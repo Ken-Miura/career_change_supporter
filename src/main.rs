@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
             .route("/wasm.js", web::get().to(js))
             .route("/wasm_bg.wasm", web::get().to(wasm))
             .route("/index.html", web::get().to(index))
-            .route("/*", web::get().to(index)) // あらゆるパスにマッチする
+            .default_service(web::get().to(index))
     })
     .bind("127.0.0.1:8080")?
     .run()
