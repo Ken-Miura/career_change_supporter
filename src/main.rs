@@ -16,7 +16,7 @@ async fn js(req: HttpRequest) -> HttpResponse {
     let path_str = uri.path();
     let v: Vec<&str> = path_str.split("/").collect();
     let last = v[v.len() - 1];
-    let path: PathBuf = (format!("{}{}", "./static/", last)).parse().unwrap();
+    let path: PathBuf = (format!("{}{}", "./static/pkg/", last)).parse().unwrap();
     let contents = fs::read_to_string(path).unwrap();
     HttpResponse::Ok()
         .header(http::header::CONTENT_TYPE, "application/javascript")
@@ -28,7 +28,7 @@ async fn wasm(req: HttpRequest) -> HttpResponse {
     let path_str = uri.path();
     let v: Vec<&str> = path_str.split("/").collect();
     let last = v[v.len() - 1];
-    let path: PathBuf = (format!("{}{}", "./static/", last)).parse().unwrap();
+    let path: PathBuf = (format!("{}{}", "./static/pkg/", last)).parse().unwrap();
     let contents = fs::read(path).unwrap();
     HttpResponse::Ok()
         .header(http::header::CONTENT_TYPE, "application/wasm")
@@ -42,8 +42,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(actix_files::Files::new("/static", ".").show_files_listing()) // staticディレクトリ以下のファイルのサーブを許可する。
-            .route("/wasm.js", web::get().to(js))
-            .route("/wasm_bg.wasm", web::get().to(wasm))
+            .route("pkg/package.js", web::get().to(js))
+            .route("pkg/package_bg.wasm", web::get().to(wasm))
             .route("/index.html", web::get().to(index))
             .default_service(web::get().to(index))
     })
