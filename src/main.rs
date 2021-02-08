@@ -2,7 +2,8 @@
 use actix_files;
 use actix_files::NamedFile;
 use actix_http::http;
-use actix_web::{HttpRequest, HttpResponse, Result};
+use actix_web::{error, web, HttpRequest, HttpResponse, Result};
+use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
 
@@ -35,17 +36,43 @@ async fn wasm(req: HttpRequest) -> HttpResponse {
         .body(contents)
 }
 
+#[derive(Deserialize)]
+struct AuthInfo {
+    mailaddress: String,
+    password: String,
+}
+
+async fn authenticate(info: web::Json<AuthInfo>) -> HttpResponse {
+    let mailaddress = info.mailaddress.clone();
+    let password = info.password.clone();
+    if mailaddress == "test@example.com" && password == "test" {
+        let contents = "{ \"name\": \"test name\" }";
+        HttpResponse::Ok().body(contents)
+    } else {
+        HttpResponse::from_error(error::ErrorUnauthorized("err: T"))
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     use actix_web::{web, App, HttpServer};
 
     HttpServer::new(|| {
+        let json_config = web::JsonConfig::default()
+            .limit(4096)
+            .error_handler(|err, _req| {
+                // create custom error response
+                error::InternalError::from_response(err, HttpResponse::Conflict().finish()).into()
+            });
+
         App::new()
             .service(actix_files::Files::new("/static", ".").show_files_listing()) // staticディレクトリ以下のファイルのサーブを許可する。
-            .route("pkg/package.js", web::get().to(js))
-            .route("pkg/package_bg.wasm", web::get().to(wasm))
+            //.app_data(json_config)
+            .route("/pkg/package.js", web::get().to(js))
+            .route("/pkg/package_bg.wasm", web::get().to(wasm))
             .route("/index.html", web::get().to(index))
-            .default_service(web::get().to(index))
+            .route("/", web::get().to(index))
+            .route("/auth-info", web::post().to(authenticate))
     })
     .bind("127.0.0.1:8080")?
     .run()
