@@ -17,22 +17,34 @@ async fn js(req: HttpRequest) -> HttpResponse {
     let path_str = uri.path();
     let v: Vec<&str> = path_str.split("/").collect();
     let last = v[v.len() - 1];
-    let path: PathBuf = (format!("{}{}", "./static/pkg/", last)).parse().unwrap();
+    let path: PathBuf = (format!("{}{}", "./static/js/", last)).parse().unwrap();
     let contents = fs::read_to_string(path).unwrap();
     HttpResponse::Ok()
         .header(http::header::CONTENT_TYPE, "application/javascript")
         .body(contents)
 }
 
-async fn wasm(req: HttpRequest) -> HttpResponse {
+async fn css(req: HttpRequest) -> HttpResponse {
     let uri = req.uri();
     let path_str = uri.path();
     let v: Vec<&str> = path_str.split("/").collect();
     let last = v[v.len() - 1];
-    let path: PathBuf = (format!("{}{}", "./static/pkg/", last)).parse().unwrap();
+    let path: PathBuf = (format!("{}{}", "./static/css/", last)).parse().unwrap();
     let contents = fs::read(path).unwrap();
     HttpResponse::Ok()
-        .header(http::header::CONTENT_TYPE, "application/wasm")
+        .header(http::header::CONTENT_TYPE, "text/css")
+        .body(contents)
+}
+
+async fn img(req: HttpRequest) -> HttpResponse {
+    let uri = req.uri();
+    let path_str = uri.path();
+    let v: Vec<&str> = path_str.split("/").collect();
+    let last = v[v.len() - 1];
+    let path: PathBuf = (format!("{}{}", "./static/img/", last)).parse().unwrap();
+    let contents = fs::read(path).unwrap();
+    HttpResponse::Ok()
+        .header(http::header::CONTENT_TYPE, "image/png")
         .body(contents)
 }
 
@@ -68,8 +80,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(actix_files::Files::new("/static", ".").show_files_listing()) // staticディレクトリ以下のファイルのサーブを許可する。
             //.app_data(json_config)
-            .route("/pkg/package.js", web::get().to(js))
-            .route("/pkg/package_bg.wasm", web::get().to(wasm))
+            .route("/js/*", web::get().to(js))
+            .route("/css/*", web::get().to(css))
+            .route("/img/*", web::get().to(img))
             .route("/index.html", web::get().to(index))
             .route("/", web::get().to(index))
             .route("/auth-info", web::post().to(authenticate))
