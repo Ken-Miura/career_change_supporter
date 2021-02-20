@@ -1,7 +1,8 @@
 // Copyright 2021 Ken Miura
 use actix_http::http;
 use actix_web::{
-    dev::Body, error, http::StatusCode, http::Uri, web, HttpRequest, HttpResponse, Result,
+    dev::Body, error, get, http::StatusCode, http::Uri, post, web, App, HttpRequest, HttpResponse,
+    HttpServer, Result,
 };
 use serde::Deserialize;
 use std::fs;
@@ -9,8 +10,13 @@ use std::path::PathBuf;
 
 static ASSETS_DIR: &str = "static";
 
-async fn index(_req: HttpRequest) -> HttpResponse {
+#[get("/index.html")]
+async fn index(req: HttpRequest) -> HttpResponse {
     // TODO: Add log accessing index
+    serve_index(req)
+}
+
+fn serve_index(_req: HttpRequest) -> HttpResponse {
     // TODO: Add log what url user acccess (index accepts all the paths)
     let index_file = format!("{}/index.html", ASSETS_DIR);
     let parse_result: Result<PathBuf, _> = index_file.parse();
@@ -28,6 +34,7 @@ async fn index(_req: HttpRequest) -> HttpResponse {
     }
 }
 
+#[get("/js/*")]
 async fn js(req: HttpRequest) -> HttpResponse {
     // TODO: Add log what file is requested
     let last_path = get_last_path(req.uri());
@@ -54,6 +61,7 @@ fn get_last_path(uri: &Uri) -> String {
     paths[paths.len() - 1].to_string()
 }
 
+#[get("/css/*")]
 async fn css(req: HttpRequest) -> HttpResponse {
     // TODO: Add log what file is requested
     let last_path = get_last_path(req.uri());
@@ -74,6 +82,7 @@ async fn css(req: HttpRequest) -> HttpResponse {
     }
 }
 
+#[get("/img/*")]
 async fn img(req: HttpRequest) -> HttpResponse {
     // TODO: Add log what file is requested
     let last_path = get_last_path(req.uri());
@@ -101,6 +110,7 @@ struct AuthInfo {
     password: String,
 }
 
+#[post("/auth-info")]
 async fn authenticate(info: web::Json<AuthInfo>) -> HttpResponse {
     let mailaddress = info.mailaddress.clone();
     let password = info.password.clone();
@@ -114,24 +124,15 @@ async fn authenticate(info: web::Json<AuthInfo>) -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    use actix_web::{web, App, HttpServer};
-
     HttpServer::new(|| {
-        let json_config = web::JsonConfig::default()
-            .limit(4096)
-            .error_handler(|err, _req| {
-                // create custom error response
-                error::InternalError::from_response(err, HttpResponse::Conflict().finish()).into()
-            });
         App::new()
             .service(actix_files::Files::new(ASSETS_DIR, ".").show_files_listing())
-            //.app_data(json_config)
-            .route("/js/*", web::get().to(js))
-            .route("/css/*", web::get().to(css))
-            .route("/img/*", web::get().to(img))
-            .route("/index.html", web::get().to(index))
-            .route("/", web::get().to(index))
-            .route("/auth-info", web::post().to(authenticate))
+            .service(js)
+            .service(css)
+            .service(img)
+            .service(index)
+            .default_service(web::route().to(serve_index))
+            .service(authenticate)
     })
     .bind("127.0.0.1:8080")?
     .run()
