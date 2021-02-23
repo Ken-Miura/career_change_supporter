@@ -110,7 +110,7 @@ struct AuthInfo {
     password: String,
 }
 
-#[post("/auth-info")]
+#[post("/auth-request")]
 async fn authenticate(info: web::Json<AuthInfo>) -> HttpResponse {
     let mailaddress = info.mailaddress.clone();
     let password = info.password.clone();
