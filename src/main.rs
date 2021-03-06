@@ -1,10 +1,23 @@
 // Copyright 2021 Ken Miura
+
+mod models;
+mod schema;
+
+#[macro_use]
+extern crate diesel;
+
 use actix_http::http;
 use actix_web::{
     dev::Body, error, get, http::StatusCode, http::Uri, post, web, App, HttpRequest, HttpResponse,
     HttpServer, Result,
 };
+use diesel::prelude::*;
+use diesel::r2d2::ConnectionManager;
+use diesel::r2d2::Pool;
+use diesel::PgConnection;
+use dotenv::dotenv;
 use serde::Deserialize;
+use std::env;
 use std::fs;
 use std::path::PathBuf;
 
@@ -110,12 +123,37 @@ struct AuthInfo {
     password: String,
 }
 
+fn find_user_by_mail_address(
+    mailaddress: &String,
+    conn: &PgConnection,
+) -> Result<Option<models::User>, diesel::result::Error> {
+    use self::schema::user_data::user::dsl::*;
+    let result = user.filter(mail_addr.eq(mailaddress))
+        .first::<models::User>(conn)
+    .optional()?;
+    Ok(result)
+}
+
 #[post("/auth-request")]
-async fn authenticate(info: web::Json<AuthInfo>) -> HttpResponse {
+async fn auth_request(info: web::Json<AuthInfo>, pool: web::Data<Pool<ConnectionManager<PgConnection>>>) -> HttpResponse {
     let mailaddress = info.mailaddress.clone();
     let password = info.password.clone();
-    if mailaddress == "test@example.com" && password == "test" {
-        let contents = "{ \"name\": \"test name\" }";
+
+    let conn = pool.get().expect("failed to get connection");
+
+    let user = web::block(move || find_user_by_mail_address(&mailaddress, &conn)).await;
+
+    let info = user.expect("error");
+    let mut auth_res = false;
+    match info {
+        Some(user) => {
+            auth_res = password == user.hashed_pass;
+        },
+        None => {}
+    }
+
+    if auth_res {
+        let contents = "{ \"result\": \"OK\" }";
         HttpResponse::Ok().body(contents)
     } else {
         HttpResponse::from_error(error::ErrorUnauthorized("err: T"))
@@ -124,17 +162,25 @@ async fn authenticate(info: web::Json<AuthInfo>) -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    dotenv().ok();
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let manager =
+        ConnectionManager::<PgConnection>::new(&database_url);
+    let pool: Pool<ConnectionManager<PgConnection>> = Pool::builder().build(manager).expect("failed to create connection pool");
+
+    HttpServer::new(move || {
         App::new()
             .service(actix_files::Files::new(ASSETS_DIR, ".").show_files_listing())
             .service(js)
             .service(css)
             .service(img)
             .service(index)
+            .service(auth_request)
             .default_service(web::route().to(serve_index))
-            .service(authenticate)
+            .data(pool.clone())
     })
-    .bind("127.0.0.1:8080")?
+    .bind("127.0.0.1:8081")?
     .run()
     .await
 }
