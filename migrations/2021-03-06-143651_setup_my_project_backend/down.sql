@@ -1,0 +1,1 @@
+DROP SCHEMA user_data CASCADE;
