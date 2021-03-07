@@ -180,7 +180,7 @@ async fn main() -> std::io::Result<()> {
             .default_service(web::route().to(serve_index))
             .data(pool.clone())
     })
-    .bind("127.0.0.1:8081")?
+    .bind("127.0.0.1:8080")?
     .run()
     .await
 }
