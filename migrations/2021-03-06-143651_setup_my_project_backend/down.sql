@@ -1,1 +1,1 @@
-DROP SCHEMA user_data CASCADE;
+DROP SCHEMA my_project_schema CASCADE;

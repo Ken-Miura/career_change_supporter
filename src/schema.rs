@@ -1,9 +1,9 @@
-pub mod user_data {
+pub mod my_project_schema {
     table! {
-        user_data.user (id) {
+        my_project_schema.user (id) {
             id -> Int4,
-            mail_addr -> Varchar,
-            hashed_pass -> Varchar,
+            email_address -> Varchar,
+            hashed_password -> Varchar,
         }
     }
 }

@@ -3,4 +3,4 @@
 
 [print_schema]
 file = "src/schema.rs"
-schema = "user_data"
+schema = "my_project_schema"

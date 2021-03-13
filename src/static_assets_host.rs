@@ -1,9 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use actix_http::http;
-use actix_web::{
-    dev::Body, get, http::StatusCode, http::Uri, HttpRequest, HttpResponse, Result,
-};
+use actix_web::{dev::Body, get, http::StatusCode, http::Uri, HttpRequest, HttpResponse, Result};
 use std::fs;
 use std::path::PathBuf;
 
