@@ -25,7 +25,7 @@ async fn auth_request(
     // TODO: Validate email address and password
     let mail_addr = info.email_address.clone();
     // TODO: hash password
-    let hashed_password = info.password.clone();
+    let pwd = info.password.clone();
 
     let conn = pool.get().expect("failed to get connection");
 
@@ -35,7 +35,13 @@ async fn auth_request(
     let mut auth_res = false;
     match info {
         Some(user) => {
-            auth_res = hashed_password == user.hashed_password;
+            use ring::hmac;
+            let key = hmac::Key::new(hmac::HMAC_SHA512, &KEY_VALUE);
+            let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
+            match result {
+                Ok(_) => auth_res = true,
+                Err(_) => auth_res = false,
+            }
         }
         None => {}
     }
@@ -90,6 +96,16 @@ async fn registration_request(
     let hashed_password = hmac::sign(&key, rand_password.as_bytes());
 
     // トランザクションで、既存のDBにメールアドレスがあるかチェック＋登録
+    // TODO: メールアドレスにUnique制約を追加するのか、トランザクションを利用するのか確認する
+    let conn = pool.get().expect("failed to get connection");
+    let result =
+        web::block(move || register_account(&info.email_address, hashed_password.as_ref(), &conn))
+            .await;
+
+    match result {
+        Ok(num) => print!("{}", num),
+        Err(err) => print!("{}", err), // reach here if unique violation 
+    }
 
     // 登録されているならメールアドレス宛にパスワードを送信
 
@@ -104,6 +120,25 @@ async fn registration_request(
         rand_password, s
     );
     HttpResponse::Ok().body(json_text)
+}
+
+use self::models::Account;
+
+fn register_account(
+    mail_addr: &String,
+    hashed_pwd: &[u8],
+    conn: &PgConnection,
+) -> Result<usize, diesel::result::Error> {
+    use schema::my_project_schema::user;
+    let new_account = Account {
+        email_address: mail_addr,
+        hashed_password: hashed_pwd,
+    };
+
+    let result = diesel::insert_into(user::table)
+        .values(&new_account)
+        .execute(conn);
+    result
 }
 
 #[derive(Serialize, Deserialize)]

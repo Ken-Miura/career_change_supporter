@@ -3,7 +3,7 @@ pub mod my_project_schema {
         my_project_schema.user (id) {
             id -> Int4,
             email_address -> Varchar,
-            hashed_password -> Varchar,
+            hashed_password -> Bytea,
         }
     }
 }
