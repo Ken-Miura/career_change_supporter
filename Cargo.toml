@@ -13,3 +13,5 @@ actix-http = "2.2.0"
 serde = "1.0.123"
 diesel = { version = "1.4.5", features = ["postgres", "r2d2"] }
 dotenv = "0.15.0"
+rand = "0.8.3"
+ring = "0.16.20"

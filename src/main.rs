@@ -14,6 +14,7 @@ use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use dotenv::dotenv;
 use serde::Deserialize;
+use serde::Serialize;
 use std::env;
 
 #[post("/auth-request")]
@@ -21,6 +22,7 @@ async fn auth_request(
     info: web::Json<AuthInfo>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
+    // TODO: Validate email address and password
     let mail_addr = info.email_address.clone();
     // TODO: hash password
     let hashed_password = info.password.clone();
@@ -64,6 +66,63 @@ fn find_user_by_mail_address(
     Ok(result)
 }
 
+const KEY_VALUE: [u8; 4] = [0, 1, 2, 3];
+
+#[post("/registration-request")]
+async fn registration_request(
+    info: web::Json<RegistrationInfo>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    if !check_if_email_address_format_is_valid(&info.email_address) {
+        return HttpResponse::from_error(error::ErrorBadRequest("failed to register account"));
+    }
+
+    // ランダムパスワード生成＋ハッシュ化
+    use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
+    let rand_password: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(16) // TODO: Consider enough length
+        .map(char::from)
+        .collect();
+    use ring::hmac;
+    let key = hmac::Key::new(hmac::HMAC_SHA512, &KEY_VALUE);
+    let hashed_password = hmac::sign(&key, rand_password.as_bytes());
+
+    // トランザクションで、既存のDBにメールアドレスがあるかチェック＋登録
+
+    // 登録されているならメールアドレス宛にパスワードを送信
+
+    // Debug output
+    use core::fmt::Write;
+    let mut s = String::with_capacity(64);
+    for byte in hashed_password.as_ref() {
+        write!(s, "{:02X}", byte);
+    }
+    let json_text = format!(
+        "{{ \"rand_password\": \"{}\", \"hashed_password\": \"{}\" }}",
+        rand_password, s
+    );
+    HttpResponse::Ok().body(json_text)
+}
+
+#[derive(Serialize, Deserialize)]
+struct RegistrationInfo {
+    email_address: String,
+}
+
+// TODO: Improve name and signature
+fn check_if_email_address_format_is_valid(mail_addr: &String) -> bool {
+    const MAX_LENGTH: usize = 254;
+    if mail_addr.len() > MAX_LENGTH {
+        return false;
+    }
+    // TODO: Add regular expression check
+    // TODO: Investigate regular expression
+    //const EMAIL_REGEXP: &str = "^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+    return true;
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -84,6 +143,7 @@ async fn main() -> std::io::Result<()> {
             .service(static_assets_host::img)
             .service(static_assets_host::index)
             .service(auth_request)
+            .service(registration_request)
             .default_service(web::route().to(static_assets_host::serve_index))
             .data(pool.clone())
     })
