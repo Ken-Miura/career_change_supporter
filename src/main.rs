@@ -22,7 +22,8 @@ async fn auth_request(
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
     let mail_addr = info.email_address.clone();
-    let password = info.password.clone();
+    // TODO: hash password
+    let hashed_password = info.password.clone();
 
     let conn = pool.get().expect("failed to get connection");
 
@@ -32,7 +33,7 @@ async fn auth_request(
     let mut auth_res = false;
     match info {
         Some(user) => {
-            auth_res = password == user.hashed_password;
+            auth_res = hashed_password == user.hashed_password;
         }
         None => {}
     }
@@ -41,7 +42,7 @@ async fn auth_request(
         let contents = "{ \"result\": \"OK\" }";
         HttpResponse::Ok().body(contents)
     } else {
-        HttpResponse::from_error(error::ErrorUnauthorized("err: T"))
+        HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate"))
     }
 }
 
