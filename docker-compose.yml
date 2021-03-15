@@ -10,10 +10,14 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: example
+  
+  cache:
+    image: redis:6.2.1
+    ports:
+      - "6379:6379"
 
   adminer:
     image: adminer:4.8.0
     restart: always
     ports:
       - "8081:8080"
-
