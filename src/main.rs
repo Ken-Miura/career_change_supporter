@@ -7,7 +7,7 @@ mod static_assets_host;
 #[macro_use]
 extern crate diesel;
 
-use actix_web::{error, post, web, App, HttpResponse, HttpServer, Result};
+use actix_web::{cookie, error, post, web, App, HttpResponse, HttpServer, Result};
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
@@ -15,6 +15,7 @@ use diesel::PgConnection;
 use dotenv::dotenv;
 use serde::Deserialize;
 use std::env;
+use time::Duration;
 
 use actix_redis::RedisSession;
 use actix_session::Session;
@@ -25,7 +26,6 @@ async fn auth_request(
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
     session: Session,
 ) -> HttpResponse {
-
     if !validate_auth_info_format(&info) {
         return HttpResponse::from_error(error::ErrorBadRequest("failed to register account"));
     }
@@ -38,9 +38,9 @@ async fn auth_request(
 
     let user = web::block(move || find_user_by_mail_address(&mail_addr, &conn)).await;
 
-    let info = user.expect("error");
+    let user_info = user.expect("error");
     let mut auth_res = false;
-    match info {
+    match user_info {
         Some(user) => {
             use ring::hmac;
             let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
@@ -54,6 +54,7 @@ async fn auth_request(
     }
 
     if auth_res {
+        let _ = session.set("email_address", &info.email_address);
         let contents = "{ \"result\": \"OK\" }";
         HttpResponse::Ok().body(contents)
     } else {
@@ -165,6 +166,16 @@ fn validate_auth_info_format(auth_info: &AuthInfo) -> bool {
     return true;
 }
 
+// Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
+#[post("/logout-request")]
+async fn logout_request(
+    session: Session,
+) -> HttpResponse {
+    session.purge();
+    let contents = "succeeded in logging out";
+    HttpResponse::Ok().body(contents)
+}
+
 // TODO: Consider and change KEY
 const SESSION_SIGN_KEY: [u8; 32] = [1; 32];
 
@@ -182,8 +193,16 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(
                 RedisSession::new("127.0.0.1:6379", &SESSION_SIGN_KEY)
-                    .ttl(300)
-                    .cookie_name("session"),
+                    .ttl(1800)
+                    // TODO: Use None to use session only cookie after following change is released
+                    // ref: https://github.com/actix/actix-extras/pull/161
+                    .cookie_max_age(Duration::seconds(1800))
+                    // TODO: Add producion environment
+                    //.cookie_secure(true)
+                    .cookie_name("session")
+                    .cookie_http_only(true)
+                    // TODO: Consider LAX policy
+                    .cookie_same_site(cookie::SameSite::Strict),
             )
             .service(
                 actix_files::Files::new(static_assets_host::ASSETS_DIR, ".").show_files_listing(),
