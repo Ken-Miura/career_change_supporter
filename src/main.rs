@@ -14,14 +14,21 @@ use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use dotenv::dotenv;
 use serde::Deserialize;
-use serde::Serialize;
 use std::env;
+
+use actix_redis::RedisSession;
+use actix_session::Session;
 
 #[post("/auth-request")]
 async fn auth_request(
     info: web::Json<AuthInfo>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+    session: Session,
 ) -> HttpResponse {
+
+    if !validate_auth_info_format(&info) {
+        return HttpResponse::from_error(error::ErrorBadRequest("failed to register account"));
+    }
     // TODO: Validate email address and password
     let mail_addr = info.email_address.clone();
     // TODO: hash password
@@ -36,7 +43,7 @@ async fn auth_request(
     match info {
         Some(user) => {
             use ring::hmac;
-            let key = hmac::Key::new(hmac::HMAC_SHA512, &KEY_VALUE);
+            let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
             let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
             match result {
                 Ok(_) => auth_res = true,
@@ -72,52 +79,56 @@ fn find_user_by_mail_address(
     Ok(result)
 }
 
-const KEY_VALUE: [u8; 4] = [0, 1, 2, 3];
+// TODO: Consider and change KEY
+const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
 
 #[post("/registration-request")]
 async fn registration_request(
-    info: web::Json<RegistrationInfo>,
+    info: web::Json<AuthInfo>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
-    if !check_if_email_address_format_is_valid(&info.email_address) {
+    if !validate_auth_info_format(&info) {
         return HttpResponse::from_error(error::ErrorBadRequest("failed to register account"));
     }
 
-    // ランダムパスワード生成＋ハッシュ化
+    use ring::hmac;
+    let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
+    let hashed_password = hmac::sign(&key, info.password.as_bytes());
+
+    // トランザクションで、既存のDBにメールアドレスがあるかチェック＋登録
+    // TODO: メールアドレスにUnique制約を追加するのか、トランザクションを利用するのか確認する
+    let mail_addr = info.email_address.clone();
+    let conn = pool.get().expect("failed to get connection");
+    let result =
+        web::block(move || register_account(&mail_addr, hashed_password.as_ref(), &conn)).await;
+
+    match result {
+        Ok(num) => print!("{}", num),
+        Err(err) => {
+            // reach here if unique violation
+            // TOOD: Consider other error handling
+            return HttpResponse::from_error(error::ErrorConflict(format!(
+                "failed to register account: {}",
+                err
+            )));
+        }
+    }
+
+    // 登録用URLのクエリパラメータの生成
+    // TODO: Add func to enable account
     use rand::distributions::Alphanumeric;
     use rand::{thread_rng, Rng};
-    let rand_password: String = thread_rng()
+    let _entry_id: String = thread_rng()
         .sample_iter(&Alphanumeric)
         .take(16) // TODO: Consider enough length
         .map(char::from)
         .collect();
-    use ring::hmac;
-    let key = hmac::Key::new(hmac::HMAC_SHA512, &KEY_VALUE);
-    let hashed_password = hmac::sign(&key, rand_password.as_bytes());
 
-    // トランザクションで、既存のDBにメールアドレスがあるかチェック＋登録
-    // TODO: メールアドレスにUnique制約を追加するのか、トランザクションを利用するのか確認する
-    let conn = pool.get().expect("failed to get connection");
-    let result =
-        web::block(move || register_account(&info.email_address, hashed_password.as_ref(), &conn))
-            .await;
+    // 登録用URLを含んだメールを送信
 
-    match result {
-        Ok(num) => print!("{}", num),
-        Err(err) => print!("{}", err), // reach here if unique violation 
-    }
-
-    // 登録されているならメールアドレス宛にパスワードを送信
-
-    // Debug output
-    use core::fmt::Write;
-    let mut s = String::with_capacity(64);
-    for byte in hashed_password.as_ref() {
-        write!(s, "{:02X}", byte);
-    }
     let json_text = format!(
-        "{{ \"rand_password\": \"{}\", \"hashed_password\": \"{}\" }}",
-        rand_password, s
+        "{{ \"message\": \"{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）\"}}",
+        info.email_address
     );
     HttpResponse::Ok().body(json_text)
 }
@@ -141,22 +152,21 @@ fn register_account(
     result
 }
 
-#[derive(Serialize, Deserialize)]
-struct RegistrationInfo {
-    email_address: String,
-}
-
-// TODO: Improve name and signature
-fn check_if_email_address_format_is_valid(mail_addr: &String) -> bool {
+// TODO: Use Result and Error lib as return type
+fn validate_auth_info_format(auth_info: &AuthInfo) -> bool {
     const MAX_LENGTH: usize = 254;
-    if mail_addr.len() > MAX_LENGTH {
+    if auth_info.email_address.len() > MAX_LENGTH {
         return false;
     }
+    // TODO: Add password format check
     // TODO: Add regular expression check
     // TODO: Investigate regular expression
     //const EMAIL_REGEXP: &str = "^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
     return true;
 }
+
+// TODO: Consider and change KEY
+const SESSION_SIGN_KEY: [u8; 32] = [1; 32];
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -170,6 +180,11 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                RedisSession::new("127.0.0.1:6379", &SESSION_SIGN_KEY)
+                    .ttl(300)
+                    .cookie_name("session"),
+            )
             .service(
                 actix_files::Files::new(static_assets_host::ASSETS_DIR, ".").show_files_listing(),
             )
