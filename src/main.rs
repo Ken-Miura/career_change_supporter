@@ -213,6 +213,7 @@ async fn main() -> std::io::Result<()> {
             .service(static_assets_host::index)
             .service(auth_request)
             .service(registration_request)
+            .service(logout_request)
             .default_service(web::route().to(static_assets_host::serve_index))
             .data(pool.clone())
     })
