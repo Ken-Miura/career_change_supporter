@@ -7,7 +7,7 @@ mod static_assets_host;
 #[macro_use]
 extern crate diesel;
 
-use actix_web::{cookie, error, post, web, App, HttpResponse, HttpServer, Result};
+use actix_web::{cookie, error, get, post, web, App, HttpResponse, HttpServer, Result};
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
@@ -168,11 +168,49 @@ fn validate_auth_info_format(auth_info: &AuthInfo) -> bool {
 
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
-async fn logout_request(
-    session: Session,
-) -> HttpResponse {
+async fn logout_request(session: Session) -> HttpResponse {
     session.purge();
     let contents = "succeeded in logging out";
+    HttpResponse::Ok().body(contents)
+}
+
+#[get("/profile-information")]
+async fn profile_information(
+    session: Session,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    // TODO: Handle Result
+    let session_info: Option<String> = session.get("email_address").unwrap_or(None);
+    if session_info == None {
+        return HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate"));
+    }
+    // セッションのttlがgetしただけで伸びるか確認する。
+
+    let conn = pool.get().expect("failed to get connection");
+    let email_address = session_info.expect("never happen");
+    let user = web::block(move || find_user_by_mail_address(&email_address, &conn)).await;
+    let user_info = user.expect("error");
+
+    match user_info {
+        Some(user) => {
+            let json_text = format!(
+                "{{ \"id\": \"{}\", \"email_address\": \"{}\"}}",
+                user.id, user.email_address
+            );
+            HttpResponse::Ok().body(json_text)
+        }
+        None => HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate")),
+    }
+}
+
+#[get("/session-state")]
+async fn session_state(session: Session) -> HttpResponse {
+    // TODO: Handle Result
+    let session_info: Option<String> = session.get("email_address").unwrap_or(None);
+    if session_info == None {
+        return HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate"));
+    }
+    let contents = "contents";
     HttpResponse::Ok().body(contents)
 }
 
@@ -193,10 +231,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(
                 RedisSession::new("127.0.0.1:6379", &SESSION_SIGN_KEY)
-                    .ttl(1800)
-                    // TODO: Use None to use session only cookie after following change is released
-                    // ref: https://github.com/actix/actix-extras/pull/161
-                    .cookie_max_age(Duration::seconds(1800))
+                    .ttl(180)
+                    .cookie_max_age(Duration::days(7))
                     // TODO: Add producion environment
                     //.cookie_secure(true)
                     .cookie_name("session")
@@ -214,6 +250,8 @@ async fn main() -> std::io::Result<()> {
             .service(auth_request)
             .service(registration_request)
             .service(logout_request)
+            .service(profile_information)
+            .service(session_state)
             .default_service(web::route().to(static_assets_host::serve_index))
             .data(pool.clone())
     })
