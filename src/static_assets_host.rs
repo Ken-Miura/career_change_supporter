@@ -21,7 +21,7 @@ pub(crate) fn serve_index(_req: HttpRequest) -> HttpResponse {
         // TODO: Add log we failed to parse path to index
         return HttpResponse::InternalServerError().body("500 Internal Server Error");
     }
-    let path = parse_result.expect("never happen err");
+    let path = parse_result.expect("never happens panic");
     let read_result = fs::read_to_string(path);
     match read_result {
         Ok(contents) => HttpResponse::Ok()
@@ -41,7 +41,7 @@ pub(crate) async fn js(req: HttpRequest) -> HttpResponse {
         // TODO: Add log what file we failed to parse
         return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
     }
-    let path = parse_result.expect("never happen err");
+    let path = parse_result.expect("never happens panic");
     // TODO: Check if path validation is needed for security
     let read_result = fs::read_to_string(path);
     match read_result {
@@ -68,7 +68,7 @@ pub(crate) async fn css(req: HttpRequest) -> HttpResponse {
         // TODO: Add log what file we failed to parse
         return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
     }
-    let path = parse_result.expect("never happen err");
+    let path = parse_result.expect("never happens panic");
     // TODO: Check if path validation is needed for security
     let read_result = fs::read_to_string(path);
     match read_result {
@@ -89,7 +89,7 @@ pub(crate) async fn img(req: HttpRequest) -> HttpResponse {
         // TODO: Add log what file we failed to parse
         return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
     }
-    let path = parse_result.expect("never happen err");
+    let path = parse_result.expect("never happens panic");
     // TODO: Check if path validation is needed for security
     let read_result = fs::read(path);
     match read_result {
