@@ -26,12 +26,12 @@ pub(crate) async fn auth_request(
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
     session: Session,
 ) -> HttpResponse {
-    if !validate_auth_info_format(&info) {
-        return HttpResponse::from_error(error::ErrorBadRequest("failed to register account"));
+    let result = validate_auth_info_format(&info);
+    if let Err(_e) = result {
+        // TODO: Consider returning JSON format
+        return HttpResponse::from_error(error::ErrorBadRequest("failed to authenticate account"));
     }
-    // TODO: Validate email address and password
     let mail_addr = info.email_address.clone();
-    // TODO: hash password
     let pwd = info.password.clone();
 
     let conn = pool.get().expect("failed to get connection");
@@ -67,7 +67,9 @@ pub(crate) async fn registration_request(
     info: web::Json<AuthInfo>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
-    if !validate_auth_info_format(&info) {
+    let result = validate_auth_info_format(&info);
+    if let Err(_e) = result {
+        // TODO: Consider returning JSON format
         return HttpResponse::from_error(error::ErrorBadRequest("failed to register account"));
     }
 
@@ -132,17 +134,38 @@ fn register_account(
     result
 }
 
-// TODO: Use Result and Error lib as return type
-fn validate_auth_info_format(auth_info: &AuthInfo) -> bool {
-    const MAX_LENGTH: usize = 254;
-    if auth_info.email_address.len() > MAX_LENGTH {
-        return false;
+enum ValidationError {
+    EmailAddressFormatError(String),
+    PasswordFormatError(String),
+}
+
+const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
+//const EMAIL_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+const PASSWORD_MIN_LENGTH: usize = 8;
+const PASSWORD_MAX_LENGTH: usize = 32;
+// TOOD: Add password regexp
+//const PASSWORD_REGEXP: &str = r"";
+
+fn validate_auth_info_format(auth_info: &AuthInfo) -> Result<(), ValidationError> {
+    let mail_addr_length = auth_info.email_address.len();
+    if mail_addr_length > EMAIL_ADDRESS_MAX_LENGTH {
+        let error_message = format!(
+            "email address length is {}: email address length must be {} or less",
+            mail_addr_length, EMAIL_ADDRESS_MAX_LENGTH
+        );
+        return Err(ValidationError::EmailAddressFormatError(error_message));
     }
-    // TODO: Add password format check
+    let pwd_length = auth_info.password.len();
+    if pwd_length < PASSWORD_MIN_LENGTH || pwd_length > PASSWORD_MAX_LENGTH {
+        // NOTE: don't include password related information (pwd_length) for security
+        let error_message = format!(
+            "password length must be {} or more, {} or less",
+            PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH
+        );
+        return Err(ValidationError::PasswordFormatError(error_message));
+    }
     // TODO: Add regular expression check
-    // TODO: Investigate regular expression
-    //const EMAIL_REGEXP: &str = "^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
-    return true;
+    return Ok(());
 }
 
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
