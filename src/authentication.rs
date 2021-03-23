@@ -2,7 +2,7 @@
 use crate::utils;
 
 use actix_session::Session;
-use actix_web::{error, get, post, web, HttpResponse};
+use actix_web::{error, get, http::StatusCode, post, web, HttpResponse};
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
@@ -205,8 +205,7 @@ fn register_account(
 #[post("/logout-request")]
 pub(crate) async fn logout_request(session: Session) -> HttpResponse {
     session.purge();
-    let contents = "succeeded in logging out";
-    HttpResponse::Ok().body(contents)
+    HttpResponse::build(StatusCode::OK).finish()
 }
 
 #[get("/session-state")]
