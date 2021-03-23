@@ -8,7 +8,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // TODO: Consider and change KEY
 pub(crate) const SESSION_SIGN_KEY: [u8; 32] = [1; 32];
@@ -170,11 +170,16 @@ pub(crate) async fn registration_request(
 
     // 登録用URLを含んだメールを送信
 
-    let json_text = format!(
-        "{{ \"message\": \"{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）\"}}",
+    let text = format!(
+        "{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）",
         auth_info.email_address
     );
-    HttpResponse::Ok().body(json_text)
+    HttpResponse::Ok().json(Message { message: text })
+}
+
+#[derive(Serialize)]
+struct Message {
+    message: String,
 }
 
 use crate::models::Account;
