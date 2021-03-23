@@ -7,6 +7,7 @@ use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
+use regex::Regex;
 use serde::Deserialize;
 
 // TODO: Consider and change KEY
@@ -20,11 +21,11 @@ enum ValidationError {
 }
 
 const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
-//const EMAIL_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+const EMAIL_ADDRESS_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
 const PASSWORD_MIN_LENGTH: usize = 8;
 const PASSWORD_MAX_LENGTH: usize = 32;
-// TOOD: Add password regexp
-//const PASSWORD_REGEXP: &str = r"";
+/// 数字を一つ以上、アルファベット小文字を一つ以上、アルファベット大文字を一つ以上含む8文字以上32文字以下の文字列
+const PASSWORD_REGEXP: &str = r"^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,32}$";
 
 #[derive(Deserialize)]
 pub(crate) struct AuthInfo {
@@ -34,7 +35,13 @@ pub(crate) struct AuthInfo {
 
 impl AuthInfo {
     fn validate_format(self: &AuthInfo) -> Result<(), ValidationError> {
-        let mail_addr_length = self.email_address.len();
+        let _ = AuthInfo::validate_email_address_format(&self.email_address)?;
+        let _ = AuthInfo::validate_password_format(&self.password)?;
+        return Ok(());
+    }
+
+    fn validate_email_address_format(email_address: &str) -> Result<(), ValidationError> {
+        let mail_addr_length = email_address.len();
         if mail_addr_length > EMAIL_ADDRESS_MAX_LENGTH {
             let error_message = format!(
                 "email address length is {}: email address length must be {} or less",
@@ -42,7 +49,19 @@ impl AuthInfo {
             );
             return Err(ValidationError::EmailAddressFormatError(error_message));
         }
-        let pwd_length = self.password.len();
+        lazy_static! {
+            static ref MAIL_ADDR_RE: Regex =
+                Regex::new(EMAIL_ADDRESS_REGEXP).expect("never happens panic");
+        }
+        if !MAIL_ADDR_RE.is_match(email_address) {
+            let error_message = format!("invalid email address format: {}", email_address);
+            return Err(ValidationError::EmailAddressFormatError(error_message));
+        }
+        Ok(())
+    }
+
+    fn validate_password_format(password: &str) -> Result<(), ValidationError> {
+        let pwd_length = password.len();
         if pwd_length < PASSWORD_MIN_LENGTH || pwd_length > PASSWORD_MAX_LENGTH {
             // NOTE: don't include password related information (pwd_length) for security
             let error_message = format!(
@@ -51,8 +70,15 @@ impl AuthInfo {
             );
             return Err(ValidationError::PasswordFormatError(error_message));
         }
-        // TODO: Add regular expression check
-        return Ok(());
+        lazy_static! {
+            static ref PWD_RE: Regex = Regex::new(PASSWORD_REGEXP).expect("never happens panic");
+        }
+        if !PWD_RE.is_match(password) {
+            // NOTE: don't include password information for security
+            let error_message = format!("invalid password format");
+            return Err(ValidationError::EmailAddressFormatError(error_message));
+        }
+        Ok(())
     }
 }
 

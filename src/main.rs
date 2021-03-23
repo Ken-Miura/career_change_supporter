@@ -7,6 +7,9 @@ mod static_assets_host;
 mod utils;
 
 #[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
 extern crate diesel;
 
 use actix_web::{cookie, error, get, web, App, HttpResponse, HttpServer};
