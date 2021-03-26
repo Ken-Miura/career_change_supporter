@@ -105,7 +105,7 @@ pub(crate) async fn auth_request(
                 // TODO: Log using _s
             }
         }
-        return HttpResponse::build(StatusCode::UNAUTHORIZED)
+        return HttpResponse::build(StatusCode::BAD_REQUEST)
             .content_type("application/problem+json")
             .json(AuthError {
                 // TODO: Define error code and message
