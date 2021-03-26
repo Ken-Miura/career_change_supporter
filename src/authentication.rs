@@ -24,8 +24,8 @@ const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
 const EMAIL_ADDRESS_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
 const PASSWORD_MIN_LENGTH: usize = 8;
 const PASSWORD_MAX_LENGTH: usize = 32;
-/// 数字を一つ以上、アルファベット小文字を一つ以上、アルファベット大文字を一つ以上含む8文字以上32文字以下の文字列
-const PASSWORD_REGEXP: &str = r"^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,32}$";
+// TODO: 数字を一つ以上、アルファベット小文字を一つ以上、アルファベット大文字を一つ以上含む8文字以上32文字以下の文字列
+const PASSWORD_REGEXP: &str = r"^[0-9a-zA-Z]{8,32}$";
 
 #[derive(Deserialize)]
 pub(crate) struct AuthInfo {
