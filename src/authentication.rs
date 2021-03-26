@@ -111,7 +111,8 @@ pub(crate) async fn auth_request(
                 // TODO: Define error code and message
                 // TODO: Create array with error_code and user_message
                 error_code: 100,
-                user_message: "メールアドレス、またはパスワードの形式が間違っています。".to_owned(),
+                user_message: "メールアドレス、またはパスワードの形式が間違っています。"
+                    .to_string(),
             });
     }
     let mail_addr = auth_info.email_address.clone();
