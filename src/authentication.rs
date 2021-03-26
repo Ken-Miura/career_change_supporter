@@ -82,6 +82,12 @@ impl AuthInfo {
     }
 }
 
+#[derive(Serialize)]
+struct AuthError {
+    error_code: u32,
+    user_message: String,
+}
+
 #[post("/auth-request")]
 pub(crate) async fn auth_request(
     auth_info: web::Json<AuthInfo>,
@@ -89,9 +95,24 @@ pub(crate) async fn auth_request(
     session: Session,
 ) -> HttpResponse {
     let result = auth_info.validate_format();
-    if let Err(_e) = result {
-        // TODO: Consider returning JSON format
-        return HttpResponse::from_error(error::ErrorBadRequest("failed to authenticate account"));
+    if let Err(e) = result {
+        match e {
+            ValidationError::EmailAddressFormatError(_s) => {
+                // TODO: Log using _s
+            }
+            ValidationError::PasswordFormatError(_s) => {
+                // NOTE: Never log security sensitive information
+                // TODO: Log using _s
+            }
+        }
+        return HttpResponse::build(StatusCode::UNAUTHORIZED)
+            .content_type("application/problem+json")
+            .json(AuthError {
+                // TODO: Define error code and message
+                // TODO: Create array with error_code and user_message
+                error_code: 100,
+                user_message: "メールアドレス、またはパスワードの形式が間違っています。".to_owned(),
+            });
     }
     let mail_addr = auth_info.email_address.clone();
     let pwd = auth_info.password.clone();
