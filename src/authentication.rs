@@ -37,7 +37,7 @@ impl AuthInfo {
     fn validate_format(self: &AuthInfo) -> Result<(), ValidationError> {
         let _ = AuthInfo::validate_email_address_format(&self.email_address)?;
         let _ = AuthInfo::validate_password_format(&self.password)?;
-        return Ok(());
+        Ok(())
     }
 
     fn validate_email_address_format(email_address: &str) -> Result<(), ValidationError> {
@@ -75,7 +75,7 @@ impl AuthInfo {
         }
         if !PWD_RE.is_match(password) {
             // NOTE: don't include password information for security
-            let error_message = format!("invalid password format");
+            let error_message = "invalid password format".to_string();
             return Err(ValidationError::EmailAddressFormatError(error_message));
         }
         Ok(())
@@ -123,17 +123,14 @@ pub(crate) async fn auth_request(
 
     let user_info = user.expect("error");
     let mut auth_res = false;
-    match user_info {
-        Some(user) => {
-            use ring::hmac;
-            let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
-            let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
-            match result {
-                Ok(_) => auth_res = true,
-                Err(_) => auth_res = false,
-            }
+    if let Some(user) = user_info {
+        use ring::hmac;
+        let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
+        let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
+        match result {
+            Ok(_) => auth_res = true,
+            Err(_) => auth_res = false,
         }
-        None => {}
     }
 
     if auth_res {
@@ -206,7 +203,7 @@ struct Message {
 use crate::models::Account;
 
 fn register_account(
-    mail_addr: &String,
+    mail_addr: &str,
     hashed_pwd: &[u8],
     conn: &PgConnection,
 ) -> Result<usize, diesel::result::Error> {
@@ -215,11 +212,9 @@ fn register_account(
         email_address: mail_addr,
         hashed_password: hashed_pwd,
     };
-
-    let result = diesel::insert_into(user::table)
+    diesel::insert_into(user::table)
         .values(&new_account)
-        .execute(conn);
-    result
+        .execute(conn)
 }
 
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post

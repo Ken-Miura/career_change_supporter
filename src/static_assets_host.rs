@@ -17,7 +17,7 @@ pub(crate) fn serve_index(_req: HttpRequest) -> HttpResponse {
     // TODO: Add log what url user acccess (index accepts all the paths)
     let index_file = format!("{}/index.html", ASSETS_DIR);
     let parse_result: Result<PathBuf, _> = index_file.parse();
-    if let Err(_) = parse_result {
+    if let Err(_e) = parse_result {
         // TODO: Add log we failed to parse path to index
         return HttpResponse::InternalServerError().body("500 Internal Server Error");
     }
@@ -37,7 +37,7 @@ pub(crate) async fn js(req: HttpRequest) -> HttpResponse {
     let last_path = get_last_path(req.uri());
     let js_file = format!("{}/js/{}", ASSETS_DIR, last_path);
     let parse_result: Result<PathBuf, _> = js_file.parse();
-    if let Err(_) = parse_result {
+    if let Err(_e) = parse_result {
         // TODO: Add log what file we failed to parse
         return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
     }
@@ -54,7 +54,7 @@ pub(crate) async fn js(req: HttpRequest) -> HttpResponse {
 
 fn get_last_path(uri: &Uri) -> String {
     let path = uri.path();
-    let paths: Vec<&str> = path.split("/").collect();
+    let paths: Vec<&str> = path.split('/').collect();
     paths[paths.len() - 1].to_string()
 }
 
@@ -64,7 +64,7 @@ pub(crate) async fn css(req: HttpRequest) -> HttpResponse {
     let last_path = get_last_path(req.uri());
     let css_file = format!("{}/css/{}", ASSETS_DIR, last_path);
     let parse_result: Result<PathBuf, _> = css_file.parse();
-    if let Err(_) = parse_result {
+    if let Err(_e) = parse_result {
         // TODO: Add log what file we failed to parse
         return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
     }
@@ -85,7 +85,7 @@ pub(crate) async fn img(req: HttpRequest) -> HttpResponse {
     let last_path = get_last_path(req.uri());
     let img_file = format!("{}/img/{}", ASSETS_DIR, last_path);
     let parse_result: Result<PathBuf, _> = img_file.parse();
-    if let Err(_) = parse_result {
+    if let Err(_e) = parse_result {
         // TODO: Add log what file we failed to parse
         return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
     }
