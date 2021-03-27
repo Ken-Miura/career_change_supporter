@@ -130,8 +130,8 @@ impl AuthInfo {
 
 #[derive(Serialize)]
 struct AuthError {
-    error_code: u32,
-    user_message: String,
+    code: u32,
+    message: String,
 }
 
 #[post("/auth-request")]
@@ -156,8 +156,8 @@ pub(crate) async fn auth_request(
             .json(AuthError {
                 // TODO: Define error code and message
                 // TODO: Create array with error_code and user_message
-                error_code: 100,
-                user_message: "メールアドレス、またはパスワードの形式が間違っています。"
+                code: 100,
+                message: "メールアドレス、またはパスワードの形式が間違っています。"
                     .to_string(),
             });
     }
