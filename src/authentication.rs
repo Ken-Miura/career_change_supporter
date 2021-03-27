@@ -22,10 +22,16 @@ enum ValidationError {
 
 const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
 const EMAIL_ADDRESS_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+
 const PASSWORD_MIN_LENGTH: usize = 10;
 const PASSWORD_MAX_LENGTH: usize = 32;
-// TODO: 数字を一つ以上、アルファベット小文字を一つ以上、アルファベット大文字を一つ以上含む10文字以上32文字以下の文字列
-const PASSWORD_REGEXP: &str = r"^[0-9a-zA-Z]{8,32}$";
+// TODO: パスワード文字に記号を利用して問題ないか検証する
+const PASSWORD_REGEXP: &str = r"^[!-~]{10,32}$";
+const UPPER_CASE_REGEXP: &str = r".*[A-Z].*";
+const LOWER_CASE_REGEXP: &str = r".*[a-z].*";
+const NUMBER_REGEXP: &str = r".*[0-9].*";
+const SYMBOL_REGEXP: &str = r".*[!-/:-@\[-`{-~].*";
+const CONSTRAINTS_OF_NUM_OF_COMBINATION: u32 = 2;
 
 #[derive(Deserialize)]
 pub(crate) struct AuthInfo {
@@ -60,6 +66,10 @@ impl AuthInfo {
         Ok(())
     }
 
+    /// パスワード要件
+    /// 10文字以上32文字以下の文字列
+    /// 使える文字列は半角英数字と記号 (ASCIIコードの0x21-0x7e)
+    /// 大文字、小文字、数字、記号のいずれか二種類以上を組み合わせる必要がある
     fn validate_password_format(password: &str) -> Result<(), ValidationError> {
         let pwd_length = password.len();
         if pwd_length < PASSWORD_MIN_LENGTH || pwd_length > PASSWORD_MAX_LENGTH {
@@ -78,7 +88,43 @@ impl AuthInfo {
             let error_message = "invalid password format".to_string();
             return Err(ValidationError::EmailAddressFormatError(error_message));
         }
+        if !AuthInfo::check_if_pwd_satisfies_constraints(password) {
+            // NOTE: don't include password information for security
+            let error_message = "invalid password format".to_string();
+            return Err(ValidationError::EmailAddressFormatError(error_message));
+        }
         Ok(())
+    }
+
+    fn check_if_pwd_satisfies_constraints(pwd: &str) -> bool {
+        lazy_static! {
+            static ref UPPER_CASE_RE: Regex =
+                Regex::new(UPPER_CASE_REGEXP).expect("never happens panic");
+        }
+        lazy_static! {
+            static ref LOWER_CASE_RE: Regex =
+                Regex::new(LOWER_CASE_REGEXP).expect("never happens panic");
+        }
+        lazy_static! {
+            static ref NUMBER_RE: Regex = Regex::new(NUMBER_REGEXP).expect("never happens panic");
+        }
+        lazy_static! {
+            static ref SYMBOL_RE: Regex = Regex::new(SYMBOL_REGEXP).expect("never happens panic");
+        }
+        let mut count = 0;
+        if UPPER_CASE_RE.is_match(pwd) {
+            count += 1;
+        }
+        if LOWER_CASE_RE.is_match(pwd) {
+            count += 1;
+        }
+        if NUMBER_RE.is_match(pwd) {
+            count += 1;
+        }
+        if SYMBOL_RE.is_match(pwd) {
+            count += 1;
+        }
+        count >= CONSTRAINTS_OF_NUM_OF_COMBINATION
     }
 }
 
