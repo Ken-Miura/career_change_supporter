@@ -118,54 +118,37 @@ impl AuthInfo {
     }
 }
 
-fn create_validation_err_response(
-    e: ValidationError, /* auth_info: &AuthInfo /*NOTE: use this param to log*/ */
-) -> HttpResponse {
+fn create_validation_err_response(auth_info: &AuthInfo, err: ValidationError) -> HttpResponse {
     let code: u32;
     let message: String;
-    match e {
+    match err {
         ValidationError::EmailAddressLength => {
             // TODO: Log
             code = error_codes::EMAIL_FORMAT_INVALID_LENGTH;
-            message = error_codes::MESSAGE
-                .get(&code)
-                .expect("never happens error")
-                .to_string();
+            message = format!("メールアドレスの長さが不正です (入力されたメールアドレスの長さ: {})。メールアドレスは{}文字以下である必要があります。", auth_info.email_address.len(), EMAIL_ADDRESS_MAX_LENGTH);
         }
         ValidationError::EmailAddressExpresson => {
             // TODO: Log
             code = error_codes::EMAIL_FORMAT_INVALID_EXPRESSION;
-            message = error_codes::MESSAGE
-                .get(&code)
-                .expect("never happens error")
-                .to_string();
+            message = format!("メールアドレスの形式が不正です (入力されたメールアドレス: {})。\"email.address@example.com\"のような形式で入力してください。", auth_info.email_address);
         }
         ValidationError::PasswordLength => {
             // NOTE: Never log security sensitive information
             // TODO: Log
             code = error_codes::PASSWORD_FORMAT_INVALID_LENGTH;
-            message = error_codes::MESSAGE
-                .get(&code)
-                .expect("never happens error")
-                .to_string();
+            message = format!("パスワードの長さが不正です。パスワードは{}文字以上、{}文字以下である必要があります。", PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH);
         }
         ValidationError::PasswordExpression => {
             // NOTE: Never log security sensitive information
             // TODO: Log
             code = error_codes::PASSWORD_FORMAT_INVALID_EXPRESSION;
-            message = error_codes::MESSAGE
-                .get(&code)
-                .expect("never happens error")
-                .to_string();
+            message = "パスワードに使用できない文字が含まれています。パスワードに使用可能な文字は、半角英数字と記号です。".to_string();
         }
         ValidationError::PasswordConstraintsViolation => {
             // NOTE: Never log security sensitive information
             // TODO: Log
             code = error_codes::PASSWORD_FORMAT_CONSTRAINTS_VIOLATION;
-            message = error_codes::MESSAGE
-                .get(&code)
-                .expect("never happens error")
-                .to_string();
+            message = "不正な形式のパスワードです。パスワードは小文字、大文字、数字または記号の内、2種類以上を組み合わせる必要があります。".to_string();
         }
     }
     return HttpResponse::build(StatusCode::BAD_REQUEST)
@@ -182,7 +165,7 @@ pub(crate) async fn auth_request(
     let result = auth_info.validate_format();
     if let Err(e) = result {
         // TODO: Log authentication fail
-        return create_validation_err_response(e);
+        return create_validation_err_response(&auth_info, e);
     }
     let mail_addr = auth_info.email_address.clone();
     let pwd = auth_info.password.clone();
@@ -208,7 +191,11 @@ pub(crate) async fn auth_request(
         let contents = "{ \"result\": \"OK\" }";
         HttpResponse::Ok().body(contents)
     } else {
-        HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate"))
+        let code = error_codes::AUTHENTICATION_FAILED;
+        let message = "メールアドレス、もしくはパスワードが間違っています。".to_string();
+        return HttpResponse::build(StatusCode::UNAUTHORIZED)
+            .content_type("application/problem+json")
+            .json(error_codes::Error { code, message });
     }
 }
 
@@ -220,7 +207,7 @@ pub(crate) async fn registration_request(
     let result = auth_info.validate_format();
     if let Err(e) = result {
         // TODO: Log registration fail
-        return create_validation_err_response(e);
+        return create_validation_err_response(&auth_info, e);
     }
 
     use ring::hmac;
