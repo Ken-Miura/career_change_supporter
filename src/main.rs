@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 mod authentication;
+mod error_codes;
 mod models;
 mod schema;
 mod static_assets_host;

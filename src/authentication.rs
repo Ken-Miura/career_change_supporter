@@ -1,4 +1,5 @@
 // Copyright 2021 Ken Miura
+use crate::error_codes;
 use crate::utils;
 
 use actix_session::Session;
@@ -16,8 +17,11 @@ pub(crate) const SESSION_SIGN_KEY: [u8; 32] = [1; 32];
 const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
 
 enum ValidationError {
-    EmailAddressFormatError(String),
-    PasswordFormatError(String),
+    EmailAddressLength,
+    EmailAddressExpresson,
+    PasswordLength,
+    PasswordExpression,
+    PasswordConstraintsViolation,
 }
 
 const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
@@ -49,19 +53,14 @@ impl AuthInfo {
     fn validate_email_address_format(email_address: &str) -> Result<(), ValidationError> {
         let mail_addr_length = email_address.len();
         if mail_addr_length > EMAIL_ADDRESS_MAX_LENGTH {
-            let error_message = format!(
-                "email address length is {}: email address length must be {} or less",
-                mail_addr_length, EMAIL_ADDRESS_MAX_LENGTH
-            );
-            return Err(ValidationError::EmailAddressFormatError(error_message));
+            return Err(ValidationError::EmailAddressLength);
         }
         lazy_static! {
             static ref MAIL_ADDR_RE: Regex =
                 Regex::new(EMAIL_ADDRESS_REGEXP).expect("never happens panic");
         }
         if !MAIL_ADDR_RE.is_match(email_address) {
-            let error_message = format!("invalid email address format: {}", email_address);
-            return Err(ValidationError::EmailAddressFormatError(error_message));
+            return Err(ValidationError::EmailAddressExpresson);
         }
         Ok(())
     }
@@ -73,25 +72,16 @@ impl AuthInfo {
     fn validate_password_format(password: &str) -> Result<(), ValidationError> {
         let pwd_length = password.len();
         if pwd_length < PASSWORD_MIN_LENGTH || pwd_length > PASSWORD_MAX_LENGTH {
-            // NOTE: don't include password related information (pwd_length) for security
-            let error_message = format!(
-                "password length must be {} or more, {} or less",
-                PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH
-            );
-            return Err(ValidationError::PasswordFormatError(error_message));
+            return Err(ValidationError::PasswordLength);
         }
         lazy_static! {
             static ref PWD_RE: Regex = Regex::new(PASSWORD_REGEXP).expect("never happens panic");
         }
         if !PWD_RE.is_match(password) {
-            // NOTE: don't include password information for security
-            let error_message = "invalid password format".to_string();
-            return Err(ValidationError::EmailAddressFormatError(error_message));
+            return Err(ValidationError::PasswordExpression);
         }
         if !AuthInfo::check_if_pwd_satisfies_constraints(password) {
-            // NOTE: don't include password information for security
-            let error_message = "invalid password format".to_string();
-            return Err(ValidationError::EmailAddressFormatError(error_message));
+            return Err(ValidationError::PasswordConstraintsViolation);
         }
         Ok(())
     }
@@ -128,10 +118,59 @@ impl AuthInfo {
     }
 }
 
-#[derive(Serialize)]
-struct AuthError {
-    code: u32,
-    message: String,
+fn create_validation_err_response(
+    e: ValidationError, /* auth_info: &AuthInfo /*NOTE: use this param to log*/ */
+) -> HttpResponse {
+    let code: u32;
+    let message: String;
+    match e {
+        ValidationError::EmailAddressLength => {
+            // TODO: Log
+            code = error_codes::EMAIL_FORMAT_INVALID_LENGTH;
+            message = error_codes::MESSAGE
+                .get(&code)
+                .expect("never happens error")
+                .to_string();
+        }
+        ValidationError::EmailAddressExpresson => {
+            // TODO: Log
+            code = error_codes::EMAIL_FORMAT_INVALID_EXPRESSION;
+            message = error_codes::MESSAGE
+                .get(&code)
+                .expect("never happens error")
+                .to_string();
+        }
+        ValidationError::PasswordLength => {
+            // NOTE: Never log security sensitive information
+            // TODO: Log
+            code = error_codes::PASSWORD_FORMAT_INVALID_LENGTH;
+            message = error_codes::MESSAGE
+                .get(&code)
+                .expect("never happens error")
+                .to_string();
+        }
+        ValidationError::PasswordExpression => {
+            // NOTE: Never log security sensitive information
+            // TODO: Log
+            code = error_codes::PASSWORD_FORMAT_INVALID_EXPRESSION;
+            message = error_codes::MESSAGE
+                .get(&code)
+                .expect("never happens error")
+                .to_string();
+        }
+        ValidationError::PasswordConstraintsViolation => {
+            // NOTE: Never log security sensitive information
+            // TODO: Log
+            code = error_codes::PASSWORD_FORMAT_CONSTRAINTS_VIOLATION;
+            message = error_codes::MESSAGE
+                .get(&code)
+                .expect("never happens error")
+                .to_string();
+        }
+    }
+    return HttpResponse::build(StatusCode::BAD_REQUEST)
+        .content_type("application/problem+json")
+        .json(error_codes::Error { code, message });
 }
 
 #[post("/auth-request")]
@@ -142,24 +181,8 @@ pub(crate) async fn auth_request(
 ) -> HttpResponse {
     let result = auth_info.validate_format();
     if let Err(e) = result {
-        match e {
-            ValidationError::EmailAddressFormatError(_s) => {
-                // TODO: Log using _s
-            }
-            ValidationError::PasswordFormatError(_s) => {
-                // NOTE: Never log security sensitive information
-                // TODO: Log using _s
-            }
-        }
-        return HttpResponse::build(StatusCode::BAD_REQUEST)
-            .content_type("application/problem+json")
-            .json(AuthError {
-                // TODO: Define error code and message
-                // TODO: Create array with error_code and user_message
-                code: 100,
-                message: "メールアドレス、またはパスワードの形式が間違っています。"
-                    .to_string(),
-            });
+        // TODO: Log authentication fail
+        return create_validation_err_response(e);
     }
     let mail_addr = auth_info.email_address.clone();
     let pwd = auth_info.password.clone();
@@ -195,9 +218,9 @@ pub(crate) async fn registration_request(
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
     let result = auth_info.validate_format();
-    if let Err(_e) = result {
-        // TODO: Consider returning JSON format
-        return HttpResponse::from_error(error::ErrorBadRequest("failed to register account"));
+    if let Err(e) = result {
+        // TODO: Log registration fail
+        return create_validation_err_response(e);
     }
 
     use ring::hmac;
