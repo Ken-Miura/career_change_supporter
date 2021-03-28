@@ -66,6 +66,7 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("failed to create connection pool");
 
+    // TODO: DOS攻撃を回避するために受け取るJSONデータのサイズ制限を追加する
     HttpServer::new(move || {
         App::new()
             .wrap(
