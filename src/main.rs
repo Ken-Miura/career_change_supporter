@@ -18,6 +18,10 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use dotenv::dotenv;
+use log::LevelFilter;
+use log4rs::append::file::FileAppender;
+use log4rs::config::{Appender, Config, Root};
+use log4rs::encode::pattern::PatternEncoder;
 use std::env;
 use time::Duration;
 
@@ -66,13 +70,10 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("failed to create connection pool");
 
-    use log::LevelFilter;
-    use log4rs::append::file::FileAppender;
-    use log4rs::config::{Appender, Config, Root};
-    use log4rs::encode::pattern::PatternEncoder;
-
+    // TODO: Check pattern encoder
+    // TODO: Check if recorded time is correct
     let logfile = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        .encoder(Box::new(PatternEncoder::new("{d} {l} {t} - {m}{n}")))
         .build("log/output.log")
         .expect("never happens panic");
 
@@ -81,6 +82,7 @@ async fn main() -> std::io::Result<()> {
         .build(Root::builder().appender("logfile").build(LevelFilter::Info))
         .expect("never happens panic");
 
+    // TODO: Add error handling
     let _ = log4rs::init_config(config);
 
     // TODO: DOS攻撃を回避するために受け取るJSONデータのサイズ制限を追加する
