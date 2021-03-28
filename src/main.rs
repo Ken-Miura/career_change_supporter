@@ -13,7 +13,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate diesel;
 
-use actix_web::{cookie, error, get, web, App, HttpResponse, HttpServer};
+use actix_web::{cookie, error, get, middleware::Logger, web, App, HttpResponse, HttpServer};
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
@@ -66,9 +66,27 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("failed to create connection pool");
 
+    use log::LevelFilter;
+    use log4rs::append::file::FileAppender;
+    use log4rs::config::{Appender, Config, Root};
+    use log4rs::encode::pattern::PatternEncoder;
+
+    let logfile = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        .build("log/output.log")
+        .expect("never happens panic");
+
+    let config = Config::builder()
+        .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        .build(Root::builder().appender("logfile").build(LevelFilter::Info))
+        .expect("never happens panic");
+
+    let _ = log4rs::init_config(config);
+
     // TODO: DOS攻撃を回避するために受け取るJSONデータのサイズ制限を追加する
     HttpServer::new(move || {
         App::new()
+            .wrap(Logger::default())
             .wrap(
                 RedisSession::new(CACHE_SERVER_ADDR, &authentication::SESSION_SIGN_KEY)
                     .ttl(180)
