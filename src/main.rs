@@ -59,6 +59,8 @@ async fn profile_information(
 
 const CACHE_SERVER_ADDR: &str = "127.0.0.1:6379";
 const APPLICATION_SERVER_ADDR: &str = "127.0.0.1:8080";
+// TODO: Consider and change KEY
+const SESSION_SIGN_KEY: [u8; 32] = [1; 32];
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -91,7 +93,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Logger::default())
             .wrap(
-                RedisSession::new(CACHE_SERVER_ADDR, &authentication::SESSION_SIGN_KEY)
+                RedisSession::new(CACHE_SERVER_ADDR, &SESSION_SIGN_KEY)
                     .ttl(180)
                     .cookie_max_age(Duration::days(7))
                     // TODO: Add producion environment

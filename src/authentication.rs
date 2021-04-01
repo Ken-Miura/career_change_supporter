@@ -12,8 +12,6 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 // TODO: Consider and change KEY
-pub(crate) const SESSION_SIGN_KEY: [u8; 32] = [1; 32];
-// TODO: Consider and change KEY
 const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
 
 enum ValidationError {
