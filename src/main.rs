@@ -109,6 +109,7 @@ async fn main() -> std::io::Result<()> {
             .service(static_assets_host::js)
             .service(static_assets_host::css)
             .service(static_assets_host::img)
+            .service(static_assets_host::favicon_ico)
             .service(static_assets_host::index)
             .service(authentication::auth_request)
             .service(authentication::registration_request)
