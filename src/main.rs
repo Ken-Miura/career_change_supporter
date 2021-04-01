@@ -72,7 +72,7 @@ async fn main() -> std::io::Result<()> {
 
     // TODO: Check pattern encoder
     // TODO: 記録される時間がサーバ上の時間か、クライアントのリクエスト時の時間が確認する
-    // TODO: 記録する時間をUTCで統一すべきか検討する
+    // TODO: ECS fargateとCloudWatchLogの連携を利用するために標準出力 (env_logger) を検討する
     let logfile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{d} {l} {t} - {m}{n}")))
         .build("log/output.log")
