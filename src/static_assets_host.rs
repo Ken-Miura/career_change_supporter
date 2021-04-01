@@ -9,16 +9,16 @@ pub(crate) static ASSETS_DIR: &str = "static";
 
 #[get("/index.html")]
 pub(crate) async fn index(req: HttpRequest) -> HttpResponse {
-    // TODO: Add log accessing index
+    log::info!("fn index");
     serve_index(req)
 }
 
-pub(crate) fn serve_index(_req: HttpRequest) -> HttpResponse {
-    // TODO: Add log what url user acccess (index accepts all the paths)
+pub(crate) fn serve_index(req: HttpRequest) -> HttpResponse {
+    log::info!("fn serve_index: requested path: {}", req.uri());
     let index_file = format!("{}/index.html", ASSETS_DIR);
     let parse_result: Result<PathBuf, _> = index_file.parse();
-    if let Err(_e) = parse_result {
-        // TODO: Add log we failed to parse path to index
+    if let Err(e) = parse_result {
+        log::error!("failed to serve index.html: {}", e);
         return HttpResponse::InternalServerError().body("500 Internal Server Error");
     }
     let path = parse_result.expect("never happens panic");
@@ -33,13 +33,13 @@ pub(crate) fn serve_index(_req: HttpRequest) -> HttpResponse {
 
 #[get("/js/*")]
 pub(crate) async fn js(req: HttpRequest) -> HttpResponse {
-    // TODO: Add log what file is requested
+    log::info!("fn js: requested path: {}", req.uri());
     let last_path = get_last_path(req.uri());
     let js_file = format!("{}/js/{}", ASSETS_DIR, last_path);
     let parse_result: Result<PathBuf, _> = js_file.parse();
-    if let Err(_e) = parse_result {
-        // TODO: Add log what file we failed to parse
-        return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
+    if let Err(e) = parse_result {
+        log::error!("failed to serve javascript file: {}", e);
+        return HttpResponse::with_body(StatusCode::INTERNAL_SERVER_ERROR, Body::Empty);
     }
     let path = parse_result.expect("never happens panic");
     // TODO: Check if path validation is needed for security
@@ -60,13 +60,13 @@ fn get_last_path(uri: &Uri) -> String {
 
 #[get("/css/*")]
 pub(crate) async fn css(req: HttpRequest) -> HttpResponse {
-    // TODO: Add log what file is requested
+    log::info!("fn cs: requested path: {}", req.uri());
     let last_path = get_last_path(req.uri());
     let css_file = format!("{}/css/{}", ASSETS_DIR, last_path);
     let parse_result: Result<PathBuf, _> = css_file.parse();
-    if let Err(_e) = parse_result {
-        // TODO: Add log what file we failed to parse
-        return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
+    if let Err(e) = parse_result {
+        log::error!("failed to serve css file: {}", e);
+        return HttpResponse::with_body(StatusCode::INTERNAL_SERVER_ERROR, Body::Empty);
     }
     let path = parse_result.expect("never happens panic");
     // TODO: Check if path validation is needed for security
@@ -81,13 +81,13 @@ pub(crate) async fn css(req: HttpRequest) -> HttpResponse {
 
 #[get("/img/*")]
 pub(crate) async fn img(req: HttpRequest) -> HttpResponse {
-    // TODO: Add log what file is requested
+    log::info!("fn img: requested path: {}", req.uri());
     let last_path = get_last_path(req.uri());
     let img_file = format!("{}/img/{}", ASSETS_DIR, last_path);
     let parse_result: Result<PathBuf, _> = img_file.parse();
-    if let Err(_e) = parse_result {
-        // TODO: Add log what file we failed to parse
-        return HttpResponse::with_body(StatusCode::NOT_FOUND, Body::Empty);
+    if let Err(e) = parse_result {
+        log::error!("failed to serve image file: {}", e);
+        return HttpResponse::with_body(StatusCode::INTERNAL_SERVER_ERROR, Body::Empty);
     }
     let path = parse_result.expect("never happens panic");
     // TODO: Check if path validation is needed for security
