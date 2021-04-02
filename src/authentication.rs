@@ -183,7 +183,7 @@ pub(crate) async fn auth_request(
     let result = auth_info.validate_format();
     if let Err(e) = result {
         log::error!(
-            "failed to authenticate account ({}): {}",
+            "failed to authenticate \"{}\": {}",
             auth_info.email_address,
             e
         );
@@ -228,11 +228,7 @@ pub(crate) async fn registration_request(
 ) -> HttpResponse {
     let result = auth_info.validate_format();
     if let Err(e) = result {
-        log::error!(
-            "failed to register account ({}): {}",
-            auth_info.email_address,
-            e
-        );
+        log::error!("failed to register \"{}\": {}", auth_info.email_address, e);
         return create_validation_err_response(e);
     }
 
