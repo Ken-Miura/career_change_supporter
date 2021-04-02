@@ -202,7 +202,6 @@ pub(crate) async fn registration_request(
     auth_info: web::Json<AuthInfo>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
-    log::info!("registration request call"); // TODO: Remove this line because this is just test for logging crate
     let result = auth_info.validate_format();
     if let Err(e) = result {
         // TODO: Log registration fail
