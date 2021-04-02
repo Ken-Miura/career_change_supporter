@@ -10,16 +10,40 @@ use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 // TODO: Consider and change KEY
 const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
 
 enum ValidationError {
-    EmailAddressLength,
-    EmailAddressExpresson,
+    EmailAddressLength { length: usize },
+    EmailAddressFormat { email_address: String },
+    // NOTE: パスワード系はセキュリティのために入力情報は保持させない。
     PasswordLength,
-    PasswordExpression,
+    PasswordFormat,
     PasswordConstraintsViolation,
+}
+
+impl fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ValidationError::EmailAddressLength { length } => {
+                write!(f, "invalid email address length: {}", length)
+            }
+            ValidationError::EmailAddressFormat { email_address } => {
+                write!(f, "invalid email address format: {}", email_address)
+            }
+            ValidationError::PasswordLength => {
+                write!(f, "invalid password length")
+            }
+            ValidationError::PasswordFormat => {
+                write!(f, "invalid password format")
+            }
+            ValidationError::PasswordConstraintsViolation => {
+                write!(f, "password constraints vaiolation")
+            }
+        }
+    }
 }
 
 const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
@@ -43,22 +67,26 @@ pub(crate) struct AuthInfo {
 
 impl AuthInfo {
     fn validate_format(self: &AuthInfo) -> Result<(), ValidationError> {
-        let _ = AuthInfo::validate_email_address_format(&self.email_address)?;
-        let _ = AuthInfo::validate_password_format(&self.password)?;
+        let _ = AuthInfo::validate_email_address(&self.email_address)?;
+        let _ = AuthInfo::validate_password(&self.password)?;
         Ok(())
     }
 
-    fn validate_email_address_format(email_address: &str) -> Result<(), ValidationError> {
+    fn validate_email_address(email_address: &str) -> Result<(), ValidationError> {
         let mail_addr_length = email_address.len();
         if mail_addr_length > EMAIL_ADDRESS_MAX_LENGTH {
-            return Err(ValidationError::EmailAddressLength);
+            return Err(ValidationError::EmailAddressLength {
+                length: mail_addr_length,
+            });
         }
         lazy_static! {
             static ref MAIL_ADDR_RE: Regex =
                 Regex::new(EMAIL_ADDRESS_REGEXP).expect("never happens panic");
         }
         if !MAIL_ADDR_RE.is_match(email_address) {
-            return Err(ValidationError::EmailAddressExpresson);
+            return Err(ValidationError::EmailAddressFormat {
+                email_address: email_address.to_string(),
+            });
         }
         Ok(())
     }
@@ -67,7 +95,7 @@ impl AuthInfo {
     /// 10文字以上32文字以下の文字列
     /// 使える文字列は半角英数字と記号 (ASCIIコードの0x21-0x7e)
     /// 大文字、小文字、数字、記号のいずれか二種類以上を組み合わせる必要がある
-    fn validate_password_format(password: &str) -> Result<(), ValidationError> {
+    fn validate_password(password: &str) -> Result<(), ValidationError> {
         let pwd_length = password.len();
         if pwd_length < PASSWORD_MIN_LENGTH || pwd_length > PASSWORD_MAX_LENGTH {
             return Err(ValidationError::PasswordLength);
@@ -76,7 +104,7 @@ impl AuthInfo {
             static ref PWD_RE: Regex = Regex::new(PASSWORD_REGEXP).expect("never happens panic");
         }
         if !PWD_RE.is_match(password) {
-            return Err(ValidationError::PasswordExpression);
+            return Err(ValidationError::PasswordFormat);
         }
         if !AuthInfo::check_if_pwd_satisfies_constraints(password) {
             return Err(ValidationError::PasswordConstraintsViolation);
@@ -116,35 +144,27 @@ impl AuthInfo {
     }
 }
 
-fn create_validation_err_response(auth_info: &AuthInfo, err: ValidationError) -> HttpResponse {
+fn create_validation_err_response(err: ValidationError) -> HttpResponse {
     let code: u32;
     let message: String;
     match err {
-        ValidationError::EmailAddressLength => {
-            // TODO: Log
+        ValidationError::EmailAddressLength { length } => {
             code = error_codes::EMAIL_FORMAT_INVALID_LENGTH;
-            message = format!("メールアドレスの長さが不正です (入力されたメールアドレスの長さ: {})。メールアドレスは{}文字以下である必要があります。", auth_info.email_address.len(), EMAIL_ADDRESS_MAX_LENGTH);
+            message = format!("メールアドレスの長さが不正です (入力されたメールアドレスの長さ: {})。メールアドレスは{}文字以下である必要があります。", length, EMAIL_ADDRESS_MAX_LENGTH);
         }
-        ValidationError::EmailAddressExpresson => {
-            // TODO: Log
+        ValidationError::EmailAddressFormat { email_address } => {
             code = error_codes::EMAIL_FORMAT_INVALID_EXPRESSION;
-            message = format!("メールアドレスの形式が不正です (入力されたメールアドレス: {})。\"email.address@example.com\"のような形式で入力してください。", auth_info.email_address);
+            message = format!("メールアドレスの形式が不正です (入力されたメールアドレス: {})。\"email.address@example.com\"のような形式で入力してください。", email_address);
         }
         ValidationError::PasswordLength => {
-            // NOTE: Never log security sensitive information
-            // TODO: Log
             code = error_codes::PASSWORD_FORMAT_INVALID_LENGTH;
             message = format!("パスワードの長さが不正です。パスワードは{}文字以上、{}文字以下である必要があります。", PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH);
         }
-        ValidationError::PasswordExpression => {
-            // NOTE: Never log security sensitive information
-            // TODO: Log
+        ValidationError::PasswordFormat => {
             code = error_codes::PASSWORD_FORMAT_INVALID_EXPRESSION;
             message = "パスワードに使用できない文字が含まれています。パスワードに使用可能な文字は、半角英数字と記号です。".to_string();
         }
         ValidationError::PasswordConstraintsViolation => {
-            // NOTE: Never log security sensitive information
-            // TODO: Log
             code = error_codes::PASSWORD_FORMAT_CONSTRAINTS_VIOLATION;
             message = "不正な形式のパスワードです。パスワードは小文字、大文字、数字または記号の内、2種類以上を組み合わせる必要があります。".to_string();
         }
@@ -162,8 +182,12 @@ pub(crate) async fn auth_request(
 ) -> HttpResponse {
     let result = auth_info.validate_format();
     if let Err(e) = result {
-        // TODO: Log authentication fail
-        return create_validation_err_response(&auth_info, e);
+        log::error!(
+            "failed to authenticate account ({}): {}",
+            auth_info.email_address,
+            e
+        );
+        return create_validation_err_response(e);
     }
     let mail_addr = auth_info.email_address.clone();
     let pwd = auth_info.password.clone();
@@ -204,8 +228,12 @@ pub(crate) async fn registration_request(
 ) -> HttpResponse {
     let result = auth_info.validate_format();
     if let Err(e) = result {
-        // TODO: Log registration fail
-        return create_validation_err_response(&auth_info, e);
+        log::error!(
+            "failed to register account ({}): {}",
+            auth_info.email_address,
+            e
+        );
+        return create_validation_err_response(e);
     }
 
     use ring::hmac;
