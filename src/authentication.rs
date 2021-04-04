@@ -213,8 +213,8 @@ fn create_validation_err_response(err: ValidationError) -> HttpResponse {
         .json(error_codes::Error { code, message });
 }
 
-#[post("/auth-request")]
-pub(crate) async fn auth_request(
+#[post("/login-request")]
+pub(crate) async fn login_request(
     _auth_info: web::Json<AuthInfo>,
     _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
     _session: Session,
