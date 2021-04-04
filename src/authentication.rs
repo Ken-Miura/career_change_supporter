@@ -4,7 +4,7 @@ use crate::error_codes;
 use crate::models::TentativeAccountInfo;
 use actix_session::Session;
 use actix_web::{error, get, http::StatusCode, post, web, HttpResponse};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
@@ -282,7 +282,7 @@ pub(crate) async fn registration_request(
     let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
     let hashed_password = hmac::sign(&key, auth_info.password.as_bytes());
     let query_id = Uuid::new_v4().to_simple().to_string();
-    let current_date_time = Local::now();
+    let current_date_time = Utc::now();
     let result = web::block(move || {
         register_tentative_user(
             &mail_addr,
@@ -377,7 +377,7 @@ fn register_tentative_user(
     mail_addr: &str,
     hashed_pwd: &[u8],
     query_id: &str,
-    current_date_time: &DateTime<Local>,
+    current_date_time: &DateTime<Utc>,
     conn: &PgConnection,
 ) -> Result<(), RegistrationError> {
     use crate::schema::my_project_schema::tentative_user;
