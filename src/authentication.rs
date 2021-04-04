@@ -9,6 +9,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use regex::Regex;
+use ring::hmac;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -18,7 +19,7 @@ const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
 enum ValidationError {
     EmailAddressLength { length: usize },
     EmailAddressFormat { email_address: String },
-    // NOTE: パスワード系はセキュリティのために入力情報は保持させない。
+    // NOTE: パスワード系はセキュリティのために入力情報は保持させない
     PasswordLength,
     PasswordFormat,
     PasswordConstraintsViolation,
@@ -199,7 +200,6 @@ pub(crate) async fn auth_request(
     let user_info = user.expect("error");
     let mut auth_res = false;
     if let Some(user) = user_info {
-        use ring::hmac;
         let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
         let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
         match result {
@@ -232,7 +232,6 @@ pub(crate) async fn registration_request(
         return create_validation_err_response(e);
     }
 
-    use ring::hmac;
     let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
     let hashed_password = hmac::sign(&key, auth_info.password.as_bytes());
 
