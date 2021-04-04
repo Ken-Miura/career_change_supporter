@@ -13,7 +13,9 @@ extern crate lazy_static;
 #[macro_use]
 extern crate diesel;
 
-use actix_web::{cookie, error, get, middleware::Logger, web, App, HttpResponse, HttpServer};
+use actix_web::{
+    cookie, get, http::StatusCode, middleware::Logger, web, App, HttpResponse, HttpServer,
+};
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
@@ -30,31 +32,33 @@ use actix_session::Session;
 
 #[get("/profile-information")]
 async fn profile_information(
-    session: Session,
-    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+    _session: Session,
+    _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
-    // TODO: Handle Result
-    let session_info: Option<String> = session.get("email_address").unwrap_or(None);
-    if session_info == None {
-        return HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate"));
-    }
-    // セッションのttlがgetしただけで伸びるか確認する。
+    // // TODO: Handle Result
+    // let session_info: Option<String> = session.get("email_address").unwrap_or(None);
+    // if session_info == None {
+    //     return HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate"));
+    // }
+    // // セッションのttlがgetしただけで伸びるか確認する。
 
-    let conn = pool.get().expect("failed to get connection");
-    let email_address = session_info.expect("never happen");
-    let user = web::block(move || utils::find_user_by_mail_address(&email_address, &conn)).await;
-    let user_info = user.expect("error");
+    // let conn = pool.get().expect("failed to get connection");
+    // let email_address = session_info.expect("never happen");
+    // let user = web::block(move || utils::find_user_by_mail_address(&email_address, &conn)).await;
+    // let user_info = user.expect("error");
 
-    match user_info {
-        Some(user) => {
-            let json_text = format!(
-                "{{ \"id\": \"{}\", \"email_address\": \"{}\"}}",
-                user.id, user.email_address
-            );
-            HttpResponse::Ok().body(json_text)
-        }
-        None => HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate")),
-    }
+    // match user_info {
+    //     Some(user) => {
+    //         let json_text = format!(
+    //             "{{ \"id\": \"{}\", \"email_address\": \"{}\"}}",
+    //             user.id, user.email_address
+    //         );
+    //         HttpResponse::Ok().body(json_text)
+    //     }
+    //     None => HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate")),
+    // }
+    // TODO: 一時的に同じレスポンスを返すようにする
+    HttpResponse::build(StatusCode::OK).finish()
 }
 
 const CACHE_SERVER_ADDR: &str = "127.0.0.1:6379";

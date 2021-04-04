@@ -1,9 +1,10 @@
 // Copyright 2021 Ken Miura
 use crate::error_codes;
-use crate::utils;
 
+use crate::models::TentativeAccountInfo;
 use actix_session::Session;
 use actix_web::{error, get, http::StatusCode, post, web, HttpResponse};
+use chrono::{DateTime, Local};
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
@@ -12,6 +13,7 @@ use regex::Regex;
 use ring::hmac;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use uuid::Uuid;
 
 // TODO: Consider and change KEY
 const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
@@ -44,6 +46,42 @@ impl fmt::Display for ValidationError {
                 write!(f, "password constraints vaiolation")
             }
         }
+    }
+}
+
+#[derive(Debug)]
+enum RegistrationError {
+    AlreadyExist { email_address: String },
+    Duplicate { email_address: String, count: i64 },
+    DieselError(diesel::result::Error),
+}
+
+impl fmt::Display for RegistrationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RegistrationError::AlreadyExist { email_address } => {
+                write!(f, "{} has already existed in user", email_address)
+            }
+            RegistrationError::Duplicate {
+                email_address,
+                count,
+            } => {
+                write!(
+                    f,
+                    "fatal error (Something is wrong!!): found \"{}\" {} times",
+                    email_address, count
+                )
+            }
+            RegistrationError::DieselError(e) => {
+                write!(f, "diesel error: {}", e)
+            }
+        }
+    }
+}
+
+impl From<diesel::result::Error> for RegistrationError {
+    fn from(error: diesel::result::Error) -> Self {
+        RegistrationError::DieselError(error)
     }
 }
 
@@ -177,48 +215,50 @@ fn create_validation_err_response(err: ValidationError) -> HttpResponse {
 
 #[post("/auth-request")]
 pub(crate) async fn auth_request(
-    auth_info: web::Json<AuthInfo>,
-    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
-    session: Session,
+    _auth_info: web::Json<AuthInfo>,
+    _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+    _session: Session,
 ) -> HttpResponse {
-    let result = auth_info.validate_format();
-    if let Err(e) = result {
-        log::error!(
-            "failed to authenticate \"{}\": {}",
-            auth_info.email_address,
-            e
-        );
-        return create_validation_err_response(e);
-    }
-    let mail_addr = auth_info.email_address.clone();
-    let pwd = auth_info.password.clone();
+    // let result = auth_info.validate_format();
+    // if let Err(e) = result {
+    //     log::error!(
+    //         "failed to authenticate \"{}\": {}",
+    //         auth_info.email_address,
+    //         e
+    //     );
+    //     return create_validation_err_response(e);
+    // }
+    // let mail_addr = auth_info.email_address.clone();
+    // let pwd = auth_info.password.clone();
 
-    let conn = pool.get().expect("failed to get connection");
+    // let conn = pool.get().expect("failed to get connection");
 
-    let user = web::block(move || utils::find_user_by_mail_address(&mail_addr, &conn)).await;
+    // let user = web::block(move || utils::find_user_by_mail_address(&mail_addr, &conn)).await;
 
-    let user_info = user.expect("error");
-    let mut auth_res = false;
-    if let Some(user) = user_info {
-        let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
-        let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
-        match result {
-            Ok(_) => auth_res = true,
-            Err(_) => auth_res = false,
-        }
-    }
+    // let user_info = user.expect("error");
+    // let mut auth_res = false;
+    // if let Some(user) = user_info {
+    //     let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
+    //     let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
+    //     match result {
+    //         Ok(_) => auth_res = true,
+    //         Err(_) => auth_res = false,
+    //     }
+    // }
 
-    if auth_res {
-        let _ = session.set("email_address", &auth_info.email_address);
-        let contents = "{ \"result\": \"OK\" }";
-        HttpResponse::Ok().body(contents)
-    } else {
-        let code = error_codes::AUTHENTICATION_FAILED;
-        let message = "メールアドレス、もしくはパスワードが間違っています。".to_string();
-        return HttpResponse::build(StatusCode::UNAUTHORIZED)
-            .content_type("application/problem+json")
-            .json(error_codes::Error { code, message });
-    }
+    // if auth_res {
+    //     let _ = session.set("email_address", &auth_info.email_address);
+    //     let contents = "{ \"result\": \"OK\" }";
+    //     HttpResponse::Ok().body(contents)
+    // } else {
+    //     let code = error_codes::AUTHENTICATION_FAILED;
+    //     let message = "メールアドレス、もしくはパスワードが間違っています。".to_string();
+    //     return HttpResponse::build(StatusCode::UNAUTHORIZED)
+    //         .content_type("application/problem+json")
+    //         .json(error_codes::Error { code, message });
+    // }
+    // TODO: 一時的に同じレスポンスを返すようにする
+    HttpResponse::build(StatusCode::OK).finish()
 }
 
 #[post("/registration-request")]
@@ -232,67 +272,148 @@ pub(crate) async fn registration_request(
         return create_validation_err_response(e);
     }
 
+    let result = pool.get();
+    if let Err(e) = result {
+        log::error!("failed to get connection: {}", e);
+        return create_db_connection_error_response();
+    }
+    let conn = result.expect("never happens panic");
+    let mail_addr = auth_info.email_address.clone();
     let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
     let hashed_password = hmac::sign(&key, auth_info.password.as_bytes());
+    let query_id = Uuid::new_v4().to_simple().to_string();
+    let current_date_time = Local::now();
+    let result = web::block(move || {
+        register_tentative_user(
+            &mail_addr,
+            hashed_password.as_ref(),
+            &query_id.clone(),
+            &current_date_time,
+            &conn,
+        )
+    })
+    .await;
 
-    // トランザクションで、既存のDBにメールアドレスがあるかチェック＋登録
-    // TODO: メールアドレスにUnique制約を追加するのか、トランザクションを利用するのか確認する
-    let mail_addr = auth_info.email_address.clone();
-    let conn = pool.get().expect("failed to get connection");
-    let result =
-        web::block(move || register_account(&mail_addr, hashed_password.as_ref(), &conn)).await;
-
-    match result {
-        Ok(num) => print!("{}", num),
-        Err(err) => {
-            // reach here if unique violation
-            // TOOD: Consider other error handling
-            return HttpResponse::from_error(error::ErrorConflict(format!(
-                "failed to register account: {}",
-                err
-            )));
+    if let Err(err) = result {
+        match err {
+            error::BlockingError::Error(e) => {
+                log::error!(
+                    "failed to register \"{}\" tentatively: {}",
+                    auth_info.email_address,
+                    e
+                );
+                return create_registration_err_response(e);
+            }
+            error::BlockingError::Canceled => {
+                log::error!("failed to register tentatively: error::BlockingError::Canceled");
+                return create_execution_canceled_response();
+            }
         }
     }
+    // TODO: 仮ユーザテーブルにアクセスするためのクエリパラメータを含んだメールを送信
 
-    // 登録用URLのクエリパラメータの生成
-    // TODO: Add func to enable account
-    use rand::distributions::Alphanumeric;
-    use rand::{thread_rng, Rng};
-    let _entry_id: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(16) // TODO: Consider enough length
-        .map(char::from)
-        .collect();
-
-    // 登録用URLを含んだメールを送信
-
-    let text = format!(
+    let message = format!(
         "{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）",
-        auth_info.email_address
+        auth_info.email_address.clone()
     );
-    HttpResponse::Ok().json(Message { message: text })
+    HttpResponse::Ok().json(TentativeRegistrationResult {
+        email_address: auth_info.email_address.clone(),
+        message,
+    })
 }
 
 #[derive(Serialize)]
-struct Message {
+struct TentativeRegistrationResult {
+    email_address: String,
     message: String,
 }
 
-use crate::models::Account;
+fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
+    let code: u32;
+    let message: String;
+    match err {
+        RegistrationError::AlreadyExist { email_address } => {
+            code = error_codes::USER_ALREADY_EXISTS;
+            message = format!("{}は既に登録されています。", email_address);
+        }
+        RegistrationError::Duplicate {
+            email_address: _,
+            count: _,
+        } => {
+            code = error_codes::USER_DUPLICATE;
+            message = error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string();
+        }
+        RegistrationError::DieselError(_e) => {
+            code = error_codes::DB_ACCESS_ERROR;
+            message = error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string();
+        }
+    };
+    return HttpResponse::build(StatusCode::BAD_REQUEST)
+        .content_type("application/problem+json")
+        .json(error_codes::Error { code, message });
+}
 
-fn register_account(
+fn create_db_connection_error_response() -> HttpResponse {
+    let code = error_codes::DB_CONNECTION_UNAVAILABLE;
+    return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+        .content_type("application/problem+json")
+        .json(error_codes::Error {
+            code,
+            message: error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string(),
+        });
+}
+
+fn create_execution_canceled_response() -> HttpResponse {
+    let code = error_codes::EXECUTION_CANCELED;
+    return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+        .content_type("application/problem+json")
+        .json(error_codes::Error {
+            code,
+            message: error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string(),
+        });
+}
+
+fn register_tentative_user(
     mail_addr: &str,
     hashed_pwd: &[u8],
+    query_id: &str,
+    current_date_time: &DateTime<Local>,
     conn: &PgConnection,
-) -> Result<usize, diesel::result::Error> {
-    use crate::schema::my_project_schema::user;
-    let new_account = Account {
-        email_address: mail_addr,
-        hashed_password: hashed_pwd,
-    };
-    diesel::insert_into(user::table)
-        .values(&new_account)
-        .execute(conn)
+) -> Result<(), RegistrationError> {
+    use crate::schema::my_project_schema::tentative_user;
+    use crate::schema::my_project_schema::user::dsl::*;
+    conn.transaction::<_, RegistrationError, _>(|| {
+        // DBに既にメールアドレスが登録されているかチェック
+        let cnt = user
+            .filter(email_address.eq(mail_addr))
+            .count()
+            .get_result::<i64>(conn)?;
+        if cnt > 1 {
+            return Err(RegistrationError::Duplicate {
+                email_address: mail_addr.to_string(),
+                count: cnt,
+            });
+        }
+        if cnt == 1 {
+            return Err(RegistrationError::AlreadyExist {
+                email_address: mail_addr.to_string(),
+            });
+        }
+        // TODO: 念の為、負の数のケースを考える必要があるか調べる
+
+        // 仮ユーザとして登録
+        let tentative_user = TentativeAccountInfo {
+            query_id,
+            email_address: mail_addr,
+            hashed_password: hashed_pwd,
+            registration_time: current_date_time,
+        };
+        // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
+        let _result = diesel::insert_into(tentative_user::table)
+            .values(&tentative_user)
+            .execute(conn)?;
+        Ok(())
+    })
 }
 
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
