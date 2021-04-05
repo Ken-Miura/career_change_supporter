@@ -13,6 +13,7 @@ services:
   
   cache:
     image: redis:6.2.1
+    restart: always
     ports:
       - "6379:6379"
 
@@ -21,3 +22,10 @@ services:
     restart: always
     ports:
       - "8081:8080"
+
+  smtp:
+    image: schickling/mailcatcher:latest
+    restart: always
+    ports:
+      - "1080:1080"
+      - "1025:1025"
