@@ -215,19 +215,19 @@ fn create_validation_err_response(err: ValidationError) -> HttpResponse {
 
 #[post("/login-request")]
 pub(crate) async fn login_request(
-    _auth_info: web::Json<AuthInfo>,
+    auth_info: web::Json<AuthInfo>,
     _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
     _session: Session,
 ) -> HttpResponse {
-    // let result = auth_info.validate_format();
-    // if let Err(e) = result {
-    //     log::error!(
-    //         "failed to authenticate \"{}\": {}",
-    //         auth_info.email_address,
-    //         e
-    //     );
-    //     return create_validation_err_response(e);
-    // }
+    let result = auth_info.validate_format();
+    if let Err(e) = result {
+        log::error!(
+            "failed to authenticate \"{}\": {}",
+            auth_info.email_address,
+            e
+        );
+        return create_validation_err_response(e);
+    }
     // let mail_addr = auth_info.email_address.clone();
     // let pwd = auth_info.password.clone();
 
