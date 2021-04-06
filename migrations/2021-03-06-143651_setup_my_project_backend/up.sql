@@ -11,7 +11,8 @@ CREATE TABLE my_project_schema.user (
 CREATE TABLE my_project_schema.tentative_user (
   id SERIAL PRIMARY KEY,
   query_id my_project_schema.uuid_simple_form UNIQUE,
-  email_address my_project_schema.email_address UNIQUE,
+  /* 一度仮登録した後、それを忘れてしまいもう一度仮登録したいケースを考え、UNIQUEにしない。query_idがUNIQUEなので一意に検索は可能 */
+  email_address my_project_schema.email_address,
   hashed_password BYTEA NOT NULL,
   registration_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
