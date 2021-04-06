@@ -311,6 +311,7 @@ pub(crate) async fn registration_request(
         }
     }
     // TODO: 仮ユーザテーブルにアクセスするためのクエリパラメータを含んだメールを送信
+    test_mail();
 
     let message = format!(
         "{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）",
@@ -320,6 +321,28 @@ pub(crate) async fn registration_request(
         email_address: auth_info.email_address.clone(),
         message,
     })
+}
+
+fn test_mail() {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+
+    let email = EmailBuilder::new()
+        .to(("to@example.com", "Firstname Lastname"))
+        .from("from@example.com")
+        .subject("日本語のタイトル")
+        .text("日本語の本文")
+        .build()
+        .unwrap();
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(([127, 0, 0, 1], 1025));
+    let mut mailer = SmtpClient::new(addr, ClientSecurity::None)
+        .unwrap()
+        .transport();
+
+    // Send the email
+    let _ = mailer.send(email.into());
 }
 
 #[derive(Serialize)]
