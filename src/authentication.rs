@@ -299,6 +299,7 @@ pub(crate) struct EntryRequest {
     id: String
 }
 
+// TODO: SameSite=Strictで問題ないか（アクセスできるか）確認する
 #[get("/entry")]
 pub(crate) async fn entry (web::Query(entry): web::Query<EntryRequest>, pool: web::Data<Pool<ConnectionManager<PgConnection>>>) -> HttpResponse {
     log::info!("{}", entry.id);
