@@ -337,6 +337,7 @@ pub(crate) async fn entry(
     if let Err(_e) = result {
         return create_error_view();
     }
+    // TODO: アカウント作成成功メールを送る
     create_success_view()
 }
 
