@@ -443,7 +443,6 @@ fn register_tentative_user(
             });
         }
         use crate::schema::my_project_schema::tentative_user;
-        // 仮ユーザとして登録
         let tentative_user = TentativeAccountInfo {
             query_id,
             email_address: mail_addr,
