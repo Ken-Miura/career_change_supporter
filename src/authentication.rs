@@ -296,14 +296,64 @@ pub(crate) async fn login_request(
 
 #[derive(Deserialize)]
 pub(crate) struct EntryRequest {
-    id: String
+    id: String,
+}
+
+const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
+
+enum IdValidationError {
+    InvalidId(String),
+}
+
+impl fmt::Display for IdValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            IdValidationError::InvalidId(id) => {
+                write!(f, "invalid id: {}", id)
+            }
+        }
+    }
 }
 
 // TODO: SameSite=Strictで問題ないか（アクセスできるか）確認する
 #[get("/entry")]
-pub(crate) async fn entry (web::Query(entry): web::Query<EntryRequest>, pool: web::Data<Pool<ConnectionManager<PgConnection>>>) -> HttpResponse {
-    log::info!("{}", entry.id);
+pub(crate) async fn entry(
+    web::Query(entry): web::Query<EntryRequest>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let result = validate_id(&entry.id);
+    if let Err(e) = result {
+        log::error!("failed to get entry: {}", e);
+        return create_invalid_id_response();
+    }
     HttpResponse::build(StatusCode::OK).finish()
+}
+
+fn create_invalid_id_response() -> HttpResponse {
+    let body = r#"<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>不正なリクエスト</title>
+      </head>
+      <body>
+        不正なURLです。ブラウザに入力されているURLと、メール本文に記載されているURLが間違っていないかご確認ください。
+      </body>
+    </html>"#
+        .to_string();
+    HttpResponse::build(StatusCode::BAD_REQUEST)
+        .content_type("text/html; charset=UTF-8")
+        .body(body)
+}
+
+fn validate_id(id: &str) -> Result<(), IdValidationError> {
+    lazy_static! {
+        static ref UUID_RE: Regex = Regex::new(UUID_REGEXP).expect("never happens panic");
+    }
+    if !UUID_RE.is_match(id) {
+        return Err(IdValidationError::InvalidId(id.to_string()));
+    }
+    Ok(())
 }
 
 #[post("/registration-request")]
