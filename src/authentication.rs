@@ -294,6 +294,17 @@ pub(crate) async fn login_request(
     HttpResponse::build(StatusCode::OK).finish()
 }
 
+#[derive(Deserialize)]
+pub(crate) struct EntryRequest {
+    id: String
+}
+
+#[get("/entry")]
+pub(crate) async fn entry (web::Query(entry): web::Query<EntryRequest>, pool: web::Data<Pool<ConnectionManager<PgConnection>>>) -> HttpResponse {
+    log::info!("{}", entry.id);
+    HttpResponse::build(StatusCode::OK).finish()
+}
+
 #[post("/registration-request")]
 pub(crate) async fn registration_request(
     auth_info: web::Json<AuthInfo>,
