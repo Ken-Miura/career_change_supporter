@@ -18,5 +18,8 @@ pub mod my_project_schema {
         }
     }
 
-    allow_tables_to_appear_in_same_query!(tentative_user, user,);
+    allow_tables_to_appear_in_same_query!(
+        tentative_user,
+        user,
+    );
 }
