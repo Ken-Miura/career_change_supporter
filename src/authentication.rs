@@ -17,6 +17,8 @@ use uuid::Uuid;
 
 // TODO: Consider and change KEY
 const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
+// TODO: 運用しながら上限を調整する
+const LIMIT_OF_REGISTRATION_RECORD: i64 = 7;
 
 enum ValidationError {
     EmailAddressLength { length: usize },
@@ -53,6 +55,7 @@ impl fmt::Display for ValidationError {
 enum RegistrationError {
     AlreadyExist { email_address: String },
     Duplicate { email_address: String, count: i64 },
+    ExceedRegistrationLimit { email_address: String, count: i64 },
     DieselError(diesel::result::Error),
 }
 
@@ -69,6 +72,16 @@ impl fmt::Display for RegistrationError {
                 write!(
                     f,
                     "fatal error (Something is wrong!!): found \"{}\" {} times",
+                    email_address, count
+                )
+            }
+            RegistrationError::ExceedRegistrationLimit {
+                email_address,
+                count,
+            } => {
+                write!(
+                    f,
+                    "exceed regstration limit (email: \"{}\", registration count: {})",
                     email_address, count
                 )
             }
@@ -282,12 +295,13 @@ pub(crate) async fn registration_request(
     let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
     let hashed_password = hmac::sign(&key, auth_info.password.as_bytes());
     let query_id = Uuid::new_v4().to_simple().to_string();
+    let query_id_to_register = query_id.clone();
     let current_date_time = Utc::now();
     let result = web::block(move || {
         register_tentative_user(
             &mail_addr,
             hashed_password.as_ref(),
-            &query_id.clone(),
+            &query_id_to_register,
             &current_date_time,
             &conn,
         )
@@ -310,20 +324,28 @@ pub(crate) async fn registration_request(
             }
         }
     }
-    // TODO: 仮ユーザテーブルにアクセスするためのクエリパラメータを含んだメールを送信
-    test_mail();
-
-    let message = format!(
+    let num_of_tentative_accounts = result.expect("never happens panic");
+    let notification =  format!(
         "{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）",
         auth_info.email_address.clone()
     );
+    let message = if num_of_tentative_accounts > 0 {
+        format!(
+            "{}。メールが届かない場合、迷惑メールフォルダに届いていないか、このサイトのドメインのメールが受信許可されているかをご確認ください。",
+            notification
+        )
+    } else {
+        notification
+    };
+    // TODO: 仮ユーザテーブルにアクセスするためのクエリパラメータを含んだメールを送信
+    test_mail(&query_id);
     HttpResponse::Ok().json(TentativeRegistrationResult {
         email_address: auth_info.email_address.clone(),
         message,
     })
 }
 
-fn test_mail() {
+fn test_mail(query_id: &str) {
     use lettre::{ClientSecurity, SmtpClient, Transport};
     use lettre_email::EmailBuilder;
 
@@ -331,7 +353,7 @@ fn test_mail() {
         .to(("to@example.com", "Firstname Lastname"))
         .from("from@example.com")
         .subject("日本語のタイトル")
-        .text("日本語の本文")
+        .text(format!("クエリID: {}", query_id))
         .build()
         .unwrap();
 
@@ -365,6 +387,14 @@ fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
         } => {
             code = error_codes::USER_DUPLICATE;
             message = error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string();
+            // TODO: 管理者にメールを送信するか検討する（通り得ない処理なので、管理者への通知があったほうがよいかもしれない）
+        }
+        RegistrationError::ExceedRegistrationLimit {
+            email_address: _,
+            count: _,
+        } => {
+            code = error_codes::EXCEED_REGISTRATION_LIMIT;
+            message = "アカウント作成を依頼できる回数の上限を超えました。一定の期間が過ぎた後、再度お試しください。".to_string();
         }
         RegistrationError::DieselError(_e) => {
             code = error_codes::DB_ACCESS_ERROR;
@@ -402,28 +432,17 @@ fn register_tentative_user(
     query_id: &str,
     current_date_time: &DateTime<Utc>,
     conn: &PgConnection,
-) -> Result<(), RegistrationError> {
-    use crate::schema::my_project_schema::tentative_user;
-    use crate::schema::my_project_schema::user::dsl::*;
+) -> Result<i64, RegistrationError> {
     conn.transaction::<_, RegistrationError, _>(|| {
-        // DBに既にメールアドレスが登録されているかチェック
-        let cnt = user
-            .filter(email_address.eq(mail_addr))
-            .count()
-            .get_result::<i64>(conn)?;
-        if cnt > 1 {
-            return Err(RegistrationError::Duplicate {
+        check_if_user_exists(mail_addr, conn)?;
+        let cnt = count_num_of_registration(mail_addr, conn)?;
+        if cnt >= LIMIT_OF_REGISTRATION_RECORD {
+            return Err(RegistrationError::ExceedRegistrationLimit {
                 email_address: mail_addr.to_string(),
                 count: cnt,
             });
         }
-        if cnt == 1 {
-            return Err(RegistrationError::AlreadyExist {
-                email_address: mail_addr.to_string(),
-            });
-        }
-        // TODO: 念の為、負の数のケースを考える必要があるか調べる
-
+        use crate::schema::my_project_schema::tentative_user;
         // 仮ユーザとして登録
         let tentative_user = TentativeAccountInfo {
             query_id,
@@ -435,8 +454,41 @@ fn register_tentative_user(
         let _result = diesel::insert_into(tentative_user::table)
             .values(&tentative_user)
             .execute(conn)?;
-        Ok(())
+        Ok(cnt)
     })
+}
+
+fn check_if_user_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), RegistrationError> {
+    use crate::schema::my_project_schema::user::dsl::*;
+    let cnt = user
+        .filter(email_address.eq(mail_addr))
+        .count()
+        .get_result::<i64>(conn)?;
+    if cnt > 1 {
+        return Err(RegistrationError::Duplicate {
+            email_address: mail_addr.to_string(),
+            count: cnt,
+        });
+    }
+    if cnt == 1 {
+        return Err(RegistrationError::AlreadyExist {
+            email_address: mail_addr.to_string(),
+        });
+    }
+    // TODO: 念の為、負の数のケースを考える必要があるか調べる
+    Ok(())
+}
+
+fn count_num_of_registration(
+    mail_addr: &str,
+    conn: &PgConnection,
+) -> Result<i64, diesel::result::Error> {
+    use crate::schema::my_project_schema::tentative_user::dsl::*;
+    let cnt = tentative_user
+        .filter(email_address.eq(mail_addr))
+        .count()
+        .get_result::<i64>(conn)?;
+    Ok(cnt)
 }
 
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
