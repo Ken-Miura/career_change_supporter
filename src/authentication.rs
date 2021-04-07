@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 use crate::error_codes;
 
-use crate::models::TentativeAccountInfo;
+use crate::models;
 use actix_session::Session;
 use actix_web::{error, get, http::StatusCode, post, web, HttpResponse};
 use chrono::{DateTime, Utc};
@@ -324,12 +324,188 @@ pub(crate) async fn entry(
     let result = validate_id(&entry.id);
     if let Err(e) = result {
         log::error!("failed to get entry: {}", e);
-        return create_invalid_id_response();
+        return create_invalid_id_view();
     }
-    HttpResponse::build(StatusCode::OK).finish()
+    let result = pool.get();
+    if let Err(e) = result {
+        log::error!("failed to get connection: {}", e);
+        return create_db_connection_error_view();
+    }
+    let conn = result.expect("never happens panic");
+    let current_date_time = Utc::now();
+    let result = web::block(move || create_user(&entry.id, current_date_time, &conn)).await;
+    if let Err(_e) = result {
+        return create_error_view();
+    }
+    create_success_view()
 }
 
-fn create_invalid_id_response() -> HttpResponse {
+fn create_error_view() -> HttpResponse {
+    let body = r#"<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>登録失敗</title>
+      </head>
+      <body>
+      登録に失敗しました。
+      </body>
+    </html>"#
+        .to_string();
+    HttpResponse::build(StatusCode::BAD_REQUEST)
+        .content_type("text/html; charset=UTF-8")
+        .body(body)
+}
+
+fn create_success_view() -> HttpResponse {
+    let body =
+        r#"<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>登録失敗</title>
+      </head>
+      <body>
+      登録に成功しました。<a href="/login">こちら</a>よりログインを行ってください。
+      </body>
+    </html>"#;
+    HttpResponse::build(StatusCode::OK)
+        .content_type("text/html; charset=UTF-8")
+        .body(body)
+}
+
+fn create_user(
+    query_id: &str,
+    current_date_time: DateTime<Utc>,
+    conn: &PgConnection,
+) -> Result<(), EntryError> {
+    conn.transaction::<_, EntryError, _>(|| {
+        let result = find_tentative_user_by_id(query_id, conn)?;
+        if result.is_empty() {
+            return Err(EntryError::NoEntry(query_id.to_string()));
+        }
+        if result.len() != 1 {
+            return Err(EntryError::EntryDuplicate(query_id.to_string()));
+        }
+        let deletion_result = delete_entry(query_id, conn);
+        if let Err(e) = deletion_result {
+            log::error!("failed to delete entry: {}", e);
+        };
+        let user = &result[0];
+        let time_passed = current_date_time - user.registration_time;
+        if time_passed.num_days() > 1 {
+            return Err(EntryError::EntryExpire {
+                registration_time: user.registration_time,
+                activation_time: current_date_time,
+            });
+        }
+        let user = &result[0];
+        create_account(&user.email_address, user.hashed_password.as_ref(), conn)?;
+        Ok(())
+    })
+}
+
+fn delete_entry(entry_id: &str, conn: &PgConnection) -> Result<(), EntryError> {
+    use crate::schema::my_project_schema::tentative_user::dsl::*;
+    // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
+    let _result = diesel::delete(tentative_user.filter(query_id.eq(entry_id))).execute(conn)?;
+    Ok(())
+}
+
+fn create_account(
+    mail_addr: &str,
+    hashed_pwd: &[u8],
+    conn: &PgConnection,
+) -> Result<(), EntryError> {
+    use crate::schema::my_project_schema::user;
+    let user = models::AccountInfo {
+        email_address: mail_addr,
+        hashed_password: hashed_pwd,
+        last_login_time: None,
+    };
+    // TODO: 既に登録されているケースをエラーハンドリングする
+    // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
+    let _result = diesel::insert_into(user::table)
+        .values(&user)
+        .execute(conn)?;
+    Ok(())
+}
+
+#[derive(Debug)]
+enum EntryError {
+    DieselError(diesel::result::Error),
+    NoEntry(String),
+    EntryDuplicate(String),
+    EntryExpire {
+        registration_time: DateTime<Utc>,
+        activation_time: DateTime<Utc>,
+    },
+}
+
+impl fmt::Display for EntryError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EntryError::DieselError(e) => {
+                write!(f, "diesel error: {}", e)
+            }
+            EntryError::NoEntry(entry_id) => {
+                write!(f, "not found entry: {}", entry_id)
+            }
+            EntryError::EntryDuplicate(entry_id) => {
+                write!(f, "duplicate entry: {}", entry_id)
+            }
+            EntryError::EntryExpire {
+                registration_time,
+                activation_time,
+            } => {
+                write!(
+                    f,
+                    "entry already expired (registration time: {}, activation time: {})",
+                    registration_time, activation_time
+                )
+            }
+        }
+    }
+}
+
+impl From<diesel::result::Error> for EntryError {
+    fn from(error: diesel::result::Error) -> Self {
+        EntryError::DieselError(error)
+    }
+}
+
+fn find_tentative_user_by_id(
+    entry_id: &str,
+    conn: &PgConnection,
+) -> Result<Vec<models::TentativeUser>, EntryError> {
+    use crate::schema::my_project_schema::tentative_user::dsl::*;
+    let users = tentative_user
+        .filter(query_id.eq(entry_id))
+        .get_results::<models::TentativeUser>(conn)?;
+    Ok(users)
+}
+
+fn create_db_connection_error_view() -> HttpResponse {
+    let body = format!(
+        r#"<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title><サーバエラー/title>
+      </head>
+      <body>
+      {} (エラーコード: {})
+      </body>
+    </html>"#,
+        error_codes::INTERNAL_SERVER_ERROR_MESSAGE,
+        error_codes::DB_CONNECTION_UNAVAILABLE
+    );
+    return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+        .content_type("text/html; charset=UTF-8")
+        .body(body);
+}
+
+fn create_invalid_id_view() -> HttpResponse {
     let body = r#"<!DOCTYPE html>
     <html>
       <head>
@@ -549,7 +725,7 @@ fn register_tentative_user(
             });
         }
         use crate::schema::my_project_schema::tentative_user;
-        let tentative_user = TentativeAccountInfo {
+        let tentative_user = models::TentativeAccountInfo {
             query_id,
             email_address: mail_addr,
             hashed_password: hashed_pwd,
