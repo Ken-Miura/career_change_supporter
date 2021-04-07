@@ -14,6 +14,8 @@ pub(crate) const USER_ALREADY_EXISTS: u32 = 9;
 pub(crate) const USER_DUPLICATE: u32 = 10;
 pub(crate) const DB_ACCESS_ERROR: u32 = 11;
 pub(crate) const EXCEED_REGISTRATION_LIMIT: u32 = 12;
+pub(crate) const EMAIL_ERROR: u32 = 13;
+pub(crate) const SMTP_ERROR: u32 = 14;
 
 pub(crate) const INTERNAL_SERVER_ERROR_MESSAGE: &str =
     "サーバでエラーが発生しました。一定時間後、再度お試しください。";

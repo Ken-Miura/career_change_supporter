@@ -57,6 +57,8 @@ enum RegistrationError {
     Duplicate { email_address: String, count: i64 },
     ExceedRegistrationLimit { email_address: String, count: i64 },
     DieselError(diesel::result::Error),
+    EmailError(lettre_email::error::Error),
+    SmtpError(lettre::smtp::error::Error),
 }
 
 impl fmt::Display for RegistrationError {
@@ -88,6 +90,12 @@ impl fmt::Display for RegistrationError {
             RegistrationError::DieselError(e) => {
                 write!(f, "diesel error: {}", e)
             }
+            RegistrationError::EmailError(e) => {
+                write!(f, "lettre email error: {}", e)
+            }
+            RegistrationError::SmtpError(e) => {
+                write!(f, "lettre smtp error: {}", e)
+            }
         }
     }
 }
@@ -95,6 +103,18 @@ impl fmt::Display for RegistrationError {
 impl From<diesel::result::Error> for RegistrationError {
     fn from(error: diesel::result::Error) -> Self {
         RegistrationError::DieselError(error)
+    }
+}
+
+impl From<lettre_email::error::Error> for RegistrationError {
+    fn from(error: lettre_email::error::Error) -> Self {
+        RegistrationError::EmailError(error)
+    }
+}
+
+impl From<lettre::smtp::error::Error> for RegistrationError {
+    fn from(error: lettre::smtp::error::Error) -> Self {
+        RegistrationError::SmtpError(error)
     }
 }
 
@@ -337,34 +357,43 @@ pub(crate) async fn registration_request(
     } else {
         notification
     };
-    // TODO: 仮ユーザテーブルにアクセスするためのクエリパラメータを含んだメールを送信
-    test_mail(&query_id);
+    let result = send_activation_mail(&auth_info.email_address, &query_id);
+    if let Err(err) = result {
+        log::error!("failed to send email: {}", err);
+        return create_registration_err_response(err);
+    }
     HttpResponse::Ok().json(TentativeRegistrationResult {
         email_address: auth_info.email_address.clone(),
         message,
     })
 }
 
-fn test_mail(query_id: &str) {
+// TODO: 環境変数から読み込むように変更する
+const SMTP_SERVER_ADDR: ([u8; 4], u16) = ([127, 0, 0, 1], 1025);
+// TODO: サーバのドメイン名を変更し、共通で利用するmoduleへ移動する
+const DOMAIN: &str = "localhost";
+const PORT: &str = "8080";
+
+fn send_activation_mail(email_address: &str, query_id: &str) -> Result<(), RegistrationError> {
     use lettre::{ClientSecurity, SmtpClient, Transport};
     use lettre_email::EmailBuilder;
-
     let email = EmailBuilder::new()
-        .to(("to@example.com", "Firstname Lastname"))
+        .to(email_address)
+        // TODO: 送信元メールを更新する
         .from("from@example.com")
+        // TOOD: メールの件名を更新する
         .subject("日本語のタイトル")
-        .text(format!("クエリID: {}", query_id))
-        .build()
-        .unwrap();
+        // TOOD: メールの本文を更新する
+        .text(format!("http://{}:{}/entry?id={}", DOMAIN, PORT, query_id))
+        .build()?;
 
     use std::net::SocketAddr;
-    let addr = SocketAddr::from(([127, 0, 0, 1], 1025));
-    let mut mailer = SmtpClient::new(addr, ClientSecurity::None)
-        .unwrap()
-        .transport();
-
-    // Send the email
-    let _ = mailer.send(email.into());
+    let addr = SocketAddr::from(SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None)?;
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into())?;
+    Ok(())
 }
 
 #[derive(Serialize)]
@@ -376,10 +405,12 @@ struct TentativeRegistrationResult {
 fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
     let code: u32;
     let message: String;
+    let status_code: StatusCode;
     match err {
         RegistrationError::AlreadyExist { email_address } => {
             code = error_codes::USER_ALREADY_EXISTS;
             message = format!("{}は既に登録されています。", email_address);
+            status_code = StatusCode::CONFLICT;
         }
         RegistrationError::Duplicate {
             email_address: _,
@@ -387,6 +418,7 @@ fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
         } => {
             code = error_codes::USER_DUPLICATE;
             message = error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string();
+            status_code = StatusCode::INTERNAL_SERVER_ERROR;
             // TODO: 管理者にメールを送信するか検討する（通り得ない処理なので、管理者への通知があったほうがよいかもしれない）
         }
         RegistrationError::ExceedRegistrationLimit {
@@ -395,13 +427,25 @@ fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
         } => {
             code = error_codes::EXCEED_REGISTRATION_LIMIT;
             message = "アカウント作成を依頼できる回数の上限を超えました。一定の期間が過ぎた後、再度お試しください。".to_string();
+            status_code = StatusCode::BAD_REQUEST;
         }
         RegistrationError::DieselError(_e) => {
             code = error_codes::DB_ACCESS_ERROR;
             message = error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string();
+            status_code = StatusCode::INTERNAL_SERVER_ERROR;
+        }
+        RegistrationError::EmailError(_e) => {
+            code = error_codes::EMAIL_ERROR;
+            message = error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string();
+            status_code = StatusCode::INTERNAL_SERVER_ERROR;
+        }
+        RegistrationError::SmtpError(_e) => {
+            code = error_codes::SMTP_ERROR;
+            message = error_codes::INTERNAL_SERVER_ERROR_MESSAGE.to_string();
+            status_code = StatusCode::INTERNAL_SERVER_ERROR;
         }
     };
-    return HttpResponse::build(StatusCode::BAD_REQUEST)
+    return HttpResponse::build(status_code)
         .content_type("application/problem+json")
         .json(error_codes::Error { code, message });
 }
