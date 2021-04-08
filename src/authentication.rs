@@ -3,7 +3,7 @@ use crate::error_codes;
 
 use crate::models;
 use actix_session::Session;
-use actix_web::{error, get, http::StatusCode, post, web, HttpResponse};
+use actix_web::{dev::Body, error, get, http::StatusCode, post, web, HttpResponse};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
@@ -249,8 +249,8 @@ fn create_validation_err_response(err: ValidationError) -> HttpResponse {
 #[post("/login-request")]
 pub(crate) async fn login_request(
     auth_info: web::Json<AuthInfo>,
-    _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
-    _session: Session,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+    session: Session,
 ) -> HttpResponse {
     let result = auth_info.validate_format();
     if let Err(e) = result {
@@ -261,37 +261,50 @@ pub(crate) async fn login_request(
         );
         return create_validation_err_response(e);
     }
-    // let mail_addr = auth_info.email_address.clone();
-    // let pwd = auth_info.password.clone();
+    let result = pool.get();
+    if let Err(e) = result {
+        log::error!("failed to get connection: {}", e);
+        return create_db_connection_error_response();
+    }
+    let conn = result.expect("never happens panic");
+    let mail_addr = auth_info.email_address.clone();
+    let result = web::block(move || find_user_by_email_address(&mail_addr, &conn)).await;
+    if let Err(_e) = result {
+        // TODO: エラーハンドリング
+        let code = error_codes::AUTHENTICATION_FAILED;
+        let message = "メールアドレス、もしくはパスワードが間違っています。".to_string();
+        return HttpResponse::build(StatusCode::UNAUTHORIZED)
+            .content_type("application/problem+json")
+            .json(error_codes::Error { code, message });
+    }
+    let user = result.expect("never happens panic");
+    let pwd = auth_info.password.clone();
+    let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
+    let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
+    if let Err(_e) = result {
+        // TODO: エラーハンドリング
+        let code = error_codes::AUTHENTICATION_FAILED;
+        let message = "メールアドレス、もしくはパスワードが間違っています。".to_string();
+        return HttpResponse::build(StatusCode::UNAUTHORIZED)
+            .content_type("application/problem+json")
+            .json(error_codes::Error { code, message });
+    }
+    let _ = session.set("email_address", &auth_info.email_address);
+    // TODO: 最終ログイン日時の更新
+    HttpResponse::with_body(StatusCode::OK, Body::Empty)
+}
 
-    // let conn = pool.get().expect("failed to get connection");
-
-    // let user = web::block(move || utils::find_user_by_mail_address(&mail_addr, &conn)).await;
-
-    // let user_info = user.expect("error");
-    // let mut auth_res = false;
-    // if let Some(user) = user_info {
-    //     let key = hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY);
-    //     let result = hmac::verify(&key, pwd.as_bytes(), &user.hashed_password);
-    //     match result {
-    //         Ok(_) => auth_res = true,
-    //         Err(_) => auth_res = false,
-    //     }
-    // }
-
-    // if auth_res {
-    //     let _ = session.set("email_address", &auth_info.email_address);
-    //     let contents = "{ \"result\": \"OK\" }";
-    //     HttpResponse::Ok().body(contents)
-    // } else {
-    //     let code = error_codes::AUTHENTICATION_FAILED;
-    //     let message = "メールアドレス、もしくはパスワードが間違っています。".to_string();
-    //     return HttpResponse::build(StatusCode::UNAUTHORIZED)
-    //         .content_type("application/problem+json")
-    //         .json(error_codes::Error { code, message });
-    // }
-    // TODO: 一時的に同じレスポンスを返すようにする
-    HttpResponse::build(StatusCode::OK).finish()
+fn find_user_by_email_address(
+    mail_addr: &str,
+    conn: &PgConnection,
+) -> Result<models::User, diesel::result::Error> {
+    use crate::schema::my_project_schema::user::dsl::*;
+    let users = user
+        .filter(email_address.eq(mail_addr))
+        .get_results::<models::User>(conn)?;
+    // TODO: ユーザの数が0もしくは1であることのチェック
+    let u = users[0].clone();
+    Ok(u)
 }
 
 #[derive(Deserialize)]
@@ -359,8 +372,7 @@ fn create_error_view() -> HttpResponse {
 }
 
 fn create_success_view() -> HttpResponse {
-    let body =
-        r#"<!DOCTYPE html>
+    let body = r#"<!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">

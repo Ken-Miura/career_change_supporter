@@ -9,7 +9,7 @@ pub struct AccountInfo<'a> {
     pub last_login_time: Option<&'a chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Queryable)]
+#[derive(Clone, Queryable)]
 pub struct User {
     pub id: i32,
     pub email_address: String,
