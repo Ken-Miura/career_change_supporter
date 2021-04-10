@@ -5,7 +5,7 @@ use actix_web::{dev::Body, get, http::StatusCode, http::Uri, HttpRequest, HttpRe
 use std::fs;
 use std::path::PathBuf;
 
-pub(crate) static ASSETS_DIR: &str = "static";
+pub(crate) const ASSETS_DIR: &str = "static";
 
 #[get("/index.html")]
 pub(crate) async fn index(req: HttpRequest) -> HttpResponse {

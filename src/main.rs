@@ -4,8 +4,9 @@ mod authentication;
 mod error_codes;
 mod models;
 mod schema;
-mod static_assets_host;
+mod static_assets;
 mod utils;
+mod accounts;
 
 #[macro_use]
 extern crate lazy_static;
@@ -108,20 +109,20 @@ async fn main() -> std::io::Result<()> {
                     .cookie_same_site(cookie::SameSite::Strict),
             )
             .service(
-                actix_files::Files::new(static_assets_host::ASSETS_DIR, ".").show_files_listing(),
+                actix_files::Files::new(static_assets::ASSETS_DIR, ".").show_files_listing(),
             )
-            .service(static_assets_host::js)
-            .service(static_assets_host::css)
-            .service(static_assets_host::img)
-            .service(static_assets_host::favicon_ico)
-            .service(static_assets_host::index)
+            .service(static_assets::js)
+            .service(static_assets::css)
+            .service(static_assets::img)
+            .service(static_assets::favicon_ico)
+            .service(static_assets::index)
             .service(authentication::registration_request)
             .service(authentication::entry)
             .service(authentication::login_request)
             .service(authentication::logout_request)
             .service(authentication::session_state)
             .service(profile_information)
-            .default_service(web::route().to(static_assets_host::serve_index))
+            .default_service(web::route().to(static_assets::serve_index))
             .data(pool.clone())
     })
     .bind(APPLICATION_SERVER_ADDR)?
