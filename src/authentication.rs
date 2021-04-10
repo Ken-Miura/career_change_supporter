@@ -406,7 +406,7 @@ fn create_user(
         };
         let user = &result[0];
         let time_passed = current_date_time - user.registration_time;
-        if time_passed.num_days() > 1 {
+        if time_passed.num_days() > 0 {
             return Err(EntryError::EntryExpire {
                 registration_time: user.registration_time,
                 activation_time: current_date_time,
