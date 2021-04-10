@@ -1,3 +1,5 @@
+// Copyright 2021 Ken Miura
+
 use super::schema::my_project_schema::tentative_user;
 use super::schema::my_project_schema::user;
 

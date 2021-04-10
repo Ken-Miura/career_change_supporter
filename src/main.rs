@@ -1,15 +1,11 @@
 // Copyright 2021 Ken Miura
 
+mod account;
 mod authentication;
-mod error_codes;
-mod models;
+mod common;
+mod model;
 mod schema;
-mod static_assets;
-mod utils;
-mod accounts;
-
-#[macro_use]
-extern crate lazy_static;
+mod static_asset;
 
 #[macro_use]
 extern crate diesel;
@@ -108,21 +104,19 @@ async fn main() -> std::io::Result<()> {
                     // TODO: Consider LAX policy
                     .cookie_same_site(cookie::SameSite::Strict),
             )
-            .service(
-                actix_files::Files::new(static_assets::ASSETS_DIR, ".").show_files_listing(),
-            )
-            .service(static_assets::js)
-            .service(static_assets::css)
-            .service(static_assets::img)
-            .service(static_assets::favicon_ico)
-            .service(static_assets::index)
-            .service(authentication::registration_request)
-            .service(authentication::entry)
+            .service(actix_files::Files::new(static_asset::ASSETS_DIR, ".").show_files_listing())
+            .service(static_asset::js)
+            .service(static_asset::css)
+            .service(static_asset::img)
+            .service(static_asset::favicon_ico)
+            .service(static_asset::index)
+            .service(account::temporary_accounts)
+            .service(account::entry)
             .service(authentication::login_request)
             .service(authentication::logout_request)
             .service(authentication::session_state)
             .service(profile_information)
-            .default_service(web::route().to(static_assets::serve_index))
+            .default_service(web::route().to(static_asset::serve_index))
             .data(pool.clone())
     })
     .bind(APPLICATION_SERVER_ADDR)?
