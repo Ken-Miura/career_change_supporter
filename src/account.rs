@@ -482,7 +482,7 @@ fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
             status_code = StatusCode::BAD_REQUEST;
         }
         RegistrationError::DieselError(_e) => {
-            code = error::code::DB_ACCESS_ERROR;
+            code = error::code::INTERNAL_SERVER_ERROR;
             message = String::from("test"); // TODO: 変更をする
             status_code = StatusCode::INTERNAL_SERVER_ERROR;
         }
