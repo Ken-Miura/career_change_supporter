@@ -150,8 +150,8 @@ impl fmt::Display for ValidationError {
     }
 }
 
-impl error::Detail for ValidationError {
-    fn code(&self) -> u32 {
+impl error::ToCode for ValidationError {
+    fn to_code(&self) -> u32 {
         match self {
             ValidationError::EmailAddressLength { code, length: _ } => *code,
             ValidationError::EmailAddressFormat {
@@ -163,7 +163,10 @@ impl error::Detail for ValidationError {
             ValidationError::PasswordConstraintsViolation { code } => *code,
         }
     }
-    fn ui_message(&self) -> String {
+}
+
+impl error::ToMessage for ValidationError {
+    fn to_message(&self) -> String {
         match self {
         ValidationError::EmailAddressLength { code: _, length} => { format!("メールアドレスの長さが不正です (入力されたメールアドレスの長さ: {})。メールアドレスは{}文字以下である必要があります。", length, EMAIL_ADDRESS_MAX_LENGTH)},
         ValidationError::EmailAddressFormat { code: _, email_address} => { format!("メールアドレスの形式が不正です (入力されたメールアドレス: {})。\"email.address@example.com\"のような形式で入力してください。", email_address)},
@@ -214,14 +217,16 @@ impl From<ring::error::Unspecified> for VerificationError {
     }
 }
 
-impl error::Detail for VerificationError {
-    fn code(&self) -> u32 {
+impl error::ToCode for VerificationError {
+    fn to_code(&self) -> u32 {
         match self {
             VerificationError::PasswordNotMatch { code, error: _ } => *code,
         }
     }
+}
 
-    fn ui_message(&self) -> String {
+impl error::ToMessage for VerificationError {
+    fn to_message(&self) -> String {
         match self {
             VerificationError::PasswordNotMatch { code: _, error: _ } => {
                 String::from("メールアドレス、もしくはパスワードが間違っています。")

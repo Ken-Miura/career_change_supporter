@@ -10,7 +10,15 @@ pub(crate) struct Error {
     pub message: String,
 }
 
-pub(crate) trait Detail {
-    fn code(&self) -> u32;
-    fn ui_message(&self) -> String;
+pub(crate) trait ToCode {
+    fn to_code(&self) -> u32;
+}
+
+pub(crate) trait ToMessage {
+    fn to_message(&self) -> String;
+}
+
+/// エラーの種類ごとに返すステータスコードが異なる場合に利用する
+pub(crate) trait ToStatusCode {
+    fn to_status_code(&self) -> actix_web::http::StatusCode;
 }

@@ -1,9 +1,10 @@
 // Copyright 2021 Ken Miura
 
+use crate::common;
 use crate::common::credential;
-use crate::common::database;
 use crate::common::error;
-use crate::common::error::Detail;
+use crate::common::error::ToCode;
+use crate::common::error::ToMessage;
 use crate::model;
 use actix_session::Session;
 use actix_web::{dev::Body, get, http::StatusCode, post, web, HttpResponse};
@@ -12,7 +13,7 @@ use diesel::prelude::*;
 #[post("/login-request")]
 pub(crate) async fn login_request(
     credential: web::Json<credential::Credential>,
-    pool: web::Data<database::ConnectionPool>,
+    pool: web::Data<common::ConnectionPool>,
     session: Session,
 ) -> HttpResponse {
     let result = credential.validate();
@@ -25,8 +26,8 @@ pub(crate) async fn login_request(
         return HttpResponse::build(StatusCode::BAD_REQUEST)
             .content_type("application/problem+json")
             .json(error::Error {
-                code: e.code(),
-                message: e.ui_message(),
+                code: e.to_code(),
+                message: e.to_message(),
             });
     }
     let result = pool.get();
@@ -35,8 +36,8 @@ pub(crate) async fn login_request(
         return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
             .content_type("application/problem+json")
             .json(error::Error {
-                code: e.code(),
-                message: e.ui_message(),
+                code: e.to_code(),
+                message: e.to_message(),
             });
     }
     let conn = result.expect("never happens panic");
@@ -57,8 +58,8 @@ pub(crate) async fn login_request(
         return HttpResponse::build(StatusCode::UNAUTHORIZED)
             .content_type("application/problem+json")
             .json(error::Error {
-                code: e.code(),
-                message: e.ui_message(),
+                code: e.to_code(),
+                message: e.to_message(),
             });
     }
     let _ = session.set("email_address", &credential.email_address);
@@ -69,11 +70,11 @@ pub(crate) async fn login_request(
 fn find_user_by_email_address(
     mail_addr: &str,
     conn: &PgConnection,
-) -> Result<model::User, diesel::result::Error> {
-    use crate::schema::my_project_schema::user::dsl::*;
-    let users = user
+) -> Result<model::AccountQueryResult, diesel::result::Error> {
+    use crate::schema::my_project_schema::user_account::dsl::*;
+    let users = user_account
         .filter(email_address.eq(mail_addr))
-        .get_results::<model::User>(conn)?;
+        .get_results::<model::AccountQueryResult>(conn)?;
     // TODO: ユーザの数が0もしくは1であることのチェック
     let u = users[0].clone();
     Ok(u)

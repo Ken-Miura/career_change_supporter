@@ -1,16 +1,6 @@
 pub mod my_project_schema {
     table! {
-        my_project_schema.tentative_user (id) {
-            id -> Int4,
-            query_id -> Bpchar,
-            email_address -> Varchar,
-            hashed_password -> Bytea,
-            registration_time -> Timestamptz,
-        }
-    }
-
-    table! {
-        my_project_schema.user (id) {
+        my_project_schema.user_account (id) {
             id -> Int4,
             email_address -> Varchar,
             hashed_password -> Bytea,
@@ -18,5 +8,15 @@ pub mod my_project_schema {
         }
     }
 
-    allow_tables_to_appear_in_same_query!(tentative_user, user,);
+    table! {
+        my_project_schema.user_temporary_account (id) {
+            id -> Int4,
+            temporary_account_id -> Bpchar,
+            email_address -> Varchar,
+            hashed_password -> Bytea,
+            created_at -> Timestamptz,
+        }
+    }
+
+    allow_tables_to_appear_in_same_query!(user_account, user_temporary_account,);
 }
