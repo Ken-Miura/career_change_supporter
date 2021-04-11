@@ -123,7 +123,7 @@ impl fmt::Display for ValidationError {
             ValidationError::EmailAddressLength { code, length } => {
                 write!(
                     f,
-                    "invalid email address length (error code: {}): {}",
+                    "invalid email address length (code: {}): {}",
                     code, length
                 )
             }
@@ -133,18 +133,18 @@ impl fmt::Display for ValidationError {
             } => {
                 write!(
                     f,
-                    "invalid email address format (error code: {}): {}",
+                    "invalid email address format (code: {}): {}",
                     code, email_address
                 )
             }
             ValidationError::PasswordLength { code } => {
-                write!(f, "invalid password length (error code: {})", code)
+                write!(f, "invalid password length (code: {})", code)
             }
             ValidationError::PasswordFormat { code } => {
-                write!(f, "invalid password format (error code: {})", code)
+                write!(f, "invalid password format (code: {})", code)
             }
             ValidationError::PasswordConstraintsViolation { code } => {
-                write!(f, "password constraints vaiolation (error code: {})", code)
+                write!(f, "password constraints vaiolation (code: {})", code)
             }
         }
     }
@@ -199,11 +199,7 @@ impl fmt::Display for VerificationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             VerificationError::PasswordNotMatch { code, error } => {
-                write!(
-                    f,
-                    "password doesn't match (error code: code: {}): {}",
-                    code, error
-                )
+                write!(f, "password doesn't match (code: {}): {}", code, error)
             }
         }
     }

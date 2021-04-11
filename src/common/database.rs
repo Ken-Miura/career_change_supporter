@@ -8,7 +8,7 @@ pub(crate) type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
 
 impl error::Detail for r2d2::Error {
     fn code(&self) -> u32 {
-        error::code::DB_CONNECTION_UNAVAILABLE
+        error::code::INTERNAL_SERVER_ERROR
     }
     fn ui_message(&self) -> String {
         String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。")

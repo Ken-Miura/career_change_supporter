@@ -389,7 +389,7 @@ fn create_db_connection_error_view() -> HttpResponse {
       </body>
     </html>"#,
         "test", // TODO: メッセージを変更
-        error::code::DB_CONNECTION_UNAVAILABLE
+        error::code::INTERNAL_SERVER_ERROR
     );
     return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
         .content_type("text/html; charset=UTF-8")
@@ -487,12 +487,12 @@ fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
             status_code = StatusCode::INTERNAL_SERVER_ERROR;
         }
         RegistrationError::EmailError(_e) => {
-            code = error::code::EMAIL_ERROR;
+            code = error::code::INTERNAL_SERVER_ERROR;
             message = String::from("test"); // TODO: 変更をする
             status_code = StatusCode::INTERNAL_SERVER_ERROR;
         }
         RegistrationError::SmtpError(_e) => {
-            code = error::code::SMTP_ERROR;
+            code = error::code::INTERNAL_SERVER_ERROR;
             message = String::from("test"); // TODO: 変更をする
             status_code = StatusCode::INTERNAL_SERVER_ERROR;
         }
@@ -503,7 +503,7 @@ fn create_registration_err_response(err: RegistrationError) -> HttpResponse {
 }
 
 fn create_execution_canceled_response() -> HttpResponse {
-    let code = error::code::EXECUTION_CANCELED;
+    let code = error::code::INTERNAL_SERVER_ERROR;
     return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
         .content_type("application/problem+json")
         .json(error::Error {
