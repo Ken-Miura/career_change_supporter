@@ -29,9 +29,9 @@ pub(crate) async fn login_request(
                 message: e.ui_message(),
             });
     }
-    let result = database::get(&pool);
+    let result = pool.get();
     if let Err(e) = result {
-        log::error!("failed to get connection: {}", e);
+        log::error!("failed to get connection (error code: {}): {}", e.code(), e);
         return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
             .content_type("application/problem+json")
             .json(error::Error {
