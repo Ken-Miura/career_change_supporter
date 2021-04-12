@@ -10,6 +10,8 @@ use actix_session::Session;
 use actix_web::{dev::Body, get, http::StatusCode, post, web, HttpResponse};
 use diesel::prelude::*;
 
+const KEY_TO_EMAIL: &str = "email_address";
+
 #[post("/login-request")]
 pub(crate) async fn login_request(
     credential: web::Json<credential::Credential>,
@@ -62,7 +64,7 @@ pub(crate) async fn login_request(
                 message: e.to_message(),
             });
     }
-    let _ = session.set("email_address", &credential.email_address);
+    let _ = session.set(KEY_TO_EMAIL, &credential.email_address);
     // TODO: 最終ログイン日時の更新
     HttpResponse::with_body(StatusCode::OK, Body::Empty)
 }
@@ -90,7 +92,7 @@ pub(crate) async fn logout_request(session: Session) -> HttpResponse {
 #[get("/session-state")]
 pub(crate) async fn session_state(session: Session) -> HttpResponse {
     // TODO: Handle Result
-    let session_info: Option<String> = session.get("email_address").unwrap_or(None);
+    let session_info: Option<String> = session.get(KEY_TO_EMAIL).unwrap_or(None);
     if session_info == None {
         return HttpResponse::from_error(actix_web::error::ErrorUnauthorized(
             "failed to authenticate",
@@ -98,6 +100,6 @@ pub(crate) async fn session_state(session: Session) -> HttpResponse {
     }
     let value = session_info.expect("never happens panic");
     // set value to explicitly enhance ttl
-    let _ = session.set("email_address", value);
+    let _ = session.set(KEY_TO_EMAIL, value);
     HttpResponse::build(StatusCode::OK).finish()
 }
