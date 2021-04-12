@@ -96,8 +96,8 @@ pub(crate) async fn session_state(session: Session) -> HttpResponse {
             "failed to authenticate",
         ));
     }
+    let value = session_info.expect("never happens panic");
     // set value to explicitly enhance ttl
-    let _ = session.set("email_address", session_info.expect("msg: &str"));
-    let contents = "contents";
-    HttpResponse::Ok().body(contents)
+    let _ = session.set("email_address", value);
+    HttpResponse::build(StatusCode::OK).finish()
 }
