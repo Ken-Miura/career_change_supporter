@@ -17,6 +17,6 @@ impl error::ToCode for r2d2::Error {
 
 impl error::ToMessage for r2d2::Error {
     fn to_message(&self) -> String {
-        String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。")
+        String::from(error::INTERNAL_SERVER_ERROR_MESSAGE)
     }
 }

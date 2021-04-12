@@ -4,6 +4,9 @@ pub(crate) mod code;
 
 use serde::Serialize;
 
+pub(crate) const INTERNAL_SERVER_ERROR_MESSAGE: &str =
+    "サーバでエラーが発生しました。一定時間後、再度お試しください。";
+
 #[derive(Serialize)]
 pub(crate) struct Error {
     pub code: u32,

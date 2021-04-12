@@ -106,9 +106,7 @@ pub(crate) async fn temporary_account(
             .content_type("application/problem+json")
             .json(error::Error {
                 code: error::code::INTERNAL_SERVER_ERROR,
-                message: String::from(
-                    "サーバでエラーが発生しました。一定時間後、再度お試しください。",
-                ),
+                message: String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
             });
     }
 
@@ -131,9 +129,7 @@ pub(crate) async fn temporary_account(
             .content_type("application/problem+json")
             .json(error::Error {
                 code: error::code::INTERNAL_SERVER_ERROR,
-                message: String::from(
-                    "サーバでエラーが発生しました。一定時間後、再度お試しください。",
-                ),
+                message: String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
             });
     }
     HttpResponse::Ok().json(TemporaryAccountResult {
@@ -396,16 +392,16 @@ impl error::ToMessage for TemporaryAccountCreationError {
                 email_address: _,
                 count: _,
                 status_code: _
-            } => String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。"),
+            } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
             TemporaryAccountCreationError::ReachLimit {
                 code: _,
                 email_address: _,
                 count: _,
                 status_code: _
             } => String::from("アカウント作成を依頼できる回数の上限を超えました。一定の期間が過ぎた後、再度お試しください。"),
-            TemporaryAccountCreationError::DieselError { code: _, error: _, status_code: _ } => String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。"),
-            TemporaryAccountCreationError::EmailError { code: _, error: _, status_code: _ } => String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。"),
-            TemporaryAccountCreationError::SmtpError { code: _, error: _, status_code: _ } => String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。"),
+            TemporaryAccountCreationError::DieselError { code: _, error: _, status_code: _ } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
+            TemporaryAccountCreationError::EmailError { code: _, error: _, status_code: _ } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
+            TemporaryAccountCreationError::SmtpError { code: _, error: _, status_code: _ } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
         }
     }
 }
@@ -497,16 +493,45 @@ pub(crate) async fn temporary_accounts(
     let result = pool.get();
     if let Err(e) = result {
         log::error!("failed to get connection: {}", e);
-        return create_db_connection_error_view();
+        return create_internal_error_view();
     }
     let conn = result.expect("never happens panic");
     let current_date_time = Utc::now();
-    let result =
-        web::block(move || create_account(&account_req.id, current_date_time, &conn)).await;
-    if let Err(_e) = result {
-        return create_error_view();
+    let temp_acc_id = account_req.id.clone();
+    let result = web::block(move || create_account(&temp_acc_id, current_date_time, &conn)).await;
+    if let Err(err) = result {
+        match err {
+            actix_web::error::BlockingError::Error(e) => {
+                if e.to_status_code() == StatusCode::INTERNAL_SERVER_ERROR {
+                    log::error!(
+                        "failed to create account (temporary account id: {}): {}",
+                        &account_req.id,
+                        e
+                    );
+                } else {
+                    log::info!(
+                        "failed to create account (temporary account id: {}): {}",
+                        &account_req.id,
+                        e
+                    );
+                }
+                return create_error_view(e);
+            }
+            actix_web::error::BlockingError::Canceled => {
+                log::error!("failed to create account (temporary account id: {}): actix_web::error::BlockingError::Canceled", &account_req.id);
+                return create_internal_error_view();
+            }
+        }
     }
-    // TODO: アカウント作成成功メールを送る
+    let email_address = result.expect("never happens panic");
+    let result = send_account_creation_success_mail(&email_address);
+    if let Err(e) = result {
+        log::error!(
+            "failed to complete creating account (\"{}\"): {}",
+            email_address,
+            e
+        );
+    }
     create_success_view()
 }
 
@@ -553,7 +578,7 @@ fn create_invalid_id_format_view() -> HttpResponse {
         .body(body)
 }
 
-fn create_db_connection_error_view() -> HttpResponse {
+fn create_internal_error_view() -> HttpResponse {
     let body = format!(
         r#"<!DOCTYPE html>
     <html>
@@ -565,7 +590,7 @@ fn create_db_connection_error_view() -> HttpResponse {
       {} (エラーコード: {})
       </body>
     </html>"#,
-        "サーバでエラーが発生しました。一定時間後、再度お試しください。",
+        common::error::INTERNAL_SERVER_ERROR_MESSAGE,
         error::code::INTERNAL_SERVER_ERROR
     );
     return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
@@ -577,7 +602,7 @@ fn create_account(
     temporary_account_id: &str,
     current_date_time: DateTime<Utc>,
     conn: &PgConnection,
-) -> Result<(), AccountCreationError> {
+) -> Result<String, AccountCreationError> {
     conn.transaction::<_, AccountCreationError, _>(|| {
         let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
         let result = delete_temporary_account(temporary_account_id, conn);
@@ -601,7 +626,7 @@ fn create_account(
             temp_acc.hashed_password.as_ref(),
             conn,
         )?;
-        Ok(())
+        Ok(temp_acc.email_address)
     })
 }
 
@@ -658,6 +683,16 @@ enum AccountCreationError {
     AccountDuplicate {
         code: u32,
         email_address: String,
+        status_code: StatusCode,
+    },
+    EmailError {
+        code: u32,
+        error: lettre_email::error::Error,
+        status_code: StatusCode,
+    },
+    SmtpError {
+        code: u32,
+        error: lettre::smtp::error::Error,
         status_code: StatusCode,
     },
 }
@@ -718,6 +753,20 @@ impl fmt::Display for AccountCreationError {
                     email_address, code
                 )
             }
+            AccountCreationError::EmailError {
+                code: _,
+                error,
+                status_code: _,
+            } => {
+                write!(f, "failed to build email: {}", error)
+            }
+            AccountCreationError::SmtpError {
+                code: _,
+                error,
+                status_code: _,
+            } => {
+                write!(f, "failed to send email: {}", error)
+            }
         }
     }
 }
@@ -725,6 +774,26 @@ impl fmt::Display for AccountCreationError {
 impl From<diesel::result::Error> for AccountCreationError {
     fn from(error: diesel::result::Error) -> Self {
         AccountCreationError::DieselError {
+            code: error::code::INTERNAL_SERVER_ERROR,
+            error,
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+impl From<lettre_email::error::Error> for AccountCreationError {
+    fn from(error: lettre_email::error::Error) -> Self {
+        AccountCreationError::EmailError {
+            code: error::code::INTERNAL_SERVER_ERROR,
+            error,
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+impl From<lettre::smtp::error::Error> for AccountCreationError {
+    fn from(error: lettre::smtp::error::Error) -> Self {
+        AccountCreationError::SmtpError {
             code: error::code::INTERNAL_SERVER_ERROR,
             error,
             status_code: StatusCode::INTERNAL_SERVER_ERROR,
@@ -762,6 +831,16 @@ impl error::ToCode for AccountCreationError {
                 email_address: _,
                 status_code: _,
             } => *code,
+            AccountCreationError::EmailError {
+                code,
+                error: _,
+                status_code: _,
+            } => *code,
+            AccountCreationError::SmtpError {
+                code,
+                error: _,
+                status_code: _,
+            } => *code,
         }
     }
 }
@@ -773,7 +852,7 @@ impl error::ToMessage for AccountCreationError {
                 code: _,
                 error: _,
                 status_code: _,
-            } => String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。"),
+            } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
             AccountCreationError::NoTemporaryAccount {
                 code: _,
                 id,
@@ -787,7 +866,7 @@ impl error::ToMessage for AccountCreationError {
                 code: _,
                 id: _,
                 status_code: _,
-            } => String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。"),
+            } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
             AccountCreationError::TemporaryAccountExpire {
                 code: _,
                 id,
@@ -806,6 +885,16 @@ impl error::ToMessage for AccountCreationError {
             } => {
                 format!("{}は既に登録済です", email_address)
             }
+            AccountCreationError::EmailError {
+                code: _,
+                error: _,
+                status_code: _,
+            } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
+            AccountCreationError::SmtpError {
+                code: _,
+                error: _,
+                status_code: _,
+            } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
         }
     }
 }
@@ -840,25 +929,59 @@ impl error::ToStatusCode for AccountCreationError {
                 email_address: _,
                 status_code,
             } => *status_code,
+            AccountCreationError::EmailError {
+                code: _,
+                error: _,
+                status_code,
+            } => *status_code,
+            AccountCreationError::SmtpError {
+                code: _,
+                error: _,
+                status_code,
+            } => *status_code,
         }
     }
 }
 
-fn create_error_view() -> HttpResponse {
-    let body = r#"<!DOCTYPE html>
+fn create_error_view(err: AccountCreationError) -> HttpResponse {
+    let body = format!(
+        r#"<!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <title>登録失敗</title>
       </head>
       <body>
-      登録に失敗しました。
+      {}
       </body>
-    </html>"#
-        .to_string();
+    </html>"#,
+        err.to_message()
+    );
     HttpResponse::build(StatusCode::BAD_REQUEST)
         .content_type("text/html; charset=UTF-8")
         .body(body)
+}
+
+fn send_account_creation_success_mail(email_address: &str) -> Result<(), AccountCreationError> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        .to(email_address)
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("日本語のタイトル")
+        // TOOD: メールの本文を更新する
+        .text("アカウントの作成に成功しました。")
+        .build()?;
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None)?;
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into())?;
+    Ok(())
 }
 
 fn create_success_view() -> HttpResponse {
