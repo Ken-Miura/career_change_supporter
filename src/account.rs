@@ -531,6 +531,7 @@ pub(crate) async fn temporary_accounts(
             email_address,
             e
         );
+        // TODO: ログに残すだけで、成功として返して良いか検討する
     }
     create_success_view()
 }
