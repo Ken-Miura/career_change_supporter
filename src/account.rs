@@ -580,13 +580,12 @@ fn create_account(
 ) -> Result<(), AccountCreationError> {
     conn.transaction::<_, AccountCreationError, _>(|| {
         let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
-        // ここまで書き直し済
-        let deletion_result = delete_entry(temporary_account_id, conn);
-        if let Err(e) = deletion_result {
-            log::error!("failed to delete entry: {}", e);
+        let result = delete_temporary_account(temporary_account_id, conn);
+        if let Err(e) = result {
+            log::warn!("failed to delete temporary account: {}", e);
         };
-        let time_passed = current_date_time - temp_acc.created_at;
-        if time_passed.num_days() > 0 {
+        let time_elapsed = current_date_time - temp_acc.created_at;
+        if time_elapsed.num_days() > 0 {
             return Err(AccountCreationError::TemporaryAccountExpire {
                 code: error::code::TEMPORARY_ACCOUNT_EXPIRED,
                 id: temporary_account_id.to_string(),
@@ -595,7 +594,9 @@ fn create_account(
                 status_code: StatusCode::BAD_REQUEST,
             });
         }
-        create_account_1(
+        // NOTE: 関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
+        // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
+        create_account_inner(
             &temp_acc.email_address,
             temp_acc.hashed_password.as_ref(),
             conn,
@@ -654,6 +655,11 @@ enum AccountCreationError {
         activated_at: DateTime<Utc>,
         status_code: StatusCode,
     },
+    AccountDuplicate {
+        code: u32,
+        email_address: String,
+        status_code: StatusCode,
+    },
 }
 
 impl fmt::Display for AccountCreationError {
@@ -701,6 +707,17 @@ impl fmt::Display for AccountCreationError {
                     code, id, created_at, activated_at
                 )
             }
+            AccountCreationError::AccountDuplicate {
+                code,
+                email_address,
+                status_code: _,
+            } => {
+                write!(
+                    f,
+                    "account (\"{}\") has already existed (code: {})",
+                    email_address, code
+                )
+            }
         }
     }
 }
@@ -740,6 +757,11 @@ impl error::ToCode for AccountCreationError {
                 activated_at: _,
                 status_code: _,
             } => *code,
+            AccountCreationError::AccountDuplicate {
+                code,
+                email_address: _,
+                status_code: _,
+            } => *code,
         }
     }
 }
@@ -777,6 +799,13 @@ impl error::ToMessage for AccountCreationError {
                 let url = format!("http://{}:{}/temporary-accounts?id={}", DOMAIN, PORT, id);
                 format!("指定されたURL ({}) は有効期限が過ぎています。お手数ですが、ユーザアカウント作成より、もう一度作成手続きをお願いします。", url)
             }
+            AccountCreationError::AccountDuplicate {
+                code: _,
+                email_address,
+                status_code: _,
+            } => {
+                format!("{}は既に登録済です", email_address)
+            }
         }
     }
 }
@@ -804,6 +833,11 @@ impl error::ToStatusCode for AccountCreationError {
                 id: _,
                 created_at: _,
                 activated_at: _,
+                status_code,
+            } => *status_code,
+            AccountCreationError::AccountDuplicate {
+                code: _,
+                email_address: _,
                 status_code,
             } => *status_code,
         }
@@ -843,29 +877,46 @@ fn create_success_view() -> HttpResponse {
         .body(body)
 }
 
-fn delete_entry(entry_id: &str, conn: &PgConnection) -> Result<(), AccountCreationError> {
+fn delete_temporary_account(
+    temp_acc_id: &str,
+    conn: &PgConnection,
+) -> Result<(), AccountCreationError> {
     use crate::schema::my_project_schema::user_temporary_account::dsl::*;
     // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
-    let _result = diesel::delete(user_temporary_account.filter(temporary_account_id.eq(entry_id)))
-        .execute(conn)?;
+    let _result =
+        diesel::delete(user_temporary_account.filter(temporary_account_id.eq(temp_acc_id)))
+            .execute(conn)?;
     Ok(())
 }
 
-fn create_account_1(
+fn create_account_inner(
     mail_addr: &str,
     hashed_pwd: &[u8],
     conn: &PgConnection,
 ) -> Result<(), AccountCreationError> {
-    use crate::schema::my_project_schema::user_account;
-    let user = model::Account {
-        email_address: mail_addr,
-        hashed_password: hashed_pwd,
-        last_login_time: None,
-    };
-    // TODO: 既に登録されているケースをエラーハンドリングする
-    // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
-    let _result = diesel::insert_into(user_account::table)
-        .values(&user)
-        .execute(conn)?;
-    Ok(())
+    conn.transaction::<_, AccountCreationError, _>(|| {
+        use crate::schema::my_project_schema::user_account::dsl::*;
+        let cnt = user_account
+            .filter(email_address.eq(mail_addr))
+            .count()
+            .get_result::<i64>(conn)?;
+        if cnt > 0 {
+            return Err(AccountCreationError::AccountDuplicate {
+                code: error::code::ACCOUNT_ALREADY_EXISTS,
+                email_address: String::from(mail_addr),
+                status_code: StatusCode::CONFLICT,
+            });
+        }
+        use crate::schema::my_project_schema::user_account;
+        let user = model::Account {
+            email_address: mail_addr,
+            hashed_password: hashed_pwd,
+            last_login_time: None,
+        };
+        // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
+        let _result = diesel::insert_into(user_account::table)
+            .values(&user)
+            .execute(conn)?;
+        Ok(())
+    })
 }
