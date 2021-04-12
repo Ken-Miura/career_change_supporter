@@ -85,6 +85,18 @@ fn find_user_by_email_address(
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
 pub(crate) async fn logout_request(session: Session) -> HttpResponse {
+    let result: Result<Option<String>, _> = session.get(KEY_TO_EMAIL);
+    if let Err(e) = result {
+        log::error!("failed to get session: {}", e);
+        // TODO: そのままレスポンスとして返却してよいのか確認する
+        return e.into();
+    }
+    let session_info = result.expect("never happens panic");
+    if let Some(email) = session_info {
+        log::info!("\"{}\" requested logout", email);
+    } else {
+        log::info!("somebody requested logout");
+    }
     session.purge();
     HttpResponse::build(StatusCode::OK).finish()
 }
