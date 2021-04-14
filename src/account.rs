@@ -28,36 +28,31 @@ const PORT: &str = "8080";
 
 static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
+// TODO: ValidationError以降の残りの処理を書き直す
 #[post("/temporary-account")]
 pub(crate) async fn temporary_account(
     credential: web::Json<credential::Credential>,
     pool: web::Data<common::ConnectionPool>,
-) -> HttpResponse {
-    let result = credential.validate();
-    if let Err(e) = result {
+) -> Result<HttpResponse, common::credential::ValidationError> {
+    let _ = credential.validate().map_err(|e| {
         log::info!(
             "failed to create temporary account for  \"{}\" (code: {}): {}",
             credential.email_address,
             e.to_code(),
             e
         );
-        return HttpResponse::build(StatusCode::BAD_REQUEST)
-            .content_type("application/problem+json")
-            .json(error::Error {
-                code: e.to_code(),
-                message: e.to_message(),
-            });
-    }
+        e
+    })?;
 
     let result = pool.get();
     if let Err(e) = result {
         log::error!("failed to get connection: {}", e);
-        return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+        return Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
             .content_type("application/problem+json")
             .json(error::Error {
                 code: e.to_code(),
                 message: e.to_message(),
-            });
+            }));
     }
 
     let conn = result.expect("never happens panic");
@@ -93,21 +88,21 @@ pub(crate) async fn temporary_account(
                 e
             );
         }
-        return HttpResponse::build(e.to_status_code())
+        return Ok(HttpResponse::build(e.to_status_code())
             .content_type("application/problem+json")
             .json(error::Error {
                 code: e.to_code(),
                 message: e.to_message(),
-            });
+            }));
     }
     if let Err(actix_web::error::BlockingError::Canceled) = result {
         log::error!("failed to create temporary account for  \"{}\": actix_web::error::BlockingError::Canceled", credential.email_address);
-        return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+        return Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
             .content_type("application/problem+json")
             .json(error::Error {
                 code: error::code::INTERNAL_SERVER_ERROR,
                 message: String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-            });
+            }));
     }
 
     let temporary_account_cnt = result.expect("never happens panic");
@@ -125,17 +120,17 @@ pub(crate) async fn temporary_account(
     let result = send_notification_mail(&credential.email_address, &id);
     if let Err(err) = result {
         log::error!("failed to send email: {}", err);
-        return HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+        return Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
             .content_type("application/problem+json")
             .json(error::Error {
                 code: error::code::INTERNAL_SERVER_ERROR,
                 message: String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-            });
+            }));
     }
-    HttpResponse::Ok().json(TemporaryAccountResult {
+    Ok(HttpResponse::Ok().json(TemporaryAccountResult {
         email_address: credential.email_address.clone(),
         message,
-    })
+    }))
 }
 
 fn create_temporary_account(

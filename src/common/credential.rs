@@ -1,6 +1,9 @@
 // Copyright 2021 Ken Miura
 
 use crate::common::error;
+use crate::common::error::ToCode;
+use crate::common::error::ToMessage;
+use actix_web::{dev::Body, http::StatusCode, web::HttpResponse, ResponseError};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use ring::hmac;
@@ -108,6 +111,7 @@ impl Credential {
     }
 }
 
+#[derive(Debug)]
 pub(crate) enum ValidationError {
     EmailAddressLength { code: u32, length: usize },
     EmailAddressFormat { code: u32, email_address: String },
@@ -174,6 +178,21 @@ impl error::ToMessage for ValidationError {
         ValidationError::PasswordFormat{ code: _}=> {String::from("パスワードに使用できない文字が含まれています。パスワードに使用可能な文字は、半角英数字と記号です。")},
         ValidationError::PasswordConstraintsViolation{ code:_}=> {String::from("不正な形式のパスワードです。パスワードは小文字、大文字、数字または記号の内、2種類以上を組み合わせる必要があります。")},
         }
+    }
+}
+
+impl ResponseError for ValidationError {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::BAD_REQUEST
+    }
+
+    fn error_response(&self) -> HttpResponse<Body> {
+        return HttpResponse::build(StatusCode::BAD_REQUEST)
+            .content_type("application/problem+json")
+            .json(error::Error {
+                code: self.to_code(),
+                message: self.to_message(),
+            });
     }
 }
 
