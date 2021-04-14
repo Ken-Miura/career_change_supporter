@@ -187,7 +187,7 @@ impl ResponseError for ValidationError {
     }
 
     fn error_response(&self) -> HttpResponse<Body> {
-        return HttpResponse::build(StatusCode::BAD_REQUEST)
+        return HttpResponse::build(self.status_code())
             .content_type("application/problem+json")
             .json(error::Error {
                 code: self.to_code(),
