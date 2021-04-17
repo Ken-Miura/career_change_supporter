@@ -110,12 +110,12 @@ impl InvalidEmailAddressFormat {
 )]
 pub(crate) struct InvalidPasswordLength {
     pub(super) code: i32,
-    pub(super) min_length: u32,
-    pub(super) max_length: u32,
+    pub(super) min_length: usize,
+    pub(super) max_length: usize,
 }
 
 impl InvalidPasswordLength {
-    pub(crate) fn new(min_length: u32, max_length: u32) -> Self {
+    pub(crate) fn new(min_length: usize, max_length: usize) -> Self {
         InvalidPasswordLength {
             code: PASSWORD_FORMAT_INVALID_LENGTH,
             min_length,
