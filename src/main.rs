@@ -7,6 +7,8 @@ mod model;
 mod schema;
 mod static_asset;
 
+// TODO: #[macro_use]なしでdieselのマクロが使えるように変更が入った際に取り除く
+// https://github.com/diesel-rs/diesel/issues/1764
 #[macro_use]
 extern crate diesel;
 
@@ -110,8 +112,8 @@ async fn main() -> std::io::Result<()> {
             .service(static_asset::img)
             .service(static_asset::favicon_ico)
             .service(static_asset::index)
-            .service(account::temporary_account)
-            .service(account::temporary_accounts)
+            //.service(account::temporary_account)
+            //.service(account::temporary_accounts)
             .service(authentication::login_request)
             .service(authentication::logout_request)
             .service(authentication::session_state)

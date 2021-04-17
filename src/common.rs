@@ -9,14 +9,6 @@ use diesel::PgConnection;
 
 pub(crate) type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
 
-impl error::ToCode for r2d2::Error {
-    fn to_code(&self) -> u32 {
-        error::code::INTERNAL_SERVER_ERROR
-    }
-}
-
-impl error::ToMessage for r2d2::Error {
-    fn to_message(&self) -> String {
-        String::from(error::INTERNAL_SERVER_ERROR_MESSAGE)
-    }
-}
+// TODO: 環境変数、もしくは他の設定から読み込むように変更する
+const DOMAIN: &str = "localhost";
+const PORT: u16 = 8080;
