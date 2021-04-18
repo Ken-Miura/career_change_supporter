@@ -7,7 +7,7 @@ use crate::common::error::handled;
 use crate::common::error::unexpected;
 use crate::model;
 use actix_session::Session;
-use actix_web::{get, http::StatusCode, post, web, HttpRequest, HttpResponse};
+use actix_web::{get, http::StatusCode, post, web, HttpResponse};
 use diesel::prelude::*;
 
 const KEY_TO_EMAIL: &str = "email_address";
