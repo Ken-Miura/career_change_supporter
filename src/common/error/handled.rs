@@ -42,6 +42,11 @@ pub(crate) enum Error {
     #[display(fmt = "{}", _0)]
     InvalidTemporaryAccountId(InvalidTemporaryAccountId),
     // --------------------
+
+    // ----authentication.rs------
+    #[display(fmt = "{}", _0)]
+    NoAccountFound(NoAccountFound),
+    // --------------------
 }
 
 // TODO: 番号の順番を整理する
@@ -51,7 +56,7 @@ const EMAIL_FORMAT_INVALID_FORMAT: i32 = 2;
 const PASSWORD_FORMAT_INVALID_LENGTH: i32 = 3;
 const PASSWORD_FORMAT_INVALID_FORMAT: i32 = 4;
 const PASSWORD_CONSTRAINTS_VIOLATION: i32 = 5;
-const PASSWORD_NOT_MATCH: i32 = 6;
+const AUTHENTICATION_FAILED: i32 = 6;
 const ACCOUNT_ALREADY_EXISTS: i32 = 7;
 const REACH_LIMIT_OF_TEMPORARY_ACCOUNT: i32 = 8;
 const NO_TEMPORARY_ACCOUNT_FOUND: i32 = 9;
@@ -162,7 +167,7 @@ pub(crate) struct PasswordNotMatch {
 impl PasswordNotMatch {
     pub(crate) fn new(error: ring::error::Unspecified) -> Self {
         PasswordNotMatch {
-            code: PASSWORD_NOT_MATCH,
+            code: AUTHENTICATION_FAILED,
             error,
         }
     }
@@ -269,6 +274,27 @@ impl InvalidTemporaryAccountId {
         InvalidTemporaryAccountId {
             code: INVALID_TEMPORARY_ACCOUNT_ID,
             id,
+        }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(
+    fmt = "no account found (code: {}, email_address: {})",
+    code,
+    email_address
+)]
+pub(crate) struct NoAccountFound {
+    pub(super) code: i32,
+    pub(super) email_address: String,
+}
+
+impl NoAccountFound {
+    pub(crate) fn new(email_address: String) -> Self {
+        NoAccountFound {
+            // NOTE: セキュリティ上の観点からPasswordNotMatchと同じ値を返し、メールアドレスが見つからないことと、パスワードが一致しないことを区別しない
+            code: AUTHENTICATION_FAILED,
+            email_address,
         }
     }
 }

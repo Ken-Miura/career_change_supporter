@@ -59,6 +59,10 @@ impl actix_web::ResponseError for Error {
                 common::error::handled::Error::InvalidTemporaryAccountId(_) => {
                     http::StatusCode::BAD_REQUEST
                 }
+                common::error::handled::Error::NoAccountFound(_) => {
+                    // NOTE: セキュリティ上の観点からPasswordNotMatchと同じ値を返し、メールアドレスが見つからないことと、パスワードが一致しないことを区別しない
+                    http::StatusCode::UNAUTHORIZED
+                }
             },
             Error::Unexpected(_e) => http::StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -134,12 +138,18 @@ impl actix_web::ResponseError for Error {
                         );
                         message = format!("不正なURLです ({}) 。ブラウザに入力されているURLと、メール本文に記載されているURLが同じかご確認ください。", url);
                     }
+                    common::error::handled::Error::NoAccountFound(e) => {
+                        code = e.code;
+                        // NOTE: セキュリティ上の観点からPasswordNotMatchと同じ値を返し、メールアドレスが見つからないことと、パスワードが一致しないことを区別しない
+                        message = format!("メールアドレス、もしくはパスワードが間違っています。");
+                    }
                 }
                 return actix_web::HttpResponse::build(self.status_code())
                     .content_type("application/problem+json")
                     .json(ErrorInformation { code, message });
             }
             Error::Unexpected(_e) => {
+                // セキュリティ上の観点から、予期しないエラーの種類にかかわらず同じコード、メッセージを返す
                 let code = common::error::unexpected::INTERNAL_SERVER_ERROR;
                 let message =
                     String::from("サーバでエラーが発生しました。一定時間後、再度お試しください。");
