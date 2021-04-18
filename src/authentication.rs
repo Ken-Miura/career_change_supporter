@@ -32,7 +32,11 @@ pub(crate) async fn login_request(
 
     let mail_addr = credential.email_address.clone();
     let result = web::block(move || find_user_by_email_address(&mail_addr, &conn)).await;
-    let user_account = result.map_err(|err| extract_blocking_error(err))?;
+    let user_account = result.map_err(|err| {
+        let e = error::Error::from(err);
+        log::error!("failed to login: {}", e);
+        return e;
+    })?;
 
     let pwd = credential.password.clone();
     let _ = credential::verify_password(&pwd, &user_account.hashed_password).map_err(|err| {
@@ -50,7 +54,11 @@ pub(crate) async fn login_request(
     })?;
     let result =
         web::block(move || update_last_login_time(primary_key, &current_date_time, &conn)).await;
-    let _ = result.map_err(|err| extract_blocking_error(err))?;
+    let _ = result.map_err(|err| {
+        let e = error::Error::from(err);
+        log::error!("failed to login: {}", e);
+        return e;
+    })?;
 
     let _ = session
         .set(KEY_TO_EMAIL, &credential.email_address)
@@ -83,23 +91,6 @@ fn find_user_by_email_address(
     }
     let u = users[0].clone();
     Ok(u)
-}
-
-fn extract_blocking_error(err: actix_web::error::BlockingError<error::Error>) -> error::Error {
-    match err {
-        actix_web::error::BlockingError::Error(e) => {
-            log::error!(
-                "failed to login: actix_web::error::BlockingError::Error: {}",
-                e
-            );
-            return e;
-        }
-        actix_web::error::BlockingError::Canceled => {
-            let e = unexpected::Error::BlockingErrCanceled;
-            log::error!("failed to login: {}", e);
-            return error::Error::Unexpected(e);
-        }
-    }
 }
 
 fn update_last_login_time(

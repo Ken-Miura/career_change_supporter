@@ -21,6 +21,12 @@ pub(crate) enum Error {
 
     #[display(fmt = "actix web error: {}", _0)]
     ActixWebErr(String),
+
+    #[display(fmt = "lettre email error: {}", _0)]
+    LettreEmailErr(lettre_email::error::Error),
+
+    #[display(fmt = "lettre smtp error: {}", _0)]
+    LettreSmtpErr(lettre::smtp::error::Error),
 }
 
 // NOTE: Use negative value because positive value is used for handled error

@@ -10,5 +10,6 @@ use diesel::PgConnection;
 pub(crate) type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
 
 // TODO: 環境変数、もしくは他の設定から読み込むように変更する
-const DOMAIN: &str = "localhost";
-const PORT: u16 = 8080;
+pub(crate) const DOMAIN: &str = "localhost";
+pub(crate) const PORT: u16 = 8080;
+pub(crate) const SMTP_SERVER_ADDR: ([u8; 4], u16) = ([127, 0, 0, 1], 1025);

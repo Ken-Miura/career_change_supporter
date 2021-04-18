@@ -22,6 +22,23 @@ pub(crate) enum Error {
     Unexpected(common::error::unexpected::Error),
 }
 
+impl From<diesel::result::Error> for Error {
+    fn from(error: diesel::result::Error) -> Self {
+        Error::Unexpected(common::error::unexpected::Error::DieselResultErr(error))
+    }
+}
+
+impl From<actix_web::error::BlockingError<Error>> for Error {
+    fn from(err: actix_web::error::BlockingError<Error>) -> Self {
+        match err {
+            actix_web::error::BlockingError::Error(e) => e,
+            actix_web::error::BlockingError::Canceled => {
+                Error::Unexpected(common::error::unexpected::Error::BlockingErrCanceled)
+            }
+        }
+    }
+}
+
 impl actix_web::ResponseError for Error {
     fn status_code(&self) -> http::StatusCode {
         match self {

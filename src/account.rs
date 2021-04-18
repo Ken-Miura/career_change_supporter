@@ -1,475 +1,190 @@
-// // Copyright 2021 Ken Miura
+// Copyright 2021 Ken Miura
 
-// use crate::common;
-// use crate::common::credential;
-// use crate::common::error;
+use crate::common;
+use crate::common::credential;
+use crate::common::error;
+use crate::common::error::handled;
+use crate::common::error::unexpected;
 
-// use crate::model;
-// use actix_web::{get, http::StatusCode, post, web, HttpResponse};
-// use chrono::{DateTime, Utc};
-// use diesel::prelude::*;
+use crate::model;
+use actix_web::{get, http::StatusCode, post, web, HttpResponse};
+use chrono;
+use diesel::prelude::*;
 // use once_cell::sync::Lazy;
 // use regex::Regex;
-// use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 // use std::fmt;
-// use uuid::Uuid;
+use uuid::Uuid;
 
-// // TODO: 運用しながら上限を調整する
-// const TEMPORARY_ACCOUNT_LIMIT: i64 = 7;
+// TODO: 運用しながら上限を調整する
+const TEMPORARY_ACCOUNT_LIMIT: i64 = 7;
 // const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
-// // TODO: 環境変数から読み込むように変更する
-// const SMTP_SERVER_ADDR: ([u8; 4], u16) = ([127, 0, 0, 1], 1025);
-// // TODO: サーバのドメイン名を変更し、共通で利用するmoduleへ移動する
-// const DOMAIN: &str = "localhost";
-// const PORT: &str = "8080";
 
 // static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
-// // TODO: ValidationError以降の残りの処理を書き直す
-// #[post("/temporary-account")]
-// pub(crate) async fn temporary_account(
-//     credential: web::Json<credential::Credential>,
-//     pool: web::Data<common::ConnectionPool>,
-// ) -> Result<HttpResponse, common::credential::ValidationError> {
-//     let _ = credential.validate().map_err(|e| {
-//         log::info!(
-//             "failed to create temporary account for  \"{}\" (code: {}): {}",
-//             credential.email_address,
-//             e.to_code(),
-//             e
-//         );
-//         e
-//     })?;
+#[post("/temporary-account")]
+pub(crate) async fn temporary_account(
+    credential: web::Json<credential::Credential>,
+    pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, error::Error> {
+    let _ = credential.validate().map_err(|err| {
+        let e = error::Error::Handled(err);
+        log::error!("failed to create temporary account: {}", e);
+        return e;
+    })?;
 
-//     let result = pool.get();
-//     if let Err(e) = result {
-//         log::error!("failed to get connection: {}", e);
-//         return Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
-//             .content_type("application/problem+json")
-//             .json(error::Error {
-//                 code: e.to_code(),
-//                 message: e.to_message(),
-//             }));
-//     }
+    let conn = pool.get().map_err(|err| {
+        let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
+        log::error!("failed to create temporary account: {}", e);
+        return e;
+    })?;
 
-//     let conn = result.expect("never happens panic");
-//     let mail_addr = credential.email_address.clone();
-//     let hashed_password = credential::hash_password(&credential.password);
-//     let id = Uuid::new_v4().to_simple().to_string();
-//     let id_to_register = id.clone();
-//     let current_date_time = Utc::now();
-//     let result = web::block(move || {
-//         create_temporary_account(
-//             &mail_addr,
-//             &hashed_password,
-//             &id_to_register,
-//             &current_date_time,
-//             &conn,
-//         )
-//     })
-//     .await;
+    let id = Uuid::new_v4().to_simple().to_string();
+    let id_cloned = id.clone();
+    let mail_addr = credential.email_address.clone();
+    let hashed_pwd = credential::hash_password(&credential.password);
+    let current_date_time = chrono::Utc::now();
+    let result = web::block(move || {
+        insert_temporary_account(id_cloned, mail_addr, hashed_pwd, current_date_time, &conn)
+    })
+    .await;
+    let temporary_account_cnt = result.map_err(|err| {
+        let e = error::Error::from(err);
+        log::error!("failed to create temporary account: {}", e);
+        e
+    })?;
 
-//     if let Err(actix_web::error::BlockingError::Error(e)) = result {
-//         if e.to_status_code() == StatusCode::INTERNAL_SERVER_ERROR {
-//             log::error!(
-//                 "failed to create temporary account for  \"{}\" (code: {}): {}",
-//                 credential.email_address,
-//                 e.to_code(),
-//                 e
-//             );
-//         } else {
-//             log::info!(
-//                 "failed to create temporary account for  \"{}\" (code: {}): {}",
-//                 credential.email_address,
-//                 e.to_code(),
-//                 e
-//             );
-//         }
-//         return Ok(HttpResponse::build(e.to_status_code())
-//             .content_type("application/problem+json")
-//             .json(error::Error {
-//                 code: e.to_code(),
-//                 message: e.to_message(),
-//             }));
-//     }
-//     if let Err(actix_web::error::BlockingError::Canceled) = result {
-//         log::error!("failed to create temporary account for  \"{}\": actix_web::error::BlockingError::Canceled", credential.email_address);
-//         return Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
-//             .content_type("application/problem+json")
-//             .json(error::Error {
-//                 code: error::code::INTERNAL_SERVER_ERROR,
-//                 message: String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             }));
-//     }
+    let mut message = format!(
+        "{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）",
+        credential.email_address
+    );
+    if temporary_account_cnt > 1 {
+        message = format!(
+            "{}。メールが届かない場合、迷惑メールフォルダに届いていないか、このサイトのドメインのメールが受信許可されているかをご確認ください。",
+            message
+        )
+    }
+    let _ = send_notification_mail(&credential.email_address, &id).map_err(|e| {
+        log::error!("failed to create temporary account: {}", e);
+        e
+    })?;
+    Ok(HttpResponse::Ok().json(TemporaryAccountResult {
+        email_address: credential.email_address.clone(),
+        message,
+    }))
+}
 
-//     let temporary_account_cnt = result.expect("never happens panic");
-//     let notification =  format!(
-//         "{}宛に登録用URLを送りました。登録用URLにアクセスし、登録を完了させてください（登録用URLの有効期間は24時間です）",
-//         credential.email_address
-//     );
-//     let mut message = notification.clone();
-//     if temporary_account_cnt > 1 {
-//         message = format!(
-//             "{}。メールが届かない場合、迷惑メールフォルダに届いていないか、このサイトのドメインのメールが受信許可されているかをご確認ください。",
-//             notification
-//         )
-//     }
-//     let result = send_notification_mail(&credential.email_address, &id);
-//     if let Err(err) = result {
-//         log::error!("failed to send email: {}", err);
-//         return Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
-//             .content_type("application/problem+json")
-//             .json(error::Error {
-//                 code: error::code::INTERNAL_SERVER_ERROR,
-//                 message: String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             }));
-//     }
-//     Ok(HttpResponse::Ok().json(TemporaryAccountResult {
-//         email_address: credential.email_address.clone(),
-//         message,
-//     }))
-// }
+fn insert_temporary_account(
+    temp_acc_id: String,
+    mail_addr: String,
+    hashed_pwd: Vec<u8>,
+    current_date_time: chrono::DateTime<chrono::Utc>,
+    conn: &PgConnection,
+) -> Result<i64, error::Error> {
+    conn.transaction::<_, error::Error, _>(|| {
+        check_if_account_exists(&mail_addr, conn)?;
+        let cnt = num_of_temporary_accounts(&mail_addr, conn)?;
+        if cnt >= TEMPORARY_ACCOUNT_LIMIT {
+            return Err(error::Error::Handled(
+                handled::Error::ReachLimitOfTemporaryAccount(
+                    handled::ReachLimitOfTemporaryAccount::new(mail_addr, cnt),
+                ),
+            ));
+        }
+        use crate::schema::my_project_schema::user_temporary_account;
+        let temp_acc = model::TemporaryAccount {
+            temporary_account_id: &temp_acc_id,
+            email_address: &mail_addr,
+            hashed_password: &hashed_pwd,
+            created_at: &current_date_time,
+        };
+        // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
+        let _result = diesel::insert_into(user_temporary_account::table)
+            .values(temp_acc)
+            .execute(conn)
+            .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
+        Ok(cnt)
+    })
+}
 
-// fn create_temporary_account(
-//     mail_addr: &str,
-//     hashed_pwd: &[u8],
-//     temporary_account_id: &str,
-//     current_date_time: &DateTime<Utc>,
-//     conn: &PgConnection,
-// ) -> Result<i64, TemporaryAccountCreationError> {
-//     conn.transaction::<_, TemporaryAccountCreationError, _>(|| {
-//         check_if_account_exists(mail_addr, conn)?;
-//         let cnt = num_of_temporary_accounts(mail_addr, conn)?;
-//         if cnt >= TEMPORARY_ACCOUNT_LIMIT {
-//             return Err(TemporaryAccountCreationError::ReachLimit {
-//                 code: error::code::REACH_TEMPORARY_ACCOUNT_LIMIT,
-//                 email_address: mail_addr.to_string(),
-//                 count: cnt,
-//                 status_code: StatusCode::BAD_REQUEST,
-//             });
-//         }
-//         use crate::schema::my_project_schema::user_temporary_account;
-//         let temp_account = model::TemporaryAccount {
-//             temporary_account_id,
-//             email_address: mail_addr,
-//             hashed_password: hashed_pwd,
-//             created_at: current_date_time,
-//         };
-//         // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
-//         let _result = diesel::insert_into(user_temporary_account::table)
-//             .values(&temp_account)
-//             .execute(conn)?;
-//         Ok(cnt)
-//     })
-// }
+fn check_if_account_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), error::Error> {
+    use crate::schema::my_project_schema::user_account::dsl::*;
+    let cnt = user_account
+        .filter(email_address.eq(mail_addr))
+        .count()
+        .get_result::<i64>(conn)
+        .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
+    if cnt > 1 {
+        return Err(error::Error::Unexpected(
+            unexpected::Error::AccountDuplicate(unexpected::AccountDuplicate::new(
+                mail_addr.to_string(),
+            )),
+        ));
+    }
+    if cnt == 1 {
+        return Err(error::Error::Handled(handled::Error::AccountAlreadyExists(
+            handled::AccountAlreadyExists::new(mail_addr.to_string()),
+        )));
+    }
+    // TODO: 念の為、負の数のケースを考える必要があるか調べる
+    Ok(())
+}
 
-// fn check_if_account_exists(
-//     mail_addr: &str,
-//     conn: &PgConnection,
-// ) -> Result<(), TemporaryAccountCreationError> {
-//     use crate::schema::my_project_schema::user_account::dsl::*;
-//     let cnt = user_account
-//         .filter(email_address.eq(mail_addr))
-//         .count()
-//         .get_result::<i64>(conn)?;
-//     if cnt > 1 {
-//         return Err(TemporaryAccountCreationError::AccountDuplicate {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             email_address: mail_addr.to_string(),
-//             count: cnt,
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         });
-//     }
-//     if cnt == 1 {
-//         return Err(TemporaryAccountCreationError::AccountAlreadyExist {
-//             code: error::code::ACCOUNT_ALREADY_EXISTS,
-//             email_address: mail_addr.to_string(),
-//             status_code: StatusCode::CONFLICT,
-//         });
-//     }
-//     // TODO: 念の為、負の数のケースを考える必要があるか調べる
-//     Ok(())
-// }
+fn num_of_temporary_accounts(mail_addr: &str, conn: &PgConnection) -> Result<i64, error::Error> {
+    use crate::schema::my_project_schema::user_temporary_account::dsl::{
+        email_address, user_temporary_account,
+    };
+    let cnt = user_temporary_account
+        .filter(email_address.eq(mail_addr))
+        .count()
+        .get_result::<i64>(conn)
+        .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
+    Ok(cnt)
+}
 
-// fn num_of_temporary_accounts(
-//     mail_addr: &str,
-//     conn: &PgConnection,
-// ) -> Result<i64, diesel::result::Error> {
-//     use crate::schema::my_project_schema::user_temporary_account::dsl::*;
-//     let cnt = user_temporary_account
-//         .filter(email_address.eq(mail_addr))
-//         .count()
-//         .get_result::<i64>(conn)?;
-//     Ok(cnt)
-// }
+fn send_notification_mail(
+    email_address: &str,
+    temporary_account_id: &str,
+) -> Result<(), error::Error> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        .to(email_address)
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("アカウント登録依頼メール")
+        // TOOD: メールの本文を更新する (http -> httpsへの変更も含む)
+        .text(format!(
+            r"下記のURLにアクセスし、登録を完了させてください（URLの有効期間は24時間です）
+            http://{}:{}/temporary-accounts?id={}",
+            common::DOMAIN,
+            common::PORT,
+            temporary_account_id
+        ))
+        .build()
+        .map_err(|e| {
+            error::Error::Unexpected(common::error::unexpected::Error::LettreEmailErr(e))
+        })?;
 
-// #[derive(Debug)]
-// enum TemporaryAccountCreationError {
-//     AccountAlreadyExist {
-//         code: u32,
-//         email_address: String,
-//         status_code: StatusCode,
-//     },
-//     AccountDuplicate {
-//         code: u32,
-//         email_address: String,
-//         count: i64,
-//         status_code: StatusCode,
-//     },
-//     ReachLimit {
-//         code: u32,
-//         email_address: String,
-//         count: i64,
-//         status_code: StatusCode,
-//     },
-//     DieselError {
-//         code: u32,
-//         error: diesel::result::Error,
-//         status_code: StatusCode,
-//     },
-//     EmailError {
-//         code: u32,
-//         error: lettre_email::error::Error,
-//         status_code: StatusCode,
-//     },
-//     SmtpError {
-//         code: u32,
-//         error: lettre::smtp::error::Error,
-//         status_code: StatusCode,
-//     },
-// }
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(common::SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into()).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    Ok(())
+}
 
-// impl fmt::Display for TemporaryAccountCreationError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         match self {
-//             TemporaryAccountCreationError::AccountAlreadyExist {
-//                 code,
-//                 email_address,
-//                 status_code: _,
-//             } => {
-//                 write!(
-//                     f,
-//                     "\"{}\" has already existed in user (code: {})",
-//                     email_address, code
-//                 )
-//             }
-//             TemporaryAccountCreationError::AccountDuplicate {
-//                 code: _,
-//                 email_address,
-//                 count,
-//                 status_code: _,
-//             } => {
-//                 write!(
-//                     f,
-//                     "fatal error: there are {} records of \"{}\" in account table",
-//                     count, email_address
-//                 )
-//             }
-//             TemporaryAccountCreationError::ReachLimit {
-//                 code,
-//                 email_address,
-//                 count,
-//                 status_code: _,
-//             } => {
-//                 write!(
-//                     f,
-//                     "reach limit of temporary accounts (code: {}, email {} found {} times)",
-//                     code, email_address, count,
-//                 )
-//             }
-//             TemporaryAccountCreationError::DieselError {
-//                 code,
-//                 error,
-//                 status_code: _,
-//             } => {
-//                 write!(f, "diesel error (code: {}): {}", code, error)
-//             }
-//             TemporaryAccountCreationError::EmailError {
-//                 code,
-//                 error,
-//                 status_code: _,
-//             } => {
-//                 write!(f, "lettre email error (code: {}): {}", code, error)
-//             }
-//             TemporaryAccountCreationError::SmtpError {
-//                 code,
-//                 error,
-//                 status_code: _,
-//             } => {
-//                 write!(f, "lettre smtp error (code: {}): {}", code, error)
-//             }
-//         }
-//     }
-// }
-
-// impl From<diesel::result::Error> for TemporaryAccountCreationError {
-//     fn from(error: diesel::result::Error) -> Self {
-//         TemporaryAccountCreationError::DieselError {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             error,
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         }
-//     }
-// }
-
-// impl From<lettre_email::error::Error> for TemporaryAccountCreationError {
-//     fn from(error: lettre_email::error::Error) -> Self {
-//         TemporaryAccountCreationError::EmailError {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             error,
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         }
-//     }
-// }
-
-// impl From<lettre::smtp::error::Error> for TemporaryAccountCreationError {
-//     fn from(error: lettre::smtp::error::Error) -> Self {
-//         TemporaryAccountCreationError::SmtpError {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             error,
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         }
-//     }
-// }
-
-// impl error::ToCode for TemporaryAccountCreationError {
-//     fn to_code(&self) -> u32 {
-//         match self {
-//             TemporaryAccountCreationError::AccountAlreadyExist {
-//                 code,
-//                 email_address: _,
-//                 status_code: _,
-//             } => *code,
-//             TemporaryAccountCreationError::AccountDuplicate {
-//                 code,
-//                 email_address: _,
-//                 count: _,
-//                 status_code: _,
-//             } => *code,
-//             TemporaryAccountCreationError::ReachLimit {
-//                 code,
-//                 email_address: _,
-//                 count: _,
-//                 status_code: _,
-//             } => *code,
-//             TemporaryAccountCreationError::DieselError {
-//                 code,
-//                 error: _,
-//                 status_code: _,
-//             } => *code,
-//             TemporaryAccountCreationError::EmailError {
-//                 code,
-//                 error: _,
-//                 status_code: _,
-//             } => *code,
-//             TemporaryAccountCreationError::SmtpError {
-//                 code,
-//                 error: _,
-//                 status_code: _,
-//             } => *code,
-//         }
-//     }
-// }
-
-// impl error::ToMessage for TemporaryAccountCreationError {
-//     fn to_message(&self) -> String {
-//         match self {
-//             TemporaryAccountCreationError::AccountAlreadyExist {
-//                 code: _,
-//                 email_address,
-//                 status_code: _
-//             } => format!("{}は既に登録されています。", email_address),
-//             TemporaryAccountCreationError::AccountDuplicate {
-//                 code: _,
-//                 email_address: _,
-//                 count: _,
-//                 status_code: _
-//             } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             TemporaryAccountCreationError::ReachLimit {
-//                 code: _,
-//                 email_address: _,
-//                 count: _,
-//                 status_code: _
-//             } => String::from("アカウント作成を依頼できる回数の上限を超えました。一定の期間が過ぎた後、再度お試しください。"),
-//             TemporaryAccountCreationError::DieselError { code: _, error: _, status_code: _ } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             TemporaryAccountCreationError::EmailError { code: _, error: _, status_code: _ } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             TemporaryAccountCreationError::SmtpError { code: _, error: _, status_code: _ } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//         }
-//     }
-// }
-
-// impl error::ToStatusCode for TemporaryAccountCreationError {
-//     fn to_status_code(&self) -> StatusCode {
-//         match self {
-//             TemporaryAccountCreationError::AccountAlreadyExist {
-//                 code: _,
-//                 email_address: _,
-//                 status_code,
-//             } => *status_code,
-//             TemporaryAccountCreationError::AccountDuplicate {
-//                 code: _,
-//                 email_address: _,
-//                 count: _,
-//                 status_code,
-//             } => *status_code,
-//             TemporaryAccountCreationError::ReachLimit {
-//                 code: _,
-//                 email_address: _,
-//                 count: _,
-//                 status_code,
-//             } => *status_code,
-//             TemporaryAccountCreationError::DieselError {
-//                 code: _,
-//                 error: _,
-//                 status_code,
-//             } => *status_code,
-//             TemporaryAccountCreationError::EmailError {
-//                 code: _,
-//                 error: _,
-//                 status_code,
-//             } => *status_code,
-//             TemporaryAccountCreationError::SmtpError {
-//                 code: _,
-//                 error: _,
-//                 status_code,
-//             } => *status_code,
-//         }
-//     }
-// }
-
-// fn send_notification_mail(
-//     email_address: &str,
-//     temporary_account_id: &str,
-// ) -> Result<(), TemporaryAccountCreationError> {
-//     use lettre::{ClientSecurity, SmtpClient, Transport};
-//     use lettre_email::EmailBuilder;
-//     let email = EmailBuilder::new()
-//         .to(email_address)
-//         // TODO: 送信元メールを更新する
-//         .from("from@example.com")
-//         // TOOD: メールの件名を更新する
-//         .subject("日本語のタイトル")
-//         // TOOD: メールの本文を更新する
-//         .text(format!(
-//             "http://{}:{}/temporary-accounts?id={}",
-//             DOMAIN, PORT, temporary_account_id
-//         ))
-//         .build()?;
-
-//     use std::net::SocketAddr;
-//     let addr = SocketAddr::from(SMTP_SERVER_ADDR);
-//     let client = SmtpClient::new(addr, ClientSecurity::None)?;
-//     let mut mailer = client.transport();
-//     // TODO: メール送信後のレスポンスが必要か検討する
-//     let _ = mailer.send(email.into())?;
-//     Ok(())
-// }
-
-// #[derive(Serialize)]
-// struct TemporaryAccountResult {
-//     email_address: String,
-//     message: String,
-// }
+#[derive(Serialize)]
+struct TemporaryAccountResult {
+    email_address: String,
+    message: String,
+}
 
 // // TODO: SameSite=Strictで問題ないか（アクセスできるか）確認する
 // #[get("/temporary-accounts")]
@@ -647,293 +362,6 @@
 //     }
 //     let user = users[0].clone();
 //     Ok(user)
-// }
-
-// #[derive(Debug)]
-// enum AccountCreationError {
-//     DieselError {
-//         code: u32,
-//         error: diesel::result::Error,
-//         status_code: StatusCode,
-//     },
-//     NoTemporaryAccount {
-//         code: u32,
-//         id: String,
-//         status_code: StatusCode,
-//     },
-//     TemporaryAccountDuplicate {
-//         code: u32,
-//         id: String,
-//         status_code: StatusCode,
-//     },
-//     TemporaryAccountExpire {
-//         code: u32,
-//         id: String,
-//         created_at: DateTime<Utc>,
-//         activated_at: DateTime<Utc>,
-//         status_code: StatusCode,
-//     },
-//     AccountDuplicate {
-//         code: u32,
-//         email_address: String,
-//         status_code: StatusCode,
-//     },
-//     EmailError {
-//         code: u32,
-//         error: lettre_email::error::Error,
-//         status_code: StatusCode,
-//     },
-//     SmtpError {
-//         code: u32,
-//         error: lettre::smtp::error::Error,
-//         status_code: StatusCode,
-//     },
-// }
-
-// impl fmt::Display for AccountCreationError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         match self {
-//             AccountCreationError::DieselError {
-//                 code: _,
-//                 error,
-//                 status_code: _,
-//             } => {
-//                 write!(f, "diesel error: {}", error)
-//             }
-//             AccountCreationError::NoTemporaryAccount {
-//                 code,
-//                 id,
-//                 status_code: _,
-//             } => {
-//                 write!(
-//                     f,
-//                     "no temporary account found (code: {}, temporary account id: {})",
-//                     code, id
-//                 )
-//             }
-//             AccountCreationError::TemporaryAccountDuplicate {
-//                 code: _,
-//                 id,
-//                 status_code: _,
-//             } => {
-//                 write!(
-//                     f,
-//                     "temporary account duplicate (temporary account id: {})",
-//                     id
-//                 )
-//             }
-//             AccountCreationError::TemporaryAccountExpire {
-//                 code,
-//                 id,
-//                 created_at,
-//                 activated_at,
-//                 status_code: _,
-//             } => {
-//                 write!(
-//                     f,
-//                     "temporary account already expired (code: {}, id: {}, created at {}, activated at {})",
-//                     code, id, created_at, activated_at
-//                 )
-//             }
-//             AccountCreationError::AccountDuplicate {
-//                 code,
-//                 email_address,
-//                 status_code: _,
-//             } => {
-//                 write!(
-//                     f,
-//                     "account (\"{}\") has already existed (code: {})",
-//                     email_address, code
-//                 )
-//             }
-//             AccountCreationError::EmailError {
-//                 code: _,
-//                 error,
-//                 status_code: _,
-//             } => {
-//                 write!(f, "failed to build email: {}", error)
-//             }
-//             AccountCreationError::SmtpError {
-//                 code: _,
-//                 error,
-//                 status_code: _,
-//             } => {
-//                 write!(f, "failed to send email: {}", error)
-//             }
-//         }
-//     }
-// }
-
-// impl From<diesel::result::Error> for AccountCreationError {
-//     fn from(error: diesel::result::Error) -> Self {
-//         AccountCreationError::DieselError {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             error,
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         }
-//     }
-// }
-
-// impl From<lettre_email::error::Error> for AccountCreationError {
-//     fn from(error: lettre_email::error::Error) -> Self {
-//         AccountCreationError::EmailError {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             error,
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         }
-//     }
-// }
-
-// impl From<lettre::smtp::error::Error> for AccountCreationError {
-//     fn from(error: lettre::smtp::error::Error) -> Self {
-//         AccountCreationError::SmtpError {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             error,
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         }
-//     }
-// }
-
-// impl error::ToCode for AccountCreationError {
-//     fn to_code(&self) -> u32 {
-//         match self {
-//             AccountCreationError::DieselError {
-//                 code,
-//                 error: _,
-//                 status_code: _,
-//             } => *code,
-//             AccountCreationError::NoTemporaryAccount {
-//                 code,
-//                 id: _,
-//                 status_code: _,
-//             } => *code,
-//             AccountCreationError::TemporaryAccountDuplicate {
-//                 code,
-//                 id: _,
-//                 status_code: _,
-//             } => *code,
-//             AccountCreationError::TemporaryAccountExpire {
-//                 code,
-//                 id: _,
-//                 created_at: _,
-//                 activated_at: _,
-//                 status_code: _,
-//             } => *code,
-//             AccountCreationError::AccountDuplicate {
-//                 code,
-//                 email_address: _,
-//                 status_code: _,
-//             } => *code,
-//             AccountCreationError::EmailError {
-//                 code,
-//                 error: _,
-//                 status_code: _,
-//             } => *code,
-//             AccountCreationError::SmtpError {
-//                 code,
-//                 error: _,
-//                 status_code: _,
-//             } => *code,
-//         }
-//     }
-// }
-
-// impl error::ToMessage for AccountCreationError {
-//     fn to_message(&self) -> String {
-//         match self {
-//             AccountCreationError::DieselError {
-//                 code: _,
-//                 error: _,
-//                 status_code: _,
-//             } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             AccountCreationError::NoTemporaryAccount {
-//                 code: _,
-//                 id,
-//                 status_code: _,
-//             } => {
-//                 // TODO: httpsに更新する
-//                 let url = format!("http://{}:{}/temporary-accounts?id={}", DOMAIN, PORT, id);
-//                 format!("指定されたURL ({}) は存在しません。メールで届いているURLと比較し、同一であるかご確認ください。", url)
-//             }
-//             AccountCreationError::TemporaryAccountDuplicate {
-//                 code: _,
-//                 id: _,
-//                 status_code: _,
-//             } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             AccountCreationError::TemporaryAccountExpire {
-//                 code: _,
-//                 id,
-//                 created_at: _,
-//                 activated_at: _,
-//                 status_code: _,
-//             } => {
-//                 // TODO: httpsに更新する
-//                 let url = format!("http://{}:{}/temporary-accounts?id={}", DOMAIN, PORT, id);
-//                 format!("指定されたURL ({}) は有効期限が過ぎています。お手数ですが、ユーザアカウント作成より、もう一度作成手続きをお願いします。", url)
-//             }
-//             AccountCreationError::AccountDuplicate {
-//                 code: _,
-//                 email_address,
-//                 status_code: _,
-//             } => {
-//                 format!("{}は既に登録済です", email_address)
-//             }
-//             AccountCreationError::EmailError {
-//                 code: _,
-//                 error: _,
-//                 status_code: _,
-//             } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//             AccountCreationError::SmtpError {
-//                 code: _,
-//                 error: _,
-//                 status_code: _,
-//             } => String::from(common::error::INTERNAL_SERVER_ERROR_MESSAGE),
-//         }
-//     }
-// }
-
-// impl error::ToStatusCode for AccountCreationError {
-//     fn to_status_code(&self) -> StatusCode {
-//         match self {
-//             AccountCreationError::DieselError {
-//                 code: _,
-//                 error: _,
-//                 status_code,
-//             } => *status_code,
-//             AccountCreationError::NoTemporaryAccount {
-//                 code: _,
-//                 id: _,
-//                 status_code,
-//             } => *status_code,
-//             AccountCreationError::TemporaryAccountDuplicate {
-//                 code: _,
-//                 id: _,
-//                 status_code,
-//             } => *status_code,
-//             AccountCreationError::TemporaryAccountExpire {
-//                 code: _,
-//                 id: _,
-//                 created_at: _,
-//                 activated_at: _,
-//                 status_code,
-//             } => *status_code,
-//             AccountCreationError::AccountDuplicate {
-//                 code: _,
-//                 email_address: _,
-//                 status_code,
-//             } => *status_code,
-//             AccountCreationError::EmailError {
-//                 code: _,
-//                 error: _,
-//                 status_code,
-//             } => *status_code,
-//             AccountCreationError::SmtpError {
-//                 code: _,
-//                 error: _,
-//                 status_code,
-//             } => *status_code,
-//         }
-//     }
 // }
 
 // fn create_error_view(err: AccountCreationError) -> HttpResponse {
