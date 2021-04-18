@@ -27,6 +27,9 @@ pub(crate) enum Error {
 
     #[display(fmt = "lettre smtp error: {}", _0)]
     LettreSmtpErr(lettre::smtp::error::Error),
+
+    #[display(fmt = "{}", _0)]
+    TemporaryAccountIdDuplicate(TemporaryAccountIdDuplicate),
 }
 
 // NOTE: Use negative value because positive value is used for handled error
@@ -53,5 +56,17 @@ pub(crate) struct FailedToUpdateAccount {
 impl FailedToUpdateAccount {
     pub(crate) fn new(primary_key: i32) -> Self {
         FailedToUpdateAccount { primary_key }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(fmt = "temporary account id duplicate (temp_acc_id: {})", temp_acc_id)]
+pub(crate) struct TemporaryAccountIdDuplicate {
+    temp_acc_id: String,
+}
+
+impl TemporaryAccountIdDuplicate {
+    pub(crate) fn new(temp_acc_id: String) -> Self {
+        TemporaryAccountIdDuplicate { temp_acc_id }
     }
 }

@@ -21,13 +21,13 @@ pub(crate) async fn login_request(
     let _ = credential.validate().map_err(|err| {
         let e = error::Error::Handled(err);
         log::error!("failed to login: {}", e);
-        return e;
+        e
     })?;
 
     let conn = pool.get().map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
         log::error!("failed to login: {}", e);
-        return e;
+        e
     })?;
 
     let mail_addr = credential.email_address.clone();
@@ -35,14 +35,14 @@ pub(crate) async fn login_request(
     let user_account = result.map_err(|err| {
         let e = error::Error::from(err);
         log::error!("failed to login: {}", e);
-        return e;
+        e
     })?;
 
     let pwd = credential.password.clone();
     let _ = credential::verify_password(&pwd, &user_account.hashed_password).map_err(|err| {
         let e = error::Error::Handled(err);
         log::error!("failed to login: {}", e);
-        return e;
+        e
     })?;
 
     let primary_key = user_account.id;
@@ -50,14 +50,14 @@ pub(crate) async fn login_request(
     let conn = pool.get().map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
         log::error!("failed to login: {}", e);
-        return e;
+        e
     })?;
     let result =
         web::block(move || update_last_login_time(primary_key, &current_date_time, &conn)).await;
     let _ = result.map_err(|err| {
         let e = error::Error::from(err);
         log::error!("failed to login: {}", e);
-        return e;
+        e
     })?;
 
     let _ = session
@@ -65,7 +65,7 @@ pub(crate) async fn login_request(
         .map_err(|err| {
             let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
             log::error!("failed to login: {}", e);
-            return e;
+            e
         })?;
     Ok(HttpResponse::build(StatusCode::OK).finish())
 }
@@ -122,7 +122,7 @@ pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, err
     let option_email_address: Option<String> = session.get(KEY_TO_EMAIL).map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
         log::error!("failed to logout {}", e);
-        return e;
+        e
     })?;
     if let Some(email_address) = option_email_address {
         log::info!("{} requested logout", email_address);
@@ -138,7 +138,7 @@ pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, erro
     let option_email_address: Option<String> = session.get(KEY_TO_EMAIL).map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
         log::error!("failed to get session state {}", e);
-        return e;
+        e
     })?;
     return match option_email_address {
         Some(email_address) => {
@@ -146,7 +146,7 @@ pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, erro
             let _ = session.set(KEY_TO_EMAIL, email_address).map_err(|err| {
                 let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
                 log::error!("failed to get session state {}", e);
-                return e;
+                e
             })?;
             Ok(HttpResponse::build(StatusCode::OK).finish())
         }

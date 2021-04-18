@@ -7,20 +7,18 @@ use crate::common::error::handled;
 use crate::common::error::unexpected;
 
 use crate::model;
-use actix_web::{get, http::StatusCode, post, web, HttpResponse};
-use chrono;
+use actix_web::{get, post, web, HttpResponse};
 use diesel::prelude::*;
-// use once_cell::sync::Lazy;
-// use regex::Regex;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
-// use std::fmt;
 use uuid::Uuid;
 
 // TODO: 運用しながら上限を調整する
 const TEMPORARY_ACCOUNT_LIMIT: i64 = 7;
-// const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
+const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
 
-// static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
+static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
 #[post("/temporary-account")]
 pub(crate) async fn temporary_account(
@@ -30,13 +28,13 @@ pub(crate) async fn temporary_account(
     let _ = credential.validate().map_err(|err| {
         let e = error::Error::Handled(err);
         log::error!("failed to create temporary account: {}", e);
-        return e;
+        e
     })?;
 
     let conn = pool.get().map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
         log::error!("failed to create temporary account: {}", e);
-        return e;
+        e
     })?;
 
     let id = Uuid::new_v4().to_simple().to_string();
@@ -186,88 +184,202 @@ struct TemporaryAccountResult {
     message: String,
 }
 
-// // TODO: SameSite=Strictで問題ないか（アクセスできるか）確認する
-// #[get("/temporary-accounts")]
-// pub(crate) async fn temporary_accounts(
-//     web::Query(account_req): web::Query<AccountRequest>,
-//     pool: web::Data<common::ConnectionPool>,
-// ) -> HttpResponse {
-//     let result = validate_id_format(&account_req.id);
-//     if let Err(e) = result {
-//         log::info!("failed to create account: {}", e);
-//         return create_invalid_id_format_view();
-//     }
-//     let result = pool.get();
-//     if let Err(e) = result {
-//         log::error!("failed to get connection: {}", e);
-//         return create_internal_error_view();
-//     }
-//     let conn = result.expect("never happens panic");
-//     let current_date_time = Utc::now();
-//     let temp_acc_id = account_req.id.clone();
-//     let result = web::block(move || create_account(&temp_acc_id, current_date_time, &conn)).await;
-//     if let Err(err) = result {
-//         match err {
-//             actix_web::error::BlockingError::Error(e) => {
-//                 if e.to_status_code() == StatusCode::INTERNAL_SERVER_ERROR {
-//                     log::error!(
-//                         "failed to create account (temporary account id: {}): {}",
-//                         &account_req.id,
-//                         e
-//                     );
-//                 } else {
-//                     log::info!(
-//                         "failed to create account (temporary account id: {}): {}",
-//                         &account_req.id,
-//                         e
-//                     );
-//                 }
-//                 return create_error_view(e);
-//             }
-//             actix_web::error::BlockingError::Canceled => {
-//                 log::error!("failed to create account (temporary account id: {}): actix_web::error::BlockingError::Canceled", &account_req.id);
-//                 return create_internal_error_view();
-//             }
-//         }
-//     }
-//     let email_address = result.expect("never happens panic");
-//     let result = send_account_creation_success_mail(&email_address);
-//     if let Err(e) = result {
-//         log::error!(
-//             "failed to complete creating account (\"{}\"): {}",
-//             email_address,
-//             e
-//         );
-//         // TODO: ログに残すだけで、成功として返して良いか検討する
-//     }
-//     create_success_view()
-// }
+// TODO: SameSite=Strictで問題ないか（アクセスできるか）確認する
+#[get("/temporary-accounts")]
+pub(crate) async fn temporary_accounts(
+    web::Query(account_req): web::Query<AccountRequest>,
+    pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, error::Error> {
+    let _ = validate_id_format(&account_req.id).map_err(|e| {
+        log::error!("failed to create account: {}", e);
+        e
+    })?;
 
-// #[derive(Deserialize)]
-// pub(crate) struct AccountRequest {
-//     id: String,
-// }
+    let conn = pool.get().map_err(|err| {
+        let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
+        log::error!("failed to create account: {}", e);
+        e
+    })?;
 
-// fn validate_id_format(id: &str) -> Result<(), IdValidationError> {
-//     if !UUID_RE.is_match(id) {
-//         return Err(IdValidationError::InvalidIdFormat(id.to_string()));
-//     }
-//     Ok(())
-// }
+    let current_date_time = chrono::Utc::now();
+    let temp_acc_id = account_req.id.clone();
+    let result = web::block(move || create_account(&temp_acc_id, current_date_time, &conn)).await;
+    let email_address = result.map_err(|err| {
+        let e = error::Error::from(err);
+        log::error!("failed to create account: {}", e);
+        e
+    })?;
 
-// enum IdValidationError {
-//     InvalidIdFormat(String),
-// }
+    // NOTE: アカウント作成には成功しているので、ログに記録するだけでエラーを無視している
+    // TODO: ログに記録するだけで、成功として返して良いか検討する
+    let _ = send_account_creation_success_mail(&email_address).map_err(|e| {
+        log::warn!("failed to create account: {}", e);
+        e
+    });
+    let message = format!(
+        r#"{}の登録に成功しました。<a href="/login">こちら</a>よりログインを行ってください。"#,
+        email_address
+    );
+    Ok(HttpResponse::Ok().json(AccountResult {
+        email_address,
+        message,
+    }))
+}
 
-// impl fmt::Display for IdValidationError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         match self {
-//             IdValidationError::InvalidIdFormat(id) => {
-//                 write!(f, "invalid id: {}", id)
-//             }
-//         }
-//     }
-// }
+#[derive(Deserialize)]
+pub(crate) struct AccountRequest {
+    id: String,
+}
+
+fn validate_id_format(id: &str) -> Result<(), error::Error> {
+    if !UUID_RE.is_match(id) {
+        let e = error::Error::Handled(handled::Error::InvalidTemporaryAccountId(
+            handled::InvalidTemporaryAccountId::new(id.to_string()),
+        ));
+        return Err(e);
+    }
+    Ok(())
+}
+
+fn create_account(
+    temporary_account_id: &str,
+    current_date_time: chrono::DateTime<chrono::Utc>,
+    conn: &PgConnection,
+) -> Result<String, error::Error> {
+    conn.transaction::<_, error::Error, _>(|| {
+        let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
+        let _ = delete_temporary_account(temporary_account_id, conn)?;
+        let time_elapsed = current_date_time - temp_acc.created_at;
+        if time_elapsed.num_days() > 0 {
+            let e = handled::TemporaryAccountExpired::new(
+                temporary_account_id.to_string(),
+                temp_acc.created_at,
+                current_date_time,
+            );
+            return Err(error::Error::Handled(
+                handled::Error::TemporaryAccountExpired(e),
+            ));
+        }
+        // NOTE: 関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
+        // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
+        create_account_inner(&temp_acc.email_address, &temp_acc.hashed_password, conn)?;
+        Ok(temp_acc.email_address)
+    })
+}
+
+fn find_temporary_account_by_id(
+    temp_acc_id: &str,
+    conn: &PgConnection,
+) -> Result<model::TemporaryAccountQueryResult, error::Error> {
+    use crate::schema::my_project_schema::user_temporary_account::dsl::*;
+    let users = user_temporary_account
+        .filter(temporary_account_id.eq(temp_acc_id))
+        .get_results::<model::TemporaryAccountQueryResult>(conn)?;
+    if users.is_empty() {
+        let e = handled::NoTemporaryAccountFound::new(temp_acc_id.to_string());
+        return Err(error::Error::Handled(
+            handled::Error::NoTemporaryAccountFound(e),
+        ));
+    }
+    if users.len() != 1 {
+        let e = unexpected::TemporaryAccountIdDuplicate::new(temp_acc_id.to_string());
+        return Err(error::Error::Unexpected(
+            unexpected::Error::TemporaryAccountIdDuplicate(e),
+        ));
+    }
+    let user = users[0].clone();
+    Ok(user)
+}
+
+fn send_account_creation_success_mail(email_address: &str) -> Result<(), error::Error> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        .to(email_address)
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("アカウント登録完了")
+        // TOOD: メールの本文を更新する
+        .text("アカウントの登録が完了しました。")
+        .build()
+        .map_err(|e| {
+            error::Error::Unexpected(common::error::unexpected::Error::LettreEmailErr(e))
+        })?;
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(common::SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into()).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    Ok(())
+}
+
+fn delete_temporary_account(temp_acc_id: &str, conn: &PgConnection) -> Result<(), error::Error> {
+    use crate::schema::my_project_schema::user_temporary_account::dsl::{
+        temporary_account_id, user_temporary_account,
+    };
+    // TODO: 戻り値 cnt（usize: the number of rows affected）を利用する必要があるか検討する
+    let cnt = diesel::delete(user_temporary_account.filter(temporary_account_id.eq(temp_acc_id)))
+        .execute(conn)?;
+    if cnt != 1 {
+        log::warn!(
+            "diesel::delete::execute result (id: {}): {}",
+            temp_acc_id,
+            cnt
+        );
+    }
+    Ok(())
+}
+
+fn create_account_inner(
+    mail_addr: &str,
+    hashed_pwd: &[u8],
+    conn: &PgConnection,
+) -> Result<(), error::Error> {
+    conn.transaction::<_, error::Error, _>(|| {
+        use crate::schema::my_project_schema::user_account::dsl::{email_address, user_account};
+        let cnt = user_account
+            .filter(email_address.eq(mail_addr))
+            .count()
+            .get_result::<i64>(conn)?;
+        if cnt > 0 {
+            let e = unexpected::AccountDuplicate::new(mail_addr.to_string());
+            return Err(error::Error::Unexpected(
+                unexpected::Error::AccountDuplicate(e),
+            ));
+        }
+        use crate::schema::my_project_schema::user_account as user_acc;
+        let user = model::Account {
+            email_address: mail_addr,
+            hashed_password: hashed_pwd,
+            last_login_time: None,
+        };
+        // TODO: 戻り値 cnt（usize: the number of rows affected）を利用する必要があるか検討する
+        let cnt = diesel::insert_into(user_acc::table)
+            .values(&user)
+            .execute(conn)?;
+        if cnt != 1 {
+            log::warn!(
+                "diesel::insert_into execute (email_address: {}, cnt: {})",
+                mail_addr,
+                cnt
+            );
+        }
+        Ok(())
+    })
+}
+
+#[derive(Serialize)]
+struct AccountResult {
+    email_address: String,
+    message: String,
+}
 
 // fn create_invalid_id_format_view() -> HttpResponse {
 //     let body = r#"<!DOCTYPE html>
@@ -306,64 +418,6 @@ struct TemporaryAccountResult {
 //         .body(body);
 // }
 
-// fn create_account(
-//     temporary_account_id: &str,
-//     current_date_time: DateTime<Utc>,
-//     conn: &PgConnection,
-// ) -> Result<String, AccountCreationError> {
-//     conn.transaction::<_, AccountCreationError, _>(|| {
-//         let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
-//         let result = delete_temporary_account(temporary_account_id, conn);
-//         if let Err(e) = result {
-//             log::warn!("failed to delete temporary account: {}", e);
-//         };
-//         let time_elapsed = current_date_time - temp_acc.created_at;
-//         if time_elapsed.num_days() > 0 {
-//             return Err(AccountCreationError::TemporaryAccountExpire {
-//                 code: error::code::TEMPORARY_ACCOUNT_EXPIRED,
-//                 id: temporary_account_id.to_string(),
-//                 created_at: temp_acc.created_at,
-//                 activated_at: current_date_time,
-//                 status_code: StatusCode::BAD_REQUEST,
-//             });
-//         }
-//         // NOTE: 関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
-//         // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
-//         create_account_inner(
-//             &temp_acc.email_address,
-//             temp_acc.hashed_password.as_ref(),
-//             conn,
-//         )?;
-//         Ok(temp_acc.email_address)
-//     })
-// }
-
-// fn find_temporary_account_by_id(
-//     temp_acc_id: &str,
-//     conn: &PgConnection,
-// ) -> Result<model::TemporaryAccountQueryResult, AccountCreationError> {
-//     use crate::schema::my_project_schema::user_temporary_account::dsl::*;
-//     let users = user_temporary_account
-//         .filter(temporary_account_id.eq(temp_acc_id))
-//         .get_results::<model::TemporaryAccountQueryResult>(conn)?;
-//     if users.is_empty() {
-//         return Err(AccountCreationError::NoTemporaryAccount {
-//             code: error::code::NO_TEMPORARY_ACCOUNT,
-//             id: temp_acc_id.to_string(),
-//             status_code: StatusCode::NOT_FOUND,
-//         });
-//     }
-//     if users.len() != 1 {
-//         return Err(AccountCreationError::TemporaryAccountDuplicate {
-//             code: error::code::INTERNAL_SERVER_ERROR,
-//             id: temp_acc_id.to_string(),
-//             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-//         });
-//     }
-//     let user = users[0].clone();
-//     Ok(user)
-// }
-
 // fn create_error_view(err: AccountCreationError) -> HttpResponse {
 //     let body = format!(
 //         r#"<!DOCTYPE html>
@@ -383,28 +437,6 @@ struct TemporaryAccountResult {
 //         .body(body)
 // }
 
-// fn send_account_creation_success_mail(email_address: &str) -> Result<(), AccountCreationError> {
-//     use lettre::{ClientSecurity, SmtpClient, Transport};
-//     use lettre_email::EmailBuilder;
-//     let email = EmailBuilder::new()
-//         .to(email_address)
-//         // TODO: 送信元メールを更新する
-//         .from("from@example.com")
-//         // TOOD: メールの件名を更新する
-//         .subject("日本語のタイトル")
-//         // TOOD: メールの本文を更新する
-//         .text("アカウントの作成に成功しました。")
-//         .build()?;
-
-//     use std::net::SocketAddr;
-//     let addr = SocketAddr::from(SMTP_SERVER_ADDR);
-//     let client = SmtpClient::new(addr, ClientSecurity::None)?;
-//     let mut mailer = client.transport();
-//     // TODO: メール送信後のレスポンスが必要か検討する
-//     let _ = mailer.send(email.into())?;
-//     Ok(())
-// }
-
 // fn create_success_view() -> HttpResponse {
 //     let body = r#"<!DOCTYPE html>
 //     <html>
@@ -419,48 +451,4 @@ struct TemporaryAccountResult {
 //     HttpResponse::build(StatusCode::OK)
 //         .content_type("text/html; charset=UTF-8")
 //         .body(body)
-// }
-
-// fn delete_temporary_account(
-//     temp_acc_id: &str,
-//     conn: &PgConnection,
-// ) -> Result<(), AccountCreationError> {
-//     use crate::schema::my_project_schema::user_temporary_account::dsl::*;
-//     // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
-//     let _result =
-//         diesel::delete(user_temporary_account.filter(temporary_account_id.eq(temp_acc_id)))
-//             .execute(conn)?;
-//     Ok(())
-// }
-
-// fn create_account_inner(
-//     mail_addr: &str,
-//     hashed_pwd: &[u8],
-//     conn: &PgConnection,
-// ) -> Result<(), AccountCreationError> {
-//     conn.transaction::<_, AccountCreationError, _>(|| {
-//         use crate::schema::my_project_schema::user_account::dsl::*;
-//         let cnt = user_account
-//             .filter(email_address.eq(mail_addr))
-//             .count()
-//             .get_result::<i64>(conn)?;
-//         if cnt > 0 {
-//             return Err(AccountCreationError::AccountDuplicate {
-//                 code: error::code::ACCOUNT_ALREADY_EXISTS,
-//                 email_address: String::from(mail_addr),
-//                 status_code: StatusCode::CONFLICT,
-//             });
-//         }
-//         use crate::schema::my_project_schema::user_account;
-//         let user = model::Account {
-//             email_address: mail_addr,
-//             hashed_password: hashed_pwd,
-//             last_login_time: None,
-//         };
-//         // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
-//         let _result = diesel::insert_into(user_account::table)
-//             .values(&user)
-//             .execute(conn)?;
-//         Ok(())
-//     })
 // }

@@ -113,7 +113,7 @@ async fn main() -> std::io::Result<()> {
             .service(static_asset::favicon_ico)
             .service(static_asset::index)
             .service(account::temporary_account)
-            //.service(account::temporary_accounts)
+            .service(account::temporary_accounts)
             .service(authentication::login_request)
             .service(authentication::logout_request)
             .service(authentication::session_state)

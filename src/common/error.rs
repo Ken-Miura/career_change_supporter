@@ -105,15 +105,16 @@ impl actix_web::ResponseError for Error {
                     }
                     common::error::handled::Error::InvalidPasswordFormat(e) => {
                         code = e.code;
-                        message = format!("パスワードに使用できない文字が含まれています。パスワードに使用可能な文字は、半角英数字と記号です。");
+                        message = "パスワードに使用できない文字が含まれています。パスワードに使用可能な文字は、半角英数字と記号です。".to_string();
                     }
                     common::error::handled::Error::PasswordConstraintsViolation(e) => {
                         code = e.code;
-                        message = format!("不正な形式のパスワードです。パスワードは小文字、大文字、数字または記号の内、2種類以上を組み合わせる必要があります。");
+                        message = "不正な形式のパスワードです。パスワードは小文字、大文字、数字または記号の内、2種類以上を組み合わせる必要があります。".to_string();
                     }
                     common::error::handled::Error::PasswordNotMatch(e) => {
                         code = e.code;
-                        message = format!("メールアドレス、もしくはパスワードが間違っています。");
+                        message =
+                            "メールアドレス、もしくはパスワードが間違っています。".to_string();
                     }
                     common::error::handled::Error::AccountAlreadyExists(e) => {
                         code = e.code;
@@ -121,7 +122,7 @@ impl actix_web::ResponseError for Error {
                     }
                     common::error::handled::Error::ReachLimitOfTemporaryAccount(e) => {
                         code = e.code;
-                        message = format!("アカウント作成を依頼できる回数の上限に達しました。一定の期間が過ぎた後、再度お試しください。");
+                        message = "アカウント作成を依頼できる回数の上限に達しました。一定の期間が過ぎた後、再度お試しください。".to_string();
                     }
                     common::error::handled::Error::NoTemporaryAccountFound(e) => {
                         code = e.code;
@@ -159,11 +160,12 @@ impl actix_web::ResponseError for Error {
                     common::error::handled::Error::NoAccountFound(e) => {
                         code = e.code;
                         // NOTE: セキュリティ上の観点からPasswordNotMatchと同じ値を返し、メールアドレスが見つからないことと、パスワードが一致しないことを区別しない
-                        message = format!("メールアドレス、もしくはパスワードが間違っています。");
+                        message =
+                            "メールアドレス、もしくはパスワードが間違っています。".to_string();
                     }
                     common::error::handled::Error::NoSessionFound(e) => {
                         code = e.code;
-                        message = format!("セッションが存在しません。");
+                        message = "セッションが存在しません。".to_string();
                     }
                 }
                 return actix_web::HttpResponse::build(self.status_code())
