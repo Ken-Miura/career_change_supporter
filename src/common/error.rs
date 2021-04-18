@@ -63,6 +63,7 @@ impl actix_web::ResponseError for Error {
                     // NOTE: セキュリティ上の観点からPasswordNotMatchと同じ値を返し、メールアドレスが見つからないことと、パスワードが一致しないことを区別しない
                     http::StatusCode::UNAUTHORIZED
                 }
+                common::error::handled::Error::NoSessionFound(_) => http::StatusCode::UNAUTHORIZED,
             },
             Error::Unexpected(_e) => http::StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -142,6 +143,10 @@ impl actix_web::ResponseError for Error {
                         code = e.code;
                         // NOTE: セキュリティ上の観点からPasswordNotMatchと同じ値を返し、メールアドレスが見つからないことと、パスワードが一致しないことを区別しない
                         message = format!("メールアドレス、もしくはパスワードが間違っています。");
+                    }
+                    common::error::handled::Error::NoSessionFound(e) => {
+                        code = e.code;
+                        message = format!("セッションが存在しません。");
                     }
                 }
                 return actix_web::HttpResponse::build(self.status_code())

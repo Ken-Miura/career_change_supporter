@@ -7,7 +7,7 @@ use crate::common::error::handled;
 use crate::common::error::unexpected;
 use crate::model;
 use actix_session::Session;
-use actix_web::{get, http::StatusCode, post, web, HttpResponse};
+use actix_web::{get, http::StatusCode, post, web, HttpRequest, HttpResponse};
 use diesel::prelude::*;
 
 const KEY_TO_EMAIL: &str = "email_address";
@@ -143,16 +143,28 @@ pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, err
 }
 
 #[get("/session-state")]
-pub(crate) async fn session_state(session: Session) -> HttpResponse {
-    // TODO: Handle Result
-    let session_info: Option<String> = session.get(KEY_TO_EMAIL).unwrap_or(None);
-    if session_info == None {
-        return HttpResponse::from_error(actix_web::error::ErrorUnauthorized(
-            "failed to authenticate",
-        ));
-    }
-    let value = session_info.expect("never happens panic");
-    // set value to explicitly enhance ttl
-    let _ = session.set(KEY_TO_EMAIL, value);
-    HttpResponse::build(StatusCode::OK).finish()
+pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
+    let option_email_address: Option<String> = session.get(KEY_TO_EMAIL).map_err(|err| {
+        let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+        log::error!("failed to get session state {}", e);
+        return e;
+    })?;
+    return match option_email_address {
+        Some(email_address) => {
+            // set value to explicitly enhance ttl
+            let _ = session.set(KEY_TO_EMAIL, email_address).map_err(|err| {
+                let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+                log::error!("failed to get session state {}", e);
+                return e;
+            })?;
+            Ok(HttpResponse::build(StatusCode::OK).finish())
+        }
+        None => {
+            let e = error::Error::Handled(handled::Error::NoSessionFound(
+                handled::NoSessionFound::new(),
+            ));
+            log::error!("failed to get session state {}", e);
+            Err(e)
+        }
+    };
 }

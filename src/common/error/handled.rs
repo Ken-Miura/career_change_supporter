@@ -46,6 +46,9 @@ pub(crate) enum Error {
     // ----authentication.rs------
     #[display(fmt = "{}", _0)]
     NoAccountFound(NoAccountFound),
+
+    #[display(fmt = "{}", _0)]
+    NoSessionFound(NoSessionFound),
     // --------------------
 }
 
@@ -62,6 +65,7 @@ const REACH_LIMIT_OF_TEMPORARY_ACCOUNT: i32 = 8;
 const NO_TEMPORARY_ACCOUNT_FOUND: i32 = 9;
 const TEMPORARY_ACCOUNT_EXPIRED: i32 = 10;
 const INVALID_TEMPORARY_ACCOUNT_ID: i32 = 11;
+const NO_SESSION_FOUND: i32 = 12;
 
 #[derive(Display, Debug)]
 #[display(
@@ -295,6 +299,20 @@ impl NoAccountFound {
             // NOTE: セキュリティ上の観点からPasswordNotMatchと同じ値を返し、メールアドレスが見つからないことと、パスワードが一致しないことを区別しない
             code: AUTHENTICATION_FAILED,
             email_address,
+        }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(fmt = "no session found (code: {})", code)]
+pub(crate) struct NoSessionFound {
+    pub(super) code: i32,
+}
+
+impl NoSessionFound {
+    pub(crate) fn new() -> Self {
+        NoSessionFound {
+            code: NO_SESSION_FOUND,
         }
     }
 }
