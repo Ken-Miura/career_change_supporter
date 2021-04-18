@@ -127,21 +127,19 @@ fn update_last_login_time(
 
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
-pub(crate) async fn logout_request(session: Session) -> HttpResponse {
-    let result: Result<Option<String>, _> = session.get(KEY_TO_EMAIL);
-    if let Err(e) = result {
-        log::error!("failed to get session: {}", e);
-        // TODO: そのままレスポンスとして返却してよいのか確認する
-        return e.into();
-    }
-    let session_info = result.expect("never happens panic");
-    if let Some(email) = session_info {
-        log::info!("\"{}\" requested logout", email);
+pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> {
+    let option_email_address: Option<String> = session.get(KEY_TO_EMAIL).map_err(|err| {
+        let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+        log::error!("failed to logout {}", e);
+        return e;
+    })?;
+    if let Some(email_address) = option_email_address {
+        log::info!("{} requested logout", email_address);
     } else {
         log::info!("somebody requested logout");
     }
     session.purge();
-    HttpResponse::build(StatusCode::OK).finish()
+    Ok(HttpResponse::build(StatusCode::OK).finish())
 }
 
 #[get("/session-state")]
