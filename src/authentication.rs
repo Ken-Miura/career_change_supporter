@@ -39,7 +39,7 @@ pub(crate) async fn login_request(
         let e = error::Error::Handled(err);
         log::error!("failed to login: {}", e);
         return e;
-    });
+    })?;
 
     let primary_key = user_account.id;
     let current_date_time = chrono::Utc::now();
