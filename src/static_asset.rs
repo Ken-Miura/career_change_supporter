@@ -14,7 +14,7 @@ pub(crate) async fn index(req: HttpRequest) -> HttpResponse {
 
 // https://host_name/temporary_accounts?id=temporary_account_idでアクセスしたときのために利用する
 // 該当しないURLにアクセスした際は、serve_indexにルーティングされる設定だが、今後temporary_accountsの別ルートが間違って追加されないように明示的に関数を作っておく
-#[get("/temporary_accounts")]
+#[get("/temporary-accounts")]
 pub(crate) async fn temporary_accounts(req: HttpRequest) -> HttpResponse {
     serve_index(req)
 }
