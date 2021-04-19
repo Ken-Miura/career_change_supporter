@@ -216,12 +216,8 @@ pub(crate) async fn temporary_accounts(
         log::warn!("failed to create account: {}", e);
         e
     });
-    let message = format!(
-        r#"{}の登録に成功しました。<a href="/login">こちら</a>よりログインを行ってください。"#,
-        email_address
-    );
+    let message = r#"登録に成功しました。<a href="/login">こちら</a>よりログインを行ってください。"#.to_string();
     Ok(HttpResponse::Ok().json(AccountResult {
-        email_address,
         message,
     }))
 }
@@ -378,7 +374,6 @@ fn create_account_inner(
 
 #[derive(Serialize)]
 struct AccountResult {
-    email_address: String,
     message: String,
 }
 
