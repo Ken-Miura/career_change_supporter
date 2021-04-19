@@ -91,7 +91,7 @@ fn insert_temporary_account(
         }
         use crate::schema::my_project_schema::user_temporary_account;
         let temp_acc = model::TemporaryAccount {
-            temporary_account_id: &temp_acc_id,
+            user_temporary_account_id: &temp_acc_id,
             email_address: &mail_addr,
             hashed_password: &hashed_pwd,
             created_at: &current_date_time,
@@ -273,7 +273,7 @@ fn find_temporary_account_by_id(
 ) -> Result<model::TemporaryAccountQueryResult, error::Error> {
     use crate::schema::my_project_schema::user_temporary_account::dsl::*;
     let users = user_temporary_account
-        .filter(temporary_account_id.eq(temp_acc_id))
+        .filter(user_temporary_account_id.eq(temp_acc_id))
         .get_results::<model::TemporaryAccountQueryResult>(conn)?;
     if users.is_empty() {
         let e = handled::NoTemporaryAccountFound::new(temp_acc_id.to_string());
@@ -322,11 +322,12 @@ fn send_account_creation_success_mail(email_address: &str) -> Result<(), error::
 
 fn delete_temporary_account(temp_acc_id: &str, conn: &PgConnection) -> Result<(), error::Error> {
     use crate::schema::my_project_schema::user_temporary_account::dsl::{
-        temporary_account_id, user_temporary_account,
+        user_temporary_account, user_temporary_account_id,
     };
     // TODO: 戻り値 cnt（usize: the number of rows affected）を利用する必要があるか検討する
-    let cnt = diesel::delete(user_temporary_account.filter(temporary_account_id.eq(temp_acc_id)))
-        .execute(conn)?;
+    let cnt =
+        diesel::delete(user_temporary_account.filter(user_temporary_account_id.eq(temp_acc_id)))
+            .execute(conn)?;
     if cnt != 1 {
         log::warn!(
             "diesel::delete::execute result (id: {}): {}",

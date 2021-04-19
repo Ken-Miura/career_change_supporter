@@ -45,7 +45,7 @@ pub(crate) async fn login_request(
         e
     })?;
 
-    let primary_key = user_account.id;
+    let primary_key = user_account.user_account_id;
     let current_date_time = chrono::Utc::now();
     let conn = pool.get().map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
