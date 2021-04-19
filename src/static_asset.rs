@@ -12,6 +12,13 @@ pub(crate) async fn index(req: HttpRequest) -> HttpResponse {
     serve_index(req)
 }
 
+// https://host_name/temporary_accounts?id=temporary_account_idでアクセスしたときのために利用する
+// 該当しないURLにアクセスした際は、serve_indexにルーティングされる設定だが、今後temporary_accountsの別ルートが間違って追加されないように明示的に関数を作っておく
+#[get("/temporary_accounts")]
+pub(crate) async fn temporary_accounts(req: HttpRequest) -> HttpResponse {
+    serve_index(req)
+}
+
 pub(crate) fn serve_index(req: HttpRequest) -> HttpResponse {
     log::info!("fn serve_index: requested path: {}", req.uri());
     let index_file = format!("{}/index.html", ASSETS_DIR);

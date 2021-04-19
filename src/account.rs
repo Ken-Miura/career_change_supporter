@@ -7,7 +7,7 @@ use crate::common::error::handled;
 use crate::common::error::unexpected;
 
 use crate::model;
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{post, web, HttpResponse};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -20,8 +20,8 @@ const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
 
 static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
-#[post("/temporary-account")]
-pub(crate) async fn temporary_account(
+#[post("/temporary-account-creation")]
+pub(crate) async fn temporary_account_creation(
     credential: web::Json<credential::Credential>,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, error::Error> {
@@ -186,9 +186,9 @@ struct TemporaryAccountResult {
 }
 
 // TODO: SameSite=Strictで問題ないか（アクセスできるか）確認する
-#[get("/temporary-accounts")]
-pub(crate) async fn temporary_accounts(
-    web::Query(account_req): web::Query<AccountRequest>,
+#[post("/account-creation")]
+pub(crate) async fn account_creation(
+    account_req: web::Json<AccountRequest>,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, error::Error> {
     let _ = validate_id_format(&account_req.id).map_err(|e| {
