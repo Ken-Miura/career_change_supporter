@@ -37,8 +37,8 @@ pub(crate) async fn temporary_account(
         e
     })?;
 
-    let id = Uuid::new_v4().to_simple().to_string();
-    let id_cloned = id.clone();
+    let temp_acc_id = Uuid::new_v4().to_simple().to_string();
+    let id_cloned = temp_acc_id.clone();
     let mail_addr = credential.email_address.clone();
     let hashed_pwd = credential::hash_password(&credential.password);
     let current_date_time = chrono::Utc::now();
@@ -62,7 +62,7 @@ pub(crate) async fn temporary_account(
             message
         )
     }
-    let _ = send_notification_mail(&credential.email_address, &id).map_err(|e| {
+    let _ = send_notification_mail(&credential.email_address, &temp_acc_id).map_err(|e| {
         log::error!("failed to create temporary account: {}", e);
         e
     })?;
@@ -231,10 +231,10 @@ pub(crate) struct AccountRequest {
     id: String,
 }
 
-fn validate_id_format(id: &str) -> Result<(), error::Error> {
-    if !UUID_RE.is_match(id) {
+fn validate_id_format(temp_acc_id: &str) -> Result<(), error::Error> {
+    if !UUID_RE.is_match(temp_acc_id) {
         let e = error::Error::Handled(handled::Error::InvalidTemporaryAccountId(
-            handled::InvalidTemporaryAccountId::new(id.to_string()),
+            handled::InvalidTemporaryAccountId::new(temp_acc_id.to_string()),
         ));
         return Err(e);
     }

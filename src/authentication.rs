@@ -10,7 +10,7 @@ use actix_session::Session;
 use actix_web::{get, http::StatusCode, post, web, HttpResponse};
 use diesel::prelude::*;
 
-const KEY_TO_EMAIL: &str = "email_address";
+const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 
 #[post("/login-request")]
 pub(crate) async fn login_request(
@@ -45,7 +45,7 @@ pub(crate) async fn login_request(
         e
     })?;
 
-    let primary_key = user_account.user_account_id;
+    let user_acc_id = user_account.user_account_id;
     let current_date_time = chrono::Utc::now();
     let conn = pool.get().map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
@@ -53,7 +53,7 @@ pub(crate) async fn login_request(
         e
     })?;
     let result =
-        web::block(move || update_last_login_time(primary_key, &current_date_time, &conn)).await;
+        web::block(move || update_last_login_time(user_acc_id, &current_date_time, &conn)).await;
     let _ = result.map_err(|err| {
         let e = error::Error::from(err);
         log::error!("failed to login: {}", e);
@@ -61,7 +61,7 @@ pub(crate) async fn login_request(
     })?;
 
     let _ = session
-        .set(KEY_TO_EMAIL, &credential.email_address)
+        .set(KEY_TO_USER_ACCOUNT_ID, user_acc_id)
         .map_err(|err| {
             let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
             log::error!("failed to login: {}", e);
@@ -94,12 +94,12 @@ fn find_user_by_email_address(
 }
 
 fn update_last_login_time(
-    primary_key: i32,
+    user_acc_id: i32,
     current_date_time: &chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
 ) -> Result<(), error::Error> {
     use crate::schema::my_project_schema::user_account::dsl::{last_login_time, user_account};
-    let affected_useraccounts = diesel::update(user_account.find(primary_key))
+    let affected_useraccounts = diesel::update(user_account.find(user_acc_id))
         .set(last_login_time.eq(Some(current_date_time)))
         .get_results::<model::AccountQueryResult>(conn)
         .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
@@ -108,7 +108,7 @@ fn update_last_login_time(
     // NOTE: メールアドレスを見つけ、パスワードの一致を確認後、最終ログイン時間を更新する前にアカウントの削除処理が走った場合に発生する可能性がある
     // TODO: 人の手で起こるようなケースはありえないので、運用の結果、発生が見られなければ削除する
     if affected_useraccounts.is_empty() {
-        let e = unexpected::FailedToUpdateAccount::new(primary_key);
+        let e = unexpected::FailedToUpdateAccount::new(user_acc_id);
         return Err(error::Error::Unexpected(
             unexpected::Error::FailedToUpdateAccount(e),
         ));
@@ -119,13 +119,13 @@ fn update_last_login_time(
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
 pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_email_address: Option<String> = session.get(KEY_TO_EMAIL).map_err(|err| {
+    let option_user_acc_id: Option<String> = session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
         log::error!("failed to logout {}", e);
         e
     })?;
-    if let Some(email_address) = option_email_address {
-        log::info!("{} requested logout", email_address);
+    if let Some(user_acc_id) = option_user_acc_id {
+        log::info!("user account id ({}) requested logout", user_acc_id);
     } else {
         log::info!("somebody requested logout");
     }
@@ -135,15 +135,15 @@ pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, err
 
 #[get("/session-state")]
 pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_email_address: Option<String> = session.get(KEY_TO_EMAIL).map_err(|err| {
+    let option_user_acc_id: Option<String> = session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
         log::error!("failed to get session state {}", e);
         e
     })?;
-    return match option_email_address {
-        Some(email_address) => {
+    return match option_user_acc_id {
+        Some(user_acc_id) => {
             // set value to explicitly enhance ttl
-            let _ = session.set(KEY_TO_EMAIL, email_address).map_err(|err| {
+            let _ = session.set(KEY_TO_USER_ACCOUNT_ID, user_acc_id).map_err(|err| {
                 let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
                 log::error!("failed to get session state {}", e);
                 e
