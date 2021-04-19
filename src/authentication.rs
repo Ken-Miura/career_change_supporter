@@ -67,7 +67,10 @@ pub(crate) async fn login_request(
             log::error!("failed to login: {}", e);
             e
         })?;
-    log::info!("user (user account id: {}) logged in successfully", user_acc_id);
+    log::info!(
+        "user (user account id: {}) logged in successfully",
+        user_acc_id
+    );
     Ok(HttpResponse::build(StatusCode::OK).finish())
 }
 
@@ -128,7 +131,10 @@ pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, err
         })?;
     session.purge();
     if let Some(user_acc_id) = option_user_acc_id {
-        log::info!("user (user account id ({}) logged out successfully", user_acc_id);
+        log::info!(
+            "user (user account id ({}) logged out successfully",
+            user_acc_id
+        );
     } else {
         log::info!("somebody logged out successfully");
     }

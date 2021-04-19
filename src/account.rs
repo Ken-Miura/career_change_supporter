@@ -66,6 +66,7 @@ pub(crate) async fn temporary_account(
         log::error!("failed to create temporary account: {}", e);
         e
     })?;
+    log::info!("created user temporary account successfully (temporary account id: {}, email address: {}) at {}", temp_acc_id, credential.email_address, current_date_time);
     Ok(HttpResponse::Ok().json(TemporaryAccountResult {
         email_address: credential.email_address.clone(),
         message,
@@ -207,7 +208,7 @@ pub(crate) async fn temporary_accounts(
         check_temp_acc_and_create_account(&temp_acc_id, current_date_time, &conn)
     })
     .await;
-    let email_address = result.map_err(|err| {
+    let user_acc = result.map_err(|err| {
         let e = error::Error::from(err);
         log::error!("failed to create account: {}", e);
         e
@@ -215,10 +216,15 @@ pub(crate) async fn temporary_accounts(
 
     // NOTE: アカウント作成には成功しているので、ログに記録するだけでエラーを無視している
     // TODO: ログに記録するだけで、成功として返して良いか検討する
-    let _ = send_account_creation_success_mail(&email_address).map_err(|e| {
+    let _ = send_account_creation_success_mail(&user_acc.email_address).map_err(|e| {
         log::warn!("failed to create account: {}", e);
         e
     });
+    log::info!(
+        "created user account successfully (user account id: {}, email address: {})",
+        user_acc.user_account_id,
+        user_acc.email_address
+    );
     let message =
         r#"登録に成功しました。<a href="/login">こちら</a>よりログインを行ってください。"#
             .to_string();
@@ -244,7 +250,7 @@ fn check_temp_acc_and_create_account(
     temporary_account_id: &str,
     current_date_time: chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
-) -> Result<String, error::Error> {
+) -> Result<model::AccountQueryResult, error::Error> {
     conn.transaction::<_, error::Error, _>(|| {
         let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
         let _ = delete_temporary_account(temporary_account_id, conn)?;
@@ -261,8 +267,8 @@ fn check_temp_acc_and_create_account(
         }
         // NOTE: 関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
         // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
-        create_account(&temp_acc.email_address, &temp_acc.hashed_password, conn)?;
-        Ok(temp_acc.email_address)
+        let user = create_account(&temp_acc.email_address, &temp_acc.hashed_password, conn)?;
+        Ok(user)
     })
 }
 
@@ -341,7 +347,7 @@ fn create_account(
     mail_addr: &str,
     hashed_pwd: &[u8],
     conn: &PgConnection,
-) -> Result<(), error::Error> {
+) -> Result<model::AccountQueryResult, error::Error> {
     conn.transaction::<_, error::Error, _>(|| {
         use crate::schema::my_project_schema::user_account::dsl::{email_address, user_account};
         let cnt = user_account
@@ -360,18 +366,18 @@ fn create_account(
             hashed_password: hashed_pwd,
             last_login_time: None,
         };
-        // TODO: 戻り値 cnt（usize: the number of rows affected）を利用する必要があるか検討する
-        let cnt = diesel::insert_into(user_acc::table)
+        let users = diesel::insert_into(user_acc::table)
             .values(&user)
-            .execute(conn)?;
-        if cnt != 1 {
-            log::warn!(
-                "diesel::insert_into execute (email_address: {}, cnt: {})",
-                mail_addr,
-                cnt
-            );
+            .get_results::<model::AccountQueryResult>(conn)?;
+        if users.len() > 1 {
+            return Err(error::Error::Unexpected(
+                unexpected::Error::AccountDuplicate(unexpected::AccountDuplicate::new(
+                    mail_addr.to_string(),
+                )),
+            ));
         }
-        Ok(())
+        let user = users[0].clone();
+        Ok(user)
     })
 }
 
