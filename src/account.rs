@@ -205,7 +205,14 @@ pub(crate) async fn account_creation(
     let current_date_time = chrono::Utc::now();
     let temp_acc_id = account_req.id.clone();
     let result = web::block(move || {
-        check_temp_acc_and_create_account(&temp_acc_id, current_date_time, &conn)
+        conn.transaction::<_, error::Error, _>(|| {
+            let temp_acc =
+                check_and_delete_temporary_account(&temp_acc_id, current_date_time, &conn)?;
+            // NOTE: create_account関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
+            // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
+            let user = create_account(&temp_acc.email_address, &temp_acc.hashed_password, &conn)?;
+            Ok(user)
+        })
     })
     .await;
     let user_acc = result.map_err(|err| {
@@ -246,30 +253,25 @@ fn validate_id_format(temp_acc_id: &str) -> Result<(), error::Error> {
     Ok(())
 }
 
-fn check_temp_acc_and_create_account(
+fn check_and_delete_temporary_account(
     temporary_account_id: &str,
     current_date_time: chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
-) -> Result<model::AccountQueryResult, error::Error> {
-    conn.transaction::<_, error::Error, _>(|| {
-        let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
-        let _ = delete_temporary_account(temporary_account_id, conn)?;
-        let time_elapsed = current_date_time - temp_acc.created_at;
-        if time_elapsed.num_days() > 0 {
-            let e = handled::TemporaryAccountExpired::new(
-                temporary_account_id.to_string(),
-                temp_acc.created_at,
-                current_date_time,
-            );
-            return Err(error::Error::Handled(
-                handled::Error::TemporaryAccountExpired(e),
-            ));
-        }
-        // NOTE: 関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
-        // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
-        let user = create_account(&temp_acc.email_address, &temp_acc.hashed_password, conn)?;
-        Ok(user)
-    })
+) -> Result<model::TemporaryAccountQueryResult, error::Error> {
+    let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
+    let _ = delete_temporary_account(temporary_account_id, conn)?;
+    let time_elapsed = current_date_time - temp_acc.created_at;
+    if time_elapsed.num_days() > 0 {
+        let e = handled::TemporaryAccountExpired::new(
+            temporary_account_id.to_string(),
+            temp_acc.created_at,
+            current_date_time,
+        );
+        return Err(error::Error::Handled(
+            handled::Error::TemporaryAccountExpired(e),
+        ));
+    }
+    Ok(temp_acc)
 }
 
 fn find_temporary_account_by_id(
@@ -294,35 +296,6 @@ fn find_temporary_account_by_id(
     }
     let user = users[0].clone();
     Ok(user)
-}
-
-fn send_account_creation_success_mail(email_address: &str) -> Result<(), error::Error> {
-    use lettre::{ClientSecurity, SmtpClient, Transport};
-    use lettre_email::EmailBuilder;
-    let email = EmailBuilder::new()
-        .to(email_address)
-        // TODO: 送信元メールを更新する
-        .from("from@example.com")
-        // TOOD: メールの件名を更新する
-        .subject("アカウント登録完了")
-        // TOOD: メールの本文を更新する
-        .text("アカウントの登録が完了しました。")
-        .build()
-        .map_err(|e| {
-            error::Error::Unexpected(common::error::unexpected::Error::LettreEmailErr(e))
-        })?;
-
-    use std::net::SocketAddr;
-    let addr = SocketAddr::from(common::SMTP_SERVER_ADDR);
-    let client = SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
-        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
-    })?;
-    let mut mailer = client.transport();
-    // TODO: メール送信後のレスポンスが必要か検討する
-    let _ = mailer.send(email.into()).map_err(|e| {
-        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
-    })?;
-    Ok(())
 }
 
 fn delete_temporary_account(temp_acc_id: &str, conn: &PgConnection) -> Result<(), error::Error> {
@@ -379,6 +352,35 @@ fn create_account(
         let user = users[0].clone();
         Ok(user)
     })
+}
+
+fn send_account_creation_success_mail(email_address: &str) -> Result<(), error::Error> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        .to(email_address)
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("アカウント登録完了")
+        // TOOD: メールの本文を更新する
+        .text("アカウントの登録が完了しました。")
+        .build()
+        .map_err(|e| {
+            error::Error::Unexpected(common::error::unexpected::Error::LettreEmailErr(e))
+        })?;
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(common::SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into()).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    Ok(())
 }
 
 #[derive(Serialize)]
