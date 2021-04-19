@@ -203,7 +203,10 @@ pub(crate) async fn temporary_accounts(
 
     let current_date_time = chrono::Utc::now();
     let temp_acc_id = account_req.id.clone();
-    let result = web::block(move || create_account(&temp_acc_id, current_date_time, &conn)).await;
+    let result = web::block(move || {
+        check_temp_acc_and_create_account(&temp_acc_id, current_date_time, &conn)
+    })
+    .await;
     let email_address = result.map_err(|err| {
         let e = error::Error::from(err);
         log::error!("failed to create account: {}", e);
@@ -216,10 +219,10 @@ pub(crate) async fn temporary_accounts(
         log::warn!("failed to create account: {}", e);
         e
     });
-    let message = r#"登録に成功しました。<a href="/login">こちら</a>よりログインを行ってください。"#.to_string();
-    Ok(HttpResponse::Ok().json(AccountResult {
-        message,
-    }))
+    let message =
+        r#"登録に成功しました。<a href="/login">こちら</a>よりログインを行ってください。"#
+            .to_string();
+    Ok(HttpResponse::Ok().json(AccountResult { message }))
 }
 
 #[derive(Deserialize)]
@@ -237,7 +240,7 @@ fn validate_id_format(temp_acc_id: &str) -> Result<(), error::Error> {
     Ok(())
 }
 
-fn create_account(
+fn check_temp_acc_and_create_account(
     temporary_account_id: &str,
     current_date_time: chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
@@ -258,7 +261,7 @@ fn create_account(
         }
         // NOTE: 関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
         // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
-        create_account_inner(&temp_acc.email_address, &temp_acc.hashed_password, conn)?;
+        create_account(&temp_acc.email_address, &temp_acc.hashed_password, conn)?;
         Ok(temp_acc.email_address)
     })
 }
@@ -334,7 +337,7 @@ fn delete_temporary_account(temp_acc_id: &str, conn: &PgConnection) -> Result<()
     Ok(())
 }
 
-fn create_account_inner(
+fn create_account(
     mail_addr: &str,
     hashed_pwd: &[u8],
     conn: &PgConnection,

@@ -119,11 +119,12 @@ fn update_last_login_time(
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
 pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_user_acc_id: Option<String> = session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
-        let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
-        log::error!("failed to logout {}", e);
-        e
-    })?;
+    let option_user_acc_id: Option<String> =
+        session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
+            let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+            log::error!("failed to logout {}", e);
+            e
+        })?;
     if let Some(user_acc_id) = option_user_acc_id {
         log::info!("user account id ({}) requested logout", user_acc_id);
     } else {
@@ -135,19 +136,23 @@ pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, err
 
 #[get("/session-state")]
 pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_user_acc_id: Option<String> = session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
-        let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
-        log::error!("failed to get session state {}", e);
-        e
-    })?;
+    let option_user_acc_id: Option<String> =
+        session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
+            let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+            log::error!("failed to get session state {}", e);
+            e
+        })?;
     return match option_user_acc_id {
         Some(user_acc_id) => {
             // set value to explicitly enhance ttl
-            let _ = session.set(KEY_TO_USER_ACCOUNT_ID, user_acc_id).map_err(|err| {
-                let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
-                log::error!("failed to get session state {}", e);
-                e
-            })?;
+            let _ = session
+                .set(KEY_TO_USER_ACCOUNT_ID, user_acc_id)
+                .map_err(|err| {
+                    let e =
+                        error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+                    log::error!("failed to get session state {}", e);
+                    e
+                })?;
             Ok(HttpResponse::build(StatusCode::OK).finish())
         }
         None => {
