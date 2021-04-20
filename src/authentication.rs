@@ -123,7 +123,7 @@ fn update_last_login_time(
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
 pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_user_acc_id: Option<String> =
+    let option_user_acc_id: Option<i32> =
         session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
             let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
             log::error!("failed to logout {}", e);
@@ -143,10 +143,10 @@ pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, err
 
 #[get("/session-state")]
 pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_user_acc_id: Option<String> =
+    let option_user_acc_id: Option<i32> =
         session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
             let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
-            log::error!("failed to get session state {}", e);
+            log::error!("failed to get session state: {}", e);
             e
         })?;
     return match option_user_acc_id {
@@ -157,7 +157,7 @@ pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, erro
                 .map_err(|err| {
                     let e =
                         error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
-                    log::error!("failed to get session state {}", e);
+                    log::error!("failed to get session state: {}", e);
                     e
                 })?;
             Ok(HttpResponse::build(StatusCode::OK).finish())
