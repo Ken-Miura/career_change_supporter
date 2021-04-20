@@ -233,8 +233,7 @@ pub(crate) async fn account_creation(
         user_acc.email_address
     );
     let message =
-        "アカウント作成が完了しました。ログイン画面よりログインをしてください。"
-            .to_string();
+        "アカウント作成が完了しました。ログイン画面よりログインをしてください。".to_string();
     Ok(HttpResponse::Ok().json(AccountResult { message }))
 }
 
