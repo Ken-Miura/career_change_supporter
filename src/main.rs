@@ -34,29 +34,7 @@ async fn profile_information(
     _session: Session,
     _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
-    // // TODO: Handle Result
-    // let session_info: Option<String> = session.get("email_address").unwrap_or(None);
-    // if session_info == None {
-    //     return HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate"));
-    // }
-    // // セッションのttlがgetしただけで伸びるか確認する。
-
-    // let conn = pool.get().expect("failed to get connection");
-    // let email_address = session_info.expect("never happen");
-    // let user = web::block(move || utils::find_user_by_mail_address(&email_address, &conn)).await;
-    // let user_info = user.expect("error");
-
-    // match user_info {
-    //     Some(user) => {
-    //         let json_text = format!(
-    //             "{{ \"id\": \"{}\", \"email_address\": \"{}\"}}",
-    //             user.id, user.email_address
-    //         );
-    //         HttpResponse::Ok().body(json_text)
-    //     }
-    //     None => HttpResponse::from_error(error::ErrorUnauthorized("failed to authenticate")),
-    // }
-    // TODO: 一時的に同じレスポンスを返すようにする
+    // TODO: Handle Result
     HttpResponse::build(StatusCode::OK).finish()
 }
 
