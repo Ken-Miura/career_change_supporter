@@ -10,34 +10,18 @@ mod user;
 #[macro_use]
 extern crate diesel;
 
-use actix_web::{cookie, middleware::Logger, web, App, HttpServer};
-use diesel::r2d2::ConnectionManager;
-use diesel::r2d2::Pool;
-use diesel::PgConnection;
+use actix_web::{middleware::Logger, web, App, HttpServer};
 use dotenv::dotenv;
 use log::LevelFilter;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
-use std::env;
-use time::Duration;
 
-use actix_redis::RedisSession;
-
-const CACHE_SERVER_ADDR: &str = "127.0.0.1:6379";
 const APPLICATION_SERVER_ADDR: &str = "127.0.0.1:8080";
-// TODO: Consider and change KEY
-const SESSION_SIGN_KEY: [u8; 32] = [1; 32];
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let manager = ConnectionManager::<PgConnection>::new(&database_url);
-    let pool: Pool<ConnectionManager<PgConnection>> = Pool::builder()
-        .build(manager)
-        .expect("failed to create connection pool");
 
     // TODO: Check pattern encoder
     // TODO: 記録される時間がサーバ上の時間か、クライアントのリクエスト時の時間が確認する
@@ -59,22 +43,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .wrap(
-                RedisSession::new(CACHE_SERVER_ADDR, &SESSION_SIGN_KEY)
-                    .ttl(180)
-                    .cookie_max_age(Duration::days(7))
-                    // TODO: Add producion environment
-                    //.cookie_secure(true)
-                    .cookie_name("session")
-                    .cookie_http_only(true)
-                    // TODO: Consider LAX policy
-                    .cookie_same_site(cookie::SameSite::Strict),
-            )
             // NOTE: /user (suffixに"/"なし) にアクセスした際に404となるので、
             // /userにアクセスしてきた際に/user/user_app.htmlにリダイレクトする
             .service(web::resource("/user").to(static_asset::redirect_to_user_app))
             .configure(user::user_config)
-            .data(pool.clone())
             // NOTE: 下記のrefに従い、"/"は最後に記載する
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
             .service(

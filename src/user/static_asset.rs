@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub(super) static USER_ASSETS_DIR: Lazy<String> =
     Lazy::new(|| format!("static{}user", std::path::MAIN_SEPARATOR));
 
-// https://host_name/temporary_accounts?id=temporary_account_idでアクセスしたときのために利用する
+// https://host_name/user/temporary_accounts?id=temporary_account_idでアクセスしたときのために利用する
 // 該当しないURLにアクセスした際は、serve_indexにルーティングされる設定だが、今後temporary_accountsの別ルートが間違って追加されないように明示的に関数を作っておく
 #[get("/temporary-accounts")]
 async fn temporary_accounts(req: HttpRequest) -> HttpResponse {

@@ -6,11 +6,45 @@ mod model;
 mod profile;
 mod static_asset;
 
-use actix_web::web;
+use actix_web::{cookie, web};
+use time::Duration;
+
+use actix_redis::RedisSession;
+
+use std::env;
+
+use crate::common;
+
+use diesel::r2d2::ConnectionManager;
+use diesel::r2d2::Pool;
+use diesel::PgConnection;
+
+// TODO: Consider and change KEY
+const USER_SESSION_SIGN_KEY: [u8; 32] = [1; 32];
 
 pub(super) fn user_config(cfg: &mut web::ServiceConfig) {
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let manager = ConnectionManager::<PgConnection>::new(&database_url);
+    let pool: common::ConnectionPool = Pool::builder()
+        .build(manager)
+        .expect("never fails to create connection pool");
+
     cfg.service(
         web::scope("/user/")
+            .wrap(
+                RedisSession::new(common::CACHE_SERVER_ADDR, &USER_SESSION_SIGN_KEY)
+                    // TODO: 適切なTTLを設定する
+                    .ttl(180)
+                    .cookie_max_age(Duration::days(7))
+                    // TODO: Add producion environment
+                    //.cookie_secure(true)
+                    .cookie_name("session")
+                    .cookie_http_only(true)
+                    // TODO: Consider LAX policy
+                    .cookie_same_site(cookie::SameSite::Strict)
+                    // NOTE: web::scopeで自動的に設定されるわけではないので明示的に指定する
+                    .cookie_path("/user/"),
+            )
             .service(crate::user::static_asset::temporary_accounts)
             .service(crate::user::account::temporary_account_creation)
             .service(crate::user::account::account_creation)
@@ -28,6 +62,7 @@ pub(super) fn user_config(cfg: &mut web::ServiceConfig) {
                 .prefer_utf8(true)
                 .index_file("user_app.html")
                 .default_handler(web::route().to(crate::user::static_asset::serve_user_app)),
-            ),
+            )
+            .data(pool),
     );
 }
