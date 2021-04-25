@@ -10,9 +10,7 @@ mod user;
 #[macro_use]
 extern crate diesel;
 
-use actix_web::{
-    cookie, middleware::Logger, web, App, HttpServer,
-};
+use actix_web::{cookie, middleware::Logger, web, App, HttpServer};
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
@@ -72,11 +70,19 @@ async fn main() -> std::io::Result<()> {
                     // TODO: Consider LAX policy
                     .cookie_same_site(cookie::SameSite::Strict),
             )
-            .service(static_asset::favicon_ico)
-            .service(static_asset::index)
+            // NOTE: /user (suffixに"/"なし) にアクセスした際に404となるので、
+            // /userにアクセスしてきた際に/user/user_app.htmlにリダイレクトする
+            .service(web::resource("/user").to(static_asset::redirect_to_user_app))
             .configure(user::user_config)
-            .default_service(web::route().to(static_asset::serve_index))
             .data(pool.clone())
+            // NOTE: 下記のrefに従い、"/"は最後に記載する
+            // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
+            .service(
+                actix_files::Files::new("/", static_asset::ASSETS_DIR)
+                    .prefer_utf8(true)
+                    .index_file("index.html")
+                    .default_handler(web::route().to(static_asset::serve_index)),
+            )
     })
     .bind(APPLICATION_SERVER_ADDR)?
     .run()
