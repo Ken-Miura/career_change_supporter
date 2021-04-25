@@ -10,7 +10,7 @@ use actix_web::web;
 
 pub(super) fn user_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/user")
+        web::scope("/user/")
             .service(crate::user::static_asset::temporary_accounts)
             .service(crate::user::account::temporary_account_creation)
             .service(crate::user::account::account_creation)
