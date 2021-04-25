@@ -6,6 +6,7 @@ use regex::Regex;
 use ring::hmac;
 use serde::Deserialize;
 
+const EMAIL_ADDRESS_MIN_LENGTH: usize = 1;
 const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
 const EMAIL_ADDRESS_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
 const PASSWORD_MIN_LENGTH: usize = 10;
@@ -49,9 +50,14 @@ impl Credential {
 
     fn validate_email_address(email_address: &str) -> Result<(), handled::Error> {
         let mail_addr_length = email_address.len();
-        if mail_addr_length > EMAIL_ADDRESS_MAX_LENGTH {
-            let e =
-                handled::InvalidEmailAddressLength::new(mail_addr_length, EMAIL_ADDRESS_MAX_LENGTH);
+        if mail_addr_length < EMAIL_ADDRESS_MIN_LENGTH
+            || mail_addr_length > EMAIL_ADDRESS_MAX_LENGTH
+        {
+            let e = handled::InvalidEmailAddressLength::new(
+                mail_addr_length,
+                EMAIL_ADDRESS_MIN_LENGTH,
+                EMAIL_ADDRESS_MAX_LENGTH,
+            );
             return Err(handled::Error::InvalidEmailAddressLength(e));
         }
         if !EMAIL_ADDR_RE.is_match(email_address) {

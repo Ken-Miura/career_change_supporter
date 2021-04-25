@@ -68,22 +68,25 @@ const NO_SESSION_FOUND: i32 = 12;
 
 #[derive(Display, Debug)]
 #[display(
-    fmt = "invalid email address length (code: {}, length: {}, max_length: {})",
+    fmt = "invalid email address length (code: {}, length: {}, min_length: {}, max_length: {})",
     code,
     length,
+    min_length,
     max_length
 )]
 pub(crate) struct InvalidEmailAddressLength {
     pub(super) code: i32,
     pub(super) length: usize,
+    pub(super) min_length: usize,
     pub(super) max_length: usize,
 }
 
 impl InvalidEmailAddressLength {
-    pub(crate) fn new(length: usize, max_length: usize) -> Self {
+    pub(crate) fn new(length: usize, min_length: usize, max_length: usize) -> Self {
         InvalidEmailAddressLength {
             code: EMAIL_FORMAT_INVALID_LENGTH,
             length,
+            min_length,
             max_length,
         }
     }

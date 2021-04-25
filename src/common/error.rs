@@ -93,7 +93,7 @@ impl actix_web::ResponseError for Error {
                 match err {
                     common::error::handled::Error::InvalidEmailAddressLength(e) => {
                         code = e.code;
-                        message = format!("メールアドレスの長さが不正です (入力されたメールアドレスの長さ: {})。メールアドレスは{}文字以下である必要があります。", e.length, e.max_length);
+                        message = format!("メールアドレスの長さが不正です (入力されたメールアドレスの長さ: {})。メールアドレスは{}文字以上{}文字以下である必要があります。", e.length, e.min_length, e.max_length);
                     }
                     common::error::handled::Error::InvalidEmailAddressFormat(e) => {
                         code = e.code;
