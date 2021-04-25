@@ -6,7 +6,7 @@ use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
 
-use crate::model;
+use crate::user::model;
 use actix_web::{post, web, HttpResponse};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
@@ -21,7 +21,7 @@ const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
 static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
 #[post("/temporary-account-creation")]
-pub(crate) async fn temporary_account_creation(
+async fn temporary_account_creation(
     credential: web::Json<credential::Credential>,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, error::Error> {
@@ -156,7 +156,7 @@ fn send_notification_mail(
         // TOOD: メールの本文を更新する (http -> httpsへの変更も含む)
         .text(format!(
             r"下記のURLにアクセスし、登録を完了させてください（URLの有効期間は24時間です）
-            http://{}:{}/temporary-accounts?id={}",
+            http://{}:{}/user/temporary-accounts?id={}",
             common::DOMAIN,
             common::PORT,
             temporary_account_id
@@ -187,7 +187,7 @@ struct TemporaryAccountResult {
 
 // TODO: SameSite=Strictで問題ないか（アクセスできるか）確認する
 #[post("/account-creation")]
-pub(crate) async fn account_creation(
+async fn account_creation(
     account_req: web::Json<AccountRequest>,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, error::Error> {
@@ -238,7 +238,7 @@ pub(crate) async fn account_creation(
 }
 
 #[derive(Deserialize)]
-pub(crate) struct AccountRequest {
+struct AccountRequest {
     id: String,
 }
 

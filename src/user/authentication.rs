@@ -5,7 +5,7 @@ use crate::common::credential;
 use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
-use crate::model;
+use crate::user::model;
 use actix_session::Session;
 use actix_web::{get, http::StatusCode, post, web, HttpResponse};
 use diesel::prelude::*;
@@ -13,7 +13,7 @@ use diesel::prelude::*;
 const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 
 #[post("/login-request")]
-pub(crate) async fn login_request(
+async fn login_request(
     credential: web::Json<credential::Credential>,
     pool: web::Data<common::ConnectionPool>,
     session: Session,
@@ -122,7 +122,7 @@ fn update_last_login_time(
 
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
-pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> {
+async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> {
     let option_user_acc_id: Option<i32> = session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
         log::error!("failed to logout {}", e);
@@ -141,7 +141,7 @@ pub(crate) async fn logout_request(session: Session) -> Result<HttpResponse, err
 }
 
 #[get("/session-state")]
-pub(crate) async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
+async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
     let option_user_acc_id: Option<i32> = session.get(KEY_TO_USER_ACCOUNT_ID).map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
         log::error!("failed to get session state: {}", e);

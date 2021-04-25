@@ -1,11 +1,9 @@
 // Copyright 2021 Ken Miura
 
-mod account;
-mod authentication;
 mod common;
-mod model;
 mod schema;
 mod static_asset;
+mod user;
 
 // TODO: #[macro_use]なしでdieselのマクロが使えるように変更が入った際に取り除く
 // https://github.com/diesel-rs/diesel/issues/1764
@@ -13,7 +11,7 @@ mod static_asset;
 extern crate diesel;
 
 use actix_web::{
-    cookie, get, http::StatusCode, middleware::Logger, web, App, HttpResponse, HttpServer,
+    cookie, middleware::Logger, web, App, HttpServer,
 };
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
@@ -27,16 +25,6 @@ use std::env;
 use time::Duration;
 
 use actix_redis::RedisSession;
-use actix_session::Session;
-
-#[get("/profile-information")]
-async fn profile_information(
-    _session: Session,
-    _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
-) -> HttpResponse {
-    // TODO: Handle Result
-    HttpResponse::build(StatusCode::OK).finish()
-}
 
 const CACHE_SERVER_ADDR: &str = "127.0.0.1:6379";
 const APPLICATION_SERVER_ADDR: &str = "127.0.0.1:8080";
@@ -84,19 +72,9 @@ async fn main() -> std::io::Result<()> {
                     // TODO: Consider LAX policy
                     .cookie_same_site(cookie::SameSite::Strict),
             )
-            .service(actix_files::Files::new(static_asset::ASSETS_DIR, ".").show_files_listing())
-            .service(static_asset::js)
-            .service(static_asset::css)
-            .service(static_asset::img)
             .service(static_asset::favicon_ico)
             .service(static_asset::index)
-            .service(static_asset::temporary_accounts)
-            .service(account::temporary_account_creation)
-            .service(account::account_creation)
-            .service(authentication::login_request)
-            .service(authentication::logout_request)
-            .service(authentication::session_state)
-            .service(profile_information)
+            .configure(user::user_config)
             .default_service(web::route().to(static_asset::serve_index))
             .data(pool.clone())
     })
