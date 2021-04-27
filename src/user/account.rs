@@ -208,8 +208,6 @@ async fn account_creation(
         conn.transaction::<_, error::Error, _>(|| {
             let temp_acc =
                 check_and_delete_temporary_account(&temp_acc_id, current_date_time, &conn)?;
-            // NOTE: create_account関数内でtransactionを利用しているため、この点でSAVEPOINTとなる
-            // TODO: transacstionの中で、transacstionを利用して問題がないか確認する
             let user = create_account(&temp_acc.email_address, &temp_acc.hashed_password, &conn)?;
             Ok(user)
         })
@@ -320,37 +318,35 @@ fn create_account(
     hashed_pwd: &[u8],
     conn: &PgConnection,
 ) -> Result<model::AccountQueryResult, error::Error> {
-    conn.transaction::<_, error::Error, _>(|| {
-        use crate::schema::my_project_schema::user_account::dsl::{email_address, user_account};
-        let cnt = user_account
-            .filter(email_address.eq(mail_addr))
-            .count()
-            .get_result::<i64>(conn)?;
-        if cnt > 0 {
-            let e = unexpected::AccountDuplicate::new(mail_addr.to_string());
-            return Err(error::Error::Unexpected(
-                unexpected::Error::AccountDuplicate(e),
-            ));
-        }
-        use crate::schema::my_project_schema::user_account as user_acc;
-        let user = model::Account {
-            email_address: mail_addr,
-            hashed_password: hashed_pwd,
-            last_login_time: None,
-        };
-        let users = diesel::insert_into(user_acc::table)
-            .values(&user)
-            .get_results::<model::AccountQueryResult>(conn)?;
-        if users.len() > 1 {
-            return Err(error::Error::Unexpected(
-                unexpected::Error::AccountDuplicate(unexpected::AccountDuplicate::new(
-                    mail_addr.to_string(),
-                )),
-            ));
-        }
-        let user = users[0].clone();
-        Ok(user)
-    })
+    use crate::schema::my_project_schema::user_account::dsl::{email_address, user_account};
+    let cnt = user_account
+        .filter(email_address.eq(mail_addr))
+        .count()
+        .get_result::<i64>(conn)?;
+    if cnt > 0 {
+        let e = unexpected::AccountDuplicate::new(mail_addr.to_string());
+        return Err(error::Error::Unexpected(
+            unexpected::Error::AccountDuplicate(e),
+        ));
+    }
+    use crate::schema::my_project_schema::user_account as user_acc;
+    let user = model::Account {
+        email_address: mail_addr,
+        hashed_password: hashed_pwd,
+        last_login_time: None,
+    };
+    let users = diesel::insert_into(user_acc::table)
+        .values(&user)
+        .get_results::<model::AccountQueryResult>(conn)?;
+    if users.len() > 1 {
+        return Err(error::Error::Unexpected(
+            unexpected::Error::AccountDuplicate(unexpected::AccountDuplicate::new(
+                mail_addr.to_string(),
+            )),
+        ));
+    }
+    let user = users[0].clone();
+    Ok(user)
 }
 
 fn send_account_creation_success_mail(email_address: &str) -> Result<(), error::Error> {
