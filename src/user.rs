@@ -23,7 +23,7 @@ use diesel::PgConnection;
 const USER_SESSION_SIGN_KEY: [u8; 32] = [1; 32];
 
 pub(super) fn user_config(cfg: &mut web::ServiceConfig) {
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = env::var("USER_APP_DATABASE_URL").expect("USER_APP_DATABASE_URL must be set");
     let manager = ConnectionManager::<PgConnection>::new(&database_url);
     let pool: common::ConnectionPool = Pool::builder()
         .build(manager)
