@@ -16,7 +16,10 @@ CREATE TABLE my_project_schema.user_account (
   last_login_time TIMESTAMP WITH TIME ZONE
 );
 GRANT SELECT, INSERT, UPDATE, DELETE ON my_project_schema.user_account To user_app;
-/* TODO: SERIALで自動生成される名称が"テーブル名_カラム名_seq"となるのが仕様なのかどうか確認する */
+/* 
+ * NOTE: 下記の参考によると、SERIALで暗黙的に作成されるSEQUENCEはtablename_colname_seqで定められる
+ * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
+ */
 GRANT USAGE ON SEQUENCE my_project_schema.user_account_user_account_id_seq TO user_app;
 
 CREATE TABLE my_project_schema.user_temporary_account (
