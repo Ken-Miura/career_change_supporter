@@ -90,7 +90,7 @@ fn insert_temporary_account(
                 ),
             ));
         }
-        use crate::schema::my_project_schema::user_temporary_account;
+        use crate::schema::career_change_supporter_schema::user_temporary_account;
         let temp_acc = model::TemporaryAccount {
             user_temporary_account_id: &temp_acc_id,
             email_address: &mail_addr,
@@ -107,7 +107,7 @@ fn insert_temporary_account(
 }
 
 fn check_if_account_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), error::Error> {
-    use crate::schema::my_project_schema::user_account::dsl::*;
+    use crate::schema::career_change_supporter_schema::user_account::dsl::*;
     let cnt = user_account
         .filter(email_address.eq(mail_addr))
         .count()
@@ -130,7 +130,7 @@ fn check_if_account_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), e
 }
 
 fn num_of_temporary_accounts(mail_addr: &str, conn: &PgConnection) -> Result<i64, error::Error> {
-    use crate::schema::my_project_schema::user_temporary_account::dsl::{
+    use crate::schema::career_change_supporter_schema::user_temporary_account::dsl::{
         email_address, user_temporary_account,
     };
     let cnt = user_temporary_account
@@ -275,7 +275,7 @@ fn find_temporary_account_by_id(
     temp_acc_id: &str,
     conn: &PgConnection,
 ) -> Result<model::TemporaryAccountQueryResult, error::Error> {
-    use crate::schema::my_project_schema::user_temporary_account::dsl::*;
+    use crate::schema::career_change_supporter_schema::user_temporary_account::dsl::*;
     let users = user_temporary_account
         .filter(user_temporary_account_id.eq(temp_acc_id))
         .get_results::<model::TemporaryAccountQueryResult>(conn)?;
@@ -296,7 +296,7 @@ fn find_temporary_account_by_id(
 }
 
 fn delete_temporary_account(temp_acc_id: &str, conn: &PgConnection) -> Result<(), error::Error> {
-    use crate::schema::my_project_schema::user_temporary_account::dsl::{
+    use crate::schema::career_change_supporter_schema::user_temporary_account::dsl::{
         user_temporary_account, user_temporary_account_id,
     };
     // TODO: 戻り値 cnt（usize: the number of rows affected）を利用する必要があるか検討する
@@ -318,7 +318,7 @@ fn create_account(
     hashed_pwd: &[u8],
     conn: &PgConnection,
 ) -> Result<model::AccountQueryResult, error::Error> {
-    use crate::schema::my_project_schema::user_account::dsl::{email_address, user_account};
+    use crate::schema::career_change_supporter_schema::user_account::dsl::{email_address, user_account};
     let cnt = user_account
         .filter(email_address.eq(mail_addr))
         .count()
@@ -329,7 +329,7 @@ fn create_account(
             unexpected::Error::AccountDuplicate(e),
         ));
     }
-    use crate::schema::my_project_schema::user_account as user_acc;
+    use crate::schema::career_change_supporter_schema::user_account as user_acc;
     let user = model::Account {
         email_address: mail_addr,
         hashed_password: hashed_pwd,

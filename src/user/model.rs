@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
-use crate::schema::my_project_schema::user_account;
-use crate::schema::my_project_schema::user_temporary_account;
+use crate::schema::career_change_supporter_schema::user_account;
+use crate::schema::career_change_supporter_schema::user_temporary_account;
 
 #[derive(Insertable)]
 #[table_name = "user_temporary_account"]

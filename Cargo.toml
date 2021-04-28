@@ -1,5 +1,5 @@
 [package]
-name = "my-project-backend"
+name = "career_change_supporter"
 version = "0.1.0"
 authors = ["kmiura <ken.miura1102@gmail.com>"]
 edition = "2018"
