@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+mod advisor;
 mod common;
 mod schema;
 mod static_asset;
@@ -47,6 +48,9 @@ async fn main() -> std::io::Result<()> {
             // /userにアクセスしてきた際に/user/user_app.htmlにリダイレクトする
             .service(web::resource("/user").to(static_asset::redirect_to_user_app))
             .configure(user::user_config)
+            // NOTE: 上記のNOTEと同様の理由で記載
+            .service(web::resource("/advisor").to(static_asset::redirect_to_advisor_app))
+            .configure(advisor::advisor_config)
             // NOTE: 下記のrefに従い、"/"は最後に記載する
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
             .service(

@@ -1,5 +1,6 @@
 /* TODO: パスワード変更＋管理方法の検討 */
 CREATE ROLE user_app WITH LOGIN PASSWORD 'test1234';
+CREATE ROLE advisor_app WITH LOGIN PASSWORD 'test5678';
 
 CREATE SCHEMA career_change_supporter_schema;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO user_app;

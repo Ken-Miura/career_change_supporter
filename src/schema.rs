@@ -17,8 +17,5 @@ pub mod career_change_supporter_schema {
         }
     }
 
-    allow_tables_to_appear_in_same_query!(
-        user_account,
-        user_temporary_account,
-    );
+    allow_tables_to_appear_in_same_query!(user_account, user_temporary_account,);
 }

@@ -102,7 +102,9 @@ fn update_last_login_time(
     current_date_time: &chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
 ) -> Result<(), error::Error> {
-    use crate::schema::career_change_supporter_schema::user_account::dsl::{last_login_time, user_account};
+    use crate::schema::career_change_supporter_schema::user_account::dsl::{
+        last_login_time, user_account,
+    };
     let affected_useraccounts = diesel::update(user_account.find(user_acc_id))
         .set(last_login_time.eq(Some(current_date_time)))
         .get_results::<model::AccountQueryResult>(conn)

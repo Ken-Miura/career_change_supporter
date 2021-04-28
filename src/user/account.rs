@@ -318,7 +318,9 @@ fn create_account(
     hashed_pwd: &[u8],
     conn: &PgConnection,
 ) -> Result<model::AccountQueryResult, error::Error> {
-    use crate::schema::career_change_supporter_schema::user_account::dsl::{email_address, user_account};
+    use crate::schema::career_change_supporter_schema::user_account::dsl::{
+        email_address, user_account,
+    };
     let cnt = user_account
         .filter(email_address.eq(mail_addr))
         .count()

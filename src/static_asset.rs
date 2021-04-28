@@ -34,3 +34,10 @@ pub(super) fn redirect_to_user_app(req: HttpRequest) -> HttpResponse {
         .header(header::LOCATION, "/user/user_app.html")
         .finish()
 }
+
+pub(super) fn redirect_to_advisor_app(req: HttpRequest) -> HttpResponse {
+    log::info!("fn redirect_to_advisor_app: requested path: {}", req.uri());
+    HttpResponse::PermanentRedirect()
+        .header(header::LOCATION, "/advisor/advisor_app.html")
+        .finish()
+}
