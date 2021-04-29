@@ -66,6 +66,7 @@ async fn login_request(
             log::error!("failed to login: {}", e);
             e
         })?;
+    // TODO: session.set()の後にsession.renew() が必要かどうか確認する
     log::info!(
         "user (user account id: {}) logged in successfully",
         user_acc_id
@@ -151,6 +152,8 @@ async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
     return match option_user_acc_id {
         Some(user_acc_id) => {
             // set value to explicitly enhance ttl
+            // TODO: session.set() でなく、session.renew() を利用すべきか確認する
+            // 参考: https://github.com/actix/actix-extras/blob/master/actix-redis/examples/authentication.rs
             let _ = session
                 .set(KEY_TO_USER_ACCOUNT_ID, user_acc_id)
                 .map_err(|err| {
