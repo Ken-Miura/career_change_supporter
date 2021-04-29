@@ -1,9 +1,10 @@
-// // Copyright 2021 Ken Miura
+// Copyright 2021 Ken Miura
 
+use crate::common;
 use crate::common::error::handled;
+use crate::common::error::unexpected;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use ring::hmac;
 use serde::Deserialize;
 
 const EMAIL_ADDRESS_MIN_LENGTH: usize = 1;
@@ -11,15 +12,15 @@ const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
 const EMAIL_ADDRESS_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
 const PASSWORD_MIN_LENGTH: usize = 10;
 const PASSWORD_MAX_LENGTH: usize = 32;
-// // TODO: パスワード文字に記号を利用して問題ないか検証する
+// TODO: パスワード文字に記号を利用して問題ないか検証する
 const PASSWORD_REGEXP: &str = r"^[!-~]{10,32}$";
 const UPPER_CASE_REGEXP: &str = r".*[A-Z].*";
 const LOWER_CASE_REGEXP: &str = r".*[a-z].*";
 const NUMBER_REGEXP: &str = r".*[0-9].*";
 const SYMBOL_REGEXP: &str = r".*[!-/:-@\[-`{-~].*";
 const CONSTRAINTS_OF_NUM_OF_COMBINATION: u32 = 2;
-// // TODO: Consider and change KEY
-const PASSWORD_HASH_KEY: [u8; 4] = [0, 1, 2, 3];
+// TODO: パスワードのストレッチングが2^BCRYPT_COST回実行される。リリース前に値を調整する
+const BCRYPT_COST: u32 = 7;
 
 static EMAIL_ADDR_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(EMAIL_ADDRESS_REGEXP).expect("never happens panic"));
@@ -33,7 +34,6 @@ static NUMBER_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(NUMBER_REGEXP).expect("never happens panic"));
 static SYMBOL_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(SYMBOL_REGEXP).expect("never happens panic"));
-static KEY: Lazy<hmac::Key> = Lazy::new(|| hmac::Key::new(hmac::HMAC_SHA512, &PASSWORD_HASH_KEY));
 
 #[derive(Deserialize)]
 pub(crate) struct Credential {
@@ -107,20 +107,26 @@ impl Credential {
     }
 }
 
-pub(crate) fn hash_password(password: &str) -> Vec<u8> {
-    let tag = hmac::sign(&KEY, password.as_bytes());
-    let binary = tag.as_ref();
-    Vec::from(binary)
+pub(crate) fn hash_password(password: &str) -> Result<Vec<u8>, unexpected::Error> {
+    let result = bcrypt::hash(password, BCRYPT_COST);
+    match result {
+        Ok(hashed_pwd_str) => {
+            let binary = hashed_pwd_str.as_bytes();
+            Ok(Vec::from(binary))
+        }
+        Err(e) => Err(unexpected::Error::BcryptErr(e)),
+    }
 }
 
 pub(crate) fn verify_password(
     password: &str,
     hashed_password: &[u8],
-) -> Result<(), handled::Error> {
-    let result = hmac::verify(&KEY, password.as_bytes(), hashed_password);
-    if let Err(err) = result {
-        let e = handled::PasswordNotMatch::new(err);
-        return Err(handled::Error::PasswordNotMatch(e));
+) -> Result<(), common::error::Error> {
+    let pwd_str = String::from_utf8(Vec::from(hashed_password))?;
+    let verified = bcrypt::verify(password, &pwd_str)?;
+    if !verified {
+        let e = handled::Error::PasswordNotMatch(handled::PasswordNotMatch::new());
+        return Err(common::error::Error::Handled(e));
     }
     Ok(())
 }

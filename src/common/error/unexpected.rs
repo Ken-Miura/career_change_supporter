@@ -30,6 +30,12 @@ pub(crate) enum Error {
 
     #[display(fmt = "{}", _0)]
     TemporaryAccountIdDuplicate(TemporaryAccountIdDuplicate),
+
+    #[display(fmt = "bcrypt error: {}", _0)]
+    BcryptErr(bcrypt::BcryptError),
+
+    #[display(fmt = "from utf-8 error: {}", _0)]
+    FromUtf8Err(std::string::FromUtf8Error),
 }
 
 // NOTE: Use negative value because positive value is used for handled error

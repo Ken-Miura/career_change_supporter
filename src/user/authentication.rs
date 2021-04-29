@@ -39,8 +39,7 @@ async fn login_request(
     })?;
 
     let pwd = credential.password.clone();
-    let _ = credential::verify_password(&pwd, &user_account.hashed_password).map_err(|err| {
-        let e = error::Error::Handled(err);
+    let _ = credential::verify_password(&pwd, &user_account.hashed_password).map_err(|e| {
         log::error!("failed to login: {}", e);
         e
     })?;

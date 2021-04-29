@@ -40,7 +40,11 @@ async fn temporary_account_creation(
     let temp_acc_id = Uuid::new_v4().to_simple().to_string();
     let id_cloned = temp_acc_id.clone();
     let mail_addr = credential.email_address.clone();
-    let hashed_pwd = credential::hash_password(&credential.password);
+    let hashed_pwd = credential::hash_password(&credential.password).map_err(|err| {
+        let e = error::Error::Unexpected(err);
+        log::error!("failed to create temporary account: {}", e);
+        e
+    })?;
     let current_date_time = chrono::Utc::now();
     let result = web::block(move || {
         insert_temporary_account(id_cloned, mail_addr, hashed_pwd, current_date_time, &conn)

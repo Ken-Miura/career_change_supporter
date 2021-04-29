@@ -39,6 +39,18 @@ impl From<actix_web::error::BlockingError<Error>> for Error {
     }
 }
 
+impl From<bcrypt::BcryptError> for Error {
+    fn from(error: bcrypt::BcryptError) -> Self {
+        Error::Unexpected(common::error::unexpected::Error::BcryptErr(error))
+    }
+}
+
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(error: std::string::FromUtf8Error) -> Self {
+        Error::Unexpected(common::error::unexpected::Error::FromUtf8Err(error))
+    }
+}
+
 impl actix_web::ResponseError for Error {
     fn status_code(&self) -> http::StatusCode {
         match self {

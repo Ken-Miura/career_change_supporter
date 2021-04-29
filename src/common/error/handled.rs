@@ -164,17 +164,15 @@ impl PasswordConstraintsViolation {
 }
 
 #[derive(Display, Debug)]
-#[display(fmt = "password doesn't match (code: {}, error: {})", code, error)]
+#[display(fmt = "password doesn't match (code: {})", code)]
 pub(crate) struct PasswordNotMatch {
     pub(super) code: i32,
-    pub(super) error: ring::error::Unspecified,
 }
 
 impl PasswordNotMatch {
-    pub(crate) fn new(error: ring::error::Unspecified) -> Self {
+    pub(crate) fn new() -> Self {
         PasswordNotMatch {
             code: AUTHENTICATION_FAILED,
-            error,
         }
     }
 }
