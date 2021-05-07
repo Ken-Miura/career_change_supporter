@@ -7,7 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "3"
+actix-web = { version = "3", features = ["openssl"] }
+openssl = "0.10.34"
 actix-files = "0.5.0"
 actix-http = "2.2.0"
 serde = "1.0.123"
@@ -32,3 +33,5 @@ futures = "0.3.14"
 # rusotoを0.43.0より上のバージョンに上げる際は、他のライブラリ (actix-web等) もtokio v1.0以上を利用することを確認する
 rusoto_core = "0.43.0"
 rusoto_s3 = "0.43.0"
+serde_json = "1.0"
+
