@@ -147,6 +147,7 @@ struct Tenant {
     currencies_supported: Vec<String>,
     default_currency: String,
     reviewed_brands: Vec<ReviewedBrands>,
+    // TODO: nullのケースが、Some(`{})になるのか、Noneになるのか確認
     metadata: Option<HashMap<String, String>>
 }
 
@@ -154,5 +155,6 @@ struct Tenant {
 struct ReviewedBrands {
 	brand: String,
 	status: String,
+	// TODO: nullのとき、Noneになるのか確認
 	available_date: Option<i64>
 }
