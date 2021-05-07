@@ -147,7 +147,9 @@ struct Tenant {
     currencies_supported: Vec<String>,
     default_currency: String,
     reviewed_brands: Vec<ReviewedBrands>,
-    // TODO: nullのケースが、Some(`{})になるのか、Noneになるのか確認
+    // nullのときNoneになる。Optionで囲んでなければnullのときpanic
+    // TODO: metadataの方がHashMap<String, String>でよいか確認する
+    // https://payjp.hatenablog.com/entry/2016/02/22/100000
     metadata: Option<HashMap<String, String>>
 }
 
@@ -155,6 +157,6 @@ struct Tenant {
 struct ReviewedBrands {
 	brand: String,
 	status: String,
-	// TODO: nullのとき、Noneになるのか確認
+    // nullのときNoneになる。Optionで囲んでなければnullのときpanic
 	available_date: Option<i64>
 }
