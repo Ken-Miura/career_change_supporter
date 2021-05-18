@@ -2,7 +2,6 @@
 
 mod account;
 mod authentication;
-mod model;
 mod profile;
 mod static_asset;
 

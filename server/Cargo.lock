@@ -831,6 +831,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "db"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "diesel",
+]
+
+[[package]]
 name = "derivative"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2346,6 +2354,7 @@ dependencies = [
  "actix-web",
  "bcrypt",
  "chrono",
+ "db",
  "derive_more",
  "diesel",
  "dotenv",

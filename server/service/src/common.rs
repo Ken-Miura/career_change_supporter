@@ -7,7 +7,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 
-pub(crate) const PACKAGE_NAME: &'static str = env!("CARGO_PKG_NAME");
+pub(crate) const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
 pub(crate) type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
 

@@ -1,0 +1,11 @@
+[package]
+name = "db"
+version = "0.1.0"
+authors = ["kmiura <ken.miura1102@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+diesel = { version = "1.4.5", features = ["postgres", "r2d2", "chrono"] }
+chrono = "0.4.19"

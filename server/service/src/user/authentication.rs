@@ -5,7 +5,6 @@ use crate::common::credential;
 use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
-use crate::user::model;
 use actix_session::Session;
 use actix_web::{get, http::StatusCode, post, web, HttpResponse};
 use diesel::prelude::*;
@@ -77,11 +76,11 @@ async fn login_request(
 fn find_user_by_email_address(
     mail_addr: &str,
     conn: &PgConnection,
-) -> Result<model::AccountQueryResult, error::Error> {
-    use crate::schema::career_change_supporter_schema::user_account::dsl::*;
+) -> Result<db::model::AccountQueryResult, error::Error> {
+    use db::schema::career_change_supporter_schema::user_account::dsl::*;
     let users = user_account
         .filter(email_address.eq(mail_addr))
-        .get_results::<model::AccountQueryResult>(conn)
+        .get_results::<db::model::AccountQueryResult>(conn)
         .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
     if users.len() > 1 {
         let e = unexpected::AccountDuplicate::new(mail_addr.to_string());
@@ -102,12 +101,12 @@ fn update_last_login_time(
     current_date_time: &chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
 ) -> Result<(), error::Error> {
-    use crate::schema::career_change_supporter_schema::user_account::dsl::{
+    use db::schema::career_change_supporter_schema::user_account::dsl::{
         last_login_time, user_account,
     };
     let affected_useraccounts = diesel::update(user_account.find(user_acc_id))
         .set(last_login_time.eq(Some(current_date_time)))
-        .get_results::<model::AccountQueryResult>(conn)
+        .get_results::<db::model::AccountQueryResult>(conn)
         .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
 
     // NOTE: findはプライマリキーを用いた検索を行うため、影響される数は0か1しかない。そのため、affected_useraccounts.len() > 1 のケースはチェックしない

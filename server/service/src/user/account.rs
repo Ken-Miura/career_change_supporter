@@ -6,7 +6,6 @@ use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
 
-use crate::user::model;
 use actix_web::{post, web, HttpResponse};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
@@ -94,8 +93,8 @@ fn insert_temporary_account(
                 ),
             ));
         }
-        use crate::schema::career_change_supporter_schema::user_temporary_account;
-        let temp_acc = model::TemporaryAccount {
+        use db::schema::career_change_supporter_schema::user_temporary_account;
+        let temp_acc = db::model::TemporaryAccount {
             user_temporary_account_id: &temp_acc_id,
             email_address: &mail_addr,
             hashed_password: &hashed_pwd,
@@ -111,7 +110,7 @@ fn insert_temporary_account(
 }
 
 fn check_if_account_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), error::Error> {
-    use crate::schema::career_change_supporter_schema::user_account::dsl::*;
+    use db::schema::career_change_supporter_schema::user_account::dsl::*;
     let cnt = user_account
         .filter(email_address.eq(mail_addr))
         .count()
@@ -134,7 +133,7 @@ fn check_if_account_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), e
 }
 
 fn num_of_temporary_accounts(mail_addr: &str, conn: &PgConnection) -> Result<i64, error::Error> {
-    use crate::schema::career_change_supporter_schema::user_temporary_account::dsl::{
+    use db::schema::career_change_supporter_schema::user_temporary_account::dsl::{
         email_address, user_temporary_account,
     };
     let cnt = user_temporary_account
@@ -258,7 +257,7 @@ fn check_and_delete_temporary_account(
     temporary_account_id: &str,
     current_date_time: chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
-) -> Result<model::TemporaryAccountQueryResult, error::Error> {
+) -> Result<db::model::TemporaryAccountQueryResult, error::Error> {
     let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
     let _ = delete_temporary_account(temporary_account_id, conn)?;
     let time_elapsed = current_date_time - temp_acc.created_at;
@@ -278,11 +277,11 @@ fn check_and_delete_temporary_account(
 fn find_temporary_account_by_id(
     temp_acc_id: &str,
     conn: &PgConnection,
-) -> Result<model::TemporaryAccountQueryResult, error::Error> {
-    use crate::schema::career_change_supporter_schema::user_temporary_account::dsl::*;
+) -> Result<db::model::TemporaryAccountQueryResult, error::Error> {
+    use db::schema::career_change_supporter_schema::user_temporary_account::dsl::*;
     let users = user_temporary_account
         .filter(user_temporary_account_id.eq(temp_acc_id))
-        .get_results::<model::TemporaryAccountQueryResult>(conn)?;
+        .get_results::<db::model::TemporaryAccountQueryResult>(conn)?;
     if users.is_empty() {
         let e = handled::NoTemporaryAccountFound::new(temp_acc_id.to_string());
         return Err(error::Error::Handled(
@@ -300,7 +299,7 @@ fn find_temporary_account_by_id(
 }
 
 fn delete_temporary_account(temp_acc_id: &str, conn: &PgConnection) -> Result<(), error::Error> {
-    use crate::schema::career_change_supporter_schema::user_temporary_account::dsl::{
+    use db::schema::career_change_supporter_schema::user_temporary_account::dsl::{
         user_temporary_account, user_temporary_account_id,
     };
     // TODO: 戻り値 cnt（usize: the number of rows affected）を利用する必要があるか検討する
@@ -321,8 +320,8 @@ fn create_account(
     mail_addr: &str,
     hashed_pwd: &[u8],
     conn: &PgConnection,
-) -> Result<model::AccountQueryResult, error::Error> {
-    use crate::schema::career_change_supporter_schema::user_account::dsl::{
+) -> Result<db::model::AccountQueryResult, error::Error> {
+    use db::schema::career_change_supporter_schema::user_account::dsl::{
         email_address, user_account,
     };
     let cnt = user_account
@@ -335,15 +334,15 @@ fn create_account(
             unexpected::Error::AccountDuplicate(e),
         ));
     }
-    use crate::schema::career_change_supporter_schema::user_account as user_acc;
-    let user = model::Account {
+    use db::schema::career_change_supporter_schema::user_account as user_acc;
+    let user = db::model::Account {
         email_address: mail_addr,
         hashed_password: hashed_pwd,
         last_login_time: None,
     };
     let users = diesel::insert_into(user_acc::table)
         .values(&user)
-        .get_results::<model::AccountQueryResult>(conn)?;
+        .get_results::<db::model::AccountQueryResult>(conn)?;
     if users.len() > 1 {
         return Err(error::Error::Unexpected(
             unexpected::Error::AccountDuplicate(unexpected::AccountDuplicate::new(

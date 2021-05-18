@@ -2,14 +2,8 @@
 
 mod advisor;
 mod common;
-mod schema;
 mod static_asset;
 mod user;
-
-// TODO: #[macro_use]なしでdieselのマクロが使えるように変更が入った際に取り除く
-// https://github.com/diesel-rs/diesel/issues/1764
-#[macro_use]
-extern crate diesel;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use dotenv::dotenv;
@@ -29,7 +23,7 @@ async fn main() -> std::io::Result<()> {
     // TODO: ECS fargateとCloudWatchLogの連携を利用するために標準出力 (env_logger) を検討する
     let logfile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{d} {l} {t} - {m}{n}")))
-        .build("log/output.log")
+        .build("service/log/output.log")
         .expect("never happens panic");
 
     let config = Config::builder()
