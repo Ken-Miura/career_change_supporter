@@ -2,5 +2,6 @@
 
 members = [
     "service",
+    "administrator_service",
     "db",
 ]

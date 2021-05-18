@@ -40,6 +40,43 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'administrator_service'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=administrator_service",
+                    "--package=administrator_service"
+                ],
+                "filter": {
+                    "name": "administrator_service",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'administrator_service'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=administrator_service",
+                    "--package=administrator_service"
+                ],
+                "filter": {
+                    "name": "administrator_service",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
