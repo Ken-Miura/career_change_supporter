@@ -670,32 +670,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "career_change_supporter"
-version = "0.1.0"
-dependencies = [
- "actix-files",
- "actix-http",
- "actix-redis",
- "actix-session",
- "actix-web",
- "bcrypt",
- "chrono",
- "derive_more",
- "diesel",
- "dotenv",
- "lettre",
- "lettre_email",
- "log",
- "log4rs",
- "once_cell",
- "r2d2",
- "regex",
- "serde",
- "time 0.2.26",
- "uuid 0.8.2",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2359,6 +2333,32 @@ dependencies = [
  "linked-hash-map",
  "serde",
  "yaml-rust",
+]
+
+[[package]]
+name = "service"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-http",
+ "actix-redis",
+ "actix-session",
+ "actix-web",
+ "bcrypt",
+ "chrono",
+ "derive_more",
+ "diesel",
+ "dotenv",
+ "lettre",
+ "lettre_email",
+ "log",
+ "log4rs",
+ "once_cell",
+ "r2d2",
+ "regex",
+ "serde",
+ "time 0.2.26",
+ "uuid 0.8.2",
 ]
 
 [[package]]

@@ -1,13 +1,20 @@
 // Copyright 2021 Ken Miura
 
+use crate::common;
 use actix_http::http;
 use actix_web::{HttpRequest, HttpResponse, Result};
 use once_cell::sync::Lazy;
 use std::fs;
 use std::path::PathBuf;
 
-pub(super) static ADVISOR_ASSETS_DIR: Lazy<String> =
-    Lazy::new(|| format!("static{}advisor", std::path::MAIN_SEPARATOR));
+pub(super) static ADVISOR_ASSETS_DIR: Lazy<String> = Lazy::new(|| {
+    format!(
+        "{}{}static{}advisor",
+        common::PACKAGE_NAME,
+        std::path::MAIN_SEPARATOR,
+        std::path::MAIN_SEPARATOR
+    )
+});
 
 pub(super) fn serve_advisor_app(req: HttpRequest) -> HttpResponse {
     log::info!("fn serve_advisor_app: requested path: {}", req.uri());

@@ -54,7 +54,7 @@ async fn main() -> std::io::Result<()> {
             // NOTE: 下記のrefに従い、"/"は最後に記載する
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
             .service(
-                actix_files::Files::new("/", static_asset::ASSETS_DIR)
+                actix_files::Files::new("/", static_asset::ASSETS_DIR.to_string())
                     .prefer_utf8(true)
                     .index_file("index.html")
                     .default_handler(web::route().to(static_asset::serve_index)),

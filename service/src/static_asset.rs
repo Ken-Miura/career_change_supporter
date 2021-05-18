@@ -1,15 +1,23 @@
 // Copyright 2021 Ken Miura
 
+use crate::common;
 use actix_http::http;
 use actix_web::{http::header, HttpRequest, HttpResponse, Result};
+use once_cell::sync::Lazy;
 use std::fs;
 use std::path::PathBuf;
 
-pub(super) const ASSETS_DIR: &str = "static";
+pub(super) static ASSETS_DIR: Lazy<String> = Lazy::new(|| {
+    format!(
+        "{}{}static",
+        common::PACKAGE_NAME,
+        std::path::MAIN_SEPARATOR,
+    )
+});
 
 pub(super) fn serve_index(req: HttpRequest) -> HttpResponse {
     log::info!("fn serve_index: requested path: {}", req.uri());
-    let file_path_str = format!("{}/index.html", ASSETS_DIR);
+    let file_path_str = format!("{}/index.html", ASSETS_DIR.to_string());
     let parse_result: Result<PathBuf, _> = file_path_str.parse();
     if let Err(e) = parse_result {
         log::error!("failed to parse path ({}): {}", file_path_str, e);

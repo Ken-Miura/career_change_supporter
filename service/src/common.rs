@@ -7,6 +7,8 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 
+pub(crate) const PACKAGE_NAME: &'static str = env!("CARGO_PKG_NAME");
+
 pub(crate) type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
 
 // TODO: 環境変数、もしくは他の設定から読み込むように変更する
