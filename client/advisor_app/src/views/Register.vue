@@ -26,7 +26,7 @@ export default defineComponent({
       registration.run = true
       let response
       try {
-        response = await fetch('advisor-registration-request', {
+        response = await fetch('registration-request', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify(data)
