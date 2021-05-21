@@ -19,6 +19,7 @@ const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
 
 static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
+// TODO: 有効期限切れのtemporary accountを自動で削除する仕組みを検討、導入する
 #[post("/temporary-account-creation")]
 async fn temporary_account_creation(
     credential: web::Json<credential::Credential>,
