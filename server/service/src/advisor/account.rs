@@ -157,7 +157,7 @@ fn send_notification_mail(
         // TOOD: メールの本文を更新する (http -> httpsへの変更も含む)
         .text(format!(
             r"下記のURLにアクセスし、必要な内容を記入して登録を完了させてください（URLの有効期間は24時間です）
-            http://{}:{}/advisor/registration-request?id={}",
+            http://{}:{}/advisor/registration-requests?id={}",
             common::DOMAIN,
             common::PORT,
             registration_req_id
