@@ -33,11 +33,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/Profile.vue')
   },
   {
-    path: '/search',
-    name: 'Search',
-    component: () => import('../views/Search.vue')
-  },
-  {
     path: '/temporary-accounts',
     name: 'TemporaryAccounts',
     component: () => import('../views/TemporaryAccounts.vue')
