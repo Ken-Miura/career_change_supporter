@@ -111,7 +111,9 @@ fn insert_temporary_account(
 }
 
 fn check_if_account_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), error::Error> {
-    use db::schema::career_change_supporter_schema::user_account::dsl::*;
+    use db::schema::career_change_supporter_schema::user_account::dsl::{
+        email_address, user_account,
+    };
     let cnt = user_account
         .filter(email_address.eq(mail_addr))
         .count()
