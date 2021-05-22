@@ -5,29 +5,17 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { defineComponent, onBeforeMount, reactive } from 'vue'
+import { LocationQuery, useRouter } from 'vue-router'
 import { getSessionState } from '@/store/SessionChecker'
 import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'TemporaryAccounts',
   setup () {
-    const router = useRouter()
-    const store = useStore()
-
-    onMounted(async () => {
-      const sessionState = await getSessionState()
-      store.commit('updateSessionState', sessionState)
-      if (sessionState === 'active') {
-        await router.push('schedule')
-      }
-    })
-
     const result = reactive({
       message: ''
     })
-
     const createErrorMessage = async (response: Response): Promise<string> => {
       try {
         const err = await response.json()
@@ -40,8 +28,7 @@ export default defineComponent({
         return `予期せぬエラーが発生しました。${e}`
       }
     }
-    const createAccount = async () => {
-      const query = router.currentRoute.value.query
+    const createAccount = async (query: LocationQuery) => {
       let response
       try {
         response = await fetch('account-creation', {
@@ -61,7 +48,18 @@ export default defineComponent({
         result.message = await createErrorMessage(response)
       }
     }
-    createAccount()
+    const router = useRouter()
+    const store = useStore()
+    onBeforeMount(async () => {
+      const sessionState = await getSessionState()
+      store.commit('updateSessionState', sessionState)
+      if (sessionState === 'active') {
+        await router.push('schedule')
+        return
+      }
+      const query = router.currentRoute.value.query
+      await createAccount(query)
+    })
     return { result }
   }
 })
