@@ -33,9 +33,9 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/Profile.vue')
   },
   {
-    path: '/temporary-accounts',
-    name: 'TemporaryAccounts',
-    component: () => import('../views/TemporaryAccounts.vue')
+    path: '/registration-requests',
+    name: 'RegistrationRequests',
+    component: () => import('../views/RegistrationRequests.vue')
   }
 ]
 
