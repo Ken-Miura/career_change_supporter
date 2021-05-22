@@ -70,7 +70,7 @@ async fn temporary_account_creation(
         log::error!("failed to create temporary account: {}", e);
         e
     })?;
-    log::info!("created user temporary account successfully (temporary account id: {}, email address: {}) at {}", temp_acc_id, credential.email_address, current_date_time);
+    log::info!("created user temporary account (temporary account id: {}, email address: {}) at {}", temp_acc_id, credential.email_address, current_date_time);
     Ok(HttpResponse::Ok().json(TemporaryAccountResult {
         email_address: credential.email_address.clone(),
         message,
@@ -95,7 +95,7 @@ fn insert_temporary_account(
             ));
         }
         use db::schema::career_change_supporter_schema::user_temporary_account;
-        let temp_acc = db::model::TemporaryAccount {
+        let temp_acc = db::model::user::TemporaryAccount {
             user_temporary_account_id: &temp_acc_id,
             email_address: &mail_addr,
             hashed_password: &hashed_pwd,
@@ -121,15 +121,17 @@ fn check_if_account_exists(mail_addr: &str, conn: &PgConnection) -> Result<(), e
         .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
     if cnt > 1 {
         return Err(error::Error::Unexpected(
-            unexpected::Error::AccountDuplicate(unexpected::AccountDuplicate::new(
+            unexpected::Error::UserAccountDuplicate(unexpected::UserAccountDuplicate::new(
                 mail_addr.to_string(),
             )),
         ));
     }
     if cnt == 1 {
-        return Err(error::Error::Handled(handled::Error::AccountAlreadyExists(
-            handled::AccountAlreadyExists::new(mail_addr.to_string()),
-        )));
+        return Err(error::Error::Handled(
+            handled::Error::UserAccountAlreadyExists(handled::UserAccountAlreadyExists::new(
+                mail_addr.to_string(),
+            )),
+        ));
     }
     // TODO: 念の為、負の数のケースを考える必要があるか調べる
     Ok(())
@@ -232,7 +234,7 @@ async fn account_creation(
         e
     });
     log::info!(
-        "created user account successfully (user account id: {}, email address: {})",
+        "created user account (user account id: {}, email address: {})",
         user_acc.user_account_id,
         user_acc.email_address
     );
@@ -260,7 +262,7 @@ fn check_and_delete_temporary_account(
     temporary_account_id: &str,
     current_date_time: chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
-) -> Result<db::model::TemporaryAccountQueryResult, error::Error> {
+) -> Result<db::model::user::TemporaryAccountQueryResult, error::Error> {
     let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
     let _ = delete_temporary_account(temporary_account_id, conn)?;
     let time_elapsed = current_date_time - temp_acc.created_at;
@@ -280,11 +282,11 @@ fn check_and_delete_temporary_account(
 fn find_temporary_account_by_id(
     temp_acc_id: &str,
     conn: &PgConnection,
-) -> Result<db::model::TemporaryAccountQueryResult, error::Error> {
+) -> Result<db::model::user::TemporaryAccountQueryResult, error::Error> {
     use db::schema::career_change_supporter_schema::user_temporary_account::dsl::*;
     let users = user_temporary_account
         .filter(user_temporary_account_id.eq(temp_acc_id))
-        .get_results::<db::model::TemporaryAccountQueryResult>(conn)?;
+        .get_results::<db::model::user::TemporaryAccountQueryResult>(conn)?;
     if users.is_empty() {
         let e = handled::NoTemporaryAccountFound::new(temp_acc_id.to_string());
         return Err(error::Error::Handled(
@@ -323,7 +325,7 @@ fn create_account(
     mail_addr: &str,
     hashed_pwd: &[u8],
     conn: &PgConnection,
-) -> Result<db::model::AccountQueryResult, error::Error> {
+) -> Result<db::model::user::AccountQueryResult, error::Error> {
     use db::schema::career_change_supporter_schema::user_account::dsl::{
         email_address, user_account,
     };
@@ -332,23 +334,23 @@ fn create_account(
         .count()
         .get_result::<i64>(conn)?;
     if cnt > 0 {
-        let e = unexpected::AccountDuplicate::new(mail_addr.to_string());
+        let e = unexpected::UserAccountDuplicate::new(mail_addr.to_string());
         return Err(error::Error::Unexpected(
-            unexpected::Error::AccountDuplicate(e),
+            unexpected::Error::UserAccountDuplicate(e),
         ));
     }
     use db::schema::career_change_supporter_schema::user_account as user_acc;
-    let user = db::model::Account {
+    let user = db::model::user::Account {
         email_address: mail_addr,
         hashed_password: hashed_pwd,
         last_login_time: None,
     };
     let users = diesel::insert_into(user_acc::table)
         .values(&user)
-        .get_results::<db::model::AccountQueryResult>(conn)?;
+        .get_results::<db::model::user::AccountQueryResult>(conn)?;
     if users.len() > 1 {
         return Err(error::Error::Unexpected(
-            unexpected::Error::AccountDuplicate(unexpected::AccountDuplicate::new(
+            unexpected::Error::UserAccountDuplicate(unexpected::UserAccountDuplicate::new(
                 mail_addr.to_string(),
             )),
         ));

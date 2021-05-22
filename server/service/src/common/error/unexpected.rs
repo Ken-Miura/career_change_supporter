@@ -11,7 +11,7 @@ pub(crate) enum Error {
     DieselResultErr(diesel::result::Error),
 
     #[display(fmt = "{}", _0)]
-    AccountDuplicate(AccountDuplicate),
+    UserAccountDuplicate(UserAccountDuplicate),
 
     #[display(fmt = "actix_web::error::BlockingError::Canceled")]
     BlockingErrCanceled,
@@ -36,20 +36,23 @@ pub(crate) enum Error {
 
     #[display(fmt = "from utf-8 error: {}", _0)]
     FromUtf8Err(std::string::FromUtf8Error),
+
+    #[display(fmt = "{}", _0)]
+    AdvisorAccountDuplicate(AdvisorAccountDuplicate),
 }
 
 // NOTE: Use negative value because positive value is used for handled error
 pub(super) const INTERNAL_SERVER_ERROR: i32 = -1;
 
 #[derive(Display, Debug)]
-#[display(fmt = "account duplicate (email_address: {})", email_address)]
-pub(crate) struct AccountDuplicate {
+#[display(fmt = "user account duplicate (email_address: {})", email_address)]
+pub(crate) struct UserAccountDuplicate {
     email_address: String,
 }
 
-impl AccountDuplicate {
+impl UserAccountDuplicate {
     pub(crate) fn new(email_address: String) -> Self {
-        AccountDuplicate { email_address }
+        UserAccountDuplicate { email_address }
     }
 }
 
@@ -74,5 +77,17 @@ pub(crate) struct TemporaryAccountIdDuplicate {
 impl TemporaryAccountIdDuplicate {
     pub(crate) fn new(temp_acc_id: String) -> Self {
         TemporaryAccountIdDuplicate { temp_acc_id }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(fmt = "advisor account duplicate (email_address: {})", email_address)]
+pub(crate) struct AdvisorAccountDuplicate {
+    email_address: String,
+}
+
+impl AdvisorAccountDuplicate {
+    pub(crate) fn new(email_address: String) -> Self {
+        AdvisorAccountDuplicate { email_address }
     }
 }

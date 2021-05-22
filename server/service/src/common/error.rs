@@ -73,7 +73,7 @@ impl actix_web::ResponseError for Error {
                 common::error::handled::Error::PasswordNotMatch(_) => {
                     http::StatusCode::UNAUTHORIZED
                 }
-                common::error::handled::Error::AccountAlreadyExists(_) => {
+                common::error::handled::Error::UserAccountAlreadyExists(_) => {
                     http::StatusCode::CONFLICT
                 }
                 common::error::handled::Error::ReachLimitOfTemporaryAccount(_) => {
@@ -93,6 +93,12 @@ impl actix_web::ResponseError for Error {
                     http::StatusCode::UNAUTHORIZED
                 }
                 common::error::handled::Error::NoSessionFound(_) => http::StatusCode::UNAUTHORIZED,
+                common::error::handled::Error::AdvisorAccountAlreadyExists(_) => {
+                    http::StatusCode::CONFLICT
+                }
+                common::error::handled::Error::ReachLimitOfRegistrationRequest(_) => {
+                    http::StatusCode::BAD_REQUEST
+                }
             },
             Error::Unexpected(_e) => http::StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -128,7 +134,7 @@ impl actix_web::ResponseError for Error {
                         message =
                             "メールアドレス、もしくはパスワードが間違っています。".to_string();
                     }
-                    common::error::handled::Error::AccountAlreadyExists(e) => {
+                    common::error::handled::Error::UserAccountAlreadyExists(e) => {
                         code = e.code;
                         message = format!("{}は既に登録されています。", e.email_address);
                     }
@@ -178,6 +184,14 @@ impl actix_web::ResponseError for Error {
                     common::error::handled::Error::NoSessionFound(e) => {
                         code = e.code;
                         message = "セッションが存在しません。".to_string();
+                    }
+                    common::error::handled::Error::AdvisorAccountAlreadyExists(e) => {
+                        code = e.code;
+                        message = format!("{}は既に登録されています。", e.email_address);
+                    }
+                    common::error::handled::Error::ReachLimitOfRegistrationRequest(e) => {
+                        code = e.code;
+                        message = "アカウント作成を依頼できる回数の上限に達しました。一定の期間が過ぎた後、再度お試しください。".to_string();
                     }
                 }
                 return actix_web::HttpResponse::build(self.status_code())

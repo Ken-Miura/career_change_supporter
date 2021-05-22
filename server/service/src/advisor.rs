@@ -49,6 +49,7 @@ pub(super) fn advisor_config(cfg: &mut web::ServiceConfig) {
                     // NOTE: web::scopeで自動的に設定されるわけではないので明示的に指定する
                     .cookie_path("/advisor/"),
             )
+            .service(crate::advisor::account::registration_request)
             .service(crate::advisor::authentication::session_state)
             // NOTE: 下記のrefに従い、"/"は最後に記載する
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes

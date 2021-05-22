@@ -2,10 +2,9 @@
 
 use derive_more::Display;
 
-// TODO: どのようにグループ分けするか検討する
 #[derive(Display, Debug)]
 pub(crate) enum Error {
-    // ----credential.rs----
+    // user specific error
     #[display(fmt = "{}", _0)]
     InvalidEmailAddressLength(InvalidEmailAddressLength),
 
@@ -23,11 +22,9 @@ pub(crate) enum Error {
 
     #[display(fmt = "{}", _0)]
     PasswordNotMatch(PasswordNotMatch),
-    // --------------------
 
-    // ----account.rs------
     #[display(fmt = "{}", _0)]
-    AccountAlreadyExists(AccountAlreadyExists),
+    UserAccountAlreadyExists(UserAccountAlreadyExists),
 
     #[display(fmt = "{}", _0)]
     ReachLimitOfTemporaryAccount(ReachLimitOfTemporaryAccount),
@@ -40,31 +37,39 @@ pub(crate) enum Error {
 
     #[display(fmt = "{}", _0)]
     InvalidTemporaryAccountId(InvalidTemporaryAccountId),
-    // --------------------
 
-    // ----authentication.rs------
     #[display(fmt = "{}", _0)]
     NoAccountFound(NoAccountFound),
 
     #[display(fmt = "{}", _0)]
     NoSessionFound(NoSessionFound),
-    // --------------------
+
+    // advisor specific error
+    #[display(fmt = "{}", _0)]
+    AdvisorAccountAlreadyExists(AdvisorAccountAlreadyExists),
+
+    #[display(fmt = "{}", _0)]
+    ReachLimitOfRegistrationRequest(ReachLimitOfRegistrationRequest),
 }
 
 // TODO: 番号の順番を整理する
 // NOTE: Use positive value because negative value is used for unexpected error
+// user specific
 const EMAIL_FORMAT_INVALID_LENGTH: i32 = 1;
 const EMAIL_FORMAT_INVALID_FORMAT: i32 = 2;
 const PASSWORD_FORMAT_INVALID_LENGTH: i32 = 3;
 const PASSWORD_FORMAT_INVALID_FORMAT: i32 = 4;
 const PASSWORD_CONSTRAINTS_VIOLATION: i32 = 5;
 const AUTHENTICATION_FAILED: i32 = 6;
-const ACCOUNT_ALREADY_EXISTS: i32 = 7;
+const USER_ACCOUNT_ALREADY_EXISTS: i32 = 7;
 const REACH_LIMIT_OF_TEMPORARY_ACCOUNT: i32 = 8;
 const NO_TEMPORARY_ACCOUNT_FOUND: i32 = 9;
 const TEMPORARY_ACCOUNT_EXPIRED: i32 = 10;
 const INVALID_TEMPORARY_ACCOUNT_ID: i32 = 11;
 const NO_SESSION_FOUND: i32 = 12;
+// advisor specific
+const ADVISOR_ACCOUNT_ALREADY_EXISTS: i32 = 13;
+const REACH_LIMIT_OF_REGISTRATION_REQUEST: i32 = 14;
 
 #[derive(Display, Debug)]
 #[display(
@@ -179,19 +184,19 @@ impl PasswordNotMatch {
 
 #[derive(Display, Debug)]
 #[display(
-    fmt = "account already exists (code: {}, email_address: {})",
+    fmt = "user account already exists (code: {}, email_address: {})",
     code,
     email_address
 )]
-pub(crate) struct AccountAlreadyExists {
+pub(crate) struct UserAccountAlreadyExists {
     pub(super) code: i32,
     pub(super) email_address: String,
 }
 
-impl AccountAlreadyExists {
+impl UserAccountAlreadyExists {
     pub(crate) fn new(email_address: String) -> Self {
-        AccountAlreadyExists {
-            code: ACCOUNT_ALREADY_EXISTS,
+        UserAccountAlreadyExists {
+            code: USER_ACCOUNT_ALREADY_EXISTS,
             email_address,
         }
     }
@@ -313,6 +318,49 @@ impl NoSessionFound {
     pub(crate) fn new() -> Self {
         NoSessionFound {
             code: NO_SESSION_FOUND,
+        }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(
+    fmt = "advisor account already exists (code: {}, email_address: {})",
+    code,
+    email_address
+)]
+pub(crate) struct AdvisorAccountAlreadyExists {
+    pub(super) code: i32,
+    pub(super) email_address: String,
+}
+
+impl AdvisorAccountAlreadyExists {
+    pub(crate) fn new(email_address: String) -> Self {
+        AdvisorAccountAlreadyExists {
+            code: ADVISOR_ACCOUNT_ALREADY_EXISTS,
+            email_address,
+        }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(
+    fmt = "reach limit of registration request (code: {}, email_address: {}, count: {})",
+    code,
+    email_address,
+    count
+)]
+pub(crate) struct ReachLimitOfRegistrationRequest {
+    pub(super) code: i32,
+    pub(super) email_address: String,
+    pub(super) count: i64,
+}
+
+impl ReachLimitOfRegistrationRequest {
+    pub(crate) fn new(email_address: String, count: i64) -> Self {
+        ReachLimitOfRegistrationRequest {
+            code: REACH_LIMIT_OF_REGISTRATION_REQUEST,
+            email_address,
+            count,
         }
     }
 }
