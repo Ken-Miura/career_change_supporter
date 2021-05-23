@@ -15,7 +15,7 @@ export default defineComponent({
   setup () {
     const router = useRouter()
     const store = useStore()
-
+    // TODO: onMounted、onBeforeMount、setupのどれで呼ぶのが正しいか確認する
     onMounted(async () => {
       const sessionState = await getSessionState()
       store.commit('updateSessionState', sessionState)
