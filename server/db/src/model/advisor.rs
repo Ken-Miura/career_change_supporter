@@ -8,3 +8,10 @@ pub struct RegistrationRequest<'a> {
     pub email_address: &'a str,
     pub created_at: &'a chrono::DateTime<chrono::Utc>,
 }
+
+#[derive(Clone, Queryable)]
+pub struct RegistrationRequestQueryResult {
+    pub advisor_registration_request_id: String,
+    pub email_address: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}

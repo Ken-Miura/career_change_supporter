@@ -39,6 +39,9 @@ pub(crate) enum Error {
 
     #[display(fmt = "{}", _0)]
     AdvisorAccountDuplicate(AdvisorAccountDuplicate),
+
+    #[display(fmt = "{}", _0)]
+    RegistrationRequestIdDuplicate(RegistrationRequestIdDuplicate),
 }
 
 // NOTE: Use negative value because positive value is used for handled error
@@ -89,5 +92,17 @@ pub(crate) struct AdvisorAccountDuplicate {
 impl AdvisorAccountDuplicate {
     pub(crate) fn new(email_address: String) -> Self {
         AdvisorAccountDuplicate { email_address }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(fmt = "registration request id duplicate (request_id: {})", request_id)]
+pub(crate) struct RegistrationRequestIdDuplicate {
+    request_id: String,
+}
+
+impl RegistrationRequestIdDuplicate {
+    pub(crate) fn new(request_id: String) -> Self {
+        RegistrationRequestIdDuplicate { request_id }
     }
 }

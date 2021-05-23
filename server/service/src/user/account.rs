@@ -266,6 +266,7 @@ fn check_and_delete_temporary_account(
     conn: &PgConnection,
 ) -> Result<db::model::user::TemporaryAccountQueryResult, error::Error> {
     let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
+    // NOTE: expireしてエラーを返したときは、トランザクション内で実行されているため、削除分もロールバックされる
     let _ = delete_temporary_account(temporary_account_id, conn)?;
     let time_elapsed = current_date_time - temp_acc.created_at;
     if time_elapsed.num_days() > 0 {

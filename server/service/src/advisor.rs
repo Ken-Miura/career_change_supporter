@@ -50,6 +50,7 @@ pub(super) fn advisor_config(cfg: &mut web::ServiceConfig) {
                     .cookie_path("/advisor/"),
             )
             .service(crate::advisor::account::registration_request)
+            .service(crate::advisor::account::registration_request_id_check)
             .service(crate::advisor::authentication::session_state)
             .service(crate::advisor::static_asset::registration_requests)
             // NOTE: 下記のrefに従い、"/"は最後に記載する

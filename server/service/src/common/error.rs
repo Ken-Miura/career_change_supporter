@@ -99,6 +99,15 @@ impl actix_web::ResponseError for Error {
                 common::error::handled::Error::ReachLimitOfRegistrationRequest(_) => {
                     http::StatusCode::BAD_REQUEST
                 }
+                common::error::handled::Error::InvalidRegistrationRequestId(_) => {
+                    http::StatusCode::BAD_REQUEST
+                }
+                common::error::handled::Error::NoRegistrationRequestFound(_) => {
+                    http::StatusCode::NOT_FOUND
+                }
+                common::error::handled::Error::RegistrationRequestExpired(_) => {
+                    http::StatusCode::BAD_REQUEST
+                }
             },
             Error::Unexpected(_e) => http::StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -146,18 +155,18 @@ impl actix_web::ResponseError for Error {
                         code = e.code;
                         // TODO: httpsに変更する
                         let url = format!(
-                            "http://{}:{}/temporary-accounts?id={}",
+                            "http://{}:{}/user/temporary-accounts?id={}",
                             common::DOMAIN,
                             common::PORT,
                             e.id
                         );
-                        message = format!("指定されたURL ({}) は存在しません。ブラウザに入力されているURLと、メール本文に記載されているURLが同じかご確認ください。", url);
+                        message = format!("指定されたURL ({}) は存在しません。ブラウザに入力されているURLと、メール本文に記載されているURLが同じかご確認ください（URLに間違いがない場合、再度アカウント作成より作成依頼をお願いいたします）", url);
                     }
                     common::error::handled::Error::TemporaryAccountExpired(e) => {
                         code = e.code;
                         // TODO: httpsに変更する
                         let url = format!(
-                            "http://{}:{}/temporary-accounts?id={}",
+                            "http://{}:{}/user/temporary-accounts?id={}",
                             common::DOMAIN,
                             common::PORT,
                             e.id
@@ -168,7 +177,7 @@ impl actix_web::ResponseError for Error {
                         code = e.code;
                         // TODO: httpsに変更する
                         let url = format!(
-                            "http://{}:{}/temporary-accounts?id={}",
+                            "http://{}:{}/user/temporary-accounts?id={}",
                             common::DOMAIN,
                             common::PORT,
                             e.id
@@ -192,6 +201,39 @@ impl actix_web::ResponseError for Error {
                     common::error::handled::Error::ReachLimitOfRegistrationRequest(e) => {
                         code = e.code;
                         message = "アカウント作成を依頼できる回数の上限に達しました。一定の期間が過ぎた後、再度お試しください。".to_string();
+                    }
+                    common::error::handled::Error::InvalidRegistrationRequestId(e) => {
+                        code = e.code;
+                        // TODO: httpsに変更する
+                        let url = format!(
+                            "http://{}:{}/advisor/registration-requests?id={}",
+                            common::DOMAIN,
+                            common::PORT,
+                            e.id
+                        );
+                        message = format!("不正なURLです ({}) 。ブラウザに入力されているURLと、メール本文に記載されているURLが同じかご確認ください。", url);
+                    }
+                    common::error::handled::Error::NoRegistrationRequestFound(e) => {
+                        code = e.code;
+                        // TODO: httpsに変更する
+                        let url = format!(
+                            "http://{}:{}/advisor/registration-requests?id={}",
+                            common::DOMAIN,
+                            common::PORT,
+                            e.id
+                        );
+                        message = format!("指定されたURL ({}) は存在しません。ブラウザに入力されているURLと、メール本文に記載されているURLが同じかご確認ください（URLに間違いがない場合、再度アカウント作成より作成依頼をお願いいたします）", url);
+                    }
+                    common::error::handled::Error::RegistrationRequestExpired(e) => {
+                        code = e.code;
+                        // TODO: httpsに変更する
+                        let url = format!(
+                            "http://{}:{}/advisor/registration-requests?id={}",
+                            common::DOMAIN,
+                            common::PORT,
+                            e.id
+                        );
+                        message = format!("指定されたURL ({}) は有効期限が過ぎています。お手数ですが、アカウント作成から再度作成手続きをお願いします。", url);
                     }
                 }
                 return actix_web::HttpResponse::build(self.status_code())

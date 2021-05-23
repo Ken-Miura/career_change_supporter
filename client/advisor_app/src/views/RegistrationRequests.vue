@@ -1,31 +1,25 @@
 <template>
-  <div>
-    <p>{{ result.message }}</p>
+  <p v-if="error.exist">{{error.message}}</p>
+  <div v-if="!error.exist">
+    <p>{{result.emailAddress}}</p>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, onMounted, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { LocationQuery, useRouter } from 'vue-router'
 import { getSessionState } from '@/store/SessionChecker'
 import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'RegistrationRequests',
   setup () {
-    const router = useRouter()
-    const store = useStore()
-    // TODO: onMounted、onBeforeMount、setupのどれで呼ぶのが正しいか確認する
-    onMounted(async () => {
-      const sessionState = await getSessionState()
-      store.commit('updateSessionState', sessionState)
-      if (sessionState === 'active') {
-        await router.push('schedule')
-      }
-    })
-
-    const result = reactive({
+    const error = reactive({
+      exist: false,
       message: ''
+    })
+    const result = reactive({
+      emailAddress: ''
     })
 
     const createErrorMessage = async (response: Response): Promise<string> => {
@@ -40,29 +34,45 @@ export default defineComponent({
         return `予期せぬエラーが発生しました。${e}`
       }
     }
-    const createAccount = async () => {
-      const query = router.currentRoute.value.query
+
+    const checkIfRequestIdExpires = async (query: LocationQuery) => {
       let response
       try {
-        response = await fetch('account-creation', {
+        response = await fetch('registration-request-id-check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify(query)
         })
       } catch (e) {
         console.log(`failed to get response: ${e}`)
-        result.message = '通信エラーが発生しました。インターネットに接続できているか確認してください。'
+        error.exist = true
+        error.message = '通信エラーが発生しました。インターネットに接続できているか確認してください。'
         return
       }
       if (response.ok) {
+        error.exist = false
+        error.message = ''
         const resJson = await response.json()
-        result.message = resJson.message
+        result.emailAddress = resJson.email_address
       } else {
-        result.message = await createErrorMessage(response)
+        error.exist = true
+        error.message = await createErrorMessage(response)
       }
     }
-    createAccount()
-    return { result }
+
+    const router = useRouter()
+    const store = useStore()
+    // TODO: onMounted、onBeforeMount、setupのどれで呼ぶのが正しいか確認する
+    onMounted(async () => {
+      const sessionState = await getSessionState()
+      store.commit('updateSessionState', sessionState)
+      if (sessionState === 'active') {
+        await router.push('schedule')
+        return
+      }
+      await checkIfRequestIdExpires(router.currentRoute.value.query)
+    })
+    return { error, result }
   }
 })
 </script>

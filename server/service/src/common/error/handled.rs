@@ -6,12 +6,6 @@ use derive_more::Display;
 pub(crate) enum Error {
     // user specific error
     #[display(fmt = "{}", _0)]
-    InvalidEmailAddressLength(InvalidEmailAddressLength),
-
-    #[display(fmt = "{}", _0)]
-    InvalidEmailAddressFormat(InvalidEmailAddressFormat),
-
-    #[display(fmt = "{}", _0)]
     InvalidPasswordLength(InvalidPasswordLength),
 
     #[display(fmt = "{}", _0)]
@@ -50,13 +44,27 @@ pub(crate) enum Error {
 
     #[display(fmt = "{}", _0)]
     ReachLimitOfRegistrationRequest(ReachLimitOfRegistrationRequest),
+
+    #[display(fmt = "{}", _0)]
+    InvalidRegistrationRequestId(InvalidRegistrationRequestId),
+
+    #[display(fmt = "{}", _0)]
+    NoRegistrationRequestFound(NoRegistrationRequestFound),
+
+    #[display(fmt = "{}", _0)]
+    RegistrationRequestExpired(RegistrationRequestExpired),
+
+    // error for both user and advisor
+    #[display(fmt = "{}", _0)]
+    InvalidEmailAddressLength(InvalidEmailAddressLength),
+
+    #[display(fmt = "{}", _0)]
+    InvalidEmailAddressFormat(InvalidEmailAddressFormat),
 }
 
 // TODO: 番号の順番を整理する
 // NOTE: Use positive value because negative value is used for unexpected error
 // user specific
-const EMAIL_FORMAT_INVALID_LENGTH: i32 = 1;
-const EMAIL_FORMAT_INVALID_FORMAT: i32 = 2;
 const PASSWORD_FORMAT_INVALID_LENGTH: i32 = 3;
 const PASSWORD_FORMAT_INVALID_FORMAT: i32 = 4;
 const PASSWORD_CONSTRAINTS_VIOLATION: i32 = 5;
@@ -70,6 +78,12 @@ const NO_SESSION_FOUND: i32 = 12;
 // advisor specific
 const ADVISOR_ACCOUNT_ALREADY_EXISTS: i32 = 13;
 const REACH_LIMIT_OF_REGISTRATION_REQUEST: i32 = 14;
+const INVALID_REGISTRATION_REQUEST_ID: i32 = 15;
+const NO_REGISTRATION_REQUEST_FOUND: i32 = 16;
+const REGISTRATION_REQUEST_EXPIRED: i32 = 17;
+// error for both user and advisor
+const EMAIL_FORMAT_INVALID_LENGTH: i32 = 1;
+const EMAIL_FORMAT_INVALID_FORMAT: i32 = 2;
 
 #[derive(Display, Debug)]
 #[display(
@@ -361,6 +375,67 @@ impl ReachLimitOfRegistrationRequest {
             code: REACH_LIMIT_OF_REGISTRATION_REQUEST,
             email_address,
             count,
+        }
+    }
+}
+#[derive(Display, Debug)]
+#[display(fmt = "invalid registration request id (code: {}, id: {})", code, id)]
+pub(crate) struct InvalidRegistrationRequestId {
+    pub(super) code: i32,
+    pub(super) id: String,
+}
+
+impl InvalidRegistrationRequestId {
+    pub(crate) fn new(id: String) -> Self {
+        InvalidRegistrationRequestId {
+            code: INVALID_REGISTRATION_REQUEST_ID,
+            id,
+        }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(fmt = "no registration request found (code: {}, id: {})", code, id)]
+pub(crate) struct NoRegistrationRequestFound {
+    pub(super) code: i32,
+    pub(super) id: String,
+}
+
+impl NoRegistrationRequestFound {
+    pub(crate) fn new(id: String) -> Self {
+        NoRegistrationRequestFound {
+            code: NO_REGISTRATION_REQUEST_FOUND,
+            id,
+        }
+    }
+}
+
+#[derive(Display, Debug)]
+#[display(
+    fmt = "registration request expired (code: {}, id: {}, created_at: {}, activated_at: {})",
+    code,
+    id,
+    created_at,
+    activated_at
+)]
+pub(crate) struct RegistrationRequestExpired {
+    pub(super) code: i32,
+    pub(super) id: String,
+    pub(super) created_at: chrono::DateTime<chrono::Utc>,
+    pub(super) activated_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl RegistrationRequestExpired {
+    pub(crate) fn new(
+        id: String,
+        created_at: chrono::DateTime<chrono::Utc>,
+        activated_at: chrono::DateTime<chrono::Utc>,
+    ) -> Self {
+        RegistrationRequestExpired {
+            code: REGISTRATION_REQUEST_EXPIRED,
+            id,
+            created_at,
+            activated_at,
         }
     }
 }

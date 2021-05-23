@@ -185,3 +185,116 @@ struct RegistrationRequestResult {
     email_address: String,
     message: String,
 }
+
+#[post("/registration-request-id-check")]
+async fn registration_request_id_check(
+    id_check_req: web::Json<IdCheckRequest>,
+    pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, error::Error> {
+    let _ = validate_id_format(&id_check_req.id).map_err(|e| {
+        log::error!("failed to check registration request id: {}", e);
+        e
+    })?;
+
+    let conn = pool.get().map_err(|err| {
+        let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
+        log::error!("failed to check registration request id: {}", e);
+        e
+    })?;
+
+    let current_date_time = chrono::Utc::now();
+    let req_id = id_check_req.id.clone();
+    let result = web::block(move || {
+        // 一連の操作をトランザクションで実行はしない
+        // advidsor registration requestテーブルに対してUPDATE権限を許可していないため、取得したreg_reqがdeleteされるまでに変化することはない。
+        let reg_req = find_registration_req_by_id(&req_id, &conn)?;
+        let time_elapsed = current_date_time - reg_req.created_at;
+        if time_elapsed.num_seconds() > 0 {
+            let _ = delete_registration_request(&req_id, &conn)?;
+            let e = handled::RegistrationRequestExpired::new(
+                req_id.to_string(),
+                reg_req.created_at,
+                current_date_time,
+            );
+            return Err(error::Error::Handled(
+                handled::Error::RegistrationRequestExpired(e),
+            ));
+        }
+        Ok(reg_req.email_address)
+    })
+    .await;
+    let email_address = result.map_err(|err| {
+        let e = error::Error::from(err);
+        log::error!("failed to check registration request id: {}", e);
+        e
+    })?;
+
+    log::info!(
+        "checked registration request (id: {}, email address: {})",
+        id_check_req.id,
+        email_address
+    );
+    Ok(HttpResponse::Ok().json(IdCheckResponse { email_address }))
+}
+
+#[derive(Deserialize)]
+struct IdCheckRequest {
+    id: String,
+}
+
+#[derive(Serialize)]
+struct IdCheckResponse {
+    email_address: String,
+}
+
+fn validate_id_format(request_id: &str) -> Result<(), error::Error> {
+    let correct_format = util::check_if_uuid_format_is_correct(request_id);
+    if !correct_format {
+        let e = error::Error::Handled(handled::Error::InvalidRegistrationRequestId(
+            handled::InvalidRegistrationRequestId::new(request_id.to_string()),
+        ));
+        return Err(e);
+    }
+    Ok(())
+}
+
+fn find_registration_req_by_id(
+    req_id: &str,
+    conn: &PgConnection,
+) -> Result<db::model::advisor::RegistrationRequestQueryResult, error::Error> {
+    use db::schema::career_change_supporter_schema::advisor_registration_request::dsl::{
+        advisor_registration_request, advisor_registration_request_id,
+    };
+    let registration_requests = advisor_registration_request
+        .filter(advisor_registration_request_id.eq(req_id))
+        .get_results::<db::model::advisor::RegistrationRequestQueryResult>(conn)?;
+    if registration_requests.is_empty() {
+        let e = handled::NoRegistrationRequestFound::new(req_id.to_string());
+        return Err(error::Error::Handled(
+            handled::Error::NoRegistrationRequestFound(e),
+        ));
+    }
+    if registration_requests.len() != 1 {
+        let e = unexpected::RegistrationRequestIdDuplicate::new(req_id.to_string());
+        return Err(error::Error::Unexpected(
+            unexpected::Error::RegistrationRequestIdDuplicate(e),
+        ));
+    }
+    let reg_req = registration_requests[0].clone();
+    Ok(reg_req)
+}
+
+fn delete_registration_request(req_id: &str, conn: &PgConnection) -> Result<(), error::Error> {
+    use db::schema::career_change_supporter_schema::advisor_registration_request::dsl::{
+        advisor_registration_request, advisor_registration_request_id,
+    };
+    // TODO: 戻り値 cnt（usize: the number of rows affected）を利用する必要があるか検討する
+    let cnt = diesel::delete(
+        advisor_registration_request.filter(advisor_registration_request_id.eq(req_id)),
+    )
+    .execute(conn)?;
+    if cnt != 1 {
+        log::warn!("diesel::delete::execute result (id: {}): {}", req_id, cnt);
+    }
+    Ok(())
+}
