@@ -11,7 +11,7 @@ import { getSessionState } from '@/store/SessionChecker'
 import { useStore } from 'vuex'
 
 export default defineComponent({
-  name: 'TemporaryAccounts',
+  name: 'RegistrationRequests',
   setup () {
     const router = useRouter()
     const store = useStore()
