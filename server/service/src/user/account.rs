@@ -214,9 +214,21 @@ async fn account_creation(
     let current_date_time = chrono::Utc::now();
     let temp_acc_id = account_req.id.clone();
     let result = web::block(move || {
+        let temp_acc = conn.transaction::<_, error::Error, _>(|| {
+            get_and_delete_temporary_account(&temp_acc_id, &conn)
+        })?;
+        let time_elapsed = current_date_time - temp_acc.created_at;
+        if time_elapsed.num_days() > 0 {
+            let e = handled::TemporaryAccountExpired::new(
+                temp_acc_id.to_string(),
+                temp_acc.created_at,
+                current_date_time,
+            );
+            return Err(error::Error::Handled(
+                handled::Error::TemporaryAccountExpired(e),
+            ));
+        }
         conn.transaction::<_, error::Error, _>(|| {
-            let temp_acc =
-                check_and_delete_temporary_account(&temp_acc_id, current_date_time, &conn)?;
             let user = create_account(&temp_acc.email_address, &temp_acc.hashed_password, &conn)?;
             Ok(user)
         })
@@ -260,25 +272,12 @@ fn validate_id_format(temp_acc_id: &str) -> Result<(), error::Error> {
     Ok(())
 }
 
-fn check_and_delete_temporary_account(
+fn get_and_delete_temporary_account(
     temporary_account_id: &str,
-    current_date_time: chrono::DateTime<chrono::Utc>,
     conn: &PgConnection,
 ) -> Result<db::model::user::TemporaryAccountQueryResult, error::Error> {
     let temp_acc = find_temporary_account_by_id(temporary_account_id, conn)?;
-    // NOTE: expireしてエラーを返したときは、トランザクション内で実行されているため、削除分もロールバックされる
     let _ = delete_temporary_account(temporary_account_id, conn)?;
-    let time_elapsed = current_date_time - temp_acc.created_at;
-    if time_elapsed.num_days() > 0 {
-        let e = handled::TemporaryAccountExpired::new(
-            temporary_account_id.to_string(),
-            temp_acc.created_at,
-            current_date_time,
-        );
-        return Err(error::Error::Handled(
-            handled::Error::TemporaryAccountExpired(e),
-        ));
-    }
     Ok(temp_acc)
 }
 
