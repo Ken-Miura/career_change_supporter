@@ -209,7 +209,7 @@ async fn registration_request_id_check(
         // advidsor registration requestテーブルに対してUPDATE権限を許可していないため、取得したreg_reqがdeleteされるまでに変化することはない。
         let reg_req = find_registration_req_by_id(&req_id, &conn)?;
         let time_elapsed = current_date_time - reg_req.created_at;
-        if time_elapsed.num_seconds() > 0 {
+        if time_elapsed.num_days() > 0 {
             let _ = delete_registration_request(&req_id, &conn)?;
             let e = handled::RegistrationRequestExpired::new(
                 req_id.to_string(),
