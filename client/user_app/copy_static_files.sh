@@ -1,5 +1,9 @@
 #!/bin/bash
 
-mkdir -p ../../server/service/static/user
-cp -r ./dist/* ../../server/service/static/user
+DSTDIR=../../server/service/static/user
+if [ -d $DSTDIR ]; then
+  rm -r $DSTDIR
+fi
+mkdir -p $DSTDIR
+cp -r ./dist/* $DSTDIR
 
