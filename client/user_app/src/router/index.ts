@@ -5,10 +5,10 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/user_app.html',
     name: 'user_app',
-    redirect: '/'
+    redirect: '/home'
   },
   {
-    path: '/',
+    path: '/home',
     name: 'Home',
     component: Home
   },

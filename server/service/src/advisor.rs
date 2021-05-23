@@ -57,6 +57,7 @@ pub(super) fn advisor_config(cfg: &mut web::ServiceConfig) {
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
             .service(
                 actix_files::Files::new(
+                    // TODO: .../advisor/ (advisorの後に/有り)だとNot Foundを返す理由の調査
                     "/",
                     crate::advisor::static_asset::ADVISOR_ASSETS_DIR.to_string(),
                 )

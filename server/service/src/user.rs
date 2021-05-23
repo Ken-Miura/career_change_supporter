@@ -61,6 +61,7 @@ pub(super) fn user_config(cfg: &mut web::ServiceConfig) {
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
             .service(
                 actix_files::Files::new(
+                    // TODO: .../user/ (userの後に/有り)だとNot Foundを返す理由の調査
                     "/",
                     crate::user::static_asset::USER_ASSETS_DIR.to_string(),
                 )

@@ -1,6 +1,6 @@
 <template>
   <div id="nav">
-    <router-link to="/">ホーム</router-link> |
+    <router-link to="/home">ホーム</router-link> |
     <div v-if="!loggedIn">
       <router-link to="/login">ログイン</router-link> |
       <router-link to="/register">アカウント作成</router-link>
