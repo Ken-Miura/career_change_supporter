@@ -6,4 +6,3 @@ if [ -d $DSTDIR ]; then
 fi
 mkdir -p $DSTDIR
 cp -r ./dist/* $DSTDIR
-
