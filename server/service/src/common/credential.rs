@@ -3,7 +3,7 @@
 use crate::common;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
-use crate::common::validator;
+use crate::common::util;
 use serde::Deserialize;
 
 // TODO: パスワードのストレッチングが2^BCRYPT_COST回実行される。リリース前に値を調整する
@@ -17,8 +17,8 @@ pub(crate) struct Credential {
 
 impl Credential {
     pub(crate) fn validate(&self) -> Result<(), handled::Error> {
-        let _ = validator::validate_email_address(&self.email_address)?;
-        let _ = validator::validate_password(&self.password)?;
+        let _ = util::validate_email_address(&self.email_address)?;
+        let _ = util::validate_password(&self.password)?;
         Ok(())
     }
 }

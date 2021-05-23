@@ -2,7 +2,7 @@
 
 pub(crate) mod credential;
 pub(crate) mod error;
-pub(crate) mod validator;
+pub(crate) mod util;
 
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;

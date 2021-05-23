@@ -5,7 +5,7 @@ use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
 
-use crate::common::validator;
+use crate::common::util;
 use actix_web::{post, web, HttpResponse};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ async fn registration_request(
     registration_req: web::Json<RegistrationRequest>,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, error::Error> {
-    let _ = validator::validate_email_address(&registration_req.email_address).map_err(|err| {
+    let _ = util::validate_email_address(&registration_req.email_address).map_err(|err| {
         let e = error::Error::Handled(err);
         log::error!("failed to process advisor registration request: {}", e);
         e

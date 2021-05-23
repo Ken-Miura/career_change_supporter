@@ -16,6 +16,7 @@ const LOWER_CASE_REGEXP: &str = r".*[a-z].*";
 const NUMBER_REGEXP: &str = r".*[0-9].*";
 const SYMBOL_REGEXP: &str = r".*[!-/:-@\[-`{-~].*";
 const CONSTRAINTS_OF_NUM_OF_COMBINATION: u32 = 2;
+const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
 
 static EMAIL_ADDR_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(EMAIL_ADDRESS_REGEXP).expect("never happens panic"));
@@ -29,6 +30,7 @@ static NUMBER_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(NUMBER_REGEXP).expect("never happens panic"));
 static SYMBOL_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(SYMBOL_REGEXP).expect("never happens panic"));
+static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
 pub(crate) fn validate_email_address(email_address: &str) -> Result<(), handled::Error> {
     let mail_addr_length = email_address.len();
@@ -84,4 +86,11 @@ fn validate_password_constraints(pwd: &str) -> Result<(), handled::Error> {
         return Err(handled::Error::PasswordConstraintsViolation(e));
     }
     Ok(())
+}
+
+pub(crate) fn check_if_uuid_format_is_correct(uuid: &str) -> bool {
+    if !UUID_RE.is_match(uuid) {
+        return false;
+    }
+    true
 }

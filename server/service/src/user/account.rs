@@ -5,19 +5,15 @@ use crate::common::credential;
 use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
+use crate::common::util;
 
 use actix_web::{post, web, HttpResponse};
 use diesel::prelude::*;
-use once_cell::sync::Lazy;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // TODO: 運用しながら上限を調整する
 const TEMPORARY_ACCOUNT_LIMIT: i64 = 7;
-const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
-
-static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never happens panic"));
 
 // TODO: 有効期限切れのtemporary accountを自動で削除する仕組みを検討、導入する
 #[post("/temporary-account-creation")]
@@ -254,7 +250,8 @@ struct AccountRequest {
 }
 
 fn validate_id_format(temp_acc_id: &str) -> Result<(), error::Error> {
-    if !UUID_RE.is_match(temp_acc_id) {
+    let correct_format = util::check_if_uuid_format_is_correct(temp_acc_id);
+    if !correct_format {
         let e = error::Error::Handled(handled::Error::InvalidTemporaryAccountId(
             handled::InvalidTemporaryAccountId::new(temp_acc_id.to_string()),
         ));
