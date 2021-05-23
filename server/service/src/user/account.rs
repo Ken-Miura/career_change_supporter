@@ -70,7 +70,12 @@ async fn temporary_account_creation(
         log::error!("failed to create temporary account: {}", e);
         e
     })?;
-    log::info!("created user temporary account (temporary account id: {}, email address: {}) at {}", temp_acc_id, credential.email_address, current_date_time);
+    log::info!(
+        "created user temporary account (temporary account id: {}, email address: {}) at {}",
+        temp_acc_id,
+        credential.email_address,
+        current_date_time
+    );
     Ok(HttpResponse::Ok().json(TemporaryAccountResult {
         email_address: credential.email_address.clone(),
         message,

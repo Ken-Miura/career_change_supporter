@@ -51,6 +51,7 @@ pub(super) fn advisor_config(cfg: &mut web::ServiceConfig) {
             )
             .service(crate::advisor::account::registration_request)
             .service(crate::advisor::authentication::session_state)
+            .service(crate::advisor::static_asset::registration_requests)
             // NOTE: 下記のrefに従い、"/"は最後に記載する
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
             .service(

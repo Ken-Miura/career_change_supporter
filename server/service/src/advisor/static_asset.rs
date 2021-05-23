@@ -2,7 +2,7 @@
 
 use crate::common;
 use actix_http::http;
-use actix_web::{HttpRequest, HttpResponse, Result};
+use actix_web::{get, HttpRequest, HttpResponse, Result};
 use once_cell::sync::Lazy;
 use std::fs;
 use std::path::PathBuf;
@@ -15,6 +15,13 @@ pub(super) static ADVISOR_ASSETS_DIR: Lazy<String> = Lazy::new(|| {
         std::path::MAIN_SEPARATOR
     )
 });
+
+// https://host_name/user/registration-requests?id=registration_request_idでアクセスしたときのために利用する
+// 該当しないURLにアクセスした際は、serve_indexにルーティングされる設定だが、今後registration-requestsの別ルートが間違って追加されないように明示的に関数を作っておく
+#[get("/registration-requests")]
+async fn registration_requests(req: HttpRequest) -> HttpResponse {
+    serve_advisor_app(req)
+}
 
 pub(super) fn serve_advisor_app(req: HttpRequest) -> HttpResponse {
     log::info!("fn serve_advisor_app: requested path: {}", req.uri());
