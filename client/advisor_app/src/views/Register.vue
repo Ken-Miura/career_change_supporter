@@ -16,46 +16,6 @@ import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'Register',
-  methods: {
-    async register () {
-      const form = this.form
-      const registration = this.registration
-      // Ignore naming convention because "email_address" is JSON param name
-      // eslint-disable-next-line
-      const data = { email_address: form.email }
-      registration.run = true
-      let response
-      try {
-        response = await fetch('registration-request', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify(data)
-        })
-      } catch (e) {
-        console.log(`failed to get response: ${e}`)
-        registration.message = '通信エラーが発生しました。インターネットに接続できているか確認してください。'
-        return
-      }
-      registration.message = await this.createMessage(response)
-    },
-    async createMessage (response: Response): Promise<string> {
-      if (response.ok) {
-        const result = await response.json()
-        return result.message
-      } else {
-        try {
-          const err = await response.json()
-          if (err.code !== undefined && err.message !== undefined) {
-            return `${err.message} (エラーコード: ${err.code})`
-          } else {
-            return `予期せぬエラーが発生しました。${err.message} (エラーコード: ${err.code})`
-          }
-        } catch (e) {
-          return `予期せぬエラーが発生しました。${e}`
-        }
-      }
-    }
-  },
   setup () {
     const router = useRouter()
     const store = useStore()
@@ -76,7 +36,44 @@ export default defineComponent({
       run: false,
       message: ''
     })
-    return { formRef, form, registration }
+
+    const createMessage = async (response: Response): Promise<string> => {
+      if (response.ok) {
+        const result = await response.json()
+        return result.message
+      } else {
+        try {
+          const err = await response.json()
+          if (err.code !== undefined && err.message !== undefined) {
+            return `${err.message} (エラーコード: ${err.code})`
+          } else {
+            return `予期せぬエラーが発生しました。${err.message} (エラーコード: ${err.code})`
+          }
+        } catch (e) {
+          return `予期せぬエラーが発生しました。${e}`
+        }
+      }
+    }
+    const register = async () => {
+      // Ignore naming convention because "email_address" is JSON param name
+      // eslint-disable-next-line
+      const data = { email_address: form.email }
+      registration.run = true
+      let response
+      try {
+        response = await fetch('registration-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(data)
+        })
+      } catch (e) {
+        console.log(`failed to get response: ${e}`)
+        registration.message = '通信エラーが発生しました。インターネットに接続できているか確認してください。'
+        return
+      }
+      registration.message = await createMessage(response)
+    }
+    return { formRef, form, registration, register }
   }
 })
 </script>
