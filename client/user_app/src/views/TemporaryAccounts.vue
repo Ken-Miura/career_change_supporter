@@ -5,7 +5,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onBeforeMount, reactive } from 'vue'
+import { defineComponent, onMounted, reactive } from 'vue'
 import { LocationQuery, useRouter } from 'vue-router'
 import { getSessionState } from '@/store/SessionChecker'
 import { useStore } from 'vuex'
@@ -50,7 +50,7 @@ export default defineComponent({
     }
     const router = useRouter()
     const store = useStore()
-    onBeforeMount(async () => {
+    onMounted(async () => {
       const sessionState = await getSessionState()
       store.commit('updateSessionState', sessionState)
       if (sessionState === 'active') {
