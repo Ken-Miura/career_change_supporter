@@ -288,7 +288,9 @@ fn find_temporary_account_by_id(
     temp_acc_id: &str,
     conn: &PgConnection,
 ) -> Result<db::model::user::TemporaryAccountQueryResult, error::Error> {
-    use db::schema::career_change_supporter_schema::user_temporary_account::dsl::*;
+    use db::schema::career_change_supporter_schema::user_temporary_account::dsl::{
+        user_temporary_account, user_temporary_account_id,
+    };
     let users = user_temporary_account
         .filter(user_temporary_account_id.eq(temp_acc_id))
         .get_results::<db::model::user::TemporaryAccountQueryResult>(conn)?;
