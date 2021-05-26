@@ -1,40 +1,42 @@
 <template>
   <p v-if="error.exist">{{error.message}}</p>
   <div v-if="!error.exist">
-    <p>メールアドレス: {{result.emailAddress}}</p>
-    <form ref="formRef" @submit.prevent="submitRegistrationInformation">
-      <!-- TODO: Add password restristion -->
-      <input v-model="form.password" type="password" required placeholder="パスワード">
-      <p>アドバイザー情報</p>
-      <input v-model="form.lastName" type = "text" required placeholder="姓">
-      <input v-model="form.firstName" type = "text" required placeholder="名">
-      <!-- TODO: 口座名義必須ならいらない？ -->
-      <input v-model="form.lastNameReading" type = "text" required placeholder="セイ">
-      <input v-model="form.firstNameReading" type = "text" required placeholder="メイ">
-      <input v-model="form.telephonNumber" type = "text" required placeholder="電話番号">
-      <input v-model="form.address" type = "text" required placeholder="住所">
-      <input v-model="form.dateOfBirth" type = "text" required placeholder="生年月日">
-      <p>身分証明書</p>
-      <div>
-        <p>表面: </p><input type="file" @change="test1" name="file1"/>
-      </div>
-      <div>
-        <p>裏面: </p><input type="file" @change="test2" name="file2"/>
-      </div>
-      <p>振込口座情報</p>
-      <input v-model="form.bankCode" type = "text" pattern="[0-9]{4}" required placeholder="銀行コード">
-      <input v-model="form.bankBranchCode" type = "text" pattern="[0-9]{3}" required placeholder="支店コード">
-      <!-- 参考情報：メルカリの振込申請での預金種別は、普通預金、当座預金、貯蓄預金のみ。当座を登録するようなユーザを想定していない。普通預金だけでいいかなあ -->
-      <!--<input v-model="form.bankAccountType" type = "text" required placeholder="預金種別">-->
-      <p>預金種別: 普通</p>
-      <!-- 参考情報：普通預金で5桁、6桁や当座預金で3桁、4桁があるが0で先頭を埋めれば良い。ゆうちょ銀行の普通預金の8桁の場合、最後の1桁の1を削除すればよい -->
-      <input v-model="form.bankAccountNumber" type = "text" pattern="[0-9]{7}" required placeholder="口座番号">
-      <input v-model="form.bankAccountHolderLastName" type = "text" required placeholder="口座名義（セイ）">
-      <input v-model="form.bankAccountHolderFirstName" type = "text" required placeholder="口座名義（メイ）">
-      <!-- 料金設定の項目 -->
-      <input v-model="form.fee" type = "text" required placeholder="料金設定">
-      <button type="submit" :disabled="!form.password">登録</button>
-    </form>
+      <form ref="formRef" class="container" @submit.prevent="submitRegistrationInformation">
+        <p id="emailAddressLabel">メールアドレス:</p>
+        <p id="emailAddress">{{result.emailAddress}}</p>
+        <p id="passwordLabel">パスワード:</p>
+        <!-- TODO: Add password restristion -->
+        <input id="password" v-model="form.password" type="password" required placeholder="パスワード">
+        <p>アドバイザー情報</p>
+        <input v-model="form.lastName" type = "text" required placeholder="姓">
+        <input v-model="form.firstName" type = "text" required placeholder="名">
+        <!-- TODO: 口座名義必須ならいらない？ -->
+        <input v-model="form.lastNameReading" type = "text" required placeholder="セイ">
+        <input v-model="form.firstNameReading" type = "text" required placeholder="メイ">
+        <input v-model="form.telephonNumber" type = "text" required placeholder="電話番号">
+        <input v-model="form.address" type = "text" required placeholder="住所">
+        <input v-model="form.dateOfBirth" type = "text" required placeholder="生年月日">
+        <p>身分証明書</p>
+        <div>
+          <p>表面: </p><input type="file" @change="test1" name="file1"/>
+        </div>
+        <div>
+          <p>裏面: </p><input type="file" @change="test2" name="file2"/>
+        </div>
+        <p>振込口座情報</p>
+        <input v-model="form.bankCode" type = "text" pattern="[0-9]{4}" title="4桁の数字を入力してください。" required placeholder="銀行コード">
+        <input v-model="form.bankBranchCode" type = "text" pattern="[0-9]{3}" title="3桁の数字を入力してください。" required placeholder="支店コード">
+        <!-- 参考情報：メルカリの振込申請での預金種別は、普通預金、当座預金、貯蓄預金のみ。当座を登録するようなユーザを想定していない。普通預金だけでいいかなあ -->
+        <!--<input v-model="form.bankAccountType" type = "text" required placeholder="預金種別">-->
+        <p>預金種別: 普通</p>
+        <!-- 参考情報：普通預金で5桁、6桁や当座預金で3桁、4桁があるが0で先頭を埋めれば良い。ゆうちょ銀行の普通預金の8桁の場合、最後の1桁の1を削除すればよい -->
+        <input v-model="form.bankAccountNumber" type = "text" pattern="[0-9]{7}" title="7桁の数字を入力してください。" required placeholder="口座番号">
+        <input v-model="form.bankAccountHolderLastName" type = "text" required placeholder="口座名義（セイ）">
+        <input v-model="form.bankAccountHolderFirstName" type = "text" required placeholder="口座名義（メイ）">
+        <!-- 料金設定の項目 -->
+        <input v-model="form.fee" type = "text" required placeholder="料金設定">
+        <button type="submit" :disabled="!form.password">登録</button>
+      </form>
   </div>
 </template>
 
@@ -162,3 +164,32 @@ export default defineComponent({
   }
 })
 </script>
+
+<style scoped>
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: baseline;
+  column-gap: 0.5ex;
+}
+#emailAddressLabel {
+    justify-self: end;
+    grid-row: 1;
+    grid-column: 1;
+}
+#emailAddress {
+    justify-self: start;
+    grid-row: 1;
+    grid-column: 2;
+}
+#passwordLabel {
+    justify-self: end;
+    grid-row: 2;
+    grid-column: 1;
+}
+#password {
+    justify-self: start;
+    grid-row: 2;
+    grid-column: 2;
+}
+</style>
