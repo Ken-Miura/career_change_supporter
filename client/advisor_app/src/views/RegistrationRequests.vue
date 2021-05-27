@@ -2,17 +2,29 @@
   <p v-if="error.exist">{{error.message}}</p>
   <div v-if="!error.exist">
       <form ref="formRef" class="container" @submit.prevent="submitRegistrationInformation">
+        <p id="description">下記の必要な情報を入力し、登録を完了させてください。</p>
+
         <p id="emailAddressLabel">メールアドレス:</p>
-        <p id="emailAddress">{{result.emailAddress}}</p>
+        <p id="emailAddress">{{form.emailAddress}}</p>
+
         <p id="passwordLabel">パスワード:</p>
         <!-- TODO: Add password restristion -->
-        <input id="password" v-model="form.password" type="password" required placeholder="パスワード">
-        <p>アドバイザー情報</p>
-        <input v-model="form.lastName" type = "text" required placeholder="姓">
-        <input v-model="form.firstName" type = "text" required placeholder="名">
+        <input id="password" v-model="form.password" type="password" required>
+
+        <p id="lastNameLabel">姓:</p>
+        <input id="lastName" v-model="form.lastName" type = "text" required>
+
         <!-- TODO: 口座名義必須ならいらない？ -->
-        <input v-model="form.lastNameReading" type = "text" required placeholder="セイ">
-        <input v-model="form.firstNameReading" type = "text" required placeholder="メイ">
+        <p id="lastNameReadingLabel">セイ:</p>
+        <input id="lastNameReading" v-model="form.lastNameReading" type = "text" required>
+
+        <p id="firstNameLabel">名:</p>
+        <input id="firstName" v-model="form.firstName" type = "text" required>
+
+        <!-- TODO: 口座名義必須ならいらない？ -->
+        <p id="firstNameReadingLabel">メイ:</p>
+        <input id="firstNameReading" v-model="form.lastNameReading" type = "text" required>
+
         <input v-model="form.telephonNumber" type = "text" required placeholder="電話番号">
         <input v-model="form.address" type = "text" required placeholder="住所">
         <input v-model="form.dateOfBirth" type = "text" required placeholder="生年月日">
@@ -53,11 +65,9 @@ export default defineComponent({
       exist: false,
       message: ''
     })
-    const result = reactive({
-      emailAddress: ''
-    })
     const formRef = ref<HTMLFormElement | null>(null)
     const form = reactive({
+      emailAddress: '',
       password: '',
       lastName: '',
       firstName: '',
@@ -105,7 +115,7 @@ export default defineComponent({
         error.exist = false
         error.message = ''
         const resJson = await response.json()
-        result.emailAddress = resJson.email_address
+        form.emailAddress = resJson.email_address
       } else {
         error.exist = true
         error.message = await createErrorMessage(response)
@@ -160,7 +170,7 @@ export default defineComponent({
       }
       await checkIfRequestIdExpires(router.currentRoute.value.query)
     })
-    return { error, result, formRef, form, test1, test2 }
+    return { error, formRef, form, test1, test2 }
   }
 })
 </script>
@@ -169,27 +179,75 @@ export default defineComponent({
 .container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: baseline;
+  align-items: center;
   column-gap: 0.5ex;
+
+}
+#description {
+    justify-self: center;
+    grid-row: 1;
+    grid-column: 1/3;
 }
 #emailAddressLabel {
+    align-self: baseline;
     justify-self: end;
-    grid-row: 1;
+    grid-row: 2;
     grid-column: 1;
 }
 #emailAddress {
+    align-self: baseline;
     justify-self: start;
-    grid-row: 1;
+    grid-row: 2;
     grid-column: 2;
 }
 #passwordLabel {
     justify-self: end;
-    grid-row: 2;
+    grid-row: 3;
     grid-column: 1;
 }
 #password {
     justify-self: start;
-    grid-row: 2;
+    grid-row: 3;
+    grid-column: 2;
+}
+#lastNameLabel {
+    justify-self: end;
+    grid-row: 4;
+    grid-column: 1;
+}
+#lastName {
+    justify-self: start;
+    grid-row: 4;
+    grid-column: 2;
+}
+#lastNameReadingLabel {
+    justify-self: end;
+    grid-row: 5;
+    grid-column: 1;
+}
+#lastNameReading {
+    justify-self: start;
+    grid-row: 5;
+    grid-column: 2;
+}
+#firstNameLabel {
+    justify-self: end;
+    grid-row: 6;
+    grid-column: 1;
+}
+#firstName {
+    justify-self: start;
+    grid-row: 6;
+    grid-column: 2;
+}
+#firstNameReadingLabel {
+    justify-self: end;
+    grid-row: 7;
+    grid-column: 1;
+}
+#firstNameReading {
+    justify-self: start;
+    grid-row: 7;
     grid-column: 2;
 }
 </style>
