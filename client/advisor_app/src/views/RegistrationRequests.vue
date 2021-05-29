@@ -4,49 +4,113 @@
       <form ref="formRef" class="container" @submit.prevent="submitRegistrationInformation">
         <p id="description">下記の必要な情報を入力し、登録を完了させてください。</p>
 
-        <p id="emailAddressLabel">メールアドレス:</p>
-        <p id="emailAddress">{{form.emailAddress}}</p>
-
-        <p id="passwordLabel">パスワード:</p>
-        <!-- TODO: Add password restristion -->
-        <input id="password" v-model="form.password" type="password" required>
-
-        <p id="lastNameLabel">姓:</p>
-        <input id="lastName" v-model="form.lastName" type = "text" required>
-
-        <!-- TODO: 口座名義必須ならいらない？ -->
-        <p id="lastNameReadingLabel">セイ:</p>
-        <input id="lastNameReading" v-model="form.lastNameReading" type = "text" required>
-
-        <p id="firstNameLabel">名:</p>
-        <input id="firstName" v-model="form.firstName" type = "text" required>
-
-        <!-- TODO: 口座名義必須ならいらない？ -->
-        <p id="firstNameReadingLabel">メイ:</p>
-        <input id="firstNameReading" v-model="form.lastNameReading" type = "text" required>
-
-        <input v-model="form.telephonNumber" type = "text" required placeholder="電話番号">
-        <input v-model="form.address" type = "text" required placeholder="住所">
-        <input v-model="form.dateOfBirth" type = "text" required placeholder="生年月日">
-        <p>身分証明書</p>
-        <div>
-          <p>表面: </p><input type="file" @change="test1" name="file1"/>
+        <div id="accountInfoContainer">
+          <p id="emailAddressLabel">メールアドレス</p>
+          <p id="emailAddress">{{form.emailAddress}}</p>
+          <p id="passwordLabel">パスワード</p>
+          <!-- TODO: Add password restristion -->
+          <input id="password" v-model="form.password" type="password" required>
         </div>
-        <div>
-          <p>裏面: </p><input type="file" @change="test2" name="file2"/>
+
+        <div id="advisorInfoContainer">
+          <div id="nameContainer">
+            <p id="nameTitle">お名前 (漢字)</p>
+            <p id="lastNameLabel">姓:</p>
+            <input id="lastName" v-model="form.lastName" type = "text" required>
+            <p id="firstNameLabel">名:</p>
+            <input id="firstName" v-model="form.firstName" type = "text" required>
+          </div>
+          <div id="nameReadingContainer">
+            <p id="nameReadingTitle">お名前 (フリガナ)</p>
+            <p id="lastNameReadingLabel">セイ:</p>
+            <input id="lastNameReading" v-model="form.lastNameReading" type = "text" required>
+            <p id="firstNameReadingLabel">メイ:</p>
+            <input id="firstNameReading" v-model="form.lastNameReading" type = "text" required>
+          </div>
+          <div id="telephoneNumberContainer">
+            <p id="telephoneNumberLabel">電話番号</p>
+            <input id="telephoneNumber" v-model="form.telephonNumber" type = "text" required>
+          </div>
+          <div id="dateOfBirthContainer">
+            <p id="dateOfBirthLabel">生年月日</p>
+            <select id="year" v-model="form.year">
+                <!-- TODO: Add values -->
+                <option value="2019">2019</option>
+                <option value="2020">2020</option>
+                <option value="2021">2021</option>
+            </select>
+            <p id="yearLabel">年</p>
+            <select id="month" v-model="form.month">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+            </select>
+            <p id="monthLabel">月</p>
+            <select id="date" v-model="form.date">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+                <option value="31">31</option>
+            </select>
+            <p id="dateLabel">日</p>
+          </div>
+          <div id="addressContainer">
+            <p id="addressLabel">住所</p>
+            <p id="prefectureLabel">都道府県:</p>
+            <input id="prefecture" v-model="form.prefecture" type = "text" required>
+            <p id="cityLabel">市区町村:</p>
+            <input id="city" v-model="form.city" type = "text" required>
+            <p id="addressLine1Label">それ以降の住所:</p>
+            <input id="addressLine1" v-model="form.addressLine1" type = "text" required>
+            <p id="addressLine2Label">建物名・号室:</p>
+            <input id="addressLine2" v-model="form.addressLine2" type = "text" required>
+          </div>
+          <div id="identificationContainer">
+            <p id="identificationLabel">身分証明書</p>
+            <p id="identificationDescription">運転免許証、保険証、在留カードは表面と裏面、パスポートは顔写真記載面と現住所記載面をアップロードしてください（保険証に関しては、保険証番号等をマスキングした状態でアップロードください）</p>
+            <p id="image1Label">画像1:</p>
+            <input id="image1" type="file" @change="test1" name="file1"/>
+            <p id="image2Label">画像2:</p>
+            <input id="image2" type="file" @change="test2" name="file2"/>
+          </div>
         </div>
-        <p>振込口座情報</p>
-        <input v-model="form.bankCode" type = "text" pattern="[0-9]{4}" title="4桁の数字を入力してください。" required placeholder="銀行コード">
-        <input v-model="form.bankBranchCode" type = "text" pattern="[0-9]{3}" title="3桁の数字を入力してください。" required placeholder="支店コード">
-        <!-- 参考情報：メルカリの振込申請での預金種別は、普通預金、当座預金、貯蓄預金のみ。当座を登録するようなユーザを想定していない。普通預金だけでいいかなあ -->
-        <!--<input v-model="form.bankAccountType" type = "text" required placeholder="預金種別">-->
-        <p>預金種別: 普通</p>
-        <!-- 参考情報：普通預金で5桁、6桁や当座預金で3桁、4桁があるが0で先頭を埋めれば良い。ゆうちょ銀行の普通預金の8桁の場合、最後の1桁の1を削除すればよい -->
-        <input v-model="form.bankAccountNumber" type = "text" pattern="[0-9]{7}" title="7桁の数字を入力してください。" required placeholder="口座番号">
-        <input v-model="form.bankAccountHolderLastName" type = "text" required placeholder="口座名義（セイ）">
-        <input v-model="form.bankAccountHolderFirstName" type = "text" required placeholder="口座名義（メイ）">
-        <!-- 料金設定の項目 -->
-        <input v-model="form.fee" type = "text" required placeholder="料金設定">
+
         <button type="submit" :disabled="!form.password">登録</button>
       </form>
   </div>
@@ -73,14 +137,14 @@ export default defineComponent({
       firstName: '',
       lastNameReading: '',
       firstNameReading: '',
-      address: '',
-      dateOfBirth: '',
-      bankCode: '',
-      bankBranchCode: '',
-      bankAccountNumber: '',
-      bankAccountHolderLastName: '',
-      bankAccountHolderFirstName: '',
-      fee: '',
+      telephonNumber: '',
+      year: '',
+      month: '',
+      date: '',
+      prefecture: '',
+      city: '',
+      addressLine1: '',
+      addressLine2: '',
       identificationHeads: null as FileList | null,
       identificationTails: null as FileList | null
     })
@@ -176,78 +240,48 @@ export default defineComponent({
 </script>
 
 <style scoped>
+#accountInfoContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: start;
+}
+#emailAddressLabel {
+    grid-row: 1;
+}
+#emailAddress {
+    grid-row: 2;
+}
+#passwordLabel {
+    grid-row: 3;
+}
+#password {
+    grid-row: 4;
+}
+
+#advisorInfoContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: start;
+}
+
 .container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   align-items: center;
-  column-gap: 0.5ex;
+  justify-items: center;
+  row-gap: 1ex;
 
 }
 #description {
-    justify-self: center;
     grid-row: 1;
-    grid-column: 1/3;
+    grid-column: 1/2;
 }
-#emailAddressLabel {
-    align-self: baseline;
-    justify-self: end;
+#accountInfoContainer {
     grid-row: 2;
-    grid-column: 1;
 }
-#emailAddress {
-    align-self: baseline;
-    justify-self: start;
-    grid-row: 2;
-    grid-column: 2;
-}
-#passwordLabel {
-    justify-self: end;
+#advisorInfoContainer {
     grid-row: 3;
-    grid-column: 1;
-}
-#password {
-    justify-self: start;
-    grid-row: 3;
-    grid-column: 2;
-}
-#lastNameLabel {
-    justify-self: end;
-    grid-row: 4;
-    grid-column: 1;
-}
-#lastName {
-    justify-self: start;
-    grid-row: 4;
-    grid-column: 2;
-}
-#lastNameReadingLabel {
-    justify-self: end;
-    grid-row: 5;
-    grid-column: 1;
-}
-#lastNameReading {
-    justify-self: start;
-    grid-row: 5;
-    grid-column: 2;
-}
-#firstNameLabel {
-    justify-self: end;
-    grid-row: 6;
-    grid-column: 1;
-}
-#firstName {
-    justify-self: start;
-    grid-row: 6;
-    grid-column: 2;
-}
-#firstNameReadingLabel {
-    justify-self: end;
-    grid-row: 7;
-    grid-column: 1;
-}
-#firstNameReading {
-    justify-self: start;
-    grid-row: 7;
-    grid-column: 2;
 }
 </style>
