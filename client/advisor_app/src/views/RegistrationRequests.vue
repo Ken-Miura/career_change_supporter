@@ -15,10 +15,8 @@
         <div id="advisorInfoContainer">
           <div id="nameContainer">
             <p id="nameTitle">お名前 (漢字)</p>
-            <p id="lastNameLabel">姓:</p>
-            <input id="lastName" v-model="form.lastName" type = "text" required>
-            <p id="firstNameLabel">名:</p>
-            <input id="firstName" v-model="form.firstName" type = "text" required>
+            <p id="lastName">姓: <input v-model="form.lastName" type = "text" required></p>
+            <p id="firstName">名: <input v-model="form.firstName" type = "text" required></p>
           </div>
           <div id="nameReadingContainer">
             <p id="nameReadingTitle">お名前 (フリガナ)</p>
@@ -268,7 +266,22 @@ export default defineComponent({
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
+  justify-items: center;
+}
+#nameContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
   justify-items: start;
+}
+#nameTitle {
+    grid-row: 1;
+}
+#lastName {
+    grid-row: 2;
+}
+#firstName {
+    grid-row: 3;
 }
 
 .container {
@@ -277,7 +290,6 @@ export default defineComponent({
   align-items: center;
   justify-items: center;
   row-gap: 1ex;
-
 }
 #description {
     grid-row: 1;
