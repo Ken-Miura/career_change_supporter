@@ -88,12 +88,11 @@
             <p id="addressLine2">建物名・号室:</p><input id="addressLine2Input" v-model="form.addressLine2" type = "text">
           </div>
           <div id="identificationContainer">
-            <p id="identificationLabel">身分証明書</p>
-            <p id="identificationDescription">運転免許証、保険証、在留カードは表面と裏面、パスポートは顔写真記載面と現住所記載面をアップロードしてください（保険証に関しては、保険証番号等をマスキングした状態でアップロードください）</p>
-            <p id="image1Label">画像1:</p>
-            <input id="image1" type="file" @change="test1" name="file1"/>
-            <p id="image2Label">画像2:</p>
-            <input id="image2" type="file" @change="test2" name="file2"/>
+            <p id="identificationTitle">身分証明書</p>
+            <!-- TODO: レイアウトを考える -->
+            <!--<p id="identificationDescription">運転免許証、保険証、在留カードは表面と裏面、<br>パスポートは顔写真記載面と現住所記載面をアップロードしてください<br>（保険証は、保険証番号をマスキングした状態でアップロードください）</p>  -->
+            <p id="image1">画像1: <input type="file" @change="test1" name="file1"/></p>
+            <p id="image2">画像2: <input type="file" @change="test2" name="file2"/></p>
           </div>
         </div>
 
@@ -239,18 +238,6 @@ export default defineComponent({
   align-items: center;
   justify-items: start;
 }
-#emailAddressLabel {
-    grid-row: 1;
-}
-#emailAddress {
-    grid-row: 2;
-}
-#passwordLabel {
-    grid-row: 3;
-}
-#password {
-    grid-row: 4;
-}
 
 #advisorInfoContainer {
   display: grid;
@@ -265,29 +252,11 @@ export default defineComponent({
   align-items: center;
   justify-items: start;
 }
-#nameTitle {
-    grid-row: 1;
-}
-#lastName {
-    grid-row: 2;
-}
-#firstName {
-    grid-row: 3;
-}
 #nameReadingContainer {
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
   justify-items: start;
-}
-#nameReadingTitle {
-    grid-row: 1;
-}
-#lastNameReading {
-    grid-row: 2;
-}
-#firstNameReading {
-    grid-row: 3;
 }
 #telephoneNumberContainer {
   display: grid;
@@ -295,23 +264,11 @@ export default defineComponent({
   align-items: center;
   justify-items: start;
 }
-#telephoneNumberTitle {
-    grid-row: 1;
-}
-#telephoneNumber {
-    grid-row: 2;
-}
 #dateOfBirthContainer {
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
   justify-items: start;
-}
-#dateOfBirthTitle {
-  grid-row: 1;
-}
-#dateOfBirth {
-  grid-row: 2;
 }
 #addressContainer {
   display: grid;
@@ -355,6 +312,12 @@ export default defineComponent({
 #addressLine2Input {
   grid-row: 5;
   grid-column: 2;
+}
+#identificationContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: start;
 }
 
 .container {
