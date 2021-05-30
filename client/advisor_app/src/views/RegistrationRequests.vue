@@ -20,21 +20,18 @@
           </div>
           <div id="nameReadingContainer">
             <p id="nameReadingTitle">お名前 (フリガナ)</p>
-            <p id="lastNameReadingLabel">セイ:</p>
-            <input id="lastNameReading" v-model="form.lastNameReading" type = "text" required>
-            <p id="firstNameReadingLabel">メイ:</p>
-            <input id="firstNameReading" v-model="form.lastNameReading" type = "text" required>
+            <p id="lastNameReading">セイ: <input v-model="form.lastNameReading" type = "text" required></p>
+            <p id="firstNameReading">メイ: <input v-model="form.lastNameReading" type = "text" required></p>
           </div>
           <div id="telephoneNumberContainer">
-            <p id="telephoneNumberLabel">電話番号</p>
+            <p id="telephoneNumberTitle">電話番号</p>
             <input id="telephoneNumber" v-model="form.telephonNumber" type = "text" required>
           </div>
           <div id="dateOfBirthContainer">
-            <p id="dateOfBirthLabel">生年月日</p>
-            <select id="year" v-model="form.year">
+            <p id="dateOfBirthTitle">生年月日</p>
+            <p id="dateOfBirth"><select v-model="form.year">
               <option v-for="year in yearList" :key="year" :value="year">{{ year }}</option>
-            </select>
-            <p id="yearLabel">年</p>
+            </select> 年
             <select id="month" v-model="form.month">
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -48,8 +45,7 @@
                 <option value="10">10</option>
                 <option value="11">11</option>
                 <option value="12">12</option>
-            </select>
-            <p id="monthLabel">月</p>
+            </select> 月
             <select id="date" v-model="form.date">
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -82,19 +78,14 @@
                 <option value="29">29</option>
                 <option value="30">30</option>
                 <option value="31">31</option>
-            </select>
-            <p id="dateLabel">日</p>
+            </select> 日</p>
           </div>
           <div id="addressContainer">
-            <p id="addressLabel">住所</p>
-            <p id="prefectureLabel">都道府県:</p>
-            <input id="prefecture" v-model="form.prefecture" type = "text" required>
-            <p id="cityLabel">市区町村:</p>
-            <input id="city" v-model="form.city" type = "text" required>
-            <p id="addressLine1Label">それ以降の住所:</p>
-            <input id="addressLine1" v-model="form.addressLine1" type = "text" required>
-            <p id="addressLine2Label">建物名・号室:</p>
-            <input id="addressLine2" v-model="form.addressLine2" type = "text" required>
+            <p id="addressTitle">住所</p>
+            <p id="prefecture">都道府県:</p><input id="prefectureInput" v-model="form.prefecture" type = "text" required>
+            <p id="city">市区町村:</p><input id="cityInput" v-model="form.city" type = "text" required>
+            <p id="addressLine1">それ以降の住所:</p><input id="addressLine1Input" v-model="form.addressLine1" type = "text" required>
+            <p id="addressLine2">建物名・号室:</p><input id="addressLine2Input" v-model="form.addressLine2" type = "text">
           </div>
           <div id="identificationContainer">
             <p id="identificationLabel">身分証明書</p>
@@ -266,6 +257,7 @@ export default defineComponent({
   grid-template-columns: 1fr;
   align-items: center;
   justify-items: center;
+  row-gap: 0.5ex;
 }
 #nameContainer {
   display: grid;
@@ -282,13 +274,95 @@ export default defineComponent({
 #firstName {
     grid-row: 3;
 }
+#nameReadingContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: start;
+}
+#nameReadingTitle {
+    grid-row: 1;
+}
+#lastNameReading {
+    grid-row: 2;
+}
+#firstNameReading {
+    grid-row: 3;
+}
+#telephoneNumberContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: start;
+}
+#telephoneNumberTitle {
+    grid-row: 1;
+}
+#telephoneNumber {
+    grid-row: 2;
+}
+#dateOfBirthContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: start;
+}
+#dateOfBirthTitle {
+  grid-row: 1;
+}
+#dateOfBirth {
+  grid-row: 2;
+}
+#addressContainer {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  justify-items: start;
+  column-gap: 0.5ex;
+}
+#addressTitle {
+  grid-row: 1;
+  grid-column: 1/3;
+}
+#prefecture {
+  grid-row: 2;
+  grid-column: 1;
+}
+#prefectureInput {
+  grid-row: 2;
+  grid-column: 2;
+}
+#city {
+  grid-row: 3;
+  grid-column: 1;
+}
+#cityInput {
+  grid-row: 3;
+  grid-column: 2;
+}
+#addressLine1 {
+  grid-row: 4;
+  grid-column: 1;
+}
+#addressLine1Input {
+  grid-row: 4;
+  grid-column: 2;
+}
+#addressLine2 {
+  grid-row: 5;
+  grid-column: 1;
+}
+#addressLine2Input {
+  grid-row: 5;
+  grid-column: 2;
+}
 
 .container {
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
   justify-items: center;
-  row-gap: 1ex;
+  row-gap: 2ex;
 }
 #description {
     grid-row: 1;
