@@ -230,8 +230,7 @@ export default defineComponent({
       }
       const start = 1950
       const date = new Date()
-      const ageEnoughToWork = 15
-      const end = date.getFullYear() - ageEnoughToWork
+      const end = date.getFullYear() - 18
       for (let i = start; i < (end + 1); i++) {
         yearList.push(i)
       }
