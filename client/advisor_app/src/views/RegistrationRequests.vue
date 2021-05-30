@@ -34,10 +34,7 @@
           <div id="dateOfBirthContainer">
             <p id="dateOfBirthLabel">生年月日</p>
             <select id="year" v-model="form.year">
-                <!-- TODO: Add values -->
-                <option value="2019">2019</option>
-                <option value="2020">2020</option>
-                <option value="2021">2021</option>
+              <option v-for="year in yearList" :key="year" :value="year">{{ year }}</option>
             </select>
             <p id="yearLabel">年</p>
             <select id="month" v-model="form.month">
@@ -148,6 +145,7 @@ export default defineComponent({
       identificationHeads: null as FileList | null,
       identificationTails: null as FileList | null
     })
+    const yearList = reactive([] as number[])
     const createErrorMessage = async (response: Response): Promise<string> => {
       try {
         const err = await response.json()
@@ -232,9 +230,16 @@ export default defineComponent({
         await router.push('schedule')
         return
       }
+      const start = 1950
+      const date = new Date()
+      const ageEnoughToWork = 15
+      const end = date.getFullYear() - ageEnoughToWork
+      for (let i = start; i < (end + 1); i++) {
+        yearList.push(i)
+      }
       await checkIfRequestIdExpires(router.currentRoute.value.query)
     })
-    return { error, formRef, form, test1, test2 }
+    return { error, formRef, form, yearList, test1, test2 }
   }
 })
 </script>
@@ -242,7 +247,7 @@ export default defineComponent({
 <style scoped>
 #accountInfoContainer {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: mim-content;
   align-items: center;
   justify-items: start;
 }
