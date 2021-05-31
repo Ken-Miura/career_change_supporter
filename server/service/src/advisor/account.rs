@@ -1,14 +1,22 @@
 // Copyright 2021 Ken Miura
 
 use crate::common;
+use crate::common::credential;
 use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
 
 use crate::common::util;
+use actix_multipart::Field;
 use actix_web::{post, web, HttpResponse};
 use diesel::prelude::*;
+use futures::{StreamExt, TryStreamExt};
+use rusoto_core;
+use rusoto_s3;
+use rusoto_s3::S3;
 use serde::{Deserialize, Serialize};
+use std::io::Write;
+use std::str;
 use uuid::Uuid;
 
 // TODO: 運用しながら上限を調整する
@@ -191,19 +199,30 @@ async fn registration_request_id_check(
     id_check_req: web::Json<IdCheckRequest>,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, error::Error> {
-    let _ = validate_id_format(&id_check_req.id).map_err(|e| {
-        log::error!("failed to check registration request id: {}", e);
-        e
-    })?;
+    let email_address = check_if_id_expires_and_get_email_address(id_check_req.id.clone(), &pool)
+        .await
+        .map_err(|err| {
+            log::error!("failed to check registration request id: {}", err);
+            err
+        })?;
+    log::info!(
+        "checked registration request (id: {}, email address: {})",
+        id_check_req.id,
+        email_address
+    );
+    Ok(HttpResponse::Ok().json(IdCheckResponse { email_address }))
+}
 
-    let conn = pool.get().map_err(|err| {
-        let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
-        log::error!("failed to check registration request id: {}", e);
-        e
-    })?;
-
+async fn check_if_id_expires_and_get_email_address(
+    id_to_check: String,
+    pool: &web::Data<common::ConnectionPool>,
+) -> Result<String, error::Error> {
+    let _ = validate_id_format(&id_to_check)?;
+    let conn = pool
+        .get()
+        .map_err(|err| error::Error::Unexpected(unexpected::Error::R2d2Err(err)))?;
     let current_date_time = chrono::Utc::now();
-    let req_id = id_check_req.id.clone();
+    let req_id = id_to_check.clone();
     let result = web::block(move || {
         // 一連の操作をトランザクションで実行はしない
         // advidsor registration requestテーブルに対してUPDATE権限を許可していないため、取得したreg_reqがdeleteされるまでに変化することはない。
@@ -223,18 +242,8 @@ async fn registration_request_id_check(
         Ok(reg_req.email_address)
     })
     .await;
-    let email_address = result.map_err(|err| {
-        let e = error::Error::from(err);
-        log::error!("failed to check registration request id: {}", e);
-        e
-    })?;
-
-    log::info!(
-        "checked registration request (id: {}, email address: {})",
-        id_check_req.id,
-        email_address
-    );
-    Ok(HttpResponse::Ok().json(IdCheckResponse { email_address }))
+    let email_address = result.map_err(|err| error::Error::from(err))?;
+    return Ok(email_address);
 }
 
 #[derive(Deserialize)]
@@ -297,4 +306,105 @@ fn delete_registration_request(req_id: &str, conn: &PgConnection) -> Result<(), 
         log::warn!("diesel::delete::execute result (id: {}): {}", req_id, cnt);
     }
     Ok(())
+}
+
+#[post("/account-creation-request")]
+async fn account_creation_request(
+    mut payload: actix_multipart::Multipart,
+    pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, common::error::Error> {
+    // id取得＋画像のs3へのアップロード（パラメータチェック含む）
+    // idからメールアドレスと登録日時を取得
+    // 登録日時が過ぎていないか確認
+    // メールアドレス＋暗号化したパスワード＋残りの情報（s3のURLを含む）を依頼日時を設定し、確認依頼テーブルに追加する
+    // 管理者にメール通知を行う
+    let mut submitted_data: Option<SubmittedData> = None;
+    let mut image1_filename: Option<String> = None;
+    let mut image2_filename: Option<String> = None;
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        let content_type = field.content_disposition().unwrap();
+        let name = content_type.get_name().unwrap();
+        if name == "parameter" {
+            // バイナリ->Stringへ変換して変数に格納
+            while let Some(chunk) = field.next().await {
+                let data = chunk.unwrap();
+                let parameter: String = str::from_utf8(&data).unwrap().parse().unwrap();
+                submitted_data = Some(serde_json::from_str(&parameter).unwrap());
+                log::info!("data: {:?}", data);
+            }
+        } else if name == "image1" {
+            let filename = upload_to_s3_bucket(field).await;
+            image1_filename = Some(filename)
+        } else if name == "image2" {
+            let filename = upload_to_s3_bucket(field).await;
+            image2_filename = Some(filename)
+        }
+    }
+    let id = submitted_data.clone().unwrap().id;
+    let email_address = check_if_id_expires_and_get_email_address(id.clone(), &pool)
+        .await
+        .map_err(|err| {
+            log::error!("failed to check registration request id: {}", err);
+            err
+        })?;
+    let password = submitted_data.clone().unwrap().password;
+    let hashed_password = credential::hash_password(&password);
+
+    let e = error::Error::Handled(handled::Error::NoSessionFound(
+        handled::NoSessionFound::new(),
+    ));
+    log::error!("failed to get session state {}", e);
+    Err(e)
+}
+
+const AWS_S3_ID_IMG_BUCKET_NAME: &str = "identification-images";
+const AWS_REGION: &str = "ap-northeast-1";
+const AWS_ENDPOINT_URL: &str = "http://localhost:4566";
+
+async fn upload_to_s3_bucket(mut field: Field) -> String {
+    let id = Uuid::new_v4().to_simple().to_string();
+    // TODO: 画像の種類によって拡張子を変える
+    let image_filename = format!("{}.png", &id);
+    // TODO: メモリでなく、一時的に/tmp/などに保存する？（直接指定せずにenv等を通して）
+    let mut contents: Vec<u8> = Vec::new();
+    // バイナリをチャンクに分けてwhileループ
+    while let Some(chunk) = field.next().await {
+        let data = chunk.unwrap();
+        contents = web::block(move || contents.write_all(&data).map(|_| contents))
+            .await
+            .unwrap();
+    }
+    let put_request = rusoto_s3::PutObjectRequest {
+        bucket: AWS_S3_ID_IMG_BUCKET_NAME.to_string(),
+        key: image_filename.clone(),
+        body: Some(contents.into()),
+        ..Default::default()
+    };
+    let region = rusoto_core::Region::Custom {
+        name: AWS_REGION.to_string(),
+        endpoint: AWS_ENDPOINT_URL.to_string(),
+    };
+    let s3_client = rusoto_s3::S3Client::new(region);
+    let result = s3_client.put_object(put_request).await;
+    let output = result.unwrap();
+    log::info!("{:?}", output);
+    return image_filename;
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct SubmittedData {
+    id: String,
+    password: String,
+    last_name: String,
+    first_name: String,
+    last_name_furigana: String,
+    first_name_furigana: String,
+    telephone_number: String,
+    year_of_birth: u16,
+    month_of_birth: u8,
+    day_of_birth: u8,
+    prefecture: String,
+    city: String,
+    address_line1: String,
+    address_line2: Option<String>,
 }

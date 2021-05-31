@@ -241,9 +241,9 @@ export default defineComponent({
         last_name_furigana: form.lastNameFurigana, // eslint-disable-line
         first_name_furigana: form.firstNameFurigana, // eslint-disable-line
         telephone_number: form.telephonNumber, // eslint-disable-line
-        year_of_birth: form.year, // eslint-disable-line
-        month_of_birth: form.month, // eslint-disable-line
-        day_of_birth: form.day, // eslint-disable-line
+        year_of_birth: parseInt(form.year), // eslint-disable-line
+        month_of_birth: parseInt(form.month), // eslint-disable-line
+        day_of_birth: parseInt(form.day), // eslint-disable-line
         prefecture: form.prefecture, // eslint-disable-line
         city: form.city, // eslint-disable-line
         address_line1: form.addressLine1, // eslint-disable-line
@@ -264,7 +264,7 @@ export default defineComponent({
       registration.run = true
       let response
       try {
-        response = await fetch('account-creation-req', {
+        response = await fetch('account-creation-request', {
           method: 'POST',
           body: formData
         })
@@ -275,7 +275,6 @@ export default defineComponent({
       }
       registration.message = await createErrorMessage(response)
     }
-
     return { error, formRef, form, yearList, onImage1StateChange, onImage2StateChange, submitData, registration }
   }
 })
