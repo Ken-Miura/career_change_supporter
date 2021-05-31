@@ -1,7 +1,7 @@
 <template>
   <p v-if="error.exist">{{error.message}}</p>
   <div v-if="!error.exist">
-      <form ref="formRef" class="container" @submit.prevent="submitRegistrationInformation">
+      <form ref="formRef" class="container" @submit.prevent="submitData">
         <p id="description">下記の必要な情報を入力し、登録を完了させてください。</p>
 
         <div id="accountInfoContainer">
@@ -21,7 +21,7 @@
           <div id="nameFuriganaContainer">
             <p id="nameFuriganaTitle">お名前 (フリガナ)</p>
             <p id="lastNameFurigana">セイ: <input v-model="form.lastNameFurigana" type = "text" required></p>
-            <p id="firstNameFurigana">メイ: <input v-model="form.lastNameFurigana" type = "text" required></p>
+            <p id="firstNameFurigana">メイ: <input v-model="form.firstNameFurigana" type = "text" required></p>
           </div>
           <div id="telephoneNumberContainer">
             <p id="telephoneNumberTitle">電話番号</p>
@@ -46,7 +46,7 @@
                 <option value="11">11</option>
                 <option value="12">12</option>
             </select> 月
-            <select id="date" v-model="form.date">
+            <select id="day" v-model="form.day">
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -95,9 +95,9 @@
             <p id="image2">画像2: <input type="file" @change="onImage2StateChange" name="file2"/></p>
           </div>
         </div>
-
         <button type="submit" :disabled="!form.password">登録</button>
       </form>
+      <p v-if="registration.run">{{registration.message}}</p>
   </div>
 </template>
 
@@ -114,6 +114,10 @@ export default defineComponent({
       exist: false,
       message: ''
     })
+    const registration = reactive({
+      run: false,
+      message: ''
+    })
     const formRef = ref<HTMLFormElement | null>(null)
     const form = reactive({
       emailAddress: '',
@@ -125,13 +129,13 @@ export default defineComponent({
       telephonNumber: '',
       year: '',
       month: '',
-      date: '',
+      day: '',
       prefecture: '',
       city: '',
       addressLine1: '',
       addressLine2: '',
-      identificationHeads: null as FileList | null,
-      identificationTails: null as FileList | null
+      image1: null as FileList | null,
+      image2: null as FileList | null
     })
     const yearList = reactive([] as number[])
     const createErrorMessage = async (response: Response): Promise<string> => {
@@ -187,7 +191,7 @@ export default defineComponent({
         console.log('files === null')
         return
       }
-      form.identificationHeads = files
+      form.image1 = files
     }
 
     const onImage2StateChange = (event: Event) => {
@@ -205,7 +209,7 @@ export default defineComponent({
         console.log('files === null')
         return
       }
-      form.identificationHeads = files
+      form.image2 = files
     }
 
     const router = useRouter()
@@ -226,7 +230,53 @@ export default defineComponent({
       }
       await checkIfRequestIdExpires(router.currentRoute.value.query)
     })
-    return { error, formRef, form, yearList, onImage1StateChange, onImage2StateChange }
+
+    const submitData = async () => {
+      const query = router.currentRoute.value.query
+      const data = {
+        id: query.id,
+        password: form.password,
+        last_name: form.lastName, // eslint-disable-line
+        first_name: form.firstName, // eslint-disable-line
+        last_name_furigana: form.lastNameFurigana, // eslint-disable-line
+        first_name_furigana: form.firstNameFurigana, // eslint-disable-line
+        telephone_number: form.telephonNumber, // eslint-disable-line
+        year_of_birth: form.year, // eslint-disable-line
+        month_of_birth: form.month, // eslint-disable-line
+        day_of_birth: form.day, // eslint-disable-line
+        prefecture: form.prefecture, // eslint-disable-line
+        city: form.city, // eslint-disable-line
+        address_line1: form.addressLine1, // eslint-disable-line
+        address_line2: form.addressLine2, // eslint-disable-line
+      }
+      const formData = new FormData()
+      formData.append('parameter', JSON.stringify(data))
+      const files1 = form.image1
+      if (files1 !== null) {
+        const file = files1[0]
+        formData.append('image1', file)
+      }
+      const files2 = form.image2
+      if (files2 !== null) {
+        const file = files2[0]
+        formData.append('image2', file)
+      }
+      registration.run = true
+      let response
+      try {
+        response = await fetch('account-creation-req', {
+          method: 'POST',
+          body: formData
+        })
+      } catch (e) {
+        console.log(`failed to get response: ${e}`)
+        registration.message = '通信エラーが発生しました。インターネットに接続できているか確認してください。'
+        return
+      }
+      registration.message = await createErrorMessage(response)
+    }
+
+    return { error, formRef, form, yearList, onImage1StateChange, onImage2StateChange, submitData, registration }
   }
 })
 </script>
