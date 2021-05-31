@@ -18,10 +18,10 @@
             <p id="lastName">姓: <input v-model="form.lastName" type = "text" required></p>
             <p id="firstName">名: <input v-model="form.firstName" type = "text" required></p>
           </div>
-          <div id="nameReadingContainer">
-            <p id="nameReadingTitle">お名前 (フリガナ)</p>
-            <p id="lastNameReading">セイ: <input v-model="form.lastNameReading" type = "text" required></p>
-            <p id="firstNameReading">メイ: <input v-model="form.lastNameReading" type = "text" required></p>
+          <div id="nameFuriganaContainer">
+            <p id="nameFuriganaTitle">お名前 (フリガナ)</p>
+            <p id="lastNameFurigana">セイ: <input v-model="form.lastNameFurigana" type = "text" required></p>
+            <p id="firstNameFurigana">メイ: <input v-model="form.lastNameFurigana" type = "text" required></p>
           </div>
           <div id="telephoneNumberContainer">
             <p id="telephoneNumberTitle">電話番号</p>
@@ -91,8 +91,8 @@
             <p id="identificationTitle">身分証明書</p>
             <!-- TODO: レイアウトを考える -->
             <!--<p id="identificationDescription">運転免許証、保険証、在留カードは表面と裏面、<br>パスポートは顔写真記載面と現住所記載面をアップロードしてください<br>（保険証は、保険証番号をマスキングした状態でアップロードください）</p>  -->
-            <p id="image1">画像1: <input type="file" @change="test1" name="file1"/></p>
-            <p id="image2">画像2: <input type="file" @change="test2" name="file2"/></p>
+            <p id="image1">画像1: <input type="file" @change="onImage1StateChange" name="file1"/></p>
+            <p id="image2">画像2: <input type="file" @change="onImage2StateChange" name="file2"/></p>
           </div>
         </div>
 
@@ -120,8 +120,8 @@ export default defineComponent({
       password: '',
       lastName: '',
       firstName: '',
-      lastNameReading: '',
-      firstNameReading: '',
+      lastNameFurigana: '',
+      firstNameFurigana: '',
       telephonNumber: '',
       year: '',
       month: '',
@@ -172,8 +172,8 @@ export default defineComponent({
       }
     }
 
-    const test1 = (event: Event) => {
-      console.log('test1')
+    const onImage1StateChange = (event: Event) => {
+      console.log('onImage1StateChange')
       if (event === null) {
         console.log('event === null')
         return
@@ -190,8 +190,8 @@ export default defineComponent({
       form.identificationHeads = files
     }
 
-    const test2 = (event: Event) => {
-      console.log('test2')
+    const onImage2StateChange = (event: Event) => {
+      console.log('onImage2StateChange')
       if (event === null) {
         console.log('event === null')
         return
@@ -226,7 +226,7 @@ export default defineComponent({
       }
       await checkIfRequestIdExpires(router.currentRoute.value.query)
     })
-    return { error, formRef, form, yearList, test1, test2 }
+    return { error, formRef, form, yearList, onImage1StateChange, onImage2StateChange }
   }
 })
 </script>
@@ -252,7 +252,7 @@ export default defineComponent({
   align-items: center;
   justify-items: start;
 }
-#nameReadingContainer {
+#nameFuriganaContainer {
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
