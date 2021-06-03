@@ -27,7 +27,7 @@ pub mod career_change_supporter_schema {
             address_line2 -> Nullable<Varchar>,
             image1 -> Varchar,
             image2 -> Nullable<Varchar>,
-            requested_time -> Nullable<Timestamptz>,
+            requested_time -> Timestamptz,
         }
     }
 

@@ -82,7 +82,7 @@ CREATE TABLE career_change_supporter_schema.advisor_account_creation_request (
   /* TODO: 最大文字数の検討 */
   image1 VARCHAR (64) NOT NULL,
   image2 VARCHAR (64),
-  requested_time TIMESTAMP WITH TIME ZONE
+  requested_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT INSERT ON career_change_supporter_schema.advisor_account_creation_request To advisor_app;
 GRANT SELECT (email_address) ON career_change_supporter_schema.advisor_account_creation_request To advisor_app;

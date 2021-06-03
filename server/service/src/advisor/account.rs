@@ -9,10 +9,9 @@ use crate::common::error::unexpected;
 use crate::common::util;
 use actix_multipart::Field;
 use actix_web::{post, web, HttpResponse};
+use chrono::DateTime;
 use diesel::prelude::*;
 use futures::{StreamExt, TryStreamExt};
-use rusoto_core;
-use rusoto_s3;
 use rusoto_s3::S3;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
@@ -223,7 +222,7 @@ async fn check_if_id_expires_and_get_email_address(
         .map_err(|err| error::Error::Unexpected(unexpected::Error::R2d2Err(err)))?;
     let current_date_time = chrono::Utc::now();
     let req_id = id_to_check.clone();
-    let result = web::block(move || {
+    let email_address = web::block(move || {
         // 一連の操作をトランザクションで実行はしない
         // advidsor registration requestテーブルに対してUPDATE権限を許可していないため、取得したreg_reqがdeleteされるまでに変化することはない。
         let reg_req = find_registration_req_by_id(&req_id, &conn)?;
@@ -241,8 +240,7 @@ async fn check_if_id_expires_and_get_email_address(
         }
         Ok(reg_req.email_address)
     })
-    .await;
-    let email_address = result.map_err(|err| error::Error::from(err))?;
+    .await?;
     return Ok(email_address);
 }
 
@@ -308,16 +306,12 @@ fn delete_registration_request(req_id: &str, conn: &PgConnection) -> Result<(), 
     Ok(())
 }
 
+// TODO: 綺麗に書き直す＋エラーハンドリングの追加
 #[post("/account-creation-request")]
 async fn account_creation_request(
     mut payload: actix_multipart::Multipart,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
-    // id取得＋画像のs3へのアップロード（パラメータチェック含む）
-    // idからメールアドレスと登録日時を取得
-    // 登録日時が過ぎていないか確認
-    // メールアドレス＋暗号化したパスワード＋残りの情報（s3のURLを含む）を依頼日時を設定し、確認依頼テーブルに追加する
-    // 管理者にメール通知を行う
     let mut submitted_data: Option<SubmittedData> = None;
     let mut image1_filename: Option<String> = None;
     let mut image2_filename: Option<String> = None;
@@ -348,7 +342,25 @@ async fn account_creation_request(
             err
         })?;
     let password = submitted_data.clone().unwrap().password;
-    let hashed_password = credential::hash_password(&password);
+    let hashed_password = credential::hash_password(&password).unwrap();
+
+    let result = create_account_registration(
+        email_address,
+        hashed_password,
+        submitted_data.unwrap(),
+        image1_filename,
+        image2_filename,
+        &pool,
+    );
+    match result {
+        Ok(()) => {
+            log::info!("ok");
+        },
+        Err(e) => {
+            log::error!("{}", e);
+        }
+    };
+    // 管理者にメール通知
 
     let e = error::Error::Handled(handled::Error::NoSessionFound(
         handled::NoSessionFound::new(),
@@ -400,11 +412,79 @@ struct SubmittedData {
     last_name_furigana: String,
     first_name_furigana: String,
     telephone_number: String,
-    year_of_birth: u16,
-    month_of_birth: u8,
-    day_of_birth: u8,
+    year_of_birth: i16,
+    month_of_birth: i16,
+    day_of_birth: i16,
     prefecture: String,
     city: String,
     address_line1: String,
     address_line2: Option<String>,
+}
+
+fn create_account_registration(
+    mail_addr: String,
+    hashed_passwoed: Vec<u8>,
+    submitted_data: SubmittedData,
+    image1: Option<String>,
+    image2: Option<String>,
+    pool: &web::Data<common::ConnectionPool>,
+) -> Result<(), common::error::Error> {
+    let conn = pool
+        .get()
+        .map_err(|err| error::Error::Unexpected(unexpected::Error::R2d2Err(err)))?;
+        conn.transaction::<_, error::Error, _>(|| {
+            use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
+                advisor_account_creation_request, email_address
+            };
+            let email_addrs = advisor_account_creation_request
+            .select(email_address).filter(email_address.eq(mail_addr.clone())).load::<String>(&conn)?;
+            if !email_addrs.is_empty() {
+                panic!("email ({}) already exist", mail_addr.clone());
+            }
+
+            use db::schema::career_change_supporter_schema::advisor_account_creation_request as aac_request;
+            let address_line2 = submitted_data.address_line2.clone().unwrap();
+            let i1 = image1.unwrap();
+            let i2 = image2.unwrap();
+            let current_date_time = chrono::Utc::now();
+            let aac_req = create_acc_request(&mail_addr, &hashed_passwoed, &submitted_data, &address_line2, &i1, &i2, &current_date_time);
+            // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
+            let _result = diesel::insert_into(aac_request::table)
+                .values(aac_req)
+                .execute(&conn)
+                .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
+
+            Ok(())
+        })?;
+    Ok(())
+}
+
+fn create_acc_request<'a> (
+    mail_addr: &'a str,
+    hashed_passwoed: &'a [u8],
+    submitted_data: &'a SubmittedData,
+    address_line2: &'a str,
+    image1: &'a str,
+    image2: &'a str,
+    current_date_time: &'a DateTime<chrono::Utc>,
+) -> db::model::advisor::AccountCreationRequest<'a> {
+    db::model::advisor::AccountCreationRequest {
+        email_address: mail_addr,
+        hashed_password: hashed_passwoed,
+        last_name: &submitted_data.last_name,
+        first_name: &submitted_data.first_name,
+        last_name_furigana: &submitted_data.last_name_furigana,
+        first_name_furigana: &submitted_data.first_name_furigana,
+        telephone_number: &submitted_data.telephone_number,
+        year_of_birth: submitted_data.year_of_birth,
+        month_of_birth: submitted_data.month_of_birth,
+        day_of_birth: submitted_data.day_of_birth,
+        prefecture: &submitted_data.prefecture,
+        city: &submitted_data.city,
+        address_line1: &submitted_data.address_line1,
+        address_line2: Some(address_line2),
+        image1,
+        image2: Some(image2),
+        requested_time: &current_date_time,
+    }
 }

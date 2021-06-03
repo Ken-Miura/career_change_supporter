@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
-use crate::schema::career_change_supporter_schema::advisor_registration_request;
 use crate::schema::career_change_supporter_schema::advisor_account_creation_request;
+use crate::schema::career_change_supporter_schema::advisor_registration_request;
 
 #[derive(Insertable)]
 #[table_name = "advisor_registration_request"]
@@ -42,7 +42,7 @@ pub struct AccountCreationRequest<'a> {
 
 #[derive(Clone, Queryable)]
 pub struct AccountCreationRequestResult {
-    pub advisor_acc_request_id: String,
+    pub advisor_acc_request_id: i32,
     pub email_address: String,
     pub hashed_password: Vec<u8>,
     pub last_name: String,
