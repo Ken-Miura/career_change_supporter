@@ -87,3 +87,4 @@ CREATE TABLE career_change_supporter_schema.advisor_account_creation_request (
 GRANT INSERT ON career_change_supporter_schema.advisor_account_creation_request To advisor_app;
 GRANT SELECT (email_address) ON career_change_supporter_schema.advisor_account_creation_request To advisor_app;
 GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_account_creation_request_advisor_acc_request_id_seq TO advisor_app;
+GRANT SELECT ON career_change_supporter_schema.advisor_account_creation_request To administrator_app;

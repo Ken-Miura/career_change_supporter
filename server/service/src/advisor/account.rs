@@ -355,7 +355,7 @@ async fn account_creation_request(
     match result {
         Ok(()) => {
             log::info!("ok");
-        },
+        }
         Err(e) => {
             log::error!("{}", e);
         }
@@ -428,7 +428,7 @@ fn create_account_registration(
     let conn = pool
         .get()
         .map_err(|err| error::Error::Unexpected(unexpected::Error::R2d2Err(err)))?;
-        conn.transaction::<_, error::Error, _>(|| {
+    conn.transaction::<_, error::Error, _>(|| {
             use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
                 advisor_account_creation_request, email_address
             };
@@ -455,7 +455,7 @@ fn create_account_registration(
     Ok(())
 }
 
-fn create_acc_request<'a> (
+fn create_acc_request<'a>(
     mail_addr: &'a str,
     hashed_passwoed: &'a [u8],
     submitted_data: &'a SubmittedData,

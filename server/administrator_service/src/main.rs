@@ -1,24 +1,89 @@
-#[macro_use]
-extern crate actix_web;
+// Copyright 2021 Ken Miura
 
 #[macro_use]
 extern crate serde_json;
 
+use actix_http::error::BlockingError;
 use actix_http::{body::Body, Response};
 use actix_web::dev::ServiceResponse;
 use actix_web::http::StatusCode;
 use actix_web::middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers};
-use actix_web::{web, App, HttpResponse, HttpServer, Result};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Result};
 
+use diesel::QueryDsl;
+use diesel::RunQueryDsl;
+use dotenv::dotenv;
 use handlebars::Handlebars;
+
+use diesel::r2d2::ConnectionManager;
+use diesel::r2d2::Pool;
+use diesel::PgConnection;
+use std::env;
 
 use std::io;
 
+#[actix_web::main]
+async fn main() -> io::Result<()> {
+    dotenv().ok();
+
+    std::env::set_var("RUST_LOG", "info");
+    std::env::set_var("RUST_BACKTRACE", "1");
+    env_logger::init();
+
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_templates_directory(".html", "./administrator_service/static/templates")
+        .unwrap();
+    let handlebars_ref = web::Data::new(handlebars);
+
+    let database_url = env::var("ADMINISTRATOR_APP_DATABASE_URL")
+        .expect("ADMINISTRATOR_APP_DATABASE_URL must be set");
+    let manager = ConnectionManager::<PgConnection>::new(&database_url);
+    let pool: Pool<ConnectionManager<PgConnection>> = Pool::builder()
+        /*
+         * NOTE: actixのarchitectureより、1 Actor（1スレッド）ごとにconnection poolを作成して割り当てる。
+         * 1スレッドあたり1コネクションで十分と思われるため、max_sizeを1に設定する。
+         */
+        .max_size(1)
+        .build(manager)
+        .expect("never fails to create connection pool");
+
+    HttpServer::new(move || {
+        App::new()
+            .wrap(error_handlers())
+            .app_data(handlebars_ref.clone())
+            .data(pool.clone())
+            .service(index)
+            .service(user)
+    })
+    .bind("127.0.0.1:8082")?
+    .run()
+    .await
+}
+
 // Macro documentation can be found in the actix_web_codegen crate
 #[get("/")]
-async fn index(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
+async fn index(
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
+            advisor_account_creation_request
+        };
+        let requests = advisor_account_creation_request
+            .limit(100)
+            .load::<db::model::advisor::AccountCreationRequestResult>(&conn)
+            .expect("failed to get data");
+        Ok(requests)
+    }).await;
+
+    let requests = result.unwrap();
+    let request = requests[0].clone();
     let data = json!({
-        "name": "Handlebars"
+        "last_name": request.last_name
     });
     let body = hb.render("index", &data).unwrap();
 
@@ -37,29 +102,6 @@ async fn user(
     let body = hb.render("user", &data).unwrap();
 
     HttpResponse::Ok().body(body)
-}
-
-#[actix_web::main]
-async fn main() -> io::Result<()> {
-    // Handlebars uses a repository for the compiled templates. This object must be
-    // shared between the application threads, and is therefore passed to the
-    // Application Builder as an atomic reference-counted pointer.
-    let mut handlebars = Handlebars::new();
-    handlebars
-        .register_templates_directory(".html", "./administrator_service/static/templates")
-        .unwrap();
-    let handlebars_ref = web::Data::new(handlebars);
-
-    HttpServer::new(move || {
-        App::new()
-            .wrap(error_handlers())
-            .app_data(handlebars_ref.clone())
-            .service(index)
-            .service(user)
-    })
-    .bind("127.0.0.1:8082")?
-    .run()
-    .await
 }
 
 // Custom error handlers, to return HTML responses when an error occurs.
