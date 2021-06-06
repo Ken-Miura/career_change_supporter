@@ -83,7 +83,10 @@ async fn index(
     let requests = result.unwrap();
     let request = requests[0].clone();
     let data = json!({
-        "last_name": request.last_name
+        "last_name": request.last_name,
+        "requested_time": request.requested_time,
+        "image1": request.image1,
+        "image2": request.image2,
     });
     let body = hb.render("index", &data).unwrap();
 
