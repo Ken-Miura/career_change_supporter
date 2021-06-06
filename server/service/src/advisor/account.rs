@@ -362,11 +362,7 @@ async fn account_creation_request(
     };
     // 管理者にメール通知
 
-    let e = error::Error::Handled(handled::Error::NoSessionFound(
-        handled::NoSessionFound::new(),
-    ));
-    log::error!("failed to get session state {}", e);
-    Err(e)
+    Ok(HttpResponse::Ok().finish())
 }
 
 const AWS_S3_ID_IMG_BUCKET_NAME: &str = "identification-images";
