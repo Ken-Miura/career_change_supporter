@@ -18,7 +18,12 @@ use handlebars::Handlebars;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
+use rusoto_s3::S3;
 use std::env;
+use  std::fs::File;
+use std::io::Write;
+use futures::TryStreamExt;
+use bytes;
 
 use std::io;
 
@@ -61,7 +66,10 @@ async fn main() -> io::Result<()> {
     .await
 }
 
-// Macro documentation can be found in the actix_web_codegen crate
+const AWS_S3_ID_IMG_BUCKET_NAME: &str = "identification-images";
+const AWS_REGION: &str = "ap-northeast-1";
+const AWS_ENDPOINT_URL: &str = "http://localhost:4566";
+
 #[get("/")]
 async fn index(
     hb: web::Data<Handlebars<'_>>,
@@ -85,11 +93,26 @@ async fn index(
     let data = json!({
         "last_name": request.last_name,
         "requested_time": request.requested_time,
-        "image1": request.image1,
-        "image2": request.image2,
     });
-    let body = hb.render("index", &data).unwrap();
 
+    let get_request = rusoto_s3::GetObjectRequest {
+        bucket: AWS_S3_ID_IMG_BUCKET_NAME.to_string(),
+        key: request.image1.clone(),
+        ..Default::default()
+    };
+    let region = rusoto_core::Region::Custom {
+        name: AWS_REGION.to_string(),
+        endpoint: AWS_ENDPOINT_URL.to_string(),
+    };
+    let s3_client = rusoto_s3::S3Client::new(region);
+    let result = s3_client.get_object(get_request).await;
+    let stream = result.unwrap().body.unwrap();
+    let body = stream.map_ok(|b| bytes::BytesMut::from(&b[..])).try_concat().await.unwrap();
+
+    let mut file = File::create(&request.image1).expect("create failed");
+    file.write_all(&body).expect("failed to write body");
+    
+    let body = hb.render("index", &data).unwrap();
     HttpResponse::Ok().body(body)
 }
 
