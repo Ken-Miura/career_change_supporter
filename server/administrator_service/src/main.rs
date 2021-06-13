@@ -16,11 +16,13 @@ use time::Duration;
 
 use actix_redis::RedisSession;
 
+use diesel::prelude::*;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use dotenv::dotenv;
 use handlebars::Handlebars;
 
+use actix_session::Session;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
@@ -29,7 +31,8 @@ use rusoto_s3::S3;
 use std::env;
 use std::fs;
 use std::path;
-use actix_session::Session;
+
+use serde::Deserialize;
 
 use std::io;
 
@@ -86,6 +89,7 @@ async fn main() -> io::Result<()> {
             .service(images)
             .service(advisor_registration_list)
             .service(authentication)
+            .default_service(web::route().to(index_inner))
     })
     .bind("127.0.0.1:8082")?
     .run()
@@ -117,13 +121,82 @@ async fn login() -> HttpResponse {
     }
 }
 
+#[derive(Deserialize)]
+struct AccountInfo {
+    email: String,
+    password: String,
+}
+
 #[post("/authentication")]
-async fn authentication() -> HttpResponse {
-    return HttpResponse::InternalServerError().body("500 Internal Server Error");
+async fn authentication(
+    session: Session,
+    params: web::Form<AccountInfo>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let email = params.email.clone();
+    let pwd = params.password.clone();
+    let pool_clone = pool.clone();
+
+    let admin = web::block(move || {
+        let conn = pool_clone.get().expect("Failed to get conn");
+        use db::schema::career_change_supporter_schema::administrator_account::dsl::{
+            administrator_account, email_address,
+        };
+        let target = administrator_account.filter(email_address.eq(email));
+        let admins = match target.get_results::<db::model::administrator::AccountQueryResult>(&conn)
+        {
+            Ok(admins) => admins,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+        if admins.len() != 1 {
+            panic!("Failed to get account");
+        }
+        let admin = admins[0].clone();
+        return Ok(admin);
+    })
+    .await
+    .expect("Failed to proccess db access");
+    let pwd_str = String::from_utf8(admin.hashed_password).expect("Failed to get pwd str");
+    let verified = bcrypt::verify(pwd, &pwd_str).expect("Failed to verify");
+    if verified {
+        let _ = web::block(move || {
+            let conn = pool.get().expect("Failed to get conn");
+            use db::schema::career_change_supporter_schema::administrator_account::dsl::{
+                administrator_account, email_address, last_login_time,
+            };
+            let current_date_time = chrono::Utc::now();
+            let target = administrator_account.filter(email_address.eq(params.email.clone()));
+            let result = diesel::update(target)
+                .set(last_login_time.eq(&current_date_time))
+                .execute(&conn);
+            match result {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            }
+        })
+        .await;
+        let _ = session
+            .set(
+                KEY_TO_ADMINISTRATOR_ACCOUNT_ID,
+                admin.administrator_account_id,
+            )
+            .expect("Failed to set value");
+        HttpResponse::PermanentRedirect()
+            .header(actix_web::http::header::LOCATION, "/")
+            .finish()
+    } else {
+        HttpResponse::Unauthorized().body(LOGIN_ERR_TEMPLATE)
+    }
 }
 
 #[get("/")]
 async fn index(session: Session) -> HttpResponse {
+    index_inner(session)
+}
+
+fn index_inner (session: Session) -> HttpResponse {
     let res = check_session(&session);
     if res.is_err() {
         return res.expect_err("OK value detected");
@@ -150,40 +223,43 @@ async fn index(session: Session) -> HttpResponse {
 const KEY_TO_ADMINISTRATOR_ACCOUNT_ID: &str = "administrator_account_id";
 
 fn check_session(session: &Session) -> Result<(), HttpResponse> {
-    let option_acc_id: Option<i32> = session.get(KEY_TO_ADMINISTRATOR_ACCOUNT_ID).map_err(|err| {
-        log::error!("err: {}", err);
-        HttpResponse::InternalServerError().finish()
-    })?;
+    let option_acc_id: Option<i32> =
+        session
+            .get(KEY_TO_ADMINISTRATOR_ACCOUNT_ID)
+            .map_err(|err| {
+                log::error!("err: {}", err);
+                HttpResponse::InternalServerError().finish()
+            })?;
     match option_acc_id {
-        Some(_acc_id) => {
-            Ok(())
-        }
+        Some(_acc_id) => Ok(()),
         None => {
-            let res = HttpResponse::Unauthorized().body(r#"<!DOCTYPE html>
-            <html>
-                <head>
-                    <meta charset="utf-8">
-                    <style type="text/css">
-                      .container{
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        flex-direction: column;
-                      }
-                    </style> 
-                    <title>管理者メニュー</title>
-                </head>
-                <body>
-                  <div class="container">
-                    <p>セッションが切れています。</p>
-                    <p><a href="login">ログインページへ</a></p>
-                  </div>
-                </body>
-            </html>"#);
+            let res = HttpResponse::Unauthorized().body(LOGIN_ERR_TEMPLATE);
             Err(res)
         }
     }
 }
+
+const LOGIN_ERR_TEMPLATE: &str = r#"<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style type="text/css">
+          .container{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+          }
+        </style> 
+        <title>管理者メニュー</title>
+    </head>
+    <body>
+      <div class="container">
+        <p>セッションが切れています。</p>
+        <p><a href="login">ログインページへ</a></p>
+      </div>
+    </body>
+</html>"#;
 
 #[get("/images/{data}")]
 async fn images(web::Path(image_path): web::Path<String>) -> HttpResponse {

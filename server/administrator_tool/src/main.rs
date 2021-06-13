@@ -3,8 +3,8 @@
 extern crate diesel;
 extern crate dotenv;
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
@@ -13,8 +13,8 @@ pub fn establish_connection() -> PgConnection {
 
     let database_url = env::var("ADMINISTRATOR_TOOL_DATABASE_URL")
         .expect("ADMINISTRATOR_TOOL_DATABASE_URL must be set");
-    PgConnection::establish(&database_url).
-    unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+    PgConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
 fn main() {
@@ -34,13 +34,15 @@ fn main() {
         let result = diesel::insert_into(administrator_account::table)
             .values(acc)
             .execute(&conn);
-            result.expect("Failed to insert value");
+        result.expect("Failed to insert value");
     } else if cmd == "update" {
         let id = &args[2];
         let password = &args[3];
         let hashed_pwd = bcrypt::hash(password, BCRYPT_COST).expect("Failed to hash password");
         let conn = establish_connection();
-        use db::schema::career_change_supporter_schema::administrator_account::dsl::{email_address, administrator_account, hashed_password};
+        use db::schema::career_change_supporter_schema::administrator_account::dsl::{
+            administrator_account, email_address, hashed_password,
+        };
         let target = administrator_account.filter(email_address.eq(&id));
         let result = diesel::update(target)
             .set(hashed_password.eq(&hashed_pwd.as_bytes()))
@@ -49,10 +51,11 @@ fn main() {
     } else if cmd == "delete" {
         let id = &args[2];
         let conn = establish_connection();
-        use db::schema::career_change_supporter_schema::administrator_account::dsl::{email_address, administrator_account};
+        use db::schema::career_change_supporter_schema::administrator_account::dsl::{
+            administrator_account, email_address,
+        };
         let target = administrator_account.filter(email_address.eq(&id));
-        let result = diesel::delete(target)
-            .execute(&conn);
+        let result = diesel::delete(target).execute(&conn);
         result.expect("Failed to delete value");
     } else {
         panic!("invalid command");
