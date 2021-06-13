@@ -2,11 +2,13 @@
 CREATE ROLE user_app WITH LOGIN PASSWORD 'test1234';
 CREATE ROLE advisor_app WITH LOGIN PASSWORD 'test5678';
 CREATE ROLE administrator_app WITH LOGIN PASSWORD 'test13579';
+CREATE ROLE administrator_tool_app WITH LOGIN PASSWORD 'test24680';
 
 CREATE SCHEMA career_change_supporter_schema;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO user_app;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO advisor_app;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO administrator_app;
+GRANT USAGE ON SCHEMA career_change_supporter_schema TO administrator_tool_app;
 
 CREATE DOMAIN career_change_supporter_schema.email_address AS VARCHAR (254) NOT NULL CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
 /* simpleフォーム (半角英数字32文字。ハイフン、波括弧を含まない) での入出力を行いたいので、標準のUUID型を使わない */
@@ -88,3 +90,17 @@ GRANT INSERT ON career_change_supporter_schema.advisor_account_creation_request 
 GRANT SELECT (email_address) ON career_change_supporter_schema.advisor_account_creation_request To advisor_app;
 GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_account_creation_request_advisor_acc_request_id_seq TO advisor_app;
 GRANT SELECT ON career_change_supporter_schema.advisor_account_creation_request To administrator_app;
+
+CREATE TABLE career_change_supporter_schema.administrator_account (
+  administrator_account_id SERIAL PRIMARY KEY,
+  /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
+  email_address career_change_supporter_schema.email_address UNIQUE,
+  hashed_password BYTEA NOT NULL,
+  last_login_time TIMESTAMP WITH TIME ZONE
+);
+GRANT SELECT ON career_change_supporter_schema.administrator_account To administrator_app;
+GRANT UPDATE (last_login_time) ON career_change_supporter_schema.administrator_account To administrator_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.administrator_account_administrator_account_id_seq TO administrator_app;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON career_change_supporter_schema.administrator_account To administrator_tool_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.administrator_account_administrator_account_id_seq TO administrator_tool_app;

@@ -8,22 +8,34 @@ use actix_http::{body::Body, Response};
 use actix_web::dev::ServiceResponse;
 use actix_web::http::StatusCode;
 use actix_web::middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers};
-use actix_web::{get, web, App, HttpResponse, HttpServer, Result};
+use actix_web::middleware::Logger;
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Result};
+
+use actix_web::cookie;
+use time::Duration;
+
+use actix_redis::RedisSession;
 
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use dotenv::dotenv;
 use handlebars::Handlebars;
 
-use bytes;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use futures::TryStreamExt;
 use rusoto_s3::S3;
 use std::env;
+use std::fs;
+use std::path;
+use actix_session::Session;
 
 use std::io;
+
+// TODO: Consider and change KEY
+const ADMINISTRATOR_SESSION_SIGN_KEY: [u8; 32] = [1; 32];
+const CACHE_SERVER_ADDR: &str = "127.0.0.1:6379";
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -54,10 +66,26 @@ async fn main() -> io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(error_handlers())
+            .wrap(Logger::default())
+            .wrap(
+                RedisSession::new(CACHE_SERVER_ADDR, &ADMINISTRATOR_SESSION_SIGN_KEY)
+                    // TODO: 適切なTTLを設定する
+                    .ttl(180)
+                    .cookie_max_age(Duration::days(7))
+                    // TODO: Add producion environment
+                    //.cookie_secure(true)
+                    .cookie_name("administrator-session")
+                    .cookie_http_only(true)
+                    // TODO: Consider LAX policy
+                    .cookie_same_site(cookie::SameSite::Strict),
+            )
             .app_data(handlebars_ref.clone())
             .data(pool.clone())
             .service(index)
+            .service(login)
             .service(images)
+            .service(advisor_registration_list)
+            .service(authentication)
     })
     .bind("127.0.0.1:8082")?
     .run()
@@ -68,35 +96,93 @@ const AWS_S3_ID_IMG_BUCKET_NAME: &str = "identification-images";
 const AWS_REGION: &str = "ap-northeast-1";
 const AWS_ENDPOINT_URL: &str = "http://localhost:4566";
 
+#[get("/login")]
+async fn login() -> HttpResponse {
+    let file_path_str = "administrator_service/static/login.html";
+    let parse_result: Result<path::PathBuf, _> = file_path_str.parse();
+    if let Err(e) = parse_result {
+        log::error!("failed to parse path ({}): {}", file_path_str, e);
+        return HttpResponse::InternalServerError().body("500 Internal Server Error");
+    }
+    let path = parse_result.expect("never happens panic");
+    let read_result = fs::read_to_string(path);
+    match read_result {
+        Ok(contents) => HttpResponse::Ok()
+            .header(actix_web::http::header::CONTENT_TYPE, "text/html")
+            .body(contents),
+        Err(e) => {
+            log::error!("failed to read file ({}): {}", file_path_str, e);
+            HttpResponse::NotFound().body("404 Page Not Found")
+        }
+    }
+}
+
+#[post("/authentication")]
+async fn authentication() -> HttpResponse {
+    return HttpResponse::InternalServerError().body("500 Internal Server Error");
+}
+
 #[get("/")]
-async fn index(
-    hb: web::Data<Handlebars<'_>>,
-    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
-) -> HttpResponse {
-    let conn = pool.get().unwrap();
-    // TODO: エラー処理の追加
-    let result: Result<_, BlockingError<String>> = web::block(move || {
-        use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
-            advisor_account_creation_request
-        };
-        let requests = advisor_account_creation_request
-            .limit(100)
-            .load::<db::model::advisor::AccountCreationRequestResult>(&conn)
-            .expect("failed to get data");
-        Ok(requests)
-    }).await;
+async fn index(session: Session) -> HttpResponse {
+    let res = check_session(&session);
+    if res.is_err() {
+        return res.expect_err("OK value detected");
+    }
+    let file_path_str = "administrator_service/static/index.html";
+    let parse_result: Result<path::PathBuf, _> = file_path_str.parse();
+    if let Err(e) = parse_result {
+        log::error!("failed to parse path ({}): {}", file_path_str, e);
+        return HttpResponse::InternalServerError().body("500 Internal Server Error");
+    }
+    let path = parse_result.expect("never happens panic");
+    let read_result = fs::read_to_string(path);
+    match read_result {
+        Ok(contents) => HttpResponse::Ok()
+            .header(actix_web::http::header::CONTENT_TYPE, "text/html")
+            .body(contents),
+        Err(e) => {
+            log::error!("failed to read file ({}): {}", file_path_str, e);
+            HttpResponse::NotFound().body("404 Page Not Found")
+        }
+    }
+}
 
-    let requests = result.unwrap();
-    let request = requests[0].clone();
-    let data = json!({
-        "last_name": request.last_name,
-        "requested_time": request.requested_time,
-        "image1": request.image1,
-        "image2": request.image2,
-    });
+const KEY_TO_ADMINISTRATOR_ACCOUNT_ID: &str = "administrator_account_id";
 
-    let body = hb.render("index", &data).unwrap();
-    HttpResponse::Ok().body(body)
+fn check_session(session: &Session) -> Result<(), HttpResponse> {
+    let option_acc_id: Option<i32> = session.get(KEY_TO_ADMINISTRATOR_ACCOUNT_ID).map_err(|err| {
+        log::error!("err: {}", err);
+        HttpResponse::InternalServerError().finish()
+    })?;
+    match option_acc_id {
+        Some(_acc_id) => {
+            Ok(())
+        }
+        None => {
+            let res = HttpResponse::Unauthorized().body(r#"<!DOCTYPE html>
+            <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style type="text/css">
+                      .container{
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        flex-direction: column;
+                      }
+                    </style> 
+                    <title>管理者メニュー</title>
+                </head>
+                <body>
+                  <div class="container">
+                    <p>セッションが切れています。</p>
+                    <p><a href="login">ログインページへ</a></p>
+                  </div>
+                </body>
+            </html>"#);
+            Err(res)
+        }
+    }
 }
 
 #[get("/images/{data}")]
@@ -122,6 +208,37 @@ async fn images(web::Path(image_path): web::Path<String>) -> HttpResponse {
     HttpResponse::Ok()
         .header(actix_web::http::header::CONTENT_TYPE, "img/png")
         .body(contents)
+}
+
+#[get("/advisor-registration-list")]
+async fn advisor_registration_list(
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
+            advisor_account_creation_request
+        };
+        let requests = advisor_account_creation_request
+            .limit(100)
+            .load::<db::model::advisor::AccountCreationRequestResult>(&conn)
+            .expect("failed to get data");
+        Ok(requests)
+    }).await;
+
+    let requests = result.unwrap();
+    let request = requests[0].clone();
+    let data = json!({
+        "last_name": request.last_name,
+        "requested_time": request.requested_time,
+        "image1": request.image1,
+        "image2": request.image2,
+    });
+
+    let body = hb.render("advisor-registration-list", &data).unwrap();
+    HttpResponse::Ok().body(body)
 }
 
 // Custom error handlers, to return HTML responses when an error occurs.

@@ -3,5 +3,6 @@
 members = [
     "service",
     "administrator_service",
+    "administrator_tool",
     "db",
 ]

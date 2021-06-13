@@ -1,5 +1,14 @@
 pub mod career_change_supporter_schema {
     table! {
+        career_change_supporter_schema.administrator_account (administrator_account_id) {
+            administrator_account_id -> Int4,
+            email_address -> Varchar,
+            hashed_password -> Bytea,
+            last_login_time -> Nullable<Timestamptz>,
+        }
+    }
+
+    table! {
         career_change_supporter_schema.advisor_account (advisor_account_id) {
             advisor_account_id -> Int4,
             email_address -> Varchar,
@@ -58,6 +67,7 @@ pub mod career_change_supporter_schema {
     }
 
     allow_tables_to_appear_in_same_query!(
+        administrator_account,
         advisor_account,
         advisor_account_creation_request,
         advisor_registration_request,
