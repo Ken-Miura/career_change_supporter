@@ -2,14 +2,22 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>Example</title>
+        <style type="text/css">
+            .container{
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              flex-direction: column;
+            }
+        </style>
+        <title>アドバイザー登録依頼リスト</title>
     </head>
     <body>
-        <p>{{last_name}}</p>
-        <p>{{requested_time}}</p>
-        <p>画像1</p>
-        <img src="images/{{image1}}">
-        <p>画像2</p>
-        <img src="images/{{image2}}">
+        <div class="container">
+          <p>{{num}}件</p>
+          {{#each items as |i|}}
+          <a href="advisor-registration-detail?id={{i.id}}">{{i.requested_time}}: {{i.last_name}} {{i.first_name}}</a>
+          {{/each}}
+        </div>
     </body>
 </html>

@@ -21,6 +21,7 @@ use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use dotenv::dotenv;
 use handlebars::Handlebars;
+use handlebars::to_json;
 
 use actix_session::Session;
 use diesel::r2d2::ConnectionManager;
@@ -31,6 +32,7 @@ use rusoto_s3::S3;
 use std::env;
 use std::fs;
 use std::path;
+use serde_json::value::Map;
 
 use serde::Deserialize;
 
@@ -288,6 +290,43 @@ async fn images(web::Path(image_path): web::Path<String>) -> HttpResponse {
 
 #[get("/advisor-registration-list")]
 async fn advisor_registration_list(
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
+            advisor_account_creation_request
+        };
+        let requests = advisor_account_creation_request
+            .limit(100)
+            .load::<db::model::advisor::AccountCreationRequestResult>(&conn)
+            .expect("failed to get data");
+        Ok(requests)
+    }).await;
+
+    let mut requests = result.unwrap();
+    requests.sort_by(|a, b| { a.requested_time.cmp(&b.requested_time) });
+    let mut data = Map::new();
+    data.insert("num".to_string(), to_json(requests.len()));
+    let mut items = Vec::new();
+    for i in 0..requests.len() {
+        let value = json!({
+            "last_name": requests[i].last_name,
+            "first_name": requests[i].first_name,
+            "requested_time": requests[i].requested_time,
+            "id": requests[i].advisor_acc_request_id
+        });
+        items.push(value);
+    }
+    data.insert("items".to_string(),to_json( items));
+    let body = hb.render("advisor-registration-list", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/advisor-registration-detail")]
+async fn advisor_registration_detail(
     hb: web::Data<Handlebars<'_>>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
