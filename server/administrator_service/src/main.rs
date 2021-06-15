@@ -90,6 +90,7 @@ async fn main() -> io::Result<()> {
             .service(login)
             .service(images)
             .service(advisor_registration_list)
+            .service(advisor_registration_detail)
             .service(authentication)
             .default_service(web::route().to(index_inner))
     })
@@ -325,8 +326,14 @@ async fn advisor_registration_list(
     HttpResponse::Ok().body(body)
 }
 
+#[derive(Deserialize)]
+struct DetailRequest {
+   id: i32,
+}
+
 #[get("/advisor-registration-detail")]
 async fn advisor_registration_detail(
+    web::Query(info): web::Query<DetailRequest>,
     hb: web::Data<Handlebars<'_>>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
@@ -336,15 +343,13 @@ async fn advisor_registration_detail(
         use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
             advisor_account_creation_request
         };
-        let requests = advisor_account_creation_request
-            .limit(100)
-            .load::<db::model::advisor::AccountCreationRequestResult>(&conn)
+        let request = advisor_account_creation_request.find(info.id)
+            .first::<db::model::advisor::AccountCreationRequestResult>(&conn)
             .expect("failed to get data");
-        Ok(requests)
+        Ok(request)
     }).await;
 
-    let requests = result.unwrap();
-    let request = requests[0].clone();
+    let request = result.unwrap();
     let data = json!({
         "last_name": request.last_name,
         "requested_time": request.requested_time,
@@ -352,7 +357,7 @@ async fn advisor_registration_detail(
         "image2": request.image2,
     });
 
-    let body = hb.render("advisor-registration-list", &data).unwrap();
+    let body = hb.render("advisor-registration-detail", &data).unwrap();
     HttpResponse::Ok().body(body)
 }
 
