@@ -350,9 +350,24 @@ async fn advisor_registration_detail(
     }).await;
 
     let request = result.unwrap();
+    let address_line2_option: Option<String> = request.address_line2;
+    let address_line2_exists = address_line2_option.is_some();
     let data = json!({
-        "last_name": request.last_name,
         "requested_time": request.requested_time,
+        "last_name": request.last_name,
+        "first_name": request.first_name,
+        "last_name_furigana": request.last_name_furigana,
+        "first_name_furigana": request.first_name_furigana,
+        "year": request.year_of_birth,
+        "month": request.month_of_birth,
+        "day": request.day_of_birth,
+        "prefecture": request.prefecture,
+        "city": request.city,
+        "address_line1": request.address_line1,
+        "address_line2_exists": address_line2_exists,
+        "address_line2": address_line2_option.expect("Failed to get address line 2"),
+        "email_address": request.email_address,
+        "telephone_num": request.telephone_number,
         "image1": request.image1,
         "image2": request.image2,
     });
