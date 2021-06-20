@@ -344,6 +344,7 @@ async fn account_creation_request(
     let password = submitted_data.clone().unwrap().password;
     let hashed_password = credential::hash_password(&password).unwrap();
 
+    let mail_addr = email_address.clone();
     let result = create_account_registration(
         email_address,
         hashed_password,
@@ -352,17 +353,54 @@ async fn account_creation_request(
         image2_filename,
         &pool,
     );
-    match result {
+    let resp = match result {
         Ok(()) => {
             log::info!("ok");
+            let _ = send_notification_mail_to_admin(&mail_addr);
+            Ok(HttpResponse::Ok().finish())
         }
         Err(e) => {
             log::error!("{}", e);
+            Err(HttpResponse::BadRequest().finish())
         }
     };
-    // 管理者にメール通知
+    if resp.is_err() {
+        return Ok(resp.expect_err("Failed to get err"));
+    };
+    return Ok(resp.expect("Failed to get data"));
+}
 
-    Ok(HttpResponse::Ok().finish())
+fn send_notification_mail_to_admin(email_address: &str) -> Result<(), error::Error> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        // TODO: ドメイン取得後書き直し
+        .to("administrator@example.com")
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("アカウント登録依頼発行")
+        // TOOD: メールの本文を更新する (http -> httpsへの変更も含む)
+        .text(format!(
+            "{}からアドバイザーアカウント登録依頼が来ました。",
+            email_address
+        ))
+        .build()
+        .map_err(|e| {
+            error::Error::Unexpected(common::error::unexpected::Error::LettreEmailErr(e))
+        })?;
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(common::SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into()).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    Ok(())
 }
 
 const AWS_S3_ID_IMG_BUCKET_NAME: &str = "identification-images";
@@ -429,6 +467,7 @@ fn create_account_registration(
         .get()
         .map_err(|err| error::Error::Unexpected(unexpected::Error::R2d2Err(err)))?;
     conn.transaction::<_, error::Error, _>(|| {
+            let _r = check_if_account_exists(&mail_addr, &conn)?;
             use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
                 advisor_account_creation_request, email_address
             };

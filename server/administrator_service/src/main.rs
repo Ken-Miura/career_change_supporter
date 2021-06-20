@@ -20,8 +20,8 @@ use diesel::prelude::*;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use dotenv::dotenv;
-use handlebars::Handlebars;
 use handlebars::to_json;
+use handlebars::Handlebars;
 
 use actix_session::Session;
 use diesel::r2d2::ConnectionManager;
@@ -29,10 +29,10 @@ use diesel::r2d2::Pool;
 use diesel::PgConnection;
 use futures::TryStreamExt;
 use rusoto_s3::S3;
+use serde_json::value::Map;
 use std::env;
 use std::fs;
 use std::path;
-use serde_json::value::Map;
 
 use serde::Deserialize;
 
@@ -91,6 +91,9 @@ async fn main() -> io::Result<()> {
             .service(images)
             .service(advisor_registration_list)
             .service(advisor_registration_detail)
+            .service(advisor_registration_accept)
+            .service(advisor_registration_reject_detail)
+            .service(advisor_registration_reject)
             .service(authentication)
             .default_service(web::route().to(index_inner))
     })
@@ -157,7 +160,7 @@ async fn authentication(
             panic!("Failed to get account");
         }
         let admin = admins[0].clone();
-        return Ok(admin);
+        Ok(admin)
     })
     .await
     .expect("Failed to proccess db access");
@@ -199,7 +202,7 @@ async fn index(session: Session) -> HttpResponse {
     index_inner(session)
 }
 
-fn index_inner (session: Session) -> HttpResponse {
+fn index_inner(session: Session) -> HttpResponse {
     let res = check_session(&session);
     if res.is_err() {
         return res.expect_err("OK value detected");
@@ -308,27 +311,28 @@ async fn advisor_registration_list(
     }).await;
 
     let mut requests = result.unwrap();
-    requests.sort_by(|a, b| { a.requested_time.cmp(&b.requested_time) });
+    requests.sort_by(|a, b| a.requested_time.cmp(&b.requested_time));
     let mut data = Map::new();
     data.insert("num".to_string(), to_json(requests.len()));
     let mut items = Vec::new();
-    for i in 0..requests.len() {
+    // TODO: for in (Iterator) が順番通りに処理されることを確認
+    for request in requests {
         let value = json!({
-            "last_name": requests[i].last_name,
-            "first_name": requests[i].first_name,
-            "requested_time": requests[i].requested_time,
-            "id": requests[i].advisor_acc_request_id
+            "last_name": request.last_name,
+            "first_name": request.first_name,
+            "requested_time": request.requested_time,
+            "id": request.advisor_acc_request_id
         });
         items.push(value);
     }
-    data.insert("items".to_string(),to_json( items));
+    data.insert("items".to_string(), to_json(items));
     let body = hb.render("advisor-registration-list", &data).unwrap();
     HttpResponse::Ok().body(body)
 }
 
 #[derive(Deserialize)]
 struct DetailRequest {
-   id: i32,
+    id: i32,
 }
 
 #[get("/advisor-registration-detail")]
@@ -353,6 +357,7 @@ async fn advisor_registration_detail(
     let address_line2_option: Option<String> = request.address_line2;
     let address_line2_exists = address_line2_option.is_some();
     let data = json!({
+        "id": request.advisor_acc_request_id,
         "requested_time": request.requested_time,
         "last_name": request.last_name,
         "first_name": request.first_name,
@@ -374,6 +379,248 @@ async fn advisor_registration_detail(
 
     let body = hb.render("advisor-registration-detail", &data).unwrap();
     HttpResponse::Ok().body(body)
+}
+
+#[get("/advisor-registration-accept")]
+async fn advisor_registration_accept(
+    web::Query(info): web::Query<DetailRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<String, BlockingError<diesel::result::Error>> = web::block(move || {
+        conn.transaction::<_, diesel::result::Error, _>(|| {
+            use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
+                advisor_account_creation_request
+            };
+            let request = advisor_account_creation_request.find(info.id)
+                .first::<db::model::advisor::AccountCreationRequestResult>(&conn)
+                .expect("failed to get data");
+
+            let acc = db::model::advisor::Account {
+                email_address: &request.email_address,
+                hashed_password: &request.hashed_password,
+                last_login_time: None
+            };
+            use db::schema::career_change_supporter_schema::advisor_account;
+            let _res = diesel::insert_into(advisor_account::table)
+                .values(&acc)
+                .get_result::<db::model::advisor::AccountResult>(&conn)
+                .expect("Failed to insert data");
+
+            let current_date_time = chrono::Utc::now();
+            let addr_line2= request.address_line2.unwrap();
+            let img2 = request.image2.unwrap();
+            let approval_data = db::model::administrator::AdvisorRegReqApproved {
+                email_address: &request.email_address,
+                last_name: &request.last_name,
+                first_name: &request.first_name,
+                last_name_furigana: &request.last_name_furigana,
+                first_name_furigana: &request.first_name_furigana,
+                telephone_number: &request.telephone_number,
+                year_of_birth: request.year_of_birth,
+                month_of_birth: request.month_of_birth,
+                day_of_birth: request.day_of_birth,
+                prefecture: &request.prefecture,
+                city: &request.city,
+                address_line1: &request.address_line1,
+                address_line2: Some(&addr_line2),
+                image1: &request.image1,
+                image2: Some(&img2),
+                approved_time: &current_date_time,
+            };
+            use db::schema::career_change_supporter_schema::advisor_reg_req_approved;
+            let _res = diesel::insert_into(advisor_reg_req_approved::table)
+                .values(&approval_data)
+                .get_result::<db::model::administrator::AdvisorRegReqApprovedResult>(&conn)
+                .expect("Failed to insert data");
+
+            let _del_res = diesel::delete(advisor_account_creation_request.find(info.id)).execute(&conn).expect("Failed to delete req");
+
+            Ok(request.email_address)
+        })
+    })
+    .await;
+
+    let mail_addr = result.expect("Failed to get data");
+    let _result = send_notification_mail_to_advisor(&mail_addr);
+
+    let data = json!({
+        "email_address": mail_addr,
+    });
+
+    let body = hb.render("advisor-registration-accepted", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+const SMTP_SERVER_ADDR: ([u8; 4], u16) = ([127, 0, 0, 1], 1025);
+
+fn send_notification_mail_to_advisor(email_address: &str) -> Result<(), lettre::error::Error> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        // TODO: ドメイン取得後書き直し
+        .to(email_address)
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("アカウント作成完了")
+        // TOOD: メールの本文を更新する (http -> httpsへの変更も含む)
+        .text(format!(
+            "{}からアドバイザーアカウントの作成が完了しました",
+            email_address
+        ))
+        .build()
+        .expect("Failed to build");
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None).expect("Failed to create clietn");
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into()).expect("Failed to send email");
+    Ok(())
+}
+
+#[get("/advisor-registration-reject-detail")]
+async fn advisor_registration_reject_detail(
+    web::Query(info): web::Query<DetailRequest>,
+    hb: web::Data<Handlebars<'_>>,
+) -> HttpResponse {
+    let data = json!({
+        "id": info.id,
+    });
+    let body = hb
+        .render("advisor-registration-reject-detail", &data)
+        .unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[derive(Deserialize)]
+struct Reason {
+    reason: String,
+}
+
+#[post("/advisor-registration-reject")]
+async fn advisor_registration_reject(
+    web::Query(info): web::Query<DetailRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    params: web::Form<Reason>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    // 1から3はトランザクション
+    // 1. advisorリクエスト削除
+    // 2. advisor拒絶履歴登録
+    // 3. advisor身分証ファイル削除（オプショナルにしておく？）
+    // advisorに拒絶メール通知
+    // 拒絶画面表示
+    let reson_clone = params.reason.clone();
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<db::model::advisor::AccountCreationRequestResult, BlockingError<diesel::result::Error>> = web::block(move || {
+        conn.transaction::<_, diesel::result::Error, _>(|| {
+            use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
+                advisor_account_creation_request
+            };
+            let request = advisor_account_creation_request.find(info.id)
+                .first::<db::model::advisor::AccountCreationRequestResult>(&conn)
+                .expect("failed to get data");
+            let request_clone = request.clone();
+
+            let current_date_time = chrono::Utc::now();
+            let addr_line2= request.address_line2.unwrap();
+            let reason = params.reason.clone();
+            let reject_data = db::model::administrator::AdvisorRegReqRejected {
+                email_address: &request.email_address,
+                last_name: &request.last_name,
+                first_name: &request.first_name,
+                last_name_furigana: &request.last_name_furigana,
+                first_name_furigana: &request.first_name_furigana,
+                telephone_number: &request.telephone_number,
+                year_of_birth: request.year_of_birth,
+                month_of_birth: request.month_of_birth,
+                day_of_birth: request.day_of_birth,
+                prefecture: &request.prefecture,
+                city: &request.city,
+                address_line1: &request.address_line1,
+                address_line2: Some(&addr_line2),
+                reject_reason: &reason,
+                rejected_time: &current_date_time,
+            };
+            use db::schema::career_change_supporter_schema::advisor_reg_req_rejected;
+            let _res = diesel::insert_into(advisor_reg_req_rejected::table)
+                .values(&reject_data)
+                .get_result::<db::model::administrator::AdvisorRegReqRejectedResult>(&conn)
+                .expect("Failed to insert data");
+            let _del_res = diesel::delete(advisor_account_creation_request.find(info.id)).execute(&conn).expect("Failed to delete req");
+            Ok(request_clone)
+        })
+    })
+    .await;
+
+    let req = result.expect("Failed to get data");
+    // TODO: async、awaitのせいでトランザクション中に画像削除ができない。トランザクション外での処理で問題ないか検討する
+    let img1 = req.image1;
+    let _result = delete_image(img1).await.expect("Failed to delete data");
+    let img2 = req.image2.unwrap();
+    let _result = delete_image(img2).await.expect("Failed to delete data");
+    let _result = send_notification_mail_to_advisor(&req.email_address);
+
+    let _res = send_rejection_mail_to_advisor(&req.email_address, &reson_clone);
+
+    let data = json!({
+        "email_address": req.email_address,
+    });
+    let body = hb.render("advisor-registration-rejected", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+fn send_rejection_mail_to_advisor(
+    email_address: &str,
+    reason: &str,
+) -> Result<(), lettre::error::Error> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        // TODO: ドメイン取得後書き直し
+        .to(email_address)
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("アカウント作成拒絶")
+        // TOOD: メールの本文を更新する (http -> httpsへの変更も含む)
+        .text(format!(
+            r"{}のアカウント作成が拒否されました。理由は下記のとおりです。
+            {}",
+            email_address, reason
+        ))
+        .build()
+        .expect("Failed to build");
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None).expect("Failed to create clietn");
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into()).expect("Failed to send email");
+    Ok(())
+}
+
+async fn delete_image(
+    image_path: String,
+) -> Result<rusoto_s3::DeleteObjectOutput, rusoto_core::RusotoError<rusoto_s3::DeleteObjectError>> {
+    let delete_request = rusoto_s3::DeleteObjectRequest {
+        bucket: AWS_S3_ID_IMG_BUCKET_NAME.to_string(),
+        key: image_path.clone(),
+        ..Default::default()
+    };
+    let region = rusoto_core::Region::Custom {
+        name: AWS_REGION.to_string(),
+        endpoint: AWS_ENDPOINT_URL.to_string(),
+    };
+    let s3_client = rusoto_s3::S3Client::new(region);
+    s3_client.delete_object(delete_request).await
 }
 
 // Custom error handlers, to return HTML responses when an error occurs.

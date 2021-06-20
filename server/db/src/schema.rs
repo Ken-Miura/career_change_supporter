@@ -41,6 +41,49 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
+        career_change_supporter_schema.advisor_reg_req_approved (advisor_reg_req_approved_id) {
+            advisor_reg_req_approved_id -> Int4,
+            email_address -> Varchar,
+            last_name -> Varchar,
+            first_name -> Varchar,
+            last_name_furigana -> Varchar,
+            first_name_furigana -> Varchar,
+            telephone_number -> Varchar,
+            year_of_birth -> Int2,
+            month_of_birth -> Int2,
+            day_of_birth -> Int2,
+            prefecture -> Varchar,
+            city -> Varchar,
+            address_line1 -> Varchar,
+            address_line2 -> Nullable<Varchar>,
+            image1 -> Varchar,
+            image2 -> Nullable<Varchar>,
+            approved_time -> Timestamptz,
+        }
+    }
+
+    table! {
+        career_change_supporter_schema.advisor_reg_req_rejected (advisor_reg_req_rejected_id) {
+            advisor_reg_req_rejected_id -> Int4,
+            email_address -> Varchar,
+            last_name -> Varchar,
+            first_name -> Varchar,
+            last_name_furigana -> Varchar,
+            first_name_furigana -> Varchar,
+            telephone_number -> Varchar,
+            year_of_birth -> Int2,
+            month_of_birth -> Int2,
+            day_of_birth -> Int2,
+            prefecture -> Varchar,
+            city -> Varchar,
+            address_line1 -> Varchar,
+            address_line2 -> Nullable<Varchar>,
+            reject_reason -> Varchar,
+            rejected_time -> Timestamptz,
+        }
+    }
+
+    table! {
         career_change_supporter_schema.advisor_registration_request (advisor_registration_request_id) {
             advisor_registration_request_id -> Bpchar,
             email_address -> Varchar,
@@ -70,6 +113,8 @@ pub mod career_change_supporter_schema {
         administrator_account,
         advisor_account,
         advisor_account_creation_request,
+        advisor_reg_req_approved,
+        advisor_reg_req_rejected,
         advisor_registration_request,
         user_account,
         user_temporary_account,
