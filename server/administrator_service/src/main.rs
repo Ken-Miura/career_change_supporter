@@ -94,6 +94,7 @@ async fn main() -> io::Result<()> {
             .service(advisor_registration_accept)
             .service(advisor_registration_reject_detail)
             .service(advisor_registration_reject)
+            .service(advisor_registration_approval_list)
             .service(authentication)
             .default_service(web::route().to(index_inner))
     })
@@ -621,6 +622,42 @@ async fn delete_image(
     };
     let s3_client = rusoto_s3::S3Client::new(region);
     s3_client.delete_object(delete_request).await
+}
+
+#[get("/advisor-registration-approval-list")]
+async fn advisor_registration_approval_list(
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().expect("Failed to get connection");
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_reg_req_approved::dsl::{
+            advisor_reg_req_approved
+        };
+        let requests = advisor_reg_req_approved
+            .limit(100)
+            .load::<db::model::administrator::AdvisorRegReqApprovedResult>(&conn)
+            .expect("failed to get data");
+        Ok(requests)
+    }).await;
+    let mut requests = result.expect("Failed to get data");
+    requests.sort_by(|a, b| b.approved_time.cmp(&a.approved_time));
+    let mut data = Map::new();
+    data.insert("num".to_string(), to_json(requests.len()));
+    let mut items = Vec::new();
+    // TODO: for in (Iterator) が順番通りに処理されることを確認
+    for request in requests {
+        let value = json!({
+            "last_name": request.last_name,
+            "first_name": request.first_name,
+            "approved_time": request.approved_time,
+            "id": request.advisor_reg_req_approved_id
+        });
+        items.push(value);
+    }
+    data.insert("items".to_string(), to_json(items));
+    let body = hb.render("advisor-registration-approval-list", &data).unwrap();
+    HttpResponse::Ok().body(body)
 }
 
 // Custom error handlers, to return HTML responses when an error occurs.
