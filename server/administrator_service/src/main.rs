@@ -95,6 +95,9 @@ async fn main() -> io::Result<()> {
             .service(advisor_registration_reject_detail)
             .service(advisor_registration_reject)
             .service(advisor_registration_approval_list)
+            .service(advisor_registration_rejection_list)
+            .service(advisor_registration_rejection_detail)
+            .service(advisor_registration_approval_detail)
             .service(authentication)
             .default_service(web::route().to(index_inner))
     })
@@ -657,6 +660,133 @@ async fn advisor_registration_approval_list(
     }
     data.insert("items".to_string(), to_json(items));
     let body = hb.render("advisor-registration-approval-list", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/advisor-registration-rejection-list")]
+async fn advisor_registration_rejection_list(
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().expect("Failed to get connection");
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_reg_req_rejected::dsl::{
+            advisor_reg_req_rejected
+        };
+        let requests = advisor_reg_req_rejected
+            .limit(100)
+            .load::<db::model::administrator::AdvisorRegReqRejectedResult>(&conn)
+            .expect("failed to get data");
+        Ok(requests)
+    }).await;
+    let mut requests = result.expect("Failed to get data");
+    requests.sort_by(|a, b| b.rejected_time.cmp(&a.rejected_time));
+    let mut data = Map::new();
+    data.insert("num".to_string(), to_json(requests.len()));
+    let mut items = Vec::new();
+    // TODO: for in (Iterator) が順番通りに処理されることを確認
+    for request in requests {
+        let value = json!({
+            "last_name": request.last_name,
+            "first_name": request.first_name,
+            "rejected_time": request.rejected_time,
+            "id": request.advisor_reg_req_rejected_id
+        });
+        items.push(value);
+    }
+    data.insert("items".to_string(), to_json(items));
+    let body = hb.render("advisor-registration-rejection-list", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/advisor-registration-rejection-detail")]
+async fn advisor_registration_rejection_detail(
+    web::Query(info): web::Query<DetailRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_reg_req_rejected::dsl::{
+            advisor_reg_req_rejected
+        };
+        let request = advisor_reg_req_rejected.find(info.id)
+            .first::<db::model::administrator::AdvisorRegReqRejectedResult>(&conn)
+            .expect("failed to get data");
+        Ok(request)
+    }).await;
+
+    let request = result.unwrap();
+    let address_line2_option: Option<String> = request.address_line2;
+    let address_line2_exists = address_line2_option.is_some();
+    let data = json!({
+        //"id": request.advisor_reg_req_rejected_id,
+        "rejected_time": request.rejected_time,
+        "last_name": request.last_name,
+        "first_name": request.first_name,
+        "last_name_furigana": request.last_name_furigana,
+        "first_name_furigana": request.first_name_furigana,
+        "year": request.year_of_birth,
+        "month": request.month_of_birth,
+        "day": request.day_of_birth,
+        "prefecture": request.prefecture,
+        "city": request.city,
+        "address_line1": request.address_line1,
+        "address_line2_exists": address_line2_exists,
+        "address_line2": address_line2_option.expect("Failed to get address line 2"),
+        "email_address": request.email_address,
+        "telephone_num": request.telephone_number,
+        "reject_reason": request.reject_reason
+    });
+
+    let body = hb.render("advisor-registration-rejection-detail", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/advisor-registration-approval-detail")]
+async fn advisor_registration_approval_detail(
+    web::Query(info): web::Query<DetailRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_reg_req_approved::dsl::{
+            advisor_reg_req_approved
+        };
+        let request = advisor_reg_req_approved.find(info.id)
+            .first::<db::model::administrator::AdvisorRegReqApprovedResult>(&conn)
+            .expect("failed to get data");
+        Ok(request)
+    }).await;
+
+    let request = result.unwrap();
+    let address_line2_option: Option<String> = request.address_line2;
+    let address_line2_exists = address_line2_option.is_some();
+    let image2 = request.image2;
+    let data = json!({
+        "approved_time": request.approved_time,
+        "last_name": request.last_name,
+        "first_name": request.first_name,
+        "last_name_furigana": request.last_name_furigana,
+        "first_name_furigana": request.first_name_furigana,
+        "year": request.year_of_birth,
+        "month": request.month_of_birth,
+        "day": request.day_of_birth,
+        "prefecture": request.prefecture,
+        "city": request.city,
+        "address_line1": request.address_line1,
+        "address_line2_exists": address_line2_exists,
+        "address_line2": address_line2_option.expect("Failed to get address line 2"),
+        "email_address": request.email_address,
+        "telephone_num": request.telephone_number,
+        "image1": request.image1,
+        "image2": image2.expect("Failed to get data")
+    });
+
+    let body = hb.render("advisor-registration-approval-detail", &data).unwrap();
     HttpResponse::Ok().body(body)
 }
 
