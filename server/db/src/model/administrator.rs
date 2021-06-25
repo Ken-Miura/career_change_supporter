@@ -38,6 +38,7 @@ pub struct AdvisorRegReqApproved<'a> {
     pub address_line2: Option<&'a str>,
     pub image1: &'a str,
     pub image2: Option<&'a str>,
+    pub associated_advisor_account_id: Option<i32>,
     pub approved_time: &'a chrono::DateTime<chrono::Utc>,
 }
 
@@ -59,6 +60,7 @@ pub struct AdvisorRegReqApprovedResult {
     pub address_line2: Option<String>,
     pub image1: String,
     pub image2: Option<String>,
+    pub associated_advisor_account_id: Option<i32>,
     pub approved_time: chrono::DateTime<chrono::Utc>,
 }
 

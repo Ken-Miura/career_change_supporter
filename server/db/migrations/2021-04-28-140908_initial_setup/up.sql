@@ -134,6 +134,11 @@ CREATE TABLE career_change_supporter_schema.advisor_reg_req_approved (
   /* TODO: 最大文字数の検討 */
   image1 VARCHAR (64) NOT NULL,
   image2 VARCHAR (64),
+  /* 
+   * SERIALはINTEGERで格納可能 https://www.postgresql.org/docs/9.1/datatype-numeric.html
+   * TODO: このような使い方 (プライマリキーのシリアルをNULLABLEの値に格納する) がアンチパターンでないか調べる
+   */
+  associated_advisor_account_id INTEGER REFERENCES career_change_supporter_schema.advisor_account(advisor_account_id) ON DELETE SET NULL ON UPDATE CASCADE,
   approved_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT, UPDATE ON career_change_supporter_schema.advisor_reg_req_approved To administrator_app;

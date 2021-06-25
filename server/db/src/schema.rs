@@ -58,6 +58,7 @@ pub mod career_change_supporter_schema {
             address_line2 -> Nullable<Varchar>,
             image1 -> Varchar,
             image2 -> Nullable<Varchar>,
+            associated_advisor_account_id -> Nullable<Int4>,
             approved_time -> Timestamptz,
         }
     }
@@ -108,6 +109,8 @@ pub mod career_change_supporter_schema {
             created_at -> Timestamptz,
         }
     }
+
+    joinable!(advisor_reg_req_approved -> advisor_account (associated_advisor_account_id));
 
     allow_tables_to_appear_in_same_query!(
         administrator_account,

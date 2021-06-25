@@ -408,7 +408,7 @@ async fn advisor_registration_accept(
                 last_login_time: None
             };
             use db::schema::career_change_supporter_schema::advisor_account;
-            let _res = diesel::insert_into(advisor_account::table)
+            let res = diesel::insert_into(advisor_account::table)
                 .values(&acc)
                 .get_result::<db::model::advisor::AccountResult>(&conn)
                 .expect("Failed to insert data");
@@ -432,6 +432,7 @@ async fn advisor_registration_accept(
                 address_line2: Some(&addr_line2),
                 image1: &request.image1,
                 image2: Some(&img2),
+                associated_advisor_account_id: Some(res.advisor_account_id),
                 approved_time: &current_date_time,
             };
             use db::schema::career_change_supporter_schema::advisor_reg_req_approved;
