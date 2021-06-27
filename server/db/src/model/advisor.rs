@@ -71,8 +71,8 @@ pub struct Account<'a> {
     pub last_login_time: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Clone, Queryable)]
-pub struct AccountResult {
+#[derive(Clone, Queryable, Debug)]
+pub struct AccountQueryResult {
     pub advisor_account_id: i32,
     pub email_address: String,
     pub hashed_password: Vec<u8>,

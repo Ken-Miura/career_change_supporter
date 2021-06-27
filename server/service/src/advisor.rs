@@ -3,6 +3,7 @@
 mod account;
 mod authentication;
 mod static_asset;
+mod profile;
 
 use actix_web::{cookie, web};
 use time::Duration;
@@ -51,9 +52,12 @@ pub(super) fn advisor_config(cfg: &mut web::ServiceConfig) {
             )
             .service(crate::advisor::account::registration_request)
             .service(crate::advisor::account::registration_request_id_check)
+            .service(crate::advisor::authentication::login_request)
+            .service(crate::advisor::authentication::logout_request)
             .service(crate::advisor::authentication::session_state)
             .service(crate::advisor::static_asset::registration_requests)
             .service(crate::advisor::account::account_creation_request)
+            .service(crate::advisor::profile::profile_information)
             // NOTE: 下記のrefに従い、"/"は最後に記載する
             // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
             .service(

@@ -111,8 +111,8 @@ GRANT USAGE ON SEQUENCE career_change_supporter_schema.administrator_account_adm
 
 CREATE TABLE career_change_supporter_schema.advisor_reg_req_approved (
   advisor_reg_req_approved_id SERIAL PRIMARY KEY,
-  /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
-  email_address career_change_supporter_schema.email_address UNIQUE,
+  /* NOTE: UNIQUEでない可能性があるのでUNIQUEはつけない */
+  email_address career_change_supporter_schema.email_address,
   last_name VARCHAR (127) NOT NULL,
   first_name VARCHAR (127) NOT NULL,
   last_name_furigana VARCHAR (127) NOT NULL,
@@ -146,8 +146,8 @@ GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_reg_req_approved_
 
 CREATE TABLE career_change_supporter_schema.advisor_reg_req_rejected (
   advisor_reg_req_rejected_id SERIAL PRIMARY KEY,
-  /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
-  email_address career_change_supporter_schema.email_address UNIQUE,
+  /* NOTE: UNIQUEでない可能性があるのでUNIQUEはつけない */
+  email_address career_change_supporter_schema.email_address,
   last_name VARCHAR (127) NOT NULL,
   first_name VARCHAR (127) NOT NULL,
   last_name_furigana VARCHAR (127) NOT NULL,

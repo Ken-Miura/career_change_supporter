@@ -410,7 +410,7 @@ async fn advisor_registration_accept(
             use db::schema::career_change_supporter_schema::advisor_account;
             let res = diesel::insert_into(advisor_account::table)
                 .values(&acc)
-                .get_result::<db::model::advisor::AccountResult>(&conn)
+                .get_result::<db::model::advisor::AccountQueryResult>(&conn)
                 .expect("Failed to insert data");
 
             let current_date_time = chrono::Utc::now();
