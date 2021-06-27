@@ -455,9 +455,9 @@ struct SubmittedData {
     last_name_furigana: String,
     first_name_furigana: String,
     telephone_number: String,
-    year_of_birth: i16,
-    month_of_birth: i16,
-    day_of_birth: i16,
+    year_of_birth: i32,
+    month_of_birth: u32,
+    day_of_birth: u32,
     prefecture: String,
     city: String,
     address_line1: String,
@@ -512,6 +512,7 @@ fn create_acc_request<'a>(
     image2: &'a str,
     current_date_time: &'a DateTime<chrono::Utc>,
 ) -> db::model::advisor::AccountCreationRequest<'a> {
+    let date_of_birth = chrono::NaiveDate::from_ymd(submitted_data.year_of_birth, submitted_data.month_of_birth, submitted_data.day_of_birth);
     db::model::advisor::AccountCreationRequest {
         email_address: mail_addr,
         hashed_password: hashed_passwoed,
@@ -520,9 +521,7 @@ fn create_acc_request<'a>(
         last_name_furigana: &submitted_data.last_name_furigana,
         first_name_furigana: &submitted_data.first_name_furigana,
         telephone_number: &submitted_data.telephone_number,
-        year_of_birth: submitted_data.year_of_birth,
-        month_of_birth: submitted_data.month_of_birth,
-        day_of_birth: submitted_data.day_of_birth,
+        date_of_birth,
         prefecture: &submitted_data.prefecture,
         city: &submitted_data.city,
         address_line1: &submitted_data.address_line1,

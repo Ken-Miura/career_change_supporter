@@ -10,6 +10,7 @@ use actix_web::http::StatusCode;
 use actix_web::middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers};
 use actix_web::middleware::Logger;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Result};
+use chrono::Datelike;
 
 use actix_web::cookie;
 use time::Duration;
@@ -367,9 +368,9 @@ async fn advisor_registration_detail(
         "first_name": request.first_name,
         "last_name_furigana": request.last_name_furigana,
         "first_name_furigana": request.first_name_furigana,
-        "year": request.year_of_birth,
-        "month": request.month_of_birth,
-        "day": request.day_of_birth,
+        "year": request.date_of_birth.year(),
+        "month": request.date_of_birth.month(),
+        "day": request.date_of_birth.day(),
         "prefecture": request.prefecture,
         "city": request.city,
         "address_line1": request.address_line1,
@@ -402,9 +403,20 @@ async fn advisor_registration_accept(
                 .first::<db::model::advisor::AccountCreationRequestResult>(&conn)
                 .expect("failed to get data");
 
+            let addr2 = request.address_line2.clone().unwrap();
             let acc = db::model::advisor::Account {
                 email_address: &request.email_address,
                 hashed_password: &request.hashed_password,
+                last_name: &request.last_name,
+                first_name: &request.first_name,
+                last_name_furigana: &request.last_name_furigana,
+                first_name_furigana: &request.first_name_furigana,
+                telephone_number: &request.telephone_number,
+                date_of_birth: request.date_of_birth,
+                prefecture: &request.prefecture,
+                city: &request.city,
+                address_line1: &request.address_line1,
+                address_line2: Some(&addr2),
                 last_login_time: None
             };
             use db::schema::career_change_supporter_schema::advisor_account;
@@ -423,9 +435,7 @@ async fn advisor_registration_accept(
                 last_name_furigana: &request.last_name_furigana,
                 first_name_furigana: &request.first_name_furigana,
                 telephone_number: &request.telephone_number,
-                year_of_birth: request.year_of_birth,
-                month_of_birth: request.month_of_birth,
-                day_of_birth: request.day_of_birth,
+                date_of_birth: request.date_of_birth,
                 prefecture: &request.prefecture,
                 city: &request.city,
                 address_line1: &request.address_line1,
@@ -543,9 +553,7 @@ async fn advisor_registration_reject(
                 last_name_furigana: &request.last_name_furigana,
                 first_name_furigana: &request.first_name_furigana,
                 telephone_number: &request.telephone_number,
-                year_of_birth: request.year_of_birth,
-                month_of_birth: request.month_of_birth,
-                day_of_birth: request.day_of_birth,
+                date_of_birth: request.date_of_birth,
                 prefecture: &request.prefecture,
                 city: &request.city,
                 address_line1: &request.address_line1,
@@ -728,9 +736,9 @@ async fn advisor_registration_rejection_detail(
         "first_name": request.first_name,
         "last_name_furigana": request.last_name_furigana,
         "first_name_furigana": request.first_name_furigana,
-        "year": request.year_of_birth,
-        "month": request.month_of_birth,
-        "day": request.day_of_birth,
+        "year": request.date_of_birth.year(),
+        "month": request.date_of_birth.month(),
+        "day": request.date_of_birth.day(),
         "prefecture": request.prefecture,
         "city": request.city,
         "address_line1": request.address_line1,
@@ -773,9 +781,9 @@ async fn advisor_registration_approval_detail(
         "first_name": request.first_name,
         "last_name_furigana": request.last_name_furigana,
         "first_name_furigana": request.first_name_furigana,
-        "year": request.year_of_birth,
-        "month": request.month_of_birth,
-        "day": request.day_of_birth,
+        "year": request.date_of_birth.year(),
+        "month": request.date_of_birth.month(),
+        "day": request.date_of_birth.day(),
         "prefecture": request.prefecture,
         "city": request.city,
         "address_line1": request.address_line1,

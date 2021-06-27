@@ -29,21 +29,31 @@ async fn profile_information(
             advisor_account
         };
         let result: Result<db::model::advisor::AccountQueryResult, diesel::result::Error> = advisor_account.find(id).first::<db::model::advisor::AccountQueryResult>(&conn);
-        if result.is_err() {
-            return Err(result.unwrap_err());
+        if let Err(err) = result {
+            return Err(err);
         }
         Ok(result.expect("Failed to get account"))
     }).await;
     let adv_acc = result.expect("Failed to get data");
 
     Ok(HttpResponse::Ok().json(Account{
-        id: adv_acc.advisor_account_id,
-        email_address: adv_acc.email_address
+        email_address: adv_acc.email_address,
     }))
 }
 
 #[derive(Serialize)]
 struct Account {
-    id: i32,
-    email_address: String
+    email_address: String,
+    // last_name: String,
+    // first_name: String,
+    // last_name_furigana: String,
+    // first_name_furigana: String,
+    // year: i16,
+    // month: i16,
+    // day: i16,
+    // telephone_number: String,
+    // prefecture: String,
+    // city: String,
+    // addressline1: String,
+    // addressline2: String
 }

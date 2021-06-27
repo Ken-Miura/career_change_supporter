@@ -1,8 +1,10 @@
 <template>
   <div>
-    <h1>Profile</h1>
-    <p>{{profile.id}}</p>
-    <p>{{profile.email}}</p>
+    <div class="container">
+      <h1>登録済情報</h1>
+      <p>{{profile.id}}</p>
+      <p>{{profile.email}}</p>
+    </div>
   </div>
 </template>
 
@@ -16,8 +18,12 @@ export default defineComponent({
   name: 'Profile',
   setup () {
     const profile = reactive({
-      id: '',
-      email: ''
+      email: '',
+      name: '',
+      furigana: '',
+      telephoneNumber: '',
+      dateOfBirth: '',
+      address: ''
     })
 
     const router = useRouter()
@@ -34,15 +40,34 @@ export default defineComponent({
         method: 'GET'
       })
       if (!response.ok) {
-        profile.id = 'error: failed to get id'
-        profile.email = 'error: failed to get email'
+        // TODO: エラーハンドリング
+        // profile.id = 'error: failed to get id'
+        // profile.email = 'error: failed to get email'
         return
       }
       const userInfo = await response.json()
-      profile.id = userInfo.id
       profile.email = userInfo.email_address
+      profile.name = userInfo.last_name + '　' + userInfo.first_name
+      profile.furigana = userInfo.last_name_furigana + '　' + userInfo.first_name_furigana
+      profile.dateOfBirth = userInfo.year + '年' + userInfo.month + '月' + userInfo.day + '日'
+      profile.telephoneNumber = userInfo.telephone_number
+      let address_line2 = '';
+      if (userInfo.address_line2) {
+        address_line2 = userInfo.address_line2
+      } 
+      // TODO: String.joinがない。。。
+      profile.address = userInfo.prefecture + userInfo.city + userInfo.address_line1 + address_line2
     })
     return { profile }
   }
 })
 </script>
+
+<style scoped>
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+</style>
