@@ -1,9 +1,13 @@
 <template>
   <div>
     <div class="container">
-      <h1>登録済情報</h1>
-      <p>{{profile.id}}</p>
+      <h2>登録済情報</h2>
       <p>{{profile.email}}</p>
+      <p>{{profile.name}}</p>
+      <p>{{profile.furigana}}</p>
+      <p>{{profile.dateOfBirth}}</p>
+      <p>{{profile.telephoneNumber}}</p>
+      <p>{{profile.address}}</p>
     </div>
   </div>
 </template>
@@ -51,12 +55,12 @@ export default defineComponent({
       profile.furigana = userInfo.last_name_furigana + '　' + userInfo.first_name_furigana
       profile.dateOfBirth = userInfo.year + '年' + userInfo.month + '月' + userInfo.day + '日'
       profile.telephoneNumber = userInfo.telephone_number
-      let address_line2 = '';
+      let addressLine2 = ''
       if (userInfo.address_line2) {
-        address_line2 = userInfo.address_line2
-      } 
+        addressLine2 = userInfo.address_line2
+      }
       // TODO: String.joinがない。。。
-      profile.address = userInfo.prefecture + userInfo.city + userInfo.address_line1 + address_line2
+      profile.address = userInfo.prefecture + userInfo.city + userInfo.address_line1 + addressLine2
     })
     return { profile }
   }

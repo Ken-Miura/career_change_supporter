@@ -9,6 +9,7 @@ use crate::common::error;
 use crate::common::error::unexpected;
 use diesel::QueryDsl;
 use serde::Serialize;
+use chrono::Datelike;
 
 #[get("/profile-information")]
 async fn profile_information(
@@ -38,22 +39,34 @@ async fn profile_information(
 
     Ok(HttpResponse::Ok().json(Account{
         email_address: adv_acc.email_address,
+        last_name: adv_acc.last_name,
+        first_name: adv_acc.first_name,
+        last_name_furigana: adv_acc.last_name_furigana,
+        first_name_furigana: adv_acc.first_name_furigana,
+        year: adv_acc.date_of_birth.year(),
+        month: adv_acc.date_of_birth.month(),
+        day: adv_acc.date_of_birth.day(),
+        telephone_number: adv_acc.telephone_number,
+        prefecture: adv_acc.prefecture,
+        city: adv_acc.city,
+        address_line1: adv_acc.address_line1,
+        address_line2: adv_acc.address_line2.expect("Failed to get addr2")
     }))
 }
 
 #[derive(Serialize)]
 struct Account {
     email_address: String,
-    // last_name: String,
-    // first_name: String,
-    // last_name_furigana: String,
-    // first_name_furigana: String,
-    // year: i16,
-    // month: i16,
-    // day: i16,
-    // telephone_number: String,
-    // prefecture: String,
-    // city: String,
-    // addressline1: String,
-    // addressline2: String
+    last_name: String,
+    first_name: String,
+    last_name_furigana: String,
+    first_name_furigana: String,
+    year: i32,
+    month: u32,
+    day: u32,
+    telephone_number: String,
+    prefecture: String,
+    city: String,
+    address_line1: String,
+    address_line2: String
 }
