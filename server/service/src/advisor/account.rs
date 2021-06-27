@@ -365,9 +365,18 @@ async fn account_creation_request(
         }
     };
     if resp.is_err() {
-        return Ok(resp.expect_err("Failed to get err"));
+        return Ok(HttpResponse::Ok().json(AccountCreationRequestResult {
+            message: "失敗".to_string()
+        }));
     };
-    return Ok(resp.expect("Failed to get data"));
+    Ok(HttpResponse::Ok().json(AccountCreationRequestResult {
+        message: "成功".to_string()
+    }))
+}
+
+#[derive(Serialize)]
+struct AccountCreationRequestResult {
+    message: String
 }
 
 fn send_notification_mail_to_admin(email_address: &str) -> Result<(), error::Error> {
