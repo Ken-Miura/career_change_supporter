@@ -273,7 +273,12 @@ export default defineComponent({
         registration.message = '通信エラーが発生しました。インターネットに接続できているか確認してください。'
         return
       }
-      registration.message = await createErrorMessage(response)
+      if (response.ok) {
+        const res = await response.json()
+        registration.message = await res.message
+      } else {
+        registration.message = await createErrorMessage(response)
+      }
     }
     return { error, formRef, form, yearList, onImage1StateChange, onImage2StateChange, submitData, registration }
   }

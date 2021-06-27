@@ -83,7 +83,7 @@ export default defineComponent({
         return
       }
       // NOTE: Credential information will be stored in cookie as session id
-      await router.push('schedule')
+      await router.push('profile')
     }
     return { formRef, form, login, error }
   }
