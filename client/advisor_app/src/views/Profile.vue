@@ -1,14 +1,31 @@
 <template>
-  <div>
-    <div class="container">
-      <h2>登録済情報</h2>
-      <p>{{profile.email}}</p>
-      <p>{{profile.name}}</p>
-      <p>{{profile.furigana}}</p>
-      <p>{{profile.dateOfBirth}}</p>
-      <p>{{profile.telephoneNumber}}</p>
-      <p>{{profile.address}}</p>
-    </div>
+  <div class="container">
+    <h3>登録済情報</h3>
+    <p>{{profile.email}}</p>
+    <p>{{profile.name}}</p>
+    <p>{{profile.furigana}}</p>
+    <p>{{profile.dateOfBirth}}</p>
+    <p>{{profile.telephoneNumber}}</p>
+    <p>{{profile.address}}</p>
+    <!-- TODO: 実装 -->
+    <button id="id-change-request">登録情報更新依頼</button>
+    <h3>口座情報</h3>
+    <p>{{profile.bankCode}}</p>
+    <p>{{profile.bankBranchCode}}</p>
+    <p>{{profile.bankAccountType}}</p>
+    <p>{{profile.bankAccountNumber}}</p>
+    <p>{{profile.furigana}}</p>
+    <!-- TODO: 実装 -->
+    <button @click="editBankInfo">口座情報更新</button>
+    <h3>経歴情報</h3>
+    <!-- TODO: 実装 -->
+    <button id="">経歴情報更新</button>
+    <h3>単価情報</h3>
+    <!-- TODO: 実装 -->
+    <button id="">単価情報更新</button>
+    <h3>スケジュール情報</h3>
+    <!-- TODO: 実装 -->
+    <button id="">スケジュール情報更新</button>
   </div>
 </template>
 
@@ -27,7 +44,11 @@ export default defineComponent({
       furigana: '',
       telephoneNumber: '',
       dateOfBirth: '',
-      address: ''
+      address: '',
+      bankCode: '',
+      bankBranchCode: '',
+      bankAccountType: '',
+      bankAccountNumber: ''
     })
 
     const router = useRouter()
@@ -62,7 +83,10 @@ export default defineComponent({
       // TODO: String.joinがない。。。
       profile.address = userInfo.prefecture + userInfo.city + userInfo.address_line1 + addressLine2
     })
-    return { profile }
+    const editBankInfo = async () => {
+      await router.push('edit-bank-info')
+    }
+    return { profile, editBankInfo }
   }
 })
 </script>

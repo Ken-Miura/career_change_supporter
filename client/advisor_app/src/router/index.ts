@@ -36,6 +36,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/registration-requests',
     name: 'RegistrationRequests',
     component: () => import('../views/RegistrationRequests.vue')
+  },
+  {
+    path: '/edit-bank-info',
+    name: 'EditBankInfo',
+    component: () => import('../views/EditBankInfo.vue')
   }
 ]
 
