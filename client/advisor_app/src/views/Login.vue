@@ -1,7 +1,7 @@
 <template>
   <p v-if="error.exist">{{error.message}}</p>
   <div>
-    <form ref="formRef" @submit.prevent="login">
+    <form ref="formRef" @submit.prevent="login" class="container">
       <input v-model="form.email" type="email" required placeholder="メールアドレス" maxlength=254>
       <!-- TODO: Add password restristion -->
       <input v-model="form.password" type="password" required placeholder="パスワード">
@@ -89,3 +89,12 @@ export default defineComponent({
   }
 })
 </script>
+
+<style scoped>
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+</style>
