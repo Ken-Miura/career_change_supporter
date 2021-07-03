@@ -5,10 +5,14 @@ use crate::common::credential;
 use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
+use std::collections::HashMap;
+use openssl::ssl::{SslConnector, SslMethod};
+use crate::advisor::authentication::session_state_inner;
+use actix_session::Session;
 
 use crate::common::util;
 use actix_multipart::Field;
-use actix_web::{post, web, HttpResponse};
+use actix_web::{client, post, web, HttpResponse};
 use chrono::DateTime;
 use diesel::prelude::*;
 use futures::{StreamExt, TryStreamExt};
@@ -530,4 +534,102 @@ fn create_acc_request<'a>(
         image2: Some(image2),
         requested_time: &current_date_time,
     }
+}
+
+#[post("/bank-info")]
+async fn bank_info(
+    tenant_req: web::Json<TenantCreationRequest>,
+    session: Session,
+    _pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, common::error::Error> {
+    let option_id = session_state_inner(&session)?;
+    let _id = option_id.expect("Failed to get id");
+
+    let tenant_create_request = TenantRequest {
+        name: tenant_req.bank_account_holder_name.clone(),
+        platform_fee_rate: "10.15".to_string(),
+        minimum_transfer_amount: "1000".to_string(),
+        bank_account_holder_name: tenant_req.bank_account_holder_name.clone(),
+        bank_code: tenant_req.bank_code.clone(),
+        bank_branch_code: tenant_req.bank_branch_code.clone(),
+        bank_account_type: "普通".to_string(),
+        bank_account_number: tenant_req.bank_account_number.clone(),
+    };
+
+    // TODO: どのような設定に気をつけなければならないか確認する
+    // https://github.com/actix/examples/tree/master/security/awc_https
+    let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    let client_builder = client::ClientBuilder::new();
+    let client = client_builder
+        .connector(client::Connector::new().ssl(ssl_builder.build()).finish())
+        .basic_auth("テスト環境の秘密鍵", Some("パスワード"))
+        .finish();
+
+    // Create request builder and send request
+    let result = client
+        .post("https://api.pay.jp/v1/tenants")
+        .send_form(&tenant_create_request)
+        .await; // <- Wait for response
+
+    // https://github.com/actix/actix-web/issues/536#issuecomment-579380701
+    let mut response = result.expect("test");
+    let result = response.json::<Tenant>().await;
+    let tenant = result.expect("test");
+
+    log::info!("Response body: {:?}", tenant);
+    
+    // parameterの処理
+    Ok(HttpResponse::Ok().into())
+}
+
+#[derive(Deserialize)]
+struct TenantCreationRequest {
+    bank_code: String,
+    bank_branch_code: String,
+    bank_account_number: String,
+    bank_account_holder_name: String,
+}
+
+#[derive(Serialize)]
+struct TenantRequest {
+    name: String,
+    platform_fee_rate: String,
+    minimum_transfer_amount: String,
+    bank_account_holder_name: String,
+    bank_code: String,
+    bank_branch_code: String,
+    bank_account_type: String,
+    bank_account_number: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Tenant {
+	id: String,
+	object: String,
+	livemode: bool,
+    created: i64,
+    platform_fee_rate: String,
+    payjp_fee_included: bool,
+    minimum_transfer_amount: i32,
+    bank_code: String,
+    bank_branch_code: String,    
+    bank_account_type: String,
+    bank_account_number: String,
+    bank_account_holder_name: String,
+    bank_account_status: String,
+    currencies_supported: Vec<String>,
+    default_currency: String,
+    reviewed_brands: Vec<ReviewedBrands>,
+    // nullのときNoneになる。Optionで囲んでなければnullのときpanic
+    // TODO: metadataの方がHashMap<String, String>でよいか確認する
+    // https://payjp.hatenablog.com/entry/2016/02/22/100000
+    metadata: Option<HashMap<String, String>>
+}
+
+#[derive(Debug, Deserialize)]
+struct ReviewedBrands {
+	brand: String,
+	status: String,
+    // nullのときNoneになる。Optionで囲んでなければnullのときpanic
+	available_date: Option<i64>
 }
