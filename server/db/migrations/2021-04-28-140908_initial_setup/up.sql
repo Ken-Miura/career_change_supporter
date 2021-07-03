@@ -63,6 +63,7 @@ CREATE TABLE career_change_supporter_schema.advisor_account (
   city VARCHAR (32) NOT NULL,
   address_line1 VARCHAR (127) NOT NULL,
   address_line2 VARCHAR (127),
+  tenant_id VARCHAR (32) UNIQUE,
   last_login_time TIMESTAMP WITH TIME ZONE
 );
 GRANT SELECT, UPDATE, DELETE ON career_change_supporter_schema.advisor_account To advisor_app;

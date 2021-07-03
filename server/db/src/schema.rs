@@ -23,6 +23,7 @@ pub mod career_change_supporter_schema {
             city -> Varchar,
             address_line1 -> Varchar,
             address_line2 -> Nullable<Varchar>,
+            tenant_id -> Nullable<Varchar>,
             last_login_time -> Nullable<Timestamptz>,
         }
     }

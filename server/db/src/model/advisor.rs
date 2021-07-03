@@ -74,6 +74,7 @@ pub struct Account<'a> {
     pub city: &'a str,
     pub address_line1: &'a str,
     pub address_line2: Option<&'a str>,
+    pub tenant_id: Option<&'a str>,
     pub last_login_time: Option<chrono::DateTime<chrono::Utc>>,
 }
 
@@ -92,5 +93,6 @@ pub struct AccountQueryResult {
     pub city: String,
     pub address_line1: String,
     pub address_line2: Option<String>,
+    pub tenant_id: Option<String>,
     pub last_login_time: Option<chrono::DateTime<chrono::Utc>>,
 }

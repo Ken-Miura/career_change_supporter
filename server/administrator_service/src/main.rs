@@ -417,6 +417,7 @@ async fn advisor_registration_accept(
                 city: &request.city,
                 address_line1: &request.address_line1,
                 address_line2: Some(&addr2),
+                tenant_id: None,
                 last_login_time: None
             };
             use db::schema::career_change_supporter_schema::advisor_account;

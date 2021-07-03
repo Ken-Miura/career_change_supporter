@@ -542,6 +542,11 @@ async fn bank_info(
     session: Session,
     _pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
+    // メモ
+    // アカウント内のテナントIDの有無を確認
+    // テナントIDがない場合 → テナント作成処理 + テナントIDの保存
+    // テナントIDがある場合 → テナント更新処理
+
     let option_id = session_state_inner(&session)?;
     let _id = option_id.expect("Failed to get id");
 
