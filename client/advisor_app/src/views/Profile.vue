@@ -14,7 +14,7 @@
     <p>{{profile.bankBranchCode}}</p>
     <p>{{profile.bankAccountType}}</p>
     <p>{{profile.bankAccountNumber}}</p>
-    <p>{{profile.furigana}}</p>
+    <p>{{profile.bankAccountHolderName}}</p>
     <!-- TODO: 実装 -->
     <button @click="editBankInfo">口座情報更新</button>
     <h3>経歴情報</h3>
@@ -48,7 +48,8 @@ export default defineComponent({
       bankCode: '',
       bankBranchCode: '',
       bankAccountType: '',
-      bankAccountNumber: ''
+      bankAccountNumber: '',
+      bankAccountHolderName: ''
     })
 
     const router = useRouter()
