@@ -23,6 +23,7 @@ pub mod career_change_supporter_schema {
             city -> Varchar,
             address_line1 -> Varchar,
             address_line2 -> Nullable<Varchar>,
+            sex -> Varchar,
             tenant_id -> Nullable<Varchar>,
             last_login_time -> Nullable<Timestamptz>,
         }
@@ -43,9 +44,23 @@ pub mod career_change_supporter_schema {
             city -> Varchar,
             address_line1 -> Varchar,
             address_line2 -> Nullable<Varchar>,
+            sex -> Varchar,
             image1 -> Varchar,
             image2 -> Nullable<Varchar>,
             requested_time -> Timestamptz,
+        }
+    }
+
+    table! {
+        career_change_supporter_schema.advisor_career (advisor_career_id) {
+            advisor_career_id -> Int4,
+            company_name -> Varchar,
+            department_name -> Nullable<Varchar>,
+            office -> Nullable<Varchar>,
+            workplace -> Nullable<Varchar>,
+            start_date -> Date,
+            end_date -> Nullable<Date>,
+            contract_type -> Varchar,
         }
     }
 
@@ -63,6 +78,7 @@ pub mod career_change_supporter_schema {
             city -> Varchar,
             address_line1 -> Varchar,
             address_line2 -> Nullable<Varchar>,
+            sex -> Varchar,
             image1 -> Varchar,
             image2 -> Nullable<Varchar>,
             associated_advisor_account_id -> Nullable<Int4>,
@@ -84,6 +100,7 @@ pub mod career_change_supporter_schema {
             city -> Varchar,
             address_line1 -> Varchar,
             address_line2 -> Nullable<Varchar>,
+            sex -> Varchar,
             reject_reason -> Varchar,
             rejected_time -> Timestamptz,
         }
@@ -121,6 +138,7 @@ pub mod career_change_supporter_schema {
         administrator_account,
         advisor_account,
         advisor_account_creation_request,
+        advisor_career,
         advisor_reg_req_approved,
         advisor_reg_req_rejected,
         advisor_registration_request,

@@ -466,6 +466,7 @@ struct SubmittedData {
     city: String,
     address_line1: String,
     address_line2: Option<String>,
+    sex: String,
 }
 
 fn create_account_registration(
@@ -530,6 +531,7 @@ fn create_acc_request<'a>(
         city: &submitted_data.city,
         address_line1: &submitted_data.address_line1,
         address_line2: Some(address_line2),
+        sex: &submitted_data.sex,
         image1,
         image2: Some(image2),
         requested_time: &current_date_time,

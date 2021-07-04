@@ -10,6 +10,10 @@ GRANT USAGE ON SCHEMA career_change_supporter_schema TO advisor_app;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO administrator_app;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO administrator_tool_app;
 
+/* TODO: dieselでenumがサポートされた後に採用する
+   CREATE TYPE career_change_supporter_schema.sex_enum AS ENUM ('male', 'female');
+ */
+CREATE DOMAIN career_change_supporter_schema.sex AS VARCHAR (6) NOT NULL CHECK (VALUE ~ 'male' OR VALUE ~ 'female');
 CREATE DOMAIN career_change_supporter_schema.email_address AS VARCHAR (254) NOT NULL CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
 /* simpleフォーム (半角英数字32文字。ハイフン、波括弧を含まない) での入出力を行いたいので、標準のUUID型を使わない */
 CREATE DOMAIN career_change_supporter_schema.uuid_simple_form AS CHAR (32) NOT NULL CHECK ( VALUE ~ '^[a-zA-Z0-9]+$' );
@@ -63,6 +67,7 @@ CREATE TABLE career_change_supporter_schema.advisor_account (
   city VARCHAR (32) NOT NULL,
   address_line1 VARCHAR (127) NOT NULL,
   address_line2 VARCHAR (127),
+  sex career_change_supporter_schema.sex,
   tenant_id VARCHAR (32) UNIQUE,
   last_login_time TIMESTAMP WITH TIME ZONE
 );
@@ -94,6 +99,7 @@ CREATE TABLE career_change_supporter_schema.advisor_account_creation_request (
   city VARCHAR (32) NOT NULL,
   address_line1 VARCHAR (127) NOT NULL,
   address_line2 VARCHAR (127),
+  sex career_change_supporter_schema.sex,
   /* TODO: 最大文字数の検討 */
   image1 VARCHAR (64) NOT NULL,
   image2 VARCHAR (64),
@@ -138,6 +144,7 @@ CREATE TABLE career_change_supporter_schema.advisor_reg_req_approved (
   city VARCHAR (32) NOT NULL,
   address_line1 VARCHAR (127) NOT NULL,
   address_line2 VARCHAR (127),
+  sex career_change_supporter_schema.sex,
   /* TODO: 最大文字数の検討 */
   image1 VARCHAR (64) NOT NULL,
   image2 VARCHAR (64),
@@ -171,9 +178,27 @@ CREATE TABLE career_change_supporter_schema.advisor_reg_req_rejected (
   city VARCHAR (32) NOT NULL,
   address_line1 VARCHAR (127) NOT NULL,
   address_line2 VARCHAR (127),
+  sex career_change_supporter_schema.sex,
   /* 必要な文字数に応じて適宜調整 */
   reject_reason VARCHAR (1000) NOT NULL,
   rejected_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT, UPDATE ON career_change_supporter_schema.advisor_reg_req_rejected To administrator_app;
 GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_reg_req_rejected_advisor_reg_req_rejected_id_seq TO administrator_app;
+
+CREATE TABLE career_change_supporter_schema.advisor_career (
+  advisor_career_id SERIAL PRIMARY KEY,
+  company_name VARCHAR (1000) NOT NULL,
+  department_name VARCHAR (1000), /* 事業部・部門 */
+  office VARCHAR (1000), /* 事業所 */
+  workplace VARCHAR (1000), /* 勤務地 */
+  start_date DATE NOT NULL, /* start_dateとend_dateから在籍期間を表示するようにする */
+  end_date DATE,
+  contract_type VARCHAR (100) NOT NULL /* 正社員か契約社員かその他か */
+  /* 職種 */
+  /* 年収 */
+  /* 管理職かどうか */
+  /* 役職名 */
+  /* 入社区分（新卒、中途） */
+  /* その他備考 (相談可能な内容、相談不可な内容) */
+);

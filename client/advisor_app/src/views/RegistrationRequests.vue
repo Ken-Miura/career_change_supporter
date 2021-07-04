@@ -87,6 +87,13 @@
             <p id="addressLine1">それ以降の住所:</p><input id="addressLine1Input" v-model="form.addressLine1" type = "text" required>
             <p id="addressLine2">建物名・号室:</p><input id="addressLine2Input" v-model="form.addressLine2" type = "text">
           </div>
+          <div id="sexContainer">
+            <p id="sexTitle">性別: <select id="sex" v-model="form.sex">
+              <option hidden>選択してください</option>
+              <option value="male">男性</option>
+              <option value="female">女性</option>
+            </select></p>
+          </div>
           <div id="identificationContainer">
             <p id="identificationTitle">身分証明書</p>
             <!-- TODO: レイアウトを考える -->
@@ -134,6 +141,7 @@ export default defineComponent({
       city: '',
       addressLine1: '',
       addressLine2: '',
+      sex: '',
       image1: null as FileList | null,
       image2: null as FileList | null
     })
@@ -248,6 +256,7 @@ export default defineComponent({
         city: form.city, // eslint-disable-line
         address_line1: form.addressLine1, // eslint-disable-line
         address_line2: form.addressLine2, // eslint-disable-line
+        sex: form.sex
       }
       const formData = new FormData()
       formData.append('parameter', JSON.stringify(data))
@@ -366,6 +375,12 @@ export default defineComponent({
 #addressLine2Input {
   grid-row: 5;
   grid-column: 2;
+}
+#sexContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: start;
 }
 #identificationContainer {
   display: grid;

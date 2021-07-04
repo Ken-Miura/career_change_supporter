@@ -378,6 +378,7 @@ async fn advisor_registration_detail(
         "address_line2": address_line2_option.expect("Failed to get address line 2"),
         "email_address": request.email_address,
         "telephone_num": request.telephone_number,
+        "sex": request.sex,
         "image1": request.image1,
         "image2": request.image2,
     });
@@ -417,6 +418,7 @@ async fn advisor_registration_accept(
                 city: &request.city,
                 address_line1: &request.address_line1,
                 address_line2: Some(&addr2),
+                sex: &request.sex,
                 tenant_id: None,
                 last_login_time: None
             };
@@ -441,6 +443,7 @@ async fn advisor_registration_accept(
                 city: &request.city,
                 address_line1: &request.address_line1,
                 address_line2: Some(&addr_line2),
+                sex: &request.sex,
                 image1: &request.image1,
                 image2: Some(&img2),
                 associated_advisor_account_id: Some(res.advisor_account_id),
@@ -525,12 +528,7 @@ async fn advisor_registration_reject(
     params: web::Form<Reason>,
     pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
 ) -> HttpResponse {
-    // 1から3はトランザクション
-    // 1. advisorリクエスト削除
-    // 2. advisor拒絶履歴登録
-    // 3. advisor身分証ファイル削除（オプショナルにしておく？）
-    // advisorに拒絶メール通知
-    // 拒絶画面表示
+    // advisor身分証ファイル削除（オプショナルにしておく？）
     let reson_clone = params.reason.clone();
     let conn = pool.get().unwrap();
     // TODO: エラー処理の追加
@@ -559,6 +557,7 @@ async fn advisor_registration_reject(
                 city: &request.city,
                 address_line1: &request.address_line1,
                 address_line2: Some(&addr_line2),
+                sex: &request.sex,
                 reject_reason: &reason,
                 rejected_time: &current_date_time,
             };
@@ -747,6 +746,7 @@ async fn advisor_registration_rejection_detail(
         "address_line2": address_line2_option.expect("Failed to get address line 2"),
         "email_address": request.email_address,
         "telephone_num": request.telephone_number,
+        "sex": request.sex,
         "reject_reason": request.reject_reason
     });
 
@@ -792,6 +792,7 @@ async fn advisor_registration_approval_detail(
         "address_line2": address_line2_option.expect("Failed to get address line 2"),
         "email_address": request.email_address,
         "telephone_num": request.telephone_number,
+        "sex": request.sex,
         "image1": request.image1,
         "image2": image2.expect("Failed to get data")
     });

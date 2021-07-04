@@ -7,6 +7,7 @@
     <p>{{profile.dateOfBirth}}</p>
     <p>{{profile.telephoneNumber}}</p>
     <p>{{profile.address}}</p>
+    <p>{{profile.sex}}</p>
     <!-- TODO: 実装 -->
     <button id="id-change-request">登録情報更新依頼</button>
     <h3>口座情報</h3>
@@ -45,6 +46,7 @@ export default defineComponent({
       telephoneNumber: '',
       dateOfBirth: '',
       address: '',
+      sex: '',
       bankCode: '',
       bankBranchCode: '',
       bankAccountType: '',
@@ -83,6 +85,7 @@ export default defineComponent({
       }
       // TODO: String.joinがない。。。
       profile.address = userInfo.prefecture + userInfo.city + userInfo.address_line1 + addressLine2
+      profile.sex = userInfo.sex
     })
     const editBankInfo = async () => {
       await router.push('edit-bank-info')

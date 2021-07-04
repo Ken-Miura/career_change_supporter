@@ -34,6 +34,7 @@ pub struct AdvisorRegReqApproved<'a> {
     pub city: &'a str,
     pub address_line1: &'a str,
     pub address_line2: Option<&'a str>,
+    pub sex: &'a str,
     pub image1: &'a str,
     pub image2: Option<&'a str>,
     pub associated_advisor_account_id: Option<i32>,
@@ -54,6 +55,7 @@ pub struct AdvisorRegReqApprovedResult {
     pub city: String,
     pub address_line1: String,
     pub address_line2: Option<String>,
+    pub sex: String,
     pub image1: String,
     pub image2: Option<String>,
     pub associated_advisor_account_id: Option<i32>,
@@ -74,6 +76,7 @@ pub struct AdvisorRegReqRejected<'a> {
     pub city: &'a str,
     pub address_line1: &'a str,
     pub address_line2: Option<&'a str>,
+    pub sex: &'a str,
     pub reject_reason: &'a str,
     pub rejected_time: &'a chrono::DateTime<chrono::Utc>,
 }
@@ -92,6 +95,7 @@ pub struct AdvisorRegReqRejectedResult {
     pub city: String,
     pub address_line1: String,
     pub address_line2: Option<String>,
+    pub sex: String,
     pub reject_reason: String,
     pub rejected_time: chrono::DateTime<chrono::Utc>,
 }

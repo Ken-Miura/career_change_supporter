@@ -36,7 +36,8 @@ async fn profile_information(
         Ok(result.expect("Failed to get account"))
     }).await;
     let adv_acc = result.expect("Failed to get data");
-
+    let val = adv_acc.sex.clone();
+    let sex = if val == "male" { "男性" } else { "女性" };
     Ok(HttpResponse::Ok().json(Account{
         email_address: adv_acc.email_address,
         last_name: adv_acc.last_name,
@@ -50,7 +51,8 @@ async fn profile_information(
         prefecture: adv_acc.prefecture,
         city: adv_acc.city,
         address_line1: adv_acc.address_line1,
-        address_line2: adv_acc.address_line2.expect("Failed to get addr2")
+        address_line2: adv_acc.address_line2.expect("Failed to get addr2"),
+        sex: sex.to_string()
     }))
 }
 
@@ -68,5 +70,6 @@ struct Account {
     prefecture: String,
     city: String,
     address_line1: String,
-    address_line2: String
+    address_line2: String,
+    sex: String
 }
