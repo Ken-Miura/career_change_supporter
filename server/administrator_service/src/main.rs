@@ -419,6 +419,7 @@ async fn advisor_registration_accept(
                 address_line1: &request.address_line1,
                 address_line2: Some(&addr2),
                 sex: &request.sex,
+                advice_fee_in_yen: None,
                 tenant_id: None,
                 last_login_time: None
             };
