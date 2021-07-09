@@ -94,3 +94,30 @@ pub(crate) fn check_if_uuid_format_is_correct(uuid: &str) -> bool {
     }
     true
 }
+
+use diesel::connection::Connection;
+use diesel::connection::TransactionManager;
+use futures::Future;
+/// 下記のURLを参考にasyncを渡せるtransactionを作成
+/// S3やPAY.JPとの連携の際、トランザクション中にHTTTP通信したい場合等々に利用することを想定。
+/// transaction_managerという非公開のAPIを利用しているので可能な限り利用を避ける。
+/// https://o296.com/2020/12/29/diesel-transaction-async.html
+pub(crate) async fn transaction<C, T, E, F>(c: &C, f: F) -> Result<T, E>
+where
+    C: Connection,
+    F: Future<Output = Result<T, E>>,
+    E: From<diesel::result::Error>,
+{
+    let transaction_manager = c.transaction_manager();
+    transaction_manager.begin_transaction(c)?;
+    match f.await {
+        Ok(value) => {
+            transaction_manager.commit_transaction(c)?;
+            Ok(value)
+        }
+        Err(e) => {
+            transaction_manager.rollback_transaction(c)?;
+            Err(e)
+        }
+    }
+}

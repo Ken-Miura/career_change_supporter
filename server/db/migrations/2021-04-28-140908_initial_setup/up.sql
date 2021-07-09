@@ -17,6 +17,8 @@ CREATE DOMAIN career_change_supporter_schema.sex AS VARCHAR (6) NOT NULL CHECK (
 CREATE DOMAIN career_change_supporter_schema.email_address AS VARCHAR (254) NOT NULL CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
 /* simpleフォーム (半角英数字32文字。ハイフン、波括弧を含まない) での入出力を行いたいので、標準のUUID型を使わない */
 CREATE DOMAIN career_change_supporter_schema.uuid_simple_form AS CHAR (32) CHECK ( VALUE ~ '^[a-zA-Z0-9]+$' );
+/* PAY.JPより回答してもらった仕様をそのままチェック */
+CREATE DOMAIN career_change_supporter_schema.tenant_id AS VARCHAR (100) CHECK ( VALUE ~ '^[-_0-9a-zA-Z]{1,100}$' );
 
 /* data structure for user */
 CREATE TABLE career_change_supporter_schema.user_account (
@@ -69,7 +71,7 @@ CREATE TABLE career_change_supporter_schema.advisor_account (
   address_line2 VARCHAR (127),
   sex career_change_supporter_schema.sex,
   advice_fee_in_yen INTEGER,
-  tenant_id VARCHAR (32) UNIQUE,
+  tenant_id career_change_supporter_schema.tenant_id UNIQUE,
   last_login_time TIMESTAMP WITH TIME ZONE
 );
 GRANT SELECT, UPDATE, DELETE ON career_change_supporter_schema.advisor_account To advisor_app;

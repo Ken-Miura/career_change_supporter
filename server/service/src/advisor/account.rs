@@ -22,6 +22,9 @@ use std::io::Write;
 use std::str;
 use uuid::Uuid;
 
+use diesel::RunQueryDsl;
+use diesel::QueryDsl;
+
 // TODO: 運用しながら上限を調整する
 const REGISTRATION_REQUEST_LIMIT: i64 = 7;
 
@@ -542,16 +545,36 @@ fn create_acc_request<'a>(
 async fn bank_info(
     tenant_req: web::Json<TenantCreationRequest>,
     session: Session,
-    _pool: web::Data<common::ConnectionPool>,
+    pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
     // メモ
     // アカウント内のテナントIDの有無を確認
     // テナントIDがない場合 → テナント作成処理 + テナントIDの保存
+    // テナントIDがない場合 → テナント作成処理 + テナントIDの保存をトランザクションで処理するためにはこちらでID生成を管理する必要がある？
     // テナントIDがある場合 → テナント更新処理
 
     let option_id = session_state_inner(&session)?;
-    let _id = option_id.expect("Failed to get id");
+    let id = option_id.expect("Failed to get id");
 
+    let c = pool.get().expect("Failed to get connection");
+    use crate::common::util;
+    let _a = util::transaction(&c, async {
+        use db::schema::career_change_supporter_schema::advisor_account::dsl::{
+            advisor_account
+        };
+        let result: Result<db::model::advisor::AccountQueryResult, diesel::result::Error> = advisor_account.find(id).first::<db::model::advisor::AccountQueryResult>(&c);
+        let acc = result.expect("Failed to get account");
+        match acc.clone().tenant_id {
+            Some(_t_id) => {
+    
+            },
+            None => {
+    
+            }
+        }
+        Ok::<_, diesel::result::Error>(acc)
+    }).await;
+    
     let tenant_create_request = TenantRequest {
         name: tenant_req.bank_account_holder_name.clone(),
         platform_fee_rate: "10.15".to_string(),
@@ -587,6 +610,17 @@ async fn bank_info(
     
     // parameterの処理
     Ok(HttpResponse::Ok().into())
+}
+
+/// https://actix.rs/docs/url-dispatch/
+#[post("/career-registeration/{id}")]
+async fn career_registeration_id(
+    web::Path(_path): web::Path<String>,
+    _tenant_req: web::Json<TenantCreationRequest>,
+    _session: Session,
+    _pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, common::error::Error> {
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[derive(Deserialize)]
