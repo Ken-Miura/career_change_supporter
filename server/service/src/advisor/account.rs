@@ -1,18 +1,18 @@
 // Copyright 2021 Ken Miura
 
+use crate::advisor::authentication::session_state_inner;
 use crate::common;
 use crate::common::credential;
 use crate::common::error;
 use crate::common::error::handled;
 use crate::common::error::unexpected;
-use std::collections::HashMap;
-use openssl::ssl::{SslConnector, SslMethod};
-use crate::advisor::authentication::session_state_inner;
 use actix_session::Session;
+use openssl::ssl::{SslConnector, SslMethod};
+use std::collections::HashMap;
 
 use crate::common::util;
 use actix_multipart::Field;
-use actix_web::{client, post, web, HttpResponse};
+use actix_web::{client, http::StatusCode, post, web, HttpResponse};
 use chrono::DateTime;
 use diesel::prelude::*;
 use futures::{StreamExt, TryStreamExt};
@@ -22,8 +22,8 @@ use std::io::Write;
 use std::str;
 use uuid::Uuid;
 
-use diesel::RunQueryDsl;
 use diesel::QueryDsl;
+use diesel::RunQueryDsl;
 
 // TODO: 運用しながら上限を調整する
 const REGISTRATION_REQUEST_LIMIT: i64 = 7;
@@ -373,17 +373,17 @@ async fn account_creation_request(
     };
     if resp.is_err() {
         return Ok(HttpResponse::Ok().json(AccountCreationRequestResult {
-            message: "失敗".to_string()
+            message: "失敗".to_string(),
         }));
     };
     Ok(HttpResponse::Ok().json(AccountCreationRequestResult {
-        message: "成功".to_string()
+        message: "成功".to_string(),
     }))
 }
 
 #[derive(Serialize)]
 struct AccountCreationRequestResult {
-    message: String
+    message: String,
 }
 
 fn send_notification_mail_to_admin(email_address: &str) -> Result<(), error::Error> {
@@ -520,7 +520,11 @@ fn create_acc_request<'a>(
     image2: &'a str,
     current_date_time: &'a DateTime<chrono::Utc>,
 ) -> db::model::advisor::AccountCreationRequest<'a> {
-    let date_of_birth = chrono::NaiveDate::from_ymd(submitted_data.year_of_birth, submitted_data.month_of_birth, submitted_data.day_of_birth);
+    let date_of_birth = chrono::NaiveDate::from_ymd(
+        submitted_data.year_of_birth,
+        submitted_data.month_of_birth,
+        submitted_data.day_of_birth,
+    );
     db::model::advisor::AccountCreationRequest {
         email_address: mail_addr,
         hashed_password: hashed_passwoed,
@@ -543,46 +547,17 @@ fn create_acc_request<'a>(
 
 #[post("/bank-info")]
 async fn bank_info(
-    tenant_req: web::Json<TenantCreationRequest>,
+    tenant_req: web::Json<TenantRequest>,
     session: Session,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
-    // メモ
-    // アカウント内のテナントIDの有無を確認
-    // テナントIDがない場合 → テナント作成処理 + テナントIDの保存
-    // テナントIDがない場合 → テナント作成処理 + テナントIDの保存をトランザクションで処理するためにはこちらでID生成を管理する必要がある？
-    // テナントIDがある場合 → テナント更新処理
-
     let option_id = session_state_inner(&session)?;
     let id = option_id.expect("Failed to get id");
 
-    let c = pool.get().expect("Failed to get connection");
-    use crate::common::util;
-    let _a = util::transaction(&c, async {
-        use db::schema::career_change_supporter_schema::advisor_account::dsl::{
-            advisor_account
-        };
-        let result: Result<db::model::advisor::AccountQueryResult, diesel::result::Error> = advisor_account.find(id).first::<db::model::advisor::AccountQueryResult>(&c);
-        let acc = result.expect("Failed to get account");
-        match acc.clone().tenant_id {
-            Some(_t_id) => {
-    
-            },
-            None => {
-    
-            }
-        }
-        Ok::<_, diesel::result::Error>(acc)
-    }).await;
-    
-    let tenant_create_request = TenantRequest {
-        name: tenant_req.bank_account_holder_name.clone(),
-        platform_fee_rate: "10.15".to_string(),
-        minimum_transfer_amount: "1000".to_string(),
+    let tenant_change_request = TenantChangeRequest {
         bank_account_holder_name: tenant_req.bank_account_holder_name.clone(),
         bank_code: tenant_req.bank_code.clone(),
         bank_branch_code: tenant_req.bank_branch_code.clone(),
-        bank_account_type: "普通".to_string(),
         bank_account_number: tenant_req.bank_account_number.clone(),
     };
 
@@ -590,24 +565,81 @@ async fn bank_info(
     // https://github.com/actix/examples/tree/master/security/awc_https
     let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
     let client_builder = client::ClientBuilder::new();
+    let secret_key = common::PAYJP_TEST_SECRET_KEY.to_string();
+    let password = common::PAYJP_TEST_PASSWORD.to_string();
     let client = client_builder
         .connector(client::Connector::new().ssl(ssl_builder.build()).finish())
-        .basic_auth("テスト環境の秘密鍵", Some("パスワード"))
+        .basic_auth(&secret_key, Some(&password))
         .finish();
 
-    // Create request builder and send request
-    let result = client
-        .post("https://api.pay.jp/v1/tenants")
-        .send_form(&tenant_create_request)
-        .await; // <- Wait for response
+    let c = pool.get().expect("Failed to get connection");
+    use crate::common::util;
+    let _a = util::transaction(&c, async {
+        use db::schema::career_change_supporter_schema::advisor_account::dsl::{
+            advisor_account, tenant_id,
+        };
+        let result: Result<db::model::advisor::AccountQueryResult, diesel::result::Error> =
+            advisor_account
+                .find(id)
+                .first::<db::model::advisor::AccountQueryResult>(&c);
+        let acc = result.expect("Failed to get account");
+        match acc.clone().tenant_id {
+            Some(t_id) => {
+                // Update teanant
+                // Create request builder and send request
+                let result = client
+                    .post(format!("https://api.pay.jp/v1/tenants/{}", t_id))
+                    .send_form(&tenant_change_request)
+                    .await; // <- Wait for response
 
-    // https://github.com/actix/actix-web/issues/536#issuecomment-579380701
-    let mut response = result.expect("test");
-    let result = response.json::<Tenant>().await;
-    let tenant = result.expect("test");
+                // https://github.com/actix/actix-web/issues/536#issuecomment-579380701
+                let mut response = result.expect("test");
+                if response.status() != StatusCode::OK {
+                    let result = response.json::<ErrorSt>().await;
+                    // エラーならロールバック
+                    let tenant = result.expect("test");
+                    log::info!("{:?}", tenant);
+                    return Err(diesel::result::Error::RollbackTransaction);
+                }
+                let result = response.json::<Tenant>().await;
+                // エラーならロールバック
+                let _tenant = result.expect("test");
+            }
+            None => {
+                // Createa teanant
+                let t_id = Uuid::new_v4().to_simple().to_string();
+                let _res = diesel::update(advisor_account.find(id))
+                    .set(tenant_id.eq(t_id.clone()))
+                    .get_results::<db::model::advisor::AccountQueryResult>(&c)?;
 
-    log::info!("Response body: {:?}", tenant);
-    
+                let tenant_create_request = TenantCreateRequest {
+                    id: t_id,
+                    name: tenant_req.bank_account_holder_name.clone(),
+                    platform_fee_rate: "10.15".to_string(),
+                    minimum_transfer_amount: "1000".to_string(),
+                    bank_account_holder_name: tenant_req.bank_account_holder_name.clone(),
+                    bank_code: tenant_req.bank_code.clone(),
+                    bank_branch_code: tenant_req.bank_branch_code.clone(),
+                    bank_account_type: "普通".to_string(),
+                    bank_account_number: tenant_req.bank_account_number.clone(),
+                };
+                // Create request builder and send request
+                let result = client
+                    .post("https://api.pay.jp/v1/tenants")
+                    .send_form(&tenant_create_request)
+                    .await; // <- Wait for response
+
+                // https://github.com/actix/actix-web/issues/536#issuecomment-579380701
+                let mut response = result.expect("test");
+                let result = response.json::<Tenant>().await;
+                // エラーならロールバック
+                let _tenant = result.expect("test");
+            }
+        }
+        Ok::<_, diesel::result::Error>(())
+    })
+    .await;
+
     // parameterの処理
     Ok(HttpResponse::Ok().into())
 }
@@ -616,7 +648,7 @@ async fn bank_info(
 #[post("/career-registeration/{id}")]
 async fn career_registeration_id(
     web::Path(_path): web::Path<String>,
-    _tenant_req: web::Json<TenantCreationRequest>,
+    _tenant_req: web::Json<TenantRequest>,
     _session: Session,
     _pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
@@ -624,7 +656,7 @@ async fn career_registeration_id(
 }
 
 #[derive(Deserialize)]
-struct TenantCreationRequest {
+pub(in crate::advisor) struct TenantRequest {
     bank_code: String,
     bank_branch_code: String,
     bank_account_number: String,
@@ -632,7 +664,8 @@ struct TenantCreationRequest {
 }
 
 #[derive(Serialize)]
-struct TenantRequest {
+struct TenantCreateRequest {
+    id: String,
     name: String,
     platform_fee_rate: String,
     minimum_transfer_amount: String,
@@ -643,20 +676,28 @@ struct TenantRequest {
     bank_account_number: String,
 }
 
+#[derive(Serialize)]
+struct TenantChangeRequest {
+    bank_account_holder_name: String,
+    bank_code: String,
+    bank_branch_code: String,
+    bank_account_number: String,
+}
+
 #[derive(Debug, Deserialize)]
-struct Tenant {
-	id: String,
-	object: String,
-	livemode: bool,
+pub(in crate::advisor) struct Tenant {
+    id: String,
+    object: String,
+    livemode: bool,
     created: i64,
     platform_fee_rate: String,
     payjp_fee_included: bool,
     minimum_transfer_amount: i32,
-    bank_code: String,
-    bank_branch_code: String,    
+    pub(in crate::advisor) bank_code: String,
+    pub(in crate::advisor) bank_branch_code: String,
     bank_account_type: String,
-    bank_account_number: String,
-    bank_account_holder_name: String,
+    pub(in crate::advisor) bank_account_number: String,
+    pub(in crate::advisor) bank_account_holder_name: String,
     bank_account_status: String,
     currencies_supported: Vec<String>,
     default_currency: String,
@@ -664,13 +705,34 @@ struct Tenant {
     // nullのときNoneになる。Optionで囲んでなければnullのときpanic
     // TODO: metadataの方がHashMap<String, String>でよいか確認する
     // https://payjp.hatenablog.com/entry/2016/02/22/100000
-    metadata: Option<HashMap<String, String>>
+    metadata: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize)]
 struct ReviewedBrands {
-	brand: String,
-	status: String,
+    brand: String,
+    status: String,
     // nullのときNoneになる。Optionで囲んでなければnullのときpanic
-	available_date: Option<i64>
+    available_date: Option<i64>,
+}
+
+// {
+//     "error": {
+//       "message": "There is no tenant with ID: dummy",
+//       "param": "id",
+//       "status": 404,
+//       "type": "client_error"
+//     }
+//   }
+#[derive(Debug, Deserialize)]
+struct ErrorSt {
+    error: Error,
+}
+
+#[derive(Debug, Deserialize)]
+struct Error {
+    message: String,
+    param: String,
+    status: i32,
+    r#type: String,
 }

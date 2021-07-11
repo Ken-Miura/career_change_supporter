@@ -2,8 +2,8 @@
 
 mod account;
 mod authentication;
-mod static_asset;
 mod profile;
+mod static_asset;
 
 use actix_web::{cookie, web};
 use time::Duration;

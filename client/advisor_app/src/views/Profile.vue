@@ -86,6 +86,10 @@ export default defineComponent({
       // TODO: String.joinがない。。。
       profile.address = userInfo.prefecture + userInfo.city + userInfo.address_line1 + addressLine2
       profile.sex = userInfo.sex
+      profile.bankCode = userInfo.bank_code
+      profile.bankBranchCode = userInfo.bank_branch_code
+      profile.bankAccountNumber = userInfo.bank_account_number
+      profile.bankAccountHolderName = userInfo.bank_account_holder_name
     })
     const editBankInfo = async () => {
       await router.push('edit-bank-info')

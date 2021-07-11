@@ -50,8 +50,14 @@ async fn login_request(
         log::error!("failed to login: {}", e);
         e
     })?;
-    let result =
-        web::block(move || update_last_login_time(advisor_account.advisor_account_id, &current_date_time, &conn)).await;
+    let result = web::block(move || {
+        update_last_login_time(
+            advisor_account.advisor_account_id,
+            &current_date_time,
+            &conn,
+        )
+    })
+    .await;
     let _ = result.map_err(|err| {
         let e = error::Error::from(err);
         log::error!("failed to login: {}", e);
@@ -102,7 +108,7 @@ fn update_last_login_time(
     conn: &PgConnection,
 ) -> Result<(), error::Error> {
     use db::schema::career_change_supporter_schema::advisor_account::dsl::{
-        last_login_time, advisor_account,
+        advisor_account, last_login_time,
     };
     let affected_useraccounts = diesel::update(advisor_account.find(advisor_acc_id))
         .set(last_login_time.eq(Some(current_date_time)))
@@ -124,11 +130,12 @@ fn update_last_login_time(
 // Use POST for logout: https://stackoverflow.com/questions/3521290/logout-get-or-post
 #[post("/logout-request")]
 async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_advisor_acc_id: Option<i32> = session.get(KEY_TO_ADVISOR_ACCOUNT_ID).map_err(|err| {
-        let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
-        log::error!("failed to logout {}", e);
-        e
-    })?;
+    let option_advisor_acc_id: Option<i32> =
+        session.get(KEY_TO_ADVISOR_ACCOUNT_ID).map_err(|err| {
+            let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+            log::error!("failed to logout {}", e);
+            e
+        })?;
     session.purge();
     if let Some(advisor_acc_id) = option_advisor_acc_id {
         log::info!(
@@ -169,11 +176,14 @@ async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
     };
 }
 
-pub (in crate::advisor) fn session_state_inner (session: &Session) -> Result<Option<i32>, common::error::Error>  {
-    let option_advisor_acc_id: Option<i32> = session.get(KEY_TO_ADVISOR_ACCOUNT_ID).map_err(|err| {
-        let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
-        log::error!("failed to get session state: {}", e);
-        e
-    })?;
+pub(in crate::advisor) fn session_state_inner(
+    session: &Session,
+) -> Result<Option<i32>, common::error::Error> {
+    let option_advisor_acc_id: Option<i32> =
+        session.get(KEY_TO_ADVISOR_ACCOUNT_ID).map_err(|err| {
+            let e = error::Error::Unexpected(unexpected::Error::ActixWebErr(err.to_string()));
+            log::error!("failed to get session state: {}", e);
+            e
+        })?;
     Ok(option_advisor_acc_id)
 }

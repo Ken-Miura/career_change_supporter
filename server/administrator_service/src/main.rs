@@ -669,7 +669,9 @@ async fn advisor_registration_approval_list(
         items.push(value);
     }
     data.insert("items".to_string(), to_json(items));
-    let body = hb.render("advisor-registration-approval-list", &data).unwrap();
+    let body = hb
+        .render("advisor-registration-approval-list", &data)
+        .unwrap();
     HttpResponse::Ok().body(body)
 }
 
@@ -705,7 +707,9 @@ async fn advisor_registration_rejection_list(
         items.push(value);
     }
     data.insert("items".to_string(), to_json(items));
-    let body = hb.render("advisor-registration-rejection-list", &data).unwrap();
+    let body = hb
+        .render("advisor-registration-rejection-list", &data)
+        .unwrap();
     HttpResponse::Ok().body(body)
 }
 
@@ -751,7 +755,9 @@ async fn advisor_registration_rejection_detail(
         "reject_reason": request.reject_reason
     });
 
-    let body = hb.render("advisor-registration-rejection-detail", &data).unwrap();
+    let body = hb
+        .render("advisor-registration-rejection-detail", &data)
+        .unwrap();
     HttpResponse::Ok().body(body)
 }
 
@@ -798,7 +804,9 @@ async fn advisor_registration_approval_detail(
         "image2": image2.expect("Failed to get data")
     });
 
-    let body = hb.render("advisor-registration-approval-detail", &data).unwrap();
+    let body = hb
+        .render("advisor-registration-approval-detail", &data)
+        .unwrap();
     HttpResponse::Ok().body(body)
 }
 

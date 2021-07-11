@@ -1,15 +1,16 @@
 // Copyright 2021 Ken Miura
 
-use crate::common;
-use diesel::RunQueryDsl;
-use actix_session::Session;
-use actix_web::{get, web, HttpResponse};
 use crate::advisor::authentication::session_state_inner;
+use crate::common;
 use crate::common::error;
 use crate::common::error::unexpected;
-use diesel::QueryDsl;
-use serde::Serialize;
+use actix_session::Session;
+use actix_web::{client, get, web, HttpResponse};
 use chrono::Datelike;
+use diesel::QueryDsl;
+use diesel::RunQueryDsl;
+use openssl::ssl::{SslConnector, SslMethod};
+use serde::Serialize;
 
 #[get("/profile-information")]
 async fn profile_information(
@@ -18,7 +19,7 @@ async fn profile_information(
 ) -> Result<HttpResponse, error::Error> {
     let option_id = session_state_inner(&session)?;
     let id = option_id.expect("Failed to get id");
-    
+
     let conn = pool.get().map_err(|err| {
         let e = error::Error::Unexpected(unexpected::Error::R2d2Err(err));
         log::error!("failed to login: {}", e);
@@ -26,34 +27,84 @@ async fn profile_information(
     })?;
 
     let result = web::block(move || {
-        use db::schema::career_change_supporter_schema::advisor_account::dsl::{
+        use db::schema::career_change_supporter_schema::advisor_account::dsl::advisor_account;
+        let result: Result<db::model::advisor::AccountQueryResult, diesel::result::Error> =
             advisor_account
-        };
-        let result: Result<db::model::advisor::AccountQueryResult, diesel::result::Error> = advisor_account.find(id).first::<db::model::advisor::AccountQueryResult>(&conn);
+                .find(id)
+                .first::<db::model::advisor::AccountQueryResult>(&conn);
         if let Err(err) = result {
             return Err(err);
         }
         Ok(result.expect("Failed to get account"))
-    }).await;
+    })
+    .await;
     let adv_acc = result.expect("Failed to get data");
     let val = adv_acc.sex.clone();
     let sex = if val == "male" { "男性" } else { "女性" };
-    Ok(HttpResponse::Ok().json(Account{
-        email_address: adv_acc.email_address,
-        last_name: adv_acc.last_name,
-        first_name: adv_acc.first_name,
-        last_name_furigana: adv_acc.last_name_furigana,
-        first_name_furigana: adv_acc.first_name_furigana,
-        year: adv_acc.date_of_birth.year(),
-        month: adv_acc.date_of_birth.month(),
-        day: adv_acc.date_of_birth.day(),
-        telephone_number: adv_acc.telephone_number,
-        prefecture: adv_acc.prefecture,
-        city: adv_acc.city,
-        address_line1: adv_acc.address_line1,
-        address_line2: adv_acc.address_line2.expect("Failed to get addr2"),
-        sex: sex.to_string()
-    }))
+    match adv_acc.tenant_id {
+        Some(t_id) => {
+            // TODO: どのような設定に気をつけなければならないか確認する
+            // https://github.com/actix/examples/tree/master/security/awc_https
+            let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
+            let client_builder = client::ClientBuilder::new();
+            let secret_key = common::PAYJP_TEST_SECRET_KEY.to_string();
+            let password = common::PAYJP_TEST_PASSWORD.to_string();
+            let client = client_builder
+                .connector(client::Connector::new().ssl(ssl_builder.build()).finish())
+                .basic_auth(&secret_key, Some(&password))
+                .finish();
+
+            let result = client
+                .get(format!("https://api.pay.jp/v1/tenants/{}", t_id))
+                .send()
+                .await; // <- Wait for response
+
+            // https://github.com/actix/actix-web/issues/536#issuecomment-579380701
+            let mut response = result.expect("test");
+            let result = response.json::<crate::advisor::account::Tenant>().await;
+            let tenant = result.expect("test");
+            Ok(HttpResponse::Ok().json(Account {
+                email_address: adv_acc.email_address,
+                last_name: adv_acc.last_name,
+                first_name: adv_acc.first_name,
+                last_name_furigana: adv_acc.last_name_furigana,
+                first_name_furigana: adv_acc.first_name_furigana,
+                year: adv_acc.date_of_birth.year(),
+                month: adv_acc.date_of_birth.month(),
+                day: adv_acc.date_of_birth.day(),
+                telephone_number: adv_acc.telephone_number,
+                prefecture: adv_acc.prefecture,
+                city: adv_acc.city,
+                address_line1: adv_acc.address_line1,
+                address_line2: adv_acc.address_line2.expect("Failed to get addr2"),
+                sex: sex.to_string(),
+                bank_code: tenant.bank_code,
+                bank_branch_code: tenant.bank_branch_code,
+                bank_account_number: tenant.bank_account_number,
+                bank_account_holder_name: tenant.bank_account_holder_name,
+            }))
+        }
+        None => Ok(HttpResponse::Ok().json(Account {
+            email_address: adv_acc.email_address,
+            last_name: adv_acc.last_name,
+            first_name: adv_acc.first_name,
+            last_name_furigana: adv_acc.last_name_furigana,
+            first_name_furigana: adv_acc.first_name_furigana,
+            year: adv_acc.date_of_birth.year(),
+            month: adv_acc.date_of_birth.month(),
+            day: adv_acc.date_of_birth.day(),
+            telephone_number: adv_acc.telephone_number,
+            prefecture: adv_acc.prefecture,
+            city: adv_acc.city,
+            address_line1: adv_acc.address_line1,
+            address_line2: adv_acc.address_line2.expect("Failed to get addr2"),
+            sex: sex.to_string(),
+            bank_code: "no bank code found".to_string(),
+            bank_branch_code: "no bank branch code found".to_string(),
+            bank_account_number: "no bank account number found".to_string(),
+            bank_account_holder_name: "no account holder name found".to_string(),
+        })),
+    }
 }
 
 #[derive(Serialize)]
@@ -71,5 +122,9 @@ struct Account {
     city: String,
     address_line1: String,
     address_line2: String,
-    sex: String
+    sex: String,
+    bank_code: String,
+    bank_branch_code: String,
+    bank_account_number: String,
+    bank_account_holder_name: String,
 }

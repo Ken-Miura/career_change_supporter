@@ -7,6 +7,14 @@ pub(crate) mod util;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::PgConnection;
+use once_cell::sync::Lazy;
+use std::env;
+
+pub(crate) static PAYJP_TEST_SECRET_KEY: Lazy<String> =
+    Lazy::new(|| env::var("PAYJP_TEST_SECRET_KEY").expect("PAYJP_TEST_SECRET_KEY must be set"));
+
+pub(crate) static PAYJP_TEST_PASSWORD: Lazy<String> =
+    Lazy::new(|| env::var("PAYJP_TEST_PASSWORD").expect("PAYJP_TEST_PASSWORD must be set"));
 
 pub(crate) const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
