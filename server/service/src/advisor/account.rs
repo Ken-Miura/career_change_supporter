@@ -631,6 +631,13 @@ async fn bank_info(
 
                 // https://github.com/actix/actix-web/issues/536#issuecomment-579380701
                 let mut response = result.expect("test");
+                if response.status() != StatusCode::OK {
+                    let result = response.json::<ErrorSt>().await;
+                    // エラーならロールバック
+                    let tenant = result.expect("test");
+                    log::info!("{:?}", tenant);
+                    return Err(diesel::result::Error::RollbackTransaction);
+                }
                 let result = response.json::<Tenant>().await;
                 // エラーならロールバック
                 let _tenant = result.expect("test");
