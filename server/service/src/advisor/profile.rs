@@ -5,7 +5,7 @@ use crate::common;
 use crate::common::error;
 use crate::common::error::unexpected;
 use actix_session::Session;
-use actix_web::{client, get, web, HttpResponse};
+use actix_web::{client, get, web, HttpResponse, http::StatusCode};
 use chrono::Datelike;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
@@ -62,6 +62,12 @@ async fn profile_information(
             // https://github.com/actix/actix-web/issues/536#issuecomment-579380701
             let mut response = result.expect("test");
             let result = response.json::<crate::advisor::account::Tenant>().await;
+            if response.status() != StatusCode::OK {
+                let result = response.json::<crate::advisor::account::ErrorSt>().await;
+                let tenant = result.expect("test");
+                log::info!("{:?}", tenant);
+                panic!("Err");
+            }
             let tenant = result.expect("test");
             Ok(HttpResponse::Ok().json(Account {
                 email_address: adv_acc.email_address,
@@ -82,6 +88,7 @@ async fn profile_information(
                 bank_branch_code: tenant.bank_branch_code,
                 bank_account_number: tenant.bank_account_number,
                 bank_account_holder_name: tenant.bank_account_holder_name,
+                advice_fee_in_yen: adv_acc.advice_fee_in_yen
             }))
         }
         None => Ok(HttpResponse::Ok().json(Account {
@@ -103,6 +110,7 @@ async fn profile_information(
             bank_branch_code: "no bank branch code found".to_string(),
             bank_account_number: "no bank account number found".to_string(),
             bank_account_holder_name: "no account holder name found".to_string(),
+            advice_fee_in_yen: adv_acc.advice_fee_in_yen,
         })),
     }
 }
@@ -127,4 +135,5 @@ struct Account {
     bank_branch_code: String,
     bank_account_number: String,
     bank_account_holder_name: String,
+    advice_fee_in_yen: Option<i32>,
 }

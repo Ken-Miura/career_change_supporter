@@ -662,6 +662,21 @@ async fn career_registeration_id(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[post("/advice-fee")]
+async fn advice_fee(
+    advice_fee_req: web::Json<AdviceFeeRequest>,
+    _session: Session,
+    _pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, common::error::Error> {
+    log::info!("advice fee: {}", advice_fee_req.advice_fee);
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(Deserialize)]
+pub(in crate::advisor) struct AdviceFeeRequest {
+    advice_fee: i32,
+}
+
 #[derive(Deserialize)]
 pub(in crate::advisor) struct TenantRequest {
     bank_code: String,
@@ -732,14 +747,14 @@ struct ReviewedBrands {
 //     }
 //   }
 #[derive(Debug, Deserialize)]
-struct ErrorSt {
-    error: Error,
+pub(in crate::advisor) struct ErrorSt {
+    pub(in crate::advisor) error: Error,
 }
 
 #[derive(Debug, Deserialize)]
-struct Error {
-    message: String,
-    param: String,
-    status: i32,
-    r#type: String,
+pub(in crate::advisor) struct Error {
+    pub(in crate::advisor) message: String,
+    pub(in crate::advisor) param: String,
+    pub(in crate::advisor) status: i32,
+    pub(in crate::advisor) r#type: String,
 }

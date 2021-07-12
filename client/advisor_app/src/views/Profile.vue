@@ -16,14 +16,13 @@
     <p>{{profile.bankAccountType}}</p>
     <p>{{profile.bankAccountNumber}}</p>
     <p>{{profile.bankAccountHolderName}}</p>
-    <!-- TODO: 実装 -->
     <button @click="editBankInfo">口座情報更新</button>
     <h3>経歴情報</h3>
     <!-- TODO: 実装 -->
     <button id="">経歴情報更新</button>
-    <h3>単価情報</h3>
-    <!-- TODO: 実装 -->
-    <button id="">単価情報更新</button>
+    <h3>1時間あたりの相談料</h3>
+    <p>{{profile.adviceFee}} 円</p>
+    <button @click="editAdviceFee">単価情報更新</button>
     <h3>スケジュール情報</h3>
     <!-- TODO: 実装 -->
     <button id="">スケジュール情報更新</button>
@@ -51,7 +50,8 @@ export default defineComponent({
       bankBranchCode: '',
       bankAccountType: '',
       bankAccountNumber: '',
-      bankAccountHolderName: ''
+      bankAccountHolderName: '',
+      adviceFee: ''
     })
 
     const router = useRouter()
@@ -90,11 +90,19 @@ export default defineComponent({
       profile.bankBranchCode = userInfo.bank_branch_code
       profile.bankAccountNumber = userInfo.bank_account_number
       profile.bankAccountHolderName = userInfo.bank_account_holder_name
+      if (userInfo.advice_fee_in_yen === null) {
+        profile.adviceFee = ''
+      } else {
+        profile.adviceFee = String(userInfo.advice_fee_in_yen)
+      }
     })
     const editBankInfo = async () => {
       await router.push('edit-bank-info')
     }
-    return { profile, editBankInfo }
+    const editAdviceFee = async () => {
+      await router.push('edit-advice-fee')
+    }
+    return { profile, editBankInfo, editAdviceFee }
   }
 })
 </script>

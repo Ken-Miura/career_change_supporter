@@ -41,6 +41,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/edit-bank-info',
     name: 'EditBankInfo',
     component: () => import('../views/EditBankInfo.vue')
+  },
+  {
+    path: '/edit-advice-fee',
+    name: 'EditAdviceFee',
+    component: () => import('../views/EditAdviceFee.vue')
   }
 ]
 
