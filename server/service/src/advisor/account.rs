@@ -665,10 +665,28 @@ async fn career_registeration_id(
 #[post("/advice-fee")]
 async fn advice_fee(
     advice_fee_req: web::Json<AdviceFeeRequest>,
-    _session: Session,
-    _pool: web::Data<common::ConnectionPool>,
+    session: Session,
+    pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
-    log::info!("advice fee: {}", advice_fee_req.advice_fee);
+    let option_id = session_state_inner(&session)?;
+    let id = option_id.expect("Failed to get id");
+
+    let advice_fee = advice_fee_req.advice_fee;
+    log::info!("advice fee: {}", advice_fee);
+    let conn = pool.get().expect("Failed to get connection");
+    let result = web::block(move || {
+        conn.transaction::<_, diesel::result::Error, _>(|| {
+            use db::schema::career_change_supporter_schema::advisor_account::dsl::{
+                advice_fee_in_yen, advisor_account,
+            };
+            let _result = diesel::update(advisor_account.find(id))
+                .set(advice_fee_in_yen.eq(advice_fee))
+                .get_results::<db::model::advisor::AccountQueryResult>(&conn)?;
+            Ok(())
+        })
+    })
+    .await;
+    let _a = result.expect("Failed to get result");
     Ok(HttpResponse::Ok().finish())
 }
 

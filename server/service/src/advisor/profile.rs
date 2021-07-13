@@ -5,7 +5,7 @@ use crate::common;
 use crate::common::error;
 use crate::common::error::unexpected;
 use actix_session::Session;
-use actix_web::{client, get, web, HttpResponse, http::StatusCode};
+use actix_web::{client, get, http::StatusCode, web, HttpResponse};
 use chrono::Datelike;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
@@ -88,7 +88,7 @@ async fn profile_information(
                 bank_branch_code: tenant.bank_branch_code,
                 bank_account_number: tenant.bank_account_number,
                 bank_account_holder_name: tenant.bank_account_holder_name,
-                advice_fee_in_yen: adv_acc.advice_fee_in_yen
+                advice_fee_in_yen: adv_acc.advice_fee_in_yen,
             }))
         }
         None => Ok(HttpResponse::Ok().json(Account {
