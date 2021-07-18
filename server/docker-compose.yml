@@ -42,3 +42,30 @@ services:
     #   - ./docker/localstack/:/docker-entrypoint-initaws.d
     ports:
       - "4566:4566"
+
+  elasticsearch:
+    build:
+      context: ./elastic_search_with_plugins
+      dockerfile: Dockerfile
+    environment:
+      - discovery.type=single-node
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+      
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.13.3
+    ports:
+      - 5601:5601
+
+volumes:
+  es-data:
+    driver: local
