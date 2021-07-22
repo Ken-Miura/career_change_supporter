@@ -47,6 +47,7 @@ services:
     build:
       context: ./elastic_search_with_plugins
       dockerfile: Dockerfile
+    restart: always
     environment:
       - discovery.type=single-node
       - cluster.name=docker-cluster
@@ -63,6 +64,7 @@ services:
       
   kibana:
     image: docker.elastic.co/kibana/kibana:7.13.3
+    restart: always
     ports:
       - 5601:5601
 
