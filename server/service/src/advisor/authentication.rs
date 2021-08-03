@@ -150,7 +150,7 @@ async fn logout_request(session: Session) -> Result<HttpResponse, error::Error> 
 
 #[get("/session-state")]
 async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
-    let option_advisor_acc_id = session_state_inner(&session)?;
+    let option_advisor_acc_id = check_advisor_session_state(&session)?;
     return match option_advisor_acc_id {
         Some(advisor_acc_id) => {
             // set value to explicitly enhance ttl
@@ -176,7 +176,7 @@ async fn session_state(session: Session) -> Result<HttpResponse, error::Error> {
     };
 }
 
-pub(in crate::advisor) fn session_state_inner(
+pub(in crate::advisor) fn check_advisor_session_state(
     session: &Session,
 ) -> Result<Option<i32>, common::error::Error> {
     let option_advisor_acc_id: Option<i32> =

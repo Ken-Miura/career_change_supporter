@@ -1,6 +1,6 @@
 // Copyright 2021 Ken Miura
 
-use crate::advisor::authentication::session_state_inner;
+use crate::advisor::authentication::check_advisor_session_state;
 use crate::common;
 use crate::common::credential;
 use crate::common::error;
@@ -14,6 +14,8 @@ use crate::common::util;
 use actix_multipart::Field;
 use actix_web::{client, http::StatusCode, post, web, HttpResponse};
 use chrono::DateTime;
+use db::model::administrator::AdvisorCareerCreateReq;
+use db::model::administrator::AdvisorRegReqApprovedResultForCareerReq;
 use diesel::prelude::*;
 use futures::{StreamExt, TryStreamExt};
 use rusoto_s3::S3;
@@ -248,7 +250,7 @@ async fn check_if_id_expires_and_get_email_address(
         Ok(reg_req.email_address)
     })
     .await?;
-    return Ok(email_address);
+    Ok(email_address)
 }
 
 #[derive(Deserialize)]
@@ -334,10 +336,10 @@ async fn account_creation_request(
                 log::info!("data: {:?}", data);
             }
         } else if name == "image1" {
-            let filename = upload_to_s3_bucket(field).await;
+            let filename = upload_to_s3_bucket(field, AWS_S3_ID_IMG_BUCKET_NAME).await;
             image1_filename = Some(filename)
         } else if name == "image2" {
-            let filename = upload_to_s3_bucket(field).await;
+            let filename = upload_to_s3_bucket(field, AWS_S3_ID_IMG_BUCKET_NAME).await;
             image2_filename = Some(filename)
         }
     }
@@ -352,14 +354,17 @@ async fn account_creation_request(
     let hashed_password = credential::hash_password(&password).unwrap();
 
     let mail_addr = email_address.clone();
-    let result = create_account_registration(
-        email_address,
-        hashed_password,
-        submitted_data.unwrap(),
-        image1_filename,
-        image2_filename,
-        &pool,
-    );
+    let result = web::block(move || {
+        create_account_registration(
+            email_address,
+            hashed_password,
+            submitted_data.unwrap(),
+            image1_filename,
+            image2_filename,
+            &pool,
+        )
+    })
+    .await;
     let resp = match result {
         Ok(()) => {
             log::info!("ok");
@@ -423,7 +428,7 @@ const AWS_S3_ID_IMG_BUCKET_NAME: &str = "identification-images";
 const AWS_REGION: &str = "ap-northeast-1";
 const AWS_ENDPOINT_URL: &str = "http://localhost:4566";
 
-async fn upload_to_s3_bucket(mut field: Field) -> String {
+async fn upload_to_s3_bucket(mut field: Field, bucket_name: &str) -> String {
     let id = Uuid::new_v4().to_simple().to_string();
     // TODO: 画像の種類によって拡張子を変える
     let image_filename = format!("{}.png", &id);
@@ -437,7 +442,7 @@ async fn upload_to_s3_bucket(mut field: Field) -> String {
             .unwrap();
     }
     let put_request = rusoto_s3::PutObjectRequest {
-        bucket: AWS_S3_ID_IMG_BUCKET_NAME.to_string(),
+        bucket: bucket_name.to_string(),
         key: image_filename.clone(),
         body: Some(contents.into()),
         ..Default::default()
@@ -450,7 +455,7 @@ async fn upload_to_s3_bucket(mut field: Field) -> String {
     let result = s3_client.put_object(put_request).await;
     let output = result.unwrap();
     log::info!("{:?}", output);
-    return image_filename;
+    image_filename
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -541,7 +546,7 @@ fn create_acc_request<'a>(
         sex: &submitted_data.sex,
         image1,
         image2: Some(image2),
-        requested_time: &current_date_time,
+        requested_time: current_date_time,
     }
 }
 
@@ -551,7 +556,7 @@ async fn bank_info(
     session: Session,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
-    let option_id = session_state_inner(&session)?;
+    let option_id = check_advisor_session_state(&session)?;
     let id = option_id.expect("Failed to get id");
 
     let tenant_change_request = TenantChangeRequest {
@@ -574,7 +579,7 @@ async fn bank_info(
 
     let c = pool.get().expect("Failed to get connection");
     use crate::common::util;
-    let _a = util::transaction(&c, async {
+    let _ = util::transaction(&c, async {
         use db::schema::career_change_supporter_schema::advisor_account::dsl::{
             advisor_account, tenant_id,
         };
@@ -651,24 +656,13 @@ async fn bank_info(
     Ok(HttpResponse::Ok().into())
 }
 
-/// https://actix.rs/docs/url-dispatch/
-#[post("/career-registeration/{id}")]
-async fn career_registeration_id(
-    web::Path(_path): web::Path<String>,
-    _tenant_req: web::Json<TenantRequest>,
-    _session: Session,
-    _pool: web::Data<common::ConnectionPool>,
-) -> Result<HttpResponse, common::error::Error> {
-    Ok(HttpResponse::Ok().finish())
-}
-
 #[post("/advice-fee")]
 async fn advice_fee(
     advice_fee_req: web::Json<AdviceFeeRequest>,
     session: Session,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, common::error::Error> {
-    let option_id = session_state_inner(&session)?;
+    let option_id = check_advisor_session_state(&session)?;
     let id = option_id.expect("Failed to get id");
 
     let advice_fee = advice_fee_req.advice_fee;
@@ -775,4 +769,224 @@ pub(in crate::advisor) struct Error {
     pub(in crate::advisor) param: String,
     pub(in crate::advisor) status: i32,
     pub(in crate::advisor) r#type: String,
+}
+
+// 経歴の作成依頼を行う
+#[post("/career-registeration")]
+async fn career_registeration(
+    session: Session,
+    mut payload: actix_multipart::Multipart,
+    pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, common::error::Error> {
+    // セッションチェック
+    // idから最新のアカウント承認記録を取得
+    // ペイロードからデータを取得
+    // ペイロードと承認記録を承認依頼DBに記録＋S3へ画像のアップロード（transaction内で実施）
+
+    let option_id = check_advisor_session_state(&session)?;
+    let id = option_id.expect("Failed to get id");
+    let conn = pool.get().expect("failed to get connection");
+    use db::schema::career_change_supporter_schema::advisor_reg_req_approved::dsl::{
+        advisor_reg_req_approved, advisor_reg_req_approved_id, approved_time,
+        associated_advisor_account_id,
+    };
+    let selected = advisor_reg_req_approved.select((
+        advisor_reg_req_approved_id,
+        associated_advisor_account_id,
+        approved_time,
+    ));
+    let result = selected
+        .filter(associated_advisor_account_id.eq(id))
+        .order(approved_time.desc())
+        .limit(1)
+        .load::<AdvisorRegReqApprovedResultForCareerReq>(&conn);
+    let v = result.expect("failed to get vector");
+    if v.is_empty() {
+        panic!("empty");
+    }
+    let req = v[0].clone();
+
+    let mut submitted_career: Option<SubmittedCareer> = None;
+    let mut image1_filename: Option<String> = None;
+    let mut image2_filename: Option<String> = None;
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        let content_type = field.content_disposition().unwrap();
+        let name = content_type.get_name().unwrap();
+        if name == "parameter" {
+            // バイナリ->Stringへ変換して変数に格納
+            while let Some(chunk) = field.next().await {
+                let data = chunk.unwrap();
+                let parameter: String = str::from_utf8(&data).unwrap().parse().unwrap();
+                submitted_career = Some(serde_json::from_str(&parameter).unwrap());
+                log::info!("data: {:?}", data);
+            }
+        } else if name == "image1" {
+            let filename =
+                upload_to_s3_bucket(field, AWS_S3_CARER_CONFIRMATION_IMG_BUCKET_NAME).await;
+            image1_filename = Some(filename)
+        } else if name == "image2" {
+            let filename =
+                upload_to_s3_bucket(field, AWS_S3_CARER_CONFIRMATION_IMG_BUCKET_NAME).await;
+            image2_filename = Some(filename)
+        }
+    }
+
+    let result = web::block(move || {
+        create_career_registration(
+            req,
+            submitted_career.expect("failed to get career"),
+            image1_filename,
+            image2_filename,
+            &conn,
+        )
+    })
+    .await;
+    let resp = match result {
+        Ok(()) => {
+            log::info!("ok");
+            let _ = send_career_notification_mail_to_admin();
+            Ok(HttpResponse::Ok().finish())
+        }
+        Err(e) => {
+            log::error!("{}", e);
+            Err(HttpResponse::BadRequest().finish())
+        }
+    };
+    if resp.is_err() {
+        return Ok(HttpResponse::Ok().json(AccountCreationRequestResult {
+            message: "失敗".to_string(),
+        }));
+    };
+    Ok(HttpResponse::Ok().json(AccountCreationRequestResult {
+        message: "成功".to_string(),
+    }))
+}
+
+const AWS_S3_CARER_CONFIRMATION_IMG_BUCKET_NAME: &str = "career-confirmation-images";
+
+fn create_career_registration(
+    req: AdvisorRegReqApprovedResultForCareerReq,
+    submitted_career: SubmittedCareer,
+    image1: Option<String>,
+    image2: Option<String>,
+    conn: &PgConnection,
+) -> Result<(), common::error::Error> {
+    conn.transaction::<_, error::Error, _>(|| {
+        // TODO: 経歴の最大件数を考える
+
+        use db::schema::career_change_supporter_schema::advisor_career_create_req;
+        let current_date_time = chrono::Utc::now();
+        let i1 = image1.expect("failed to get image1");
+        let i2 = image2.expect("failed to get image2");
+        let career_req = create_career_req(&req, &submitted_career, &i1, &i2, &current_date_time);
+        // TODO: 戻り値（usize: the number of rows affected）を利用する必要があるか検討する
+        let _result = diesel::insert_into(advisor_career_create_req::table)
+            .values(career_req)
+            .execute(conn)
+            .map_err(|e| error::Error::Unexpected(unexpected::Error::DieselResultErr(e)))?;
+
+        Ok(())
+    })?;
+    Ok(())
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct SubmittedCareer {
+    company_name: String,
+    department_name: String,
+    office: String,
+    contract_type: String,
+    profession: String,
+    is_manager: bool,
+    position_name: String,
+    start_year: i32,
+    start_month: u32,
+    start_day: u32,
+    end_year: i32,
+    end_month: u32,
+    end_day: u32,
+    annual_income_in_man_yen: i32,
+    is_new_graduate: bool,
+    note: String,
+}
+
+fn create_career_req<'a>(
+    req: &'a AdvisorRegReqApprovedResultForCareerReq,
+    submitted_career: &'a SubmittedCareer,
+    image1: &'a str,
+    image2: &'a str,
+    current_date_time: &'a DateTime<chrono::Utc>,
+) -> AdvisorCareerCreateReq<'a> {
+    let start_date = chrono::NaiveDate::from_ymd(
+        submitted_career.start_year,
+        submitted_career.start_month,
+        submitted_career.start_day,
+    );
+    let end_date = Some(chrono::NaiveDate::from_ymd(
+        submitted_career.end_year,
+        submitted_career.end_month,
+        submitted_career.end_day,
+    ));
+    AdvisorCareerCreateReq {
+        cre_req_adv_acc_id: req.advisor_reg_req_approved_id,
+        company_name: &submitted_career.company_name,
+        department_name: Some(&submitted_career.department_name),
+        office: Some(&submitted_career.office),
+        contract_type: &submitted_career.contract_type,
+        profession: Some(&submitted_career.profession),
+        is_manager: submitted_career.is_manager,
+        position_name: Some(&submitted_career.position_name),
+        start_date,
+        end_date,
+        annual_income_in_man_yen: submitted_career.annual_income_in_man_yen,
+        is_new_graduate: submitted_career.is_new_graduate,
+        note: Some(&submitted_career.note),
+        image1,
+        image2: Some(image2),
+        requested_time: current_date_time,
+    }
+}
+
+/// 経歴を編集する
+/// https://actix.rs/docs/url-dispatch/
+#[post("/career-registeration/{id}")]
+async fn career_registeration_id(
+    web::Path(_path): web::Path<String>,
+    _tenant_req: web::Json<TenantRequest>,
+    session: Session,
+    _pool: web::Data<common::ConnectionPool>,
+) -> Result<HttpResponse, common::error::Error> {
+    let option_id = check_advisor_session_state(&session)?;
+    let _id = option_id.expect("Failed to get id");
+    Ok(HttpResponse::Ok().finish())
+}
+
+fn send_career_notification_mail_to_admin() -> Result<(), error::Error> {
+    use lettre::{ClientSecurity, SmtpClient, Transport};
+    use lettre_email::EmailBuilder;
+    let email = EmailBuilder::new()
+        // TODO: ドメイン取得後書き直し
+        .to("administrator@example.com")
+        // TODO: 送信元メールを更新する
+        .from("from@example.com")
+        // TOOD: メールの件名を更新する
+        .subject("アカウント登録依頼発行")
+        // TOOD: メールの本文を更新する (http -> httpsへの変更も含む)
+        .text("経歴作成依頼が来ました")
+        .build()
+        .map_err(|e| {
+            error::Error::Unexpected(common::error::unexpected::Error::LettreEmailErr(e))
+        })?;
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(common::SMTP_SERVER_ADDR);
+    let client = SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    let mut mailer = client.transport();
+    // TODO: メール送信後のレスポンスが必要か検討する
+    let _ = mailer.send(email.into()).map_err(|e| {
+        error::Error::Unexpected(common::error::unexpected::Error::LettreSmtpErr(e))
+    })?;
+    Ok(())
 }

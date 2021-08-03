@@ -162,6 +162,7 @@ CREATE TABLE career_change_supporter_schema.advisor_reg_req_approved (
 );
 GRANT SELECT, INSERT ON career_change_supporter_schema.advisor_reg_req_approved To administrator_app;
 GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_reg_req_approved_advisor_reg_req_approved_id_seq TO administrator_app;
+GRANT SELECT (advisor_reg_req_approved_id, associated_advisor_account_id, approved_time) ON career_change_supporter_schema.advisor_reg_req_approved To advisor_app;
 
 CREATE TABLE career_change_supporter_schema.advisor_reg_req_rejected (
   advisor_reg_req_rejected_id SERIAL PRIMARY KEY,

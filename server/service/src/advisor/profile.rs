@@ -1,6 +1,6 @@
 // Copyright 2021 Ken Miura
 
-use crate::advisor::authentication::session_state_inner;
+use crate::advisor::authentication::check_advisor_session_state;
 use crate::common;
 use crate::common::error;
 use crate::common::error::unexpected;
@@ -17,7 +17,7 @@ async fn profile_information(
     session: Session,
     pool: web::Data<common::ConnectionPool>,
 ) -> Result<HttpResponse, error::Error> {
-    let option_id = session_state_inner(&session)?;
+    let option_id = check_advisor_session_state(&session)?;
     let id = option_id.expect("Failed to get id");
 
     let conn = pool.get().map_err(|err| {

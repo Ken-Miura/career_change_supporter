@@ -19,7 +19,7 @@
     <button @click="editBankInfo">口座情報更新</button>
     <h3>経歴情報</h3>
     <!-- TODO: 実装 -->
-    <button id="">経歴情報更新</button>
+    <button @click="createCareer">経歴情報作成</button>
     <h3>1時間あたりの相談料</h3>
     <p>{{profile.adviceFee}} 円</p>
     <button @click="editAdviceFee">単価情報更新</button>
@@ -102,7 +102,10 @@ export default defineComponent({
     const editAdviceFee = async () => {
       await router.push('edit-advice-fee')
     }
-    return { profile, editBankInfo, editAdviceFee }
+    const createCareer = async () => {
+      await router.push('create-career-info')
+    }
+    return { profile, editBankInfo, editAdviceFee, createCareer }
   }
 })
 </script>

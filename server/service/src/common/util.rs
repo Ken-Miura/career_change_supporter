@@ -34,7 +34,7 @@ static UUID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(UUID_REGEXP).expect("never
 
 pub(crate) fn validate_email_address(email_address: &str) -> Result<(), handled::Error> {
     let mail_addr_length = email_address.len();
-    if mail_addr_length < EMAIL_ADDRESS_MIN_LENGTH || mail_addr_length > EMAIL_ADDRESS_MAX_LENGTH {
+    if !(EMAIL_ADDRESS_MIN_LENGTH..=EMAIL_ADDRESS_MAX_LENGTH).contains(&mail_addr_length) {
         let e = handled::InvalidEmailAddressLength::new(
             mail_addr_length,
             EMAIL_ADDRESS_MIN_LENGTH,
@@ -55,7 +55,7 @@ pub(crate) fn validate_email_address(email_address: &str) -> Result<(), handled:
 /// 大文字、小文字、数字、記号のいずれか二種類以上を組み合わせる必要がある
 pub(crate) fn validate_password(password: &str) -> Result<(), handled::Error> {
     let pwd_length = password.len();
-    if pwd_length < PASSWORD_MIN_LENGTH || pwd_length > PASSWORD_MAX_LENGTH {
+    if !(PASSWORD_MIN_LENGTH..=PASSWORD_MAX_LENGTH).contains(&pwd_length) {
         let e = handled::InvalidPasswordLength::new(PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH);
         return Err(handled::Error::InvalidPasswordLength(e));
     }

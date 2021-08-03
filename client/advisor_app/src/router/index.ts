@@ -46,6 +46,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/edit-advice-fee',
     name: 'EditAdviceFee',
     component: () => import('../views/EditAdviceFee.vue')
+  },
+  {
+    path: '/create-career-info',
+    name: 'CreateCareerInfo',
+    component: () => import('../views/CreateCareerInfo.vue')
   }
 ]
 

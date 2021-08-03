@@ -27,8 +27,8 @@ fn main() {
         let conn = establish_connection();
         use db::schema::career_change_supporter_schema::administrator_account;
         let acc = db::model::administrator::Account {
-            email_address: &id,
-            hashed_password: &hashed_pwd.as_bytes(),
+            email_address: id,
+            hashed_password: hashed_pwd.as_bytes(),
             last_login_time: None,
         };
         let result = diesel::insert_into(administrator_account::table)
