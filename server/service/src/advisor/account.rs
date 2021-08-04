@@ -938,7 +938,7 @@ fn create_career_req<'a>(
         position_name: Some(&submitted_career.position_name),
         start_date,
         end_date,
-        annual_income_in_man_yen: submitted_career.annual_income_in_man_yen,
+        annual_income_in_man_yen: Some(submitted_career.annual_income_in_man_yen),
         is_new_graduate: submitted_career.is_new_graduate,
         note: Some(&submitted_career.note),
         image1,

@@ -225,13 +225,13 @@ CREATE TABLE career_change_supporter_schema.advisor_career_create_req (
   office VARCHAR (1000), /* 事業所 */
   contract_type VARCHAR (100) NOT NULL, /* 正社員か契約社員かその他か */
   profession VARCHAR (100), /* 職種 */
-  is_manager BOOLEAN, /* 管理職かどうか */
+  is_manager BOOLEAN NOT NULL, /* 管理職かどうか */
   position_name VARCHAR (100), /* 役職名 */
   /* 以下は名刺からわからないのでチェックしない */
   start_date DATE NOT NULL, /* start_dateとend_dateから在籍期間を表示するようにする */
   end_date DATE,
   annual_income_in_man_yen INTEGER, /* 年収 */
-  is_new_graduate BOOLEAN, /* 入社区分（新卒、中途） */
+  is_new_graduate BOOLEAN NOT NULL, /* 入社区分（新卒、中途） */
   note VARCHAR (2000), /* その他備考 (相談可能な内容、相談不可な内容) */
   /* TODO: 最大文字数の検討 */
   image1 VARCHAR (64) NOT NULL,

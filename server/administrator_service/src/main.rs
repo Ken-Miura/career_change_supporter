@@ -90,6 +90,7 @@ async fn main() -> io::Result<()> {
             .service(index)
             .service(login)
             .service(images)
+            .service(career_images)
             .service(advisor_registration_list)
             .service(advisor_registration_detail)
             .service(advisor_registration_accept)
@@ -100,6 +101,8 @@ async fn main() -> io::Result<()> {
             .service(advisor_registration_rejection_detail)
             .service(advisor_registration_approval_detail)
             .service(authentication)
+            .service(advisor_career_creation_list)
+            .service(advisor_career_creation_detail)
             .default_service(web::route().to(index_inner))
     })
     .bind("127.0.0.1:8082")?
@@ -110,6 +113,7 @@ async fn main() -> io::Result<()> {
 const AWS_S3_ID_IMG_BUCKET_NAME: &str = "identification-images";
 const AWS_REGION: &str = "ap-northeast-1";
 const AWS_ENDPOINT_URL: &str = "http://localhost:4566";
+const AWS_S3_CARER_CONFIRMATION_IMG_BUCKET_NAME: &str = "career-confirmation-images";
 
 #[get("/login")]
 async fn login() -> HttpResponse {
@@ -276,6 +280,31 @@ const LOGIN_ERR_TEMPLATE: &str = r#"<!DOCTYPE html>
 async fn images(web::Path(image_path): web::Path<String>) -> HttpResponse {
     let get_request = rusoto_s3::GetObjectRequest {
         bucket: AWS_S3_ID_IMG_BUCKET_NAME.to_string(),
+        key: image_path.clone(),
+        ..Default::default()
+    };
+    let region = rusoto_core::Region::Custom {
+        name: AWS_REGION.to_string(),
+        endpoint: AWS_ENDPOINT_URL.to_string(),
+    };
+    let s3_client = rusoto_s3::S3Client::new(region);
+    let result = s3_client.get_object(get_request).await;
+    let stream = result.unwrap().body.unwrap();
+    let body = stream
+        .map_ok(|b| bytes::BytesMut::from(&b[..]))
+        .try_concat()
+        .await
+        .unwrap();
+    let contents = body.to_vec();
+    HttpResponse::Ok()
+        .header(actix_web::http::header::CONTENT_TYPE, "img/png")
+        .body(contents)
+}
+
+#[get("/career-images/{data}")]
+async fn career_images(web::Path(image_path): web::Path<String>) -> HttpResponse {
+    let get_request = rusoto_s3::GetObjectRequest {
+        bucket: AWS_S3_CARER_CONFIRMATION_IMG_BUCKET_NAME.to_string(),
         key: image_path.clone(),
         ..Default::default()
     };
@@ -855,4 +884,113 @@ fn get_error_response<B>(res: &ServiceResponse<B>, error: &str) -> Response<Body
         }
         None => fallback(error),
     }
+}
+
+
+#[get("/advisor-career-creation-list")]
+async fn advisor_career_creation_list(
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    // TODO: エラー処理の追加
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_career_create_req::dsl::{
+            advisor_career_create_req
+        };
+        let requests = advisor_career_create_req
+            .limit(100)
+            .load::<db::model::administrator::AdvisorCareerCreateReqResult>(&conn)
+            .expect("failed to get data");
+        Ok(requests)
+    }).await;
+
+    let mut requests = result.unwrap();
+    requests.sort_by(|a, b| a.requested_time.cmp(&b.requested_time));
+    let mut data = Map::new();
+    data.insert("num".to_string(), to_json(requests.len()));
+    let mut items = Vec::new();
+    // TODO: for in (Iterator) が順番通りに処理されることを確認
+    for request in requests {
+        let value = json!({
+            "requested_time": request.requested_time,
+            "id": request.advisor_career_create_req_id,
+        });
+        items.push(value);
+    }
+    data.insert("items".to_string(), to_json(items));
+    let body = hb.render("advisor-career-creation-list", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/advisor-career-creation-detail")]
+async fn advisor_career_creation_detail(
+    web::Query(info): web::Query<DetailRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().unwrap();
+    let result: Result<_, BlockingError<String>> = web::block(move || {
+        use db::schema::career_change_supporter_schema::advisor_career_create_req::dsl::{
+            advisor_career_create_req
+        };
+        let request1 = advisor_career_create_req.find(info.id)
+            .first::<db::model::administrator::AdvisorCareerCreateReqResult>(&conn)
+            .expect("failed to get data");
+
+        use db::schema::career_change_supporter_schema::advisor_reg_req_approved::dsl::{
+            advisor_reg_req_approved
+        };
+        let id = request1.cre_req_adv_acc_id.expect("failed to get id");
+        let request2 = advisor_reg_req_approved.find(id)
+          .first::<db::model::administrator::AdvisorRegReqApprovedResult>(&conn)
+          .expect("failed to get data");
+
+        Ok((request1, request2))
+    }).await;
+
+    let requests = result.unwrap();
+    let request1 = requests.0;
+    let request2 = requests.1;
+    let address_line2_option: Option<String> = request2.address_line2;
+    let address_line2_exists = address_line2_option.is_some();
+    let data = json!({
+        "id": request1.advisor_career_create_req_id,
+        "requested_time": request1.requested_time,
+        "company_name": request1.company_name,
+        "department_name": request1.department_name.expect("failed to get department"),
+        "office": request1.office.expect("failed to get office"),
+        "contract_type": request1.contract_type,
+        "profession": request1.profession.expect("failed to get profession"),
+        "is_manager": request1.is_manager,
+        "position_name": request1.position_name.expect("failed to get position name"),
+        "start_date": request1.start_date,
+        "end_date": request1.end_date.expect("failed to get end date"), 
+        "annual_income_in_man_yen": request1.annual_income_in_man_yen.expect("failed to get annual income"),
+        "is_new_graduate": request1.is_new_graduate,
+        "note": request1.note,
+        "career_image1": request1.image1,
+        "career_image2": request1.image2,
+
+        "last_name": request2.last_name,
+        "first_name": request2.first_name,
+        "last_name_furigana": request2.last_name_furigana,
+        "first_name_furigana": request2.first_name_furigana,
+        "year": request2.date_of_birth.year(),
+        "month": request2.date_of_birth.month(),
+        "day": request2.date_of_birth.day(),
+        "prefecture": request2.prefecture,
+        "city": request2.city,
+        "address_line1": request2.address_line1,
+        "address_line2_exists": address_line2_exists,
+        "address_line2": address_line2_option.expect("Failed to get address line 2"),
+        "email_address": request2.email_address,
+        "telephone_num": request2.telephone_number,
+        "sex": request2.sex,
+        "image1": request2.image1,
+        "image2": request2.image2,
+    });
+
+    let body = hb.render("advisor-career-creation-detail", &data).unwrap();
+    HttpResponse::Ok().body(body)
 }
