@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>payjp checkout</title>
+</head>
+<body>
+  <p>テスト</p>
+  <script type="text/javascript">
+    function onCreated(res) {
+        console.log("onCreated");
+        console.log(res);
+    }
+    function onFailed(status, err) {
+        console.log("onFailed");
+        console.log(status + ": " + err);
+    }
+  </script>
+  <form id="my_form" action="/test" method="post">
+    <script
+      type="text/javascript"
+      src="https://checkout.pay.jp/"
+      class="payjp-button"
+      data-key="公開テスト鍵"
+      data-submit-text="テスト支払い"
+      data-partial="true"
+      data-on-created="onCreated"
+      data-on-failed="onFailed">
+    </script>
+    <input type="submit" value="送信">
+  </form>
+</body>
+</html>
