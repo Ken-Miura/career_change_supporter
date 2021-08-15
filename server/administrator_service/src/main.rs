@@ -14,6 +14,7 @@ use chrono::Datelike;
 
 use actix_web::cookie;
 use time::Duration;
+use uuid::Uuid;
 
 use actix_redis::RedisSession;
 
@@ -103,6 +104,9 @@ async fn main() -> io::Result<()> {
             .service(authentication)
             .service(advisor_career_creation_list)
             .service(advisor_career_creation_detail)
+            .service(advisor_career_creation_reject_detail)
+            .service(advisor_career_creation_reject)
+            .service(advisor_career_creation_accept)
             .default_service(web::route().to(index_inner))
     })
     .bind("127.0.0.1:8082")?
@@ -477,7 +481,7 @@ async fn advisor_registration_accept(
                 image1: &request.image1,
                 image2: Some(&img2),
                 associated_advisor_account_id: Some(res.advisor_account_id),
-                approved_time: &current_date_time,
+                approved_time: current_date_time,
             };
             use db::schema::career_change_supporter_schema::advisor_reg_req_approved;
             let _res = diesel::insert_into(advisor_reg_req_approved::table)
@@ -589,7 +593,7 @@ async fn advisor_registration_reject(
                 address_line2: Some(&addr_line2),
                 sex: &request.sex,
                 reject_reason: &reason,
-                rejected_time: &current_date_time,
+                rejected_time: current_date_time,
             };
             use db::schema::career_change_supporter_schema::advisor_reg_req_rejected;
             let _res = diesel::insert_into(advisor_reg_req_rejected::table)
@@ -886,7 +890,6 @@ fn get_error_response<B>(res: &ServiceResponse<B>, error: &str) -> Response<Body
     }
 }
 
-
 #[get("/advisor-career-creation-list")]
 async fn advisor_career_creation_list(
     hb: web::Data<Handlebars<'_>>,
@@ -941,7 +944,7 @@ async fn advisor_career_creation_detail(
         use db::schema::career_change_supporter_schema::advisor_reg_req_approved::dsl::{
             advisor_reg_req_approved
         };
-        let id = request1.cre_req_adv_acc_id.expect("failed to get id");
+        let id = request1.cre_req_adv_acc_id;
         let request2 = advisor_reg_req_approved.find(id)
           .first::<db::model::administrator::AdvisorRegReqApprovedResult>(&conn)
           .expect("failed to get data");
@@ -965,7 +968,7 @@ async fn advisor_career_creation_detail(
         "is_manager": request1.is_manager,
         "position_name": request1.position_name.expect("failed to get position name"),
         "start_date": request1.start_date,
-        "end_date": request1.end_date.expect("failed to get end date"), 
+        "end_date": request1.end_date.expect("failed to get end date"),
         "annual_income_in_man_yen": request1.annual_income_in_man_yen.expect("failed to get annual income"),
         "is_new_graduate": request1.is_new_graduate,
         "note": request1.note,
@@ -993,4 +996,228 @@ async fn advisor_career_creation_detail(
 
     let body = hb.render("advisor-career-creation-detail", &data).unwrap();
     HttpResponse::Ok().body(body)
+}
+
+#[get("/advisor-career-creation-reject-detail")]
+async fn advisor_career_creation_reject_detail(
+    web::Query(info): web::Query<DetailRequest>,
+    hb: web::Data<Handlebars<'_>>,
+) -> HttpResponse {
+    let data = json!({
+        "id": info.id,
+    });
+    let body = hb
+        .render("advisor-career-creation-reject-detail", &data)
+        .unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[post("/advisor-career-creation-reject")]
+async fn advisor_career_creation_reject(
+    web::Query(info): web::Query<DetailRequest>,
+    _hb: web::Data<Handlebars<'_>>,
+    _params: web::Form<Reason>,
+    _pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    // TODO: 実装
+    log::info!("id: {}", info.id);
+    HttpResponse::Ok().finish()
+}
+
+#[get("/advisor-career-creation-accept")]
+async fn advisor_career_creation_accept(
+    web::Query(info): web::Query<DetailRequest>,
+    _hb: web::Data<Handlebars<'_>>,
+    pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+) -> HttpResponse {
+    let conn = pool.get().expect("failed to get connection");
+
+    // トランザクション内で実施
+    // idからデータ取得
+    // careerに登録
+    // approvedに登録
+    // createから削除
+    // elastic searchに登録
+    // トランザクション外で実施
+    // メール送信
+
+    let _result = transaction(&conn, async {
+        use db::schema::career_change_supporter_schema::advisor_career_create_req::dsl::advisor_career_create_req;
+        let req1 = advisor_career_create_req
+            .find(info.id)
+            .first::<db::model::administrator::AdvisorCareerCreateReqResult>(&conn)
+            .expect("failed to get data");
+        use db::schema::career_change_supporter_schema::advisor_reg_req_approved::dsl::advisor_reg_req_approved;
+        let req2 = advisor_reg_req_approved
+            .find(req1.cre_req_adv_acc_id)
+            .first::<db::model::administrator::AdvisorRegReqApprovedResult>(&conn)
+            .expect("failed to get data");
+        let adv_id = req2
+            .associated_advisor_account_id
+            .expect("failed to get advidor account id");
+
+        let career_id = Uuid::new_v4().to_simple().to_string();
+        let dept_name = &req1.department_name.expect("failed to get department name");
+        let office = &req1.office.expect("failed to get office");
+        let profession = &req1.profession.expect("failed to get profession");
+        let position_name = &req1.position_name.expect("failed to get position name");
+        let note = &req1.note.expect("failed to get note");
+        let ac = db::model::administrator::AdvisorCareerReq {
+            advisor_career_id: career_id,
+            career_associated_adv_acc_id: Some(adv_id),
+            company_name: &req1.company_name,
+            department_name: Some(dept_name),
+            office: Some(office),
+            start_date: req1.start_date,
+            end_date: req1.end_date,
+            contract_type: &req1.contract_type,
+            profession: Some(profession),
+            annual_income_in_yen: req1.annual_income_in_man_yen,
+            is_manager: req1.is_manager,
+            position_name: Some(position_name),
+            is_new_graduate: req1.is_new_graduate,
+            note: Some(note),
+        };
+        use db::schema::career_change_supporter_schema::advisor_career;
+        let _r = diesel::insert_into(advisor_career::table)
+            .values(&ac)
+            .execute(&conn);
+
+        let _ = diesel::delete(advisor_career_create_req.find(info.id)).execute(&conn);
+
+        if false {
+            return Err(diesel::result::Error::RollbackTransaction);
+        }
+        Ok(())
+        // TODO: 承認の記録
+        // let aca = db::model::administrator::AdvisorCareerApprovedReq {
+        //     approve_adv_acc_id: req,
+        //     company_name: req.company_name,
+        //     department_name: req.department_name,
+        //     office: Option<&'a str>,
+        //     contract_type: &'a str,
+        //     profession: Option<&'a str>,
+        //     is_manager: bool,
+        //     position_name: Option<&'a str>,
+        //     start_date: chrono::NaiveDate,
+        //     end_date: Option<chrono::NaiveDate>,
+        //     annual_income_in_man_yen: Option<i32>,
+        //     is_new_graduate: bool,
+        //     note: Option<&'a str>,
+        //     image1: &'a str,
+        //     image2: Option<&'a str>,
+        //     approved_time: chrono::DateTime<chrono::Utc>,
+        // };
+        // use db::schema::career_change_supporter_schema::adv_career_approved;
+        // let result = diesel::insert_into(adv_career_approved::table).values(&aca)
+        //          .get_result::<db::model::administrator::AdvisorCareerApprovedReqResult>(&conn)
+        //          .expect("failed to insert data");;
+    });
+
+    HttpResponse::Ok().finish()
+    // TODO: エラー処理の追加
+    // let result: Result<String, BlockingError<diesel::result::Error>> = web::block(move || {
+    //     conn.transaction::<_, diesel::result::Error, _>(|| {
+    //         use db::schema::career_change_supporter_schema::advisor_account_creation_request::dsl::{
+    //             advisor_account_creation_request
+    //         };
+    //         let request = advisor_account_creation_request.find(info.id)
+    //             .first::<db::model::advisor::AccountCreationRequestResult>(&conn)
+    //             .expect("failed to get data");
+
+    //         let addr2 = request.address_line2.clone().unwrap();
+    //         let acc = db::model::advisor::Account {
+    //             email_address: &request.email_address,
+    //             hashed_password: &request.hashed_password,
+    //             last_name: &request.last_name,
+    //             first_name: &request.first_name,
+    //             last_name_furigana: &request.last_name_furigana,
+    //             first_name_furigana: &request.first_name_furigana,
+    //             telephone_number: &request.telephone_number,
+    //             date_of_birth: request.date_of_birth,
+    //             prefecture: &request.prefecture,
+    //             city: &request.city,
+    //             address_line1: &request.address_line1,
+    //             address_line2: Some(&addr2),
+    //             sex: &request.sex,
+    //             advice_fee_in_yen: None,
+    //             tenant_id: None,
+    //             last_login_time: None
+    //         };
+    //         use db::schema::career_change_supporter_schema::advisor_account;
+    //         let res = diesel::insert_into(advisor_account::table)
+    //             .values(&acc)
+    //             .get_result::<db::model::advisor::AccountQueryResult>(&conn)
+    //             .expect("Failed to insert data");
+
+    //         let current_date_time = chrono::Utc::now();
+    //         let addr_line2= request.address_line2.unwrap();
+    //         let img2 = request.image2.unwrap();
+    //         let approval_data = db::model::administrator::AdvisorRegReqApproved {
+    //             email_address: &request.email_address,
+    //             last_name: &request.last_name,
+    //             first_name: &request.first_name,
+    //             last_name_furigana: &request.last_name_furigana,
+    //             first_name_furigana: &request.first_name_furigana,
+    //             telephone_number: &request.telephone_number,
+    //             date_of_birth: request.date_of_birth,
+    //             prefecture: &request.prefecture,
+    //             city: &request.city,
+    //             address_line1: &request.address_line1,
+    //             address_line2: Some(&addr_line2),
+    //             sex: &request.sex,
+    //             image1: &request.image1,
+    //             image2: Some(&img2),
+    //             associated_advisor_account_id: Some(res.advisor_account_id),
+    //             approved_time: &current_date_time,
+    //         };
+    //         use db::schema::career_change_supporter_schema::advisor_reg_req_approved;
+    //         let _res = diesel::insert_into(advisor_reg_req_approved::table)
+    //             .values(&approval_data)
+    //             .get_result::<db::model::administrator::AdvisorRegReqApprovedResult>(&conn)
+    //             .expect("Failed to insert data");
+
+    //         let _del_res = diesel::delete(advisor_account_creation_request.find(info.id)).execute(&conn).expect("Failed to delete req");
+
+    //         Ok(request.email_address)
+    //     })
+    // })
+    // .await;
+
+    // let mail_addr = result.expect("Failed to get data");
+    // let _result = send_notification_mail_to_advisor(&mail_addr);
+
+    // let data = json!({
+    //     "email_address": mail_addr,
+    // });
+
+    // let body = hb.render("advisor-career-creation-accepted", &data).unwrap();
+    // HttpResponse::Ok().body(body)
+}
+
+use diesel::connection::Connection;
+use diesel::connection::TransactionManager;
+use futures::Future;
+/// 下記のURLを参考にasyncを渡せるtransactionを作成
+/// S3やPAY.JPとの連携の際、トランザクション中にHTTTP通信したい場合等々に利用することを想定。
+/// transaction_managerという非公開のAPIを利用しているので可能な限り利用を避ける。
+/// https://o296.com/2020/12/29/diesel-transaction-async.html
+pub(crate) async fn transaction<C, T, E, F>(c: &C, f: F) -> Result<T, E>
+where
+    C: Connection,
+    F: Future<Output = Result<T, E>>,
+    E: From<diesel::result::Error>,
+{
+    let transaction_manager = c.transaction_manager();
+    transaction_manager.begin_transaction(c)?;
+    match f.await {
+        Ok(value) => {
+            transaction_manager.commit_transaction(c)?;
+            Ok(value)
+        }
+        Err(e) => {
+            transaction_manager.rollback_transaction(c)?;
+            Err(e)
+        }
+    }
 }

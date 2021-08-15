@@ -943,7 +943,7 @@ fn create_career_req<'a>(
         note: Some(&submitted_career.note),
         image1,
         image2: Some(image2),
-        requested_time: current_date_time,
+        requested_time: *current_date_time,
     }
 }
 

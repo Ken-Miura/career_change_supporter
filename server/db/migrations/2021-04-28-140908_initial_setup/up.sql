@@ -203,9 +203,9 @@ CREATE TABLE career_change_supporter_schema.advisor_career (
   contract_type VARCHAR (100) NOT NULL, /* 正社員か契約社員かその他か */
   profession VARCHAR (100), /* 職種 */
   annual_income_in_yen INTEGER, /* 年収 */
-  is_manager BOOLEAN, /* 管理職かどうか */
+  is_manager BOOLEAN NOT NULL, /* 管理職かどうか */
   position_name VARCHAR (100), /* 役職名 */
-  is_new_graduate BOOLEAN, /* 入社区分（新卒、中途） */
+  is_new_graduate BOOLEAN NOT NULL, /* 入社区分（新卒、中途） */
   note VARCHAR (2000) /* その他備考 (相談可能な内容、相談不可な内容) */
 );
 
@@ -219,7 +219,7 @@ GRANT SELECT ON career_change_supporter_schema.advisor_career To user_app;
 CREATE TABLE career_change_supporter_schema.advisor_career_create_req (
   advisor_career_create_req_id SERIAL PRIMARY KEY,
   /* advisor_reg_req_approved_idの変更や削除は基本的に許可しない予定なのでデフォルト（エラー）動作 */
-  cre_req_adv_acc_id INTEGER REFERENCES career_change_supporter_schema.advisor_reg_req_approved(advisor_reg_req_approved_id),
+  cre_req_adv_acc_id INTEGER NOT NULL REFERENCES career_change_supporter_schema.advisor_reg_req_approved(advisor_reg_req_approved_id),
   company_name VARCHAR (1000) NOT NULL, /* 会社名 */
   department_name VARCHAR (1000), /* 事業部・部門 */
   office VARCHAR (1000), /* 事業所 */
@@ -252,8 +252,14 @@ CREATE TABLE career_change_supporter_schema.adv_career_approved (
   office VARCHAR (1000), /* 事業所 */
   contract_type VARCHAR (100) NOT NULL, /* 正社員か契約社員かその他か */
   profession VARCHAR (100), /* 職種 */
-  is_manager BOOLEAN, /* 管理職かどうか */
+  is_manager BOOLEAN NOT NULL, /* 管理職かどうか */
   position_name VARCHAR (100), /* 役職名 */
+  /* TODO: 以下の項目はどうすべきか検討 */
+  start_date DATE NOT NULL, /* start_dateとend_dateから在籍期間を表示するようにする */
+  end_date DATE,
+  annual_income_in_man_yen INTEGER, /* 年収 */
+  is_new_graduate BOOLEAN NOT NULL, /* 入社区分（新卒、中途） */
+  note VARCHAR (2000), /* その他備考 (相談可能な内容、相談不可な内容) */
   /* TODO: 最大文字数の検討 */
   image1 VARCHAR (64) NOT NULL,
   image2 VARCHAR (64),
@@ -271,8 +277,14 @@ CREATE TABLE career_change_supporter_schema.adv_career_rejected (
   office VARCHAR (1000), /* 事業所 */
   contract_type VARCHAR (100) NOT NULL, /* 正社員か契約社員かその他か */
   profession VARCHAR (100), /* 職種 */
-  is_manager BOOLEAN, /* 管理職かどうか */
+  is_manager BOOLEAN NOT NULL, /* 管理職かどうか */
   position_name VARCHAR (100), /* 役職名 */
+  /* TODO: 以下の項目はどうすべきか検討 */
+  start_date DATE NOT NULL, /* start_dateとend_dateから在籍期間を表示するようにする */
+  end_date DATE,
+  annual_income_in_man_yen INTEGER, /* 年収 */
+  is_new_graduate BOOLEAN NOT NULL, /* 入社区分（新卒、中途） */
+  note VARCHAR (2000), /* その他備考 (相談可能な内容、相談不可な内容) */
   /* TODO: 最大文字数の検討 */
   image1 VARCHAR (64) NOT NULL,
   image2 VARCHAR (64),

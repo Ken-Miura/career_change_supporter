@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 db = { path = "../db" }
-actix-web = { version = "3", features = ["openssl"] }
+actix-web = { version = "3.3.2", features = ["openssl"] }
 openssl = "0.10.34"
 actix-files = "0.5.0"
 actix-http = "2.2.0"

@@ -1,6 +1,8 @@
 // Copyright 2021 Ken Miura
 
 use crate::schema::career_change_supporter_schema::administrator_account;
+use crate::schema::career_change_supporter_schema::adv_career_approved;
+use crate::schema::career_change_supporter_schema::advisor_career;
 use crate::schema::career_change_supporter_schema::advisor_career_create_req;
 use crate::schema::career_change_supporter_schema::advisor_reg_req_approved;
 use crate::schema::career_change_supporter_schema::advisor_reg_req_rejected;
@@ -39,7 +41,7 @@ pub struct AdvisorRegReqApproved<'a> {
     pub image1: &'a str,
     pub image2: Option<&'a str>,
     pub associated_advisor_account_id: Option<i32>,
-    pub approved_time: &'a chrono::DateTime<chrono::Utc>,
+    pub approved_time: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Queryable)]
@@ -86,7 +88,7 @@ pub struct AdvisorRegReqRejected<'a> {
     pub address_line2: Option<&'a str>,
     pub sex: &'a str,
     pub reject_reason: &'a str,
-    pub rejected_time: &'a chrono::DateTime<chrono::Utc>,
+    pub rejected_time: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Clone, Queryable)]
@@ -126,13 +128,13 @@ pub struct AdvisorCareerCreateReq<'a> {
     pub note: Option<&'a str>,
     pub image1: &'a str,
     pub image2: Option<&'a str>,
-    pub requested_time: &'a chrono::DateTime<chrono::Utc>,
+    pub requested_time: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Clone, Queryable)]
 pub struct AdvisorCareerCreateReqResult {
     pub advisor_career_create_req_id: i32,
-    pub cre_req_adv_acc_id: Option<i32>,
+    pub cre_req_adv_acc_id: i32,
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,
@@ -148,4 +150,83 @@ pub struct AdvisorCareerCreateReqResult {
     pub image1: String,
     pub image2: Option<String>,
     pub requested_time: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Insertable)]
+#[table_name = "adv_career_approved"]
+pub struct AdvisorCareerApprovedReq<'a> {
+    pub approve_adv_acc_id: i32,
+    pub company_name: &'a str,
+    pub department_name: Option<&'a str>,
+    pub office: Option<&'a str>,
+    pub contract_type: &'a str,
+    pub profession: Option<&'a str>,
+    pub is_manager: bool,
+    pub position_name: Option<&'a str>,
+    pub start_date: chrono::NaiveDate,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub annual_income_in_man_yen: Option<i32>,
+    pub is_new_graduate: bool,
+    pub note: Option<&'a str>,
+    pub image1: &'a str,
+    pub image2: Option<&'a str>,
+    pub approved_time: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Clone, Queryable)]
+pub struct AdvisorCareerApprovedReqResult {
+    pub adv_career_approved_id: i32,
+    pub approve_adv_acc_id: i32,
+    pub company_name: String,
+    pub department_name: Option<String>,
+    pub office: Option<String>,
+    pub contract_type: String,
+    pub profession: Option<String>,
+    pub is_manager: bool,
+    pub position_name: Option<String>,
+    pub start_date: chrono::NaiveDate,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub annual_income_in_man_yen: Option<i32>,
+    pub is_new_graduate: bool,
+    pub note: Option<String>,
+    pub image1: String,
+    pub image2: Option<String>,
+    pub approved_time: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Insertable)]
+#[table_name = "advisor_career"]
+pub struct AdvisorCareerReq<'a> {
+    pub advisor_career_id: String,
+    pub career_associated_adv_acc_id: Option<i32>,
+    pub company_name: &'a str,
+    pub department_name: Option<&'a str>,
+    pub office: Option<&'a str>,
+    pub start_date: chrono::NaiveDate,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub contract_type: &'a str,
+    pub profession: Option<&'a str>,
+    pub annual_income_in_yen: Option<i32>,
+    pub is_manager: bool,
+    pub position_name: Option<&'a str>,
+    pub is_new_graduate: bool,
+    pub note: Option<&'a str>,
+}
+
+#[derive(Clone, Queryable)]
+pub struct AdvisorCareerReqResult {
+    pub advisor_career_id: String,
+    pub career_associated_adv_acc_id: Option<i32>,
+    pub company_name: String,
+    pub department_name: Option<String>,
+    pub office: Option<String>,
+    pub start_date: chrono::NaiveDate,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub contract_type: String,
+    pub profession: Option<String>,
+    pub annual_income_in_yen: Option<i32>,
+    pub is_manager: bool,
+    pub position_name: Option<String>,
+    pub is_new_graduate: bool,
+    pub note: Option<String>,
 }
