@@ -1,60 +1,55 @@
 // Copyright 2021 Ken Miura
 
-mod advisor;
-mod common;
-mod static_asset;
-mod user;
+use std::net::SocketAddr;
 
-use actix_web::{middleware::Logger, web, App, HttpServer};
-use dotenv::dotenv;
-use log::LevelFilter;
-use log4rs::append::file::FileAppender;
-use log4rs::config::{Appender, Config, Root};
-use log4rs::encode::pattern::PatternEncoder;
+use axum::route;
+use axum::routing::RoutingDsl;
+use tower::{service_fn, BoxError, Service};
+use tower_http::services::{ServeDir, ServeFile};
 
-const APPLICATION_SERVER_ADDR: &str = "127.0.0.1:8080";
+use http_body::combinators::BoxBody;
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    dotenv().ok();
+#[tokio::main]
+async fn main() {
+    let get_index = axum::service::get(service_fn(|req| async {
+        let resp = ServeFile::new("service/static/index.html")
+            .call(req)
+            .await?;
+        Ok::<_, BoxError>(resp)
+    }));
+    let get_user_app = axum::service::get(service_fn(|req| async {
+        let resp = ServeDir::new("service/static/user").call(req).await?;
+        let resp = resp.map(|body| BoxBody::new(body));
+        if resp.status() == 404 {
+            let resp = ServeFile::new("service/static/user/user_app.html")
+                .call(())
+                .await?;
+            let resp = resp.map(|body| BoxBody::new(body));
+            return Ok(resp);
+        }
+        Ok::<_, BoxError>(resp)
+    }));
+    let get_advisor_app = axum::service::get(service_fn(|req| async {
+        let resp = ServeDir::new("service/static/advisor").call(req).await?;
+        let resp = resp.map(|body| BoxBody::new(body));
+        if resp.status() == 404 {
+            let resp = ServeFile::new("service/static/advisor/advisor_app.html")
+                .call(())
+                .await?;
+            let resp = resp.map(|body| BoxBody::new(body));
+            return Ok(resp);
+        }
+        Ok::<_, BoxError>(resp)
+    }));
+    let app = route("/", get_index.clone())
+        .route("/index.html", get_index)
+        .nest("/user", get_user_app)
+        .nest("/advisor", get_advisor_app);
 
-    // TODO: Check pattern encoder
-    // TODO: 記録される時間がサーバ上の時間か、クライアントのリクエスト時の時間が確認する
-    // TODO: ECS fargateとCloudWatchLogの連携を利用するために標準出力 (env_logger) を検討する
-    let logfile = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d} {l} {t} - {m}{n}")))
-        .build("service/log/output.log")
-        .expect("never happens panic");
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
-    let config = Config::builder()
-        .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .build(Root::builder().appender("logfile").build(LevelFilter::Info))
-        .expect("never happens panic");
-
-    // TODO: Add error handling
-    let _ = log4rs::init_config(config);
-
-    // TODO: DOS攻撃を回避するために受け取るJSONデータのサイズ制限を追加する
-    HttpServer::new(move || {
-        App::new()
-            .wrap(Logger::default())
-            // NOTE: /user (suffixに"/"なし) にアクセスした際に404となるので、
-            // /userにアクセスしてきた際に/user/user_app.htmlにリダイレクトする
-            .service(web::resource("/user").to(static_asset::redirect_to_user_app))
-            .configure(user::user_config)
-            // NOTE: 上記のNOTEと同様の理由で記載
-            .service(web::resource("/advisor").to(static_asset::redirect_to_advisor_app))
-            .configure(advisor::advisor_config)
-            // NOTE: 下記のrefに従い、"/"は最後に記載する
-            // ref: https://docs.rs/actix-files/0.5.0/actix_files/struct.Files.html#implementation-notes
-            .service(
-                actix_files::Files::new("/", static_asset::ASSETS_DIR.to_string())
-                    .prefer_utf8(true)
-                    .index_file("index.html")
-                    .default_handler(web::route().to(static_asset::serve_index)),
-            )
-    })
-    .bind(APPLICATION_SERVER_ADDR)?
-    .run()
-    .await
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
