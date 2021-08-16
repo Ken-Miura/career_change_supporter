@@ -2,7 +2,7 @@
 
 members = [
     "service",
-    "administrator_service",
-    "administrator_tool",
-    "db",
+    "admin_service",
+    "admin_account",
+    "common",
 ]

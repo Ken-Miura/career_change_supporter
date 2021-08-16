@@ -1,5 +1,5 @@
 [package]
-name = "administrator_service"
+name = "admin_service"
 version = "0.1.0"
 authors = ["kmiura <ken.miura1102@gmail.com>"]
 edition = "2018"
@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-db = { path = "../db" }
+db = { path = "../common" }
 actix-web = "3"
 actix-files = "0.5.0"
 actix-http = "2.2.0"

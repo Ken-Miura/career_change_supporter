@@ -1,5 +1,5 @@
 [package]
-name = "administrator_tool"
+name = "admin_account"
 version = "0.1.0"
 authors = ["kmiura <ken.miura1102@gmail.com>"]
 edition = "2018"
