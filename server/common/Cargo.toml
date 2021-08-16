@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 diesel = { version = "1.4.5", features = ["postgres", "r2d2", "chrono"] }
 chrono = "0.4.19"
+serde = { version = "1.0.127", features = ["derive"] }

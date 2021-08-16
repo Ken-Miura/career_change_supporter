@@ -7,3 +7,4 @@ extern crate diesel;
 
 pub mod model;
 pub mod schema;
+pub mod credential;
