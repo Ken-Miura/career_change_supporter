@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-db = { path = "../db" }
+db = { path = "../common" }
 serde = "1.0.123"
 diesel = { version = "1.4.5", features = ["postgres", "r2d2", "chrono"] }
 r2d2 = "0.8.9"
