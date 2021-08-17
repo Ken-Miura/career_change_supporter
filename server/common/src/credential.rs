@@ -26,7 +26,11 @@ impl Credential {
 }
 
 fn validate_email_address(email_address: &str) -> Result<(), CredentialError> {
-    todo!()
+    let result = crate::util::validate_email_address(email_address);
+    match result {
+        Ok(_) => Ok(()),
+        Err(e) => Err(CredentialError::InvalidEmailAddress(e)),
+    }
 }
 
 fn validate_password(password: &str) -> Result<(), CredentialError> {
@@ -35,7 +39,9 @@ fn validate_password(password: &str) -> Result<(), CredentialError> {
 
 /// Error related to [Credential]
 #[derive(Debug)]
-pub enum CredentialError {}
+pub enum CredentialError {
+    InvalidEmailAddress(crate::util::EmailAddressValidationError),
+}
 
 impl Display for CredentialError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -43,4 +49,8 @@ impl Display for CredentialError {
     }
 }
 
-impl Error for CredentialError {}
+impl Error for CredentialError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
+}
