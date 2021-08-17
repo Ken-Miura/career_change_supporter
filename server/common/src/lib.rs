@@ -5,6 +5,7 @@
 #[macro_use]
 extern crate diesel;
 
+pub mod credential;
 pub mod model;
 pub mod schema;
-pub mod credential;
+pub mod util;
