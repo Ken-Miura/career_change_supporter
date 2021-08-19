@@ -95,13 +95,20 @@ mod tests {
     #[test]
     fn validate_email_address_returns_invalid_length_if_given_empty_string() {
         let empty_str = "";
-        
+
         let result = validate_email_address(empty_str);
 
         let err = result.expect_err("failed to get Err");
         match err {
-            EmailAddressValidationError::InvalidLength { length, min_length: _, max_length: _ } => assert!(length == 0, "length != 0"),
-            EmailAddressValidationError::InvalidFormat { email_address: _ } => panic!("got EmailAddressValidationError::InvalidFormat"),
+            EmailAddressValidationError::InvalidLength {
+                length,
+                min_length: _,
+                max_length: _,
+            } => assert!(length == 0, "length: {}", length),
+            EmailAddressValidationError::InvalidFormat { email_address } => panic!(
+                "EmailAddressValidationError::InvalidFormat {{ email_address: \"{}\" }}",
+                email_address
+            ),
         }
     }
 }
