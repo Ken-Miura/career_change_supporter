@@ -47,7 +47,7 @@ pub fn validate_email_address(email_address: &str) -> Result<(), EmailAddressVal
         });
     }
     if !EMAIL_ADDR_RE.is_match(email_address) {
-        return Err(EmailAddressValidationError::InvalidCharacter {
+        return Err(EmailAddressValidationError::InvalidFormat {
             email_address: email_address.to_string(),
         });
     }
@@ -62,7 +62,7 @@ pub enum EmailAddressValidationError {
         min_length: usize,
         max_length: usize,
     },
-    InvalidCharacter {
+    InvalidFormat {
         email_address: String,
     },
 }
@@ -79,7 +79,7 @@ impl Display for EmailAddressValidationError {
                 "invalid email address length: {} (length must be {} or more, and {} or less)",
                 length, min_length, max_length
             ),
-            EmailAddressValidationError::InvalidCharacter { email_address } => {
+            EmailAddressValidationError::InvalidFormat { email_address } => {
                 write!(f, "invalid email address format: {}", email_address)
             }
         }
@@ -87,6 +87,24 @@ impl Display for EmailAddressValidationError {
 }
 
 impl Error for EmailAddressValidationError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_email_address_returns_invalid_length_if_given_empty_string() {
+        let empty_str = "";
+        
+        let result = validate_email_address(empty_str);
+
+        let err = result.expect_err("failed to get Err");
+        match err {
+            EmailAddressValidationError::InvalidLength { length, min_length: _, max_length: _ } => assert!(length == 0, "length != 0"),
+            EmailAddressValidationError::InvalidFormat { email_address: _ } => panic!("got EmailAddressValidationError::InvalidFormat"),
+        }
+    }
+}
 
 /// Validates password.<br>
 /// password requirements<br>
