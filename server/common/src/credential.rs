@@ -5,7 +5,7 @@ use std::error::Error;
 use std::fmt::Display;
 
 // TODO: リリース前に値を調整する (パスワードのストレッチングが2^BCRYPT_COST回実行される)
-const BCRYPT_COST: u32 = 7;
+// const BCRYPT_COST: u32 = 7;
 
 /// Credential for login
 ///
@@ -18,6 +18,7 @@ pub struct Credential {
 }
 
 impl Credential {
+    /// Validate creadential.
     pub fn validate(&self) -> Result<(), CredentialError> {
         let _ = validate_email_address(&self.email_address)?;
         let _ = validate_password(&self.password)?;
@@ -34,23 +35,36 @@ fn validate_email_address(email_address: &str) -> Result<(), CredentialError> {
 }
 
 fn validate_password(password: &str) -> Result<(), CredentialError> {
-    todo!()
+    let result = crate::util::validate_password(password);
+    match result {
+        Ok(_) => Ok(()),
+        Err(e) => Err(CredentialError::InvalidPassword(e)),
+    }
 }
 
 /// Error related to [Credential]
 #[derive(Debug)]
 pub enum CredentialError {
     InvalidEmailAddress(crate::util::EmailAddressValidationError),
+    InvalidPassword(crate::util::PasswordValidationError),
 }
 
 impl Display for CredentialError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match self {
+            CredentialError::InvalidEmailAddress(e) => {
+                write!(f, "failed to validate email address: {}", e)
+            }
+            CredentialError::InvalidPassword(e) => write!(f, "failed to validate password: {}", e),
+        }
     }
 }
 
 impl Error for CredentialError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        None
+        match self {
+            CredentialError::InvalidEmailAddress(e) => Some(e),
+            CredentialError::InvalidPassword(e) => Some(e),
+        }
     }
 }
