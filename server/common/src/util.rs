@@ -88,6 +88,104 @@ impl Display for EmailAddressValidationError {
 
 impl Error for EmailAddressValidationError {}
 
+/// Validates password.<br>
+/// password requirements<br>
+/// - 長さが10文字以上32文字以下
+/// - 使える文字は半角英数字と記号 (ASCIIコードの0x21-0x7e)
+/// - 大文字、小文字、数字、記号のいずれか二種類以上を組み合わせる必要がある
+pub fn validate_password(password: &str) -> Result<(), PasswordValidationError> {
+    let pwd_length = password.len();
+    if !(PASSWORD_MIN_LENGTH..=PASSWORD_MAX_LENGTH).contains(&pwd_length) {
+        return Err(PasswordValidationError::InvalidLength {
+            min_length: PASSWORD_MIN_LENGTH,
+            max_length: PASSWORD_MAX_LENGTH,
+        });
+    }
+    if !PWD_RE.is_match(password) {
+        return Err(PasswordValidationError::ConstraintViolation);
+    }
+    let _ = validate_password_constraints(password)?;
+    Ok(())
+}
+
+fn validate_password_constraints(pwd: &str) -> Result<(), PasswordValidationError> {
+    let mut count = 0;
+    if UPPER_CASE_RE.is_match(pwd) {
+        count += 1;
+    }
+    if LOWER_CASE_RE.is_match(pwd) {
+        count += 1;
+    }
+    if NUMBER_RE.is_match(pwd) {
+        count += 1;
+    }
+    if SYMBOL_RE.is_match(pwd) {
+        count += 1;
+    }
+    if count < CONSTRAINTS_OF_NUM_OF_COMBINATION {
+        return Err(PasswordValidationError::ConstraintViolation);
+    }
+    Ok(())
+}
+
+/// Error related to [validate_password()]
+#[derive(Debug)]
+pub enum PasswordValidationError {
+    InvalidLength {
+        min_length: usize,
+        max_length: usize,
+    },
+    InvalidCharacter,
+    ConstraintViolation,
+}
+
+impl Display for PasswordValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PasswordValidationError::InvalidLength {
+                min_length,
+                max_length,
+            } => write!(
+                f,
+                "password length must be {} or more, and {} or less",
+                min_length, max_length
+            ),
+            PasswordValidationError::InvalidCharacter => write!(f, "invalid character included"),
+            PasswordValidationError::ConstraintViolation => write!(f, "constraint violation"),
+        }
+    }
+}
+
+impl Error for PasswordValidationError {}
+
+/// Validates UUID format.
+pub fn validate_uuid(uuid: &str) -> Result<(), UuidValidationError> {
+    if !UUID_RE.is_match(uuid) {
+        return Err(UuidValidationError::InvalidFormat {
+            invalid_uuid: uuid.to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Error related to [validate_uuid()]
+#[derive(Debug)]
+pub enum UuidValidationError {
+    InvalidFormat { invalid_uuid: String },
+}
+
+impl Display for UuidValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UuidValidationError::InvalidFormat { invalid_uuid } => {
+                write!(f, "invalid UUID: {}", invalid_uuid)
+            }
+        }
+    }
+}
+
+impl Error for UuidValidationError {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,101 +333,3 @@ mod tests {
         }
     }
 }
-
-/// Validates password.<br>
-/// password requirements<br>
-/// - 長さが10文字以上32文字以下
-/// - 使える文字は半角英数字と記号 (ASCIIコードの0x21-0x7e)
-/// - 大文字、小文字、数字、記号のいずれか二種類以上を組み合わせる必要がある
-pub fn validate_password(password: &str) -> Result<(), PasswordValidationError> {
-    let pwd_length = password.len();
-    if !(PASSWORD_MIN_LENGTH..=PASSWORD_MAX_LENGTH).contains(&pwd_length) {
-        return Err(PasswordValidationError::InvalidLength {
-            min_length: PASSWORD_MIN_LENGTH,
-            max_length: PASSWORD_MAX_LENGTH,
-        });
-    }
-    if !PWD_RE.is_match(password) {
-        return Err(PasswordValidationError::ConstraintViolation);
-    }
-    let _ = validate_password_constraints(password)?;
-    Ok(())
-}
-
-fn validate_password_constraints(pwd: &str) -> Result<(), PasswordValidationError> {
-    let mut count = 0;
-    if UPPER_CASE_RE.is_match(pwd) {
-        count += 1;
-    }
-    if LOWER_CASE_RE.is_match(pwd) {
-        count += 1;
-    }
-    if NUMBER_RE.is_match(pwd) {
-        count += 1;
-    }
-    if SYMBOL_RE.is_match(pwd) {
-        count += 1;
-    }
-    if count < CONSTRAINTS_OF_NUM_OF_COMBINATION {
-        return Err(PasswordValidationError::ConstraintViolation);
-    }
-    Ok(())
-}
-
-/// Error related to [validate_password()]
-#[derive(Debug)]
-pub enum PasswordValidationError {
-    InvalidLength {
-        min_length: usize,
-        max_length: usize,
-    },
-    InvalidCharacter,
-    ConstraintViolation,
-}
-
-impl Display for PasswordValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PasswordValidationError::InvalidLength {
-                min_length,
-                max_length,
-            } => write!(
-                f,
-                "password length must be {} or more, and {} or less",
-                min_length, max_length
-            ),
-            PasswordValidationError::InvalidCharacter => write!(f, "invalid character included"),
-            PasswordValidationError::ConstraintViolation => write!(f, "constraint violation"),
-        }
-    }
-}
-
-impl Error for PasswordValidationError {}
-
-/// Validates UUID format.
-pub fn validate_uuid(uuid: &str) -> Result<(), UuidValidationError> {
-    if !UUID_RE.is_match(uuid) {
-        return Err(UuidValidationError::InvalidFormat {
-            invalid_uuid: uuid.to_string(),
-        });
-    }
-    Ok(())
-}
-
-/// Error related to [validate_uuid()]
-#[derive(Debug)]
-pub enum UuidValidationError {
-    InvalidFormat { invalid_uuid: String },
-}
-
-impl Display for UuidValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            UuidValidationError::InvalidFormat { invalid_uuid } => {
-                write!(f, "invalid UUID: {}", invalid_uuid)
-            }
-        }
-    }
-}
-
-impl Error for UuidValidationError {}
