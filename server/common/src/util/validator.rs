@@ -102,7 +102,7 @@ pub fn validate_password(password: &str) -> Result<(), PasswordValidationError> 
         });
     }
     if !PWD_RE.is_match(password) {
-        return Err(PasswordValidationError::ConstraintViolation);
+        return Err(PasswordValidationError::InvalidCharacter);
     }
     let _ = validate_password_constraints(password)?;
     Ok(())
@@ -188,6 +188,8 @@ impl Error for UuidValidationError {}
 
 #[cfg(test)]
 mod tests {
+    use core::panic;
+
     use super::*;
 
     #[test]
@@ -330,6 +332,118 @@ mod tests {
                 "email_address: {}",
                 email_address
             ),
+        }
+    }
+
+    #[test]
+    fn validate_password_returns_ok_if_given_valid_password_1() {
+        // 10 letters with lower case and upper case
+        let valid_password = "aaaaaaaaaaA";
+
+        let result = validate_password(valid_password);
+        
+        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+    }
+
+    #[test]
+    fn validate_password_returns_ok_if_given_valid_password_2() {
+        // 32 letters with lower case and digit
+        let valid_password = "a1234567890123456789012345678901";
+
+        let result = validate_password(valid_password);
+        
+        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+    }
+
+    #[test]
+    fn validate_password_returns_ok_if_given_valid_password_3() {
+        // lower case and symbol
+        let valid_password = "a!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
+
+        let result = validate_password(valid_password);
+        
+        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+    }
+
+    #[test]
+    fn validate_password_returns_ok_if_given_valid_password_4() {
+        // upper case and symbol
+        let valid_password = "Z!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
+
+        let result = validate_password(valid_password);
+        
+        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+    }
+
+    #[test]
+    fn validate_password_returns_ok_if_given_valid_password_5() {
+        // upper case and digit
+        let valid_password = "Z0123456789";
+
+        let result = validate_password(valid_password);
+        
+        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+    }
+
+    #[test]
+    fn validate_password_returns_ok_if_given_valid_password_6() {
+        // symbol and digit
+        let valid_password = "<>123456789";
+
+        let result = validate_password(valid_password);
+        
+        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+    }
+
+    #[test]
+    fn validate_password_returns_ok_if_given_valid_password_7() {
+        // lower case, upper case, symbol and digit
+        let valid_password = "bC<>123456789";
+
+        let result = validate_password(valid_password);
+        
+        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+    }
+
+    #[test]
+    fn validate_password_returns_invalid_length_if_given_9_letters_password() {
+        let invalid_password = "a12345678";
+
+        let result = validate_password(invalid_password);
+        
+        let err = result.expect_err("failed to get Err");
+        match err {
+            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => { /* pass test */ },
+            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
+            PasswordValidationError::ConstraintViolation => panic!("PasswordValidationError::ConstraintViolation"),
+        }
+    }
+
+    #[test]
+    fn validate_password_returns_invalid_length_if_given_33_letters_password() {
+        let invalid_password = "01234567890123456789012345678901A";
+
+        let result = validate_password(invalid_password);
+        
+        let err = result.expect_err("failed to get Err");
+        match err {
+            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => { /* pass test */ },
+            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
+            PasswordValidationError::ConstraintViolation => panic!("PasswordValidationError::ConstraintViolation"),
+        }
+    }
+
+    #[test]
+    fn validate_password_returns_invalid_length_if_given_password_with_invalid_() {
+        let invalid_password = "a1_ｂ１２不正な文字";
+
+        let result = validate_password(invalid_password);
+        
+        let err = result.expect_err("failed to get Err");
+        match err {
+            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => panic!("PasswordValidationError::InvalidLength"),
+            PasswordValidationError::InvalidCharacter => { /* pass test */ },
+            PasswordValidationError::ConstraintViolation => panic!("PasswordValidationError::ConstraintViolation"),
         }
     }
 }
