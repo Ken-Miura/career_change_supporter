@@ -118,7 +118,6 @@ GRANT SELECT, DELETE ON ccs_schema.advisor_account_creation_request To admin_app
 
 CREATE TABLE ccs_schema.admin_account (
   admin_account_id SERIAL PRIMARY KEY,
-  /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
   email_address ccs_schema.email_address UNIQUE,
   hashed_password BYTEA NOT NULL,
   last_login_time TIMESTAMP WITH TIME ZONE
