@@ -1,5 +1,5 @@
 Add following environment variable before executing diesel cli
-DATABASE_URL=postgres://postgres:example@localhost/career_change_supporter_db
+(CCS = Career Change Supporter)
+DATABASE_URL=postgres://postgres:example@localhost/ccs_db
 or Add following option
---database-url=postgres://postgres:example@localhost/career_change_supporter_db
-
+--database-url=postgres://postgres:example@localhost/ccs_db
