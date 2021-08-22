@@ -1,14 +1,14 @@
 /* TODO: パスワード変更＋管理方法の検討 */
 CREATE ROLE user_app WITH LOGIN PASSWORD 'test1234';
 CREATE ROLE advisor_app WITH LOGIN PASSWORD 'test5678';
-CREATE ROLE administrator_app WITH LOGIN PASSWORD 'test13579';
-CREATE ROLE administrator_tool_app WITH LOGIN PASSWORD 'test24680';
+CREATE ROLE admin_app WITH LOGIN PASSWORD 'test13579';
+CREATE ROLE admin_account_app WITH LOGIN PASSWORD 'test24680';
 
 CREATE SCHEMA career_change_supporter_schema;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO user_app;
 GRANT USAGE ON SCHEMA career_change_supporter_schema TO advisor_app;
-GRANT USAGE ON SCHEMA career_change_supporter_schema TO administrator_app;
-GRANT USAGE ON SCHEMA career_change_supporter_schema TO administrator_tool_app;
+GRANT USAGE ON SCHEMA career_change_supporter_schema TO admin_app;
+GRANT USAGE ON SCHEMA career_change_supporter_schema TO admin_account_app;
 
 /* TODO: dieselでenumがサポートされた後に採用する
    CREATE TYPE career_change_supporter_schema.sex_enum AS ENUM ('male', 'female');
@@ -78,8 +78,8 @@ GRANT SELECT, UPDATE, DELETE ON career_change_supporter_schema.advisor_account T
 /* TODO: 単なる読み取りだけの場合はSEQUENCEの権限を与える必要はないはずだが、確認する */
 /*GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_account_advisor_account_id_seq TO advisor_app;*/
 
-GRANT SELECT, INSERT, UPDATE ON career_change_supporter_schema.advisor_account To administrator_app;
-GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_account_advisor_account_id_seq TO administrator_app;
+GRANT SELECT, INSERT, UPDATE ON career_change_supporter_schema.advisor_account To admin_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_account_advisor_account_id_seq TO admin_app;
 
 GRANT SELECT (advisor_account_id, sex, advice_fee_in_yen) ON career_change_supporter_schema.advisor_account To user_app;
 
@@ -113,7 +113,7 @@ CREATE TABLE career_change_supporter_schema.advisor_account_creation_request (
 GRANT INSERT ON career_change_supporter_schema.advisor_account_creation_request To advisor_app;
 GRANT SELECT (email_address) ON career_change_supporter_schema.advisor_account_creation_request To advisor_app;
 GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_account_creation_request_advisor_acc_request_id_seq TO advisor_app;
-GRANT SELECT, DELETE ON career_change_supporter_schema.advisor_account_creation_request To administrator_app;
+GRANT SELECT, DELETE ON career_change_supporter_schema.advisor_account_creation_request To admin_app;
 
 CREATE TABLE career_change_supporter_schema.administrator_account (
   administrator_account_id SERIAL PRIMARY KEY,
@@ -122,12 +122,12 @@ CREATE TABLE career_change_supporter_schema.administrator_account (
   hashed_password BYTEA NOT NULL,
   last_login_time TIMESTAMP WITH TIME ZONE
 );
-GRANT SELECT ON career_change_supporter_schema.administrator_account To administrator_app;
-GRANT UPDATE (last_login_time) ON career_change_supporter_schema.administrator_account To administrator_app;
-GRANT USAGE ON SEQUENCE career_change_supporter_schema.administrator_account_administrator_account_id_seq TO administrator_app;
+GRANT SELECT ON career_change_supporter_schema.administrator_account To admin_app;
+GRANT UPDATE (last_login_time) ON career_change_supporter_schema.administrator_account To admin_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.administrator_account_administrator_account_id_seq TO admin_app;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON career_change_supporter_schema.administrator_account To administrator_tool_app;
-GRANT USAGE ON SEQUENCE career_change_supporter_schema.administrator_account_administrator_account_id_seq TO administrator_tool_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON career_change_supporter_schema.administrator_account To admin_account_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.administrator_account_administrator_account_id_seq TO admin_account_app;
 
 CREATE TABLE career_change_supporter_schema.advisor_reg_req_approved (
   advisor_reg_req_approved_id SERIAL PRIMARY KEY,
@@ -160,8 +160,8 @@ CREATE TABLE career_change_supporter_schema.advisor_reg_req_approved (
   associated_advisor_account_id INTEGER REFERENCES career_change_supporter_schema.advisor_account(advisor_account_id) ON DELETE SET NULL ON UPDATE CASCADE,
   approved_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
-GRANT SELECT, INSERT ON career_change_supporter_schema.advisor_reg_req_approved To administrator_app;
-GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_reg_req_approved_advisor_reg_req_approved_id_seq TO administrator_app;
+GRANT SELECT, INSERT ON career_change_supporter_schema.advisor_reg_req_approved To admin_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_reg_req_approved_advisor_reg_req_approved_id_seq TO admin_app;
 GRANT SELECT (advisor_reg_req_approved_id, associated_advisor_account_id, approved_time) ON career_change_supporter_schema.advisor_reg_req_approved To advisor_app;
 
 CREATE TABLE career_change_supporter_schema.advisor_reg_req_rejected (
@@ -189,8 +189,8 @@ CREATE TABLE career_change_supporter_schema.advisor_reg_req_rejected (
   reject_reason VARCHAR (1000) NOT NULL,
   rejected_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
-GRANT SELECT, INSERT ON career_change_supporter_schema.advisor_reg_req_rejected To administrator_app;
-GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_reg_req_rejected_advisor_reg_req_rejected_id_seq TO administrator_app;
+GRANT SELECT, INSERT ON career_change_supporter_schema.advisor_reg_req_rejected To admin_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_reg_req_rejected_advisor_reg_req_rejected_id_seq TO admin_app;
 
 CREATE TABLE career_change_supporter_schema.advisor_career (
   advisor_career_id career_change_supporter_schema.uuid_simple_form PRIMARY KEY,
@@ -212,7 +212,7 @@ CREATE TABLE career_change_supporter_schema.advisor_career (
 /* TODO: advisor自身で更新可能なカラムは個別にUPDATE権限を入れる */
 GRANT SELECT ON career_change_supporter_schema.advisor_career To advisor_app;
 
-GRANT SELECT, INSERT, UPDATE ON career_change_supporter_schema.advisor_career To administrator_app;
+GRANT SELECT, INSERT, UPDATE ON career_change_supporter_schema.advisor_career To admin_app;
 
 GRANT SELECT ON career_change_supporter_schema.advisor_career To user_app;
 
@@ -241,7 +241,7 @@ CREATE TABLE career_change_supporter_schema.advisor_career_create_req (
 GRANT INSERT ON career_change_supporter_schema.advisor_career_create_req To advisor_app;
 GRANT USAGE ON SEQUENCE career_change_supporter_schema.advisor_career_create_req_advisor_career_create_req_id_seq TO advisor_app;
 
-GRANT SELECT, DELETE ON career_change_supporter_schema.advisor_career_create_req To administrator_app;
+GRANT SELECT, DELETE ON career_change_supporter_schema.advisor_career_create_req To admin_app;
 
 CREATE TABLE career_change_supporter_schema.adv_career_approved (
   adv_career_approved_id SERIAL PRIMARY KEY,
@@ -265,8 +265,8 @@ CREATE TABLE career_change_supporter_schema.adv_career_approved (
   image2 VARCHAR (64),
   approved_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
-GRANT SELECT, INSERT ON career_change_supporter_schema.adv_career_approved To administrator_app;
-GRANT USAGE ON SEQUENCE career_change_supporter_schema.adv_career_approved_adv_career_approved_id_seq TO administrator_app;
+GRANT SELECT, INSERT ON career_change_supporter_schema.adv_career_approved To admin_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.adv_career_approved_adv_career_approved_id_seq TO admin_app;
 
 CREATE TABLE career_change_supporter_schema.adv_career_rejected (
   adv_career_rejected_id SERIAL PRIMARY KEY,
@@ -292,5 +292,5 @@ CREATE TABLE career_change_supporter_schema.adv_career_rejected (
   reject_reason VARCHAR (1000) NOT NULL,
   rejected_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
-GRANT SELECT, INSERT ON career_change_supporter_schema.adv_career_rejected To administrator_app;
-GRANT USAGE ON SEQUENCE career_change_supporter_schema.adv_career_rejected_adv_career_rejected_id_seq TO administrator_app;
+GRANT SELECT, INSERT ON career_change_supporter_schema.adv_career_rejected To admin_app;
+GRANT USAGE ON SEQUENCE career_change_supporter_schema.adv_career_rejected_adv_career_rejected_id_seq TO admin_app;
