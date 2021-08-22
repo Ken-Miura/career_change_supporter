@@ -125,7 +125,6 @@ CREATE TABLE ccs_schema.admin_account (
 );
 GRANT SELECT ON ccs_schema.admin_account To admin_app;
 GRANT UPDATE (last_login_time) ON ccs_schema.admin_account To admin_app;
-GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_app;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.admin_account To admin_account_app;
 GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_account_app;
