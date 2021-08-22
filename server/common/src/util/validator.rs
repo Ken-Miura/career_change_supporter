@@ -341,8 +341,13 @@ mod tests {
         let valid_password = "aaaaaaaaaaA";
 
         let result = validate_password(valid_password);
-        
-        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+
+        assert!(
+            result.is_ok(),
+            "valid_password: {}, length: {}",
+            valid_password,
+            valid_password.len()
+        );
     }
 
     #[test]
@@ -351,8 +356,13 @@ mod tests {
         let valid_password = "a1234567890123456789012345678901";
 
         let result = validate_password(valid_password);
-        
-        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+
+        assert!(
+            result.is_ok(),
+            "valid_password: {}, length: {}",
+            valid_password,
+            valid_password.len()
+        );
     }
 
     #[test]
@@ -361,8 +371,13 @@ mod tests {
         let valid_password = "a!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
 
         let result = validate_password(valid_password);
-        
-        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+
+        assert!(
+            result.is_ok(),
+            "valid_password: {}, length: {}",
+            valid_password,
+            valid_password.len()
+        );
     }
 
     #[test]
@@ -371,8 +386,13 @@ mod tests {
         let valid_password = "Z!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
 
         let result = validate_password(valid_password);
-        
-        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+
+        assert!(
+            result.is_ok(),
+            "valid_password: {}, length: {}",
+            valid_password,
+            valid_password.len()
+        );
     }
 
     #[test]
@@ -381,8 +401,13 @@ mod tests {
         let valid_password = "Z0123456789";
 
         let result = validate_password(valid_password);
-        
-        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+
+        assert!(
+            result.is_ok(),
+            "valid_password: {}, length: {}",
+            valid_password,
+            valid_password.len()
+        );
     }
 
     #[test]
@@ -391,8 +416,13 @@ mod tests {
         let valid_password = "<>123456789";
 
         let result = validate_password(valid_password);
-        
-        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+
+        assert!(
+            result.is_ok(),
+            "valid_password: {}, length: {}",
+            valid_password,
+            valid_password.len()
+        );
     }
 
     #[test]
@@ -401,8 +431,13 @@ mod tests {
         let valid_password = "bC<>123456789";
 
         let result = validate_password(valid_password);
-        
-        assert!(result.is_ok(), "valid_password: {}, length: {}", valid_password, valid_password.len());
+
+        assert!(
+            result.is_ok(),
+            "valid_password: {}, length: {}",
+            valid_password,
+            valid_password.len()
+        );
     }
 
     #[test]
@@ -410,12 +445,19 @@ mod tests {
         let invalid_password = "a12345678";
 
         let result = validate_password(invalid_password);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => { /* pass test */ },
-            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
-            PasswordValidationError::ConstraintViolation => panic!("PasswordValidationError::ConstraintViolation"),
+            PasswordValidationError::InvalidLength {
+                min_length: _,
+                max_length: _,
+            } => { /* pass test */ }
+            PasswordValidationError::InvalidCharacter => {
+                panic!("PasswordValidationError::InvalidCharacter")
+            }
+            PasswordValidationError::ConstraintViolation => {
+                panic!("PasswordValidationError::ConstraintViolation")
+            }
         }
     }
 
@@ -424,12 +466,19 @@ mod tests {
         let invalid_password = "01234567890123456789012345678901A";
 
         let result = validate_password(invalid_password);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => { /* pass test */ },
-            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
-            PasswordValidationError::ConstraintViolation => panic!("PasswordValidationError::ConstraintViolation"),
+            PasswordValidationError::InvalidLength {
+                min_length: _,
+                max_length: _,
+            } => { /* pass test */ }
+            PasswordValidationError::InvalidCharacter => {
+                panic!("PasswordValidationError::InvalidCharacter")
+            }
+            PasswordValidationError::ConstraintViolation => {
+                panic!("PasswordValidationError::ConstraintViolation")
+            }
         }
     }
 
@@ -439,12 +488,17 @@ mod tests {
         let invalid_password = "a1_ｂ１２不正な文字";
 
         let result = validate_password(invalid_password);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => { /* pass test */ },
-            PasswordValidationError::ConstraintViolation => panic!("PasswordValidationError::ConstraintViolation"),
+            PasswordValidationError::InvalidLength {
+                min_length: _,
+                max_length: _,
+            } => panic!("PasswordValidationError::InvalidLength"),
+            PasswordValidationError::InvalidCharacter => { /* pass test */ }
+            PasswordValidationError::ConstraintViolation => {
+                panic!("PasswordValidationError::ConstraintViolation")
+            }
         }
     }
 
@@ -453,12 +507,17 @@ mod tests {
         let invalid_password = "eeeeeeeeee";
 
         let result = validate_password(invalid_password);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
-            PasswordValidationError::ConstraintViolation => { /* pass test */ },
+            PasswordValidationError::InvalidLength {
+                min_length: _,
+                max_length: _,
+            } => panic!("PasswordValidationError::InvalidLength"),
+            PasswordValidationError::InvalidCharacter => {
+                panic!("PasswordValidationError::InvalidCharacter")
+            }
+            PasswordValidationError::ConstraintViolation => { /* pass test */ }
         }
     }
 
@@ -467,12 +526,17 @@ mod tests {
         let invalid_password = "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
 
         let result = validate_password(invalid_password);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
-            PasswordValidationError::ConstraintViolation => { /* pass test */ },
+            PasswordValidationError::InvalidLength {
+                min_length: _,
+                max_length: _,
+            } => panic!("PasswordValidationError::InvalidLength"),
+            PasswordValidationError::InvalidCharacter => {
+                panic!("PasswordValidationError::InvalidCharacter")
+            }
+            PasswordValidationError::ConstraintViolation => { /* pass test */ }
         }
     }
 
@@ -481,12 +545,17 @@ mod tests {
         let invalid_password = "!#$%&'()<>";
 
         let result = validate_password(invalid_password);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
-            PasswordValidationError::ConstraintViolation => { /* pass test */ },
+            PasswordValidationError::InvalidLength {
+                min_length: _,
+                max_length: _,
+            } => panic!("PasswordValidationError::InvalidLength"),
+            PasswordValidationError::InvalidCharacter => {
+                panic!("PasswordValidationError::InvalidCharacter")
+            }
+            PasswordValidationError::ConstraintViolation => { /* pass test */ }
         }
     }
 
@@ -495,12 +564,17 @@ mod tests {
         let invalid_password = "01234567890123456789012345678901";
 
         let result = validate_password(invalid_password);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            PasswordValidationError::InvalidLength { min_length: _, max_length: _ } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => panic!("PasswordValidationError::InvalidCharacter"),
-            PasswordValidationError::ConstraintViolation => { /* pass test */ },
+            PasswordValidationError::InvalidLength {
+                min_length: _,
+                max_length: _,
+            } => panic!("PasswordValidationError::InvalidLength"),
+            PasswordValidationError::InvalidCharacter => {
+                panic!("PasswordValidationError::InvalidCharacter")
+            }
+            PasswordValidationError::ConstraintViolation => { /* pass test */ }
         }
     }
 
@@ -510,8 +584,13 @@ mod tests {
         let valid_uuid = "0123456789abcdefghijKLMNOPQRSTUV";
 
         let result = validate_uuid(valid_uuid);
-        
-        assert!(result.is_ok(), "valid_uuid: {}, length: {}", valid_uuid, valid_uuid.len())
+
+        assert!(
+            result.is_ok(),
+            "valid_uuid: {}, length: {}",
+            valid_uuid,
+            valid_uuid.len()
+        )
     }
 
     #[test]
@@ -519,10 +598,14 @@ mod tests {
         let uuid = "0123456789abcdefghijKLMNOPQRSTUVW";
 
         let result = validate_uuid(uuid);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(invalid_uuid, uuid, "expect: {}, got: {}", invalid_uuid, uuid),
+            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
+                invalid_uuid, uuid,
+                "expect: {}, got: {}",
+                invalid_uuid, uuid
+            ),
         }
     }
 
@@ -531,10 +614,14 @@ mod tests {
         let uuid = "0123456789abcdefghijKLMNOPQRSTU";
 
         let result = validate_uuid(uuid);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(invalid_uuid, uuid, "expect: {}, got: {}", invalid_uuid, uuid),
+            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
+                invalid_uuid, uuid,
+                "expect: {}, got: {}",
+                invalid_uuid, uuid
+            ),
         }
     }
 
@@ -543,10 +630,14 @@ mod tests {
         let uuid = "01234567-89abcdef-ghijKLMN-OPQRSTUV";
 
         let result = validate_uuid(uuid);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(invalid_uuid, uuid, "expect: {}, got: {}", invalid_uuid, uuid),
+            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
+                invalid_uuid, uuid,
+                "expect: {}, got: {}",
+                invalid_uuid, uuid
+            ),
         }
     }
 
@@ -555,10 +646,14 @@ mod tests {
         let uuid = "0123456789!#$%&'()=~0123456789<>";
 
         let result = validate_uuid(uuid);
-        
+
         let err = result.expect_err("failed to get Err");
         match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(invalid_uuid, uuid, "expect: {}, got: {}", invalid_uuid, uuid),
+            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
+                invalid_uuid, uuid,
+                "expect: {}, got: {}",
+                invalid_uuid, uuid
+            ),
         }
     }
 }
