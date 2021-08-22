@@ -1,11 +1,15 @@
 // Copyright 2021 Ken Miura
 
+use common::model::admin::NewAccount;
+use common::schema::ccs_schema::admin_account;
 use common::util::validator::{
     validate_email_address, validate_password, EmailAddressValidationError, PasswordValidationError,
 };
+use common::util::{hash_password, PasswordHandlingError};
 use diesel::connection::Connection;
-use diesel::pg::PgConnection;
-use diesel::ConnectionError;
+use diesel::pg::{Pg, PgConnection};
+use diesel::query_builder::functions::insert_into;
+use diesel::{ConnectionError, RunQueryDsl};
 use std::fmt::Display;
 use std::{env::args, env::var, error::Error, process::exit};
 
@@ -91,7 +95,9 @@ fn main() {
     }
 }
 
-fn establish_connection(database_url: String) -> Result<impl Connection, ApplicationError> {
+fn establish_connection(
+    database_url: String,
+) -> Result<impl Connection<Backend = Pg>, ApplicationError> {
     let result = PgConnection::establish(&database_url);
     match result {
         Ok(conn) => Ok(conn),
@@ -102,10 +108,19 @@ fn establish_connection(database_url: String) -> Result<impl Connection, Applica
 fn create_admin_account(
     email_address: &str,
     password: &str,
-    connection: impl Connection,
+    connection: impl Connection<Backend = Pg>,
 ) -> Result<(), ApplicationError> {
     let _ = validate_email_address(email_address)?;
     let _ = validate_password(password)?;
+    let hashed_pwd = hash_password(password)?;
+    let account = NewAccount {
+        email_address,
+        hashed_password: &hashed_pwd,
+        last_login_time: None,
+    };
+    let _ = insert_into(admin_account::table)
+        .values(account)
+        .execute(&connection)?;
     Ok(())
 }
 
@@ -114,6 +129,8 @@ enum ApplicationError {
     ConnectionErr(ConnectionError),
     EmailAddrErr(EmailAddressValidationError),
     PasswordErr(PasswordValidationError),
+    PasswordHandlingErr(PasswordHandlingError),
+    DatabaseError(diesel::result::Error),
 }
 
 impl Display for ApplicationError {
@@ -124,6 +141,8 @@ impl Display for ApplicationError {
             }
             ApplicationError::EmailAddrErr(e) => write!(f, "email address error: {}", e),
             ApplicationError::PasswordErr(e) => write!(f, "password error: {}", e),
+            ApplicationError::PasswordHandlingErr(e) => write!(f, "password handling error: {}", e),
+            ApplicationError::DatabaseError(e) => write!(f, "database error: {}", e),
         }
     }
 }
@@ -139,5 +158,17 @@ impl From<EmailAddressValidationError> for ApplicationError {
 impl From<PasswordValidationError> for ApplicationError {
     fn from(e: PasswordValidationError) -> Self {
         ApplicationError::PasswordErr(e)
+    }
+}
+
+impl From<PasswordHandlingError> for ApplicationError {
+    fn from(e: PasswordHandlingError) -> Self {
+        ApplicationError::PasswordHandlingErr(e)
+    }
+}
+
+impl From<diesel::result::Error> for ApplicationError {
+    fn from(e: diesel::result::Error) -> Self {
+        ApplicationError::DatabaseError(e)
     }
 }
