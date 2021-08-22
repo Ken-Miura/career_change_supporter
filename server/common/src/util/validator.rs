@@ -12,8 +12,8 @@ const PASSWORD_MIN_LENGTH: usize = 10;
 const PASSWORD_MAX_LENGTH: usize = 32;
 // ASCIIコード表の!(0x21)から~(0x7e)までに存在する文字、かつ10以上32以下
 const PASSWORD_REGEXP: &str = r"^[!-~]{10,32}$";
-const UPPER_CASE_REGEXP: &str = r".*[A-Z].*";
-const LOWER_CASE_REGEXP: &str = r".*[a-z].*";
+const UPPERCASE_REGEXP: &str = r".*[A-Z].*";
+const LOWERCASE_REGEXP: &str = r".*[a-z].*";
 const NUMBER_REGEXP: &str = r".*[0-9].*";
 const SYMBOL_REGEXP: &str = r".*[!-/:-@\[-`{-~].*";
 const CONSTRAINTS_OF_NUM_OF_COMBINATION: u32 = 2;
@@ -25,10 +25,10 @@ static PWD_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(PASSWORD_REGEXP)
         .expect("failed to compile password (characters allowed in password) regexp")
 });
-static UPPER_CASE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(UPPER_CASE_REGEXP).expect("failed to compile upper case regexp"));
-static LOWER_CASE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(LOWER_CASE_REGEXP).expect("failed to compile lower case regexp"));
+static UPPERCASE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(UPPERCASE_REGEXP).expect("failed to compile uppercase regexp"));
+static LOWERCASE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(LOWERCASE_REGEXP).expect("failed to compile lowercase regexp"));
 static NUMBER_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(NUMBER_REGEXP).expect("failed to compile number regexp"));
 static SYMBOL_RE: Lazy<Regex> =
@@ -110,10 +110,10 @@ pub fn validate_password(password: &str) -> Result<(), PasswordValidationError> 
 
 fn validate_password_constraints(pwd: &str) -> Result<(), PasswordValidationError> {
     let mut count = 0;
-    if UPPER_CASE_RE.is_match(pwd) {
+    if UPPERCASE_RE.is_match(pwd) {
         count += 1;
     }
-    if LOWER_CASE_RE.is_match(pwd) {
+    if LOWERCASE_RE.is_match(pwd) {
         count += 1;
     }
     if NUMBER_RE.is_match(pwd) {
@@ -151,7 +151,7 @@ impl Display for PasswordValidationError {
                 min_length, max_length
             ),
             PasswordValidationError::InvalidCharacter => write!(f, "invalid character included"),
-            PasswordValidationError::ConstraintViolation => write!(f, "constraint violation"),
+            PasswordValidationError::ConstraintViolation => write!(f, "constraint violation (password must contain at least two types of lowercase, uppercase, digit, and symbol)"),
         }
     }
 }
@@ -337,7 +337,7 @@ mod tests {
 
     #[test]
     fn validate_password_returns_ok_if_given_valid_password_1() {
-        // 10 letters with lower case and upper case
+        // 10 letters with lowercase and uppercase
         let valid_password = "aaaaaaaaaaA";
 
         let result = validate_password(valid_password);
@@ -352,7 +352,7 @@ mod tests {
 
     #[test]
     fn validate_password_returns_ok_if_given_valid_password_2() {
-        // 32 letters with lower case and digit
+        // 32 letters with lowercase and digit
         let valid_password = "a1234567890123456789012345678901";
 
         let result = validate_password(valid_password);
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn validate_password_returns_ok_if_given_valid_password_3() {
-        // lower case and symbol
+        // lowercase and symbol
         let valid_password = "a!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
 
         let result = validate_password(valid_password);
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn validate_password_returns_ok_if_given_valid_password_4() {
-        // upper case and symbol
+        // uppercase and symbol
         let valid_password = "Z!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
 
         let result = validate_password(valid_password);
@@ -397,7 +397,7 @@ mod tests {
 
     #[test]
     fn validate_password_returns_ok_if_given_valid_password_5() {
-        // upper case and digit
+        // uppercase and digit
         let valid_password = "Z0123456789";
 
         let result = validate_password(valid_password);
@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn validate_password_returns_ok_if_given_valid_password_7() {
-        // lower case, upper case, symbol and digit
+        // lowercase, uppercase, symbol and digit
         let valid_password = "bC<>123456789";
 
         let result = validate_password(valid_password);
@@ -503,7 +503,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_password_returns_invalid_length_if_given_password_only_lower_case() {
+    fn validate_password_returns_invalid_length_if_given_password_only_lowercase() {
         let invalid_password = "eeeeeeeeee";
 
         let result = validate_password(invalid_password);
@@ -522,7 +522,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_password_returns_invalid_length_if_given_password_only_upper_case() {
+    fn validate_password_returns_invalid_length_if_given_password_only_uppercase() {
         let invalid_password = "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
 
         let result = validate_password(invalid_password);
