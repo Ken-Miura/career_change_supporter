@@ -73,6 +73,7 @@ fn main() {
             println!("ex: {} list", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
+        todo!()
     } else if cmd == "update" {
         if args.len() != 4 {
             println!(
@@ -82,12 +83,14 @@ fn main() {
             println!("ex: {} update admin@test.com 1234abcdABCD", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
+        todo!()
     } else if cmd == "delete" {
         if args.len() != 3 {
             println!("usage: {} delete \"admin_email_address\"", args[0]);
             println!("ex: {} delete admin@test.com", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
+        todo!()
     } else {
         println!("invalid subcommand: {}", cmd);
         println!("valid subcommand [ create | list | update | delete ]");
