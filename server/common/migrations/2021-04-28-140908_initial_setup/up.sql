@@ -116,19 +116,19 @@ GRANT SELECT (email_address) ON ccs_schema.advisor_account_creation_request To a
 GRANT USAGE ON SEQUENCE ccs_schema.advisor_account_creation_request_advisor_acc_request_id_seq TO advisor_app;
 GRANT SELECT, DELETE ON ccs_schema.advisor_account_creation_request To admin_app;
 
-CREATE TABLE ccs_schema.administrator_account (
-  administrator_account_id SERIAL PRIMARY KEY,
+CREATE TABLE ccs_schema.admin_account (
+  admin_account_id SERIAL PRIMARY KEY,
   /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
   email_address ccs_schema.email_address UNIQUE,
   hashed_password BYTEA NOT NULL,
   last_login_time TIMESTAMP WITH TIME ZONE
 );
-GRANT SELECT ON ccs_schema.administrator_account To admin_app;
-GRANT UPDATE (last_login_time) ON ccs_schema.administrator_account To admin_app;
-GRANT USAGE ON SEQUENCE ccs_schema.administrator_account_administrator_account_id_seq TO admin_app;
+GRANT SELECT ON ccs_schema.admin_account To admin_app;
+GRANT UPDATE (last_login_time) ON ccs_schema.admin_account To admin_app;
+GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_app;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.administrator_account To admin_account_app;
-GRANT USAGE ON SEQUENCE ccs_schema.administrator_account_administrator_account_id_seq TO admin_account_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.admin_account To admin_account_app;
+GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_account_app;
 
 CREATE TABLE ccs_schema.advisor_reg_req_approved (
   advisor_reg_req_approved_id SERIAL PRIMARY KEY,
