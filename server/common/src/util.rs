@@ -45,3 +45,33 @@ impl Display for PasswordHandlingError {
 
 impl Error for PasswordHandlingError {
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use validator::validate_password;
+
+    #[test]
+    fn handle_password_match_case () {
+        let password = "0123456789abcdefghijKLMNOPQR@<>.";
+        let _ = validate_password(password).expect("failed to get Ok");
+
+        let hashed_pwd = hash_password(password).expect("failed to get Ok");
+        let result = is_password_match(password, &hashed_pwd).expect("failed to get Ok");
+
+        assert!(result, "password: {}, hashed password: {}", password, hashed_pwd);
+    }
+
+    #[test]
+    fn handle_password_non_match_case () {
+        let password1 = "0123456789abcdefghijKLMNOPQR@<>.";
+        let password2 = "abcdefghi0123456789";
+        let _ = validate_password(password1).expect("failed to get Ok");
+        let _ = validate_password(password2).expect("failed to get Ok");
+
+        let hashed_pwd = hash_password(password1).expect("failed to get Ok");
+        let result = is_password_match(password2, &hashed_pwd).expect("failed to get Ok");
+
+        assert!(!result, "password1: {}, hashed password: {}, password2: {}", password1, hashed_pwd, password2);
+    }
+}
