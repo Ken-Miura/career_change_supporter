@@ -1,7 +1,7 @@
-pub mod career_change_supporter_schema {
+pub mod ccs_schema {
     table! {
-        career_change_supporter_schema.administrator_account (administrator_account_id) {
-            administrator_account_id -> Int4,
+        ccs_schema.admin_account (admin_account_id) {
+            admin_account_id -> Int4,
             email_address -> Varchar,
             hashed_password -> Bytea,
             last_login_time -> Nullable<Timestamptz>,
@@ -9,7 +9,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.adv_career_approved (adv_career_approved_id) {
+        ccs_schema.adv_career_approved (adv_career_approved_id) {
             adv_career_approved_id -> Int4,
             approve_adv_acc_id -> Nullable<Int4>,
             company_name -> Varchar,
@@ -31,7 +31,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.adv_career_rejected (adv_career_rejected_id) {
+        ccs_schema.adv_career_rejected (adv_career_rejected_id) {
             adv_career_rejected_id -> Int4,
             reject_adv_acc_id -> Nullable<Int4>,
             company_name -> Varchar,
@@ -54,7 +54,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.advisor_account (advisor_account_id) {
+        ccs_schema.advisor_account (advisor_account_id) {
             advisor_account_id -> Int4,
             email_address -> Varchar,
             hashed_password -> Bytea,
@@ -76,7 +76,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.advisor_account_creation_request (advisor_acc_request_id) {
+        ccs_schema.advisor_account_creation_request (advisor_acc_request_id) {
             advisor_acc_request_id -> Int4,
             email_address -> Varchar,
             hashed_password -> Bytea,
@@ -98,7 +98,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.advisor_career (advisor_career_id) {
+        ccs_schema.advisor_career (advisor_career_id) {
             advisor_career_id -> Bpchar,
             career_associated_adv_acc_id -> Nullable<Int4>,
             company_name -> Varchar,
@@ -117,7 +117,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.advisor_career_create_req (advisor_career_create_req_id) {
+        ccs_schema.advisor_career_create_req (advisor_career_create_req_id) {
             advisor_career_create_req_id -> Int4,
             cre_req_adv_acc_id -> Int4,
             company_name -> Varchar,
@@ -139,7 +139,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.advisor_reg_req_approved (advisor_reg_req_approved_id) {
+        ccs_schema.advisor_reg_req_approved (advisor_reg_req_approved_id) {
             advisor_reg_req_approved_id -> Int4,
             email_address -> Varchar,
             last_name -> Varchar,
@@ -161,7 +161,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.advisor_reg_req_rejected (advisor_reg_req_rejected_id) {
+        ccs_schema.advisor_reg_req_rejected (advisor_reg_req_rejected_id) {
             advisor_reg_req_rejected_id -> Int4,
             email_address -> Varchar,
             last_name -> Varchar,
@@ -181,7 +181,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.advisor_registration_request (advisor_registration_request_id) {
+        ccs_schema.advisor_registration_request (advisor_registration_request_id) {
             advisor_registration_request_id -> Bpchar,
             email_address -> Varchar,
             created_at -> Timestamptz,
@@ -189,7 +189,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.user_account (user_account_id) {
+        ccs_schema.user_account (user_account_id) {
             user_account_id -> Int4,
             email_address -> Varchar,
             hashed_password -> Bytea,
@@ -198,7 +198,7 @@ pub mod career_change_supporter_schema {
     }
 
     table! {
-        career_change_supporter_schema.user_temporary_account (user_temporary_account_id) {
+        ccs_schema.user_temporary_account (user_temporary_account_id) {
             user_temporary_account_id -> Bpchar,
             email_address -> Varchar,
             hashed_password -> Bytea,
@@ -213,7 +213,7 @@ pub mod career_change_supporter_schema {
     joinable!(advisor_reg_req_approved -> advisor_account (associated_advisor_account_id));
 
     allow_tables_to_appear_in_same_query!(
-        administrator_account,
+        admin_account,
         adv_career_approved,
         adv_career_rejected,
         advisor_account,

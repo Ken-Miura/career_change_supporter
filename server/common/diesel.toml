@@ -3,4 +3,4 @@
 
 [print_schema]
 file = "src/schema.rs"
-schema = "career_change_supporter_schema"
+schema = "ccs_schema"
