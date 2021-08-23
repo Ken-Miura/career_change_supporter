@@ -11,6 +11,7 @@ use common::util::validator::{
 use common::util::{hash_password, PasswordHandlingError};
 use diesel::connection::Connection;
 use diesel::pg::{Pg, PgConnection};
+use diesel::query_builder::functions::delete;
 use diesel::query_builder::functions::insert_into;
 use diesel::query_builder::functions::update;
 use diesel::ExpressionMethods;
@@ -104,7 +105,14 @@ fn main() {
             println!("ex: {} delete admin@test.com", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
-        todo!()
+        let result = delete_admin_account(&args[2], conn);
+        match result {
+            Ok(_) => exit(SUCCESS),
+            Err(e) => {
+                println!("application error: {}", e);
+                exit(APPLICATION_ERR);
+            }
+        }
     } else {
         println!("invalid subcommand: {}", cmd);
         println!("valid subcommand [ create | list | update | delete ]");
@@ -148,6 +156,15 @@ fn update_admin_account(
     let _ = update(admin_account.filter(email_address.eq(email_addr)))
         .set(hashed_password.eq(hashed_pwd))
         .execute(&connection)?;
+    Ok(())
+}
+
+fn delete_admin_account(
+    email_addr: &str,
+    connection: impl Connection<Backend = Pg>,
+) -> Result<(), ApplicationError> {
+    let _ = validate_email_address(email_addr)?;
+    let _ = delete(admin_account.filter(email_address.eq(email_addr))).execute(&connection)?;
     Ok(())
 }
 
