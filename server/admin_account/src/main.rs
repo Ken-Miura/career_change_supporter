@@ -83,7 +83,12 @@ fn main() {
         }
         let result = list_admin_accounts(conn);
         match result {
-            Ok(_) => exit(SUCCESS),
+            Ok(email_addrs) => {
+                email_addrs.iter().for_each(|email_addr| {
+                    println!("{}", email_addr);
+                });
+                exit(SUCCESS);
+            }
             Err(e) => {
                 println!("application error: {}", e);
                 exit(APPLICATION_ERR);
