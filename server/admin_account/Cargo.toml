@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 common = { path = "../common" }
-diesel = { version = "1.4.7", features = ["postgres", "r2d2", "chrono"] }
+diesel = { version = "1.4.7", features = ["postgres", "chrono"] }
