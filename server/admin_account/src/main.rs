@@ -81,7 +81,14 @@ fn main() {
             println!("ex: {} list", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
-        todo!()
+        let result = list_admin_accounts(conn);
+        match result {
+            Ok(_) => exit(SUCCESS),
+            Err(e) => {
+                println!("application error: {}", e);
+                exit(APPLICATION_ERR);
+            }
+        }
     } else if cmd == "update" {
         if args.len() != 4 {
             println!(
@@ -143,6 +150,15 @@ fn create_admin_account(
         .values(account)
         .execute(&connection)?;
     Ok(())
+}
+
+fn list_admin_accounts(
+    connection: impl Connection<Backend = Pg>,
+) -> Result<Vec<String>, ApplicationError> {
+    let email_addrs = admin_account
+        .select(email_address)
+        .load::<String>(&connection)?;
+    Ok(email_addrs)
 }
 
 fn update_admin_account(
