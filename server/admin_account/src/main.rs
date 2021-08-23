@@ -17,27 +17,28 @@ const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_ACCOUNT_APP";
 
 const SUCCESS: i32 = 0;
 const NO_ENV_VAR_FOUND: i32 = 1;
-const INVALID_ARG_LENGTH: i32 = 2;
-const INVALID_SUB_COMMAND: i32 = 3;
-const APPLICATION_ERR: i32 = 4;
+const CONNECTION_ERROR: i32 = 2;
+const INVALID_ARG_LENGTH: i32 = 3;
+const INVALID_SUB_COMMAND: i32 = 4;
+const APPLICATION_ERR: i32 = 5;
 
 fn main() {
     // check and get db url
     let result = var(KEY_TO_DATABASE_URL);
-    if let Err(_) = result {
+    if result.is_err() {
         println!(
-            "environment variable \"{}\" must be set",
+            "Not environment variable found: environment variable \"{}\" must be set",
             KEY_TO_DATABASE_URL
         );
         exit(NO_ENV_VAR_FOUND);
     }
-    let database_url = result.expect(&format!("failed to get value of {}", KEY_TO_DATABASE_URL));
+    let database_url = result.unwrap_or_else(|_| panic!("failed to get value of {}", KEY_TO_DATABASE_URL));
 
     // get connection
     let result = establish_connection(database_url);
     if let Err(e) = result {
-        println!("application error: {}", e);
-        exit(APPLICATION_ERR);
+        println!("failed to establish connection: {}", e);
+        exit(CONNECTION_ERROR);
     }
     let conn = result.expect("failed to get Connection");
 
@@ -100,12 +101,8 @@ fn main() {
 
 fn establish_connection(
     database_url: String,
-) -> Result<impl Connection<Backend = Pg>, ApplicationError> {
-    let result = PgConnection::establish(&database_url);
-    match result {
-        Ok(conn) => Ok(conn),
-        Err(e) => Err(ApplicationError::ConnectionErr(e)),
-    }
+) -> Result<impl Connection<Backend = Pg>, ConnectionError> {
+    PgConnection::establish(&database_url)
 }
 
 fn create_admin_account(
@@ -129,7 +126,6 @@ fn create_admin_account(
 
 #[derive(Debug)]
 enum ApplicationError {
-    ConnectionErr(ConnectionError),
     EmailAddrErr(EmailAddressValidationError),
     PasswordErr(PasswordValidationError),
     PasswordHandlingErr(PasswordHandlingError),
@@ -139,9 +135,6 @@ enum ApplicationError {
 impl Display for ApplicationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ApplicationError::ConnectionErr(e) => {
-                write!(f, "failed to establish connection: {}", e)
-            }
             ApplicationError::EmailAddrErr(e) => write!(f, "email address error: {}", e),
             ApplicationError::PasswordErr(e) => write!(f, "password error: {}", e),
             ApplicationError::PasswordHandlingErr(e) => write!(f, "password handling error: {}", e),
