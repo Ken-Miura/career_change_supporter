@@ -1,7 +1,10 @@
 // Copyright 2021 Ken Miura
 
 use common::model::admin::NewAccount;
-use common::schema::ccs_schema::admin_account;
+use common::schema::ccs_schema::admin_account::dsl::{
+    admin_account, email_address, hashed_password,
+};
+use common::schema::ccs_schema::admin_account::table as admin_account_table;
 use common::util::validator::{
     validate_email_address, validate_password, EmailAddressValidationError, PasswordValidationError,
 };
@@ -9,7 +12,9 @@ use common::util::{hash_password, PasswordHandlingError};
 use diesel::connection::Connection;
 use diesel::pg::{Pg, PgConnection};
 use diesel::query_builder::functions::insert_into;
-use diesel::{ConnectionError, RunQueryDsl};
+use diesel::query_builder::functions::update;
+use diesel::ExpressionMethods;
+use diesel::{ConnectionError, QueryDsl, RunQueryDsl};
 use std::fmt::Display;
 use std::{env::args, env::var, error::Error, process::exit};
 
@@ -32,7 +37,8 @@ fn main() {
         );
         exit(NO_ENV_VAR_FOUND);
     }
-    let database_url = result.unwrap_or_else(|_| panic!("failed to get value of {}", KEY_TO_DATABASE_URL));
+    let database_url =
+        result.unwrap_or_else(|_| panic!("failed to get value of {}", KEY_TO_DATABASE_URL));
 
     // get connection
     let result = establish_connection(database_url);
@@ -84,7 +90,14 @@ fn main() {
             println!("ex: {} update admin@test.com 1234abcdABCD", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
-        todo!()
+        let result = update_admin_account(&args[2], &args[3], conn);
+        match result {
+            Ok(_) => exit(SUCCESS),
+            Err(e) => {
+                println!("application error: {}", e);
+                exit(APPLICATION_ERR);
+            }
+        }
     } else if cmd == "delete" {
         if args.len() != 3 {
             println!("usage: {} delete \"admin_email_address\"", args[0]);
@@ -106,20 +119,34 @@ fn establish_connection(
 }
 
 fn create_admin_account(
-    email_address: &str,
+    email_addr: &str,
     password: &str,
     connection: impl Connection<Backend = Pg>,
 ) -> Result<(), ApplicationError> {
-    let _ = validate_email_address(email_address)?;
+    let _ = validate_email_address(email_addr)?;
     let _ = validate_password(password)?;
     let hashed_pwd = hash_password(password)?;
     let account = NewAccount {
-        email_address,
+        email_address: email_addr,
         hashed_password: &hashed_pwd,
         last_login_time: None,
     };
-    let _ = insert_into(admin_account::table)
+    let _ = insert_into(admin_account_table)
         .values(account)
+        .execute(&connection)?;
+    Ok(())
+}
+
+fn update_admin_account(
+    email_addr: &str,
+    password: &str,
+    connection: impl Connection<Backend = Pg>,
+) -> Result<(), ApplicationError> {
+    let _ = validate_email_address(email_addr)?;
+    let _ = validate_password(password)?;
+    let hashed_pwd = hash_password(password)?;
+    let _ = update(admin_account.filter(email_address.eq(email_addr)))
+        .set(hashed_password.eq(hashed_pwd))
         .execute(&connection)?;
     Ok(())
 }
