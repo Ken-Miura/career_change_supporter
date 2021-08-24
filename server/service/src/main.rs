@@ -1,55 +1,85 @@
 // Copyright 2021 Ken Miura
 
-use std::net::SocketAddr;
-
-use axum::route;
-use axum::routing::RoutingDsl;
-use tower::{service_fn, BoxError, Service};
+use axum::{
+    handler::{get, Handler},
+    http::StatusCode,
+    response::IntoResponse,
+    service, Router,
+};
+use std::{convert::Infallible, io, net::SocketAddr};
 use tower_http::services::{ServeDir, ServeFile};
-
-use http_body::combinators::BoxBody;
 
 #[tokio::main]
 async fn main() {
-    let get_index = axum::service::get(service_fn(|req| async {
-        let resp = ServeFile::new("service/static/index.html")
-            .call(req)
-            .await?;
-        Ok::<_, BoxError>(resp)
-    }));
-    let get_user_app = axum::service::get(service_fn(|req| async {
-        let resp = ServeDir::new("service/static/user").call(req).await?;
-        let resp = resp.map(|body| BoxBody::new(body));
-        if resp.status() == 404 {
-            let resp = ServeFile::new("service/static/user/user_app.html")
-                .call(())
-                .await?;
-            let resp = resp.map(|body| BoxBody::new(body));
-            return Ok(resp);
-        }
-        Ok::<_, BoxError>(resp)
-    }));
-    let get_advisor_app = axum::service::get(service_fn(|req| async {
-        let resp = ServeDir::new("service/static/advisor").call(req).await?;
-        let resp = resp.map(|body| BoxBody::new(body));
-        if resp.status() == 404 {
-            let resp = ServeFile::new("service/static/advisor/advisor_app.html")
-                .call(())
-                .await?;
-            let resp = resp.map(|body| BoxBody::new(body));
-            return Ok(resp);
-        }
-        Ok::<_, BoxError>(resp)
-    }));
-    let app = route("/", get_index.clone())
-        .route("/index.html", get_index)
-        .nest("/user", get_user_app)
-        .nest("/advisor", get_advisor_app);
+    // Set the RUST_LOG, if it hasn't been explicitly defined
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "service=debug,tower_http=debug");
+    }
+    tracing_subscriber::fmt::init();
 
+    // our API routes
+    let api_routes = Router::new().route("/users", get(|| async { "users#index" }));
+
+    let app = Router::new()
+        .nest(
+            "/",
+            Router::new()
+                .route(
+                    "/",
+                    service::get(ServeFile::new("service/static/index.html"))
+                        .handle_error(handle_io_error),
+                )
+                .route(
+                    "/index.html",
+                    service::get(ServeFile::new("service/static/index.html"))
+                        .handle_error(handle_io_error),
+                ),
+        )
+        .nest(
+            "/user",
+            Router::new()
+                .route(
+                    "/",
+                    service::get(ServeDir::new("service/static/user"))
+                        .handle_error(handle_io_error),
+                )
+                .or(
+                    service::any(ServeFile::new("service/static/user/user_app.html"))
+                        .handle_error(handle_io_error),
+                ),
+        )
+        .nest(
+            "/advisor",
+            Router::new()
+                .route(
+                    "/",
+                    service::get(ServeDir::new("service/static/advisor"))
+                        .handle_error(handle_io_error),
+                )
+                .or(
+                    service::any(ServeFile::new("service/static/advisor/advisor_app.html"))
+                        .handle_error(handle_io_error),
+                ),
+        )
+        // serve the API at `/api/*`
+        .nest("/api", api_routes)
+        .or(handler_404.into_service());
+
+    // run
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+fn handle_io_error(error: io::Error) -> Result<impl IntoResponse, Infallible> {
+    Ok((
+        StatusCode::INTERNAL_SERVER_ERROR,
+        format!("Unhandled error: {}", error),
+    ))
+}
+
+async fn handler_404() -> impl IntoResponse {
+    (StatusCode::NOT_FOUND, "nothing to see here")
 }
