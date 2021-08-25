@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-    "service",
+    "user_service",
+    "advisor_service",
     "admin_service",
     "admin_account",
     "common",
