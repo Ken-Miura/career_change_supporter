@@ -10,11 +10,11 @@ module.exports = {
   },
   devServer: {
     proxy: {
-      '^/api/user': {
+      '^/api/users': {
         target: 'http://localhost:3000',
         logLevel: 'debug',
       },
-      '^/api/advisor': {
+      '^/api/advisors': {
         target: 'http://localhost:3001',
         logLevel: 'debug',
       }
