@@ -16,6 +16,7 @@ use diesel::query_builder::functions::insert_into;
 use diesel::query_builder::functions::update;
 use diesel::ExpressionMethods;
 use diesel::{ConnectionError, QueryDsl, RunQueryDsl};
+use dotenv::dotenv;
 use std::fmt::Display;
 use std::{env::args, env::var, error::Error, process::exit};
 
@@ -30,6 +31,7 @@ const APPLICATION_ERR: i32 = 5;
 
 fn main() {
     // check and get db url
+    let _ = dotenv().ok();
     let result = var(KEY_TO_DATABASE_URL);
     if result.is_err() {
         println!(
