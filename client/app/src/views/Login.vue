@@ -67,7 +67,7 @@ export default defineComponent({
       const data = { email_address: form.email, password: form.password }
       let response
       try {
-        response = await fetch('login-request', {
+        response = await fetch('/api/user/login-request', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify(data)

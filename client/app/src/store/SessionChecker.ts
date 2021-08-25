@@ -5,7 +5,7 @@ export type SessionState = 'none' | 'active'
 export async function getSessionState (): Promise<SessionState> {
   let response
   try {
-    response = await fetch('session-state', {
+    response = await fetch('/api/user/session-state', {
       method: 'GET'
     })
   } catch (e) {

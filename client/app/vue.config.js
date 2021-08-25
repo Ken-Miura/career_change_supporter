@@ -11,12 +11,12 @@ module.exports = {
   devServer: {
     proxy: {
       '^/api/user': {
-        target: 'http://localhost:3000/api/user',
+        target: 'http://localhost:3000',
         logLevel: 'debug',
         pathRewrite: { '^/api/user': '/api/user' }
       },
       '^/api/advisor': {
-        target: 'http://localhost:3001/api/advisor',
+        target: 'http://localhost:3001',
         logLevel: 'debug',
         pathRewrite: { '^/api/advisor': '/api/advisor' }
       }
