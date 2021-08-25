@@ -66,9 +66,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "axum"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9f1cf342987549fce6524495190ae4212e1822c43dacd929d13f52b70920922"
+checksum = "8057b0a4ea316fc0ad3bd48706f2b89076e45a70b9f7b3a4e740e5ec52078ea2"
 dependencies = [
  "async-trait",
  "bitflags",
