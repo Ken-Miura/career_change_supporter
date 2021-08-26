@@ -1020,8 +1020,11 @@ name = "user_service"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "diesel",
+ "dotenv",
  "http-body",
  "hyper",
+ "num_cpus",
  "tokio",
  "tower",
  "tower-http",
