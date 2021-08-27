@@ -1,3 +1,5 @@
+use diesel::{PgConnection, r2d2::{ConnectionManager, Pool}};
+
 // Copyright 2021 Ken Miura
 
 // TODO: #[macro_use]なしでdieselのマクロが使えるように変更が入った際に取り除く
@@ -9,3 +11,5 @@ pub mod credential;
 pub mod model;
 pub mod schema;
 pub mod util;
+
+pub type ConnectionPool = Pool<ConnectionManager<PgConnection>>;

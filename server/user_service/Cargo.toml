@@ -7,6 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+common = { path = "../common" }
 axum = "0.2.3"
 hyper = { version = "0.14.11", features = ["full"] }
 tokio = { version = "1.10.0", features = ["full"] }

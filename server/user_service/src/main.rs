@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use axum::{handler::get, AddExtensionLayer, Router};
+use common::ConnectionPool;
 use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
 use dotenv::dotenv;
 use std::env::set_var;
@@ -32,7 +33,7 @@ async fn main_internal(num_of_cpus: u32) {
     });
     let manager = ConnectionManager::<PgConnection>::new(&database_url);
     // NOTE: bb8-dieselのcrate (https://crates.io/crates/bb8-diesel) がtokio 1.0系統に対応した後、r2d2からの移行を検討する
-    let pool: Pool<ConnectionManager<PgConnection>> = Pool::builder()
+    let pool: ConnectionPool = Pool::builder()
         .max_size(num_of_cpus)
         .build(manager)
         .expect("failed to build connection pool");

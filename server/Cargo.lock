@@ -1020,6 +1020,7 @@ name = "user_service"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "common",
  "diesel",
  "dotenv",
  "http-body",
