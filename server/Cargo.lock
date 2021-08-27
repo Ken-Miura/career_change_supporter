@@ -169,12 +169,17 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "bcrypt",
  "chrono",
  "diesel",
+ "hyper",
  "once_cell",
  "regex",
  "serde",
+ "tokio",
+ "tower",
+ "tracing",
 ]
 
 [[package]]
@@ -1026,6 +1031,7 @@ dependencies = [
  "http-body",
  "hyper",
  "num_cpus",
+ "serde",
  "tokio",
  "tower",
  "tower-http",

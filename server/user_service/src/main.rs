@@ -1,5 +1,7 @@
 // Copyright 2021 Ken Miura
 
+mod account;
+
 use axum::{handler::get, AddExtensionLayer, Router};
 use common::ConnectionPool;
 use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};

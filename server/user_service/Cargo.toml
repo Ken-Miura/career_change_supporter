@@ -19,3 +19,4 @@ tower-http = { version = "0.1.1", features = ["trace"] }
 dotenv = "0.15.0"
 diesel = { version = "1.4.7", features = ["postgres", "r2d2", "chrono"] }
 num_cpus = "1.13.0"
+serde = { version = "1.0.127", features = ["derive"] }
