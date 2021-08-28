@@ -5,6 +5,7 @@
 #[macro_use]
 extern crate diesel;
 
+mod err_code;
 pub mod model;
 pub mod schema;
 pub mod util;
@@ -21,20 +22,31 @@ use diesel::{
     PgConnection,
 };
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde::Serialize;
 
 /// 任意のステータスコードを指定可能で、BodyにJSONを含むレスポンス
-pub type JsonResp = (StatusCode, Json<Value>);
+pub type JsonResp<T> = (StatusCode, Json<T>);
 
-/// OkとErrの両方で、[JsonResp]を返却する[Result]
-pub type JsonRespResult = Result<JsonResp, JsonResp>;
+/// [Ok]と[Err]の両方で、[JsonResp]を返却する[Result]
+///
+/// Sには、[Ok]のときにレスポンスのBodyに含めるJSONを示す型を代入する。
+/// [Err]のときは、[ApiError]をJSONとしてBodyに含める。
+pub type JsonRespResult<S> = Result<JsonResp<S>, JsonResp<ApiError>>;
+
+/// API呼び出しに失敗した際、その理由を示すエラーコード
+///
+/// [JsonRespResult]で[Err]を返却する際、JSONとしてBodyに含める。
+#[derive(Serialize)]
+pub struct ApiError {
+    pub code: u32,
+}
 
 pub type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
 
 /// データベースへのコネクション
 ///
 /// ハンドラ関数内でデータベースへのアクセスを行いたい場合、原則としてこの型をパラメータとして受け付ける。
-/// ハンドラ内で複数のコネクションが必要な場合のみ、[Extension<ConnectionPool>]をパラメータとして受け付ける。
+/// ハンドラ内で複数のコネクションが必要な場合のみ、[axum::extract::Extension]<[ConnectionPool]>をパラメータとして受け付ける。
 pub struct DatabaseConnection(pub PooledConnection<ConnectionManager<PgConnection>>);
 
 #[async_trait]
@@ -42,18 +54,28 @@ impl<B> FromRequest<B> for DatabaseConnection
 where
     B: Send,
 {
-    type Rejection = StatusCode;
+    type Rejection = JsonResp<ApiError>;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
             .await
             .map_err(|e| {
                 tracing::error!("failed to extract connection pool from req: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        code: err_code::UNEXPECTED_ERR,
+                    }),
+                )
             })?;
         let conn = pool.get().map_err(|e| {
             tracing::error!("failed to get connection from pool: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: err_code::UNEXPECTED_ERR,
+                }),
+            )
         })?;
         Ok(Self(conn))
     }
@@ -80,28 +102,37 @@ where
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
-    type Rejection = JsonResp;
+    type Rejection = JsonResp<ApiError>;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let payload = extract::Json::<Credential>::from_request(req)
             .await
             .map_err(|e| {
                 tracing::error!("failed to extract credential from req: {}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({})))
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        code: err_code::UNEXPECTED_ERR,
+                    }),
+                )
             })?;
         let cred = payload.0;
         let _ = util::validator::validate_email_address(&cred.email_address).map_err(|e| {
             tracing::error!("failed to validate credential: {}", e);
             (
                 StatusCode::BAD_REQUEST,
-                Json(json!({ "error": "invalid_email_address" })),
+                Json(ApiError {
+                    code: err_code::INVALID_EMAIL_ADDRESS_FORMAT,
+                }),
             )
         })?;
         let _ = util::validator::validate_password(&cred.password).map_err(|e| {
             tracing::error!("failed to validate credential: {}", e);
             (
                 StatusCode::BAD_REQUEST,
-                Json(json!({ "error": "invalid_password" })),
+                Json(ApiError {
+                    code: err_code::INVALID_PASSWORD_FORMAT,
+                }),
             )
         })?;
         Ok(Self(cred))
