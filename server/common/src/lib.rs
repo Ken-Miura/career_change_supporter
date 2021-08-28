@@ -25,21 +25,26 @@ use serde::Deserialize;
 use serde::Serialize;
 
 /// 任意のステータスコードを指定可能で、BodyにJSONを含むレスポンス
-pub type JsonResp<T> = (StatusCode, Json<T>);
+pub type Resp<T> = (StatusCode, Json<T>);
 
-/// [Ok]と[Err]の両方で、[JsonResp]を返却する[Result]
-///
-/// Sには、[Ok]のときにレスポンスのBodyに含めるJSONを示す型を代入する。
-/// [Err]のときは、[ApiError]をJSONとしてBodyに含める。
-pub type JsonRespResult<S> = Result<JsonResp<S>, JsonResp<ApiError>>;
+/// 任意のステータスコードを指定可能で、Bodyに[ApiError]をJSONとして含むレスポンス
+pub type ErrResp = Resp<ApiError>;
 
-/// API呼び出しに失敗した際、その理由を示すエラーコード
+/// API呼び出しに失敗した際のエラー
 ///
-/// [JsonRespResult]で[Err]を返却する際、JSONとしてBodyに含める。
+/// メンバー[`Self::code`]に、エラーの理由を示すコードを含む。
 #[derive(Serialize)]
 pub struct ApiError {
     pub code: u32,
 }
+
+/// API呼び出しに対して、クライアントに返却するレスポンスを含む[Result]
+///
+/// [Ok]は、TをJSONとしてBodyに含める[Resp]を包含する。<br>
+/// Tには、API呼び出しが成功したときに、レスポンスのBodyに含めたいJSONを示す型を代入する。<br>
+/// <br>
+/// [Err]は、[ApiError]をJSONとしてBodyに含める[ErrResp]を包含する。
+pub type RespResult<T> = Result<Resp<T>, ErrResp>;
 
 pub type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -54,7 +59,7 @@ impl<B> FromRequest<B> for DatabaseConnection
 where
     B: Send,
 {
-    type Rejection = JsonResp<ApiError>;
+    type Rejection = ErrResp;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
@@ -102,7 +107,7 @@ where
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
-    type Rejection = JsonResp<ApiError>;
+    type Rejection = ErrResp;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let payload = extract::Json::<Credential>::from_request(req)
