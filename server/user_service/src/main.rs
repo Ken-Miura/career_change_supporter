@@ -2,8 +2,10 @@
 
 mod account;
 
-use axum::{handler::get, AddExtensionLayer, Router};
+use axum::handler::post;
+use axum::{AddExtensionLayer, Router};
 use common::ConnectionPool;
+use common::ValidCred;
 use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
 use dotenv::dotenv;
 use std::env::set_var;
@@ -24,7 +26,10 @@ fn main() {
 
 async fn main_internal(num_of_cpus: u32) {
     let _ = dotenv().ok();
-    set_var("RUST_LOG", "user_service=debug,tower_http=debug");
+    set_var(
+        "RUST_LOG",
+        "user_service=debug,common=debug,tower_http=debug",
+    );
     tracing_subscriber::fmt::init();
 
     let database_url = var(KEY_TO_DATABASE_URL).unwrap_or_else(|_| {
@@ -41,7 +46,7 @@ async fn main_internal(num_of_cpus: u32) {
         .expect("failed to build connection pool");
 
     let app = Router::new()
-        .nest("/api/users", Router::new().route("/hello", get(handler)))
+        .nest("/api/users", Router::new().route("/hello", post(handler)))
         .layer(AddExtensionLayer::new(pool));
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
@@ -60,6 +65,4 @@ async fn main_internal(num_of_cpus: u32) {
         .expect("failed to serve app");
 }
 
-async fn handler() -> &'static str {
-    "<h1>Hello, World!</h1>"
-}
+async fn handler(ValidCred(_cred): ValidCred) {}

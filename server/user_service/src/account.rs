@@ -1,8 +1,6 @@
 // Copyright 2021 Ken Miura
 
-use axum::Json;
-use common::credential::Credential;
-use common::DatabaseConnection;
+use common::{DatabaseConnection, ValidCred};
 
 /// 一時アカウントを作成する。<br>
 /// <br>
@@ -10,7 +8,7 @@ use common::DatabaseConnection;
 /// # Errors
 ///
 async fn _post_temp_accounts(
-    Json(_req_body): Json<Credential>,
+    ValidCred(_cred): ValidCred,
     DatabaseConnection(_conn): DatabaseConnection,
 ) {
 }
