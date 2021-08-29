@@ -4,9 +4,22 @@ use axum::{http::StatusCode, Json};
 use lettre;
 use lettre::{ClientSecurity, Transport};
 use lettre_email::EmailBuilder;
+use once_cell::sync::Lazy;
+use std::env::var;
 use std::net::SocketAddr;
 
 use crate::{err_code, ApiError, ErrResp};
+
+pub const KEY_TO_SOCKET_FOR_SMTP_SERVER: &str = "SOCKET_FOR_SMTP_SERVER";
+
+pub static SOCKET_FOR_SMTP_SERVER: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_SOCKET_FOR_SMTP_SERVER).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"127.0.0.1:1080\") must be set",
+            KEY_TO_SOCKET_FOR_SMTP_SERVER
+        );
+    })
+});
 
 pub trait SendMail {
     fn send_mail(&self, to: &str, from: &str, subject: &str, text: &str) -> Result<(), ErrResp>;

@@ -1557,6 +1557,7 @@ dependencies = [
  "http-body",
  "hyper",
  "num_cpus",
+ "once_cell",
  "serde",
  "tokio",
  "tower",

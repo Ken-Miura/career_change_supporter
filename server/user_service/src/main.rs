@@ -2,19 +2,37 @@
 
 mod account;
 
-use axum::handler::post;
+use axum::handler::get;
 use axum::{AddExtensionLayer, Router};
+use common::smtp::{KEY_TO_SOCKET_FOR_SMTP_SERVER, SOCKET_FOR_SMTP_SERVER};
 use common::ConnectionPool;
-use common::ValidCred;
 use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
 use dotenv::dotenv;
+use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_USER_APP";
 
+/// アプリケーション起動時に存在をチェックするため、
+/// アプリケーションの動作に必要な環境変数をすべて列挙する。
+static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
+    vec![
+        KEY_TO_DATABASE_URL.to_string(),
+        KEY_TO_SOCKET.to_string(),
+        KEY_TO_SOCKET_FOR_SMTP_SERVER.to_string(),
+    ]
+});
+
 fn main() {
+    let _ = dotenv().ok();
+    let result = check_env_vars(ENV_VARS.to_vec());
+    if result.is_err() {
+        println!("failed to resolve mandatory env vars (following env vars are needed)");
+        println!("{:?}", result.unwrap_err());
+        std::process::exit(1);
+    }
     let num = num_cpus::get();
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(num)
@@ -24,8 +42,20 @@ fn main() {
         .block_on(main_internal(num as u32))
 }
 
+fn check_env_vars(env_vars: Vec<String>) -> Result<(), Vec<String>> {
+    let var_errs = env_vars
+        .iter()
+        .map(|env_var| (env_var.clone(), var(env_var)))
+        .filter(|env_var_and_result| env_var_and_result.1.is_err())
+        .map(|env_var_and_err| env_var_and_err.0)
+        .collect::<Vec<String>>();
+    if !var_errs.is_empty() {
+        return Err(var_errs);
+    }
+    Ok(())
+}
+
 async fn main_internal(num_of_cpus: u32) {
-    let _ = dotenv().ok();
     set_var(
         "RUST_LOG",
         "user_service=debug,common=debug,tower_http=debug",
@@ -46,7 +76,7 @@ async fn main_internal(num_of_cpus: u32) {
         .expect("failed to build connection pool");
 
     let app = Router::new()
-        .nest("/api/users", Router::new().route("/hello", post(handler)))
+        .nest("/api/users", Router::new().route("/hello", get(handler)))
         .layer(AddExtensionLayer::new(pool));
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
@@ -65,4 +95,6 @@ async fn main_internal(num_of_cpus: u32) {
         .expect("failed to serve app");
 }
 
-async fn handler(ValidCred(_cred): ValidCred) {}
+async fn handler() -> String {
+    SOCKET_FOR_SMTP_SERVER.to_string()
+}
