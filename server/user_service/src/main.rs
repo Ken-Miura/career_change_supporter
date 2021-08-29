@@ -16,8 +16,8 @@ use std::env::var;
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_USER_APP";
 
-/// アプリケーション起動時に存在をチェックするため、
-/// アプリケーションの動作に必要な環境変数をすべて列挙する
+/// アプリケーションの動作に必須の環境変数をすべて列挙し、
+/// 起動直後に存在をチェックする
 static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
         KEY_TO_DATABASE_URL.to_string(),
