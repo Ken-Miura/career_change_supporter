@@ -3,6 +3,7 @@
 pub mod validator;
 
 use std::convert::From;
+use std::env::var;
 use std::error::Error;
 use std::fmt::Display;
 use std::string::FromUtf8Error;
@@ -95,4 +96,22 @@ mod tests {
             password1, hashed_pwd, password2
         );
     }
+}
+
+/// 入力された環境変数が定義されているかチェックする<br>
+/// <br>
+/// 入力された環境変数がすべて定義されている場合、Okを返す。<br>
+/// 入力された環境変数の内、どれか一つでも定義されていなければ、Errを返す。
+/// Errには定義されていない環境変数を含む。
+pub fn check_env_vars(env_vars: Vec<String>) -> Result<(), Vec<String>> {
+    let not_found_vars = env_vars
+        .iter()
+        .map(|env_var| (env_var.clone(), var(env_var)))
+        .filter(|env_var_and_result| env_var_and_result.1.is_err())
+        .map(|env_var_and_err| env_var_and_err.0)
+        .collect::<Vec<String>>();
+    if !not_found_vars.is_empty() {
+        return Err(not_found_vars);
+    }
+    Ok(())
 }

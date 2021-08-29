@@ -6,6 +6,7 @@ use axum::handler::get;
 use axum::{AddExtensionLayer, Router};
 use common::smtp::{KEY_TO_SOCKET_FOR_SMTP_SERVER, SOCKET_FOR_SMTP_SERVER};
 use common::ConnectionPool;
+use common::util::check_env_vars;
 use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
 use dotenv::dotenv;
 use once_cell::sync::Lazy;
@@ -16,7 +17,7 @@ const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_USER_APP";
 
 /// アプリケーション起動時に存在をチェックするため、
-/// アプリケーションの動作に必要な環境変数をすべて列挙する。
+/// アプリケーションの動作に必要な環境変数をすべて列挙する
 static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
         KEY_TO_DATABASE_URL.to_string(),
@@ -40,19 +41,6 @@ fn main() {
         .build()
         .expect("failed to build Runtime")
         .block_on(main_internal(num as u32))
-}
-
-fn check_env_vars(env_vars: Vec<String>) -> Result<(), Vec<String>> {
-    let var_errs = env_vars
-        .iter()
-        .map(|env_var| (env_var.clone(), var(env_var)))
-        .filter(|env_var_and_result| env_var_and_result.1.is_err())
-        .map(|env_var_and_err| env_var_and_err.0)
-        .collect::<Vec<String>>();
-    if !var_errs.is_empty() {
-        return Err(var_errs);
-    }
-    Ok(())
 }
 
 async fn main_internal(num_of_cpus: u32) {
