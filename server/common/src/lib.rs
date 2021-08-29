@@ -8,6 +8,7 @@ extern crate diesel;
 mod err_code;
 pub mod model;
 pub mod schema;
+pub mod smtp;
 pub mod util;
 
 use axum::{
