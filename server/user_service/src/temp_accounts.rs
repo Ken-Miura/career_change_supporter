@@ -56,7 +56,7 @@ pub(crate) async fn post_temp_accounts(
 
 #[derive(Serialize)]
 pub(crate) struct TempAccountsResult {
-    email_addr: String,
+    email_address: String,
 }
 
 // これをテスト対象と考える。
@@ -94,7 +94,7 @@ async fn post_temp_accounts_internal(
     Ok((
         StatusCode::OK,
         Json(TempAccountsResult {
-            email_addr: email_addr.to_string(),
+            email_address: email_addr.to_string(),
         }),
     ))
 }
