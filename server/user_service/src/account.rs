@@ -2,12 +2,14 @@
 
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Utc};
+use common::model::user::NewTempAccount;
 use common::schema::ccs_schema::user_account::dsl::{
     email_address as user_email_addr, user_account,
 };
 use common::schema::ccs_schema::user_temp_account::dsl::{
     email_address as temp_user_email_addr, user_temp_account,
 };
+use common::schema::ccs_schema::user_temp_account::table as user_temp_account_table;
 use common::ApiError;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
@@ -16,8 +18,8 @@ use common::{
 use diesel::dsl::count_star;
 use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::query_dsl::select_dsl::SelectDsl;
-use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
+use diesel::{insert_into, ExpressionMethods};
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
@@ -33,19 +35,16 @@ use crate::err_code;
 /// # Errors
 ///
 async fn _post_temp_accounts(
-    ValidCred(_cred): ValidCred,
+    ValidCred(cred): ValidCred,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<TempAccountsResult> {
-    // user accountの存在の確認 (メールアドレス) -> Result
-    // temp account作成 (mail, password, uuid, date_time) -> Result<個数>
-    // 成功時にメール送信
     let uuid = Uuid::new_v4().to_simple();
+    let current_date_time = chrono::Utc::now();
     let op = TempAccountsOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    let current_date_time = chrono::Utc::now();
     let ret = post_temp_accounts_internal(
-        "test@test.com",
-        "aaaaaaaaaA",
+        &cred.email_address,
+        &cred.password,
         uuid,
         current_date_time,
         op,
@@ -65,13 +64,19 @@ async fn post_temp_accounts_internal(
     email_addr: &str,
     password: &str,
     simple_uuid: Simple,
-    registered_time: DateTime<Utc>,
+    register_time: DateTime<Utc>,
     op: impl TempAccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<TempAccountsResult> {
     let _a = async {
         let _ = op.user_exists(email_addr);
-        op.create_temp_account(email_addr, password, simple_uuid, registered_time)
+        let temp_account = NewTempAccount {
+            user_temp_account_id: "",
+            email_address: "",
+            hashed_password: &vec![0u8, 1u8],
+            created_at: &register_time,
+        };
+        op.create_temp_account(temp_account)
     }
     .await;
     let _b = async {
@@ -92,13 +97,7 @@ trait TempAccountsOperation {
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
     fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp>;
-    fn create_temp_account(
-        &self,
-        email_addr: &str,
-        password: &str,
-        simple_uuid: Simple,
-        registered_time: DateTime<Utc>,
-    ) -> Result<(), ErrResp>;
+    fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp>;
 }
 
 struct TempAccountsOperationImpl {
@@ -154,13 +153,19 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
         Ok(cnt)
     }
 
-    fn create_temp_account(
-        &self,
-        email_addr: &str,
-        password: &str,
-        simple_uuid: Simple,
-        registered_time: DateTime<Utc>,
-    ) -> Result<(), ErrResp> {
+    fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp> {
+        let _ = insert_into(user_temp_account_table)
+            .values(temp_account)
+            .execute(&self.conn)
+            .map_err(|e| {
+                tracing::error!("failed to insert user temp account: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        code: err_code::UNEXPECTED_ERR,
+                    }),
+                )
+            });
         Ok(())
     }
 }

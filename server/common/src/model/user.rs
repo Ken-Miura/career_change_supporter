@@ -3,7 +3,7 @@
 // use crate::schema::career_change_supporter_schema::user_account;
 use crate::schema::ccs_schema::user_temp_account;
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[table_name = "user_temp_account"]
 pub struct NewTempAccount<'a> {
     pub user_temp_account_id: &'a str,
