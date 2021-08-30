@@ -2,7 +2,10 @@
 
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Utc};
-use common::{DatabaseConnection, ErrResp, RespResult, ValidCred};
+use common::{
+    smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
+    DatabaseConnection, ErrResp, RespResult, ValidCred,
+};
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
@@ -24,7 +27,7 @@ async fn _post_temp_accounts(
     // 成功時にメール送信
     let uuid = Uuid::new_v4().to_simple();
     let user = UserImpl::new(conn);
-    let send_mail = SendMailImpl::new("email_address".to_string());
+    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let current_date_time = chrono::Utc::now();
     let ret = post_temp_accounts_internal(
         "test@test.com",
@@ -32,7 +35,7 @@ async fn _post_temp_accounts(
         uuid,
         current_date_time,
         user,
-        send_mail,
+        smtp_client,
     )
     .await?;
     Ok(ret)
@@ -56,7 +59,10 @@ async fn post_temp_accounts_internal(
     let b =
         async { user.create_temp_account(email_address, password, simple_uuid, registered_time) }
             .await;
-    let c = async { send_mail.send_mail() }.await;
+    let c = async {
+        send_mail.send_mail("to@test.com", "from@test.com", "サブジェクト", "テキスト")
+    }
+    .await;
     let ret = (
         StatusCode::OK,
         Json(TempAccount {
@@ -99,26 +105,6 @@ impl User for UserImpl {
         simple_uuid: Simple,
         registered_time: DateTime<Utc>,
     ) -> Result<u32, ErrResp> {
-        todo!()
-    }
-}
-
-trait SendMail {
-    fn send_mail(&self) -> Result<(), ErrResp>;
-}
-
-struct SendMailImpl {
-    email_address: String,
-}
-
-impl SendMailImpl {
-    fn new(email_address: String) -> Self {
-        Self { email_address }
-    }
-}
-
-impl SendMail for SendMailImpl {
-    fn send_mail(&self) -> Result<(), ErrResp> {
         todo!()
     }
 }
