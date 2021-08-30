@@ -55,7 +55,7 @@ pub(crate) async fn post_temp_accounts(
 }
 
 #[derive(Serialize)]
-struct TempAccountsResult {
+pub (crate) struct TempAccountsResult {
     email_addr: String,
 }
 
