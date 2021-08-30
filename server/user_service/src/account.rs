@@ -8,20 +8,20 @@ use common::schema::ccs_schema::user_account::dsl::{
 use common::schema::ccs_schema::user_temp_account::dsl::{
     email_address as temp_user_email_addr, user_temp_account,
 };
+use common::ApiError;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     DatabaseConnection, ErrResp, RespResult, ValidCred,
 };
-use common::{ApiError, TransactionErr};
 use diesel::dsl::count_star;
 use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::query_dsl::select_dsl::SelectDsl;
+use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
-use diesel::{Connection, ExpressionMethods};
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
@@ -88,14 +88,17 @@ async fn post_temp_accounts_internal(
 }
 
 trait TempAccountsOperation {
+    // DBの分離レベルにはREAD COMITTEDを想定。
+    // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
+    fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp>;
     fn create_temp_account(
         &self,
         email_addr: &str,
         password: &str,
         simple_uuid: Simple,
         registered_time: DateTime<Utc>,
-    ) -> Result<u32, ErrResp>;
+    ) -> Result<(), ErrResp>;
 }
 
 struct TempAccountsOperationImpl {
@@ -130,36 +133,34 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
         Ok(cnt != 0)
     }
 
+    fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {
+        let cnt = user_temp_account
+            .filter(temp_user_email_addr.eq(email_addr))
+            .select(count_star())
+            .get_result::<i64>(&self.conn)
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to count user temp account ({}) exists: {}",
+                    email_addr,
+                    e
+                );
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        code: err_code::UNEXPECTED_ERR,
+                    }),
+                )
+            })?;
+        Ok(cnt)
+    }
+
     fn create_temp_account(
         &self,
         email_addr: &str,
         password: &str,
         simple_uuid: Simple,
         registered_time: DateTime<Utc>,
-    ) -> Result<u32, ErrResp> {
-        let ret = self.conn.transaction::<_, TransactionErr, _>(|| {
-            let cnt = user_temp_account
-                .filter(temp_user_email_addr.eq(email_addr))
-                .select(count_star())
-                .get_result::<i64>(&self.conn)
-                .map_err(|e| {
-                    tracing::error!(
-                        "failed to count user temp account ({}) exists: {}",
-                        email_addr,
-                        e
-                    );
-                    TransactionErr::DatabaseErr(e)
-                })?;
-            if cnt > 1 {
-                return Err(TransactionErr::ApplicationErr((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        code: err_code::UNEXPECTED_ERR,
-                    }),
-                )));
-            }
-            Ok(cnt)
-        });
-        Ok(1)
+    ) -> Result<(), ErrResp> {
+        Ok(())
     }
 }
