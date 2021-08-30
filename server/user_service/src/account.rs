@@ -2,21 +2,26 @@
 
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Utc};
-use common::schema::ccs_schema::user_account::dsl::{email_address, user_account};
-use common::ApiError;
+use common::schema::ccs_schema::user_account::dsl::{
+    email_address as user_email_addr, user_account,
+};
+use common::schema::ccs_schema::user_temp_account::dsl::{
+    email_address as temp_user_email_addr, user_temp_account,
+};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     DatabaseConnection, ErrResp, RespResult, ValidCred,
 };
+use common::{ApiError, TransactionErr};
 use diesel::dsl::count_star;
 use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::query_dsl::select_dsl::SelectDsl;
-use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
+use diesel::{Connection, ExpressionMethods};
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
@@ -76,7 +81,7 @@ async fn post_temp_accounts_internal(
     let ret = (
         StatusCode::OK,
         Json(TempAccount {
-            email_addr: "test@test.com".to_string(),
+            email_addr: email_addr.to_string(),
         }),
     );
     Ok(ret)
@@ -106,7 +111,7 @@ impl TempAccountsOperationImpl {
 impl TempAccountsOperation for TempAccountsOperationImpl {
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
         let cnt = user_account
-            .filter(email_address.eq(email_addr))
+            .filter(user_email_addr.eq(email_addr))
             .select(count_star())
             .get_result::<i64>(&self.conn)
             .map_err(|e| {
@@ -132,6 +137,29 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
         simple_uuid: Simple,
         registered_time: DateTime<Utc>,
     ) -> Result<u32, ErrResp> {
-        todo!()
+        let ret = self.conn.transaction::<_, TransactionErr, _>(|| {
+            let cnt = user_temp_account
+                .filter(temp_user_email_addr.eq(email_addr))
+                .select(count_star())
+                .get_result::<i64>(&self.conn)
+                .map_err(|e| {
+                    tracing::error!(
+                        "failed to count user temp account ({}) exists: {}",
+                        email_addr,
+                        e
+                    );
+                    TransactionErr::DatabaseErr(e)
+                })?;
+            if cnt > 1 {
+                return Err(TransactionErr::ApplicationErr((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        code: err_code::UNEXPECTED_ERR,
+                    }),
+                )));
+            }
+            Ok(cnt)
+        });
+        Ok(1)
     }
 }

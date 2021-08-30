@@ -144,3 +144,21 @@ where
         Ok(Self(cred))
     }
 }
+
+/// dieselのトランザクション内で発生したエラー<br>
+/// <br>
+/// アプリケーションに関連するエラーの場合、[TransactionErr::ApplicationErr]を、
+/// データベースアクセスに関連するエラー（diesel api呼び出しの結果のエラー）の場合、[TransactionErr::DatabaseErr]を利用する。<br>
+/// <br>
+/// NOTE: dieselのトランザクションは、エラーとしてFrom\<diesel::result::Error\>を実装した型を要求しているため、ErrRespを直接返却することができない。
+/// そのため、[TransactionErr]が必要となる。
+pub enum TransactionErr {
+    ApplicationErr(ErrResp),
+    DatabaseErr(diesel::result::Error),
+}
+
+impl From<diesel::result::Error> for TransactionErr {
+    fn from(e: diesel::result::Error) -> Self {
+        TransactionErr::DatabaseErr(e)
+    }
+}
