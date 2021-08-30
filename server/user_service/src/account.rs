@@ -26,7 +26,7 @@ async fn _post_temp_accounts(
     // temp account作成 (mail, password, uuid, date_time) -> Result<個数>
     // 成功時にメール送信
     let uuid = Uuid::new_v4().to_simple();
-    let user = UserImpl::new(conn);
+    let user = TempAccountsOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let current_date_time = chrono::Utc::now();
     let ret = post_temp_accounts_internal(
@@ -52,13 +52,12 @@ async fn post_temp_accounts_internal(
     password: &str,
     simple_uuid: Simple,
     registered_time: DateTime<Utc>,
-    user: impl User,
+    op: impl TempAccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<TempAccount> {
-    let a = async { user.user_exists(email_address) }.await;
-    let b =
-        async { user.create_temp_account(email_address, password, simple_uuid, registered_time) }
-            .await;
+    let a = async { op.user_exists(email_address) }.await;
+    let b = async { op.create_temp_account(email_address, password, simple_uuid, registered_time) }
+        .await;
     let c = async {
         send_mail.send_mail("to@test.com", "from@test.com", "サブジェクト", "テキスト")
     }
@@ -72,7 +71,7 @@ async fn post_temp_accounts_internal(
     Ok(ret)
 }
 
-trait User {
+trait TempAccountsOperation {
     fn user_exists(&self, email_address: &str) -> Result<bool, ErrResp>;
     fn create_temp_account(
         &self,
@@ -83,17 +82,17 @@ trait User {
     ) -> Result<u32, ErrResp>;
 }
 
-struct UserImpl {
+struct TempAccountsOperationImpl {
     conn: PooledConnection<ConnectionManager<PgConnection>>,
 }
 
-impl UserImpl {
+impl TempAccountsOperationImpl {
     fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
         Self { conn }
     }
 }
 
-impl User for UserImpl {
+impl TempAccountsOperation for TempAccountsOperationImpl {
     fn user_exists(&self, email_address: &str) -> Result<bool, ErrResp> {
         todo!()
     }
