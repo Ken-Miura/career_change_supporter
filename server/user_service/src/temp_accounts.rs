@@ -10,7 +10,7 @@ use common::schema::ccs_schema::user_temp_account::dsl::{
     email_address as temp_user_email_addr, user_temp_account,
 };
 use common::schema::ccs_schema::user_temp_account::table as user_temp_account_table;
-use common::ApiError;
+use common::util::hash_password;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     DatabaseConnection, ErrResp, RespResult, ValidCred,
@@ -27,14 +27,14 @@ use diesel::{
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
-use crate::err_code;
+use crate::util::unexpected_err_resp;
 
 /// 一時アカウントを作成する。<br>
 /// <br>
 ///
 /// # Errors
 ///
-async fn _post_temp_accounts(
+pub(crate) async fn post_temp_accounts(
     ValidCred(cred): ValidCred,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<TempAccountsResult> {
@@ -68,28 +68,38 @@ async fn post_temp_accounts_internal(
     op: impl TempAccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<TempAccountsResult> {
-    let _a = async {
-        let _ = op.user_exists(email_addr);
+    let hashed_pwd = hash_password(password).map_err(|e| {
+        tracing::error!("failed to handle password: {}", e);
+        unexpected_err_resp()
+    })?;
+    let _ = async {
+        let exists = op.user_exists(email_addr)?;
+        if exists {
+            todo!()
+        }
+        let cnt = op.num_of_temp_accounts(email_addr)?;
+        if cnt > 6 {
+            todo!()
+        }
         let temp_account = NewTempAccount {
-            user_temp_account_id: "",
-            email_address: "",
-            hashed_password: &vec![0u8, 1u8],
+            user_temp_account_id: &simple_uuid.to_string(),
+            email_address: email_addr,
+            hashed_password: &hashed_pwd,
             created_at: &register_time,
         };
         op.create_temp_account(temp_account)
     }
-    .await;
-    let _b = async {
+    .await?;
+    let _ = async {
         send_mail.send_mail("to@test.com", "from@test.com", "サブジェクト", "テキスト")
     }
-    .await;
-    let ret = (
+    .await?;
+    Ok((
         StatusCode::OK,
         Json(TempAccountsResult {
             email_addr: email_addr.to_string(),
         }),
-    );
-    Ok(ret)
+    ))
 }
 
 trait TempAccountsOperation {
@@ -122,12 +132,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
                     email_addr,
                     e
                 );
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        code: err_code::UNEXPECTED_ERR,
-                    }),
-                )
+                unexpected_err_resp()
             })?;
         Ok(cnt != 0)
     }
@@ -143,12 +148,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
                     email_addr,
                     e
                 );
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        code: err_code::UNEXPECTED_ERR,
-                    }),
-                )
+                unexpected_err_resp()
             })?;
         Ok(cnt)
     }
@@ -159,12 +159,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
             .execute(&self.conn)
             .map_err(|e| {
                 tracing::error!("failed to insert user temp account: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        code: err_code::UNEXPECTED_ERR,
-                    }),
-                )
+                unexpected_err_resp()
             });
         Ok(())
     }

@@ -1,11 +1,13 @@
 // Copyright 2021 Ken Miura
 
-mod account;
 mod err_code;
+mod temp_accounts;
+mod util;
 
-use axum::handler::get;
+use crate::temp_accounts::post_temp_accounts;
+use axum::handler::post;
 use axum::{AddExtensionLayer, Router};
-use common::smtp::{KEY_TO_SOCKET_FOR_SMTP_SERVER, SOCKET_FOR_SMTP_SERVER};
+use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::util::check_env_vars;
 use common::ConnectionPool;
 use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
@@ -65,7 +67,11 @@ async fn main_internal(num_of_cpus: u32) {
         .expect("failed to build connection pool");
 
     let app = Router::new()
-        .nest("/api/users", Router::new().route("/hello", get(handler)))
+        .nest(
+            "/api/users",
+            //Router::new().route("/temp-accounts", post(post_temp_accounts)),
+        Router::new().route("/hello", post(|| async { "hello" })),
+        )
         .layer(AddExtensionLayer::new(pool));
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
@@ -82,8 +88,4 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
-}
-
-async fn handler() -> String {
-    SOCKET_FOR_SMTP_SERVER.to_string()
 }
