@@ -8,6 +8,7 @@ use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     DatabaseConnection, ErrResp, RespResult, ValidCred,
 };
+use diesel::dsl::count_star;
 use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::query_dsl::select_dsl::SelectDsl;
 use diesel::ExpressionMethods;
@@ -63,10 +64,12 @@ async fn post_temp_accounts_internal(
     op: impl TempAccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<TempAccount> {
-    let a = async { op.user_exists(email_addr) }.await;
-    let b =
-        async { op.create_temp_account(email_addr, password, simple_uuid, registered_time) }.await;
-    let c = async {
+    let _a = async {
+        let _ = op.user_exists(email_addr);
+        op.create_temp_account(email_addr, password, simple_uuid, registered_time)
+    }
+    .await;
+    let _b = async {
         send_mail.send_mail("to@test.com", "from@test.com", "サブジェクト", "テキスト")
     }
     .await;
@@ -102,10 +105,10 @@ impl TempAccountsOperationImpl {
 
 impl TempAccountsOperation for TempAccountsOperationImpl {
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        let email_addrs = user_account
-            .select(email_address)
+        let cnt = user_account
             .filter(email_address.eq(email_addr))
-            .load::<String>(&self.conn)
+            .select(count_star())
+            .get_result::<i64>(&self.conn)
             .map_err(|e| {
                 tracing::error!(
                     "failed to check if user account ({}) exists: {}",
@@ -119,7 +122,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
                     }),
                 )
             })?;
-        Ok(!email_addrs.is_empty())
+        Ok(cnt != 0)
     }
 
     fn create_temp_account(
