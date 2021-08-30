@@ -41,6 +41,7 @@ pub(crate) async fn post_temp_accounts(
     let uuid = Uuid::new_v4().to_simple();
     let current_date_time = chrono::Utc::now();
     let op = TempAccountsOperationImpl::new(conn);
+    //let op = TempAccountsOperationMock::new("conn".to_string());
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let ret = post_temp_accounts_internal(
         &cred.email_address,
@@ -75,6 +76,8 @@ async fn post_temp_accounts_internal(
     // NOTE: このasyncブロックのありなしで、
     // the trait `Handler<_, _>` is not implemented for `fn(ValidCred, DatabaseConnection) -> impl std::future::Future {post_temp_accounts}`
     // のコンパイルエラーのありなしが変わる。なぜasyncのありなしが外側の関数（post_temp_accounts）のtrait boundに影響を与えるのか不明。
+    // 
+    // -> PooledConnection<ConnectionManager<PgConnection>>がSendを実装していないことが原因のように見える。
     let _ = async {
         let exists = op.user_exists(email_addr)?;
         if exists {
@@ -125,45 +128,36 @@ impl TempAccountsOperationImpl {
 
 impl TempAccountsOperation for TempAccountsOperationImpl {
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        let cnt = user_account
-            .filter(user_email_addr.eq(email_addr))
-            .select(count_star())
-            .get_result::<i64>(&self.conn)
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to check if user account ({}) exists: {}",
-                    email_addr,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(cnt != 0)
+        todo!()
     }
 
     fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {
-        let cnt = user_temp_account
-            .filter(temp_user_email_addr.eq(email_addr))
-            .select(count_star())
-            .get_result::<i64>(&self.conn)
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to count user temp account ({}) exists: {}",
-                    email_addr,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(cnt)
+        todo!()
     }
 
     fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp> {
-        let _ = insert_into(user_temp_account_table)
-            .values(temp_account)
-            .execute(&self.conn)
-            .map_err(|e| {
-                tracing::error!("failed to insert user temp account: {}", e);
-                unexpected_err_resp()
-            });
-        Ok(())
+        todo!()
+    }
+}
+
+struct TempAccountsOperationMock {
+    member: String
+}
+
+impl TempAccountsOperationMock {
+    fn new(member: String) -> Self { Self { member } }
+}
+
+impl TempAccountsOperation for TempAccountsOperationMock {
+    fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
+        todo!()
+    }
+
+    fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {
+        todo!()
+    }
+
+    fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp> {
+        todo!()
     }
 }
