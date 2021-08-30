@@ -26,7 +26,7 @@ async fn _post_temp_accounts(
     // temp account作成 (mail, password, uuid, date_time) -> Result<個数>
     // 成功時にメール送信
     let uuid = Uuid::new_v4().to_simple();
-    let user = TempAccountsOperationImpl::new(conn);
+    let op = TempAccountsOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let current_date_time = chrono::Utc::now();
     let ret = post_temp_accounts_internal(
@@ -34,7 +34,7 @@ async fn _post_temp_accounts(
         "aaaaaaaaaA",
         uuid,
         current_date_time,
-        user,
+        op,
         smtp_client,
     )
     .await?;
