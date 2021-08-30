@@ -72,21 +72,27 @@ async fn post_temp_accounts_internal(
         tracing::error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
-    let exists = op.user_exists(email_addr)?;
-    if exists {
-        todo!()
+    // NOTE: このasyncブロックのありなしで、
+    // the trait `Handler<_, _>` is not implemented for `fn(ValidCred, DatabaseConnection) -> impl std::future::Future {post_temp_accounts}`
+    // のコンパイルエラーのありなしが変わる。なぜasyncのありなしが外側の関数（post_temp_accounts）のtrait boundに影響を与えるのか不明。
+    let _ = async {
+        let exists = op.user_exists(email_addr)?;
+        if exists {
+            todo!()
+        }
+        let cnt = op.num_of_temp_accounts(email_addr)?;
+        if cnt > 6 {
+            todo!()
+        }
+        let temp_account = NewTempAccount {
+            user_temp_account_id: &simple_uuid.to_string(),
+            email_address: email_addr,
+            hashed_password: &hashed_pwd,
+            created_at: &register_time,
+        };
+        op.create_temp_account(temp_account)
     }
-    let cnt = op.num_of_temp_accounts(email_addr)?;
-    if cnt > 6 {
-        todo!()
-    }
-    let temp_account = NewTempAccount {
-        user_temp_account_id: &simple_uuid.to_string(),
-        email_address: email_addr,
-        hashed_password: &hashed_pwd,
-        created_at: &register_time,
-    };
-    op.create_temp_account(temp_account)?;
+    .await?;
     let _ = async {
         send_mail.send_mail("to@test.com", "from@test.com", "サブジェクト", "テキスト")
     }
