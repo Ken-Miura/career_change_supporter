@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 mod account;
+mod err_code;
 
 use axum::handler::get;
 use axum::{AddExtensionLayer, Router};
