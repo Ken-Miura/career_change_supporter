@@ -198,8 +198,8 @@ pub mod ccs_schema {
     }
 
     table! {
-        ccs_schema.user_temporary_account (user_temporary_account_id) {
-            user_temporary_account_id -> Bpchar,
+        ccs_schema.user_temp_account (user_temp_account_id) {
+            user_temp_account_id -> Bpchar,
             email_address -> Varchar,
             hashed_password -> Bytea,
             created_at -> Timestamptz,
@@ -224,6 +224,6 @@ pub mod ccs_schema {
         advisor_reg_req_rejected,
         advisor_registration_request,
         user_account,
-        user_temporary_account,
+        user_temp_account,
     );
 }

@@ -21,7 +21,6 @@ CREATE DOMAIN ccs_schema.uuid_simple_form AS CHAR (32) CHECK ( VALUE ~ '^[a-zA-Z
 /* PAY.JPより回答してもらった仕様をそのままチェック */
 CREATE DOMAIN ccs_schema.tenant_id AS VARCHAR (100) CHECK ( VALUE ~ '^[-_0-9a-zA-Z]{1,100}$' );
 
-/* data structure for user */
 CREATE TABLE ccs_schema.user_account (
   user_account_id SERIAL PRIMARY KEY,
   /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
@@ -36,14 +35,14 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.user_account To user_app;
  */
 GRANT USAGE ON SEQUENCE ccs_schema.user_account_user_account_id_seq TO user_app;
 
-CREATE TABLE ccs_schema.user_temporary_account (
-  user_temporary_account_id ccs_schema.uuid_simple_form PRIMARY KEY,
-  /* 一度仮登録した後、それを忘れてしまいもう一度仮登録したいケースを考え、UNIQUEにしない。user_temporary_account_idがPRIMARY KEYなので一意に検索は可能 */
+CREATE TABLE ccs_schema.user_temp_account (
+  user_temp_account_id ccs_schema.uuid_simple_form PRIMARY KEY,
+  /* 一度仮登録した後、それを忘れてしまいもう一度仮登録したいケースを考え、UNIQUEにしない。user_temp_account_idがPRIMARY KEYなので一意に検索は可能 */
   email_address ccs_schema.email_address,
   hashed_password BYTEA NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
-GRANT SELECT, INSERT, DELETE ON ccs_schema.user_temporary_account To user_app;
+GRANT SELECT, INSERT, DELETE ON ccs_schema.user_temp_account To user_app;
 
 /* data structure for advisor */
 CREATE TABLE ccs_schema.advisor_registration_request (
