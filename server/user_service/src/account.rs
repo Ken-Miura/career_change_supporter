@@ -35,7 +35,7 @@ use crate::err_code;
 async fn _post_temp_accounts(
     ValidCred(_cred): ValidCred,
     DatabaseConnection(conn): DatabaseConnection,
-) -> RespResult<TempAccount> {
+) -> RespResult<TempAccountsResult> {
     // user accountの存在の確認 (メールアドレス) -> Result
     // temp account作成 (mail, password, uuid, date_time) -> Result<個数>
     // 成功時にメール送信
@@ -56,7 +56,7 @@ async fn _post_temp_accounts(
 }
 
 #[derive(Serialize)]
-struct TempAccount {
+struct TempAccountsResult {
     email_addr: String,
 }
 
@@ -68,7 +68,7 @@ async fn post_temp_accounts_internal(
     registered_time: DateTime<Utc>,
     op: impl TempAccountsOperation,
     send_mail: impl SendMail,
-) -> RespResult<TempAccount> {
+) -> RespResult<TempAccountsResult> {
     let _a = async {
         let _ = op.user_exists(email_addr);
         op.create_temp_account(email_addr, password, simple_uuid, registered_time)
@@ -80,7 +80,7 @@ async fn post_temp_accounts_internal(
     .await;
     let ret = (
         StatusCode::OK,
-        Json(TempAccount {
+        Json(TempAccountsResult {
             email_addr: email_addr.to_string(),
         }),
     );
