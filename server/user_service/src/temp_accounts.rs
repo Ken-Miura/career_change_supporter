@@ -214,29 +214,56 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
 #[cfg(test)]
 mod tests {
 
+    use common::util::is_password_match;
+
     use super::*;
 
-    struct TempAccountsOperationMock {
+    struct TempAccountsOperationMock<'a> {
         user_exists: bool,
         cnt: i64,
+        uuid: &'a str,
+        email_address: &'a str,
+        password: &'a str,
+        register_time: &'a DateTime<Utc>,
     }
 
-    impl TempAccountsOperationMock {
-        fn new(user_exists: bool, cnt: i64) -> Self {
-            Self { user_exists, cnt }
+    impl<'a> TempAccountsOperationMock<'a> {
+        fn new(
+            user_exists: bool,
+            cnt: i64,
+            uuid: &'a str,
+            email_address: &'a str,
+            password: &'a str,
+            register_time: &'a DateTime<Utc>,
+        ) -> Self {
+            Self {
+                user_exists,
+                cnt,
+                uuid,
+                email_address,
+                password,
+                register_time,
+            }
         }
     }
 
-    impl TempAccountsOperation for TempAccountsOperationMock {
-        fn user_exists(&self, _email_addr: &str) -> Result<bool, ErrResp> {
+    impl<'a> TempAccountsOperation for TempAccountsOperationMock<'a> {
+        fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
+            assert_eq!(self.email_address, email_addr);
             Ok(self.user_exists)
         }
 
-        fn num_of_temp_accounts(&self, _email_addr: &str) -> Result<i64, ErrResp> {
+        fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {
+            assert_eq!(self.email_address, email_addr);
             Ok(self.cnt)
         }
 
-        fn create_temp_account(&self, _temp_account: NewTempAccount) -> Result<(), ErrResp> {
+        fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp> {
+            assert_eq!(self.uuid, temp_account.user_temp_account_id);
+            assert_eq!(self.email_address, temp_account.email_address);
+            let result = is_password_match(self.password, temp_account.hashed_password).expect("failed to get Ok");
+            assert!(result, "password not match");
+            assert_eq!(self.register_time, temp_account.created_at);
             Ok(())
         }
     }
@@ -283,13 +310,21 @@ mod tests {
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now();
-        let op_mock = TempAccountsOperationMock::new(false, 0);
+        let op_mock = TempAccountsOperationMock::new(
+            false,
+            0,
+            &uuid_str,
+            email_address,
+            password,
+            &current_date_time,
+        );
         let send_mail_mock = SendMailMock::new(
             email_address.to_string(),
             SYSTEM_EMAIL_ADDRESS.to_string(),
             SUBJECT.to_string(),
             create_text(url, &uuid_str),
         );
+
         let result = post_temp_accounts_internal(
             email_address,
             password,
@@ -300,6 +335,7 @@ mod tests {
             send_mail_mock,
         )
         .await;
+
         let resp = result.expect("failed to get Ok");
         assert_eq!(resp.0, StatusCode::OK);
         assert_eq!(resp.1.email_address, email_address);
