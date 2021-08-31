@@ -54,6 +54,7 @@ pub(crate) async fn post_temp_accounts(
     let ret = post_temp_accounts_internal(
         &cred.email_address,
         &cred.password,
+        &URL_FOR_FRONT_END.to_string(),
         uuid,
         current_date_time,
         op,
@@ -72,6 +73,7 @@ pub(crate) struct TempAccountsResult {
 async fn post_temp_accounts_internal(
     email_addr: &str,
     password: &str,
+    url: &str,
     simple_uuid: Simple,
     register_time: DateTime<Utc>,
     op: impl TempAccountsOperation,
@@ -113,7 +115,7 @@ async fn post_temp_accounts_internal(
         op.create_temp_account(temp_account)
     }
     .await?;
-    let text = create_text(&uuid_2);
+    let text = create_text(url, &uuid_2);
     let _ = async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, SUBJECT, &text) }.await?;
     Ok((
         StatusCode::OK,
@@ -123,7 +125,7 @@ async fn post_temp_accounts_internal(
     ))
 }
 
-fn create_text(uuid_str: &str) -> String {
+fn create_text(url: &str, uuid_str: &str) -> String {
     // TODO: 文面の調整
     format!(
         r"!!注意!! まだユーザー登録は完了していません。
@@ -142,9 +144,7 @@ fn create_text(uuid_str: &str) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        URL_FOR_FRONT_END.to_string(),
-        uuid_str,
-        INQUIRY_EMAIL_ADDRESS
+        url, uuid_str, INQUIRY_EMAIL_ADDRESS
     )
 }
 
@@ -213,12 +213,95 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use core::panic;
 
     use super::*;
 
+    struct TempAccountsOperationMock {
+        user_exists: bool,
+        cnt: i64,
+    }
+
+    impl TempAccountsOperationMock {
+        fn new(user_exists: bool, cnt: i64) -> Self {
+            Self { user_exists, cnt }
+        }
+    }
+
+    impl TempAccountsOperation for TempAccountsOperationMock {
+        fn user_exists(&self, _email_addr: &str) -> Result<bool, ErrResp> {
+            Ok(self.user_exists)
+        }
+
+        fn num_of_temp_accounts(&self, _email_addr: &str) -> Result<i64, ErrResp> {
+            Ok(self.cnt)
+        }
+
+        fn create_temp_account(&self, _temp_account: NewTempAccount) -> Result<(), ErrResp> {
+            Ok(())
+        }
+    }
+
+    struct SendMailMock {
+        to: String,
+        from: String,
+        subject: String,
+        text: String,
+    }
+
+    impl SendMailMock {
+        fn new(to: String, from: String, subject: String, text: String) -> Self {
+            Self {
+                to,
+                from,
+                subject,
+                text,
+            }
+        }
+    }
+
+    impl SendMail for SendMailMock {
+        fn send_mail(
+            &self,
+            to: &str,
+            from: &str,
+            subject: &str,
+            text: &str,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.to, to);
+            assert_eq!(self.from, from);
+            assert_eq!(self.subject, subject);
+            assert_eq!(self.text, text);
+            Ok(())
+        }
+    }
+
     #[tokio::test]
-    async fn my_test() {
-        assert!(true);
+    async fn temp_accounts_success() {
+        let email_address = "test@example.com";
+        let password: &str = "aaaaaaaaaB";
+        let url: &str = "http://localhost:8080";
+        let uuid = Uuid::new_v4().to_simple();
+        let uuid_str = uuid.to_string();
+        let current_date_time = chrono::Utc::now();
+        let op_mock = TempAccountsOperationMock::new(false, 0);
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(url, &uuid_str),
+        );
+        let result = post_temp_accounts_internal(
+            email_address,
+            password,
+            url,
+            uuid,
+            current_date_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(resp.1.email_address, email_address);
     }
 }

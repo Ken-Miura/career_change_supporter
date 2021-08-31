@@ -11,7 +11,7 @@ pub mod schema;
 pub mod smtp;
 pub mod util;
 
-use std::env::var;
+use std::{env::var, fmt::Debug};
 
 use axum::{
     async_trait, extract,
@@ -37,7 +37,7 @@ pub type ErrResp = Resp<ApiError>;
 /// API呼び出しに失敗した際のエラー
 ///
 /// メンバー[`Self::code`]に、エラーの理由を示すコードを含む。
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct ApiError {
     pub code: u32,
 }
