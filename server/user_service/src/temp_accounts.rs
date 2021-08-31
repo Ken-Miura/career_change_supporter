@@ -64,7 +64,7 @@ pub(crate) async fn post_temp_accounts(
     Ok(ret)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub(crate) struct TempAccountsResult {
     email_address: String,
 }
@@ -261,7 +261,8 @@ mod tests {
         fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp> {
             assert_eq!(self.uuid, temp_account.user_temp_account_id);
             assert_eq!(self.email_address, temp_account.email_address);
-            let result = is_password_match(self.password, temp_account.hashed_password).expect("failed to get Ok");
+            let result = is_password_match(self.password, temp_account.hashed_password)
+                .expect("failed to get Ok");
             assert!(result, "password not match");
             assert_eq!(self.register_time, temp_account.created_at);
             Ok(())
@@ -312,7 +313,7 @@ mod tests {
         let current_date_time = chrono::Utc::now();
         let op_mock = TempAccountsOperationMock::new(
             false,
-            0,
+            MAX_TEMP_ACCOUNTS - 1,
             &uuid_str,
             email_address,
             password,
@@ -339,5 +340,83 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(resp.0, StatusCode::OK);
         assert_eq!(resp.1.email_address, email_address);
+    }
+
+    #[tokio::test]
+    async fn temp_accounts_fail_account_already_exists() {
+        let email_address = "test@example.com";
+        let password: &str = "aaaaaaaaaB";
+        let url: &str = "http://localhost:8080";
+        let uuid = Uuid::new_v4().to_simple();
+        let uuid_str = uuid.to_string();
+        let current_date_time = chrono::Utc::now();
+        let op_mock = TempAccountsOperationMock::new(
+            true,
+            0,
+            &uuid_str,
+            email_address,
+            password,
+            &current_date_time,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(url, &uuid_str),
+        );
+
+        let result = post_temp_accounts_internal(
+            email_address,
+            password,
+            url,
+            uuid,
+            current_date_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1.code, ACCOUNT_ALREADY_EXISTS);
+    }
+
+    #[tokio::test]
+    async fn temp_accounts_fail_reach_max_temp_accounts_limit() {
+        let email_address = "test@example.com";
+        let password: &str = "aaaaaaaaaB";
+        let url: &str = "http://localhost:8080";
+        let uuid = Uuid::new_v4().to_simple();
+        let uuid_str = uuid.to_string();
+        let current_date_time = chrono::Utc::now();
+        let op_mock = TempAccountsOperationMock::new(
+            false,
+            MAX_TEMP_ACCOUNTS,
+            &uuid_str,
+            email_address,
+            password,
+            &current_date_time,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(url, &uuid_str),
+        );
+
+        let result = post_temp_accounts_internal(
+            email_address,
+            password,
+            url,
+            uuid,
+            current_date_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1.code, REACH_TEMP_ACCOUNTS_LIMIT);
     }
 }
