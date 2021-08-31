@@ -10,12 +10,13 @@ use common::schema::ccs_schema::user_temp_account::dsl::{
     email_address as temp_user_email_addr, user_temp_account,
 };
 use common::schema::ccs_schema::user_temp_account::table as user_temp_account_table;
+use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::hash_password;
-use common::ApiError;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     DatabaseConnection, ErrResp, RespResult, ValidCred,
 };
+use common::{ApiError, URL_FOR_FRONT_END};
 use diesel::dsl::count_star;
 use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::query_dsl::select_dsl::SelectDsl;
@@ -32,7 +33,10 @@ use crate::err_code::{ACCOUNT_ALREADY_EXISTS, REACH_TEMP_ACCOUNTS_LIMIT};
 use crate::util::unexpected_err_resp;
 
 // TODO: 運用しながら上限を調整する
-const MAX_TEMP_ACCOUNTS: i64 = 7;
+const MAX_TEMP_ACCOUNTS: i64 = 5;
+
+// TODO: 文面の調整
+const SUBJECT: &str = "[就職転職に失敗しないためのサイト] ユーザー登録用URLのお知らせ";
 
 /// 一時アカウントを作成する。<br>
 /// <br>
@@ -77,7 +81,9 @@ async fn post_temp_accounts_internal(
         tracing::error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
-    let cnt = async move {
+    let uuid_1 = simple_uuid.to_string();
+    let uuid_2 = uuid_1.clone();
+    let _ = async move {
         let exists = op.user_exists(email_addr)?;
         if exists {
             tracing::error!("user account ({}) already exists", email_addr);
@@ -99,25 +105,47 @@ async fn post_temp_accounts_internal(
             ));
         }
         let temp_account = NewTempAccount {
-            user_temp_account_id: &simple_uuid.to_string(),
+            user_temp_account_id: &uuid_1,
             email_address: email_addr,
             hashed_password: &hashed_pwd,
             created_at: &register_time,
         };
-        let _ = op.create_temp_account(temp_account)?;
-        Ok(cnt)
+        op.create_temp_account(temp_account)
     }
     .await?;
-    let _ = async {
-        send_mail.send_mail("to@test.com", "from@test.com", "サブジェクト", "テキスト")
-    }
-    .await?;
+    let text = create_text(&uuid_2);
+    let _ = async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, SUBJECT, &text) }.await?;
     Ok((
         StatusCode::OK,
         Json(TempAccountsResult {
             email_address: email_addr.to_string(),
         }),
     ))
+}
+
+fn create_text(uuid_str: &str) -> String {
+    // TODO: 文面の調整
+    format!(
+        r"!!注意!! まだユーザー登録は完了していません。
+
+このたびは、就職転職に失敗しないためのサイトのユーザー登録手続きをしていただき、ありがとうございます。
+
+下記URLに、PCまたはスマートフォンでアクセスしてご登録手続きの完了をお願いいたします。
+{}/accounts?temp-account-id={}
+
+※このURLの有効期間は手続き受付時より24時間です。URLが無効となった場合は、最初からやり直してください。
+※本メールにお心あたりが無い場合、他の方が誤ってあなたのメールアドレスを入力した可能性があります。お心あたりがない場合、本メールは破棄していただくようお願いいたします。
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+        URL_FOR_FRONT_END.to_string(),
+        uuid_str,
+        INQUIRY_EMAIL_ADDRESS
+    )
 }
 
 trait TempAccountsOperation {

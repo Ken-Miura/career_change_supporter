@@ -10,6 +10,11 @@ use std::net::SocketAddr;
 
 use crate::{err_code, ApiError, ErrResp};
 
+// TODO: 実際にメールアドレスを取得した後、修正する
+pub const SYSTEM_EMAIL_ADDRESS: &str = "admin@test.com";
+// TODO: 実際にメールアドレスを取得した後、修正する
+pub const INQUIRY_EMAIL_ADDRESS: &str = "inquiry@test.com";
+
 pub const KEY_TO_SOCKET_FOR_SMTP_SERVER: &str = "SOCKET_FOR_SMTP_SERVER";
 
 pub static SOCKET_FOR_SMTP_SERVER: Lazy<String> = Lazy::new(|| {
@@ -52,7 +57,7 @@ impl SendMail for SmtpClient {
                     }),
                 )
             })?;
-        let sock = self.socket.parse::<SocketAddr>().map_err(|e| {
+        let addr = self.socket.parse::<SocketAddr>().map_err(|e| {
             tracing::error!("failed to parse socket str: str={}, e={}", self.socket, e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -61,7 +66,6 @@ impl SendMail for SmtpClient {
                 }),
             )
         })?;
-        let addr = SocketAddr::from(sock);
         let client = lettre::SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
             tracing::error!("failed to create lettre::SmtpClient: {}", e);
             (

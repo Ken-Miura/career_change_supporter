@@ -9,7 +9,7 @@ use axum::handler::post;
 use axum::{AddExtensionLayer, Router};
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::util::check_env_vars;
-use common::ConnectionPool;
+use common::{ConnectionPool, KEY_TO_URL_FOR_FRONT_END};
 use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
 use dotenv::dotenv;
 use once_cell::sync::Lazy;
@@ -26,6 +26,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_DATABASE_URL.to_string(),
         KEY_TO_SOCKET.to_string(),
         KEY_TO_SOCKET_FOR_SMTP_SERVER.to_string(),
+        KEY_TO_URL_FOR_FRONT_END.to_string(),
     ]
 });
 
