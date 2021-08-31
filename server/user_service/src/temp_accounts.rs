@@ -210,3 +210,15 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core::panic;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn my_test() {
+        assert!(true);
+    }
+}
