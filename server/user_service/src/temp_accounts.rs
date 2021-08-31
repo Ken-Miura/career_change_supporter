@@ -11,6 +11,7 @@ use common::schema::ccs_schema::user_temp_account::dsl::{
 };
 use common::schema::ccs_schema::user_temp_account::table as user_temp_account_table;
 use common::util::hash_password;
+use common::ApiError;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     DatabaseConnection, ErrResp, RespResult, ValidCred,
@@ -27,7 +28,11 @@ use diesel::{
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
+use crate::err_code::{ACCOUNT_ALREADY_EXISTS, REACH_TEMP_ACCOUNTS_LIMIT};
 use crate::util::unexpected_err_resp;
+
+// TODO: 運用しながら上限を調整する
+const MAX_TEMP_ACCOUNTS: i64 = 7;
 
 /// 一時アカウントを作成する。<br>
 /// <br>
@@ -72,14 +77,26 @@ async fn post_temp_accounts_internal(
         tracing::error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
-    let _ = async move {
+    let cnt = async move {
         let exists = op.user_exists(email_addr)?;
         if exists {
-            todo!()
+            tracing::error!("user account ({}) already exists", email_addr);
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: ACCOUNT_ALREADY_EXISTS,
+                }),
+            ));
         }
         let cnt = op.num_of_temp_accounts(email_addr)?;
-        if cnt > 6 {
-            todo!()
+        // DBの分離レベルがSerializeでないため、MAX_TEMP_ACCOUNTSを超える可能性を考慮し、">="とする
+        if cnt >= MAX_TEMP_ACCOUNTS {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: REACH_TEMP_ACCOUNTS_LIMIT,
+                }),
+            ));
         }
         let temp_account = NewTempAccount {
             user_temp_account_id: &simple_uuid.to_string(),
@@ -87,7 +104,8 @@ async fn post_temp_accounts_internal(
             hashed_password: &hashed_pwd,
             created_at: &register_time,
         };
-        op.create_temp_account(temp_account)
+        let _ = op.create_temp_account(temp_account)?;
+        Ok(cnt)
     }
     .await?;
     let _ = async {
