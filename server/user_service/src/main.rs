@@ -71,7 +71,6 @@ async fn main_internal(num_of_cpus: u32) {
         .nest(
             "/api/users",
             Router::new().route("/temp-accounts", post(post_temp_accounts)),
-            //Router::new().route("/hello", post(|| async { "hello" })),
         )
         .layer(AddExtensionLayer::new(pool));
 
