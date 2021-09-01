@@ -40,9 +40,9 @@ const SUBJECT: &str = "[就職転職に失敗しないためのサイト] ユー
 
 /// 一時アカウントを作成する。<br>
 /// <br>
-///
 /// # Errors
-///
+/// すでにアカウントがある場合、ステータスコード400、エラーコード[ACCOUNT_ALREADY_EXISTS]を返す<br>
+/// MAX_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[REACH_TEMP_ACCOUNTS_LIMIT]を返す
 pub(crate) async fn post_temp_accounts(
     ValidCred(cred): ValidCred,
     DatabaseConnection(conn): DatabaseConnection,
