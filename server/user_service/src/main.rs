@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+mod accounts;
 mod err_code;
 mod temp_accounts;
 mod util;
