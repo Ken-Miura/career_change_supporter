@@ -42,7 +42,7 @@ CREATE TABLE ccs_schema.user_temp_account (
   hashed_password BYTEA NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
-GRANT SELECT, INSERT, DELETE ON ccs_schema.user_temp_account To user_app;
+GRANT SELECT, INSERT ON ccs_schema.user_temp_account To user_app;
 
 /* data structure for advisor */
 CREATE TABLE ccs_schema.advisor_registration_request (
