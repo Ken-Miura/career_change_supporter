@@ -51,17 +51,16 @@ pub(crate) async fn post_temp_accounts(
     let current_date_time = chrono::Utc::now();
     let op = TempAccountsOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    let ret = post_temp_accounts_internal(
+    post_temp_accounts_internal(
         &cred.email_address,
         &cred.password,
         &URL_FOR_FRONT_END.to_string(),
-        uuid,
-        current_date_time,
+        &uuid,
+        &current_date_time,
         op,
         smtp_client,
     )
-    .await?;
-    Ok(ret)
+    .await
 }
 
 #[derive(Serialize, Debug)]
@@ -74,8 +73,8 @@ async fn post_temp_accounts_internal(
     email_addr: &str,
     password: &str,
     url: &str,
-    simple_uuid: Simple,
-    register_time: DateTime<Utc>,
+    simple_uuid: &Simple,
+    register_time: &DateTime<Utc>,
     op: impl TempAccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<TempAccountsResult> {
@@ -112,7 +111,7 @@ async fn post_temp_accounts_internal(
             hashed_password: &hashed_pwd,
             created_at: &register_time,
         };
-        op.create_temp_account(temp_account)
+        op.create_temp_account(&temp_account)
     }
     .await?;
     let text = create_text(url, &uuid_2);
@@ -153,7 +152,7 @@ trait TempAccountsOperation {
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
     fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp>;
-    fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp>;
+    fn create_temp_account(&self, temp_account: &NewTempAccount) -> Result<(), ErrResp>;
 }
 
 struct TempAccountsOperationImpl {
@@ -199,7 +198,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
         Ok(cnt)
     }
 
-    fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp> {
+    fn create_temp_account(&self, temp_account: &NewTempAccount) -> Result<(), ErrResp> {
         let _ = insert_into(user_temp_account_table)
             .values(temp_account)
             .execute(&self.conn)
@@ -258,7 +257,7 @@ mod tests {
             Ok(self.cnt)
         }
 
-        fn create_temp_account(&self, temp_account: NewTempAccount) -> Result<(), ErrResp> {
+        fn create_temp_account(&self, temp_account: &NewTempAccount) -> Result<(), ErrResp> {
             assert_eq!(self.uuid, temp_account.user_temp_account_id);
             assert_eq!(self.email_address, temp_account.email_address);
             let result = is_password_match(self.password, temp_account.hashed_password)
@@ -330,8 +329,8 @@ mod tests {
             email_address,
             password,
             url,
-            uuid,
-            current_date_time,
+            &uuid,
+            &current_date_time,
             op_mock,
             send_mail_mock,
         )
@@ -369,8 +368,8 @@ mod tests {
             email_address,
             password,
             url,
-            uuid,
-            current_date_time,
+            &uuid,
+            &current_date_time,
             op_mock,
             send_mail_mock,
         )
@@ -408,8 +407,8 @@ mod tests {
             email_address,
             password,
             url,
-            uuid,
-            current_date_time,
+            &uuid,
+            &current_date_time,
             op_mock,
             send_mail_mock,
         )
