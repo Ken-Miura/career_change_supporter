@@ -58,6 +58,9 @@ async fn get_accounts_internal(
         op.create_account(&account)
     }
     .await;
+    let _ = async {
+        send_mail.send_mail("to", "from", "subject", "text")
+    }.await;
     Ok((StatusCode::OK, Json(AccountsResult {})))
 }
 
