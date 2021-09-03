@@ -5,7 +5,9 @@ use axum::{extract::Query, Json};
 use chrono::{DateTime, Utc};
 use common::model::user::NewAccount;
 use common::model::user::TempAccount;
-use common::smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS};
+use common::smtp::{
+    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
+};
 use common::util::validator::validate_uuid;
 use common::{ApiError, DatabaseConnection, ErrResp, RespResult};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
@@ -15,8 +17,8 @@ use serde::Serialize;
 
 use crate::err_code::{ACCOUNT_ALREADY_EXISTS, INVALID_UUID, TEMP_ACCOUNT_EXPIRED};
 
-const SUBJECT: &str = "";
-const TEXT: &str = "";
+// TODO: 文面の調整
+const SUBJECT: &str = "[就職転職に失敗しないためのサイト] ユーザー登録完了通知";
 
 /// アカウントを作成する<br>
 /// <br>
@@ -91,8 +93,9 @@ async fn get_accounts_internal(
         Ok(temp_account.email_address)
     }
     .await?;
+    let text = create_text();
     let _ =
-        async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, "subject", "text") }.await?;
+        async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, SUBJECT, &text) }.await?;
     Ok((StatusCode::OK, Json(AccountsResult {})))
 }
 
@@ -100,6 +103,23 @@ async fn get_accounts_internal(
 pub(crate) struct TempAccountId {
     #[serde(rename = "temp-account-id")]
     temp_account_id: String,
+}
+
+fn create_text() -> String {
+    // TODO: 文面の調整
+    format!(
+        r"ユーザー登録が完了いたしました。このたびは就職転職に失敗しないためのサイトへのご登録ありがとうございます。
+
+アドバイザーに相談を申し込むには、ご本人確認が必要となります。引き続き、ログイン後、プロフィールよりご本人確認の申請をお願いいたします。
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+        INQUIRY_EMAIL_ADDRESS
+    )
 }
 
 trait AccountsOperation {
