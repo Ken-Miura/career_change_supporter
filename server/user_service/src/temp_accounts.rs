@@ -109,7 +109,7 @@ async fn post_temp_accounts_internal(
             user_temp_account_id: &uuid_1,
             email_address: email_addr,
             hashed_password: &hashed_pwd,
-            created_at: &register_time,
+            created_at: register_time,
         };
         op.create_temp_account(&temp_account)
     }

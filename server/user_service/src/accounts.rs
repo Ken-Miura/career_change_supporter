@@ -5,13 +5,18 @@ use axum::{extract::Query, Json};
 use chrono::{DateTime, Utc};
 use common::model::user::NewAccount;
 use common::model::user::TempAccount;
-use common::smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER};
+use common::smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS};
 use common::util::validator::validate_uuid;
-use common::{DatabaseConnection, ErrResp, RespResult};
+use common::{ApiError, DatabaseConnection, ErrResp, RespResult};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::PgConnection;
 use serde::Deserialize;
 use serde::Serialize;
+
+use crate::err_code::{ACCOUNT_ALREADY_EXISTS, INVALID_UUID, TEMP_ACCOUNT_EXPIRED};
+
+const SUBJECT: &str = "";
+const TEXT: &str = "";
 
 /// アカウントを作成する<br>
 /// <br>
@@ -41,26 +46,53 @@ async fn get_accounts_internal(
     op: impl AccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<AccountsResult> {
-    let _ = validate_uuid(temp_account_id).map_err(|e| {});
-    let _ = async move {
-        let temp_account = op.find_temp_account_by_id(temp_account_id).unwrap();
-        // check if expired
-        todo!();
-        let exists = op.user_exists(&temp_account.email_address).unwrap();
+    let _ = validate_uuid(temp_account_id).map_err(|e| {
+        tracing::error!("invalid uuid ({}): {}", temp_account_id, e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError { code: INVALID_UUID }),
+        )
+    })?;
+    let email_addr = async move {
+        let temp_account = op.find_temp_account_by_id(temp_account_id)?;
+        let exists = op.user_exists(&temp_account.email_address)?;
         if exists {
-            todo!();
+            tracing::error!(
+                "failed to create account: user account ({}) already exists",
+                &temp_account.email_address
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: ACCOUNT_ALREADY_EXISTS,
+                }),
+            ));
+        }
+        let duration = *current_date_time - temp_account.created_at;
+        if duration.num_days() > 0 {
+            tracing::error!(
+                "temp account (created at {}) already expired at {}",
+                &temp_account.created_at,
+                current_date_time
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: TEMP_ACCOUNT_EXPIRED,
+                }),
+            ));
         }
         let account = NewAccount {
             email_address: &temp_account.email_address,
             hashed_password: &temp_account.hashed_password,
             last_login_time: None,
         };
-        op.create_account(&account)
+        let _ = op.create_account(&account)?;
+        Ok(temp_account.email_address)
     }
-    .await;
-    let _ = async {
-        send_mail.send_mail("to", "from", "subject", "text")
-    }.await;
+    .await?;
+    let _ =
+        async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, "subject", "text") }.await?;
     Ok((StatusCode::OK, Json(AccountsResult {})))
 }
 
