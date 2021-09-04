@@ -3,9 +3,6 @@
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Utc};
 use common::model::user::NewTempAccount;
-use common::schema::ccs_schema::user_account::dsl::{
-    email_address as user_email_addr, user_account,
-};
 use common::schema::ccs_schema::user_temp_account::dsl::{
     email_address as temp_user_email_addr, user_temp_account,
 };
@@ -30,7 +27,7 @@ use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
 use crate::err_code::{ACCOUNT_ALREADY_EXISTS, REACH_TEMP_ACCOUNTS_LIMIT};
-use crate::util::unexpected_err_resp;
+use crate::util::{self, unexpected_err_resp};
 
 // TODO: 運用しながら上限を調整する
 const MAX_TEMP_ACCOUNTS: i64 = 5;
@@ -167,19 +164,7 @@ impl TempAccountsOperationImpl {
 
 impl TempAccountsOperation for TempAccountsOperationImpl {
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        let cnt = user_account
-            .filter(user_email_addr.eq(email_addr))
-            .select(count_star())
-            .get_result::<i64>(&self.conn)
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to check if user account ({}) exists: {}",
-                    email_addr,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(cnt != 0)
+        util::user_exists(&self.conn, email_addr)
     }
 
     fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {

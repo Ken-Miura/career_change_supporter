@@ -5,17 +5,23 @@ use axum::{extract::Query, Json};
 use chrono::{DateTime, Utc};
 use common::model::user::NewAccount;
 use common::model::user::TempAccount;
+use common::schema::ccs_schema::user_temp_account::dsl::user_temp_account;
 use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::validator::validate_uuid;
 use common::{ApiError, DatabaseConnection, ErrResp, RespResult};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::PgConnection;
+use diesel::result::Error::NotFound;
+use diesel::RunQueryDsl;
+use diesel::{PgConnection, QueryDsl};
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::err_code::{ACCOUNT_ALREADY_EXISTS, INVALID_UUID, TEMP_ACCOUNT_EXPIRED};
+use crate::err_code::{
+    ACCOUNT_ALREADY_EXISTS, INVALID_UUID, NO_TEMP_ACCOUNT_FOUND, TEMP_ACCOUNT_EXPIRED,
+};
+use crate::util::{self, unexpected_err_resp};
 
 // TODO: 文面の調整
 const SUBJECT: &str = "[就職転職に失敗しないためのサイト] ユーザー登録完了通知";
@@ -142,14 +148,31 @@ impl AccountsOperationImpl {
 
 impl AccountsOperation for AccountsOperationImpl {
     fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
-        todo!()
+        let result = user_temp_account
+            .find(temp_account_id)
+            .first::<TempAccount>(&self.conn);
+        match result {
+            Ok(temp_account) => Ok(temp_account),
+            Err(e) => {
+                if e == NotFound {
+                    Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: NO_TEMP_ACCOUNT_FOUND,
+                        }),
+                    ))
+                } else {
+                    Err(unexpected_err_resp())
+                }
+            }
+        }
     }
 
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        todo!()
+        util::user_exists(&self.conn, email_addr)
     }
 
-    fn create_account(&self, temp_account: &NewAccount) -> Result<(), ErrResp> {
+    fn create_account(&self, _temp_account: &NewAccount) -> Result<(), ErrResp> {
         todo!()
     }
 }
