@@ -188,7 +188,12 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
             .values(temp_account)
             .execute(&self.conn)
             .map_err(|e| {
-                tracing::error!("failed to insert user temp account: {}", e);
+                tracing::error!(
+                    "failed to insert user temp account (id: {}, email address: {}): {}",
+                    temp_account.user_temp_account_id,
+                    temp_account.email_address,
+                    e
+                );
                 unexpected_err_resp()
             });
         Ok(())
