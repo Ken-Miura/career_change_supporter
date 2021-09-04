@@ -56,7 +56,7 @@ async fn get_accounts_internal(
     send_mail: impl SendMail,
 ) -> RespResult<AccountsResult> {
     let _ = validate_uuid(temp_account_id).map_err(|e| {
-        tracing::error!("invalid uuid ({}): {}", temp_account_id, e);
+        tracing::error!("failed to validate uuid ({}): {}", temp_account_id, e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError { code: INVALID_UUID }),
