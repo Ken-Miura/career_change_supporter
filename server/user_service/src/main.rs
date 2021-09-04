@@ -17,6 +17,7 @@ use dotenv::dotenv;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
+use tower_http::trace::TraceLayer;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_USER_APP";
@@ -76,7 +77,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/temp-accounts", post(post_temp_accounts))
                 .route("/accounts", get(get_accounts)),
         )
-        .layer(AddExtensionLayer::new(pool));
+        .layer(AddExtensionLayer::new(pool))
+        .layer(TraceLayer::new_for_http());
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
             panic!(
