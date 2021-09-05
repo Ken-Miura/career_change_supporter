@@ -188,3 +188,51 @@ impl AccountsOperation for AccountsOperationImpl {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct AccountsOperationMock {
+        temp_account: TempAccount,
+        no_temp_account_found: bool,
+        exists: bool,
+    }
+
+    impl AccountsOperationMock {
+        fn new(temp_account: TempAccount, no_temp_account_found: bool, exists: bool) -> Self {
+            Self {
+                temp_account,
+                no_temp_account_found,
+                exists,
+            }
+        }
+    }
+
+    impl AccountsOperation for AccountsOperationMock {
+        fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
+            assert_eq!(&self.temp_account.user_temp_account_id, temp_account_id);
+            if self.no_temp_account_found {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: NO_TEMP_ACCOUNT_FOUND,
+                    }),
+                ));
+            }
+            Ok(self.temp_account.clone())
+        }
+
+        fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
+            assert_eq!(&self.temp_account.email_address, email_addr);
+            Ok(self.exists)
+        }
+
+        fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp> {
+            assert_eq!(&self.temp_account.email_address, account.email_address);
+            assert_eq!(&self.temp_account.hashed_password, account.hashed_password);
+            assert_eq!(None, account.last_login_time);
+            Ok(())
+        }
+    }
+}

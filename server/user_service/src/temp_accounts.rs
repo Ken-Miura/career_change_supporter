@@ -205,6 +205,8 @@ mod tests {
 
     use common::util::is_password_match;
 
+    use crate::util::tests::SendMailMock;
+
     use super::*;
 
     struct TempAccountsOperationMock<'a> {
@@ -254,40 +256,6 @@ mod tests {
                 .expect("failed to get Ok");
             assert!(result, "password not match");
             assert_eq!(self.register_time, temp_account.created_at);
-            Ok(())
-        }
-    }
-
-    struct SendMailMock {
-        to: String,
-        from: String,
-        subject: String,
-        text: String,
-    }
-
-    impl SendMailMock {
-        fn new(to: String, from: String, subject: String, text: String) -> Self {
-            Self {
-                to,
-                from,
-                subject,
-                text,
-            }
-        }
-    }
-
-    impl SendMail for SendMailMock {
-        fn send_mail(
-            &self,
-            to: &str,
-            from: &str,
-            subject: &str,
-            text: &str,
-        ) -> Result<(), ErrResp> {
-            assert_eq!(self.to, to);
-            assert_eq!(self.from, from);
-            assert_eq!(self.subject, subject);
-            assert_eq!(self.text, text);
             Ok(())
         }
     }

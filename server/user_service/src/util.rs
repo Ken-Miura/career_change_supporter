@@ -37,3 +37,43 @@ pub(crate) fn user_exists(
         })?;
     Ok(cnt != 0)
 }
+
+/// テストコードで共通で使うコードをまとめるモジュール
+#[cfg(test)]
+pub(crate) mod tests {
+    use common::{smtp::SendMail, ErrResp};
+
+    pub(crate) struct SendMailMock {
+        to: String,
+        from: String,
+        subject: String,
+        text: String,
+    }
+
+    impl SendMailMock {
+        pub(crate) fn new(to: String, from: String, subject: String, text: String) -> Self {
+            Self {
+                to,
+                from,
+                subject,
+                text,
+            }
+        }
+    }
+
+    impl SendMail for SendMailMock {
+        fn send_mail(
+            &self,
+            to: &str,
+            from: &str,
+            subject: &str,
+            text: &str,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.to, to);
+            assert_eq!(self.from, from);
+            assert_eq!(self.subject, subject);
+            assert_eq!(self.text, text);
+            Ok(())
+        }
+    }
+}
