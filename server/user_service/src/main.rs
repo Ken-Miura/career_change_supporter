@@ -72,7 +72,7 @@ async fn main_internal(num_of_cpus: u32) {
 
     let app = Router::new()
         .nest(
-            "/api/users",
+            "/api",
             Router::new()
                 .route("/temp-accounts", post(post_temp_accounts))
                 .route("/accounts", get(get_accounts)),
