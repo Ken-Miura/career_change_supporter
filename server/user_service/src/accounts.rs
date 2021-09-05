@@ -46,7 +46,7 @@ pub(crate) async fn get_accounts(
     .await
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct AccountsResult {}
 
 async fn get_accounts_internal(
@@ -191,6 +191,12 @@ impl AccountsOperation for AccountsOperationImpl {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{Duration, TimeZone};
+    use common::util::hash_password;
+    use uuid::Uuid;
+
+    use crate::util::tests::SendMailMock;
+
     use super::*;
 
     struct AccountsOperationMock {
@@ -234,5 +240,34 @@ mod tests {
             assert_eq!(None, account.last_login_time);
             Ok(())
         }
+    }
+
+    #[tokio::test]
+    async fn accounts_success() {
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let email_addr = "test@test.com";
+        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let temp_account = TempAccount {
+            user_temp_account_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            created_at: register_date_time,
+        };
+        let op_mock = AccountsOperationMock::new(temp_account, false, false);
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+        let current_date_time = register_date_time + Duration::days(1) - Duration::seconds(1);
+
+        let result =
+            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(AccountsResult {}, resp.1 .0);
     }
 }
