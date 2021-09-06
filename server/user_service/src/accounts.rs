@@ -95,7 +95,7 @@ async fn get_accounts_internal(
             email_address: &temp_account.email_address,
             hashed_password: &temp_account.hashed_password,
             last_login_time: None,
-            created_at: current_date_time
+            created_at: current_date_time,
         };
         let _ = op.create_account(&account)?;
         Ok(temp_account.email_address)
@@ -209,21 +209,26 @@ mod tests {
         temp_account: &'a TempAccount,
         no_temp_account_found: bool,
         exists: bool,
-        current_date_time: &'a DateTime<Utc>
+        current_date_time: &'a DateTime<Utc>,
     }
 
-    impl <'a> AccountsOperationMock <'a> {
-        fn new(temp_account: &'a TempAccount, no_temp_account_found: bool, exists: bool, current_date_time: &'a DateTime<Utc>) -> Self {
+    impl<'a> AccountsOperationMock<'a> {
+        fn new(
+            temp_account: &'a TempAccount,
+            no_temp_account_found: bool,
+            exists: bool,
+            current_date_time: &'a DateTime<Utc>,
+        ) -> Self {
             Self {
                 temp_account,
                 no_temp_account_found,
                 exists,
-                current_date_time
+                current_date_time,
             }
         }
     }
 
-    impl <'a> AccountsOperation for AccountsOperationMock<'a> {
+    impl<'a> AccountsOperation for AccountsOperationMock<'a> {
         fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
             assert_eq!(&self.temp_account.user_temp_account_id, temp_account_id);
             if self.no_temp_account_found {
@@ -278,5 +283,121 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(AccountsResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn accounts_fail_invalid_uuid() {
+        let uuid = "0123456789abcABC".to_string();
+        let email_addr = "test@test.com";
+        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let temp_account = TempAccount {
+            user_temp_account_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            created_at: register_date_time,
+        };
+        let current_date_time = register_date_time + Duration::days(1) - Duration::seconds(1);
+        let op_mock = AccountsOperationMock::new(&temp_account, false, false, &current_date_time);
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result =
+            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(INVALID_UUID, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn accounts_fail_temp_account_expired() {
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let email_addr = "test@test.com";
+        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let temp_account = TempAccount {
+            user_temp_account_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            created_at: register_date_time,
+        };
+        let current_date_time = register_date_time + Duration::days(1);
+        let op_mock = AccountsOperationMock::new(&temp_account, false, false, &current_date_time);
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result =
+            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(TEMP_ACCOUNT_EXPIRED, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn accounts_fail_no_temp_account_found() {
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let email_addr = "test@test.com";
+        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let temp_account = TempAccount {
+            user_temp_account_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            created_at: register_date_time,
+        };
+        let current_date_time = register_date_time + Duration::days(1) - Duration::seconds(1);
+        let op_mock = AccountsOperationMock::new(&temp_account, true, false, &current_date_time);
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result =
+            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(NO_TEMP_ACCOUNT_FOUND, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn accounts_fail_account_exists() {
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let email_addr = "test@test.com";
+        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let temp_account = TempAccount {
+            user_temp_account_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            created_at: register_date_time,
+        };
+        let current_date_time = register_date_time + Duration::days(1) - Duration::seconds(1);
+        let op_mock = AccountsOperationMock::new(&temp_account, false, true, &current_date_time);
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result =
+            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(ACCOUNT_ALREADY_EXISTS, resp.1.code);
     }
 }
