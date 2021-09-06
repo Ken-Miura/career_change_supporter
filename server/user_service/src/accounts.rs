@@ -30,6 +30,10 @@ const SUBJECT: &str = "[就職転職に失敗しないためのサイト] ユー
 /// アカウントを作成する<br>
 /// <br>
 /// # Errors
+/// すでにアカウントがある場合、ステータスコード400、エラーコード[ACCOUNT_ALREADY_EXISTS]を返す<br>
+/// UUIDが不正な形式の場合、ステータスコード400、エラーコード[INVALID_UUID]を返す<br>
+/// 一時アカウントが見つからない場合、ステータスコード400、エラーコード[NO_TEMP_ACCOUNT_FOUND]を返す<br>
+/// 一時アカウントが期限切れの場合、ステータスコード400、エラーコード[TEMP_ACCOUNT_EXPIRED]を返す<br>
 pub(crate) async fn get_accounts(
     temp_account: Query<TempAccountId>,
     DatabaseConnection(conn): DatabaseConnection,
