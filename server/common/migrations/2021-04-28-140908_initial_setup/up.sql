@@ -26,7 +26,8 @@ CREATE TABLE ccs_schema.user_account (
   /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
   email_address ccs_schema.email_address UNIQUE,
   hashed_password BYTEA NOT NULL,
-  last_login_time TIMESTAMP WITH TIME ZONE
+  last_login_time TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.user_account To user_app;
 /* 

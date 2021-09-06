@@ -95,6 +95,7 @@ async fn get_accounts_internal(
             email_address: &temp_account.email_address,
             hashed_password: &temp_account.hashed_password,
             last_login_time: None,
+            created_at: current_date_time
         };
         let _ = op.create_account(&account)?;
         Ok(temp_account.email_address)
@@ -204,23 +205,25 @@ mod tests {
 
     use super::*;
 
-    struct AccountsOperationMock {
-        temp_account: TempAccount,
+    struct AccountsOperationMock<'a> {
+        temp_account: &'a TempAccount,
         no_temp_account_found: bool,
         exists: bool,
+        current_date_time: &'a DateTime<Utc>
     }
 
-    impl AccountsOperationMock {
-        fn new(temp_account: TempAccount, no_temp_account_found: bool, exists: bool) -> Self {
+    impl <'a> AccountsOperationMock <'a> {
+        fn new(temp_account: &'a TempAccount, no_temp_account_found: bool, exists: bool, current_date_time: &'a DateTime<Utc>) -> Self {
             Self {
                 temp_account,
                 no_temp_account_found,
                 exists,
+                current_date_time
             }
         }
     }
 
-    impl AccountsOperation for AccountsOperationMock {
+    impl <'a> AccountsOperation for AccountsOperationMock<'a> {
         fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
             assert_eq!(&self.temp_account.user_temp_account_id, temp_account_id);
             if self.no_temp_account_found {
@@ -243,6 +246,7 @@ mod tests {
             assert_eq!(&self.temp_account.email_address, account.email_address);
             assert_eq!(&self.temp_account.hashed_password, account.hashed_password);
             assert_eq!(None, account.last_login_time);
+            assert_eq!(&self.current_date_time, &account.created_at);
             Ok(())
         }
     }
@@ -259,14 +263,14 @@ mod tests {
             hashed_password: hashed_pwd,
             created_at: register_date_time,
         };
-        let op_mock = AccountsOperationMock::new(temp_account, false, false);
+        let current_date_time = register_date_time + Duration::days(1) - Duration::seconds(1);
+        let op_mock = AccountsOperationMock::new(&temp_account, false, false, &current_date_time);
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
             SYSTEM_EMAIL_ADDRESS.to_string(),
             SUBJECT.to_string(),
             create_text(),
         );
-        let current_date_time = register_date_time + Duration::days(1) - Duration::seconds(1);
 
         let result =
             get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;

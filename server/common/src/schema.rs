@@ -194,6 +194,7 @@ pub mod ccs_schema {
             email_address -> Varchar,
             hashed_password -> Bytea,
             last_login_time -> Nullable<Timestamptz>,
+            created_at -> Timestamptz,
         }
     }
 
