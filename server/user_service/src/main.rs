@@ -2,10 +2,12 @@
 
 mod accounts;
 mod err_code;
+mod login;
 mod temp_accounts;
 mod util;
 
 use crate::accounts::get_accounts;
+use crate::login::post_login;
 use crate::temp_accounts::post_temp_accounts;
 use async_redis_session::RedisSessionStore;
 use axum::handler::{get, post};
@@ -86,7 +88,8 @@ async fn main_internal(num_of_cpus: u32) {
             "/api",
             Router::new()
                 .route("/temp-accounts", post(post_temp_accounts))
-                .route("/accounts", get(get_accounts)),
+                .route("/accounts", get(get_accounts))
+                .route("/login", post(post_login)),
         )
         .layer(AddExtensionLayer::new(pool))
         .layer(AddExtensionLayer::new(store))
