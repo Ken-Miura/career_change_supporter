@@ -7,8 +7,10 @@ mod util;
 
 use crate::accounts::get_accounts;
 use crate::temp_accounts::post_temp_accounts;
+use async_redis_session::RedisSessionStore;
 use axum::handler::{get, post};
 use axum::{AddExtensionLayer, Router};
+use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::util::check_env_vars;
 use common::{ConnectionPool, KEY_TO_URL_FOR_FRONT_END};
@@ -30,6 +32,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_SOCKET.to_string(),
         KEY_TO_SOCKET_FOR_SMTP_SERVER.to_string(),
         KEY_TO_URL_FOR_FRONT_END.to_string(),
+        KEY_TO_URL_FOR_REDIS_SERVER.to_string(),
     ]
 });
 
@@ -70,6 +73,14 @@ async fn main_internal(num_of_cpus: u32) {
         .build(manager)
         .expect("failed to build connection pool");
 
+    let redis_url = var(KEY_TO_URL_FOR_REDIS_SERVER).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_URL_FOR_REDIS_SERVER
+        )
+    });
+    let store = RedisSessionStore::new(redis_url).expect("failed to connect redis");
+
     let app = Router::new()
         .nest(
             "/api",
@@ -78,6 +89,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/accounts", get(get_accounts)),
         )
         .layer(AddExtensionLayer::new(pool))
+        .layer(AddExtensionLayer::new(store))
         .layer(TraceLayer::new_for_http());
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
