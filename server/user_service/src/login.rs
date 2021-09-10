@@ -14,7 +14,10 @@ use diesel::{
     PgConnection,
 };
 
-const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 70);
+const LENGTH_OF_MEETING: u64 = 60;
+const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
+const LOGIN_SESSION_EXPIRY: Duration =
+    Duration::from_secs(60 * (LENGTH_OF_MEETING + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
 /// ログインを行う<br>
 /// <br>
