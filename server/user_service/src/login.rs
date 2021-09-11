@@ -152,15 +152,90 @@ impl LoginOperation for LoginOperationImpl {
 
 #[cfg(test)]
 mod tests {
+    use async_session::MemoryStore;
+    use async_session::SessionStore;
+    use chrono::TimeZone;
+    use common::util::hash_password;
+
     use super::*;
+
+    struct LoginOperationMock<'a> {
+        account: Account,
+        login_time: &'a DateTime<Utc>,
+    }
+
+    impl<'a> LoginOperationMock<'a> {
+        fn new(account: Account, login_time: &'a DateTime<Utc>) -> Self {
+            Self {
+                account,
+                login_time,
+            }
+        }
+    }
+
+    impl<'a> LoginOperation for LoginOperationMock<'a> {
+        fn find_account_by_email_addr(&self, email_addr: &str) -> Result<Account, ErrResp> {
+            assert_eq!(self.account.email_address, email_addr);
+            Ok(self.account.clone())
+        }
+
+        fn set_login_session_expiry(&self, _session: &mut Session) {
+            // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
+        }
+
+        fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
+            assert_eq!(self.account.user_account_id, id);
+            assert_eq!(self.login_time, login_time);
+            Ok(())
+        }
+    }
 
     #[tokio::test]
     async fn login_success() {
-        // ログイン準備
-        // ログイン
-        // ログイン結果
-        //   ステータスコード200
-        //   ヘッダにsessionを取得可能なcookieがセットされている
-        //   最終ログインが更新されている
+        let id = 1102;
+        let email_addr = "test@example.com";
+        let pwd = "1234567890abcdABCD";
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            last_login_time: Some(last_login),
+            created_at: creation_time,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, &current_date_time);
+
+        let result =
+            post_login_internal(email_addr, pwd, &current_date_time, op, store.clone()).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        let header_value = resp.1.get(SET_COOKIE).expect("failed to get value");
+        let cookie_value = extract_session_value(header_value);
+        let session = store
+            .load_session(cookie_value)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let actual_id = session
+            .get::<i32>(KEY_TO_USER_ACCOUNT_ID)
+            .expect("failed to get value");
+        assert_eq!(id, actual_id);
+    }
+
+    fn extract_session_value(header_value: &HeaderValue) -> String {
+        let set_cookie = header_value.to_str().expect("failed to get value");
+        let cookie_name = set_cookie
+            .split(";")
+            .find(|s| s.contains("session"))
+            .expect("failed to get session")
+            .trim()
+            .split_once("=")
+            .expect("failed to get value");
+        cookie_name.1.to_string()
     }
 }
