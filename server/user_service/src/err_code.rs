@@ -9,3 +9,4 @@ pub(crate) const REACH_TEMP_ACCOUNTS_LIMIT: u32 = 20002;
 pub(crate) const INVALID_UUID: u32 = 20003;
 pub(crate) const TEMP_ACCOUNT_EXPIRED: u32 = 20004;
 pub(crate) const NO_TEMP_ACCOUNT_FOUND: u32 = 20005;
+pub(crate) const EMAIL_OR_PWD_INCORRECT: u32 = 20006;
