@@ -196,8 +196,8 @@ mod tests {
     async fn login_success() {
         let id = 1102;
         let email_addr = "test@example.com";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let pwd = "1234567890abcdABCD";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
         let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);

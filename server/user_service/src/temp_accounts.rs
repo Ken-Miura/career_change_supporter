@@ -203,7 +203,10 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
 #[cfg(test)]
 mod tests {
 
-    use common::util::is_password_match;
+    use common::util::{
+        is_password_match,
+        validator::{validate_email_address, validate_password},
+    };
 
     use crate::util::tests::SendMailMock;
 
@@ -264,6 +267,8 @@ mod tests {
     async fn temp_accounts_success() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
+        let _ = validate_email_address(email_address).expect("failed to get Ok");
+        let _ = validate_password(password).expect("failed to get Ok");
         let url: &str = "http://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
@@ -303,6 +308,8 @@ mod tests {
     async fn temp_accounts_fail_account_already_exists() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
+        let _ = validate_email_address(email_address).expect("failed to get Ok");
+        let _ = validate_password(password).expect("failed to get Ok");
         let url: &str = "http://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
@@ -342,6 +349,8 @@ mod tests {
     async fn temp_accounts_fail_reach_max_temp_accounts_limit() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
+        let _ = validate_email_address(email_address).expect("failed to get Ok");
+        let _ = validate_password(password).expect("failed to get Ok");
         let url: &str = "http://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();

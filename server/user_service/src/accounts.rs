@@ -202,7 +202,10 @@ impl AccountsOperation for AccountsOperationImpl {
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, TimeZone};
-    use common::util::hash_password;
+    use common::util::{
+        hash_password,
+        validator::{validate_email_address, validate_password},
+    };
     use uuid::Uuid;
 
     use crate::util::tests::SendMailMock;
@@ -322,7 +325,11 @@ mod tests {
     async fn accounts_fail_temp_account_expired() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
-        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let pwd = "aaaaaaaaaA";
+        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let _ = validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash password");
         let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
@@ -351,7 +358,11 @@ mod tests {
     async fn accounts_fail_no_temp_account_found() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
-        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let pwd = "aaaaaaaaaA";
+        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let _ = validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash password");
         let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
@@ -380,7 +391,11 @@ mod tests {
     async fn accounts_fail_account_exists() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
-        let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
+        let pwd = "aaaaaaaaaA";
+        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let _ = validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash password");
         let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
