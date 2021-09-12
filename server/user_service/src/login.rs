@@ -8,17 +8,16 @@ use axum::extract::Extension;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use chrono::{DateTime, Utc};
-use common::schema::ccs_schema::user_account::dsl::{email_address, user_account};
+use common::schema::ccs_schema::user_account::dsl::{email_address, last_login_time, user_account};
 use common::util::is_password_match;
 use common::{model::user::Account, DatabaseConnection, ValidCred};
 use common::{ApiError, ErrResp};
-use diesel::query_dsl::filter_dsl::FilterDsl;
-use diesel::query_dsl::select_dsl::SelectDsl;
+use diesel::query_builder::functions::update;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
-use diesel::{ExpressionMethods, RunQueryDsl};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
 use crate::err_code::EMAIL_OR_PWD_INCORRECT;
@@ -180,7 +179,19 @@ impl LoginOperation for LoginOperationImpl {
     }
 
     fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
-        todo!()
+        let _ = update(user_account.find(id))
+            .set(last_login_time.eq(login_time))
+            .execute(&self.conn)
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to update last login time ({}) on id ({}): {}",
+                    login_time,
+                    id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(())
     }
 }
 
