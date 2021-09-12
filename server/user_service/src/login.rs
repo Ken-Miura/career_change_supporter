@@ -21,7 +21,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
 use crate::err_code::EMAIL_OR_PWD_INCORRECT;
-use crate::util::{unexpected_err_resp, ROOT_PATH};
+use crate::util::{unexpected_err_resp, COOKIE_NAME, ROOT_PATH};
 
 const LENGTH_OF_MEETING: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
@@ -137,8 +137,9 @@ fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<
 fn create_cookie_format(cookie_value: &str) -> String {
     format!(
         // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"session={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
-        "session={}; SameSite=Strict; Path={}/; HttpOnly",
+        //"{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
+        "{}={}; SameSite=Strict; Path={}/; HttpOnly",
+        COOKIE_NAME,
         cookie_value,
         ROOT_PATH
     )
@@ -204,6 +205,8 @@ mod tests {
     use common::util::hash_password;
     use common::util::validator::validate_email_address;
     use common::util::validator::validate_password;
+
+    use crate::util::COOKIE_NAME;
 
     use super::*;
 
@@ -284,7 +287,7 @@ mod tests {
         let set_cookie = header_value.to_str().expect("failed to get value");
         let cookie_name = set_cookie
             .split(";")
-            .find(|s| s.contains("session"))
+            .find(|s| s.contains(COOKIE_NAME))
             .expect("failed to get session")
             .trim()
             .split_once("=")
