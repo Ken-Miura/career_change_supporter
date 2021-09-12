@@ -18,7 +18,7 @@ use diesel::{
 use hyper::header::SET_COOKIE;
 
 use crate::err_code::EMAIL_OR_PWD_INCORRECT;
-use crate::util::unexpected_err_resp;
+use crate::util::{unexpected_err_resp, ROOT_PATH};
 
 const LENGTH_OF_MEETING: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
@@ -113,9 +113,10 @@ async fn post_login_internal(
 fn create_cookie_format(cookie_value: &str) -> String {
     format!(
         // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"session={}; SameSite=Strict; Path=/api/; Secure; HttpOnly",
-        "session={}; SameSite=Strict; Path=/api/; HttpOnly",
-        cookie_value
+        //"session={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
+        "session={}; SameSite=Strict; Path={}/; HttpOnly",
+        cookie_value,
+        ROOT_PATH
     )
 }
 

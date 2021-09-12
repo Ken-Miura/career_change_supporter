@@ -9,6 +9,7 @@ mod util;
 use crate::accounts::get_accounts;
 use crate::login::post_login;
 use crate::temp_accounts::post_temp_accounts;
+use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::handler::{get, post};
 use axum::{AddExtensionLayer, Router};
@@ -85,7 +86,7 @@ async fn main_internal(num_of_cpus: u32) {
 
     let app = Router::new()
         .nest(
-            "/api",
+            ROOT_PATH,
             Router::new()
                 .route("/temp-accounts", post(post_temp_accounts))
                 .route("/accounts", get(get_accounts))
