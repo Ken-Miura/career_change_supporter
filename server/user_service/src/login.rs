@@ -220,9 +220,9 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(resp.0, StatusCode::OK);
         let header_value = resp.1.get(SET_COOKIE).expect("failed to get value");
-        let cookie_value = extract_session_value(header_value);
+        let cookie_name_value = extract_cookie_name_value(header_value);
         let session = store
-            .load_session(cookie_value)
+            .load_session(cookie_name_value)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");
@@ -232,7 +232,7 @@ mod tests {
         assert_eq!(id, actual_id);
     }
 
-    fn extract_session_value(header_value: &HeaderValue) -> String {
+    fn extract_cookie_name_value(header_value: &HeaderValue) -> String {
         let set_cookie = header_value.to_str().expect("failed to get value");
         let cookie_name = set_cookie
             .split(";")
