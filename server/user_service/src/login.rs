@@ -178,8 +178,16 @@ mod tests {
 
     impl<'a> LoginOperation for LoginOperationMock<'a> {
         fn find_account_by_email_addr(&self, email_addr: &str) -> Result<Account, ErrResp> {
-            assert_eq!(self.account.email_address, email_addr);
-            Ok(self.account.clone())
+            if self.account.email_address == email_addr {
+                Ok(self.account.clone())
+            } else {
+                Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError {
+                        code: EMAIL_OR_PWD_INCORRECT,
+                    }),
+                ))
+            }
         }
 
         fn set_login_session_expiry(&self, _session: &mut Session) {
@@ -218,7 +226,7 @@ mod tests {
             post_login_internal(email_addr, pwd, &current_date_time, op, store.clone()).await;
 
         let resp = result.expect("failed to get Ok");
-        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(StatusCode::OK, resp.0);
         let header_value = resp.1.get(SET_COOKIE).expect("failed to get value");
         let cookie_name_value = extract_cookie_name_value(header_value);
         let session = store
@@ -242,5 +250,37 @@ mod tests {
             .split_once("=")
             .expect("failed to get value");
         cookie_name.1.to_string()
+    }
+
+    #[tokio::test]
+    async fn login_fail_no_email_addr_found() {
+        let id = 1102;
+        let email_addr1 = "test1@example.com";
+        let email_addr2 = "test2@example.com";
+        let pwd = "1234567890abcdABCD";
+        let _ = validate_email_address(email_addr1).expect("failed to get Ok");
+        let _ = validate_email_address(email_addr2).expect("failed to get Ok");
+        let _ = validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            email_address: email_addr1.to_string(),
+            hashed_password: hashed_pwd,
+            last_login_time: Some(last_login),
+            created_at: creation_time,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, &current_date_time);
+
+        let result =
+            post_login_internal(email_addr2, pwd, &current_date_time, op, store.clone()).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
+        assert_eq!(EMAIL_OR_PWD_INCORRECT, resp.1.code);
+        assert_eq!(0, store.count().await);
     }
 }
