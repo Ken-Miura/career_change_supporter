@@ -8,13 +8,17 @@ use axum::extract::Extension;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use chrono::{DateTime, Utc};
+use common::schema::ccs_schema::user_account::dsl::{email_address, user_account};
 use common::util::is_password_match;
 use common::{model::user::Account, DatabaseConnection, ValidCred};
 use common::{ApiError, ErrResp};
+use diesel::query_dsl::filter_dsl::FilterDsl;
+use diesel::query_dsl::select_dsl::SelectDsl;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
+use diesel::{ExpressionMethods, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
 use crate::err_code::EMAIL_OR_PWD_INCORRECT;
@@ -55,7 +59,9 @@ async fn post_login_internal(
     op: impl LoginOperation,
     store: impl SessionStore,
 ) -> LoginResult {
-    let account = op.find_account_by_email_addr(email_addr)?;
+    let accounts = op.filter_account_by_email_addr(email_addr)?;
+    let _ = ensure_account_is_only_one(email_addr, &accounts)?;
+    let account = accounts[0].clone();
     let matched = is_password_match(password, &account.hashed_password).map_err(|e| {
         tracing::error!("failed to handle password: {}", e);
         unexpected_err_resp()
@@ -110,6 +116,24 @@ async fn post_login_internal(
     Ok((StatusCode::OK, headers))
 }
 
+fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<(), ErrResp> {
+    let num = accounts.len();
+    if num == 0 {
+        tracing::error!("unauthorized: {}", email_addr);
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ApiError {
+                code: EMAIL_OR_PWD_INCORRECT,
+            }),
+        ));
+    }
+    if num != 1 {
+        tracing::error!("multiple email addresses: {}", email_addr);
+        return Err(unexpected_err_resp());
+    }
+    Ok(())
+}
+
 fn create_cookie_format(cookie_value: &str) -> String {
     format!(
         // TODO: SSLのセットアップが完了し次第、Secureを追加する
@@ -121,7 +145,7 @@ fn create_cookie_format(cookie_value: &str) -> String {
 }
 
 trait LoginOperation {
-    fn find_account_by_email_addr(&self, email_addr: &str) -> Result<Account, ErrResp>;
+    fn filter_account_by_email_addr(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp>;
     fn set_login_session_expiry(&self, session: &mut Session);
     fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp>;
 }
@@ -138,8 +162,17 @@ impl LoginOperationImpl {
 }
 
 impl LoginOperation for LoginOperationImpl {
-    fn find_account_by_email_addr(&self, email_addr: &str) -> Result<Account, ErrResp> {
-        todo!()
+    fn filter_account_by_email_addr(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp> {
+        let result = user_account
+            .filter(email_address.eq(email_addr))
+            .load::<Account>(&self.conn);
+        match result {
+            Ok(accounts) => Ok(accounts),
+            Err(e) => {
+                tracing::error!("failed to load accounts ({}): {}", email_addr, e);
+                Err(unexpected_err_resp())
+            }
+        }
     }
 
     fn set_login_session_expiry(&self, session: &mut Session) {
@@ -177,16 +210,11 @@ mod tests {
     }
 
     impl<'a> LoginOperation for LoginOperationMock<'a> {
-        fn find_account_by_email_addr(&self, email_addr: &str) -> Result<Account, ErrResp> {
+        fn filter_account_by_email_addr(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp> {
             if self.account.email_address == email_addr {
-                Ok(self.account.clone())
+                Ok(vec![self.account.clone()])
             } else {
-                Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError {
-                        code: EMAIL_OR_PWD_INCORRECT,
-                    }),
-                ))
+                Ok(vec![])
             }
         }
 
