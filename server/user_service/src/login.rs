@@ -143,7 +143,7 @@ impl LoginOperation for LoginOperationImpl {
     }
 
     fn set_login_session_expiry(&self, session: &mut Session) {
-        todo!()
+        session.expire_in(self.expiry);
     }
 
     fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
