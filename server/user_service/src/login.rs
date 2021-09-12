@@ -30,9 +30,10 @@ const LOGIN_SESSION_EXPIRY: Duration =
 const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 
 /// ログインを行う<br>
+/// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcoookieをセットして応答する<br>
 /// <br>
 /// # Errors
-///
+/// email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EMAIL_OR_PWD_INCORRECT]を返す<br>
 pub(crate) async fn post_login(
     ValidCred(cred): ValidCred,
     DatabaseConnection(conn): DatabaseConnection,
@@ -45,10 +46,10 @@ pub(crate) async fn post_login(
     post_login_internal(&email_addr, &password, &current_date_time, op, store).await
 }
 
-///
+/// ログインリクエストの結果を示す型
 pub(crate) type LoginResult = Result<LoginResp, ErrResp>;
 
-///
+/// ログインに成功した場合に返却される型
 pub(crate) type LoginResp = (StatusCode, HeaderMap);
 
 async fn post_login_internal(
