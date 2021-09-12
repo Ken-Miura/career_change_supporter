@@ -283,4 +283,36 @@ mod tests {
         assert_eq!(EMAIL_OR_PWD_INCORRECT, resp.1.code);
         assert_eq!(0, store.count().await);
     }
+
+    #[tokio::test]
+    async fn login_fail_incorrect_password() {
+        let id = 1102;
+        let email_addr = "test1@example.com";
+        let pwd1 = "1234567890abcdABCD";
+        let pwd2 = "bbbbbbbbbC";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let _ = validate_password(pwd1).expect("failed to get Ok");
+        let _ = validate_password(pwd2).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd1).expect("failed to hash pwd");
+        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            last_login_time: Some(last_login),
+            created_at: creation_time,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, &current_date_time);
+
+        let result =
+            post_login_internal(email_addr, pwd2, &current_date_time, op, store.clone()).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
+        assert_eq!(EMAIL_OR_PWD_INCORRECT, resp.1.code);
+        assert_eq!(0, store.count().await);
+    }
 }
