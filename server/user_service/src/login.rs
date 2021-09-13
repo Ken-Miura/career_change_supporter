@@ -21,13 +21,12 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
 use crate::err_code::EMAIL_OR_PWD_INCORRECT;
-use crate::util::{unexpected_err_resp, COOKIE_NAME, ROOT_PATH};
+use crate::util::{create_cookie_format, unexpected_err_resp, KEY_TO_USER_ACCOUNT_ID};
 
 const LENGTH_OF_MEETING: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING + TIME_FOR_SUBSEQUENT_OPERATIONS));
-const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcoookieをセットして応答する<br>
@@ -134,17 +133,6 @@ fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<
     Ok(())
 }
 
-fn create_cookie_format(cookie_name_value: &str) -> String {
-    format!(
-        // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
-        "{}={}; SameSite=Strict; Path={}/; HttpOnly",
-        COOKIE_NAME,
-        cookie_name_value,
-        ROOT_PATH
-    )
-}
-
 trait LoginOperation {
     fn filter_account_by_email_addr(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp>;
     fn set_login_session_expiry(&self, session: &mut Session);
@@ -206,7 +194,7 @@ mod tests {
     use common::util::validator::validate_email_address;
     use common::util::validator::validate_password;
 
-    use crate::util::COOKIE_NAME;
+    use crate::util::tests::extract_cookie_name_value;
 
     use super::*;
 
@@ -281,18 +269,6 @@ mod tests {
             .get::<i32>(KEY_TO_USER_ACCOUNT_ID)
             .expect("failed to get value");
         assert_eq!(id, actual_id);
-    }
-
-    fn extract_cookie_name_value(header_value: &HeaderValue) -> String {
-        let set_cookie = header_value.to_str().expect("failed to get value");
-        let cookie_name = set_cookie
-            .split(";")
-            .find(|s| s.contains(COOKIE_NAME))
-            .expect("failed to get session")
-            .trim()
-            .split_once("=")
-            .expect("failed to get value");
-        cookie_name.1.to_string()
     }
 
     #[tokio::test]

@@ -7,7 +7,7 @@ use common::ErrResp;
 use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 use hyper::header::SET_COOKIE;
 
-use crate::util::{unexpected_err_resp, COOKIE_NAME, ROOT_PATH};
+use crate::util::{create_expired_cookie_format, unexpected_err_resp, COOKIE_NAME};
 
 use axum::{body::Body, http::Request};
 
@@ -82,13 +82,49 @@ pub(crate) async fn post_logout_internal(
     Ok((StatusCode::OK, headers))
 }
 
-fn create_expired_cookie_format(cookie_name_value: &str) -> String {
-    format!(
-        // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"{}={}; SameSite=Strict; Path={}/; Max-Age=-1; Secure; HttpOnly",
-        "{}={}; SameSite=Strict; Path={}/; Max-Age=-1; HttpOnly",
-        COOKIE_NAME,
-        cookie_name_value,
-        ROOT_PATH
-    )
+#[cfg(test)]
+mod tests {
+    use async_session::{MemoryStore, Session, SessionStore};
+    use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
+
+    use crate::util::{
+        create_cookie_format,
+        tests::{extract_cookie_max_age_value, extract_cookie_name_value},
+        KEY_TO_USER_ACCOUNT_ID,
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn logout_success() {
+        let store = MemoryStore::new();
+        let mut session = Session::new();
+        let user_account_id = 203;
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        let _ = session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        let cookie_name_value = store
+            .store_session(session)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let mut headers = HeaderMap::new();
+        let header_value = create_cookie_format(&cookie_name_value)
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+        assert_eq!(1, store.count().await);
+
+        let result = post_logout_internal(option_cookie, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+        assert_eq!(StatusCode::OK, result.0);
+        let header_value = result.1.get(SET_COOKIE).expect("failed to get value");
+        assert_eq!(cookie_name_value, extract_cookie_name_value(header_value));
+        assert_eq!("-1", extract_cookie_max_age_value(header_value));
+    }
 }
