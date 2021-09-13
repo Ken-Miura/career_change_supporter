@@ -7,33 +7,26 @@ use axum::http::StatusCode;
 use common::ErrResp;
 use headers::{Cookie, HeaderMap, HeaderMapExt};
 
-use crate::util::COOKIE_NAME;
+use crate::util::{unexpected_err_resp, COOKIE_NAME};
 
 use axum::{body::Body, http::Request};
 
 /// ログアウトを行う
 /// <br>
 /// # Errors
-/// リクエストにcookieを含んでいない場合、ステータスコード400を返す<br>
-pub(crate) async fn post_logout(
-    //TypedHeader(cookie): TypedHeader<Cookie>,
-    //Extension(store): Extension<RedisSessionStore>,
-    req: Request<Body>, //) -> LogoutResult {
-) {
+///
+pub(crate) async fn post_logout(req: Request<Body>) -> LogoutResult {
     let extentions = req.extensions();
-    let store = extentions
-        .get::<RedisSessionStore>()
-        .expect("failed to get value");
+    let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
+        tracing::error!("failed to get session store");
+        unexpected_err_resp()
+    })?;
     let headers = req.headers();
-    let result = headers.typed_try_get::<Cookie>();
-    match result {
-        Ok(option) => match option {
-            Some(cookie) => println!("cookie: {:?}", cookie),
-            None => println!("None"),
-        },
-        Err(e) => println!("err: {}", e),
-    }
-    //post_logout_internal(&cookie, store).await;
+    let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
+        tracing::error!("failed to get cookie: {}", e);
+        unexpected_err_resp()
+    })?;
+    post_logout_internal(option_cookie, store).await
 }
 
 /// ログアウトリクエストの結果を示す型
@@ -43,9 +36,11 @@ pub(crate) type LogoutResult = Result<LogoutResp, ErrResp>;
 pub(crate) type LogoutResp = (StatusCode, HeaderMap);
 
 pub(crate) async fn post_logout_internal(
-    cookie: &Cookie,
-    store: impl SessionStore,
+    option_cookie: Option<Cookie>,
+    store: &impl SessionStore,
 ) -> LogoutResult {
-    let cookie_name_value = cookie.get(COOKIE_NAME);
-    todo!()
+    //let cookie_name_value = cookie.get(COOKIE_NAME);
+    //todo!()
+    let headerMap = HeaderMap::new();
+    Ok((StatusCode::OK, headerMap))
 }
