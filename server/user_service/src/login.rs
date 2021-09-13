@@ -21,7 +21,9 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
 use crate::err_code::EMAIL_OR_PWD_INCORRECT;
-use crate::util::{create_cookie_format, unexpected_err_resp, KEY_TO_USER_ACCOUNT_ID};
+use crate::util::{
+    session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID, unexpected_err_resp,
+};
 
 const LENGTH_OF_MEETING: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;

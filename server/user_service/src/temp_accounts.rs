@@ -164,7 +164,7 @@ impl TempAccountsOperationImpl {
 
 impl TempAccountsOperation for TempAccountsOperationImpl {
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        util::user_exists(&self.conn, email_addr)
+        util::db_operation::user_exists(&self.conn, email_addr)
     }
 
     fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {

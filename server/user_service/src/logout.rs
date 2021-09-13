@@ -7,7 +7,9 @@ use common::ErrResp;
 use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 use hyper::header::SET_COOKIE;
 
-use crate::util::{create_expired_cookie_format, unexpected_err_resp, COOKIE_NAME};
+use crate::util::{
+    session::create_expired_cookie_format, session::COOKIE_NAME, unexpected_err_resp,
+};
 
 use axum::{body::Body, http::Request};
 
@@ -88,9 +90,9 @@ mod tests {
     use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 
     use crate::util::{
-        create_cookie_format,
+        session::create_cookie_format,
+        session::KEY_TO_USER_ACCOUNT_ID,
         tests::{extract_cookie_max_age_value, extract_cookie_name_value},
-        KEY_TO_USER_ACCOUNT_ID,
     };
 
     use super::*;

@@ -180,7 +180,7 @@ impl AccountsOperation for AccountsOperationImpl {
     }
 
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        util::user_exists(&self.conn, email_addr)
+        util::db_operation::user_exists(&self.conn, email_addr)
     }
 
     fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp> {

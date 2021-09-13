@@ -1,43 +1,14 @@
 // Copyright 2021 Ken Miura
 
+pub(crate) mod db_operation;
+pub(crate) mod session;
+
 use axum::{http::StatusCode, Json};
-use common::schema::ccs_schema::user_account::dsl::{email_address, user_account};
 use common::{ApiError, ErrResp};
-use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::PgConnection;
-use diesel::{
-    dsl::count_star,
-    query_dsl::methods::{FilterDsl, SelectDsl},
-    ExpressionMethods, RunQueryDsl,
-};
 
 use crate::err_code;
 
 pub(crate) const ROOT_PATH: &str = "/api";
-pub(crate) const COOKIE_NAME: &str = "session";
-pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
-
-pub(crate) fn create_cookie_format(cookie_name_value: &str) -> String {
-    format!(
-        // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
-        "{}={}; SameSite=Strict; Path={}/; HttpOnly",
-        COOKIE_NAME,
-        cookie_name_value,
-        ROOT_PATH
-    )
-}
-
-pub(crate) fn create_expired_cookie_format(cookie_name_value: &str) -> String {
-    format!(
-        // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"{}={}; SameSite=Strict; Path={}/; Max-Age=-1; Secure; HttpOnly",
-        "{}={}; SameSite=Strict; Path={}/; Max-Age=-1; HttpOnly",
-        COOKIE_NAME,
-        cookie_name_value,
-        ROOT_PATH
-    )
-}
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
     (
@@ -48,29 +19,13 @@ pub(crate) fn unexpected_err_resp() -> ErrResp {
     )
 }
 
-/// ユーザーが既に存在するか確認する
-pub(crate) fn user_exists(
-    conn: &PooledConnection<ConnectionManager<PgConnection>>,
-    email_addr: &str,
-) -> Result<bool, ErrResp> {
-    let cnt = user_account
-        .filter(email_address.eq(email_addr))
-        .select(count_star())
-        .get_result::<i64>(conn)
-        .map_err(|e| {
-            tracing::error!("user ({}) already exists: {}", email_addr, e);
-            unexpected_err_resp()
-        })?;
-    Ok(cnt != 0)
-}
-
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 pub(crate) mod tests {
     use common::{smtp::SendMail, ErrResp};
     use headers::HeaderValue;
 
-    use super::COOKIE_NAME;
+    use super::session::COOKIE_NAME;
 
     pub(crate) struct SendMailMock {
         to: String,
