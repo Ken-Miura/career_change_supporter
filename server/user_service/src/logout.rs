@@ -85,8 +85,8 @@ pub(crate) async fn post_logout_internal(
 fn create_expired_cookie_format(cookie_name_value: &str) -> String {
     format!(
         // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
-        "{}={}; SameSite=Strict; Path={}/; HttpOnly",
+        //"{}={}; SameSite=Strict; Path={}/; Max-Age=-1; Secure; HttpOnly",
+        "{}={}; SameSite=Strict; Path={}/; Max-Age=-1; HttpOnly",
         COOKIE_NAME,
         cookie_name_value,
         ROOT_PATH
