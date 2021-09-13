@@ -96,7 +96,7 @@ async fn post_login_internal(
         );
         unexpected_err_resp()
     })?;
-    let cookie_value = match option {
+    let cookie_name_value = match option {
         Some(c) => c,
         None => {
             tracing::error!("failed to get cookie for id ({})", user_account_id);
@@ -106,10 +106,10 @@ async fn post_login_internal(
     let _ = op.update_last_login(user_account_id, login_time)?;
     tracing::info!("{} logged-in at {}", email_addr, login_time);
     let mut headers = HeaderMap::new();
-    let cookie = create_cookie_format(&cookie_value)
+    let cookie = create_cookie_format(&cookie_name_value)
         .parse::<HeaderValue>()
         .map_err(|e| {
-            tracing::error!("failed to parse cookie ({}): {}", cookie_value, e);
+            tracing::error!("failed to parse cookie ({}): {}", cookie_name_value, e);
             unexpected_err_resp()
         })?;
     headers.insert(SET_COOKIE, cookie);
@@ -134,13 +134,13 @@ fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<
     Ok(())
 }
 
-fn create_cookie_format(cookie_value: &str) -> String {
+fn create_cookie_format(cookie_name_value: &str) -> String {
     format!(
         // TODO: SSLのセットアップが完了し次第、Secureを追加する
         //"{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
         "{}={}; SameSite=Strict; Path={}/; HttpOnly",
         COOKIE_NAME,
-        cookie_value,
+        cookie_name_value,
         ROOT_PATH
     )
 }

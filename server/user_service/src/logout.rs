@@ -2,12 +2,12 @@
 
 use async_redis_session::RedisSessionStore;
 use async_session::SessionStore;
-use axum::extract::{Extension, TypedHeader};
 use axum::http::StatusCode;
 use common::ErrResp;
-use headers::{Cookie, HeaderMap, HeaderMapExt};
+use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
+use hyper::header::SET_COOKIE;
 
-use crate::util::{unexpected_err_resp, COOKIE_NAME};
+use crate::util::{unexpected_err_resp, COOKIE_NAME, ROOT_PATH};
 
 use axum::{body::Body, http::Request};
 
@@ -39,8 +39,56 @@ pub(crate) async fn post_logout_internal(
     option_cookie: Option<Cookie>,
     store: &impl SessionStore,
 ) -> LogoutResult {
-    //let cookie_name_value = cookie.get(COOKIE_NAME);
-    //todo!()
-    let headerMap = HeaderMap::new();
-    Ok((StatusCode::OK, headerMap))
+    let cookie = match option_cookie {
+        Some(c) => c,
+        None => {
+            tracing::debug!("no cookie on logout");
+            return Ok((StatusCode::OK, HeaderMap::new()));
+        }
+    };
+    let cookie_name_value = match cookie.get(COOKIE_NAME) {
+        Some(value) => value,
+        None => {
+            tracing::debug!("no {} in cookie on logout", COOKIE_NAME);
+            return Ok((StatusCode::OK, HeaderMap::new()));
+        }
+    };
+    let option_session = store
+        .load_session(cookie_name_value.to_string())
+        .await
+        .map_err(|e| {
+            tracing::error!("failed to load session: {}", e);
+            unexpected_err_resp()
+        })?;
+    let session = match option_session {
+        Some(s) => s,
+        None => {
+            tracing::debug!("no session in session store on logout");
+            return Ok((StatusCode::OK, HeaderMap::new()));
+        }
+    };
+    let _ = store.destroy_session(session).await.map_err(|e| {
+        tracing::error!("failed to destroy session (={}): {}", cookie_name_value, e);
+        unexpected_err_resp()
+    })?;
+    let mut headers = HeaderMap::new();
+    let expired_cookie = create_expired_cookie_format(cookie_name_value)
+        .parse::<HeaderValue>()
+        .map_err(|e| {
+            tracing::error!("failed to parse cookie ({}): {}", cookie_name_value, e);
+            unexpected_err_resp()
+        })?;
+    headers.insert(SET_COOKIE, expired_cookie);
+    Ok((StatusCode::OK, headers))
+}
+
+fn create_expired_cookie_format(cookie_name_value: &str) -> String {
+    format!(
+        // TODO: SSLのセットアップが完了し次第、Secureを追加する
+        //"{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
+        "{}={}; SameSite=Strict; Path={}/; HttpOnly",
+        COOKIE_NAME,
+        cookie_name_value,
+        ROOT_PATH
+    )
 }
