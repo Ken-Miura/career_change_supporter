@@ -17,8 +17,11 @@ use axum::{body::Body, http::Request};
 
 /// ログアウトを行う
 /// <br>
-/// # Errors
-///
+/// リクエストにCookieが含まれていない場合、ステータスコード200を返す<br>
+/// Cookieのnameが[COOKIE_NAME]でない場合、ステータスコード200を返す<br>
+/// [COOKIE_NAME]の値と一致するセッションがない場合（既にセッションが期限切れの場合も含む）、ステータスコード200を返す<br>
+/// [COOKIE_NAME]の値と一致するセッションがある場合、
+/// セッションを削除（ログアウト）し、ステータスコード200と期限切れのCookie（ブラウザ上のCookieをブラウザに削除してもらうため）を返す<br>
 pub(crate) async fn post_logout(req: Request<Body>) -> LogoutResult {
     let extentions = req.extensions();
     let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
