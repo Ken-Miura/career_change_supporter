@@ -188,6 +188,7 @@ mod tests {
         headers.insert("cookie", header_value);
         let option_cookie = headers.typed_get::<Cookie>();
 
+        // ログアウト前にセッションを削除
         let loaded_session = store
             .load_session(cookie_name_value)
             .await
