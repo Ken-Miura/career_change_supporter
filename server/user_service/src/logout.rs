@@ -98,7 +98,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn logout_success() {
+    async fn logout_success_session_alive() {
         let store = MemoryStore::new();
         let mut session = Session::new();
         let user_account_id = 203;
@@ -128,5 +128,18 @@ mod tests {
         let header_value = result.1.get(SET_COOKIE).expect("failed to get value");
         assert_eq!(cookie_name_value, extract_cookie_name_value(header_value));
         assert_eq!("-1", extract_cookie_max_age_value(header_value));
+    }
+
+    #[tokio::test]
+    async fn logout_success_no_cookie() {
+        let option_cookie: Option<Cookie> = None;
+        let store = MemoryStore::new();
+
+        let result = post_logout_internal(option_cookie, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert!(result.1.is_empty());
     }
 }
