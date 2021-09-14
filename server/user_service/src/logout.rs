@@ -148,4 +148,22 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         assert!(result.1.is_empty());
     }
+
+    #[tokio::test]
+    async fn logout_success_incorrect_cookie() {
+        let mut headers = HeaderMap::new();
+        let header_value = "name=taro"
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+        let store = MemoryStore::new();
+
+        let result = post_logout_internal(option_cookie, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert!(result.1.is_empty());
+    }
 }
