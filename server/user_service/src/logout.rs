@@ -8,7 +8,9 @@ use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 use hyper::header::SET_COOKIE;
 
 use crate::util::{
-    session::create_expired_cookie_format, session::COOKIE_NAME, unexpected_err_resp,
+    session::COOKIE_NAME,
+    session::{create_expired_cookie_format, KEY_TO_USER_ACCOUNT_ID},
+    unexpected_err_resp,
 };
 
 use axum::{body::Body, http::Request};
@@ -68,6 +70,10 @@ pub(crate) async fn post_logout_internal(
             tracing::debug!("no session in session store on logout");
             return Ok((StatusCode::OK, HeaderMap::new()));
         }
+    };
+    match session.get::<i32>(KEY_TO_USER_ACCOUNT_ID) {
+        Some(id) => tracing::info!("User (id: {}) logged out", id),
+        None => tracing::info!("Someone logged out"),
     };
     let _ = store.destroy_session(session).await.map_err(|e| {
         tracing::error!("failed to destroy session (={}): {}", cookie_name_value, e);
