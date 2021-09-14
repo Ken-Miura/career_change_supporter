@@ -166,4 +166,45 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         assert!(result.1.is_empty());
     }
+
+    #[tokio::test]
+    async fn logout_success_session_already_expired() {
+        let store = MemoryStore::new();
+        let mut session = Session::new();
+        let user_account_id = 203;
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        let _ = session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        let cookie_name_value = store
+            .store_session(session)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let mut headers = HeaderMap::new();
+        let header_value = create_cookie_format(&cookie_name_value)
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+
+        let loaded_session = store
+            .load_session(cookie_name_value)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let _ = store
+            .destroy_session(loaded_session)
+            .await
+            .expect("failed to get Ok");
+        assert_eq!(0, store.count().await);
+
+        let result = post_logout_internal(option_cookie, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+        assert_eq!(StatusCode::OK, result.0);
+        assert!(result.1.is_empty());
+    }
 }
