@@ -8,8 +8,7 @@ use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 use hyper::header::SET_COOKIE;
 
 use crate::util::{
-    session::COOKIE_NAME,
-    session::{create_expired_cookie_format, KEY_TO_USER_ACCOUNT_ID},
+    session::{create_expired_cookie_format, extract_session_id, KEY_TO_USER_ACCOUNT_ID},
     unexpected_err_resp,
 };
 
@@ -46,22 +45,15 @@ pub(crate) async fn post_logout_internal(
     option_cookie: Option<Cookie>,
     store: &impl SessionStore,
 ) -> LogoutResult {
-    let cookie = match option_cookie {
-        Some(c) => c,
+    let session_id_value = match extract_session_id(option_cookie) {
+        Some(s) => s,
         None => {
-            tracing::debug!("no cookie on logout");
-            return Ok((StatusCode::OK, HeaderMap::new()));
-        }
-    };
-    let cookie_name_value = match cookie.get(COOKIE_NAME) {
-        Some(value) => value,
-        None => {
-            tracing::debug!("no {} in cookie on logout", COOKIE_NAME);
+            tracing::debug!("no valid cookie on logout");
             return Ok((StatusCode::OK, HeaderMap::new()));
         }
     };
     let option_session = store
-        .load_session(cookie_name_value.to_string())
+        .load_session(session_id_value.to_string())
         .await
         .map_err(|e| {
             tracing::error!("failed to load session: {}", e);
@@ -79,14 +71,14 @@ pub(crate) async fn post_logout_internal(
         None => tracing::info!("Someone logged out"),
     };
     let _ = store.destroy_session(session).await.map_err(|e| {
-        tracing::error!("failed to destroy session (={}): {}", cookie_name_value, e);
+        tracing::error!("failed to destroy session (={}): {}", session_id_value, e);
         unexpected_err_resp()
     })?;
     let mut headers = HeaderMap::new();
-    let expired_cookie = create_expired_cookie_format(cookie_name_value)
+    let expired_cookie = create_expired_cookie_format(&session_id_value)
         .parse::<HeaderValue>()
         .map_err(|e| {
-            tracing::error!("failed to parse cookie ({}): {}", cookie_name_value, e);
+            tracing::error!("failed to parse cookie ({}): {}", session_id_value, e);
             unexpected_err_resp()
         })?;
     headers.insert(SET_COOKIE, expired_cookie);
@@ -99,9 +91,11 @@ mod tests {
     use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 
     use crate::util::{
-        session::create_cookie_format,
         session::KEY_TO_USER_ACCOUNT_ID,
-        tests::{extract_cookie_max_age_value, extract_cookie_name_value},
+        session::{
+            create_cookie_format,
+            tests::{extract_cookie_max_age_value, extract_session_id_value},
+        },
     };
 
     use super::*;
@@ -115,13 +109,13 @@ mod tests {
         let _ = session
             .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
             .expect("failed to get Ok");
-        let cookie_name_value = store
+        let session_id_value = store
             .store_session(session)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");
         let mut headers = HeaderMap::new();
-        let header_value = create_cookie_format(&cookie_name_value)
+        let header_value = create_cookie_format(&session_id_value)
             .parse::<HeaderValue>()
             .expect("failed to get Ok");
         headers.insert("cookie", header_value);
@@ -135,7 +129,7 @@ mod tests {
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::OK, result.0);
         let header_value = result.1.get(SET_COOKIE).expect("failed to get value");
-        assert_eq!(cookie_name_value, extract_cookie_name_value(header_value));
+        assert_eq!(session_id_value, extract_session_id_value(header_value));
         assert_eq!("-1", extract_cookie_max_age_value(header_value));
     }
 
@@ -179,13 +173,13 @@ mod tests {
         let _ = session
             .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
             .expect("failed to get Ok");
-        let cookie_name_value = store
+        let session_id_value = store
             .store_session(session)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");
         let mut headers = HeaderMap::new();
-        let header_value = create_cookie_format(&cookie_name_value)
+        let header_value = create_cookie_format(&session_id_value)
             .parse::<HeaderValue>()
             .expect("failed to get Ok");
         headers.insert("cookie", header_value);
@@ -193,7 +187,7 @@ mod tests {
 
         // ログアウト前にセッションを削除
         let loaded_session = store
-            .load_session(cookie_name_value)
+            .load_session(session_id_value)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");

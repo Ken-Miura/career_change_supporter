@@ -97,8 +97,8 @@ async fn post_login_internal(
         );
         unexpected_err_resp()
     })?;
-    let cookie_name_value = match option {
-        Some(c) => c,
+    let session_id_value = match option {
+        Some(s) => s,
         None => {
             tracing::error!("failed to get cookie for id ({})", user_account_id);
             return Err(unexpected_err_resp());
@@ -107,10 +107,14 @@ async fn post_login_internal(
     let _ = op.update_last_login(user_account_id, login_time)?;
     tracing::info!("{} logged-in at {}", email_addr, login_time);
     let mut headers = HeaderMap::new();
-    let cookie = create_cookie_format(&cookie_name_value)
+    let cookie = create_cookie_format(&session_id_value)
         .parse::<HeaderValue>()
         .map_err(|e| {
-            tracing::error!("failed to parse cookie ({}): {}", cookie_name_value, e);
+            tracing::error!(
+                "failed to parse cookie (session_id: {}): {}",
+                session_id_value,
+                e
+            );
             unexpected_err_resp()
         })?;
     headers.insert(SET_COOKIE, cookie);
@@ -196,7 +200,7 @@ mod tests {
     use common::util::validator::validate_email_address;
     use common::util::validator::validate_password;
 
-    use crate::util::tests::extract_cookie_name_value;
+    use crate::util::session::tests::extract_session_id_value;
 
     use super::*;
 
@@ -261,9 +265,9 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         let header_value = resp.1.get(SET_COOKIE).expect("failed to get value");
-        let cookie_name_value = extract_cookie_name_value(header_value);
+        let session_id = extract_session_id_value(header_value);
         let session = store
-            .load_session(cookie_name_value)
+            .load_session(session_id)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");
