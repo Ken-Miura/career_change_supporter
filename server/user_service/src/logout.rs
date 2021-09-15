@@ -41,7 +41,7 @@ pub(crate) type LogoutResult = Result<LogoutResp, ErrResp>;
 /// ログアウトに成功した場合に返却される型
 pub(crate) type LogoutResp = (StatusCode, HeaderMap);
 
-pub(crate) async fn post_logout_internal(
+async fn post_logout_internal(
     option_cookie: Option<Cookie>,
     store: &impl SessionStore,
 ) -> LogoutResult {
