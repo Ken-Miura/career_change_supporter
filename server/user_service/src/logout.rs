@@ -22,14 +22,14 @@ use axum::{body::Body, http::Request};
 /// [COOKIE_NAME]の値と一致するセッションがある場合、
 /// セッションを削除（ログアウト）し、ステータスコード200と期限切れのCookie（ブラウザ上のCookieをブラウザに削除してもらうため）を返す<br>
 pub(crate) async fn post_logout(req: Request<Body>) -> LogoutResult {
-    let extentions = req.extensions();
-    let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
-        tracing::error!("failed to get session store");
-        unexpected_err_resp()
-    })?;
     let headers = req.headers();
     let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
         tracing::error!("failed to get cookie: {}", e);
+        unexpected_err_resp()
+    })?;
+    let extentions = req.extensions();
+    let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
+        tracing::error!("failed to get session store");
         unexpected_err_resp()
     })?;
     post_logout_internal(option_cookie, store).await
