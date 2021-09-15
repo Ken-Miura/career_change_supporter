@@ -100,7 +100,10 @@ async fn post_login_internal(
     let session_id_value = match option {
         Some(s) => s,
         None => {
-            tracing::error!("failed to get cookie for id ({})", user_account_id);
+            tracing::error!(
+                "failed to get cookie name for user account id ({})",
+                user_account_id
+            );
             return Err(unexpected_err_resp());
         }
     };
