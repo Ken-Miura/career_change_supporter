@@ -71,7 +71,11 @@ pub(crate) async fn post_logout_internal(
         None => tracing::info!("Someone logged out"),
     };
     let _ = store.destroy_session(session).await.map_err(|e| {
-        tracing::error!("failed to destroy session (={}): {}", session_id_value, e);
+        tracing::error!(
+            "failed to destroy session (session_id: {}): {}",
+            session_id_value,
+            e
+        );
         unexpected_err_resp()
     })?;
     let mut headers = HeaderMap::new();
