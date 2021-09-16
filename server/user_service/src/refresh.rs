@@ -24,14 +24,15 @@ pub(crate) async fn get_refresh(req: Request<Body>) -> Result<StatusCode, ErrRes
         tracing::error!("failed to get session store");
         unexpected_err_resp()
     })?;
-    let op = RefreshOperationImpl::new(LOGIN_SESSION_EXPIRY);
-    get_refresh_internal(option_cookie, store, op).await
+    let op = RefreshOperationImpl {};
+    get_refresh_internal(option_cookie, store, op, LOGIN_SESSION_EXPIRY).await
 }
 
 async fn get_refresh_internal(
     option_cookie: Option<Cookie>,
     store: &impl SessionStore,
     op: impl RefreshOperation,
+    expiry: Duration,
 ) -> Result<StatusCode, ErrResp> {
     let session_id_value = match extract_session_id(option_cookie) {
         Some(s) => s,
@@ -58,7 +59,7 @@ async fn get_refresh_internal(
             return Ok(StatusCode::UNAUTHORIZED);
         }
     };
-    op.set_login_session_expiry(&mut session);
+    op.set_login_session_expiry(&mut session, expiry);
     // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
     let _ = store.store_session(session).await.map_err(|e| {
         tracing::error!(
@@ -72,21 +73,13 @@ async fn get_refresh_internal(
 }
 
 trait RefreshOperation {
-    fn set_login_session_expiry(&self, session: &mut Session);
+    fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration);
 }
 
-struct RefreshOperationImpl {
-    expiry: Duration,
-}
-
-impl RefreshOperationImpl {
-    fn new(expiry: Duration) -> Self {
-        Self { expiry }
-    }
-}
+struct RefreshOperationImpl {}
 
 impl RefreshOperation for RefreshOperationImpl {
-    fn set_login_session_expiry(&self, session: &mut Session) {
-        session.expire_in(self.expiry);
+    fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration) {
+        session.expire_in(expiry);
     }
 }
