@@ -58,7 +58,7 @@ async fn get_refresh_internal(
             return Ok(StatusCode::UNAUTHORIZED);
         }
     };
-    op.extend_login_session_expiry(&mut session);
+    op.set_login_session_expiry(&mut session);
     let _ = store.store_session(session).await.map_err(|e| {
         tracing::error!(
             "failed to store session (session_id={}): {}",
@@ -71,7 +71,7 @@ async fn get_refresh_internal(
 }
 
 trait RefreshOperation {
-    fn extend_login_session_expiry(&self, session: &mut Session);
+    fn set_login_session_expiry(&self, session: &mut Session);
 }
 
 struct RefreshOperationImpl {
@@ -85,7 +85,7 @@ impl RefreshOperationImpl {
 }
 
 impl RefreshOperation for RefreshOperationImpl {
-    fn extend_login_session_expiry(&self, session: &mut Session) {
+    fn set_login_session_expiry(&self, session: &mut Session) {
         session.expire_in(self.expiry);
     }
 }
