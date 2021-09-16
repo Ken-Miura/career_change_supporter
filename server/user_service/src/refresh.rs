@@ -59,6 +59,7 @@ async fn get_refresh_internal(
         }
     };
     op.set_login_session_expiry(&mut session);
+    // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
     let _ = store.store_session(session).await.map_err(|e| {
         tracing::error!(
             "failed to store session (session_id={}): {}",
