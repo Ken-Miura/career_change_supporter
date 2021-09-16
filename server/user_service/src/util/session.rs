@@ -1,12 +1,21 @@
 // Copyright 2021 Ken Miura
 
+use std::time::Duration;
+
 use headers::Cookie;
 
 use crate::util::ROOT_PATH;
 
 const COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
+const LENGTH_OF_MEETING: u64 = 60;
+const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 
+/// セッションの有効期限
+pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
+    Duration::from_secs(60 * (LENGTH_OF_MEETING + TIME_FOR_SUBSEQUENT_OPERATIONS));
+
+/// [COOKIE_NAME]を含むSet-Cookie用の文字列を返す。
 pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
     format!(
         // TODO: SSLのセットアップが完了し次第、Secureを追加する
@@ -18,6 +27,8 @@ pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
     )
 }
 
+/// [COOKIE_NAME]を含む、有効期限切れのSet-Cookie用の文字列を返す<br>
+/// ブラウザに保存されたCookieの削除指示を出したいときに使う。
 pub(crate) fn create_expired_cookie_format(session_id_value: &str) -> String {
     format!(
         // TODO: SSLのセットアップが完了し次第、Secureを追加する
@@ -29,6 +40,7 @@ pub(crate) fn create_expired_cookie_format(session_id_value: &str) -> String {
     )
 }
 
+/// Cookieが存在し、[COOKIE_NAME]を含む場合、対応する値を返す
 pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String> {
     let cookie = match option_cookie {
         Some(c) => c,

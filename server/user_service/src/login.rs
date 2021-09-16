@@ -21,14 +21,10 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
 use crate::err_code::EMAIL_OR_PWD_INCORRECT;
+use crate::util::session::LOGIN_SESSION_EXPIRY;
 use crate::util::{
     session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID, unexpected_err_resp,
 };
-
-const LENGTH_OF_MEETING: u64 = 60;
-const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
-const LOGIN_SESSION_EXPIRY: Duration =
-    Duration::from_secs(60 * (LENGTH_OF_MEETING + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcoookieをセットして応答する<br>
