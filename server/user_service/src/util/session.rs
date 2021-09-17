@@ -1,8 +1,8 @@
 // Copyright 2021 Ken Miura
 
-use std::time::Duration;
-
 use headers::Cookie;
+use serde::Deserialize;
+use std::time::Duration;
 
 use crate::util::ROOT_PATH;
 
@@ -56,6 +56,20 @@ pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String
             None
         }
     }
+}
+
+/// ユーザーの情報にアクセスするためのID
+///
+/// ハンドラ関数内でユーザーの情報にアクセスしたい場合、原則としてこの型をパラメータとして受け付ける。
+/// このパラメータに含むIDを用いて、データベースからユーザー情報を取得できる。
+/// この型をパラメータとして受け付けると、ハンドラ関数の処理に入る前に下記の前処理を実施する。
+/// <ul>
+///   <li>ログインセッションが有効であることを確認</li>
+///   <li>TODO: 利用規約に同意済みである確認</li>
+/// </ul>
+#[derive(Deserialize, Clone)]
+pub(crate) struct User {
+    pub(crate) account_id: i32,
 }
 
 /// テストコードで共通で使うコードをまとめるモジュール
