@@ -5,24 +5,30 @@ use std::time::Duration;
 use async_redis_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::{body::Body, http::Request, http::StatusCode};
-use common::ErrResp;
 use headers::{Cookie, HeaderMapExt};
 
-use crate::util::{
-    session::{extract_session_id, LOGIN_SESSION_EXPIRY},
-    unexpected_err_resp,
-};
+use crate::util::session::{extract_session_id, LOGIN_SESSION_EXPIRY};
 
-pub(crate) async fn get_refresh(req: Request<Body>) -> Result<StatusCode, ErrResp> {
+/// ログインセッションを延長する<br>
+/// セッションが有効な間に呼び出すと、セッションの有効期限を[LOGIN_SESSION_EXPIRY]だけ延長し、ステータスコード200を返す。<br>
+/// <br>
+/// # Errors
+/// 下記の場合、ステータスコード401を返す。<br>
+/// <ul>
+///   <li>ヘッダにCookieがない場合</li>
+///   <li>CookieにセッションIDが含まれていない場合</li>
+///   <li>既にセッションの有効期限が切れている場合</li>
+/// </ul>
+pub(crate) async fn get_refresh(req: Request<Body>) -> Result<StatusCode, StatusCode> {
     let headers = req.headers();
     let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
         tracing::error!("failed to get cookie: {}", e);
-        unexpected_err_resp()
+        StatusCode::INTERNAL_SERVER_ERROR
     })?;
     let extentions = req.extensions();
     let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
         tracing::error!("failed to get session store");
-        unexpected_err_resp()
+        StatusCode::INTERNAL_SERVER_ERROR
     })?;
     let op = RefreshOperationImpl {};
     get_refresh_internal(option_cookie, store, op, LOGIN_SESSION_EXPIRY).await
@@ -33,12 +39,12 @@ async fn get_refresh_internal(
     store: &impl SessionStore,
     op: impl RefreshOperation,
     expiry: Duration,
-) -> Result<StatusCode, ErrResp> {
+) -> Result<StatusCode, StatusCode> {
     let session_id_value = match extract_session_id(option_cookie) {
         Some(s) => s,
         None => {
             tracing::debug!("no valid cookie on refresh");
-            return Ok(StatusCode::UNAUTHORIZED);
+            return Err(StatusCode::UNAUTHORIZED);
         }
     };
     let option_session = store
@@ -50,13 +56,13 @@ async fn get_refresh_internal(
                 session_id_value,
                 e
             );
-            unexpected_err_resp()
+            StatusCode::INTERNAL_SERVER_ERROR
         })?;
     let mut session = match option_session {
         Some(s) => s,
         None => {
             tracing::debug!("no valid session on refresh");
-            return Ok(StatusCode::UNAUTHORIZED);
+            return Err(StatusCode::UNAUTHORIZED);
         }
     };
     op.set_login_session_expiry(&mut session, expiry);
@@ -67,7 +73,7 @@ async fn get_refresh_internal(
             session_id_value,
             e
         );
-        unexpected_err_resp()
+        StatusCode::INTERNAL_SERVER_ERROR
     })?;
     Ok(StatusCode::OK)
 }
