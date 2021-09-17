@@ -89,3 +89,141 @@ impl RefreshOperation for RefreshOperationImpl {
         session.expire_in(expiry);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use async_session::{MemoryStore, Session, SessionStore};
+    use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
+    use hyper::StatusCode;
+
+    use crate::{
+        refresh::get_refresh_internal,
+        util::session::{create_cookie_format, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
+    };
+
+    use super::RefreshOperation;
+
+    struct RefreshOperationMock {
+        expiry: std::time::Duration,
+    }
+
+    impl RefreshOperation for RefreshOperationMock {
+        fn set_login_session_expiry(
+            &self,
+            _session: &mut async_session::Session,
+            expiry: std::time::Duration,
+        ) {
+            assert_eq!(self.expiry, expiry);
+        }
+    }
+
+    #[tokio::test]
+    async fn refresh_success() {
+        let store = MemoryStore::new();
+        let mut session = Session::new();
+        let user_account_id = 555;
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        let _ = session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        let session_id_value = store
+            .store_session(session)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let mut headers = HeaderMap::new();
+        let header_value = create_cookie_format(&session_id_value)
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+        assert_eq!(1, store.count().await);
+        let op_mock = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
+
+        let result =
+            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+
+        let code = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, code);
+    }
+
+    #[tokio::test]
+    async fn refresh_fail_no_cookie() {
+        let option_cookie: Option<Cookie> = None;
+        let store = MemoryStore::new();
+        let op_mock = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
+
+        let result =
+            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+
+        let code = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, code);
+    }
+
+    #[tokio::test]
+    async fn refresh_fail_incorrect_cookie() {
+        let mut headers = HeaderMap::new();
+        let header_value = "name=taro"
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+        let store = MemoryStore::new();
+        let op_mock = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
+
+        let result =
+            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+
+        let code = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, code);
+    }
+
+    #[tokio::test]
+    async fn refresh_fail_session_already_expired() {
+        let store = MemoryStore::new();
+        let mut session = Session::new();
+        let user_account_id = 203;
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        let _ = session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        let session_id_value = store
+            .store_session(session)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let mut headers = HeaderMap::new();
+        let header_value = create_cookie_format(&session_id_value)
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+
+        // リフレッシュ前にセッションを削除
+        let loaded_session = store
+            .load_session(session_id_value)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let _ = store
+            .destroy_session(loaded_session)
+            .await
+            .expect("failed to get Ok");
+        assert_eq!(0, store.count().await);
+        let op_mock = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
+
+        let result =
+            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+
+        let code = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, code);
+    }
+}
