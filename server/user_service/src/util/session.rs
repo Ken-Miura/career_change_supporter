@@ -79,7 +79,7 @@ pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String
 ///   <li>ログインセッションが有効であることを確認</li>
 ///   <li>TODO: 利用規約に同意済みである確認</li>
 /// </ul>
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub(crate) struct User {
     pub(crate) account_id: i32,
 }
@@ -167,7 +167,11 @@ async fn get_user_by_cookie(
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 pub(crate) mod tests {
-    use headers::HeaderValue;
+    use async_session::MemoryStore;
+    use axum::http::StatusCode;
+    use headers::{Cookie, HeaderValue};
+
+    use crate::{err_code, util::session::get_user_by_cookie};
 
     use super::COOKIE_NAME;
 
@@ -193,5 +197,21 @@ pub(crate) mod tests {
             .split_once("=")
             .expect("failed to get value");
         cookie_max_age.1.to_string()
+    }
+
+    #[tokio::test]
+    async fn get_user_by_cookie_success() {}
+
+    #[tokio::test]
+    async fn get_user_by_cookie_fail_no_cookie() {
+        let option_cookie: Option<Cookie> = None;
+        let store = MemoryStore::new();
+
+        let result = get_user_by_cookie(option_cookie, &store)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
     }
 }
