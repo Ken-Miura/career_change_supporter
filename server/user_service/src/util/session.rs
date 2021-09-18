@@ -1,10 +1,22 @@
 // Copyright 2021 Ken Miura
 
+use async_redis_session::RedisSessionStore;
+use async_session::async_trait;
+use axum::{
+    extract::{Extension, FromRequest, RequestParts},
+    Json,
+};
+use common::{ApiError, ErrResp};
 use headers::Cookie;
+use headers::HeaderMapExt;
+use hyper::StatusCode;
 use serde::Deserialize;
 use std::time::Duration;
 
-use crate::util::ROOT_PATH;
+use crate::{
+    err_code::UNAUTHORIZED,
+    util::{unexpected_err_resp, ROOT_PATH},
+};
 
 const COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
@@ -70,6 +82,49 @@ pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String
 #[derive(Deserialize, Clone)]
 pub(crate) struct User {
     pub(crate) account_id: i32,
+}
+
+#[async_trait]
+impl<B> FromRequest<B> for User
+where
+    B: Send,
+{
+    type Rejection = ErrResp;
+
+    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let headers = match req.headers() {
+            Some(h) => h,
+            None => {
+                tracing::debug!("no headers found");
+                return Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError { code: UNAUTHORIZED }),
+                ));
+            }
+        };
+        let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
+            tracing::error!("failed to get Cookie: {}", e);
+            unexpected_err_resp()
+        })?;
+        let session_id_value = match extract_session_id(option_cookie) {
+            Some(s) => s,
+            None => {
+                tracing::debug!("no valid cookie on request");
+                return Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError { code: UNAUTHORIZED }),
+                ));
+            }
+        };
+        tracing::info!("{}", session_id_value);
+        let Extension(store) = Extension::<RedisSessionStore>::from_request(req)
+            .await
+            .map_err(|e| {
+                tracing::error!("failed to get session store: {}", e);
+                unexpected_err_resp()
+            })?;
+        Ok(User { account_id: 0 })
+    }
 }
 
 /// テストコードで共通で使うコードをまとめるモジュール

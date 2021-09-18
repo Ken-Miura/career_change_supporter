@@ -4,6 +4,7 @@ mod accounts;
 mod err_code;
 mod login;
 mod logout;
+mod profile;
 mod refresh;
 mod temp_accounts;
 mod util;
@@ -11,6 +12,7 @@ mod util;
 use crate::accounts::get_accounts;
 use crate::login::post_login;
 use crate::logout::post_logout;
+use crate::profile::get_profile;
 use crate::refresh::get_refresh;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::ROOT_PATH;
@@ -96,7 +98,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/accounts", get(get_accounts))
                 .route("/login", post(post_login))
                 .route("/logout", post(post_logout))
-                .route("/refresh", post(get_refresh)),
+                .route("/refresh", get(get_refresh))
+                .route("/profile", get(get_profile)),
         )
         .layer(AddExtensionLayer::new(pool))
         .layer(AddExtensionLayer::new(store))
