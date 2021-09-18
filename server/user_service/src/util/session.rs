@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use async_redis_session::RedisSessionStore;
-use async_session::async_trait;
+use async_session::{async_trait, SessionStore};
 use axum::{
     extract::{Extension, FromRequest, RequestParts},
     Json,
@@ -116,14 +116,44 @@ where
                 ));
             }
         };
-        tracing::info!("{}", session_id_value);
         let Extension(store) = Extension::<RedisSessionStore>::from_request(req)
             .await
             .map_err(|e| {
                 tracing::error!("failed to get session store: {}", e);
                 unexpected_err_resp()
             })?;
-        Ok(User { account_id: 0 })
+        let option_session = store
+            .load_session(session_id_value.clone())
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to load session (session_id={}): {}",
+                    session_id_value,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        let session = match option_session {
+            Some(s) => s,
+            None => {
+                tracing::debug!("no valid session on request");
+                return Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError { code: UNAUTHORIZED }),
+                ));
+            }
+        };
+        let id = match session.get::<i32>(KEY_TO_USER_ACCOUNT_ID) {
+            Some(id) => id,
+            None => {
+                tracing::error!(
+                    "failed to get id from session (session_id={})",
+                    session_id_value
+                );
+                return Err(unexpected_err_resp());
+            }
+        };
+        Ok(User { account_id: id })
     }
 }
 
