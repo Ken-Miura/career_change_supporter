@@ -4,12 +4,12 @@ use async_redis_session::RedisSessionStore;
 use async_session::{async_trait, SessionStore};
 use axum::{
     extract::{Extension, FromRequest, RequestParts},
+    http::StatusCode,
     Json,
 };
 use common::{ApiError, ErrResp};
+use headers::Cookie;
 use headers::HeaderMapExt;
-use headers::{Cookie, HeaderMap};
-use hyper::StatusCode;
 use serde::Deserialize;
 use std::time::Duration;
 
@@ -98,29 +98,28 @@ where
                 tracing::error!("failed to get session store: {}", e);
                 unexpected_err_resp()
             })?;
-        let headers_option = req.headers();
-        user_from_request_internal(headers_option, &store).await
+        let headers = match req.headers() {
+            Some(h) => h,
+            None => {
+                tracing::debug!("no headers found");
+                return Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError { code: UNAUTHORIZED }),
+                ));
+            }
+        };
+        let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
+            tracing::error!("failed to get Cookie: {}", e);
+            unexpected_err_resp()
+        })?;
+        get_user_by_cookie(option_cookie, &store).await
     }
 }
 
-async fn user_from_request_internal(
-    headers_option: Option<&HeaderMap>,
+async fn get_user_by_cookie(
+    option_cookie: Option<Cookie>,
     store: &impl SessionStore,
 ) -> Result<User, ErrResp> {
-    let headers = match headers_option {
-        Some(h) => h,
-        None => {
-            tracing::debug!("no headers found");
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(ApiError { code: UNAUTHORIZED }),
-            ));
-        }
-    };
-    let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
-        tracing::error!("failed to get Cookie: {}", e);
-        unexpected_err_resp()
-    })?;
     let session_id_value = match extract_session_id(option_cookie) {
         Some(s) => s,
         None => {
