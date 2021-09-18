@@ -7,8 +7,8 @@ use axum::{
     Json,
 };
 use common::{ApiError, ErrResp};
-use headers::Cookie;
 use headers::HeaderMapExt;
+use headers::{Cookie, HeaderMap};
 use hyper::StatusCode;
 use serde::Deserialize;
 use std::time::Duration;
@@ -92,69 +92,77 @@ where
     type Rejection = ErrResp;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let headers = match req.headers() {
-            Some(h) => h,
-            None => {
-                tracing::debug!("no headers found");
-                return Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError { code: UNAUTHORIZED }),
-                ));
-            }
-        };
-        let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
-            tracing::error!("failed to get Cookie: {}", e);
-            unexpected_err_resp()
-        })?;
-        let session_id_value = match extract_session_id(option_cookie) {
-            Some(s) => s,
-            None => {
-                tracing::debug!("no valid cookie on request");
-                return Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError { code: UNAUTHORIZED }),
-                ));
-            }
-        };
         let Extension(store) = Extension::<RedisSessionStore>::from_request(req)
             .await
             .map_err(|e| {
                 tracing::error!("failed to get session store: {}", e);
                 unexpected_err_resp()
             })?;
-        let option_session = store
-            .load_session(session_id_value.clone())
-            .await
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to load session (session_id={}): {}",
-                    session_id_value,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        let session = match option_session {
-            Some(s) => s,
-            None => {
-                tracing::debug!("no valid session on request");
-                return Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError { code: UNAUTHORIZED }),
-                ));
-            }
-        };
-        let id = match session.get::<i32>(KEY_TO_USER_ACCOUNT_ID) {
-            Some(id) => id,
-            None => {
-                tracing::error!(
-                    "failed to get id from session (session_id={})",
-                    session_id_value
-                );
-                return Err(unexpected_err_resp());
-            }
-        };
-        Ok(User { account_id: id })
+        let headers_option = req.headers();
+        user_from_request_internal(headers_option, &store).await
     }
+}
+
+async fn user_from_request_internal(
+    headers_option: Option<&HeaderMap>,
+    store: &impl SessionStore,
+) -> Result<User, ErrResp> {
+    let headers = match headers_option {
+        Some(h) => h,
+        None => {
+            tracing::debug!("no headers found");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError { code: UNAUTHORIZED }),
+            ));
+        }
+    };
+    let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
+        tracing::error!("failed to get Cookie: {}", e);
+        unexpected_err_resp()
+    })?;
+    let session_id_value = match extract_session_id(option_cookie) {
+        Some(s) => s,
+        None => {
+            tracing::debug!("no valid cookie on request");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError { code: UNAUTHORIZED }),
+            ));
+        }
+    };
+    let option_session = store
+        .load_session(session_id_value.clone())
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "failed to load session (session_id={}): {}",
+                session_id_value,
+                e
+            );
+            unexpected_err_resp()
+        })?;
+    let session = match option_session {
+        Some(s) => s,
+        None => {
+            tracing::debug!("no valid session on request");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError { code: UNAUTHORIZED }),
+            ));
+        }
+    };
+    let id = match session.get::<i32>(KEY_TO_USER_ACCOUNT_ID) {
+        Some(id) => id,
+        None => {
+            tracing::error!(
+                "failed to get id from session (session_id={})",
+                session_id_value
+            );
+            return Err(unexpected_err_resp());
+        }
+    };
+    Ok(User { account_id: id })
 }
 
 /// テストコードで共通で使うコードをまとめるモジュール
