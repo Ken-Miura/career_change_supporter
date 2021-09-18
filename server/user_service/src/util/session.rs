@@ -167,11 +167,14 @@ async fn get_user_by_cookie(
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 pub(crate) mod tests {
-    use async_session::MemoryStore;
+    use async_session::{MemoryStore, Session, SessionStore};
     use axum::http::StatusCode;
-    use headers::{Cookie, HeaderValue};
+    use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 
-    use crate::{err_code, util::session::get_user_by_cookie};
+    use crate::{
+        err_code,
+        util::session::{create_cookie_format, get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID},
+    };
 
     use super::COOKIE_NAME;
 
@@ -200,7 +203,33 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn get_user_by_cookie_success() {}
+    async fn get_user_by_cookie_success() {
+        let store = MemoryStore::new();
+        let mut session = Session::new();
+        let user_account_id = 15001;
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        let _ = session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        let session_id_value = store
+            .store_session(session)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let mut headers = HeaderMap::new();
+        let header_value = create_cookie_format(&session_id_value)
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+        assert_eq!(1, store.count().await);
+
+        let user = get_user_by_cookie(option_cookie, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(user_account_id, user.account_id);
+    }
 
     #[tokio::test]
     async fn get_user_by_cookie_fail_no_cookie() {
@@ -211,6 +240,66 @@ pub(crate) mod tests {
             .await
             .expect_err("failed to get Err");
 
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn get_user_by_cookie_fail_incorrect_cookie() {
+        let mut headers = HeaderMap::new();
+        let header_value = "name=taro"
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+        let store = MemoryStore::new();
+
+        let result = get_user_by_cookie(option_cookie, &store)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn get_user_by_cookie_fail_session_already_expired() {
+        let store = MemoryStore::new();
+        let mut session = Session::new();
+        let user_account_id = 10002;
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        let _ = session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        let session_id_value = store
+            .store_session(session)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let mut headers = HeaderMap::new();
+        let header_value = create_cookie_format(&session_id_value)
+            .parse::<HeaderValue>()
+            .expect("failed to get Ok");
+        headers.insert("cookie", header_value);
+        let option_cookie = headers.typed_get::<Cookie>();
+
+        // ログアウト前にセッションを削除
+        let loaded_session = store
+            .load_session(session_id_value)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let _ = store
+            .destroy_session(loaded_session)
+            .await
+            .expect("failed to get Ok");
+        assert_eq!(0, store.count().await);
+
+        let result = get_user_by_cookie(option_cookie, &store)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
         assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
     }
