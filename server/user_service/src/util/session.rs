@@ -202,32 +202,62 @@ pub(crate) mod tests {
         cookie_max_age.1.to_string()
     }
 
-    #[tokio::test]
-    async fn get_user_by_cookie_success() {
-        let store = MemoryStore::new();
+    /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
+    pub(crate) async fn prepare_session(user_account_id: i32, store: &impl SessionStore) -> String {
         let mut session = Session::new();
-        let user_account_id = 15001;
         // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
         let _ = session
             .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
             .expect("failed to get Ok");
-        let session_id_value = store
+        store
             .store_session(session)
             .await
             .expect("failed to get Ok")
-            .expect("failed to get value");
+            .expect("failed to get value")
+    }
+
+    pub(crate) fn prepare_cookie(session_id_value: &str) -> Option<Cookie> {
         let mut headers = HeaderMap::new();
-        let header_value = create_cookie_format(&session_id_value)
+        let header_value = create_cookie_format(session_id_value)
             .parse::<HeaderValue>()
             .expect("failed to get Ok");
         headers.insert("cookie", header_value);
-        let option_cookie = headers.typed_get::<Cookie>();
+        headers.typed_get::<Cookie>()
+    }
+
+    pub(crate) async fn remove_session_from_store(
+        session_id_value: &str,
+        store: &impl SessionStore,
+    ) {
+        let loaded_session = store
+            .load_session(session_id_value.to_string())
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+        let _ = store
+            .destroy_session(loaded_session)
+            .await
+            .expect("failed to get Ok");
+    }
+
+    #[tokio::test]
+    async fn get_user_by_cookie_success() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id_value = prepare_session(user_account_id, &store).await;
+        let option_cookie = prepare_cookie(&session_id_value);
         assert_eq!(1, store.count().await);
 
         let user = get_user_by_cookie(option_cookie, &store)
             .await
             .expect("failed to get Ok");
 
+        // get_user_by_cookieが何らかの副作用でセッションを破棄していないか確認
+        // 補足説明:
+        // 実際の運用ではセッションに有効期限をもたせるので、
+        // get_user_by_cookieの後にセッションの有効期限が切れて0になることもあり得る。
+        // しかし、テストケースではセッションに有効期限を持たせていないため、0にはならない。
+        assert_eq!(1, store.count().await);
         assert_eq!(user_account_id, user.account_id);
     }
 
@@ -264,35 +294,12 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn get_user_by_cookie_fail_session_already_expired() {
-        let store = MemoryStore::new();
-        let mut session = Session::new();
         let user_account_id = 10002;
-        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
-        let _ = session
-            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
-            .expect("failed to get Ok");
-        let session_id_value = store
-            .store_session(session)
-            .await
-            .expect("failed to get Ok")
-            .expect("failed to get value");
-        let mut headers = HeaderMap::new();
-        let header_value = create_cookie_format(&session_id_value)
-            .parse::<HeaderValue>()
-            .expect("failed to get Ok");
-        headers.insert("cookie", header_value);
-        let option_cookie = headers.typed_get::<Cookie>();
-
-        // ログアウト前にセッションを削除
-        let loaded_session = store
-            .load_session(session_id_value)
-            .await
-            .expect("failed to get Ok")
-            .expect("failed to get value");
-        let _ = store
-            .destroy_session(loaded_session)
-            .await
-            .expect("failed to get Ok");
+        let store = MemoryStore::new();
+        let session_id_value = prepare_session(user_account_id, &store).await;
+        let option_cookie = prepare_cookie(&session_id_value);
+        // リクエストのプリプロセス前ににセッションを削除
+        let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
 
         let result = get_user_by_cookie(option_cookie, &store)

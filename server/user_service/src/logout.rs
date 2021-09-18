@@ -91,15 +91,12 @@ async fn post_logout_internal(
 
 #[cfg(test)]
 mod tests {
-    use async_session::{MemoryStore, Session, SessionStore};
+    use async_session::MemoryStore;
     use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 
-    use crate::util::{
-        session::KEY_TO_USER_ACCOUNT_ID,
-        session::{
-            create_cookie_format,
-            tests::{extract_cookie_max_age_value, extract_session_id_value},
-        },
+    use crate::util::session::tests::{
+        extract_cookie_max_age_value, extract_session_id_value, prepare_cookie, prepare_session,
+        remove_session_from_store,
     };
 
     use super::*;
@@ -107,23 +104,9 @@ mod tests {
     #[tokio::test]
     async fn logout_success_session_alive() {
         let store = MemoryStore::new();
-        let mut session = Session::new();
         let user_account_id = 203;
-        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
-        let _ = session
-            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
-            .expect("failed to get Ok");
-        let session_id_value = store
-            .store_session(session)
-            .await
-            .expect("failed to get Ok")
-            .expect("failed to get value");
-        let mut headers = HeaderMap::new();
-        let header_value = create_cookie_format(&session_id_value)
-            .parse::<HeaderValue>()
-            .expect("failed to get Ok");
-        headers.insert("cookie", header_value);
-        let option_cookie = headers.typed_get::<Cookie>();
+        let session_id_value = prepare_session(user_account_id, &store).await;
+        let option_cookie = prepare_cookie(&session_id_value);
         assert_eq!(1, store.count().await);
 
         let result = post_logout_internal(option_cookie, &store)
@@ -171,34 +154,11 @@ mod tests {
     #[tokio::test]
     async fn logout_success_session_already_expired() {
         let store = MemoryStore::new();
-        let mut session = Session::new();
         let user_account_id = 203;
-        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
-        let _ = session
-            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
-            .expect("failed to get Ok");
-        let session_id_value = store
-            .store_session(session)
-            .await
-            .expect("failed to get Ok")
-            .expect("failed to get value");
-        let mut headers = HeaderMap::new();
-        let header_value = create_cookie_format(&session_id_value)
-            .parse::<HeaderValue>()
-            .expect("failed to get Ok");
-        headers.insert("cookie", header_value);
-        let option_cookie = headers.typed_get::<Cookie>();
-
+        let session_id_value = prepare_session(user_account_id, &store).await;
+        let option_cookie = prepare_cookie(&session_id_value);
         // ログアウト前にセッションを削除
-        let loaded_session = store
-            .load_session(session_id_value)
-            .await
-            .expect("failed to get Ok")
-            .expect("failed to get value");
-        let _ = store
-            .destroy_session(loaded_session)
-            .await
-            .expect("failed to get Ok");
+        let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
 
         let result = post_logout_internal(option_cookie, &store)
