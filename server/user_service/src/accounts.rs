@@ -16,16 +16,17 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::result::Error::NotFound;
 use diesel::{insert_into, RunQueryDsl};
 use diesel::{PgConnection, QueryDsl};
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 
 use crate::err_code::{
     ACCOUNT_ALREADY_EXISTS, INVALID_UUID, NO_TEMP_ACCOUNT_FOUND, TEMP_ACCOUNT_EXPIRED,
 };
-use crate::util::{self, unexpected_err_resp};
+use crate::util::{self, unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 文面の調整
-const SUBJECT: &str = "[就職転職に失敗しないためのサイト] ユーザー登録完了通知";
+static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] ユーザー登録完了通知", WEB_SITE_NAME));
 
 /// アカウントを作成する<br>
 /// <br>
@@ -107,7 +108,7 @@ async fn get_accounts_internal(
     .await?;
     let text = create_text();
     let _ =
-        async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, SUBJECT, &text) }.await?;
+        async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
     Ok((StatusCode::OK, Json(AccountsResult {})))
 }
 
@@ -120,7 +121,7 @@ pub(crate) struct TempAccountId {
 fn create_text() -> String {
     // TODO: 文面の調整
     format!(
-        r"ユーザー登録が完了いたしました。このたびは就職転職に失敗しないためのサイトへのご登録ありがとうございます。
+        r"ユーザー登録が完了いたしました。このたびは{}へのご登録ありがとうございます。
 
 他のユーザーに相談を申し込むには、ご本人確認が必要となります。引き続き、ログイン後、プロフィールよりご本人確認の申請をお願いいたします。
 
@@ -135,7 +136,7 @@ fn create_text() -> String {
 
 【お問い合わせ先】
 Email: {}",
-        INQUIRY_EMAIL_ADDRESS
+        WEB_SITE_NAME, INQUIRY_EMAIL_ADDRESS
     )
 }
 

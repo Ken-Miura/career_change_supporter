@@ -8,6 +8,8 @@ use common::{ApiError, ErrResp};
 
 use crate::err_code;
 
+pub(crate) const WEB_SITE_NAME: &str = "就職先・転職先を見極めるためのサイト";
+
 pub(crate) const ROOT_PATH: &str = "/api";
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

@@ -23,17 +23,19 @@ use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
+use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
 use crate::err_code::{ACCOUNT_ALREADY_EXISTS, REACH_TEMP_ACCOUNTS_LIMIT};
-use crate::util::{self, unexpected_err_resp};
+use crate::util::{self, unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
 const MAX_TEMP_ACCOUNTS: i64 = 5;
 
 // TODO: 文面の調整
-const SUBJECT: &str = "[就職転職に失敗しないためのサイト] ユーザー登録用URLのお知らせ";
+static SUBJECT: Lazy<String> =
+    Lazy::new(|| format!("[{}] ユーザー登録用URLのお知らせ", WEB_SITE_NAME));
 
 /// 一時アカウントを作成する。<br>
 /// <br>
@@ -112,7 +114,8 @@ async fn post_temp_accounts_internal(
     }
     .await?;
     let text = create_text(url, &uuid_2);
-    let _ = async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, SUBJECT, &text) }.await?;
+    let _ =
+        async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
     Ok((
         StatusCode::OK,
         Json(TempAccountsResult {
@@ -126,7 +129,7 @@ fn create_text(url: &str, uuid_str: &str) -> String {
     format!(
         r"!!注意!! まだユーザー登録は完了していません。
 
-このたびは、就職転職に失敗しないためのサイトのユーザー登録手続きをしていただき、ありがとうございます。
+このたびは、{}のユーザー登録手続きをしていただき、ありがとうございます。
 
 下記URLに、PCまたはスマートフォンでアクセスしてご登録手続きの完了をお願いいたします。
 {}/accounts?temp-account-id={}
@@ -140,7 +143,7 @@ fn create_text(url: &str, uuid_str: &str) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        url, uuid_str, INQUIRY_EMAIL_ADDRESS
+        WEB_SITE_NAME, url, uuid_str, INQUIRY_EMAIL_ADDRESS
     )
 }
 
