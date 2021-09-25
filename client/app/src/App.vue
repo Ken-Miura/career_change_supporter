@@ -9,7 +9,7 @@
           </a>
         </div>
         <div class="block lg:hidden pr-4">
-          <button id="nav-toggle" class="flex items-center p-1 text-pink-800 hover:text-gray-900 focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
+          <button id="nav-toggle" class="flex items-center p-1 text-white focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
             <svg class="fill-current h-6 w-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <title>Menu</title>
               <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z" />
@@ -34,12 +34,26 @@
       <div class="container px-3 mx-auto flex flex-wrap flex-col md:flex-row items-center">
         <!--Left Col-->
         <div class="flex flex-col w-full md:w-2/5 justify-center items-start text-center md:text-left">
-          <p class="uppercase tracking-loose w-full">What business are you?</p>
-          <h1 class="my-4 text-5xl font-bold leading-tight">
-            Main Hero Message to sell yourself!
+          <h1 class="my-4 text-3xl font-bold leading-tight">
+            就職先・転職先を選ぶ手助けに
           </h1>
-          <p class="leading-normal text-2xl mb-8">
-            Sub-hero message, not too long and not too short. Make it just right!
+          <p class="leading-normal text-xl mb-8">
+            就職、転職に関して下記の経験をされたことはありませんか？
+          </p>
+          <ul class="list-disc px-8">
+            <li>給与体系や福利厚生の詳細を事前に確認がしたいが、内定前の段階だと人事やリクルーターには聞きづらい</li>
+            <li>いざ働いてみると、求人票に書かれていたことと違う、職場の雰囲気が想像していたものと違う</li>
+          </ul>
+          <br>
+          <p class="leading-normal text-l mb-8">
+            給与体系や福利厚生は、会社を選ぶ上で重要な選定基準ですが、内定前の段階では人事（もしくは人事権を持っている可能性のあるリクルーター）のような立場の上の者としか会社との接点がなく、内定後までそのようなことが聞きづらいことが多々あるかと思います。せっかく内定をもらえても入社するほど納得できる給与体系や福利厚生でなければ、面接の対策に使った時間が無駄になります。
+          </p>
+          <h1 class="my-4 text-3xl font-bold leading-tight">
+            匿名
+          </h1>
+          <p class="leading-normal text-xl mb-8">
+            就職先、転職先を見極めたいユーザーとその会社に勤めている（勤めたことがある）ユーザーをマッチングさせ、情報交換を可能にすることで、
+            気になる、もしくは内定先の会社に所属するユーザーに相談を行う
           </p>
         </div>
         <!--Right Col-->
