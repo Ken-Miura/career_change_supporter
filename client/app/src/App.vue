@@ -1,5 +1,5 @@
 <template>
-  <div class="leading-normal tracking-normal text-white bg-gradient-to-r from-gray-500 to-gray-900" style="font-family: 'Source Sans Pro', sans-serif;">
+  <div v-on:click="menu" class="leading-normal tracking-normal text-white bg-gradient-to-r from-gray-500 to-gray-900" style="font-family: 'Source Sans Pro', sans-serif;">
     <!--Nav-->
     <nav id="header" class="fixed w-full z-30 top-0 text-white">
       <div class="w-full container mx-auto flex flex-wrap items-center justify-between mt-0 py-2">
@@ -9,7 +9,7 @@
           </a>
         </div>
         <div class="block lg:hidden pr-4">
-          <button id="nav-toggle" v-on:click="onMenuClicked" class="flex items-center p-1 text-white focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
+          <button id="nav-toggle" class="flex items-center p-1 text-white focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
             <svg class="fill-current h-6 w-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <title>Menu</title>
               <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z" />
@@ -84,50 +84,6 @@
     </footer>
     <!--
     <script>
-      var scrollpos = window.scrollY;
-      var header = document.getElementById("header");
-      var navcontent = document.getElementById("nav-content");
-      var navaction = document.getElementById("navAction");
-      var brandname = document.getElementById("brandname");
-      var toToggle = document.querySelectorAll(".toggleColour");
-
-      document.addEventListener("scroll", function () {
-        /*Apply classes for slide in bar*/
-        scrollpos = window.scrollY;
-
-        if (scrollpos > 10) {
-          header.classList.add("bg-white");
-          navaction.classList.remove("bg-white");
-          navaction.classList.add("gradient");
-          navaction.classList.remove("text-gray-800");
-          navaction.classList.add("text-white");
-          //Use to switch toggleColour colours
-          for (var i = 0; i < toToggle.length; i++) {
-            toToggle[i].classList.add("text-gray-800");
-            toToggle[i].classList.remove("text-white");
-          }
-          header.classList.add("shadow");
-          navcontent.classList.remove("bg-gray-100");
-          navcontent.classList.add("bg-white");
-        } else {
-          header.classList.remove("bg-white");
-          navaction.classList.remove("gradient");
-          navaction.classList.add("bg-white");
-          navaction.classList.remove("text-white");
-          navaction.classList.add("text-gray-800");
-          //Use to switch toggleColour colours
-          for (var i = 0; i < toToggle.length; i++) {
-            toToggle[i].classList.add("text-white");
-            toToggle[i].classList.remove("text-gray-800");
-          }
-
-          header.classList.remove("shadow");
-          navcontent.classList.remove("bg-white");
-          navcontent.classList.add("bg-gray-100");
-        }
-      });
-    </script>
-    <script>
       /*Toggle dropdown list*/
       /*https://gist.github.com/slavapas/593e8e50cf4cc16ac972afcbad4f70c8*/
 
@@ -168,19 +124,37 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent, ref, onMounted, reactive } from 'vue'
 
 export default defineComponent({
   name: 'App',
   setup () {
     const isHidden = ref(true)
-    const onMenuClicked = () => {
-      isHidden.value = !isHidden.value
+    const menu = (e: Event) => {
+      const target = (e && e.target) as HTMLElement // | null
+      const navMenu = document.getElementById('nav-toggle') as HTMLElement
+      const result = checkParent(target, navMenu)
+      if (result) {
+        isHidden.value = !isHidden.value
+      } else {
+        isHidden.value = true
+      }
     }
-    return { onMenuClicked, isHidden }
+    return { menu, isHidden }
   }
 })
+
+function checkParent (target: Node, elm: Node): boolean {
+  let t = target
+  while (t.parentNode) {
+    if (t === elm) {
+      return true
+    }
+    t = t.parentNode
+  }
+  return false
+}
 </script>
 
 <style>
