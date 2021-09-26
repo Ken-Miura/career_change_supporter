@@ -3,8 +3,8 @@ import Home from '../views/Home.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/user_app.html',
-    name: 'user_app',
+    path: '/index.html',
+    name: 'home',
     redirect: '/home'
   },
   {
