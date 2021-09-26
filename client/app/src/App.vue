@@ -9,14 +9,14 @@
           </a>
         </div>
         <div class="block lg:hidden pr-4">
-          <button id="nav-toggle" class="flex items-center p-1 text-white focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
+          <button id="nav-toggle" v-on:click="onMenuClicked" class="flex items-center p-1 text-white focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
             <svg class="fill-current h-6 w-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <title>Menu</title>
               <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z" />
             </svg>
           </button>
         </div>
-        <div class="w-full flex-grow lg:flex lg:items-center lg:w-auto hidden mt-2 lg:mt-0 bg-white lg:bg-transparent text-black p-4 lg:p-0 z-20" id="nav-content">
+        <div v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-white', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']" id="nav-content">
           <ul class="list-reset lg:flex justify-end flex-1 items-center">
             <li class="mr-3">
               <a class="inline-block text-white no-underline py-2 px-4" href="#">新規登録</a>
@@ -167,6 +167,21 @@
     -->
   </div>
 </template>
+
+<script>
+import { defineComponent, ref, onMounted, reactive } from 'vue'
+
+export default defineComponent({
+  name: 'App',
+  setup () {
+    const isHidden = ref(true)
+    const onMenuClicked = () => {
+      isHidden.value = !isHidden.value
+    }
+    return { onMenuClicked, isHidden }
+  }
+})
+</script>
 
 <style>
 </style>
