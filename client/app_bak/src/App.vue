@@ -168,5 +168,47 @@
   </div>
 </template>
 
+<script lang="ts">
+import { defineComponent } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+import { getSessionState } from '@/store/SessionChecker'
+
+export default defineComponent({
+  name: 'App',
+  setup () {
+    // const loggedIn = ref(false)
+    // const store = useStore()
+    // const unwatch = store.watch(
+    //   (state) => state.sessionState,
+    //   // Add special commnet to suppress unused parameter
+    //   // eslint-disable-next-line
+    //   (newValue, _oldValue) => { loggedIn.value = (newValue === 'active') })
+    // onMounted(async () => {
+    //   const sessionState = await getSessionState()
+    //   store.commit('updateSessionState', sessionState)
+    // })
+    // onUnmounted(() => { unwatch() })
+    // const router = useRouter()
+    // const logout = async () => {
+    //   store.commit('updateSessionState', 'none')
+    //   const response = await fetch('logout-request', {
+    //     method: 'POST'
+    //   })
+    //   if (!response.ok) {
+    //     const text = await response.text()
+    //     console.log('failed logout request. status: %d, body: %s', response.status, text)
+    //   }
+    //   const redirectToLogin = async () => await router.push('login')
+    //   redirectToLogin()
+    // }
+    // return {
+    //   loggedIn,
+    //   logout
+    // }
+  }
+})
+</script>
+
 <style>
 </style>
