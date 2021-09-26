@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, onMounted } from 'vue'
+import { defineComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSessionState } from '@/store/SessionChecker'
 import { useStore } from 'vuex'
@@ -15,35 +15,35 @@ import { useStore } from 'vuex'
 export default defineComponent({
   name: 'Profile',
   setup () {
-    const profile = reactive({
-      id: '',
-      email: ''
-    })
+    // const profile = reactive({
+    //   id: '',
+    //   email: ''
+    // })
 
-    const router = useRouter()
-    const store = useStore()
+    // const router = useRouter()
+    // const store = useStore()
 
-    // TODO: onMounted、onBeforeMount、setupのどれで呼ぶのが正しいか確認する
-    onMounted(async () => {
-      const sessionState = await getSessionState()
-      store.commit('updateSessionState', sessionState)
-      if (sessionState !== 'active') {
-        await router.push('login')
-        return
-      }
-      const response = await fetch('profile-information', {
-        method: 'GET'
-      })
-      if (!response.ok) {
-        profile.id = 'error: failed to get id'
-        profile.email = 'error: failed to get email'
-        return
-      }
-      const userInfo = await response.json()
-      profile.id = userInfo.id
-      profile.email = userInfo.email_address
-    })
-    return { profile }
+    // // TODO: onMounted、onBeforeMount、setupのどれで呼ぶのが正しいか確認する
+    // onMounted(async () => {
+    //   const sessionState = await getSessionState()
+    //   store.commit('updateSessionState', sessionState)
+    //   if (sessionState !== 'active') {
+    //     await router.push('login')
+    //     return
+    //   }
+    //   const response = await fetch('profile-information', {
+    //     method: 'GET'
+    //   })
+    //   if (!response.ok) {
+    //     profile.id = 'error: failed to get id'
+    //     profile.email = 'error: failed to get email'
+    //     return
+    //   }
+    //   const userInfo = await response.json()
+    //   profile.id = userInfo.id
+    //   profile.email = userInfo.email_address
+    // })
+    // return { profile }
   }
 })
 </script>
