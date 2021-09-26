@@ -16,7 +16,7 @@
             </svg>
           </button>
         </div>
-        <div v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-white', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']" id="nav-content">
+        <div v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-gray-600', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']" id="nav-content">
           <ul class="list-reset lg:flex justify-end flex-1 items-center">
             <li class="mr-3">
               <a class="inline-block text-white no-underline py-2 px-4" href="#">新規登録</a>
