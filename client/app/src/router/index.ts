@@ -3,6 +3,11 @@ import Landing from '../views/Landing.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
+    path: '/index.html',
+    name: 'RedirectToLanding',
+    redirect: '/'
+  },
+  {
     path: '/',
     name: 'Landing',
     component: Landing
