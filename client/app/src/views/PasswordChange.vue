@@ -7,7 +7,7 @@
     </header>
     <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
-        <h3 class="font-bold text-2xl">ログイン</h3>
+        <h3 class="font-bold text-2xl">パスワード変更</h3>
       </section>
       <section class="mt-10">
         <form class="flex flex-col" method="POST" action="#">
@@ -19,10 +19,11 @@
             <label class="block text-gray-700 text-sm font-bold mb-2 ml-3" for="password">パスワード</label>
             <input type="password" id="password" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
           </div>
-          <div class="flex justify-end">
-            <router-link to="/password-change" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">パスワードを忘れた場合</router-link>
+          <div class="mb-6 pt-3 rounded bg-gray-200">
+            <label class="block text-gray-700 text-sm font-bold mb-2 ml-3" for="password">パスワード（確認）</label>
+            <input type="password" id="password_confirmation" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
           </div>
-          <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ログイン</button>
+          <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更</button>
         </form>
       </section>
     </main>
@@ -36,6 +37,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'Login'
+  name: 'PasswordChange'
 })
 </script>
