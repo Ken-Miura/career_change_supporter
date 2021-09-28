@@ -1,5 +1,5 @@
 <template>
-  <div v-on:click="switchNavContentStateIfNeeded" class="leading-normal tracking-normal text-white bg-gradient-to-r from-gray-500 to-gray-900" style="font-family: 'Source Sans Pro', sans-serif;">
+  <div v-on:click="switchNavContentState" class="leading-normal tracking-normal text-white bg-gradient-to-r from-gray-500 to-gray-900" style="font-family: 'Source Sans Pro', sans-serif;">
     <!--Nav-->
     <nav id="header" class="fixed w-full z-30 top-0 text-white">
       <div class="w-full container mx-auto flex flex-wrap items-center justify-between mt-0 py-2">
@@ -92,7 +92,7 @@ export default defineComponent({
   name: 'Landing',
   setup () {
     const isHidden = ref(true)
-    const switchNavContentStateIfNeeded = (e: Event) => {
+    const switchNavContentState = (e: Event) => {
       const target = (e && e.target)
       if (!(target instanceof Node)) {
         isHidden.value = true
@@ -109,7 +109,7 @@ export default defineComponent({
         isHidden.value = true
       }
     }
-    return { switchNavContentStateIfNeeded, isHidden }
+    return { switchNavContentState, isHidden }
   }
 })
 
