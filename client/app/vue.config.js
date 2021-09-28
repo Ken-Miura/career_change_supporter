@@ -5,7 +5,7 @@ module.exports = {
   pages: {
     index: {
       entry: 'src/main.ts',
-      title: 'Career Change Suppoter' // TODO: リリース前に変更
+      title: '就職先・転職先を見極めるためのサイト'
     }
   },
   devServer: {
