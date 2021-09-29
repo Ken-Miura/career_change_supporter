@@ -9,7 +9,7 @@
           </p>
         </div>
         <div class="block lg:hidden pr-4">
-          <button id="nav-toggle" class="flex items-center p-1 text-white focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
+          <button ref="navToggle" class="flex items-center p-1 text-white focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-300 ease-in-out">
             <svg class="fill-current h-6 w-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <title>Menu</title>
               <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z" />
@@ -86,30 +86,32 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, reactive } from 'vue'
+import { defineComponent, ref } from 'vue'
 
 export default defineComponent({
   name: 'Landing',
   setup () {
     const isHidden = ref(true)
+    const navToggle = ref(null as HTMLElement | null)
     const switchNavContentState = (e: Event) => {
       const target = (e && e.target)
       if (!(target instanceof Node)) {
         isHidden.value = true
         return
       }
-      const navMenu = document.getElementById('nav-toggle')
-      if (!(navMenu instanceof HTMLElement)) {
-        throw new Error('navMenu instanceof HTMLElement')
+      const elem = navToggle.value
+      if (elem === null) {
+        isHidden.value = true
+        return
       }
-      const result = checkIfTargetWithinElm(target, navMenu)
+      const result = checkIfTargetWithinElm(target, elem)
       if (result) {
         isHidden.value = !isHidden.value
       } else {
         isHidden.value = true
       }
     }
-    return { switchNavContentState, isHidden }
+    return { isHidden, navToggle, switchNavContentState }
   }
 })
 
