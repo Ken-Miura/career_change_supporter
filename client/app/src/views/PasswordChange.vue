@@ -13,15 +13,15 @@
         <form class="flex flex-col" method="POST" action="#">
           <div class="mb-6 pt-3 rounded bg-gray-200">
             <label class="block text-gray-700 text-sm font-bold mb-2 ml-3" for="email">メールアドレス</label>
-            <input type="email" minlength="1" maxlength="254" id="email" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            <input type="email" required minlength="1" maxlength="254" id="email" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
           </div>
           <div class="mb-6 pt-3 rounded bg-gray-200">
             <label class="block text-gray-700 text-sm font-bold mb-2 ml-3" for="password">パスワード</label>
-            <input type="password" id="password" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            <input type="password" required id="password" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
           </div>
           <div class="mb-6 pt-3 rounded bg-gray-200">
             <label class="block text-gray-700 text-sm font-bold mb-2 ml-3" for="password">パスワード（確認）</label>
-            <input type="password" id="password_confirmation" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            <input type="password" required id="password_confirmation" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
           </div>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更</button>
         </form>
