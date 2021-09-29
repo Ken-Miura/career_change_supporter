@@ -11,7 +11,7 @@
       </section>
       <section class="mt-10">
         <form class="flex flex-col" method="POST" action="#">
-          <EmailAddress/>
+          <EmailAddress @on-email-updated="setEmail"/>
           <Password label="パスワード"/>
           <Password label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">新規登録</button>
@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, reactive } from 'vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
 
@@ -34,6 +34,18 @@ export default defineComponent({
   components: {
     EmailAddress,
     Password
+  },
+  setup () {
+    const form = reactive({
+      email: ''
+    })
+    const setEmail = (email: string) => {
+      form.email = email
+    }
+    return {
+      form,
+      setEmail
+    }
   }
 })
 </script>
