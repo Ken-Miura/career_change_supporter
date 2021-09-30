@@ -14,7 +14,9 @@ export default defineComponent({
     const onInput = (e: Event) => {
       const target = (e && e.target)
       if (!(target instanceof HTMLInputElement)) {
-        return
+        // HTMLInputElement以外が来るときはinputタグ以外に関数が指定されている。
+        // inputタグ以外にしていすることは想定していないため、Errorとする。
+        throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
       }
       emit('on-email-address-updated', target.value)
     }
