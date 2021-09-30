@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 
 // eslint-disable-next-line
 export function useCredentilWithConfirmation () {
@@ -16,10 +16,12 @@ export function useCredentilWithConfirmation () {
   const setPasswordConfirmation = (passwordConfirmation: string) => {
     form.passwordConfirmation = passwordConfirmation
   }
+  const passwordsAreSame = computed(() => form.password === form.passwordConfirmation)
   return {
     form,
     setEmailAddress,
     setPassword,
-    setPasswordConfirmation
+    setPasswordConfirmation,
+    passwordsAreSame
   }
 }

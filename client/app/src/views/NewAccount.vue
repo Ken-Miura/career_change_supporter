@@ -41,7 +41,8 @@ export default defineComponent({
       form,
       setEmailAddress,
       setPassword,
-      setPasswordConfirmation
+      setPasswordConfirmation,
+      passwordsAreSame
     } =
     useCredentilWithConfirmation()
     return {
