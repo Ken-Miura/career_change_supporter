@@ -12,8 +12,8 @@
       <section class="mt-10">
         <form class="flex flex-col" method="POST" action="#">
           <EmailAddress @on-email-address-updated="setEmailAddress"/>
-          <Password label="パスワード"/>
-          <Password label="パスワード（確認）"/>
+          <Password @on-password-updated="setPassword" label="パスワード"/>
+          <Password @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">新規登録</button>
         </form>
       </section>
@@ -37,14 +37,24 @@ export default defineComponent({
   },
   setup () {
     const form = reactive({
-      emailAddress: ''
+      emailAddress: '',
+      password: '',
+      passwordConfirmation: ''
     })
     const setEmailAddress = (emailAddress: string) => {
       form.emailAddress = emailAddress
     }
+    const setPassword = (password: string) => {
+      form.password = password
+    }
+    const setPasswordConfirmation = (passwordConfirmation: string) => {
+      form.passwordConfirmation = passwordConfirmation
+    }
     return {
       form,
-      setEmailAddress
+      setEmailAddress,
+      setPassword,
+      setPasswordConfirmation
     }
   }
 })
