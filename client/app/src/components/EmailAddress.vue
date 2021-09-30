@@ -16,7 +16,7 @@ export default defineComponent({
       if (!(target instanceof HTMLInputElement)) {
         return
       }
-      emit('on-email-updated', target.value)
+      emit('on-email-address-updated', target.value)
     }
     return {
       onInput
