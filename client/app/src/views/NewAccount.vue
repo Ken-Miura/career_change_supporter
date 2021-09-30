@@ -25,9 +25,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive } from 'vue'
+import { defineComponent } from 'vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
+import { useCredentilWithConfirmation } from '@/components/useCredentialWithConfirmation'
 
 export default defineComponent({
   name: 'NewAccount',
@@ -36,20 +37,13 @@ export default defineComponent({
     Password
   },
   setup () {
-    const form = reactive({
-      emailAddress: '',
-      password: '',
-      passwordConfirmation: ''
-    })
-    const setEmailAddress = (emailAddress: string) => {
-      form.emailAddress = emailAddress
-    }
-    const setPassword = (password: string) => {
-      form.password = password
-    }
-    const setPasswordConfirmation = (passwordConfirmation: string) => {
-      form.passwordConfirmation = passwordConfirmation
-    }
+    const {
+      form,
+      setEmailAddress,
+      setPassword,
+      setPasswordConfirmation
+    } =
+    useCredentilWithConfirmation()
     return {
       form,
       setEmailAddress,
