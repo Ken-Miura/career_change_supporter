@@ -10,7 +10,7 @@
         <h3 class="font-bold text-2xl">新規登録</h3>
       </section>
       <section class="mt-10">
-        <form class="flex flex-col" method="POST" action="#">
+        <form class="flex flex-col" @submit.prevent="createNewAccount">
           <EmailAddress @on-email-address-updated="setEmailAddress"/>
           <Password @on-password-updated="setPassword" label="パスワード"/>
           <Password @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
@@ -45,11 +45,18 @@ export default defineComponent({
       passwordsAreSame
     } =
     useCredentilWithConfirmation()
+    const createNewAccount = async () => {
+      console.log(form.emailAddress)
+      console.log(form.password)
+      console.log(form.passwordConfirmation)
+      console.log(passwordsAreSame.value)
+    }
     return {
       form,
       setEmailAddress,
       setPassword,
-      setPasswordConfirmation
+      setPasswordConfirmation,
+      createNewAccount
     }
   }
 })
