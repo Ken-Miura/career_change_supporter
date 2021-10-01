@@ -29,6 +29,7 @@ import { defineComponent } from 'vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
 import { useCredentil } from '@/components/useCredential'
+import { useRouter } from 'vue-router'
 
 export default defineComponent({
   name: 'NewAccount',
@@ -37,6 +38,7 @@ export default defineComponent({
     Password
   },
   setup () {
+    const router = useRouter()
     const {
       form,
       setEmailAddress,
@@ -61,6 +63,9 @@ export default defineComponent({
         })
         const result = await response.json()
         console.log(result)
+        if (response.status === 200) {
+          await router.push({ name: 'TempAccountCreated', params: { emailAddress: result.email_address } })
+        }
       } catch (e) {
         console.log(`failed to get response: ${e}`)
       }

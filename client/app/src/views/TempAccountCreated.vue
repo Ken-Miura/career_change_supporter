@@ -6,7 +6,7 @@
       </router-link>
     </header>
     <main class="flex justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <h3 class="font-bold text-lg">test@test.com宛にメールを送信しました。</h3>
+      <h3 v-if="emailAddress != undefined" class="font-bold text-lg">{{ emailAddress }}宛にメールを送信しました。メールを確認し、新規登録を完了させて下さい。</h3>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
@@ -18,6 +18,9 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'TempAccountCreated'
+  name: 'TempAccountCreated',
+  props: {
+    emailAddress: String
+  }
 })
 </script>
