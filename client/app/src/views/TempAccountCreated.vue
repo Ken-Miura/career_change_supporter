@@ -18,8 +18,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'TempAccountCreated',
-  setup () {
-  }
+  name: 'TempAccountCreated'
 })
 </script>
