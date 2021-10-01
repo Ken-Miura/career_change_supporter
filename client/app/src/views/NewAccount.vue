@@ -46,10 +46,24 @@ export default defineComponent({
     } =
     useCredentilWithConfirmation()
     const createNewAccount = async () => {
-      console.log(form.emailAddress)
-      console.log(form.password)
-      console.log(form.passwordConfirmation)
-      console.log(passwordsAreSame.value)
+      if (!passwordsAreSame.value) {
+        console.error('!passwordsAreSame.value')
+        return
+      }
+      // eslint-disable-next-line
+      const data = { email_address: form.emailAddress, password: form.password }
+      let response
+      try {
+        response = await fetch('/api/temp-accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(data)
+        })
+        const result = await response.json()
+        console.log(result)
+      } catch (e) {
+        console.log(`failed to get response: ${e}`)
+      }
     }
     return {
       form,
