@@ -1,7 +1,7 @@
 import { computed, reactive } from 'vue'
 
 // eslint-disable-next-line
-export function useCredentilWithConfirmation () {
+export function useCredentil () {
   const form = reactive({
     emailAddress: '',
     password: '',

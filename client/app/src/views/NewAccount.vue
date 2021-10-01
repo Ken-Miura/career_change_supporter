@@ -28,7 +28,7 @@
 import { defineComponent } from 'vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
-import { useCredentilWithConfirmation } from '@/components/useCredentialWithConfirmation'
+import { useCredentil } from '@/components/useCredential'
 
 export default defineComponent({
   name: 'NewAccount',
@@ -44,7 +44,7 @@ export default defineComponent({
       setPasswordConfirmation,
       passwordsAreSame
     } =
-    useCredentilWithConfirmation()
+    useCredentil()
     const createNewAccount = async () => {
       if (!passwordsAreSame.value) {
         console.error('!passwordsAreSame.value')
