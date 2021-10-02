@@ -1,29 +1,21 @@
 import { shallowMount } from '@vue/test-utils'
-import Password from '@/components/Password.vue'
+import EmailAddress from '@/components/EmailAddress.vue'
 
-describe('Password.vue', () => {
+describe('EmailAddress.vue', () => {
   it('has one label and input', () => {
-    const wrapper = shallowMount(Password)
+    const wrapper = shallowMount(EmailAddress)
     const labels = wrapper.findAll('label')
     expect(labels.length).toBe(1)
     const inputs = wrapper.findAll('input')
     expect(inputs.length).toBe(1)
   })
 
-  it('renders props.label when passed', () => {
-    const label = 'パスワード'
-    const wrapper = shallowMount(Password, {
-      props: { label }
-    })
-    expect(wrapper.text()).toMatch(label)
-  })
-  
-  it('emits on-password-updated event with input value', () => {
-    const wrapper = shallowMount(Password)
+  it('emits on-email-address-updated event with input value', () => {
+    const wrapper = shallowMount(EmailAddress)
     const input = wrapper.find('input')
-    const pwd = 'abcdABCD1234'
+    const pwd = 'test@example.com'
     input.setValue(pwd)
-    const result = wrapper.emitted('on-password-updated')
+    const result = wrapper.emitted('on-email-address-updated')
     if (result === undefined || result[0] === undefined) {
       throw new Error('result === undefined || result[0] === undefined')
     }
