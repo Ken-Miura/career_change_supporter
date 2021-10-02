@@ -17,7 +17,7 @@ describe('Password.vue', () => {
     })
     expect(wrapper.text()).toMatch(label)
   })
-  
+
   it('emits on-password-updated event with input value', () => {
     const wrapper = shallowMount(Password)
     const input = wrapper.find('input')

@@ -30,6 +30,8 @@ import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
 import { useCredentil } from '@/components/useCredential'
 import { useRouter } from 'vue-router'
+import { createTempAccount, CreateTempAccountResp } from '@/util/NewAccounts'
+import { ApiErrorResp } from '@/util/ApiError'
 
 export default defineComponent({
   name: 'NewAccount',
@@ -52,19 +54,15 @@ export default defineComponent({
         console.error('!passwordsAreSame.value')
         return
       }
-      // eslint-disable-next-line
-      const data = { email_address: form.emailAddress, password: form.password }
-      let response
       try {
-        response = await fetch('/api/temp-accounts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify(data)
-        })
-        const result = await response.json()
-        console.log(result)
-        if (response.status === 200) {
-          await router.push({ name: 'TempAccountCreated', params: { emailAddress: result.email_address } })
+        const result = await createTempAccount(form.emailAddress, form.password)
+        if (result instanceof CreateTempAccountResp) {
+          await router.push({ name: 'TempAccountCreated', params: { emailAddress: result.getEmailAddress() } })
+        } else if (result instanceof ApiErrorResp) {
+          console.error('status code: ' + result.getStatusCode())
+          console.error('code: ' + result.getApiError().getCode())
+        } else {
+          throw new Error('no type found')
         }
       } catch (e) {
         console.log(`failed to get response: ${e}`)
