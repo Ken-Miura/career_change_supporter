@@ -1,17 +1,5 @@
-import { ApiErrorResp, ApiError } from './ApiError'
-
-export class CreateTempAccountResp {
-  // createからアクセスしているため、意味のないコンストラクタではない
-  // eslint-disable-next-line
-  private constructor (private readonly emailAddress: string) {}
-  public static create (emailAddress: string): CreateTempAccountResp {
-    return new CreateTempAccountResp(emailAddress)
-  }
-
-  public getEmailAddress (): string {
-    return this.emailAddress
-  }
-}
+import { ApiErrorResp, ApiError } from '../ApiError'
+import { CreateTempAccountResp } from './CreateTempAccountResp'
 
 export async function createTempAccount (emailAddress: string, password: string): Promise<CreateTempAccountResp | ApiErrorResp> {
   // eslint-disable-next-line

@@ -30,8 +30,9 @@ import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
 import { useCredentil } from '@/components/useCredential'
 import { useRouter } from 'vue-router'
-import { createTempAccount, CreateTempAccountResp } from '@/util/NewAccounts'
 import { ApiErrorResp } from '@/util/ApiError'
+import { createTempAccount } from '@/util/new-account/CreateTempAccount'
+import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
 
 export default defineComponent({
   name: 'NewAccount',
