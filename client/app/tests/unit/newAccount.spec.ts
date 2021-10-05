@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import NewAccount from '@/views/NewAccount.vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
@@ -19,17 +19,18 @@ jest.mock('vue-router', () => ({
 const routerMock = useRouter()
 
 describe('NewAccount.vue', () => {
-  it('dispalays', async () => {
+  it('moves to TempAccountCreated when email address and password are passed', async () => {
     const emailAddress = 'test@example.com'
     createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
-
+    
     const wrapper = mount(NewAccount, {
       global: {
-        // TODO: 要調査
-        stubs: ['router-link']
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
       }
     })
-
+    
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(emailAddress)
