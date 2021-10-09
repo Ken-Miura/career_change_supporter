@@ -11,8 +11,8 @@
       </section>
       <section class="mt-10">
         <form class="flex flex-col" method="POST" action="#">
-          <EmailAddress/>
-          <Password label="パスワード"/>
+          <EmailAddress class="mb-6"/>
+          <Password class="mb-6" label="パスワード"/>
           <div class="flex justify-end">
             <router-link to="/password-change" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">パスワードを忘れた、または変更したい場合</router-link>
           </div>

@@ -11,14 +11,11 @@
       </section>
       <section class="mt-10">
         <form class="flex flex-col" @submit.prevent="createNewAccount">
-          <EmailAddress @on-email-address-updated="setEmailAddress"/>
-          <Password @on-password-updated="setPassword" label="パスワード"/>
-          <Password @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
+          <EmailAddress class="mb-6" @on-email-address-updated="setEmailAddress"/>
+          <Password class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
+          <Password class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">新規登録</button>
-          <div class="bg-red-100 border border-red-400 text-red-700 mt-6 pt-3 px-4 py-3 rounded relative" role="alert">
-            <strong class="font-bold">Holy smokes!</strong>
-            <span class="block sm:inline">Something seriously bad happened.</span>
-          </div>
+          <AlertMessage v-bind:class="['mt-6' ,{ 'hidden': isHidden }]" message="テスト"/>
         </form>
       </section>
     </main>
@@ -29,9 +26,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import { useCredentil } from '@/components/useCredential'
 import { useRouter } from 'vue-router'
 import { ApiErrorResp } from '@/util/ApiError'
@@ -42,7 +40,8 @@ export default defineComponent({
   name: 'NewAccount',
   components: {
     EmailAddress,
-    Password
+    Password,
+    AlertMessage
   },
   setup () {
     const router = useRouter()
@@ -54,9 +53,11 @@ export default defineComponent({
       passwordsAreSame
     } =
     useCredentil()
+    const isHidden = ref(true)
     const createNewAccount = async () => {
       if (!passwordsAreSame.value) {
         console.error('!passwordsAreSame.value')
+        isHidden.value = false
         return
       }
       try {
@@ -78,6 +79,7 @@ export default defineComponent({
       setEmailAddress,
       setPassword,
       setPasswordConfirmation,
+      isHidden,
       createNewAccount
     }
   }

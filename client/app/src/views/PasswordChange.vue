@@ -11,9 +11,9 @@
       </section>
       <section class="mt-10">
         <form class="flex flex-col" method="POST" action="#">
-          <EmailAddress/>
-          <Password label="パスワード"/>
-          <Password label="パスワード（確認）"/>
+          <EmailAddress class="mb-6"/>
+          <Password class="mb-6" label="パスワード"/>
+          <Password class="mb-6" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更</button>
         </form>
       </section>
