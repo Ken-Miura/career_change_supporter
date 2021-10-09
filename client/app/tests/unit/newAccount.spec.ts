@@ -4,7 +4,6 @@ import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
 import { createTempAccount } from '@/util/new-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
-import { useRouter } from 'vue-router'
 
 jest.mock('@/util/new-account/CreateTempAccount')
 const createTempAccountMock = createTempAccount as jest.MockedFunction<typeof createTempAccount>
@@ -16,7 +15,6 @@ jest.mock('vue-router', () => ({
     push: routerPushMock,
   }),
 }));
-const routerMock = useRouter()
 
 describe('NewAccount.vue', () => {
   it('moves to TempAccountCreated when email address and password are passed', async () => {
