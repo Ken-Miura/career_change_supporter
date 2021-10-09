@@ -9,18 +9,18 @@ jest.mock('@/util/new-account/CreateTempAccount')
 const createTempAccountMock = createTempAccount as jest.MockedFunction<typeof createTempAccount>
 
 // 参考: https://stackoverflow.com/questions/68763693/vue-routers-injection-fails-during-a-jest-unit-test
-const routerPushMock = jest.fn();
+const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
   useRouter: () => ({
-    push: routerPushMock,
-  }),
-}));
+    push: routerPushMock
+  })
+}))
 
 describe('NewAccount.vue', () => {
   it('moves to TempAccountCreated when email address and password are passed', async () => {
     const emailAddress = 'test@example.com'
     createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
-    
+
     const wrapper = mount(NewAccount, {
       global: {
         stubs: {
@@ -28,7 +28,7 @@ describe('NewAccount.vue', () => {
         }
       }
     })
-    
+
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(emailAddress)
@@ -42,7 +42,7 @@ describe('NewAccount.vue', () => {
 
     const button = wrapper.find('button')
     await button.trigger('submit')
-    
+
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     const data = JSON.parse(`{ "name": "TempAccountCreated", "params": {"emailAddress": "${emailAddress}"} }`)
     expect(routerPushMock).toHaveBeenCalledWith(data)

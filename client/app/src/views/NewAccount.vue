@@ -15,6 +15,10 @@
           <Password @on-password-updated="setPassword" label="パスワード"/>
           <Password @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">新規登録</button>
+          <div class="bg-red-100 border border-red-400 text-red-700 mt-6 pt-3 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Holy smokes!</strong>
+            <span class="block sm:inline">Something seriously bad happened.</span>
+          </div>
         </form>
       </section>
     </main>
