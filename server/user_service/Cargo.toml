@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 common = { path = "../common" }
-axum = { version = "0.2.6", features = ["headers"] }
+axum = { version = "0.2.8", features = ["headers"] }
 headers = "0.3.4"
 hyper = { version = "0.14.11", features = ["full"] }
 tokio = { version = "1.10.0", features = ["full"] }
