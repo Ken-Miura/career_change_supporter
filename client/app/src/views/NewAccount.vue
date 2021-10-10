@@ -15,7 +15,7 @@
           <Password class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
           <Password class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">新規登録</button>
-          <AlertMessage v-bind:class="['mt-6' ,{ 'hidden': isHidden }]" message="テスト"/>
+          <AlertMessage v-bind:class="['mt-6' ,{ 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
       </section>
     </main>
@@ -54,10 +54,12 @@ export default defineComponent({
     } =
     useCredentil()
     const isHidden = ref(true)
+    const errorMessage = ref('')
     const createNewAccount = async () => {
       if (!passwordsAreSame.value) {
         console.error('!passwordsAreSame.value')
         isHidden.value = false
+        errorMessage.value = 'パスワードと確認用パスワードが一致していません'
         return
       }
       try {
@@ -68,10 +70,11 @@ export default defineComponent({
           console.error('status code: ' + result.getStatusCode())
           console.error('code: ' + result.getApiError().getCode())
         } else {
-          throw new Error('no type found')
+          throw new Error(`unexpected result: ${result}`)
         }
       } catch (e) {
-        console.log(`failed to get response: ${e}`)
+        isHidden.value = false
+        errorMessage.value = `新規登録に失敗しました。通信環境を確認し、一定時間後に再度お試し下さい: ${e}`
       }
     }
     return {
@@ -80,6 +83,7 @@ export default defineComponent({
       setPassword,
       setPasswordConfirmation,
       isHidden,
+      errorMessage,
       createNewAccount
     }
   }
