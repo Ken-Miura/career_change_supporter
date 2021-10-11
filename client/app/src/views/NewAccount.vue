@@ -35,6 +35,7 @@ import { useRouter } from 'vue-router'
 import { ApiErrorResp } from '@/util/ApiError'
 import { createTempAccount } from '@/util/new-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
+import { createErrorMessage } from '@/util/ErrorMessage'
 
 export default defineComponent({
   name: 'NewAccount',
@@ -67,8 +68,8 @@ export default defineComponent({
         if (result instanceof CreateTempAccountResp) {
           await router.push({ name: 'TempAccountCreated', params: { emailAddress: result.getEmailAddress() } })
         } else if (result instanceof ApiErrorResp) {
-          console.error('status code: ' + result.getStatusCode())
-          console.error('code: ' + result.getApiError().getCode())
+          isHidden.value = false
+          errorMessage.value = createErrorMessage(result.getApiError().getCode())
         } else {
           throw new Error(`unexpected result: ${result}`)
         }
