@@ -15,7 +15,7 @@
           <Password class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
           <Password class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">新規登録</button>
-          <AlertMessage v-bind:class="['mt-6' ,{ 'hidden': isHidden }]" v-bind:message="errorMessage"/>
+          <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
       </section>
     </main>

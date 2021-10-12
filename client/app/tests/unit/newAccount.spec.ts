@@ -1,6 +1,7 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
 import NewAccount from '@/views/NewAccount.vue'
 import EmailAddress from '@/components/EmailAddress.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import Password from '@/components/Password.vue'
 import { createTempAccount } from '@/util/new-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
@@ -17,7 +18,7 @@ jest.mock('vue-router', () => ({
 }))
 
 describe('NewAccount.vue', () => {
-  it('has one EmailAddress and two Passwords', () => {
+  it('has one EmailAddress, two Passwords and one AlertMessage', () => {
     const wrapper = mount(NewAccount, {
       global: {
         stubs: {
@@ -27,8 +28,23 @@ describe('NewAccount.vue', () => {
     })
     const emailAddresses = wrapper.findAllComponents(EmailAddress)
     expect(emailAddresses.length).toBe(1)
-    const Passwords = wrapper.findAllComponents(Password)
-    expect(Passwords.length).toBe(2)
+    const passwords = wrapper.findAllComponents(Password)
+    expect(passwords.length).toBe(2)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+  })
+
+  it('sets a hidden attribute on AlertMessage on created', () => {
+    const wrapper = mount(NewAccount, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).toContain('hidden')
   })
 
   it('moves to TempAccountCreated when email address and password are passed', async () => {
