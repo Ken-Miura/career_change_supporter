@@ -17,7 +17,7 @@ describe('TempAccountCreated.vue', () => {
     expect(h3Tag.text()).toMatch(`${emailAddress}宛にメールを送信しました。メールを確認し、新規登録を完了させて下さい。`)
   })
 
-  it('does not render messag when no props passed', () => {
+  it('does not render message when no props passed', () => {
     const wrapper = mount(TempAccountCreated, {
       global: {
         stubs: {
