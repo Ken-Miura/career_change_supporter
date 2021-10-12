@@ -17,6 +17,20 @@ jest.mock('vue-router', () => ({
 }))
 
 describe('NewAccount.vue', () => {
+  it('has one EmailAddress and two Passwords', () => {
+    const wrapper = mount(NewAccount, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const emailAddresses = wrapper.findAllComponents(EmailAddress)
+    expect(emailAddresses.length).toBe(1)
+    const Passwords = wrapper.findAllComponents(Password)
+    expect(Passwords.length).toBe(2)
+  })
+
   it('moves to TempAccountCreated when email address and password are passed', async () => {
     const emailAddress = 'test@example.com'
     createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
