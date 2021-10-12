@@ -34,7 +34,7 @@ describe('NewAccount.vue', () => {
     expect(alertMessages.length).toBe(1)
   })
 
-  it('sets a hidden attribute on AlertMessage on created', () => {
+  it('has AlertMessage with a hidden attribute when created', () => {
     const wrapper = mount(NewAccount, {
       global: {
         stubs: {
