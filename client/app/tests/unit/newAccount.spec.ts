@@ -18,6 +18,11 @@ jest.mock('vue-router', () => ({
 }))
 
 describe('NewAccount.vue', () => {
+  beforeEach(() => {
+    routerPushMock.mockClear()
+    createTempAccountMock.mockReset()
+  })
+
   it('has one EmailAddress, two Passwords and one AlertMessage', () => {
     const wrapper = mount(NewAccount, {
       global: {
@@ -48,6 +53,38 @@ describe('NewAccount.vue', () => {
   })
 
   it('moves to TempAccountCreated when email address and password are passed', async () => {
+    const emailAddress = 'test@example.com'
+    createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
+
+    const wrapper = mount(NewAccount, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddrInput = emailAddr.find('input')
+    emailAddrInput.setValue(emailAddress)
+
+    const pwd = 'abcdABCD1234'
+    const pwds = wrapper.findAllComponents(Password)
+    const pwdInput = pwds[0].find('input')
+    pwdInput.setValue(pwd)
+    const pwdConfirmationInput = pwds[1].find('input')
+    pwdConfirmationInput.setValue(pwd)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{ "name": "TempAccountCreated", "params": {"emailAddress": "${emailAddress}"} }`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
+
+  it('displays alert message "test" when account already exists', async () => {
+    // TODO: 実装
     const emailAddress = 'test@example.com'
     createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
 
