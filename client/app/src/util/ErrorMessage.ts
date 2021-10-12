@@ -21,7 +21,7 @@ export function createErrorMessage (code: number): string {
   } else if (code === ACCOUNT_ALREADY_EXISTS) {
     return `アカウントが既に存在しています (${code})`
   } else if (code === REACH_TEMP_ACCOUNTS_LIMIT) {
-    return `新規作成依頼回数の上限に達しました。数日後、再度新規作成をお試し下さい (${code})`
+    return `新規作成試行回数の上限に達しました。数日後、再度新規作成を行って下さい (${code})`
   } else if (code === INVALID_UUID) {
     return `UUIDの形式が不正です。URLが提供されたものと一致するかご確認下さい (${code})`
   } else if (code === TEMP_ACCOUNT_EXPIRED) {
