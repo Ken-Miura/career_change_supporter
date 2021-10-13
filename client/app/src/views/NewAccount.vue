@@ -58,7 +58,6 @@ export default defineComponent({
     const errorMessage = ref('')
     const createNewAccount = async () => {
       if (!passwordsAreSame.value) {
-        console.error('!passwordsAreSame.value')
         isHidden.value = false
         errorMessage.value = 'パスワードと確認用パスワードが一致していません'
         return
