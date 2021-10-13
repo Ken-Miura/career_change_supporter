@@ -14,7 +14,7 @@ describe('TempAccountCreated.vue', () => {
     })
     const mainTag = wrapper.find('main')
     const h3Tag = mainTag.find('h3')
-    expect(h3Tag.text()).toMatch(`${emailAddress}宛にメールを送信しました。メールを確認し、新規登録を完了させて下さい。`)
+    expect(h3Tag.text()).toMatch(`${emailAddress}宛にメールを送信しました。メールを確認し、新規登録を完了させて下さい（メールが届いていない場合、迷惑メールに振り分けられていないか、もしくは本サイトのドメインのメールの受信が許可されているかご確認下さい）`)
   })
 
   it('does not render message when no props passed', () => {
