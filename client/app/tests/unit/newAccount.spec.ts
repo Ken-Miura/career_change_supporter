@@ -21,6 +21,9 @@ jest.mock('vue-router', () => ({
   })
 }))
 
+const emailAddress = 'test@example.com'
+const pwd = 'abcdABCD1234'
+
 describe('NewAccount.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -57,7 +60,6 @@ describe('NewAccount.vue', () => {
   })
 
   it('moves to TempAccountCreated when email address and password are passed', async () => {
-    const emailAddress = 'test@example.com'
     createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
 
     const wrapper = mount(NewAccount, {
@@ -72,7 +74,6 @@ describe('NewAccount.vue', () => {
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(emailAddress)
 
-    const pwd = 'abcdABCD1234'
     const pwds = wrapper.findAllComponents(Password)
     const pwdInput = pwds[0].find('input')
     pwdInput.setValue(pwd)
@@ -102,10 +103,8 @@ describe('NewAccount.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
-    const emailAddress = 'test@example.com'
     emailAddrInput.setValue(emailAddress)
 
-    const pwd = 'abcdABCD1234'
     const pwds = wrapper.findAllComponents(Password)
     const pwdInput = pwds[0].find('input')
     pwdInput.setValue(pwd)
@@ -140,10 +139,8 @@ describe('NewAccount.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
-    const emailAddress = 'test@example.com'
     emailAddrInput.setValue(emailAddress)
 
-    const pwd = 'abcdABCD1234'
     const pwds = wrapper.findAllComponents(Password)
     const pwdInput = pwds[0].find('input')
     pwdInput.setValue(pwd)
