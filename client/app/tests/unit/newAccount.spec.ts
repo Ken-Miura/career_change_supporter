@@ -21,8 +21,9 @@ jest.mock('vue-router', () => ({
   })
 }))
 
-const emailAddress = 'test@example.com'
-const pwd = 'abcdABCD1234'
+const EMAIL_ADDRESS = 'test@example.com'
+const PWD = 'abcdABCD1234'
+const DIFFERENT_PWD = '1234abcdABCD'
 
 describe('NewAccount.vue', () => {
   beforeEach(() => {
@@ -60,7 +61,7 @@ describe('NewAccount.vue', () => {
   })
 
   it('moves to TempAccountCreated when email address and password are passed', async () => {
-    createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
+    createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(EMAIL_ADDRESS))
 
     const wrapper = mount(NewAccount, {
       global: {
@@ -72,19 +73,19 @@ describe('NewAccount.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(emailAddress)
+    emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwds = wrapper.findAllComponents(Password)
     const pwdInput = pwds[0].find('input')
-    pwdInput.setValue(pwd)
+    pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
-    pwdConfirmationInput.setValue(pwd)
+    pwdConfirmationInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "TempAccountCreated", "params": {"emailAddress": "${emailAddress}"} }`)
+    const data = JSON.parse(`{ "name": "TempAccountCreated", "params": {"emailAddress": "${EMAIL_ADDRESS}"} }`)
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -103,13 +104,13 @@ describe('NewAccount.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(emailAddress)
+    emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwds = wrapper.findAllComponents(Password)
     const pwdInput = pwds[0].find('input')
-    pwdInput.setValue(pwd)
+    pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
-    pwdConfirmationInput.setValue(pwd)
+    pwdConfirmationInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -139,13 +140,13 @@ describe('NewAccount.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(emailAddress)
+    emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwds = wrapper.findAllComponents(Password)
     const pwdInput = pwds[0].find('input')
-    pwdInput.setValue(pwd)
+    pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
-    pwdConfirmationInput.setValue(pwd)
+    pwdConfirmationInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -158,5 +159,70 @@ describe('NewAccount.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.REACH_TEMP_ACCOUNTS_LIMIT_MESSAGE)
     expect(resultMessage).toContain(Code.REACH_TEMP_ACCOUNTS_LIMIT)
+  })
+
+  it('does not move TempAccountCreated when password and password confirm are different', async () => {
+    const apiErr = ApiError.create(Code.REACH_TEMP_ACCOUNTS_LIMIT)
+    const apiErrorResp = ApiErrorResp.create(400, apiErr)
+    createTempAccountMock.mockResolvedValue(apiErrorResp)
+
+    const wrapper = mount(NewAccount, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddrInput = emailAddr.find('input')
+    emailAddrInput.setValue(EMAIL_ADDRESS)
+
+    const pwds = wrapper.findAllComponents(Password)
+    const pwdInput = pwds[0].find('input')
+    pwdInput.setValue(PWD)
+    const pwdConfirmationInput = pwds[1].find('input')
+    pwdConfirmationInput.setValue(DIFFERENT_PWD)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+  })
+
+  it(`displays alert message ${Message.NEW_ACCOUNT_CREATION_FAILED} when connection error happened`, async () => {
+    const errDetail = 'connection error'
+    createTempAccountMock.mockRejectedValue(new Error(errDetail))
+
+    const wrapper = mount(NewAccount, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddrInput = emailAddr.find('input')
+    emailAddrInput.setValue(EMAIL_ADDRESS)
+
+    const pwds = wrapper.findAllComponents(Password)
+    const pwdInput = pwds[0].find('input')
+    pwdInput.setValue(PWD)
+    const pwdConfirmationInput = pwds[1].find('input')
+    pwdConfirmationInput.setValue(PWD)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NEW_ACCOUNT_CREATION_FAILED)
+    expect(resultMessage).toContain(errDetail)
   })
 })
