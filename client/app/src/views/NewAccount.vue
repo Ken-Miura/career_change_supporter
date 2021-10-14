@@ -35,7 +35,7 @@ import { useRouter } from 'vue-router'
 import { ApiErrorResp } from '@/util/ApiError'
 import { createTempAccount } from '@/util/new-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
-import { createErrorMessage } from '@/util/ErrorMessage'
+import { createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 
 export default defineComponent({

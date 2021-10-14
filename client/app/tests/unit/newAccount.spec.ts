@@ -5,6 +5,10 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import Password from '@/components/Password.vue'
 import { createTempAccount } from '@/util/new-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
+import { Message } from '@/util/Message'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { nextTick } from 'vue'
+import { Code } from '@/util/Error'
 
 jest.mock('@/util/new-account/CreateTempAccount')
 const createTempAccountMock = createTempAccount as jest.MockedFunction<typeof createTempAccount>
@@ -83,10 +87,10 @@ describe('NewAccount.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
-  it('displays alert message "test" when account already exists', async () => {
-    // TODO: 実装
-    const emailAddress = 'test@example.com'
-    createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(emailAddress))
+  it(`displays alert message ${Message.ACCOUNT_ALREADY_EXISTS_MESSAGE} when account already exists`, async () => {
+    const apiErr = ApiError.create(Code.ACCOUNT_ALREADY_EXISTS)
+    const apiErrorResp = ApiErrorResp.create(400, apiErr)
+    createTempAccountMock.mockResolvedValue(apiErrorResp)
 
     const wrapper = mount(NewAccount, {
       global: {
@@ -98,6 +102,7 @@ describe('NewAccount.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddress)
     const emailAddrInput = emailAddr.find('input')
+    const emailAddress = 'test@example.com'
     emailAddrInput.setValue(emailAddress)
 
     const pwd = 'abcdABCD1234'
@@ -109,9 +114,52 @@ describe('NewAccount.vue', () => {
 
     const button = wrapper.find('button')
     await button.trigger('submit')
+    await nextTick()
 
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "TempAccountCreated", "params": {"emailAddress": "${emailAddress}"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ACCOUNT_ALREADY_EXISTS_MESSAGE)
+    expect(resultMessage).toContain(Code.ACCOUNT_ALREADY_EXISTS)
+  })
+
+  it(`displays alert message ${Message.REACH_TEMP_ACCOUNTS_LIMIT_MESSAGE} when reach new account limit`, async () => {
+    const apiErr = ApiError.create(Code.REACH_TEMP_ACCOUNTS_LIMIT)
+    const apiErrorResp = ApiErrorResp.create(400, apiErr)
+    createTempAccountMock.mockResolvedValue(apiErrorResp)
+
+    const wrapper = mount(NewAccount, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddrInput = emailAddr.find('input')
+    const emailAddress = 'test@example.com'
+    emailAddrInput.setValue(emailAddress)
+
+    const pwd = 'abcdABCD1234'
+    const pwds = wrapper.findAllComponents(Password)
+    const pwdInput = pwds[0].find('input')
+    pwdInput.setValue(pwd)
+    const pwdConfirmationInput = pwds[1].find('input')
+    pwdConfirmationInput.setValue(pwd)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.REACH_TEMP_ACCOUNTS_LIMIT_MESSAGE)
+    expect(resultMessage).toContain(Code.REACH_TEMP_ACCOUNTS_LIMIT)
   })
 })
