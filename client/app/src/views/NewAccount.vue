@@ -36,6 +36,7 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { createTempAccount } from '@/util/new-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
 import { createErrorMessage } from '@/util/ErrorMessage'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
   name: 'NewAccount',
@@ -59,7 +60,7 @@ export default defineComponent({
     const createNewAccount = async () => {
       if (!passwordsAreSame.value) {
         isHidden.value = false
-        errorMessage.value = 'パスワードと確認用パスワードが一致していません'
+        errorMessage.value = Message.PASSWORD_CONFIRMATION_FAILED
         return
       }
       try {
@@ -74,7 +75,7 @@ export default defineComponent({
         }
       } catch (e) {
         isHidden.value = false
-        errorMessage.value = `新規登録に失敗しました。通信環境を確認し、一定時間後に再度お試し下さい: ${e}`
+        errorMessage.value = `${Message.NEW_ACCOUNT_CREATION_FAILED}: ${e}`
       }
     }
     return {
