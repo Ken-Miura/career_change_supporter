@@ -35,7 +35,7 @@ const MAX_TEMP_ACCOUNTS: i64 = 5;
 
 // TODO: 文面の調整
 static SUBJECT: Lazy<String> =
-    Lazy::new(|| format!("[{}] ユーザー登録用URLのお知らせ", WEB_SITE_NAME));
+    Lazy::new(|| format!("[{}] 新規登録用URLのお知らせ", WEB_SITE_NAME));
 
 /// 一時アカウントを作成する。<br>
 /// <br>
@@ -127,9 +127,9 @@ async fn post_temp_accounts_internal(
 fn create_text(url: &str, uuid_str: &str) -> String {
     // TODO: 文面の調整
     format!(
-        r"!!注意!! まだユーザー登録は完了していません。
+        r"!!注意!! まだ新規登録は完了していません。
 
-このたびは、{}のユーザー登録手続きをしていただき、ありがとうございます。
+このたびは、{}の新規登録手続きをしていただき、ありがとうございます。
 
 下記URLに、PCまたはスマートフォンでアクセスしてご登録手続きの完了をお願いいたします。
 {}/accounts?temp-account-id={}

@@ -26,7 +26,7 @@ use crate::err_code::{
 use crate::util::{self, unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 文面の調整
-static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] ユーザー登録完了通知", WEB_SITE_NAME));
+static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 
 /// アカウントを作成する<br>
 /// <br>
@@ -121,7 +121,7 @@ pub(crate) struct TempAccountId {
 fn create_text() -> String {
     // TODO: 文面の調整
     format!(
-        r"ユーザー登録が完了いたしました。このたびは{}へのご登録ありがとうございます。
+        r"新規登録が完了いたしました。このたびは{}へのご登録ありがとうございます。
 
 他のユーザーに相談を申し込むには、ご本人確認が必要となります。引き続き、ログイン後、プロフィールよりご本人確認の申請をお願いいたします。
 

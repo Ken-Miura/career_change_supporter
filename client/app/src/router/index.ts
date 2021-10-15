@@ -21,14 +21,14 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/new-account',
     name: 'NewAccount',
-    // 新規作成は頻繁に起こらないと思われるため、lazy loading
+    // 新規登録は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/NewAccount.vue')
   },
   {
     path: '/temp-account-created',
     name: 'TempAccountCreated',
     props: true,
-    // 新規作成は頻繁に起こらないと思われるため、lazy loading
+    // 新規登録は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/TempAccountCreated.vue')
   },
   {
@@ -40,7 +40,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/accounts',
     name: 'AccountCreated',
-    // 新規作成は頻繁に起こらないと思われるため、lazy loading
+    // 新規登録は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/AccountCreated.vue')
   }
 ]
