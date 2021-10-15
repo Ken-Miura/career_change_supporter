@@ -15,16 +15,35 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { createAccount } from '@/util/account/CreateAccount'
+import { CreateAccountResp } from '@/util/account/CreateAccountResp'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Message } from '@/util/Message'
+import { createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
   name: 'AccountCreated',
   setup () {
     const message = ref('')
     const router = useRouter()
-    const query = router.currentRoute.value.query
-    message.value = JSON.stringify(query)
+    onMounted(async () => {
+      const query = router.currentRoute.value.query
+      const data = JSON.stringify(query)
+      try {
+        const result = await await createAccount(data)
+        if (result instanceof CreateAccountResp) {
+          message.value = '成功'
+        } else if (result instanceof ApiErrorResp) {
+          message.value = '失敗' // createErrorMessage(result.getApiError().getCode())
+        } else {
+          throw new Error(`unexpected result: ${result}`)
+        }
+      } catch (e) {
+        message.value = `${Message.NEW_ACCOUNT_CREATION_FAILED}: ${e}`
+      }
+    })
     return { message }
   }
 })

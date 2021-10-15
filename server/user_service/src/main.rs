@@ -9,7 +9,7 @@ mod refresh;
 mod temp_accounts;
 mod util;
 
-use crate::accounts::get_accounts;
+use crate::accounts::post_accounts;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::profile::get_profile;
@@ -95,7 +95,7 @@ async fn main_internal(num_of_cpus: u32) {
             ROOT_PATH,
             Router::new()
                 .route("/temp-accounts", post(post_temp_accounts))
-                .route("/accounts", get(get_accounts))
+                .route("/accounts", post(post_accounts))
                 .route("/login", post(post_login))
                 .route("/logout", post(post_logout))
                 .route("/refresh", get(get_refresh))

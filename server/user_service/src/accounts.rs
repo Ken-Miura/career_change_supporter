@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use axum::http::StatusCode;
-use axum::{extract::Query, Json};
+use axum::Json;
 use chrono::{DateTime, Utc};
 use common::model::user::NewAccount;
 use common::model::user::TempAccount;
@@ -35,14 +35,14 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] ユーザー登録完�
 /// UUIDが不正な形式の場合、ステータスコード400、エラーコード[INVALID_UUID]を返す<br>
 /// 一時アカウントが見つからない場合、ステータスコード400、エラーコード[NO_TEMP_ACCOUNT_FOUND]を返す<br>
 /// 一時アカウントが期限切れの場合、ステータスコード400、エラーコード[TEMP_ACCOUNT_EXPIRED]を返す<br>
-pub(crate) async fn get_accounts(
-    temp_account: Query<TempAccountId>,
+pub(crate) async fn post_accounts(
+    Json(temp_account): Json<TempAccountId>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<AccountsResult> {
     let current_date_time = chrono::Utc::now();
     let op = AccountsOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    get_accounts_internal(
+    post_accounts_internal(
         &temp_account.temp_account_id,
         &current_date_time,
         op,
@@ -54,7 +54,7 @@ pub(crate) async fn get_accounts(
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct AccountsResult {}
 
-async fn get_accounts_internal(
+async fn post_accounts_internal(
     temp_account_id: &str,
     current_date_time: &DateTime<Utc>,
     op: impl AccountsOperation,
@@ -286,7 +286,7 @@ mod tests {
         );
 
         let result =
-            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -315,7 +315,7 @@ mod tests {
         );
 
         let result =
-            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -348,7 +348,7 @@ mod tests {
         );
 
         let result =
-            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -381,7 +381,7 @@ mod tests {
         );
 
         let result =
-            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -414,7 +414,7 @@ mod tests {
         );
 
         let result =
-            get_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);

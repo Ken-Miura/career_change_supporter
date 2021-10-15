@@ -3,14 +3,14 @@ import NewAccount from '@/views/NewAccount.vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import Password from '@/components/Password.vue'
-import { createTempAccount } from '@/util/new-account/CreateTempAccount'
-import { CreateTempAccountResp } from '@/util/new-account/CreateTempAccountResp'
+import { createTempAccount } from '@/util/temp-account/CreateTempAccount'
+import { CreateTempAccountResp } from '@/util/temp-account/CreateTempAccountResp'
 import { Message } from '@/util/Message'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { nextTick } from 'vue'
 import { Code } from '@/util/Error'
 
-jest.mock('@/util/new-account/CreateTempAccount')
+jest.mock('@/util/temp-account/CreateTempAccount')
 const createTempAccountMock = createTempAccount as jest.MockedFunction<typeof createTempAccount>
 
 // 参考: https://stackoverflow.com/questions/68763693/vue-routers-injection-fails-during-a-jest-unit-test
