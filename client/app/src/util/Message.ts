@@ -16,4 +16,6 @@ export namespace Message {
     export const NO_TEMP_ACCOUNT_FOUND_MESSAGE = '指定されたURLが見つかりませんでした。URLが提供されたものと一致するかご確認下さい'
     export const EMAIL_OR_PWD_INCORRECT_MESSAGE = 'メールアドレス、もしくはパスワードが間違っています'
     export const UNAUTHORIZED_MESSAGE = '認証が必要です'
+    export const ACCOUNT_CREATED = 'アカウントの作成が完了しました。'
+    export const ACCOUNT_CREATION_FAILED = `アカウントの作成に失敗しました。${RETRY_REQUEST}`
 }

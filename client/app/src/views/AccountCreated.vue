@@ -34,14 +34,14 @@ export default defineComponent({
       try {
         const result = await await createAccount(data)
         if (result instanceof CreateAccountResp) {
-          message.value = '成功'
+          message.value = Message.ACCOUNT_CREATED
         } else if (result instanceof ApiErrorResp) {
-          message.value = '失敗' // createErrorMessage(result.getApiError().getCode())
+          message.value = createErrorMessage(result.getApiError().getCode())
         } else {
           throw new Error(`unexpected result: ${result}`)
         }
       } catch (e) {
-        message.value = `${Message.NEW_ACCOUNT_CREATION_FAILED}: ${e}`
+        message.value = `${Message.ACCOUNT_CREATION_FAILED}: ${e}`
       }
     })
     return { message }
