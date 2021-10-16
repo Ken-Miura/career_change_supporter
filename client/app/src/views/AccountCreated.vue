@@ -36,7 +36,7 @@ export default defineComponent({
         return
       }
       try {
-        const result = await await createAccount(data)
+        const result = await createAccount(data)
         if (result instanceof CreateAccountResp) {
           message.value = Message.ACCOUNT_CREATED
         } else if (result instanceof ApiErrorResp) {
