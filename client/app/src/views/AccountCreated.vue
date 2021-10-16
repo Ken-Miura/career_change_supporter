@@ -31,6 +31,10 @@ export default defineComponent({
     onMounted(async () => {
       const query = router.currentRoute.value.query
       const data = JSON.stringify(query)
+      if (!data.match('"temp-account-id"')) {
+        message.value = Message.INVALID_QUERY_PARAM
+        return
+      }
       try {
         const result = await await createAccount(data)
         if (result instanceof CreateAccountResp) {

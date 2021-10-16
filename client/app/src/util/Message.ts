@@ -14,6 +14,7 @@ export namespace Message {
     export const INVALID_UUID_MESSAGE = 'UUIDの形式が不正です。URLが提供されたものと一致するかご確認下さい'
     export const TEMP_ACCOUNT_EXPIRED_MESSAGE = '有効期限が過ぎています。もう一度初めから手続きをお願い致します'
     export const NO_TEMP_ACCOUNT_FOUND_MESSAGE = '指定されたURLが見つかりませんでした。URLが提供されたものと一致するかご確認下さい'
+    export const INVALID_QUERY_PARAM = '指定されたURLの形式が正しくありません。URLが提供されたものと一致するかご確認下さい'
     export const EMAIL_OR_PWD_INCORRECT_MESSAGE = 'メールアドレス、もしくはパスワードが間違っています'
     export const UNAUTHORIZED_MESSAGE = '認証が必要です'
     export const ACCOUNT_CREATED = '新規登録が完了しました。'
