@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import Landing from '../views/Landing.vue'
 import Login from '../views/Login.vue'
+import Profile from '../views/personalized/Profile.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -42,6 +43,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'AccountCreated',
     // 新規登録は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/AccountCreated.vue')
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile
   }
 ]
 

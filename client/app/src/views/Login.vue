@@ -31,6 +31,7 @@
 import { defineComponent, onMounted, ref } from 'vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import { useRouter } from 'vue-router'
 import { useCredentil } from '@/components/useCredential'
 import { Message } from '@/util/Message'
@@ -38,17 +39,31 @@ import { createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
 import { login } from '@/util/login/Login'
+import { RefreshResp } from '@/util/refresh/RefreshResp'
+import { refresh } from '@/util/refresh/Refresh'
 
 export default defineComponent({
   name: 'Login',
   components: {
     EmailAddress,
-    Password
+    Password,
+    AlertMessage
   },
   setup () {
     const router = useRouter()
     onMounted(async () => {
-      // TODO: セッションが存在するならリダイレクト
+      try {
+        const result = await refresh()
+        if (result instanceof RefreshResp) {
+          await router.push('profile')
+        } else if (result instanceof ApiErrorResp) {
+          await router.push('login')
+        } else {
+          throw new Error(`unexpected result: ${result}`)
+        }
+      } catch (e) {
+        await router.push('login')
+      }
     })
     const {
       form,
@@ -62,8 +77,7 @@ export default defineComponent({
       try {
         const result = await login(form.emailAddress, form.password)
         if (result instanceof LoginResp) {
-          // TODO: プロファイルページへ
-          // await router.push({ name: 'TempAccountCreated', params: { emailAddress: result.getEmailAddress() } })
+          await router.push('profile')
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())
