@@ -11,6 +11,7 @@ jest.mock('@/util/account/CreateAccount')
 const createAccountMock = createAccount as jest.MockedFunction<typeof createAccount>
 
 // TODO: クエリパラメータを含むrouterをより良い方法でモック化できる場合、そちらに改善する
+// eslint-disable-next-line
 let queryObject: any
 jest.mock('vue-router', () => ({
   useRouter: () => ({
@@ -88,5 +89,39 @@ describe('AccountCreated.vue', () => {
     const mainTag = wrapper.find('main')
     const h3Tag = mainTag.find('h3')
     expect(h3Tag.text()).toMatch(`${Message.ACCOUNT_ALREADY_EXISTS_MESSAGE}`)
+  })
+
+  it(`displays ${Message.NO_TEMP_ACCOUNT_FOUND_MESSAGE} when temp account id is not found`, async () => {
+    const apiErr = ApiError.create(Code.NO_TEMP_ACCOUNT_FOUND)
+    createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    queryObject = { 'temp-account-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
+    const wrapper = mount(AccountCreated, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    const mainTag = wrapper.find('main')
+    const h3Tag = mainTag.find('h3')
+    expect(h3Tag.text()).toMatch(`${Message.NO_TEMP_ACCOUNT_FOUND_MESSAGE}`)
+  })
+
+  it(`displays ${Message.TEMP_ACCOUNT_EXPIRED_MESSAGE} when temp account id has aleady expired`, async () => {
+    const apiErr = ApiError.create(Code.TEMP_ACCOUNT_EXPIRED)
+    createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    queryObject = { 'temp-account-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
+    const wrapper = mount(AccountCreated, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    const mainTag = wrapper.find('main')
+    const h3Tag = mainTag.find('h3')
+    expect(h3Tag.text()).toMatch(`${Message.TEMP_ACCOUNT_EXPIRED_MESSAGE}`)
   })
 })
