@@ -56,7 +56,7 @@ describe('AccountCreated.vue', () => {
     expect(h3Tag.text()).toMatch(`${Message.INVALID_QUERY_PARAM}`)
   })
 
-  it(`displays ${Message.INVALID_UUID_MESSAGE} when query has no temp-account-id`, async () => {
+  it(`displays ${Message.INVALID_UUID_MESSAGE} when invalid uuid format is passed`, async () => {
     const apiErr = ApiError.create(Code.INVALID_UUID)
     createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'temp-account-id': /* 31桁 */ 'bc999c52f1cc4801bfd9216cdebc076' }
@@ -71,5 +71,22 @@ describe('AccountCreated.vue', () => {
     const mainTag = wrapper.find('main')
     const h3Tag = mainTag.find('h3')
     expect(h3Tag.text()).toMatch(`${Message.INVALID_UUID_MESSAGE}`)
+  })
+
+  it(`displays ${Message.ACCOUNT_ALREADY_EXISTS_MESSAGE} when account has already existed`, async () => {
+    const apiErr = ApiError.create(Code.ACCOUNT_ALREADY_EXISTS)
+    createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    queryObject = { 'temp-account-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
+    const wrapper = mount(AccountCreated, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    const mainTag = wrapper.find('main')
+    const h3Tag = mainTag.find('h3')
+    expect(h3Tag.text()).toMatch(`${Message.ACCOUNT_ALREADY_EXISTS_MESSAGE}`)
   })
 })
