@@ -19,4 +19,5 @@ export namespace Message {
     export const UNAUTHORIZED_MESSAGE = '認証が必要です'
     export const ACCOUNT_CREATED = '新規登録が完了しました。'
     export const ACCOUNT_CREATION_FAILED = `新規登録に失敗しました。${RETRY_REQUEST}`
+    export const LOGIN_FAILED = `ログインに失敗しました。${RETRY_REQUEST}`
 }
