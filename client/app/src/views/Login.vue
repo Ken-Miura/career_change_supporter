@@ -39,7 +39,6 @@ import { createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
 import { login } from '@/util/login/Login'
-import { RefreshResp } from '@/util/refresh/RefreshResp'
 import { refresh } from '@/util/refresh/Refresh'
 
 export default defineComponent({
@@ -54,10 +53,11 @@ export default defineComponent({
     onMounted(async () => {
       try {
         const result = await refresh()
-        if (result instanceof RefreshResp) {
+        if (result === 'SUCCESS') {
           await router.push('profile')
-        } else if (result instanceof ApiErrorResp) {
-          await router.push('login')
+        } else if (result === 'FAILURE') {
+          // refreshに失敗 => セッションが切れている => ログイン画面へ遷移となる
+          // ただ、もともとログインページなのでrouteを更新する必要はない。なので何もしない
         } else {
           throw new Error(`unexpected result: ${result}`)
         }

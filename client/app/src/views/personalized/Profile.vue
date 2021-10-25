@@ -19,7 +19,6 @@
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { refresh } from '@/util/refresh/Refresh'
-import { RefreshResp } from '@/util/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { logout } from '@/util/logout/Logout'
 import { LogoutResp } from '@/util/logout/LogoutResp'
@@ -32,16 +31,14 @@ export default defineComponent({
     onMounted(async () => {
       try {
         const result = await refresh()
-        if (result instanceof RefreshResp) {
-          // do nothing
-        } else if (result instanceof ApiErrorResp) {
-          console.log(`ApiErrorResp: ${result}`)
+        if (result === 'SUCCESS') {
+          // セッションが存在するので、このまま現在のページを表示する
+        } else if (result === 'FAILURE') {
           await router.push('login')
         } else {
           throw new Error(`unexpected result: ${result}`)
         }
       } catch (e) {
-        console.log(`catch: ${e}`)
         await router.push('login')
       }
     })

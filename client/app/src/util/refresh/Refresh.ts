@@ -1,13 +1,11 @@
-import { ApiErrorResp, ApiError } from '../ApiError'
-import { RefreshResp } from './RefreshResp'
+export type RefreshResult = 'SUCCESS' | 'FAILURE'
 
-export async function refresh (): Promise<RefreshResp | ApiErrorResp> {
+export async function refresh (): Promise<RefreshResult> {
   const response = await fetch('/api/refresh', {
     method: 'GET'
   })
   if (!response.ok) {
-    const apiErr = await response.json() as { code: number }
-    return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
+    return 'FAILURE'
   }
-  return RefreshResp.create()
+  return 'SUCCESS'
 }
