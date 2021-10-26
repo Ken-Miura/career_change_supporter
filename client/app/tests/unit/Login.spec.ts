@@ -1,4 +1,4 @@
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import Login from '@/views/Login.vue'
 import { refresh } from '@/util/refresh/Refresh'
 import EmailAddress from '@/components/EmailAddress.vue'
@@ -35,5 +35,21 @@ describe('Login.vue', () => {
     expect(passwords.length).toBe(1)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(1)
+  })
+
+  it('transits to profile when session has already existed', async () => {
+    refreshMock.mockResolvedValue('SUCCESS')
+
+    mount(Login, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('profile')
   })
 })
