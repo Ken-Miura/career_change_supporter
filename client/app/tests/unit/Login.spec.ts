@@ -5,9 +5,14 @@ import EmailAddress from '@/components/EmailAddress.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import Password from '@/components/Password.vue'
 import { Message } from '@/util/Message'
+import { login } from '@/util/login/Login'
+import { LoginResp } from '@/util/login/LoginResp'
 
 jest.mock('@/util/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
+
+jest.mock('@/util/login/Login')
+const loginMock = login as jest.MockedFunction<typeof login>
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -16,10 +21,14 @@ jest.mock('vue-router', () => ({
   })
 }))
 
+const EMAIL_ADDRESS = 'test@example.com'
+const PWD = 'abcdABCD1234'
+
 describe('Login.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
     refreshMock.mockReset()
+    loginMock.mockReset()
   })
 
   it('has one EmailAddress, one Password and one AlertMessage', () => {
@@ -102,5 +111,32 @@ describe('Login.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it('moves to profile when login is successful', async () => {
+    refreshMock.mockResolvedValue('FAILURE')
+    loginMock.mockResolvedValue(LoginResp.create())
+
+    const wrapper = mount(Login, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddrInput = emailAddr.find('input')
+    emailAddrInput.setValue(EMAIL_ADDRESS)
+
+    const pwd = wrapper.findComponent(Password)
+    const pwdInput = pwd.find('input')
+    pwdInput.setValue(PWD)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('profile')
   })
 })
