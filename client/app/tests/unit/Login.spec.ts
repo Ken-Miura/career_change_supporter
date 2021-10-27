@@ -37,7 +37,20 @@ describe('Login.vue', () => {
     expect(alertMessages.length).toBe(1)
   })
 
-  it('transits to profile when session has already existed', async () => {
+  it('has AlertMessage with a hidden attribute when created', () => {
+    const wrapper = mount(Login, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).toContain('hidden')
+  })
+
+  it('moves to profile when session has already existed', async () => {
     refreshMock.mockResolvedValue('SUCCESS')
 
     mount(Login, {
