@@ -50,6 +50,8 @@ export default defineComponent({
   },
   setup () {
     const router = useRouter()
+    const isHidden = ref(true)
+    const errorMessage = ref('')
     onMounted(async () => {
       try {
         const result = await refresh()
@@ -62,7 +64,8 @@ export default defineComponent({
           throw new Error(`unexpected result: ${result}`)
         }
       } catch (e) {
-        await router.push('login')
+        isHidden.value = false
+        errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
     const {
@@ -71,8 +74,6 @@ export default defineComponent({
       setPassword
     } =
     useCredentil()
-    const isHidden = ref(true)
-    const errorMessage = ref('')
     const loginHandler = async () => {
       try {
         const result = await login(form.emailAddress, form.password)
