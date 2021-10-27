@@ -65,4 +65,19 @@ describe('Login.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('profile')
   })
+
+  it('does not move when session has not existed yet', async () => {
+    refreshMock.mockResolvedValue('FAILURE')
+
+    mount(Login, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+  })
 })
