@@ -7,6 +7,9 @@ import Password from '@/components/Password.vue'
 import { Message } from '@/util/Message'
 import { login } from '@/util/login/Login'
 import { LoginResp } from '@/util/login/LoginResp'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
+import { nextTick } from 'vue'
 
 jest.mock('@/util/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -138,5 +141,38 @@ describe('Login.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('profile')
+  })
+
+  it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {
+    refreshMock.mockResolvedValue('FAILURE')
+    loginMock.mockResolvedValue(ApiErrorResp.create(401, ApiError.create(Code.EMAIL_OR_PWD_INCORRECT)))
+
+    const wrapper = mount(Login, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddrInput = emailAddr.find('input')
+    emailAddrInput.setValue(EMAIL_ADDRESS)
+
+    const pwd = wrapper.findComponent(Password)
+    const pwdInput = pwd.find('input')
+    pwdInput.setValue(PWD)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.EMAIL_OR_PWD_INCORRECT_MESSAGE)
+    expect(resultMessage).toContain(Code.EMAIL_OR_PWD_INCORRECT)
   })
 })
