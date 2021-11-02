@@ -43,6 +43,20 @@ CREATE TABLE ccs_schema.user_temp_account (
 );
 GRANT SELECT, INSERT ON ccs_schema.user_temp_account To user_app;
 
+/* 
+ * ユーザーが利用規約に同意した証拠なので、後から同意したことを追跡できるように、
+ * アカウントが削除されても利用規約の合意は削除されないようにする
+ *（user_account_idを外部キーとしてuser_account.user_account_idと関連付けない）
+ */
+CREATE TABLE ccs_schema.terms_of_use (
+  user_account_id INTEGER NOT NULL,
+  ver INTEGER NOT NULL,
+  email_address ccs_schema.email_address,
+  agreed_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  PRIMARY KEY (user_account_id, ver)
+);
+GRANT SELECT, INSERT ON ccs_schema.terms_of_use To user_app;
+
 CREATE TABLE ccs_schema.admin_account (
   admin_account_id SERIAL PRIMARY KEY,
   email_address ccs_schema.email_address UNIQUE,

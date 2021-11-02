@@ -9,6 +9,15 @@ pub mod ccs_schema {
     }
 
     table! {
+        ccs_schema.terms_of_use (user_account_id, ver) {
+            user_account_id -> Int4,
+            ver -> Int4,
+            email_address -> Varchar,
+            agreed_at -> Timestamptz,
+        }
+    }
+
+    table! {
         ccs_schema.user_account (user_account_id) {
             user_account_id -> Int4,
             email_address -> Varchar,
@@ -27,5 +36,10 @@ pub mod ccs_schema {
         }
     }
 
-    allow_tables_to_appear_in_same_query!(admin_account, user_account, user_temp_account,);
+    allow_tables_to_appear_in_same_query!(
+        admin_account,
+        terms_of_use,
+        user_account,
+        user_temp_account,
+    );
 }
