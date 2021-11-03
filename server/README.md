@@ -4,6 +4,15 @@ aws --endpoint-url=http://localhost:4566 s3 mb s3://identification-images --prof
 aws --endpoint-url=http://localhost:4566 s3 mb s3://career-confirmation-images --profile=localstack
 ```
 
+.envファイル例
+```
+DB_URL_FOR_USER_APP=postgres://user_app:test1234@localhost/ccs_db
+SOCKET_FOR_USER_APP=127.0.0.1:3000
+SOCKET_FOR_SMTP_SERVER=127.0.0.1:1025
+URL_FOR_FRONT_END=http://localhost:8080
+URL_FOR_REDIS_SERVER=redis://127.0.0.1:6379
+```
+
 NOTE:
 定期処理で対応する予定の処理
 - 期限切れのtemp_accountレコードの削除
