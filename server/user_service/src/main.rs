@@ -15,9 +15,10 @@ use crate::logout::post_logout;
 use crate::profile::get_profile;
 use crate::refresh::get_refresh;
 use crate::temp_accounts::post_temp_accounts;
+use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
-use axum::handler::{get, post};
+use axum::routing::{get, post};
 use axum::{AddExtensionLayer, Router};
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
@@ -42,6 +43,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_SOCKET_FOR_SMTP_SERVER.to_string(),
         KEY_TO_URL_FOR_FRONT_END.to_string(),
         KEY_TO_URL_FOR_REDIS_SERVER.to_string(),
+        KEY_TO_TERMS_OF_USE_VERSION.to_string(),
     ]
 });
 
