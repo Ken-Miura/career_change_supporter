@@ -1,12 +1,10 @@
 // Copyright 2021 Ken Miura
 
-use axum::http::StatusCode;
-use axum::Json;
+use common::ErrResp;
 use common::{
     model::user::TermsOfUse,
     schema::ccs_schema::terms_of_use::dsl::terms_of_use as terms_of_use_table,
 };
-use common::{ApiError, ErrResp};
 use core::panic;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
@@ -16,7 +14,6 @@ use diesel::{QueryDsl, RunQueryDsl};
 use once_cell::sync::Lazy;
 use std::env::var;
 
-use crate::err_code::NOT_TERMS_OF_USE_AGREED_YET;
 use crate::util::unexpected_err_resp;
 
 pub(crate) const KEY_TO_TERMS_OF_USE_VERSION: &str = "TERMS_OF_USE_VERSION";
@@ -42,30 +39,22 @@ pub(crate) static TERMS_OF_USE_VERSION: Lazy<i32> = Lazy::new(|| {
     terms_of_use_version
 });
 
-pub(crate) trait TermsOfUseCheckOperation {
-    fn check_if_user_has_already_agreed(
-        &self,
-        id: i32,
-        terms_of_use_version: i32,
-    ) -> Result<(), ErrResp>;
+pub(crate) trait TermsOfUseLoadOperation {
+    fn load(&self, id: i32, terms_of_use_version: i32) -> Result<Vec<TermsOfUse>, ErrResp>;
 }
 
-pub(crate) struct TermsOfUseCheckOperationImpl {
+pub(crate) struct TermsOfUseLoadOperationImpl {
     conn: PooledConnection<ConnectionManager<PgConnection>>,
 }
 
-impl TermsOfUseCheckOperationImpl {
+impl TermsOfUseLoadOperationImpl {
     pub(crate) fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
         Self { conn }
     }
 }
 
-impl TermsOfUseCheckOperation for TermsOfUseCheckOperationImpl {
-    fn check_if_user_has_already_agreed(
-        &self,
-        id: i32,
-        terms_of_use_version: i32,
-    ) -> Result<(), ErrResp> {
+impl TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl {
+    fn load(&self, id: i32, terms_of_use_version: i32) -> Result<Vec<TermsOfUse>, ErrResp> {
         let results = terms_of_use_table
             .find((id, terms_of_use_version))
             .load::<TermsOfUse>(&self.conn)
@@ -78,27 +67,6 @@ impl TermsOfUseCheckOperation for TermsOfUseCheckOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        let len = results.len();
-        if len == 0 {
-            tracing::info!(
-                "id ({}) has not agreed terms of use version ({}) yet",
-                id,
-                terms_of_use_version
-            );
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: NOT_TERMS_OF_USE_AGREED_YET,
-                }),
-            ));
-        }
-        if len > 1 {
-            // NOTE: primary keyで検索しているため、ここを通るケースはdieselの障害
-            panic!(
-                "number of terms of use (id: {}, version: {}): {}",
-                id, terms_of_use_version, len
-            )
-        }
-        Ok(())
+        Ok(results)
     }
 }

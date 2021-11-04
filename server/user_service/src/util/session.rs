@@ -14,14 +14,13 @@ use serde::Deserialize;
 use std::time::Duration;
 
 use crate::{
-    err_code::UNAUTHORIZED,
-    util::{
-        terms_of_use::{TermsOfUseCheckOperation, TermsOfUseCheckOperationImpl},
-        unexpected_err_resp, ROOT_PATH,
-    },
+    err_code::{NOT_TERMS_OF_USE_AGREED_YET, UNAUTHORIZED},
+    util::{unexpected_err_resp, ROOT_PATH},
 };
 
-use super::terms_of_use::TERMS_OF_USE_VERSION;
+use super::terms_of_use::{
+    TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
+};
 
 const COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
@@ -129,8 +128,8 @@ where
             tracing::error!("failed to get connection from pool: {}", e);
             unexpected_err_resp()
         })?;
-        let op = TermsOfUseCheckOperationImpl::new(conn);
-        let _ = op.check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION)?;
+        let op = TermsOfUseLoadOperationImpl::new(conn);
+        let _ = check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION, op)?;
 
         Ok(user)
     }
@@ -182,6 +181,36 @@ async fn get_user_by_cookie(
         }
     };
     Ok(User { account_id: id })
+}
+
+fn check_if_user_has_already_agreed(
+    id: i32,
+    terms_of_use_version: i32,
+    op: impl TermsOfUseLoadOperation,
+) -> Result<(), ErrResp> {
+    let results = op.load(id, terms_of_use_version)?;
+    let len = results.len();
+    if len == 0 {
+        tracing::info!(
+            "id ({}) has not agreed terms of use version ({}) yet",
+            id,
+            terms_of_use_version
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: NOT_TERMS_OF_USE_AGREED_YET,
+            }),
+        ));
+    }
+    if len > 1 {
+        // NOTE: primary keyで検索しているため、ここを通るケースはdieselの障害
+        panic!(
+            "number of terms of use (id: {}, version: {}): {}",
+            id, terms_of_use_version, len
+        )
+    }
+    Ok(())
 }
 
 /// テストコードで共通で使うコードをまとめるモジュール
