@@ -129,8 +129,8 @@ where
             tracing::error!("failed to get connection from pool: {}", e);
             unexpected_err_resp()
         })?;
-        let checker = TermsOfUseCheckOperationImpl::new(conn);
-        let _ = checker.check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION)?;
+        let op = TermsOfUseCheckOperationImpl::new(conn);
+        let _ = op.check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION)?;
 
         Ok(user)
     }
