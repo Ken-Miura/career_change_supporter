@@ -7,7 +7,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use common::{ApiError, ErrResp};
+use common::{ApiError, ConnectionPool, ErrResp};
 use headers::Cookie;
 use headers::HeaderMapExt;
 use serde::Deserialize;
@@ -15,8 +15,13 @@ use std::time::Duration;
 
 use crate::{
     err_code::UNAUTHORIZED,
-    util::{unexpected_err_resp, ROOT_PATH},
+    util::{
+        terms_of_use::{TermsOfUseCheckOperation, TermsOfUseCheckOperationImpl},
+        unexpected_err_resp, ROOT_PATH,
+    },
 };
+
+use super::terms_of_use::TERMS_OF_USE_VERSION;
 
 const COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
@@ -112,7 +117,22 @@ where
             tracing::error!("failed to get Cookie: {}", e);
             unexpected_err_resp()
         })?;
-        get_user_by_cookie(option_cookie, &store).await
+        let user = get_user_by_cookie(option_cookie, &store).await?;
+
+        let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
+            .await
+            .map_err(|e| {
+                tracing::error!("failed to extract connection pool from req: {}", e);
+                unexpected_err_resp()
+            })?;
+        let conn = pool.get().map_err(|e| {
+            tracing::error!("failed to get connection from pool: {}", e);
+            unexpected_err_resp()
+        })?;
+        let checker = TermsOfUseCheckOperationImpl::new(conn);
+        let _ = checker.check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION)?;
+
+        Ok(user)
     }
 }
 

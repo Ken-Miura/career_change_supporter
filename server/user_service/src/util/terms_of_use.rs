@@ -42,7 +42,7 @@ pub(crate) static TERMS_OF_USE_VERSION: Lazy<i32> = Lazy::new(|| {
     terms_of_use_version
 });
 
-trait TermsOfUseCheckOperation {
+pub(crate) trait TermsOfUseCheckOperation {
     fn check_if_user_has_already_agreed(
         &self,
         id: i32,
@@ -50,12 +50,12 @@ trait TermsOfUseCheckOperation {
     ) -> Result<(), ErrResp>;
 }
 
-struct TermsOfUseCheckOperationImpl {
+pub(crate) struct TermsOfUseCheckOperationImpl {
     conn: PooledConnection<ConnectionManager<PgConnection>>,
 }
 
 impl TermsOfUseCheckOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
+    pub(crate) fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
         Self { conn }
     }
 }
