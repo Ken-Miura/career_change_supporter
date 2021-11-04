@@ -86,7 +86,7 @@ impl TermsOfUseCheckOperation for TermsOfUseCheckOperationImpl {
                 terms_of_use_version
             );
             return Err((
-                StatusCode::UNAUTHORIZED,
+                StatusCode::BAD_REQUEST,
                 Json(ApiError {
                     code: NOT_TERMS_OF_USE_AGREED_YET,
                 }),
