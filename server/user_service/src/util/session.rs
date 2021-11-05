@@ -135,7 +135,21 @@ where
     }
 }
 
-async fn get_user_by_cookie(
+/// cookieからUserを取得する<br>
+/// Userを取得するには、セッションが有効な期間中に呼び出す必要がある<br>
+/// <br>
+/// # NOTE
+/// Userを利用するときは、原則としてハンドラのパラメータにUserを指定する方法を選択する（前記方法だと利用規約の同意しているかの確認も同時に行うため）
+/// 本関数は、Userの情報を使いたいが、利用規約の同意を確認したくないケース（ex. ユーザーから利用規約の同意を得るケース）のみに利用する<br>
+/// <br>
+/// # Errors
+/// 下記の場合、ステータスコード401、エラーコード[UNAUTHORIZED]を返す<br>
+/// <ul>
+///   <li>Cookieがない場合</li>
+///   <li>CookieにセッションIDが含まれていない場合</li>
+///   <li>既にセッションの有効期限が切れている場合</li>
+/// </ul>
+pub(crate) async fn get_user_by_cookie(
     option_cookie: Option<Cookie>,
     store: &impl SessionStore,
 ) -> Result<User, ErrResp> {

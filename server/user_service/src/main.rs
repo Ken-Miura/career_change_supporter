@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 mod accounts;
+mod agreement;
 mod agreement_status;
 mod err_code;
 mod login;
@@ -11,6 +12,7 @@ mod temp_accounts;
 mod util;
 
 use crate::accounts::post_accounts;
+use crate::agreement::post_agreement;
 use crate::agreement_status::get_agreement_status;
 use crate::login::post_login;
 use crate::logout::post_logout;
@@ -104,6 +106,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/logout", post(post_logout))
                 .route("/refresh", get(get_refresh))
                 .route("/agreement-status", get(get_agreement_status))
+                .route("/agreement", post(post_agreement))
                 .route("/profile", get(get_profile)),
         )
         .layer(AddExtensionLayer::new(pool))
