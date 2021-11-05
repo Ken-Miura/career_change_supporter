@@ -218,14 +218,19 @@ fn check_if_user_has_already_agreed(
 pub(crate) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
     use axum::http::StatusCode;
+    use chrono::TimeZone;
+    use common::{model::user::TermsOfUse, ErrResp};
     use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
 
     use crate::{
         err_code,
-        util::session::{create_cookie_format, get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID},
+        util::{
+            session::{create_cookie_format, get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID},
+            terms_of_use::TermsOfUseLoadOperation,
+        },
     };
 
-    use super::COOKIE_NAME;
+    use super::{check_if_user_has_already_agreed, COOKIE_NAME};
 
     pub(crate) fn extract_session_id_value(header_value: &HeaderValue) -> String {
         let set_cookie = header_value.to_str().expect("failed to get value");
@@ -358,5 +363,54 @@ pub(crate) mod tests {
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
         assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
+    }
+
+    struct TermsOfUseLoadOperationMock {
+        has_already_agreed: bool,
+    }
+
+    impl TermsOfUseLoadOperationMock {
+        fn new(has_already_agreed: bool) -> Self {
+            Self { has_already_agreed }
+        }
+    }
+
+    impl TermsOfUseLoadOperation for TermsOfUseLoadOperationMock {
+        fn load(&self, id: i32, terms_of_use_version: i32) -> Result<Vec<TermsOfUse>, ErrResp> {
+            if !self.has_already_agreed {
+                return Ok(vec![]);
+            }
+            let terms_of_use = TermsOfUse {
+                user_account_id: id,
+                ver: terms_of_use_version,
+                email_address: "test@example.com".to_string(),
+                agreed_at: chrono::Utc.ymd(2021, 11, 5).and_hms(20, 00, 40),
+            };
+            Ok(vec![terms_of_use])
+        }
+    }
+
+    #[test]
+    fn check_if_user_has_already_agreed_success_user_has_already_agreed() {
+        let user_account_id = 10002;
+        let terms_of_use_version = 1;
+        let op = TermsOfUseLoadOperationMock::new(true);
+
+        let result = check_if_user_has_already_agreed(user_account_id, terms_of_use_version, op);
+
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn check_if_user_has_already_agreed_fail_user_has_not_agreed_yet() {
+        let user_account_id = 10002;
+        let terms_of_use_version = 1;
+        let op = TermsOfUseLoadOperationMock::new(false);
+
+        let result = check_if_user_has_already_agreed(user_account_id, terms_of_use_version, op)
+            .expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::BAD_REQUEST, result.0);
+        assert_eq!(err_code::NOT_TERMS_OF_USE_AGREED_YET, result.1 .0.code);
     }
 }
