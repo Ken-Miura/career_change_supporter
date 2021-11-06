@@ -12,3 +12,4 @@ pub(crate) const NO_TEMP_ACCOUNT_FOUND: u32 = 20005;
 pub(crate) const EMAIL_OR_PWD_INCORRECT: u32 = 20006;
 pub(crate) const UNAUTHORIZED: u32 = 20007;
 pub(crate) const NOT_TERMS_OF_USE_AGREED_YET: u32 = 20008;
+pub(crate) const ALREADY_AGREED_TERMS_OF_USE: u32 = 20009;
