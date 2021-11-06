@@ -81,7 +81,7 @@ pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String
 /// この型をパラメータとして受け付けると、ハンドラ関数の処理に入る前に下記の前処理を実施する。
 /// <ul>
 ///   <li>ログインセッションが有効であることを確認</li>
-///   <li>TODO: 利用規約に同意済みである確認</li>
+///   <li>利用規約に同意済みである確認</li>
 /// </ul>
 #[derive(Deserialize, Clone, Debug)]
 pub(crate) struct User {
