@@ -73,13 +73,13 @@ impl AgreementOperationImpl {
     }
 
     fn check_if_unique_violation(e: &diesel::result::Error) -> bool {
-        match e {
-            diesel::result::Error::DatabaseError(kind, _) => match kind {
-                diesel::result::DatabaseErrorKind::UniqueViolation => true,
-                _ => false,
-            },
-            _ => false,
-        }
+        matches!(
+            e,
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UniqueViolation,
+                _,
+            )
+        )
     }
 }
 
@@ -113,6 +113,12 @@ impl AgreementOperation for AgreementOperationImpl {
             .execute(&self.conn)
             .map_err(|e| {
                 if AgreementOperationImpl::check_if_unique_violation(&e) {
+                    tracing::error!(
+                        "id ({}) has already agreed terms of use(version: {}): {}",
+                        id,
+                        version,
+                        e
+                    );
                     return (
                         StatusCode::BAD_REQUEST,
                         Json(ApiError {
