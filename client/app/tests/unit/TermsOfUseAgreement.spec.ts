@@ -58,7 +58,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it('has AlertMessage with a hidden attribute and does not move when refresh is success', async () => {
-    refreshMock.mockResolvedValue('SUCCESS')
+    refreshMock.mockResolvedValue(true)
 
     const wrapper = mount(TermsOfUseAgreement, {
       global: {
@@ -77,7 +77,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it('moves to login when refresh is failure', async () => {
-    refreshMock.mockResolvedValue('FAILURE')
+    refreshMock.mockResolvedValue(false)
 
     mount(TermsOfUseAgreement, {
       global: {
@@ -110,7 +110,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it('moves to profile after user agrees terms of use', async () => {
-    refreshMock.mockResolvedValue('SUCCESS')
+    refreshMock.mockResolvedValue(true)
     agreeTermsOfUseMock.mockResolvedValue(AgreeTermsOfUseResp.create())
 
     const wrapper = mount(TermsOfUseAgreement, {
@@ -128,7 +128,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it('moves to profile when user has already agreed terms of use', async () => {
-    refreshMock.mockResolvedValue('SUCCESS')
+    refreshMock.mockResolvedValue(true)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ALREADY_AGREED_TERMS_OF_USE))
     agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
 
@@ -147,7 +147,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it('moves to login when session has already exipired', async () => {
-    refreshMock.mockResolvedValue('SUCCESS')
+    refreshMock.mockResolvedValue(true)
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
 
@@ -166,7 +166,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happens`, async () => {
-    refreshMock.mockResolvedValue('SUCCESS')
+    refreshMock.mockResolvedValue(true)
     const errDetail = 'connection error'
     agreeTermsOfUseMock.mockRejectedValue(new Error(errDetail))
 

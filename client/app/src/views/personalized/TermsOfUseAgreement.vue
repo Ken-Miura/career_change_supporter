@@ -43,13 +43,11 @@ export default defineComponent({
     onMounted(async () => {
       try {
         const result = await refresh()
-        if (result === 'SUCCESS') {
+        if (result) {
           // セッションが存在するので、このまま現在のページを表示する
-        } else if (result === 'FAILURE') {
-          await router.push('login')
-        } else {
-          throw new Error(`unexpected result: ${result}`)
+          return
         }
+        await router.push('login')
       } catch (e) {
         await router.push('login')
       }

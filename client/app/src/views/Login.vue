@@ -35,11 +35,13 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import { useRouter } from 'vue-router'
 import { useCredentil } from '@/components/useCredential'
 import { Message } from '@/util/Message'
-import { createErrorMessage } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
 import { login } from '@/util/login/Login'
 import { refresh } from '@/util/refresh/Refresh'
+import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
+import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
 
 export default defineComponent({
   name: 'Login',
@@ -55,13 +57,23 @@ export default defineComponent({
     onMounted(async () => {
       try {
         const result = await refresh()
-        if (result === 'SUCCESS') {
-          await router.push('profile')
-        } else if (result === 'FAILURE') {
+        if (!result) {
           // refreshに失敗 => セッションが切れている => ログイン画面へ遷移となる
           // ただ、もともとログインページなのでrouteを更新する必要はない。なので何もしない
-        } else {
-          throw new Error(`unexpected result: ${result}`)
+          return
+        }
+        const agreementStatus = await checkAgreementStatus()
+        if (agreementStatus instanceof CheckAgreementStatusResp) {
+          await router.push('profile')
+        } else if (agreementStatus instanceof ApiErrorResp) {
+          const code = agreementStatus.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('terms-of-use')
+          } else {
+            throw new Error(`unexpected result: ${agreementStatus}`)
+          }
         }
       } catch (e) {
         isHidden.value = false
