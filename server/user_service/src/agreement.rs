@@ -167,3 +167,112 @@ async fn post_agreement_internal(
     .await?;
     Ok(StatusCode::OK)
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::Json;
+    use chrono::{Duration, TimeZone};
+    use common::{model::user::Account, util::hash_password, ApiError, ErrResp};
+    use hyper::StatusCode;
+
+    use crate::err_code::ALREADY_AGREED_TERMS_OF_USE;
+
+    use super::{post_agreement_internal, AgreementOperation};
+
+    struct AgreementOperationMock<'a> {
+        already_agreed_terms_of_use: bool,
+        id: i32,
+        version: i32,
+        email_address: &'a str,
+        agreed_at: &'a chrono::DateTime<chrono::Utc>,
+    }
+
+    impl<'a> AgreementOperationMock<'a> {
+        fn new(
+            already_agreed_terms_of_use: bool,
+            id: i32,
+            version: i32,
+            email_address: &'a str,
+            agreed_at: &'a chrono::DateTime<chrono::Utc>,
+        ) -> Self {
+            Self {
+                already_agreed_terms_of_use,
+                id,
+                version,
+                email_address,
+                agreed_at,
+            }
+        }
+    }
+
+    impl AgreementOperation for AgreementOperationMock<'_> {
+        fn find_account_by_id(&self, id: i32) -> Result<Vec<Account>, ErrResp> {
+            assert_eq!(self.id, id);
+            let hashed_password = hash_password("aaaaaaaaaA")
+                .map_err(|e| panic!("failed to handle password: {}", e))?;
+            let last_login_time = *self.agreed_at - Duration::minutes(10);
+            let created_at = *self.agreed_at - Duration::minutes(30);
+            let account = Account {
+                user_account_id: self.id,
+                email_address: self.email_address.to_string(),
+                hashed_password,
+                last_login_time: Some(last_login_time),
+                created_at: created_at,
+            };
+            Ok(vec![account])
+        }
+
+        fn agree_terms_of_use(
+            &self,
+            id: i32,
+            version: i32,
+            email_address: &str,
+            agreed_at: &chrono::DateTime<chrono::Utc>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.id, id);
+            assert_eq!(self.version, version);
+            assert_eq!(self.email_address, email_address);
+            assert_eq!(self.agreed_at, agreed_at);
+            if self.already_agreed_terms_of_use {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: ALREADY_AGREED_TERMS_OF_USE,
+                    }),
+                ));
+            }
+            return Ok(());
+        }
+    }
+
+    #[tokio::test]
+    async fn agreement_success() {
+        let id = 51235;
+        let email_address = "test@example.com";
+        let version = 1;
+        let agreed_at = chrono::Utc.ymd(2021, 11, 7).and_hms(11, 00, 40);
+        let op = AgreementOperationMock::new(false, id, version, email_address, &agreed_at);
+
+        let result = post_agreement_internal(id, version, &agreed_at, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result);
+    }
+
+    #[tokio::test]
+    async fn agreement_fail_already_agreed() {
+        let id = 82546;
+        let email_address = "test1234@example.com";
+        let version = 1;
+        let agreed_at = chrono::Utc.ymd(2021, 11, 7).and_hms(11, 00, 40);
+        let op = AgreementOperationMock::new(true, id, version, email_address, &agreed_at);
+
+        let result = post_agreement_internal(id, version, &agreed_at, op)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::BAD_REQUEST, result.0);
+        assert_eq!(ALREADY_AGREED_TERMS_OF_USE, result.1 .0.code);
+    }
+}
