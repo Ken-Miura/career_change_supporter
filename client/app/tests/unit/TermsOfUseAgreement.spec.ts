@@ -1,5 +1,5 @@
 import { refresh } from '@/util/refresh/Refresh'
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import TermsOfUseAgreement from '@/views/personalized/TermsOfUseAgreement.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import TermsOfUse from '@/components/TermsOfUse.vue'
@@ -50,5 +50,24 @@ describe('TermsOfUseAgreement.vue', () => {
     const alertMessage = wrapper.findComponent(AlertMessage)
     const classes = alertMessage.classes()
     expect(classes).toContain('hidden')
+  })
+
+  it('has AlertMessage with a hidden attribute and does not move when refresh is success', async () => {
+    refreshMock.mockResolvedValue('SUCCESS')
+
+    const wrapper = mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).toContain('hidden')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 })
