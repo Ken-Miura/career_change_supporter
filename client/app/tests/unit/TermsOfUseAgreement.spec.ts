@@ -3,6 +3,7 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import TermsOfUseAgreement from '@/views/personalized/TermsOfUseAgreement.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import TermsOfUse from '@/components/TermsOfUse.vue'
+import { agreeTermsOfUse } from '@/util/terms-of-use/AgreeTermsOfUse'
 
 jest.mock('@/util/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -14,10 +15,14 @@ jest.mock('vue-router', () => ({
   })
 }))
 
+jest.mock('@/util/terms-of-use/AgreeTermsOfUse')
+const agreeTermsOfUseMock = agreeTermsOfUse as jest.MockedFunction<typeof agreeTermsOfUse>
+
 describe('TermsOfUseAgreement.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
     refreshMock.mockReset()
+    agreeTermsOfUseMock.mockReset()
   })
 
   it('has one TermsOfUse and one AlertMessage', () => {
@@ -32,5 +37,18 @@ describe('TermsOfUseAgreement.vue', () => {
     expect(termsOfUses.length).toBe(1)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(1)
+  })
+
+  it('has AlertMessage with a hidden attribute when created', () => {
+    const wrapper = mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).toContain('hidden')
   })
 })
