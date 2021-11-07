@@ -86,4 +86,21 @@ describe('TermsOfUseAgreement.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('login')
   })
+
+  it('moves to login when connection error happens', async () => {
+    const errDetail = 'connection error'
+    refreshMock.mockRejectedValue(new Error(errDetail))
+
+    mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('login')
+  })
 })
