@@ -163,6 +163,7 @@
       <div class="flex justify-center mt-6">
         <button v-on:click="agreeTermsOfUseHandler" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意する</button>
       </div>
+      <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
@@ -178,25 +179,32 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { agreeTermsOfUse } from '@/util/terms-of-use/AgreeTermsOfUse'
 import { AgreeTermsOfUseResp } from '@/util/terms-of-use/AgreeTermsOfUseResp'
 import { Code } from '@/util/Error'
+import AlertMessage from '@/components/AlertMessage.vue'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
   name: 'TermsOfUse',
+  components: {
+    AlertMessage
+  },
   setup () {
     const router = useRouter()
-    // onMounted(async () => {
-    //   try {
-    //     const result = await refresh()
-    //     if (result === 'SUCCESS') {
-    //       // セッションが存在するので、このまま現在のページを表示する
-    //     } else if (result === 'FAILURE') {
-    //       await router.push('login')
-    //     } else {
-    //       throw new Error(`unexpected result: ${result}`)
-    //     }
-    //   } catch (e) {
-    //     await router.push('login')
-    //   }
-    // })
+    const isHidden = ref(true)
+    const errorMessage = ref('')
+    onMounted(async () => {
+      try {
+        const result = await refresh()
+        if (result === 'SUCCESS') {
+          // セッションが存在するので、このまま現在のページを表示する
+        } else if (result === 'FAILURE') {
+          await router.push('login')
+        } else {
+          throw new Error(`unexpected result: ${result}`)
+        }
+      } catch (e) {
+        await router.push('login')
+      }
+    })
     const agreeTermsOfUseHandler = async () => {
       try {
         const result = await agreeTermsOfUse()
@@ -219,11 +227,11 @@ export default defineComponent({
           throw new Error(`unexpected result: ${result}`)
         }
       } catch (e) {
-        // メッセージ表示にする
-        await router.push('login')
+        isHidden.value = false
+        errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
-    return { agreeTermsOfUseHandler }
+    return { isHidden, errorMessage, agreeTermsOfUseHandler }
   }
 })
 </script>
