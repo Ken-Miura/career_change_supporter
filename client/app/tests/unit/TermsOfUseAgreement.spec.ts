@@ -4,6 +4,11 @@ import TermsOfUseAgreement from '@/views/personalized/TermsOfUseAgreement.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import TermsOfUse from '@/components/TermsOfUse.vue'
 import { agreeTermsOfUse } from '@/util/terms-of-use/AgreeTermsOfUse'
+import { AgreeTermsOfUseResp } from '@/util/terms-of-use/AgreeTermsOfUseResp'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
+import { Message } from '@/util/Message'
+import { nextTick } from 'vue'
 
 jest.mock('@/util/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -102,5 +107,85 @@ describe('TermsOfUseAgreement.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('login')
+  })
+
+  it('moves to profile after user agrees terms of use', async () => {
+    refreshMock.mockResolvedValue('SUCCESS')
+    agreeTermsOfUseMock.mockResolvedValue(AgreeTermsOfUseResp.create())
+
+    const wrapper = mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('button')
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('profile')
+  })
+
+  it('moves to profile when user has already agreed terms of use', async () => {
+    refreshMock.mockResolvedValue('SUCCESS')
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ALREADY_AGREED_TERMS_OF_USE))
+    agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
+
+    const wrapper = mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('button')
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('profile')
+  })
+
+  it('moves to login when session has already exipired', async () => {
+    refreshMock.mockResolvedValue('SUCCESS')
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
+
+    const wrapper = mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('button')
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('login')
+  })
+
+  it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happens`, async () => {
+    refreshMock.mockResolvedValue('SUCCESS')
+    const errDetail = 'connection error'
+    agreeTermsOfUseMock.mockRejectedValue(new Error(errDetail))
+
+    const wrapper = mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('button')
+    await button.trigger('click')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
   })
 })
