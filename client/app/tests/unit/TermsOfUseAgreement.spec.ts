@@ -70,4 +70,20 @@ describe('TermsOfUseAgreement.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
+
+  it('moves to login when refresh is failure', async () => {
+    refreshMock.mockResolvedValue('FAILURE')
+
+    mount(TermsOfUseAgreement, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('login')
+  })
 })
