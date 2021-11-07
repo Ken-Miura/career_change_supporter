@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="flex justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <h3 class="font-bold text-lg">{{ message }}</h3>
       <button v-on:click="logoutHandler">ログアウト</button>
     </main>
