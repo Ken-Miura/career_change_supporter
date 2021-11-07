@@ -48,6 +48,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/profile',
     name: 'Profile',
     component: Profile
+  },
+  {
+    path: '/terms-of-use',
+    name: 'TermsOfUse',
+    // 利用規約の同意は頻繁に起こらないと思われるため、lazy loading
+    component: () => import('../views/personalized/TermsOfUse.vue')
   }
 ]
 
