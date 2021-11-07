@@ -16,6 +16,8 @@ export namespace Code {
   export const NO_TEMP_ACCOUNT_FOUND = 20005
   export const EMAIL_OR_PWD_INCORRECT = 20006
   export const UNAUTHORIZED = 20007
+  export const NOT_TERMS_OF_USE_AGREED_YET = 20008
+  export const ALREADY_AGREED_TERMS_OF_USE = 20009
 }
 
 export function createErrorMessage (code: number): string {

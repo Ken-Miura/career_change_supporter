@@ -161,7 +161,7 @@
         <p class="mt-4">以上</p>
       </div>
       <div class="flex justify-center mt-6">
-        <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意する</button>
+        <button v-on:click="agreeTermsOfUseHandler" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意する</button>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
@@ -175,14 +175,14 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { refresh } from '@/util/refresh/Refresh'
 import { ApiErrorResp } from '@/util/ApiError'
-import { logout } from '@/util/logout/Logout'
-import { LogoutResp } from '@/util/logout/LogoutResp'
+import { agreeTermsOfUse } from '@/util/terms-of-use/AgreeTermsOfUse'
+import { AgreeTermsOfUseResp } from '@/util/terms-of-use/AgreeTermsOfUseResp'
+import { Code } from '@/util/Error'
 
 export default defineComponent({
   name: 'TermsOfUse',
   setup () {
-    // const message = ref('プロファイル用テストページ')
-    // const router = useRouter()
+    const router = useRouter()
     // onMounted(async () => {
     //   try {
     //     const result = await refresh()
@@ -197,22 +197,33 @@ export default defineComponent({
     //     await router.push('login')
     //   }
     // })
-    // const logoutHandler = async () => {
-    //   try {
-    //     const result = await logout()
-    //     if (result instanceof LogoutResp) {
-    //       console.log('LogoutResp')
-    //     } else if (result instanceof ApiErrorResp) {
-    //       console.log(`ApiErrorResp: ${result}`)
-    //     } else {
-    //       throw new Error(`unexpected result: ${result}`)
-    //     }
-    //   } catch (e) {
-    //     console.log(`catch: ${e}`)
-    //   }
-    //   await router.push('login')
-    // }
-    // return { message, logoutHandler }
+    const agreeTermsOfUseHandler = async () => {
+      try {
+        const result = await agreeTermsOfUse()
+        if (result instanceof AgreeTermsOfUseResp) {
+          await router.push('profile')
+        } else if (result instanceof ApiErrorResp) {
+          const code = result.getApiError().getCode()
+          // 利用規約に同意するためにはセッションが有効である必要がある
+          // そのため、セッションの期限が切れている場合、Code.UNAUTHORIZEDが返却される
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+          } else if (code === Code.ALREADY_AGREED_TERMS_OF_USE) {
+            // 複数回連続で利用規約に同意するを押した場合、Code.ALREADY_AGREED_TERMS_OF_USEが返却される可能性が考えられる
+            // 既に利用規約に同意している場合は、無視してprofile画面へ遷移する
+            await router.push('profile')
+          } else {
+            throw new Error(`unexpected result: ${result}`)
+          }
+        } else {
+          throw new Error(`unexpected result: ${result}`)
+        }
+      } catch (e) {
+        // メッセージ表示にする
+        await router.push('login')
+      }
+    }
+    return { agreeTermsOfUseHandler }
   }
 })
 </script>
