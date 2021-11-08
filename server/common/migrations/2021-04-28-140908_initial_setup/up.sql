@@ -57,6 +57,15 @@ CREATE TABLE ccs_schema.terms_of_use (
 );
 GRANT SELECT, INSERT ON ccs_schema.terms_of_use To user_app;
 
+CREATE TABLE ccs_schema.new_password (
+  new_password_id ccs_schema.uuid_simple_form PRIMARY KEY,
+  /* 一度パスワード変更依頼を出した後、もう一度パスワード変更依頼を出したいケースを考慮し、UNIQUEにしない。new_password_idがPRIMARY KEYなので一意に検索は可能 */
+  email_address ccs_schema.email_address,
+  hashed_password BYTEA NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+GRANT SELECT, INSERT ON ccs_schema.terms_of_use To user_app;
+
 CREATE TABLE ccs_schema.admin_account (
   admin_account_id SERIAL PRIMARY KEY,
   email_address ccs_schema.email_address UNIQUE,

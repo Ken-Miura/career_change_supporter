@@ -9,6 +9,15 @@ pub mod ccs_schema {
     }
 
     table! {
+        ccs_schema.new_password (new_password_id) {
+            new_password_id -> Bpchar,
+            email_address -> Varchar,
+            hashed_password -> Bytea,
+            created_at -> Timestamptz,
+        }
+    }
+
+    table! {
         ccs_schema.terms_of_use (user_account_id, ver) {
             user_account_id -> Int4,
             ver -> Int4,
@@ -38,6 +47,7 @@ pub mod ccs_schema {
 
     allow_tables_to_appear_in_same_query!(
         admin_account,
+        new_password,
         terms_of_use,
         user_account,
         user_temp_account,
