@@ -34,9 +34,7 @@ pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
 /// [COOKIE_NAME]を含むSet-Cookie用の文字列を返す。
 pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
     format!(
-        // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
-        "{}={}; SameSite=Strict; Path={}/; HttpOnly",
+        "{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
         COOKIE_NAME,
         session_id_value,
         ROOT_PATH
@@ -47,9 +45,7 @@ pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
 /// ブラウザに保存されたCookieの削除指示を出したいときに使う。
 pub(crate) fn create_expired_cookie_format(session_id_value: &str) -> String {
     format!(
-        // TODO: SSLのセットアップが完了し次第、Secureを追加する
-        //"{}={}; SameSite=Strict; Path={}/; Max-Age=-1; Secure; HttpOnly",
-        "{}={}; SameSite=Strict; Path={}/; Max-Age=-1; HttpOnly",
+        "{}={}; SameSite=Strict; Path={}/; Max-Age=-1; Secure; HttpOnly",
         COOKIE_NAME,
         session_id_value,
         ROOT_PATH
