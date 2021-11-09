@@ -199,6 +199,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        err_code::REACH_NEW_PASSWORDS_LIMIT,
         new_password::{
             create_text, post_new_password_internal, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT,
         },
@@ -293,5 +294,42 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn new_password_fail_fail_reach_max_num_of_new_passwords_limit() {}
+    async fn new_password_fail_fail_reach_max_num_of_new_passwords_limit() {
+        let email_address = "test@example.com";
+        let new_password: &str = "aaaaaaaaaB";
+        let _ = validate_email_address(email_address).expect("failed to get Ok");
+        let _ = validate_password(new_password).expect("failed to get Ok");
+        let url: &str = "https://localhost:8080";
+        let uuid = Uuid::new_v4().to_simple();
+        let uuid_str = uuid.to_string();
+        let current_date_time = chrono::Utc::now();
+        let op_mock = NewPasswordOperationMock::new(
+            MAX_NUM_OF_NEW_PASSWORDS,
+            &uuid_str,
+            email_address,
+            new_password,
+            &current_date_time,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(url, &uuid_str),
+        );
+
+        let result = post_new_password_internal(
+            email_address,
+            new_password,
+            url,
+            &uuid,
+            &current_date_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1.code, REACH_NEW_PASSWORDS_LIMIT);
+    }
 }
