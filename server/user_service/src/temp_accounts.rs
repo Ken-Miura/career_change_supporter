@@ -27,8 +27,8 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
-use crate::err_code::{ACCOUNT_ALREADY_EXISTS, REACH_TEMP_ACCOUNTS_LIMIT};
-use crate::util::{self, unexpected_err_resp, WEB_SITE_NAME};
+use crate::err_code::REACH_TEMP_ACCOUNTS_LIMIT;
+use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_TEMP_ACCOUNTS: i64 = 5;
@@ -37,9 +37,11 @@ const MAX_NUM_OF_TEMP_ACCOUNTS: i64 = 5;
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLのお知らせ", WEB_SITE_NAME));
 
 /// 一時アカウントを作成する。<br>
+/// # NOTE
+/// （アカウントの存在確認に悪用されないように）既にアカウントがあるかどうかのチェックはしない<br>
+/// 既にアカウントがある場合は、アカウント作成時にエラーとする<br>
 /// <br>
 /// # Errors
-/// すでにアカウントがある場合、ステータスコード400、エラーコード[ACCOUNT_ALREADY_EXISTS]を返す<br>
 /// MAX_NUM_OF_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[REACH_TEMP_ACCOUNTS_LIMIT]を返す
 pub(crate) async fn post_temp_accounts(
     ValidCred(cred): ValidCred,
@@ -80,19 +82,9 @@ async fn post_temp_accounts_internal(
         tracing::error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
-    let uuid_1 = simple_uuid.to_string();
-    let uuid_2 = uuid_1.clone();
+    let uuid = simple_uuid.to_string();
+    let uuid_for_url = uuid.clone();
     let _ = async move {
-        let exists = op.user_exists(email_addr)?;
-        if exists {
-            tracing::error!("user account ({}) already exists", email_addr);
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: ACCOUNT_ALREADY_EXISTS,
-                }),
-            ));
-        }
         let cnt = op.num_of_temp_accounts(email_addr)?;
         // DBの分離レベルがSerializeでないため、MAX_NUM_OF_TEMP_ACCOUNTSを超える可能性を考慮し、">="とする
         if cnt >= MAX_NUM_OF_TEMP_ACCOUNTS {
@@ -104,7 +96,7 @@ async fn post_temp_accounts_internal(
             ));
         }
         let temp_account = NewTempAccount {
-            user_temp_account_id: &uuid_1,
+            user_temp_account_id: &uuid,
             email_address: email_addr,
             hashed_password: &hashed_pwd,
             created_at: register_time,
@@ -112,7 +104,7 @@ async fn post_temp_accounts_internal(
         op.create_temp_account(&temp_account)
     }
     .await?;
-    let text = create_text(url, &uuid_2);
+    let text = create_text(url, &uuid_for_url);
     let _ =
         async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
     Ok((
@@ -149,7 +141,6 @@ Email: {}",
 trait TempAccountsOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
     fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp>;
     fn create_temp_account(&self, temp_account: &NewTempAccount) -> Result<(), ErrResp>;
 }
@@ -165,10 +156,6 @@ impl TempAccountsOperationImpl {
 }
 
 impl TempAccountsOperation for TempAccountsOperationImpl {
-    fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        util::db_operation::user_exists(&self.conn, email_addr)
-    }
-
     fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {
         let cnt = user_temp_account
             .filter(temp_user_email_addr.eq(email_addr))
@@ -215,7 +202,6 @@ mod tests {
     use super::*;
 
     struct TempAccountsOperationMock<'a> {
-        user_exists: bool,
         cnt: i64,
         uuid: &'a str,
         email_address: &'a str,
@@ -225,7 +211,6 @@ mod tests {
 
     impl<'a> TempAccountsOperationMock<'a> {
         fn new(
-            user_exists: bool,
             cnt: i64,
             uuid: &'a str,
             email_address: &'a str,
@@ -233,7 +218,6 @@ mod tests {
             register_time: &'a DateTime<Utc>,
         ) -> Self {
             Self {
-                user_exists,
                 cnt,
                 uuid,
                 email_address,
@@ -244,11 +228,6 @@ mod tests {
     }
 
     impl<'a> TempAccountsOperation for TempAccountsOperationMock<'a> {
-        fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-            assert_eq!(self.email_address, email_addr);
-            Ok(self.user_exists)
-        }
-
         fn num_of_temp_accounts(&self, email_addr: &str) -> Result<i64, ErrResp> {
             assert_eq!(self.email_address, email_addr);
             Ok(self.cnt)
@@ -276,7 +255,6 @@ mod tests {
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now();
         let op_mock = TempAccountsOperationMock::new(
-            false,
             MAX_NUM_OF_TEMP_ACCOUNTS - 1,
             &uuid_str,
             email_address,
@@ -307,47 +285,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn temp_accounts_fail_account_already_exists() {
-        let email_address = "test@example.com";
-        let password: &str = "aaaaaaaaaB";
-        let _ = validate_email_address(email_address).expect("failed to get Ok");
-        let _ = validate_password(password).expect("failed to get Ok");
-        let url: &str = "http://localhost:8080";
-        let uuid = Uuid::new_v4().to_simple();
-        let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now();
-        let op_mock = TempAccountsOperationMock::new(
-            true,
-            0,
-            &uuid_str,
-            email_address,
-            password,
-            &current_date_time,
-        );
-        let send_mail_mock = SendMailMock::new(
-            email_address.to_string(),
-            SYSTEM_EMAIL_ADDRESS.to_string(),
-            SUBJECT.to_string(),
-            create_text(url, &uuid_str),
-        );
-
-        let result = post_temp_accounts_internal(
-            email_address,
-            password,
-            url,
-            &uuid,
-            &current_date_time,
-            op_mock,
-            send_mail_mock,
-        )
-        .await;
-
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1.code, ACCOUNT_ALREADY_EXISTS);
-    }
-
-    #[tokio::test]
     async fn temp_accounts_fail_reach_max_num_of_temp_accounts_limit() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
@@ -358,7 +295,6 @@ mod tests {
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now();
         let op_mock = TempAccountsOperationMock::new(
-            false,
             MAX_NUM_OF_TEMP_ACCOUNTS,
             &uuid_str,
             email_address,
