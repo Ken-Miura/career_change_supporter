@@ -163,7 +163,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
             .get_result::<i64>(&self.conn)
             .map_err(|e| {
                 tracing::error!(
-                    "failed to count user temp account ({}) exists: {}",
+                    "failed to count user temp account for {}: {}",
                     email_addr,
                     e
                 );
