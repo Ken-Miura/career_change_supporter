@@ -185,4 +185,113 @@ impl NewPasswordOperation for NewPasswordOperationImpl {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use chrono::{DateTime, Utc};
+    use common::{
+        model::user::NewNewPassword,
+        smtp::SYSTEM_EMAIL_ADDRESS,
+        util::{
+            is_password_match,
+            validator::{validate_email_address, validate_password},
+        },
+        ErrResp,
+    };
+    use uuid::Uuid;
+
+    use crate::{
+        new_password::{
+            create_text, post_new_password_internal, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT,
+        },
+        util::tests::SendMailMock,
+    };
+
+    use axum::http::StatusCode;
+
+    use super::NewPasswordOperation;
+
+    struct NewPasswordOperationMock<'a> {
+        cnt: i64,
+        uuid: &'a str,
+        email_address: &'a str,
+        password: &'a str,
+        register_time: &'a DateTime<Utc>,
+    }
+
+    impl<'a> NewPasswordOperationMock<'a> {
+        fn new(
+            cnt: i64,
+            uuid: &'a str,
+            email_address: &'a str,
+            password: &'a str,
+            register_time: &'a DateTime<Utc>,
+        ) -> Self {
+            Self {
+                cnt,
+                uuid,
+                email_address,
+                password,
+                register_time,
+            }
+        }
+    }
+
+    impl<'a> NewPasswordOperation for NewPasswordOperationMock<'a> {
+        fn num_of_new_passwords(&self, email_addr: &str) -> Result<i64, ErrResp> {
+            assert_eq!(self.email_address, email_addr);
+            Ok(self.cnt)
+        }
+
+        fn create_new_password(&self, new_password: &NewNewPassword) -> Result<(), ErrResp> {
+            assert_eq!(self.uuid, new_password.new_password_id);
+            assert_eq!(self.email_address, new_password.email_address);
+            let result = is_password_match(self.password, new_password.hashed_password)
+                .expect("failed to get Ok");
+            assert!(result, "password not match");
+            assert_eq!(self.register_time, new_password.created_at);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn new_password_success() {
+        let email_address = "test@example.com";
+        let new_password: &str = "aaaaaaaaaB";
+        let _ = validate_email_address(email_address).expect("failed to get Ok");
+        let _ = validate_password(new_password).expect("failed to get Ok");
+        let url: &str = "https://localhost:8080";
+        let uuid = Uuid::new_v4().to_simple();
+        let uuid_str = uuid.to_string();
+        let current_date_time = chrono::Utc::now();
+        let op_mock = NewPasswordOperationMock::new(
+            MAX_NUM_OF_NEW_PASSWORDS - 1,
+            &uuid_str,
+            email_address,
+            new_password,
+            &current_date_time,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(url, &uuid_str),
+        );
+
+        let result = post_new_password_internal(
+            email_address,
+            new_password,
+            url,
+            &uuid,
+            &current_date_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(resp.1.email_address, email_address);
+    }
+
+    #[tokio::test]
+    async fn new_password_fail_fail_reach_max_num_of_new_passwords_limit() {}
+}
