@@ -3,6 +3,7 @@
 use chrono::DateTime;
 use chrono::Utc;
 
+use crate::schema::ccs_schema::new_password;
 use crate::schema::ccs_schema::terms_of_use;
 use crate::schema::ccs_schema::user_account;
 use crate::schema::ccs_schema::user_temp_account;
@@ -57,4 +58,21 @@ pub struct TermsOfUse {
     pub ver: i32,
     pub email_address: String,
     pub agreed_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug)]
+#[table_name = "new_password"]
+pub struct NewNewPassword<'a> {
+    pub new_password_id: &'a str,
+    pub email_address: &'a str,
+    pub hashed_password: &'a [u8],
+    pub created_at: &'a DateTime<Utc>,
+}
+
+#[derive(Clone, Queryable)]
+pub struct NewPassword {
+    pub new_password_id: String,
+    pub email_address: String,
+    pub hashed_password: Vec<u8>,
+    pub created_at: DateTime<Utc>,
 }
