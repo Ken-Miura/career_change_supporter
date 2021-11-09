@@ -250,7 +250,7 @@ mod tests {
         let password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
         let _ = validate_password(password).expect("failed to get Ok");
-        let url: &str = "http://localhost:8080";
+        let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now();
@@ -290,7 +290,7 @@ mod tests {
         let password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
         let _ = validate_password(password).expect("failed to get Ok");
-        let url: &str = "http://localhost:8080";
+        let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now();

@@ -172,7 +172,7 @@ pub const KEY_TO_URL_FOR_FRONT_END: &str = "URL_FOR_FRONT_END";
 pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
     var(KEY_TO_URL_FOR_FRONT_END).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"http://localhost:8080\") must be set",
+            "Not environment variable found: environment variable \"{}\" (example value: \"https://localhost:8080\") must be set",
             KEY_TO_URL_FOR_FRONT_END
         );
     })
