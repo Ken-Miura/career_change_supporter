@@ -14,6 +14,7 @@ URL_FOR_REDIS_SERVER=redis://127.0.0.1:6379
 TERMS_OF_USE_VERSION=1
 ```
 
-NOTE:
+TODO:
 定期処理で対応する予定の処理
 - 期限切れのtemp_accountレコードの削除
+- 期限切れのnew_passwordレコードの削除
