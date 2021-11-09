@@ -13,7 +13,7 @@ use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     DatabaseConnection, ErrResp, RespResult, ValidCred,
 };
-use common::{ApiError, URL_FOR_FRONT_END};
+use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR};
 use diesel::dsl::count_star;
 use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::query_dsl::select_dsl::SelectDsl;
@@ -125,7 +125,7 @@ fn create_text(url: &str, uuid_str: &str) -> String {
 下記URLに、PCまたはスマートフォンでアクセスしてご登録手続きの完了をお願いいたします。
 {}/accounts?temp-account-id={}
 
-※このURLの有効期間は手続き受付時より24時間です。URLが無効となった場合は、最初からやり直してください。
+※このURLの有効期間は手続き受付時より{}時間です。URLが無効となった場合は、最初からやり直してください。
 ※本メールにお心あたりが無い場合、他の方が誤ってあなたのメールアドレスを入力した可能性があります。お心あたりがない場合、本メールは破棄していただくようお願いいたします。
 
 本メールはシステムより自動配信されています。
@@ -134,7 +134,7 @@ fn create_text(url: &str, uuid_str: &str) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        WEB_SITE_NAME, url, uuid_str, INQUIRY_EMAIL_ADDRESS
+        WEB_SITE_NAME, url, uuid_str, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR, INQUIRY_EMAIL_ADDRESS
     )
 }
 
