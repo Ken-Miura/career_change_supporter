@@ -119,14 +119,12 @@ async fn post_new_password_internal(
 fn create_text(url: &str, uuid_str: &str) -> String {
     // TODO: 文面の調整
     format!(
-        r"!!注意!! まだ新規登録は完了していません。
+        r"!!注意!! まだパスワード変更は完了していません。
 
-このたびは、{}の新規登録手続きをしていただき、ありがとうございます。
-
-下記URLに、PCまたはスマートフォンでアクセスしてご登録手続きの完了をお願いいたします。
+下記URLに、PCまたはスマートフォンでアクセスしてパスワード変更手続きの完了をお願いいたします。
 {}/new-password?new-password-id={}
 
-※このURLの有効期間は手続き受付時より24時間です。URLが無効となった場合は、最初からやり直してください。
+※このURLの有効期間は手続き受付時より10分間です。URLが無効となった場合は、最初からやり直してください。
 ※本メールにお心あたりが無い場合、他の方が誤ってあなたのメールアドレスを入力した可能性があります。お心あたりがない場合、本メールは破棄していただくようお願いいたします。
 
 本メールはシステムより自動配信されています。
@@ -135,7 +133,7 @@ fn create_text(url: &str, uuid_str: &str) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        WEB_SITE_NAME, url, uuid_str, INQUIRY_EMAIL_ADDRESS
+        url, uuid_str, INQUIRY_EMAIL_ADDRESS
     )
 }
 
