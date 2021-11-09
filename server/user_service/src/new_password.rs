@@ -294,7 +294,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn new_password_fail_fail_reach_max_num_of_new_passwords_limit() {
+    async fn new_password_fail_reach_max_num_of_new_passwords_limit() {
         let email_address = "test@example.com";
         let new_password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
