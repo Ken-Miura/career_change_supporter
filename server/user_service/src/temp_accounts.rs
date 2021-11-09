@@ -31,7 +31,7 @@ use crate::err_code::{ACCOUNT_ALREADY_EXISTS, REACH_TEMP_ACCOUNTS_LIMIT};
 use crate::util::{self, unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
-const MAX_TEMP_ACCOUNTS: i64 = 5;
+const MAX_NUM_OF_TEMP_ACCOUNTS: i64 = 5;
 
 // TODO: 文面の調整
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLのお知らせ", WEB_SITE_NAME));
@@ -40,7 +40,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLの�
 /// <br>
 /// # Errors
 /// すでにアカウントがある場合、ステータスコード400、エラーコード[ACCOUNT_ALREADY_EXISTS]を返す<br>
-/// MAX_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[REACH_TEMP_ACCOUNTS_LIMIT]を返す
+/// MAX_NUM_OF_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[REACH_TEMP_ACCOUNTS_LIMIT]を返す
 pub(crate) async fn post_temp_accounts(
     ValidCred(cred): ValidCred,
     DatabaseConnection(conn): DatabaseConnection,
@@ -94,8 +94,8 @@ async fn post_temp_accounts_internal(
             ));
         }
         let cnt = op.num_of_temp_accounts(email_addr)?;
-        // DBの分離レベルがSerializeでないため、MAX_TEMP_ACCOUNTSを超える可能性を考慮し、">="とする
-        if cnt >= MAX_TEMP_ACCOUNTS {
+        // DBの分離レベルがSerializeでないため、MAX_NUM_OF_TEMP_ACCOUNTSを超える可能性を考慮し、">="とする
+        if cnt >= MAX_NUM_OF_TEMP_ACCOUNTS {
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -277,7 +277,7 @@ mod tests {
         let current_date_time = chrono::Utc::now();
         let op_mock = TempAccountsOperationMock::new(
             false,
-            MAX_TEMP_ACCOUNTS - 1,
+            MAX_NUM_OF_TEMP_ACCOUNTS - 1,
             &uuid_str,
             email_address,
             password,
@@ -348,7 +348,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn temp_accounts_fail_reach_max_temp_accounts_limit() {
+    async fn temp_accounts_fail_reach_max_num_of_temp_accounts_limit() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
@@ -359,7 +359,7 @@ mod tests {
         let current_date_time = chrono::Utc::now();
         let op_mock = TempAccountsOperationMock::new(
             false,
-            MAX_TEMP_ACCOUNTS,
+            MAX_NUM_OF_TEMP_ACCOUNTS,
             &uuid_str,
             email_address,
             password,
