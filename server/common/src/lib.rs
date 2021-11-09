@@ -179,9 +179,9 @@ pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
 });
 
 /// 時間単位での一時アカウントの有効期限<br>
-/// [VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR] 丁度の期間は有効期限に含まない
+/// [VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR] 丁度の期間は有効期限に含む
 pub const VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR: i64 = 24;
 
 /// 分単位での新規パスワードの有効期限<br>
-/// [VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE] 丁度の期間は有効期限に含まない
+/// [VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE] 丁度の期間は有効期限に含む
 pub const VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE: i64 = 10;

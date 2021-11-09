@@ -2,6 +2,7 @@
 
 use axum::http::StatusCode;
 use axum::Json;
+use chrono::Duration;
 use chrono::{DateTime, Utc};
 use common::model::user::NewAccount;
 use common::model::user::TempAccount;
@@ -84,7 +85,7 @@ async fn post_accounts_internal(
             ));
         }
         let duration = *current_date_time - temp_account.created_at;
-        if duration.num_hours() >= VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR {
+        if duration > Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR) {
             tracing::error!(
                 "temp account (created at {}) already expired at {}",
                 &temp_account.created_at,
@@ -277,9 +278,8 @@ mod tests {
             hashed_password: hashed_pwd,
             created_at: register_date_time,
         };
-        let current_date_time = register_date_time
-            + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
-            - Duration::seconds(1);
+        let current_date_time =
+            register_date_time + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
         let op_mock = AccountsOperationMock::new(&temp_account, false, false, &current_date_time);
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -308,9 +308,8 @@ mod tests {
             hashed_password: hashed_pwd,
             created_at: register_date_time,
         };
-        let current_date_time = register_date_time
-            + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
-            - Duration::seconds(1);
+        let current_date_time =
+            register_date_time + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
         let op_mock = AccountsOperationMock::new(&temp_account, false, false, &current_date_time);
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -343,8 +342,9 @@ mod tests {
             hashed_password: hashed_pwd,
             created_at: register_date_time,
         };
-        let current_date_time =
-            register_date_time + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
+        let current_date_time = register_date_time
+            + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            + Duration::milliseconds(1);
         let op_mock = AccountsOperationMock::new(&temp_account, false, false, &current_date_time);
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -377,9 +377,8 @@ mod tests {
             hashed_password: hashed_pwd,
             created_at: register_date_time,
         };
-        let current_date_time = register_date_time
-            + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
-            - Duration::seconds(1);
+        let current_date_time =
+            register_date_time + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
         let op_mock = AccountsOperationMock::new(&temp_account, true, false, &current_date_time);
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -412,9 +411,8 @@ mod tests {
             hashed_password: hashed_pwd,
             created_at: register_date_time,
         };
-        let current_date_time = register_date_time
-            + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
-            - Duration::seconds(1);
+        let current_date_time =
+            register_date_time + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
         let op_mock = AccountsOperationMock::new(&temp_account, false, true, &current_date_time);
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
