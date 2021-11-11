@@ -14,3 +14,6 @@ pub(crate) const UNAUTHORIZED: u32 = 20007;
 pub(crate) const NOT_TERMS_OF_USE_AGREED_YET: u32 = 20008;
 pub(crate) const ALREADY_AGREED_TERMS_OF_USE: u32 = 20009;
 pub(crate) const REACH_NEW_PASSWORDS_LIMIT: u32 = 20010;
+pub(crate) const NO_ACCOUNT_FOUND: u32 = 20011;
+pub(crate) const NO_NEW_PASSWORD_FOUND: u32 = 20012;
+pub(crate) const NEW_PASSWORD_EXPIRED: u32 = 20013;

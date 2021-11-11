@@ -19,6 +19,7 @@ use crate::agreement_status::get_agreement_status;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::new_password::post_new_password;
+use crate::password_change::post_password_change;
 use crate::profile::get_profile;
 use crate::refresh::get_refresh;
 use crate::temp_accounts::post_temp_accounts;
@@ -111,6 +112,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/agreement-status", get(get_agreement_status))
                 .route("/agreement", post(post_agreement))
                 .route("/new-password", post(post_new_password))
+                .route("/password-change", post(post_password_change))
                 .route("/profile", get(get_profile)),
         )
         .layer(AddExtensionLayer::new(pool))

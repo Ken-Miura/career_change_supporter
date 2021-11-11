@@ -71,19 +71,6 @@ async fn post_accounts_internal(
     })?;
     let email_addr = async move {
         let temp_account = op.find_temp_account_by_id(temp_account_id)?;
-        let exists = op.user_exists(&temp_account.email_address)?;
-        if exists {
-            tracing::error!(
-                "failed to create account: user account ({}) already exists",
-                &temp_account.email_address
-            );
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: ACCOUNT_ALREADY_EXISTS,
-                }),
-            ));
-        }
         let duration = *current_date_time - temp_account.created_at;
         if duration > Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR) {
             tracing::error!(
@@ -95,6 +82,19 @@ async fn post_accounts_internal(
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
                     code: TEMP_ACCOUNT_EXPIRED,
+                }),
+            ));
+        }
+        let exists = op.user_exists(&temp_account.email_address)?;
+        if exists {
+            tracing::error!(
+                "failed to create account: user account ({}) already exists",
+                &temp_account.email_address
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: ACCOUNT_ALREADY_EXISTS,
                 }),
             ));
         }
