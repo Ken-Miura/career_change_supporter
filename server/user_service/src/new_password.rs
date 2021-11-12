@@ -33,7 +33,6 @@ use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_NEW_PASSWORDS: i64 = 5;
 
-// TODO: 文面の調整
 static SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] パスワード変更用URLのお知らせ", WEB_SITE_NAME));
 

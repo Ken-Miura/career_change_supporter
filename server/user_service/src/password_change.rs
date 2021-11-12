@@ -28,7 +28,6 @@ use crate::err_code::{
 };
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
-// TODO: 文面の調整
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
 /// 新しいパスワードに変更する<br>

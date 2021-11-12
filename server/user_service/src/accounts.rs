@@ -27,7 +27,6 @@ use crate::err_code::{
 };
 use crate::util::{self, unexpected_err_resp, WEB_SITE_NAME};
 
-// TODO: 文面の調整
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 
 /// アカウントを作成する<br>

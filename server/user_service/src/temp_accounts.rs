@@ -33,7 +33,6 @@ use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_TEMP_ACCOUNTS: i64 = 5;
 
-// TODO: 文面の調整
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLのお知らせ", WEB_SITE_NAME));
 
 /// 一時アカウントを作成する。<br>
