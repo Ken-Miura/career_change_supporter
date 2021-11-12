@@ -86,15 +86,7 @@ async fn post_password_change_internal(
                 }),
             ));
         }
-        let accounts = op.filter_account_by_email_address(&new_pwd.email_address)?;
-        let cnt = accounts.len();
-        if cnt != 1 {
-            return Err(no_account_found_or_unexpected_err(
-                cnt,
-                &new_pwd.email_address,
-            ));
-        }
-        let account = accounts[0].clone();
+        let account = find_account_by_email_address(&new_pwd.email_address, &op)?;
         let _ = op.update_password(account.user_account_id, &new_pwd.hashed_password)?;
         Ok(new_pwd.email_address)
     }
@@ -105,27 +97,31 @@ async fn post_password_change_internal(
     Ok((StatusCode::OK, Json(PasswordChangeResult {})))
 }
 
-fn no_account_found_or_unexpected_err(cnt: usize, email_addr: &str) -> ErrResp {
-    if cnt == 1 {
-        panic!("cnt == 1")
-    }
+fn find_account_by_email_address(
+    email_addr: &str,
+    op: &impl PasswordChangeOperation,
+) -> Result<Account, ErrResp> {
+    let accounts = op.filter_account_by_email_address(email_addr)?;
+    let cnt = accounts.len();
     if cnt == 0 {
         tracing::error!(
             "failed to change password: user account ({}) does not exist",
             email_addr
         );
-        (
+        Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: NO_ACCOUNT_FOUND,
             }),
-        )
+        ))
+    } else if cnt == 1 {
+        Ok(accounts[0].clone())
     } else {
         tracing::error!(
             "failed to change password: found multiple accounts: {}",
             email_addr
         );
-        unexpected_err_resp()
+        Err(unexpected_err_resp())
     }
 }
 
