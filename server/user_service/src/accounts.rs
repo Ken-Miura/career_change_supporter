@@ -6,6 +6,7 @@ use chrono::Duration;
 use chrono::{DateTime, Utc};
 use common::model::user::NewAccount;
 use common::model::user::TempAccount;
+use common::schema::ccs_schema::user_account::dsl::{email_address, user_account};
 use common::schema::ccs_schema::user_account::table as user_account_table;
 use common::schema::ccs_schema::user_temp_account::dsl::user_temp_account;
 use common::smtp::{
@@ -16,6 +17,7 @@ use common::VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR;
 use common::{ApiError, DatabaseConnection, ErrResp, RespResult};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::result::Error::NotFound;
+use diesel::{dsl::count_star, ExpressionMethods};
 use diesel::{insert_into, RunQueryDsl};
 use diesel::{PgConnection, QueryDsl};
 use once_cell::sync::Lazy;
@@ -25,7 +27,7 @@ use serde::Serialize;
 use crate::err_code::{
     ACCOUNT_ALREADY_EXISTS, INVALID_UUID, NO_TEMP_ACCOUNT_FOUND, TEMP_ACCOUNT_EXPIRED,
 };
-use crate::util::{self, unexpected_err_resp, WEB_SITE_NAME};
+use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 
@@ -182,7 +184,15 @@ impl AccountsOperation for AccountsOperationImpl {
     }
 
     fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        util::db_operation::user_exists(&self.conn, email_addr)
+        let cnt = user_account
+            .filter(email_address.eq(email_addr))
+            .select(count_star())
+            .get_result::<i64>(&self.conn)
+            .map_err(|e| {
+                tracing::error!("failed to check user existence ({}): {}", email_addr, e);
+                unexpected_err_resp()
+            })?;
+        Ok(cnt != 0)
     }
 
     fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp> {

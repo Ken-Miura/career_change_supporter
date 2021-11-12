@@ -1,6 +1,5 @@
 // Copyright 2021 Ken Miura
 
-pub(crate) mod db_operation;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
 
