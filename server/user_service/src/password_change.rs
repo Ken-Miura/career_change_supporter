@@ -214,7 +214,7 @@ impl PasswordChangeOperation for PasswordChangeOperationImpl {
 mod tests {
     use axum::http::StatusCode;
     use axum::Json;
-    use chrono::{Duration, TimeZone};
+    use chrono::{DateTime, Duration, TimeZone, Utc};
     use common::{
         model::user::{Account, NewPassword},
         smtp::SYSTEM_EMAIL_ADDRESS,
@@ -227,7 +227,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        err_code::{NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND},
+        err_code::{INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND},
         password_change::{
             create_text, post_password_change_internal, PasswordChangeResult, SUBJECT,
         },
@@ -240,8 +240,11 @@ mod tests {
         no_new_password_found: bool,
         new_password: NewPassword,
         no_account_found: bool,
-        account: Account,
+        user_account_id: i32,
+        email_address: String,
         old_pwd: String,
+        last_login_time: Option<DateTime<Utc>>,
+        created_at: DateTime<Utc>,
         new_pwd_equals_old_one: bool,
     }
 
@@ -250,16 +253,22 @@ mod tests {
             no_new_password_found: bool,
             new_password: NewPassword,
             no_account_found: bool,
-            account: Account,
+            user_account_id: i32,
+            email_address: String,
             old_pwd: String,
+            last_login_time: Option<DateTime<Utc>>,
+            created_at: DateTime<Utc>,
             new_pwd_equals_old_one: bool,
         ) -> Self {
             Self {
                 no_new_password_found,
                 new_password,
-                account,
                 no_account_found,
+                user_account_id,
+                email_address,
                 old_pwd,
+                last_login_time,
+                created_at,
                 new_pwd_equals_old_one,
             }
         }
@@ -291,12 +300,21 @@ mod tests {
                     }),
                 ));
             }
-            assert_eq!(self.account.email_address, email_addr);
-            Ok(vec![self.account.clone()])
+            assert_eq!(self.email_address, email_addr);
+            let _ = validate_password(&self.old_pwd).expect("failed to get Ok");
+            let hashed_pwd = hash_password(&self.old_pwd).expect("failed to get Ok");
+            let account = Account {
+                user_account_id: self.user_account_id,
+                email_address: self.email_address.to_string(),
+                hashed_password: hashed_pwd,
+                last_login_time: self.last_login_time,
+                created_at: self.created_at,
+            };
+            Ok(vec![account])
         }
 
         fn update_password(&self, id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
-            assert_eq!(self.account.user_account_id, id);
+            assert_eq!(self.user_account_id, id);
             assert_eq!(self.new_password.hashed_password, hashed_pwd);
             if self.new_pwd_equals_old_one {
                 assert!(is_password_match(&self.old_pwd, hashed_pwd).expect("failed to get Ok"));
@@ -324,21 +342,16 @@ mod tests {
         };
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
-        let hashed_old_pwd = hash_password(old_pwd).expect("failed to hash password");
-        let account = Account {
-            user_account_id: 52354,
-            email_address: email_addr.to_string(),
-            hashed_password: hashed_old_pwd,
-            last_login_time: Some(new_pwd_created_at - Duration::days(1)),
-            created_at: new_pwd_created_at - Duration::days(2),
-        };
         let op_mock = PasswordChangeOperationMock::new(
             false,
             new_password,
             false,
-            account,
+            52354,
+            email_addr.to_string(),
             old_pwd.to_string(),
-            false,
+            Some(new_pwd_created_at - Duration::days(1)),
+            new_pwd_created_at - Duration::days(2),
+            new_pwd == old_pwd,
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -374,21 +387,16 @@ mod tests {
         };
         let old_pwd = new_pwd; // update to same password
         let _ = validate_password(old_pwd).expect("failed to get Ok");
-        let hashed_old_pwd = hash_password(old_pwd).expect("failed to hash password");
-        let account = Account {
-            user_account_id: 52354,
-            email_address: email_addr.to_string(),
-            hashed_password: hashed_old_pwd,
-            last_login_time: Some(new_pwd_created_at - Duration::days(1)),
-            created_at: new_pwd_created_at - Duration::days(2),
-        };
         let op_mock = PasswordChangeOperationMock::new(
             false,
             new_password,
             false,
-            account,
+            52354,
+            email_addr.to_string(),
             old_pwd.to_string(),
-            true,
+            Some(new_pwd_created_at - Duration::days(1)),
+            new_pwd_created_at - Duration::days(2),
+            new_pwd == old_pwd,
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -408,7 +416,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_success_case_where_user_never_logged_in() {
+    async fn password_change_success_case_where_user_has_not_logged_in_yet() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -424,21 +432,16 @@ mod tests {
         };
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
-        let hashed_old_pwd = hash_password(old_pwd).expect("failed to hash password");
-        let account = Account {
-            user_account_id: 52354,
-            email_address: email_addr.to_string(),
-            hashed_password: hashed_old_pwd,
-            last_login_time: None,
-            created_at: new_pwd_created_at - Duration::days(2),
-        };
         let op_mock = PasswordChangeOperationMock::new(
             false,
             new_password,
             false,
-            account,
+            52354,
+            email_addr.to_string(),
             old_pwd.to_string(),
-            false,
+            None,
+            new_pwd_created_at - Duration::days(2),
+            new_pwd == old_pwd,
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -455,5 +458,186 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(PasswordChangeResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn password_change_fail_invalid_uuid() {
+        let uuid = "0123456789abcABC".to_string();
+        let email_addr = "test@test.com";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let new_pwd = "aaaaaaaaaA";
+        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
+        let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let new_password = NewPassword {
+            new_password_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_new_pwd,
+            created_at: new_pwd_created_at,
+        };
+        let old_pwd = "aaaaaaaaaB";
+        let _ = validate_password(old_pwd).expect("failed to get Ok");
+        let op_mock = PasswordChangeOperationMock::new(
+            false,
+            new_password,
+            false,
+            52354,
+            email_addr.to_string(),
+            old_pwd.to_string(),
+            Some(new_pwd_created_at - Duration::days(1)),
+            new_pwd_created_at - Duration::days(2),
+            new_pwd == old_pwd,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+        let current_date_time =
+            new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
+
+        let result =
+            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(INVALID_UUID, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn password_change_fail_no_account_found() {
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let email_addr = "test@test.com";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let new_pwd = "aaaaaaaaaA";
+        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
+        let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let new_password = NewPassword {
+            new_password_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_new_pwd,
+            created_at: new_pwd_created_at,
+        };
+        let old_pwd = "aaaaaaaaaB";
+        let _ = validate_password(old_pwd).expect("failed to get Ok");
+        let op_mock = PasswordChangeOperationMock::new(
+            false,
+            new_password,
+            true,
+            52354,
+            email_addr.to_string(),
+            old_pwd.to_string(),
+            Some(new_pwd_created_at - Duration::days(1)),
+            new_pwd_created_at - Duration::days(2),
+            new_pwd == old_pwd,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+        let current_date_time =
+            new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
+
+        let result =
+            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(NO_ACCOUNT_FOUND, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn password_change_fail_no_new_password_found() {
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let email_addr = "test@test.com";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let new_pwd = "aaaaaaaaaA";
+        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
+        let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let new_password = NewPassword {
+            new_password_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_new_pwd,
+            created_at: new_pwd_created_at,
+        };
+        let old_pwd = "aaaaaaaaaB";
+        let _ = validate_password(old_pwd).expect("failed to get Ok");
+        let op_mock = PasswordChangeOperationMock::new(
+            true,
+            new_password,
+            false,
+            52354,
+            email_addr.to_string(),
+            old_pwd.to_string(),
+            Some(new_pwd_created_at - Duration::days(1)),
+            new_pwd_created_at - Duration::days(2),
+            new_pwd == old_pwd,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+        let current_date_time =
+            new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
+
+        let result =
+            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(NO_NEW_PASSWORD_FOUND, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn password_change_fail_new_password_expired() {
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let email_addr = "test@test.com";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let new_pwd = "aaaaaaaaaA";
+        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
+        let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let new_password = NewPassword {
+            new_password_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_new_pwd,
+            created_at: new_pwd_created_at,
+        };
+        let old_pwd = "aaaaaaaaaB";
+        let _ = validate_password(old_pwd).expect("failed to get Ok");
+        let op_mock = PasswordChangeOperationMock::new(
+            false,
+            new_password,
+            false,
+            52354,
+            email_addr.to_string(),
+            old_pwd.to_string(),
+            Some(new_pwd_created_at - Duration::days(1)),
+            new_pwd_created_at - Duration::days(2),
+            new_pwd == old_pwd,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+        let current_date_time = new_pwd_created_at
+            + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE)
+            + Duration::milliseconds(1);
+
+        let result =
+            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(NEW_PASSWORD_EXPIRED, resp.1.code);
     }
 }
