@@ -64,7 +64,7 @@ CREATE TABLE ccs_schema.new_password (
   hashed_password BYTEA NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
-GRANT SELECT, INSERT ON ccs_schema.terms_of_use To user_app;
+GRANT SELECT, INSERT ON ccs_schema.new_password To user_app;
 
 CREATE TABLE ccs_schema.admin_account (
   admin_account_id SERIAL PRIMARY KEY,
