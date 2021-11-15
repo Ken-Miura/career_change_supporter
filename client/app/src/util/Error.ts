@@ -18,6 +18,10 @@ export namespace Code {
   export const UNAUTHORIZED = 20007
   export const NOT_TERMS_OF_USE_AGREED_YET = 20008
   export const ALREADY_AGREED_TERMS_OF_USE = 20009
+  export const REACH_NEW_PASSWORDS_LIMIT = 20010
+  export const NO_ACCOUNT_FOUND = 20011
+  export const NO_NEW_PASSWORD_FOUND = 20012
+  export const NEW_PASSWORD_EXPIRED = 20013
 }
 
 export function createErrorMessage (code: number): string {
@@ -41,6 +45,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} (${code})`
   } else if (code === Code.UNAUTHORIZED) {
     return `${Message.UNAUTHORIZED_MESSAGE} (${code})`
+  } else if (code === Code.REACH_NEW_PASSWORDS_LIMIT) {
+    return `${Message.REACH_NEW_PASSWORDS_LIMIT_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

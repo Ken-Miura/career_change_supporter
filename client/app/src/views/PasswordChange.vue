@@ -10,11 +10,12 @@
         <h3 class="font-bold text-2xl">パスワード変更</h3>
       </section>
       <section class="mt-10">
-        <form class="flex flex-col" method="POST" action="#">
-          <EmailAddress class="mb-6"/>
-          <Password class="mb-6" label="パスワード"/>
-          <Password class="mb-6" label="パスワード（確認）"/>
+        <form class="flex flex-col" @submit.prevent="requestPasswordChange">
+          <EmailAddress class="mb-6" @on-email-address-updated="setEmailAddress"/>
+          <Password class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
+          <Password class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更</button>
+          <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
       </section>
     </main>
@@ -25,15 +26,67 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 import EmailAddress from '@/components/EmailAddress.vue'
 import Password from '@/components/Password.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
+import { Message } from '@/util/Message'
+import { useRouter } from 'vue-router'
+import { useCredentil } from '@/components/useCredential'
+import { createErrorMessage } from '@/util/Error'
+import { ApiErrorResp } from '@/util/ApiError'
+import { createNewPassword } from '@/util/password/CreateNewPassword'
+import { CreateNewPasswordResp } from '@/util/password/CreateNewPasswordResp'
 
 export default defineComponent({
   name: 'PasswordChange',
   components: {
     EmailAddress,
-    Password
+    Password,
+    AlertMessage
+  },
+  setup () {
+    const router = useRouter()
+    const {
+      form,
+      setEmailAddress,
+      setPassword,
+      setPasswordConfirmation,
+      passwordsAreSame
+    } =
+    useCredentil()
+    const isHidden = ref(true)
+    const errorMessage = ref('')
+    const requestPasswordChange = async () => {
+      if (!passwordsAreSame.value) {
+        isHidden.value = false
+        errorMessage.value = Message.PASSWORD_CONFIRMATION_FAILED
+        return
+      }
+      try {
+        const result = await createNewPassword(form.emailAddress, form.password)
+        if (result instanceof CreateNewPasswordResp) {
+          await router.push({ name: 'NewPasswordCreated', params: { emailAddress: result.getEmailAddress() } })
+        } else if (result instanceof ApiErrorResp) {
+          isHidden.value = false
+          errorMessage.value = createErrorMessage(result.getApiError().getCode())
+        } else {
+          throw new Error(`unexpected result: ${result}`)
+        }
+      } catch (e) {
+        isHidden.value = false
+        errorMessage.value = `${Message.NEW_PASSWORD_CREATION_FAILED}: ${e}`
+      }
+    }
+    return {
+      form,
+      setEmailAddress,
+      setPassword,
+      setPasswordConfirmation,
+      isHidden,
+      errorMessage,
+      requestPasswordChange
+    }
   }
 })
 </script>

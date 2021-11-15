@@ -20,4 +20,6 @@ export namespace Message {
     export const ACCOUNT_CREATED = '新規登録が完了しました。'
     export const ACCOUNT_CREATION_FAILED = `新規登録に失敗しました。${RETRY_REQUEST}`
     export const LOGIN_FAILED = `ログインに失敗しました。${RETRY_REQUEST}`
+    export const NEW_PASSWORD_CREATION_FAILED = `パスワード変更に失敗しました。${RETRY_REQUEST}`
+    export const REACH_NEW_PASSWORDS_LIMIT_MESSAGE = 'パスワード変更試行回数の上限に達しました。数日後、再度新規登録を行って下さい'
 }

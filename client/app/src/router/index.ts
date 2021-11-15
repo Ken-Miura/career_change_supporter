@@ -39,6 +39,13 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/PasswordChange.vue')
   },
   {
+    path: '/new-password-created',
+    name: 'NewPasswordCreated',
+    props: true,
+    // パスワード変更は頻繁に起こらないと思われるため、lazy loading
+    component: () => import('../views/NewPasswordCreated.vue')
+  },
+  {
     path: '/accounts',
     name: 'AccountCreated',
     // 新規登録は頻繁に起こらないと思われるため、lazy loading
