@@ -33,6 +33,12 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/TempAccountCreated.vue')
   },
   {
+    path: '/accounts',
+    name: 'AccountCreated',
+    // 新規登録は頻繁に起こらないと思われるため、lazy loading
+    component: () => import('../views/AccountCreated.vue')
+  },
+  {
     path: '/password-change',
     name: 'PasswordChange',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
@@ -46,10 +52,17 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/NewPasswordCreated.vue')
   },
   {
-    path: '/accounts',
-    name: 'AccountCreated',
-    // 新規登録は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/AccountCreated.vue')
+    path: '/new-password',
+    name: 'NewPassword',
+    // パスワード変更は頻繁に起こらないと思われるため、lazy loading
+    component: () => import('../views/NewPassword.vue')
+  },
+  {
+    path: '/new-password-applied',
+    name: 'NewPasswordApplied',
+    props: true,
+    // パスワード変更は頻繁に起こらないと思われるため、lazy loading
+    component: () => import('../views/NewPasswordApplied.vue')
   },
   {
     path: '/profile',

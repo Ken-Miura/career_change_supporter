@@ -47,6 +47,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.UNAUTHORIZED_MESSAGE} (${code})`
   } else if (code === Code.REACH_NEW_PASSWORDS_LIMIT) {
     return `${Message.REACH_NEW_PASSWORDS_LIMIT_MESSAGE} (${code})`
+  } else if (code === Code.NEW_PASSWORD_EXPIRED) {
+    return `${Message.NEW_PASSWORD_EXPIRED_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
