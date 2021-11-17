@@ -11,7 +11,7 @@
       </section>
       <section class="mt-10">
         <form class="flex flex-col" @submit.prevent="loginHandler">
-          <EmailAddress class="mb-6" @on-email-address-updated="setEmailAddress"/>
+          <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
           <Password class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
           <div class="flex justify-end">
             <router-link to="/password-change" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">パスワードを忘れた、または変更したい場合</router-link>
@@ -29,7 +29,7 @@
 
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
-import EmailAddress from '@/components/EmailAddress.vue'
+import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import Password from '@/components/Password.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { useRouter } from 'vue-router'
@@ -46,7 +46,7 @@ import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreement
 export default defineComponent({
   name: 'Login',
   components: {
-    EmailAddress,
+    EmailAddressInput,
     Password,
     AlertMessage
   },

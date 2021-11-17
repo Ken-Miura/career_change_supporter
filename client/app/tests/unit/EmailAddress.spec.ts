@@ -1,9 +1,9 @@
 import { shallowMount } from '@vue/test-utils'
-import EmailAddress from '@/components/EmailAddress.vue'
+import EmailAddressInput from '@/components/EmailAddressInput.vue'
 
-describe('EmailAddress.vue', () => {
+describe('EmailAddressInput.vue', () => {
   it('has one label and input', () => {
-    const wrapper = shallowMount(EmailAddress)
+    const wrapper = shallowMount(EmailAddressInput)
     const labels = wrapper.findAll('label')
     expect(labels.length).toBe(1)
     const inputs = wrapper.findAll('input')
@@ -11,7 +11,7 @@ describe('EmailAddress.vue', () => {
   })
 
   it('emits on-email-address-updated event with input value', () => {
-    const wrapper = shallowMount(EmailAddress)
+    const wrapper = shallowMount(EmailAddressInput)
     const input = wrapper.find('input')
     const pwd = 'test@example.com'
     input.setValue(pwd)

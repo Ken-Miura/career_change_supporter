@@ -1,6 +1,6 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
 import NewAccount from '@/views/NewAccount.vue'
-import EmailAddress from '@/components/EmailAddress.vue'
+import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import Password from '@/components/Password.vue'
 import { createTempAccount } from '@/util/temp-account/CreateTempAccount'
@@ -31,7 +31,7 @@ describe('NewAccount.vue', () => {
     createTempAccountMock.mockReset()
   })
 
-  it('has one EmailAddress, two Passwords and one AlertMessage', () => {
+  it('has one EmailAddressInput, two Passwords and one AlertMessage', () => {
     const wrapper = mount(NewAccount, {
       global: {
         stubs: {
@@ -39,7 +39,7 @@ describe('NewAccount.vue', () => {
         }
       }
     })
-    const emailAddresses = wrapper.findAllComponents(EmailAddress)
+    const emailAddresses = wrapper.findAllComponents(EmailAddressInput)
     expect(emailAddresses.length).toBe(1)
     const passwords = wrapper.findAllComponents(Password)
     expect(passwords.length).toBe(2)
@@ -71,7 +71,7 @@ describe('NewAccount.vue', () => {
       }
     })
 
-    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
@@ -102,7 +102,7 @@ describe('NewAccount.vue', () => {
       }
     })
 
-    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
@@ -138,7 +138,7 @@ describe('NewAccount.vue', () => {
       }
     })
 
-    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
@@ -167,7 +167,7 @@ describe('NewAccount.vue', () => {
       }
     })
 
-    const emailAddr = wrapper.findComponent(EmailAddress)
+    const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 

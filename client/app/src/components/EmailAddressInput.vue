@@ -9,7 +9,7 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'EmailAddress',
+  name: 'EmailAddressInput',
   setup (_, { emit }) {
     const onInput = (e: Event) => {
       const target = (e && e.target)

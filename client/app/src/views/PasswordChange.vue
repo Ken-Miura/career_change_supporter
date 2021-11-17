@@ -11,7 +11,7 @@
       </section>
       <section class="mt-10">
         <form class="flex flex-col" @submit.prevent="requestPasswordChange">
-          <EmailAddress class="mb-6" @on-email-address-updated="setEmailAddress"/>
+          <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
           <Password class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
           <Password class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更</button>
@@ -27,7 +27,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import EmailAddress from '@/components/EmailAddress.vue'
+import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import Password from '@/components/Password.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
@@ -41,7 +41,7 @@ import { CreateNewPasswordResp } from '@/util/password/CreateNewPasswordResp'
 export default defineComponent({
   name: 'PasswordChange',
   components: {
-    EmailAddress,
+    EmailAddressInput,
     Password,
     AlertMessage
   },
