@@ -27,7 +27,7 @@ import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStat
 import { Code } from '@/util/Error'
 
 export default defineComponent({
-  name: 'Profile',
+  name: 'ProfilePage',
   setup () {
     const message = ref('プロファイル用テストページ')
     const router = useRouter()

@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
-import Profile from '../views/personalized/Profile.vue'
+import ProfilePage from '../views/personalized/ProfilePage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -66,8 +66,8 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/profile',
-    name: 'Profile',
-    component: Profile
+    name: 'ProfilePage',
+    component: ProfilePage
   },
   {
     path: '/terms-of-use',

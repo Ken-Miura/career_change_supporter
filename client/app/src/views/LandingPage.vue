@@ -89,7 +89,7 @@
 import { defineComponent, ref } from 'vue'
 
 export default defineComponent({
-  name: 'Landing',
+  name: 'LandingPage',
   setup () {
     const isHidden = ref(true)
     const navToggle = ref(null as HTMLElement | null)
