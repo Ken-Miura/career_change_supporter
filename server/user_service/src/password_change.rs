@@ -93,6 +93,7 @@ async fn post_password_change_internal(
     let text = create_text();
     let _ =
         async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
+    tracing::info!("{} changed password at {}", email_addr, current_date_time);
     Ok((StatusCode::OK, Json(PasswordChangeResult {})))
 }
 
