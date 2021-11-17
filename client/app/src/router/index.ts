@@ -1,18 +1,18 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import Landing from '../views/Landing.vue'
+import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import Profile from '../views/personalized/Profile.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/index.html',
-    name: 'RedirectToLanding',
+    name: 'RedirectToLandingPage',
     redirect: '/'
   },
   {
     path: '/',
-    name: 'Landing',
-    component: Landing
+    name: 'LandingPage',
+    component: LandingPage
   },
   {
     path: '/login',
