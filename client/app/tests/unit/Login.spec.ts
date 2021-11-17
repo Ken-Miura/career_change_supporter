@@ -3,7 +3,7 @@ import Login from '@/views/Login.vue'
 import { refresh } from '@/util/refresh/Refresh'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
-import Password from '@/components/Password.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { Message } from '@/util/Message'
 import { login } from '@/util/login/Login'
 import { LoginResp } from '@/util/login/LoginResp'
@@ -40,7 +40,7 @@ describe('Login.vue', () => {
     checkAgreementStatusMock.mockReset()
   })
 
-  it('has one EmailAddressInput, one Password and one AlertMessage', () => {
+  it('has one EmailAddressInput, one PasswordInput and one AlertMessage', () => {
     const wrapper = mount(Login, {
       global: {
         stubs: {
@@ -50,7 +50,7 @@ describe('Login.vue', () => {
     })
     const emailAddresses = wrapper.findAllComponents(EmailAddressInput)
     expect(emailAddresses.length).toBe(1)
-    const passwords = wrapper.findAllComponents(Password)
+    const passwords = wrapper.findAllComponents(PasswordInput)
     expect(passwords.length).toBe(1)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(1)
@@ -176,7 +176,7 @@ describe('Login.vue', () => {
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
-    const pwd = wrapper.findComponent(Password)
+    const pwd = wrapper.findComponent(PasswordInput)
     const pwdInput = pwd.find('input')
     pwdInput.setValue(PWD)
 
@@ -203,7 +203,7 @@ describe('Login.vue', () => {
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
-    const pwd = wrapper.findComponent(Password)
+    const pwd = wrapper.findComponent(PasswordInput)
     const pwdInput = pwd.find('input')
     pwdInput.setValue(PWD)
 

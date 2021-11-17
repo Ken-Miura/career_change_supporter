@@ -2,7 +2,7 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import NewAccount from '@/views/NewAccount.vue'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
-import Password from '@/components/Password.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { createTempAccount } from '@/util/temp-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/temp-account/CreateTempAccountResp'
 import { Message } from '@/util/Message'
@@ -31,7 +31,7 @@ describe('NewAccount.vue', () => {
     createTempAccountMock.mockReset()
   })
 
-  it('has one EmailAddressInput, two Passwords and one AlertMessage', () => {
+  it('has one EmailAddressInput, two PasswordInputs and one AlertMessage', () => {
     const wrapper = mount(NewAccount, {
       global: {
         stubs: {
@@ -41,7 +41,7 @@ describe('NewAccount.vue', () => {
     })
     const emailAddresses = wrapper.findAllComponents(EmailAddressInput)
     expect(emailAddresses.length).toBe(1)
-    const passwords = wrapper.findAllComponents(Password)
+    const passwords = wrapper.findAllComponents(PasswordInput)
     expect(passwords.length).toBe(2)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(1)
@@ -75,7 +75,7 @@ describe('NewAccount.vue', () => {
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
-    const pwds = wrapper.findAllComponents(Password)
+    const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
     pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
@@ -106,7 +106,7 @@ describe('NewAccount.vue', () => {
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
-    const pwds = wrapper.findAllComponents(Password)
+    const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
     pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
@@ -142,7 +142,7 @@ describe('NewAccount.vue', () => {
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
-    const pwds = wrapper.findAllComponents(Password)
+    const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
     pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
@@ -171,7 +171,7 @@ describe('NewAccount.vue', () => {
     const emailAddrInput = emailAddr.find('input')
     emailAddrInput.setValue(EMAIL_ADDRESS)
 
-    const pwds = wrapper.findAllComponents(Password)
+    const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
     pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')

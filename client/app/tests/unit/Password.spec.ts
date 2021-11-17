@@ -1,9 +1,9 @@
 import { shallowMount } from '@vue/test-utils'
-import Password from '@/components/Password.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
 
-describe('Password.vue', () => {
+describe('PasswordInput.vue', () => {
   it('has one label and input', () => {
-    const wrapper = shallowMount(Password)
+    const wrapper = shallowMount(PasswordInput)
     const labels = wrapper.findAll('label')
     expect(labels.length).toBe(1)
     const inputs = wrapper.findAll('input')
@@ -12,14 +12,14 @@ describe('Password.vue', () => {
 
   it('renders props.label when passed', () => {
     const label = 'パスワード'
-    const wrapper = shallowMount(Password, {
+    const wrapper = shallowMount(PasswordInput, {
       props: { label }
     })
     expect(wrapper.text()).toMatch(label)
   })
 
   it('emits on-password-updated event with input value', () => {
-    const wrapper = shallowMount(Password)
+    const wrapper = shallowMount(PasswordInput)
     const input = wrapper.find('input')
     const pwd = 'abcdABCD1234'
     input.setValue(pwd)
