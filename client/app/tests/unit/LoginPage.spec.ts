@@ -1,5 +1,5 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
-import Login from '@/views/Login.vue'
+import LoginPage from '@/views/LoginPage.vue'
 import { refresh } from '@/util/refresh/Refresh'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -32,7 +32,7 @@ jest.mock('vue-router', () => ({
 const EMAIL_ADDRESS = 'test@example.com'
 const PWD = 'abcdABCD1234'
 
-describe('Login.vue', () => {
+describe('LoginPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
     refreshMock.mockReset()
@@ -41,7 +41,7 @@ describe('Login.vue', () => {
   })
 
   it('has one EmailAddressInput, one PasswordInput and one AlertMessage', () => {
-    const wrapper = mount(Login, {
+    const wrapper = mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -57,7 +57,7 @@ describe('Login.vue', () => {
   })
 
   it('has AlertMessage with a hidden attribute when created', () => {
-    const wrapper = mount(Login, {
+    const wrapper = mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -73,7 +73,7 @@ describe('Login.vue', () => {
     refreshMock.mockResolvedValue(true)
     checkAgreementStatusMock.mockResolvedValue(CheckAgreementStatusResp.create())
 
-    mount(Login, {
+    mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -91,7 +91,7 @@ describe('Login.vue', () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
     checkAgreementStatusMock.mockResolvedValue(apiErrResp)
 
-    mount(Login, {
+    mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -110,7 +110,7 @@ describe('Login.vue', () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     checkAgreementStatusMock.mockResolvedValue(apiErrResp)
 
-    mount(Login, {
+    mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -126,7 +126,7 @@ describe('Login.vue', () => {
   it('does not move when session has not existed yet', async () => {
     refreshMock.mockResolvedValue(false)
 
-    mount(Login, {
+    mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -142,7 +142,7 @@ describe('Login.vue', () => {
     const errDetail = 'connection error'
     refreshMock.mockRejectedValue(new Error(errDetail))
 
-    const wrapper = mount(Login, {
+    const wrapper = mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -164,7 +164,7 @@ describe('Login.vue', () => {
     refreshMock.mockResolvedValue(false)
     loginMock.mockResolvedValue(LoginResp.create())
 
-    const wrapper = mount(Login, {
+    const wrapper = mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -191,7 +191,7 @@ describe('Login.vue', () => {
     refreshMock.mockResolvedValue(false)
     loginMock.mockResolvedValue(ApiErrorResp.create(401, ApiError.create(Code.EMAIL_OR_PWD_INCORRECT)))
 
-    const wrapper = mount(Login, {
+    const wrapper = mount(LoginPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub

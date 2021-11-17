@@ -44,7 +44,7 @@ import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStat
 import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
 
 export default defineComponent({
-  name: 'Login',
+  name: 'LoginPage',
   components: {
     EmailAddressInput,
     PasswordInput,
