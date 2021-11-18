@@ -39,7 +39,7 @@ import { createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 
 export default defineComponent({
-  name: 'NewAccount',
+  name: 'NewAccountPage',
   components: {
     EmailAddressInput,
     PasswordInput,

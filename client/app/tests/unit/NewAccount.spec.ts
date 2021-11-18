@@ -1,5 +1,5 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import NewAccount from '@/views/NewAccount.vue'
+import NewAccountPage from '@/views/NewAccountPage.vue'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
@@ -25,14 +25,14 @@ const EMAIL_ADDRESS = 'test@example.com'
 const PWD = 'abcdABCD1234'
 const DIFFERENT_PWD = '1234abcdABCD'
 
-describe('NewAccount.vue', () => {
+describe('NewAccountPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
     createTempAccountMock.mockReset()
   })
 
   it('has one EmailAddressInput, two PasswordInputs and one AlertMessage', () => {
-    const wrapper = mount(NewAccount, {
+    const wrapper = mount(NewAccountPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -48,7 +48,7 @@ describe('NewAccount.vue', () => {
   })
 
   it('has AlertMessage with a hidden attribute when created', () => {
-    const wrapper = mount(NewAccount, {
+    const wrapper = mount(NewAccountPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -63,7 +63,7 @@ describe('NewAccount.vue', () => {
   it('moves to TempAccountCreated when email address and password are passed', async () => {
     createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(EMAIL_ADDRESS))
 
-    const wrapper = mount(NewAccount, {
+    const wrapper = mount(NewAccountPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -94,7 +94,7 @@ describe('NewAccount.vue', () => {
     const apiErrorResp = ApiErrorResp.create(400, apiErr)
     createTempAccountMock.mockResolvedValue(apiErrorResp)
 
-    const wrapper = mount(NewAccount, {
+    const wrapper = mount(NewAccountPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -130,7 +130,7 @@ describe('NewAccount.vue', () => {
     const apiErrorResp = ApiErrorResp.create(400, apiErr)
     createTempAccountMock.mockResolvedValue(apiErrorResp)
 
-    const wrapper = mount(NewAccount, {
+    const wrapper = mount(NewAccountPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -159,7 +159,7 @@ describe('NewAccount.vue', () => {
     const errDetail = 'connection error'
     createTempAccountMock.mockRejectedValue(new Error(errDetail))
 
-    const wrapper = mount(NewAccount, {
+    const wrapper = mount(NewAccountPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub

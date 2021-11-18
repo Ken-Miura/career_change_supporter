@@ -21,9 +21,9 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/new-account',
-    name: 'NewAccount',
+    name: 'NewAccountPage',
     // 新規登録は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/NewAccount.vue')
+    component: () => import('../views/NewAccountPage.vue')
   },
   {
     path: '/temp-account-created',
