@@ -24,7 +24,7 @@ import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
-  name: 'AccountCreated',
+  name: 'AccountCreationPage',
   setup () {
     const message = ref('')
     const router = useRouter()

@@ -1,4 +1,4 @@
-import AccountCreated from '@/views/AccountCreated.vue'
+import AccountCreationPage from '@/views/AccountCreationPage.vue'
 import { createAccount } from '@/util/account/CreateAccount'
 import { mount, RouterLinkStub } from '@vue/test-utils'
 import { CreateAccountResp } from '@/util/account/CreateAccountResp'
@@ -19,7 +19,7 @@ jest.mock('vue-router', () => ({
   })
 }))
 
-describe('AccountCreated.vue', () => {
+describe('AccountCreationPage.vue', () => {
   beforeEach(() => {
     createAccountMock.mockReset()
     queryObject = null
@@ -28,7 +28,7 @@ describe('AccountCreated.vue', () => {
   it(`displays ${Message.ACCOUNT_CREATED} when account is created`, async () => {
     createAccountMock.mockResolvedValue(CreateAccountResp.create())
     queryObject = { 'temp-account-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
-    const wrapper = mount(AccountCreated, {
+    const wrapper = mount(AccountCreationPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -44,7 +44,7 @@ describe('AccountCreated.vue', () => {
   it(`displays ${Message.INVALID_QUERY_PARAM} when query has no temp-account-id`, async () => {
     createAccountMock.mockResolvedValue(CreateAccountResp.create())
     queryObject = { 'temp-acc': 'bc999c52f1cc4801bfd9216cdebc0763' }
-    const wrapper = mount(AccountCreated, {
+    const wrapper = mount(AccountCreationPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -61,7 +61,7 @@ describe('AccountCreated.vue', () => {
     const apiErr = ApiError.create(Code.INVALID_UUID)
     createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'temp-account-id': /* 31桁 */ 'bc999c52f1cc4801bfd9216cdebc076' }
-    const wrapper = mount(AccountCreated, {
+    const wrapper = mount(AccountCreationPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -78,7 +78,7 @@ describe('AccountCreated.vue', () => {
     const apiErr = ApiError.create(Code.ACCOUNT_ALREADY_EXISTS)
     createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'temp-account-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
-    const wrapper = mount(AccountCreated, {
+    const wrapper = mount(AccountCreationPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -95,7 +95,7 @@ describe('AccountCreated.vue', () => {
     const apiErr = ApiError.create(Code.NO_TEMP_ACCOUNT_FOUND)
     createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'temp-account-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
-    const wrapper = mount(AccountCreated, {
+    const wrapper = mount(AccountCreationPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -112,7 +112,7 @@ describe('AccountCreated.vue', () => {
     const apiErr = ApiError.create(Code.TEMP_ACCOUNT_EXPIRED)
     createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'temp-account-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
-    const wrapper = mount(AccountCreated, {
+    const wrapper = mount(AccountCreationPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub

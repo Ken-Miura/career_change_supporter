@@ -33,10 +33,10 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/CreateTempAccountResultPage.vue')
   },
   {
-    path: '/accounts',
-    name: 'AccountCreated',
+    path: '/account-creation',
+    name: 'AccountCreationPage',
     // 新規登録は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/AccountCreated.vue')
+    component: () => import('../views/AccountCreationPage.vue')
   },
   {
     path: '/password-change',
