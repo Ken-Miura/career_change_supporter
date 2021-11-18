@@ -1,6 +1,6 @@
 import { refresh } from '@/util/refresh/Refresh'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
-import TermsOfUseAgreement from '@/views/personalized/TermsOfUseAgreement.vue'
+import TermsOfUsePage from '@/views/personalized/TermsOfUsePage.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import TermsOfUse from '@/components/TermsOfUse.vue'
 import { agreeTermsOfUse } from '@/util/terms-of-use/AgreeTermsOfUse'
@@ -23,7 +23,7 @@ jest.mock('vue-router', () => ({
 jest.mock('@/util/terms-of-use/AgreeTermsOfUse')
 const agreeTermsOfUseMock = agreeTermsOfUse as jest.MockedFunction<typeof agreeTermsOfUse>
 
-describe('TermsOfUseAgreement.vue', () => {
+describe('TermsOfUsePage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
     refreshMock.mockReset()
@@ -31,7 +31,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it('has one TermsOfUse and one AlertMessage', () => {
-    const wrapper = mount(TermsOfUseAgreement, {
+    const wrapper = mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -45,7 +45,7 @@ describe('TermsOfUseAgreement.vue', () => {
   })
 
   it('has AlertMessage with a hidden attribute when created', () => {
-    const wrapper = mount(TermsOfUseAgreement, {
+    const wrapper = mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -60,7 +60,7 @@ describe('TermsOfUseAgreement.vue', () => {
   it('has AlertMessage with a hidden attribute and does not move when refresh is success', async () => {
     refreshMock.mockResolvedValue(true)
 
-    const wrapper = mount(TermsOfUseAgreement, {
+    const wrapper = mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -79,7 +79,7 @@ describe('TermsOfUseAgreement.vue', () => {
   it('moves to login when refresh is failure', async () => {
     refreshMock.mockResolvedValue(false)
 
-    mount(TermsOfUseAgreement, {
+    mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -96,7 +96,7 @@ describe('TermsOfUseAgreement.vue', () => {
     const errDetail = 'connection error'
     refreshMock.mockRejectedValue(new Error(errDetail))
 
-    mount(TermsOfUseAgreement, {
+    mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -113,7 +113,7 @@ describe('TermsOfUseAgreement.vue', () => {
     refreshMock.mockResolvedValue(true)
     agreeTermsOfUseMock.mockResolvedValue(AgreeTermsOfUseResp.create())
 
-    const wrapper = mount(TermsOfUseAgreement, {
+    const wrapper = mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -132,7 +132,7 @@ describe('TermsOfUseAgreement.vue', () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ALREADY_AGREED_TERMS_OF_USE))
     agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
 
-    const wrapper = mount(TermsOfUseAgreement, {
+    const wrapper = mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -151,7 +151,7 @@ describe('TermsOfUseAgreement.vue', () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
 
-    const wrapper = mount(TermsOfUseAgreement, {
+    const wrapper = mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -170,7 +170,7 @@ describe('TermsOfUseAgreement.vue', () => {
     const errDetail = 'connection error'
     agreeTermsOfUseMock.mockRejectedValue(new Error(errDetail))
 
-    const wrapper = mount(TermsOfUseAgreement, {
+    const wrapper = mount(TermsOfUsePage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub

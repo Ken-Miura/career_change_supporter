@@ -31,7 +31,7 @@ import TermsOfUse from '@/components/TermsOfUse.vue'
 import { Message } from '@/util/Message'
 
 export default defineComponent({
-  name: 'TermsOfUseAgreement',
+  name: 'TermsOfUsePage',
   components: {
     AlertMessage,
     TermsOfUse

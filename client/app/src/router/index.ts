@@ -71,9 +71,9 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/terms-of-use',
-    name: 'TermsOfUseAgreement',
+    name: 'TermsOfUsePage',
     // 利用規約の同意は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/personalized/TermsOfUseAgreement.vue')
+    component: () => import('../views/personalized/TermsOfUsePage.vue')
   }
 ]
 
