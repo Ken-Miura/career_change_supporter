@@ -60,7 +60,7 @@ describe('NewAccountPage.vue', () => {
     expect(classes).toContain('hidden')
   })
 
-  it('moves to TempAccountCreated when email address and password are passed', async () => {
+  it('moves to CreateTempAccountResultPage when email address and password are passed', async () => {
     createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(EMAIL_ADDRESS))
 
     const wrapper = mount(NewAccountPage, {
@@ -85,7 +85,7 @@ describe('NewAccountPage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "TempAccountCreated", "params": {"emailAddress": "${EMAIL_ADDRESS}"} }`)
+    const data = JSON.parse(`{ "name": "CreateTempAccountResultPage", "params": {"emailAddress": "${EMAIL_ADDRESS}"} }`)
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -125,7 +125,7 @@ describe('NewAccountPage.vue', () => {
     expect(resultMessage).toContain(Code.REACH_TEMP_ACCOUNTS_LIMIT)
   })
 
-  it('does not move TempAccountCreated when password and password confirm are different', async () => {
+  it('does not move CreateTempAccountResultPage when password and password confirm are different', async () => {
     const apiErr = ApiError.create(Code.REACH_TEMP_ACCOUNTS_LIMIT)
     const apiErrorResp = ApiErrorResp.create(400, apiErr)
     createTempAccountMock.mockResolvedValue(apiErrorResp)

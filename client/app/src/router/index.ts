@@ -26,11 +26,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/NewAccountPage.vue')
   },
   {
-    path: '/temp-account-created',
-    name: 'TempAccountCreated',
+    path: '/create-temp-account-result',
+    name: 'CreateTempAccountResultPage',
     props: true,
     // 新規登録は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/TempAccountCreated.vue')
+    component: () => import('../views/CreateTempAccountResultPage.vue')
   },
   {
     path: '/accounts',
