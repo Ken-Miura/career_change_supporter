@@ -10,7 +10,7 @@
         <h3 class="font-bold text-2xl">新規登録</h3>
       </section>
       <section class="mt-10">
-        <form class="flex flex-col" @submit.prevent="createNewAccount">
+        <form class="flex flex-col" @submit.prevent="createTempAccountHandler">
           <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
           <PasswordInput class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
           <PasswordInput class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
@@ -57,13 +57,17 @@ export default defineComponent({
     useCredentil()
     const isHidden = ref(true)
     const errorMessage = ref('')
-    const createNewAccount = async () => {
+    const createTempAccountHandler = async () => {
       if (!passwordsAreSame.value) {
         isHidden.value = false
         errorMessage.value = Message.PASSWORD_CONFIRMATION_FAILED
         return
       }
       try {
+        // 新規作成の流れは下記の通り
+        // 1. システムは、一時アカウントを作成し、ユーザーにメールを送信する
+        // 2. ユーザーは、メールに記載してあるURLにアクセスし、アカウントを新規作成する
+        // 下記の関数では1の機能を提供する
         const result = await createTempAccount(form.emailAddress, form.password)
         if (result instanceof CreateTempAccountResp) {
           await router.push({ name: 'TempAccountCreated', params: { emailAddress: result.getEmailAddress() } })
@@ -75,7 +79,7 @@ export default defineComponent({
         }
       } catch (e) {
         isHidden.value = false
-        errorMessage.value = `${Message.NEW_ACCOUNT_CREATION_FAILED}: ${e}`
+        errorMessage.value = `${Message.TEMP_ACCOUNT_CREATION_FAILED}: ${e}`
       }
     }
     return {
@@ -85,7 +89,7 @@ export default defineComponent({
       setPasswordConfirmation,
       isHidden,
       errorMessage,
-      createNewAccount
+      createTempAccountHandler
     }
   }
 })

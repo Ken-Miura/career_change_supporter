@@ -155,7 +155,7 @@ describe('NewAccountPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
-  it(`displays alert message ${Message.NEW_ACCOUNT_CREATION_FAILED} when connection error happened`, async () => {
+  it(`displays alert message ${Message.TEMP_ACCOUNT_CREATION_FAILED} when connection error happened`, async () => {
     const errDetail = 'connection error'
     createTempAccountMock.mockRejectedValue(new Error(errDetail))
 
@@ -186,7 +186,7 @@ describe('NewAccountPage.vue', () => {
     const classes = alertMessage.classes()
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(Message.NEW_ACCOUNT_CREATION_FAILED)
+    expect(resultMessage).toContain(Message.TEMP_ACCOUNT_CREATION_FAILED)
     expect(resultMessage).toContain(errDetail)
   })
 })
