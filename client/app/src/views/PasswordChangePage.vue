@@ -10,7 +10,7 @@
         <h3 class="font-bold text-2xl">パスワード変更</h3>
       </section>
       <section class="mt-10">
-        <form class="flex flex-col" @submit.prevent="requestPasswordChange">
+        <form class="flex flex-col" @submit.prevent="createNewPasswordHandler">
           <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
           <PasswordInput class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
           <PasswordInput class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
@@ -57,13 +57,17 @@ export default defineComponent({
     useCredentil()
     const isHidden = ref(true)
     const errorMessage = ref('')
-    const requestPasswordChange = async () => {
+    const createNewPasswordHandler = async () => {
       if (!passwordsAreSame.value) {
         isHidden.value = false
         errorMessage.value = Message.PASSWORD_CONFIRMATION_FAILED
         return
       }
       try {
+        // パスワード変更の流れは下記の通り
+        // 1. システムは、新規パスワードを作成し、ユーザーにメールを送信する
+        // 2. ユーザーは、メールに記載してあるURLにアクセスすることで新規パスワードを適用し、パスワード変更を完了する
+        // 下記の関数では1の機能を提供する
         const result = await createNewPassword(form.emailAddress, form.password)
         if (result instanceof CreateNewPasswordResp) {
           await router.push({ name: 'NewPasswordCreated', params: { emailAddress: result.getEmailAddress() } })
@@ -85,7 +89,7 @@ export default defineComponent({
       setPasswordConfirmation,
       isHidden,
       errorMessage,
-      requestPasswordChange
+      createNewPasswordHandler
     }
   }
 })
