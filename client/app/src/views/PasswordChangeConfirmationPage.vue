@@ -24,14 +24,14 @@ import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
-  name: 'PasswordChangeConfirmationPage',
+  name: 'NewPassword',
   setup () {
     const router = useRouter()
     const applyNewPasswordHandler = async () => {
       const query = router.currentRoute.value.query
       const data = JSON.stringify(query)
       if (!data.match('"new-password-id"')) {
-        await router.push({ name: 'NewPasswordApplied', params: { message: Message.INVALID_QUERY_PARAM } })
+        await router.push({ name: 'ApplyNewPasswordResultPage', params: { message: Message.INVALID_QUERY_PARAM } })
         return
       }
       let message: string
@@ -47,7 +47,7 @@ export default defineComponent({
       } catch (e) {
         message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      await router.push({ name: 'NewPasswordApplied', params: { message } })
+      await router.push({ name: 'ApplyNewPasswordResultPage', params: { message } })
     }
     return { applyNewPasswordHandler }
   }

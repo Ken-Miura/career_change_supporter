@@ -58,11 +58,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/PasswordChangeConfirmationPage.vue')
   },
   {
-    path: '/new-password-applied',
-    name: 'NewPasswordApplied',
+    path: '/apply-new-password-result',
+    name: 'ApplyNewPasswordResultPage',
     props: true,
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/NewPasswordApplied.vue')
+    component: () => import('../views/ApplyNewPasswordResultPage.vue')
   },
   {
     path: '/profile',
