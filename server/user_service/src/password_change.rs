@@ -1,7 +1,11 @@
 // Copyright 2021 Ken Miura
 
+use async_redis_session::RedisSessionStore;
+use async_session::SessionStore;
+use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
+use axum::{body::Body, http::Request};
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use common::model::user::Account;
@@ -19,6 +23,7 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::result::Error::NotFound;
 use diesel::{update, RunQueryDsl};
 use diesel::{ExpressionMethods, PgConnection, QueryDsl};
+use headers::{Cookie, HeaderMapExt};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
@@ -26,11 +31,13 @@ use serde::Serialize;
 use crate::err_code::{
     INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND,
 };
+use crate::util::session::extract_session_id;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
 /// 新しいパスワードに変更する<br>
+/// セッションが存在する場合、新しいパスワードに変更する前にセッションを破棄する<br>
 /// <br>
 /// # Errors
 /// アカウントがない場合、ステータスコード400、エラーコード[NO_ACCOUNT_FOUND]を返す<br>
@@ -40,7 +47,19 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 pub(crate) async fn post_password_change(
     Json(new_pwd): Json<NewPasswordId>,
     DatabaseConnection(conn): DatabaseConnection,
+    Extension(store): Extension<RedisSessionStore>,
+    req: Request<Body>,
 ) -> RespResult<PasswordChangeResult> {
+    let headers = req.headers();
+    let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
+        tracing::error!("failed to get cookie: {}", e);
+        unexpected_err_resp()
+    })?;
+    let session_id_value_option = extract_session_id(option_cookie);
+    if let Some(session_id_value) = session_id_value_option {
+        let _ = destroy_session_if_exists(&session_id_value, &store).await?;
+    }
+
     let current_date_time = chrono::Utc::now();
     let op = PasswordChangeOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
@@ -87,14 +106,47 @@ async fn post_password_change_internal(
         }
         let account = find_account_by_email_address(&new_pwd.email_address, &op)?;
         let _ = op.update_password(account.user_account_id, &new_pwd.hashed_password)?;
+        tracing::info!(
+            "{} changed password at {}",
+            new_pwd.email_address,
+            current_date_time
+        );
         Ok(new_pwd.email_address)
     }
     .await?;
     let text = create_text();
     let _ =
         async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
-    tracing::info!("{} changed password at {}", email_addr, current_date_time);
     Ok((StatusCode::OK, Json(PasswordChangeResult {})))
+}
+
+async fn destroy_session_if_exists(
+    session_id_value: &str,
+    store: &impl SessionStore,
+) -> Result<(), ErrResp> {
+    let option_session = store
+        .load_session(session_id_value.to_string())
+        .await
+        .map_err(|e| {
+            tracing::error!("failed to load session: {}", e);
+            unexpected_err_resp()
+        })?;
+    let session = match option_session {
+        Some(s) => s,
+        None => {
+            tracing::debug!("no session in session store on password change");
+            return Ok(());
+        }
+    };
+    let _ = store.destroy_session(session).await.map_err(|e| {
+        tracing::error!(
+            "failed to destroy session (session_id: {}): {}",
+            session_id_value,
+            e
+        );
+        unexpected_err_resp()
+    })?;
+    Ok(())
 }
 
 fn find_account_by_email_address(
