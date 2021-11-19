@@ -45,10 +45,10 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 /// 新しいパスワードが見つからない場合、ステータスコード400、エラーコード[NO_NEW_PASSWORD_FOUND]を返す<br>
 /// 新しいパスワードが期限切れの場合、ステータスコード400、エラーコード[NEW_PASSWORD_EXPIRED]を返す<br>
 pub(crate) async fn post_password_change(
+    req: Request<Body>,
+    Extension(store): Extension<RedisSessionStore>,
     Json(new_pwd): Json<NewPasswordId>,
     DatabaseConnection(conn): DatabaseConnection,
-    Extension(store): Extension<RedisSessionStore>,
-    req: Request<Body>,
 ) -> RespResult<PasswordChangeResult> {
     let headers = req.headers();
     let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
@@ -265,6 +265,7 @@ impl PasswordChangeOperation for PasswordChangeOperationImpl {
 
 #[cfg(test)]
 mod tests {
+    use async_session::MemoryStore;
     use axum::http::StatusCode;
     use axum::Json;
     use chrono::{DateTime, Duration, TimeZone, Utc};
@@ -284,10 +285,10 @@ mod tests {
         password_change::{
             create_text, post_password_change_internal, PasswordChangeResult, SUBJECT,
         },
-        util::tests::SendMailMock,
+        util::{session::tests::prepare_session, tests::SendMailMock},
     };
 
-    use super::PasswordChangeOperation;
+    use super::{destroy_session_if_exists, PasswordChangeOperation};
 
     struct PasswordChangeOperationMock {
         no_new_password_found: bool,
@@ -692,5 +693,33 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(NEW_PASSWORD_EXPIRED, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn destroy_session_if_exists_destorys_session() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id_value = prepare_session(user_account_id, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let _ = destroy_session_if_exists(&session_id_value, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+    }
+
+    #[tokio::test]
+    async fn destroy_session_if_exists_returns_ok_if_no_session_exists() {
+        let store = MemoryStore::new();
+        // dummy session id
+        let session_id_value = "KBvGQJJVyQquK5yuEcwlbfJfjNHBMAXIKRnHbVO/0QzBMHLak1xmqhaTbDuscJSeEPL2qwZfTP5BalDDMmR8eA==";
+        assert_eq!(0, store.count().await);
+
+        let _ = destroy_session_if_exists(&session_id_value, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
     }
 }

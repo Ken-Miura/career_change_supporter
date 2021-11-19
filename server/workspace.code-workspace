@@ -4,5 +4,140 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug executable 'user_service'",
+				"cargo": {
+					"args": [
+						"build",
+						"--bin=user_service",
+						"--package=user_service"
+					],
+					"filter": {
+						"name": "user_service",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug unit tests in executable 'user_service'",
+				"cargo": {
+					"args": [
+						"test",
+						"--no-run",
+						"--bin=user_service",
+						"--package=user_service"
+					],
+					"filter": {
+						"name": "user_service",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug unit tests in library 'common'",
+				"cargo": {
+					"args": [
+						"test",
+						"--no-run",
+						"--lib",
+						"--package=common"
+					],
+					"filter": {
+						"name": "common",
+						"kind": "lib"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug executable 'admin_service'",
+				"cargo": {
+					"args": [
+						"build",
+						"--bin=admin_service",
+						"--package=admin_service"
+					],
+					"filter": {
+						"name": "admin_service",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug unit tests in executable 'admin_service'",
+				"cargo": {
+					"args": [
+						"test",
+						"--no-run",
+						"--bin=admin_service",
+						"--package=admin_service"
+					],
+					"filter": {
+						"name": "admin_service",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug executable 'admin_account'",
+				"cargo": {
+					"args": [
+						"build",
+						"--bin=admin_account",
+						"--package=admin_account"
+					],
+					"filter": {
+						"name": "admin_account",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug unit tests in executable 'admin_account'",
+				"cargo": {
+					"args": [
+						"test",
+						"--no-run",
+						"--bin=admin_account",
+						"--package=admin_account"
+					],
+					"filter": {
+						"name": "admin_account",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			}
+		]
+	}
 }
