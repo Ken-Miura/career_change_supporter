@@ -39,7 +39,7 @@ import { createNewPassword } from '@/util/password/CreateNewPassword'
 import { CreateNewPasswordResp } from '@/util/password/CreateNewPasswordResp'
 
 export default defineComponent({
-  name: 'PasswordChange',
+  name: 'PasswordChangePage',
   components: {
     EmailAddressInput,
     PasswordInput,

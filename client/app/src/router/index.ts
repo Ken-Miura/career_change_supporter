@@ -40,9 +40,9 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/password-change',
-    name: 'PasswordChange',
+    name: 'PasswordChangePage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/PasswordChange.vue')
+    component: () => import('../views/PasswordChangePage.vue')
   },
   {
     path: '/new-password-created',
