@@ -52,10 +52,10 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/NewPasswordCreationResultPage.vue')
   },
   {
-    path: '/new-password',
-    name: 'NewPassword',
+    path: '/password-change-confirmation',
+    name: 'PasswordChangeConfirmationPage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/NewPassword.vue')
+    component: () => import('../views/PasswordChangeConfirmationPage.vue')
   },
   {
     path: '/new-password-applied',

@@ -24,7 +24,7 @@ import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
-  name: 'NewPassword',
+  name: 'PasswordChangeConfirmationPage',
   setup () {
     const router = useRouter()
     const applyNewPasswordHandler = async () => {
