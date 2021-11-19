@@ -45,11 +45,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/PasswordChangePage.vue')
   },
   {
-    path: '/new-password-created',
-    name: 'NewPasswordCreated',
+    path: '/new-password-creation-result',
+    name: 'NewPasswordCreationResultPage',
     props: true,
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/NewPasswordCreated.vue')
+    component: () => import('../views/NewPasswordCreationResultPage.vue')
   },
   {
     path: '/new-password',

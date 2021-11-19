@@ -18,7 +18,7 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'NewPasswordCreated',
+  name: 'NewPasswordCreationResultPage',
   props: {
     emailAddress: String
   }
