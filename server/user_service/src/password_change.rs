@@ -2,6 +2,7 @@
 
 use async_redis_session::RedisSessionStore;
 use async_session::SessionStore;
+use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
 use axum::{body::Body, http::Request};
@@ -45,6 +46,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 /// 新しいパスワードが期限切れの場合、ステータスコード400、エラーコード[NEW_PASSWORD_EXPIRED]を返す<br>
 pub(crate) async fn post_password_change(
     req: Request<Body>,
+    Extension(store): Extension<RedisSessionStore>,
     Json(new_pwd): Json<NewPasswordId>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<PasswordChangeResult> {
@@ -55,12 +57,7 @@ pub(crate) async fn post_password_change(
     })?;
     let session_id_value_option = extract_session_id(option_cookie);
     if let Some(session_id_value) = session_id_value_option {
-        let extentions = req.extensions();
-        let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
-            tracing::error!("failed to get session store");
-            unexpected_err_resp()
-        })?;
-        let _ = destroy_session_if_exists(&session_id_value, store).await?;
+        let _ = destroy_session_if_exists(&session_id_value, &store).await?;
     }
 
     let current_date_time = chrono::Utc::now();
