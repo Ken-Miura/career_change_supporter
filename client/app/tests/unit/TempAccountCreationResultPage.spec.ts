@@ -1,10 +1,10 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import CreateTempAccountResultPage from '@/views/CreateTempAccountResultPage.vue'
+import TempAccountCreationResultPage from '@/views/TempAccountCreationResultPage.vue'
 
-describe('CreateTempAccountResultPage.vue', () => {
+describe('TempAccountCreationResultPage.vue', () => {
   it('renders message with props.emailAddress when passed', () => {
     const emailAddress = 'test@example.com'
-    const wrapper = mount(CreateTempAccountResultPage, {
+    const wrapper = mount(TempAccountCreationResultPage, {
       props: { emailAddress },
       global: {
         stubs: {
@@ -18,7 +18,7 @@ describe('CreateTempAccountResultPage.vue', () => {
   })
 
   it('does not render message when no props passed', () => {
-    const wrapper = mount(CreateTempAccountResultPage, {
+    const wrapper = mount(TempAccountCreationResultPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub

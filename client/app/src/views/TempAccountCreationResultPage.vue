@@ -18,7 +18,7 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'CreateTempAccountResultPage',
+  name: 'TempAccountCreationResultPage',
   props: {
     emailAddress: String
   }
