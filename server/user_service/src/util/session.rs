@@ -8,10 +8,11 @@ use axum::{
     Json,
 };
 use common::{ApiError, ConnectionPool, ErrResp};
-use headers::Cookie;
+use cookie::SameSite;
 use headers::HeaderMapExt;
 use serde::Deserialize;
 use std::time::Duration;
+use tower_cookies::Cookie;
 
 use crate::{
     err_code::{NOT_TERMS_OF_USE_AGREED_YET, UNAUTHORIZED},
@@ -33,23 +34,30 @@ pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
 
 /// [SESSION_ID_COOKIE_NAME]を含むSet-Cookie用の文字列を返す。
 pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
-    format!(
-        "{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
-        SESSION_ID_COOKIE_NAME, session_id_value, ROOT_PATH
-    )
+    Cookie::build(SESSION_ID_COOKIE_NAME, session_id_value)
+        .same_site(SameSite::Strict)
+        .path(ROOT_PATH)
+        .secure(true)
+        .http_only(true)
+        .finish()
+        .to_string()
 }
 
 /// [SESSION_ID_COOKIE_NAME]を含む、有効期限切れのSet-Cookie用の文字列を返す<br>
 /// ブラウザに保存されたCookieの削除指示を出したいときに使う。
 pub(crate) fn create_expired_cookie_format(session_id_value: &str) -> String {
-    format!(
-        "{}={}; SameSite=Strict; Path={}/; Max-Age=-1; Secure; HttpOnly",
-        SESSION_ID_COOKIE_NAME, session_id_value, ROOT_PATH
-    )
+    let mut cookie = Cookie::build(SESSION_ID_COOKIE_NAME, session_id_value)
+        .same_site(SameSite::Strict)
+        .path(ROOT_PATH)
+        .secure(true)
+        .http_only(true)
+        .finish();
+    cookie.make_removal();
+    cookie.to_string()
 }
 
 /// Cookieが存在し、[SESSION_ID_COOKIE_NAME]を含む場合、対応する値を返す
-pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String> {
+pub(crate) fn extract_session_id(option_cookie: Option<headers::Cookie>) -> Option<String> {
     let cookie = match option_cookie {
         Some(c) => c,
         None => {
@@ -104,7 +112,7 @@ where
                 ));
             }
         };
-        let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
+        let option_cookie = headers.typed_try_get::<headers::Cookie>().map_err(|e| {
             tracing::error!("failed to get Cookie: {}", e);
             unexpected_err_resp()
         })?;
@@ -142,7 +150,7 @@ where
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
 pub(crate) async fn get_user_by_cookie(
-    option_cookie: Option<Cookie>,
+    option_cookie: Option<headers::Cookie>,
     store: &impl SessionStore,
 ) -> Result<User, ErrResp> {
     let session_id_value = match extract_session_id(option_cookie) {
@@ -226,13 +234,16 @@ pub(crate) mod tests {
     use axum::http::StatusCode;
     use chrono::TimeZone;
     use common::{model::user::TermsOfUse, ErrResp};
-    use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
+    use cookie::{Cookie, SameSite};
+    use headers::{HeaderMap, HeaderMapExt, HeaderValue};
+    use tower_cookies::Cookies;
 
     use crate::{
         err_code,
         util::{
             session::{create_cookie_format, get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID},
             terms_of_use::TermsOfUseLoadOperation,
+            ROOT_PATH,
         },
     };
 
@@ -276,13 +287,26 @@ pub(crate) mod tests {
             .expect("failed to get value")
     }
 
-    pub(crate) fn prepare_cookie(session_id_value: &str) -> Option<Cookie> {
+    // TODO: 更新する
+    pub(crate) fn prepare_cookie_temp(session_id_value: &str) -> Option<headers::Cookie> {
         let mut headers = HeaderMap::new();
         let header_value = create_cookie_format(session_id_value)
             .parse::<HeaderValue>()
             .expect("failed to get Ok");
         headers.insert("cookie", header_value);
-        headers.typed_get::<Cookie>()
+        headers.typed_get::<headers::Cookie>()
+    }
+
+    pub(crate) fn prepare_cookies(session_id_value: &str) -> Cookies {
+        let cookie = Cookie::build(SESSION_ID_COOKIE_NAME, session_id_value.to_string())
+            .same_site(SameSite::Strict)
+            .path(ROOT_PATH)
+            .secure(true)
+            .http_only(true)
+            .finish();
+        let cookies = Cookies::default();
+        cookies.add(cookie.clone());
+        cookies
     }
 
     pub(crate) async fn remove_session_from_store(
@@ -305,7 +329,7 @@ pub(crate) mod tests {
         let store = MemoryStore::new();
         let user_account_id = 15001;
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie(&session_id_value);
+        let option_cookie = prepare_cookie_temp(&session_id_value);
         assert_eq!(1, store.count().await);
 
         let user = get_user_by_cookie(option_cookie, &store)
@@ -323,7 +347,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn get_user_by_cookie_fail_no_cookie() {
-        let option_cookie: Option<Cookie> = None;
+        let option_cookie: Option<headers::Cookie> = None;
         let store = MemoryStore::new();
 
         let result = get_user_by_cookie(option_cookie, &store)
@@ -341,7 +365,7 @@ pub(crate) mod tests {
             .parse::<HeaderValue>()
             .expect("failed to get Ok");
         headers.insert("cookie", header_value);
-        let option_cookie = headers.typed_get::<Cookie>();
+        let option_cookie = headers.typed_get::<headers::Cookie>();
         let store = MemoryStore::new();
 
         let result = get_user_by_cookie(option_cookie, &store)
@@ -357,7 +381,7 @@ pub(crate) mod tests {
         let user_account_id = 10002;
         let store = MemoryStore::new();
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie(&session_id_value);
+        let option_cookie = prepare_cookie_temp(&session_id_value);
         // リクエストのプリプロセス前ににセッションを削除
         let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);

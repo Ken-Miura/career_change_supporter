@@ -99,7 +99,7 @@ mod tests {
     use crate::{
         refresh::get_refresh_internal,
         util::session::{
-            tests::{prepare_cookie, prepare_session, remove_session_from_store},
+            tests::{prepare_cookie_temp, prepare_session, remove_session_from_store},
             LOGIN_SESSION_EXPIRY,
         },
     };
@@ -125,7 +125,7 @@ mod tests {
         let store = MemoryStore::new();
         let user_account_id = 555;
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie(&session_id_value);
+        let option_cookie = prepare_cookie_temp(&session_id_value);
         assert_eq!(1, store.count().await);
         let op_mock = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
@@ -179,7 +179,7 @@ mod tests {
         let store = MemoryStore::new();
         let user_account_id = 203;
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie(&session_id_value);
+        let option_cookie = prepare_cookie_temp(&session_id_value);
         // リフレッシュ前にセッションを削除
         let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
