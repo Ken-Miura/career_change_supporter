@@ -9,10 +9,9 @@ use axum::{
 };
 use common::{ApiError, ConnectionPool, ErrResp};
 use cookie::SameSite;
-use headers::HeaderMapExt;
 use serde::Deserialize;
 use std::time::Duration;
-use tower_cookies::Cookie;
+use tower_cookies::{Cookie, Cookies};
 
 use crate::{
     err_code::{NOT_TERMS_OF_USE_AGREED_YET, UNAUTHORIZED},
@@ -56,24 +55,6 @@ pub(crate) fn create_expired_cookie_format(session_id_value: &str) -> String {
     cookie.to_string()
 }
 
-/// Cookieが存在し、[SESSION_ID_COOKIE_NAME]を含む場合、対応する値を返す
-pub(crate) fn extract_session_id(option_cookie: Option<headers::Cookie>) -> Option<String> {
-    let cookie = match option_cookie {
-        Some(c) => c,
-        None => {
-            tracing::debug!("no cookie");
-            return None;
-        }
-    };
-    match cookie.get(SESSION_ID_COOKIE_NAME) {
-        Some(value) => Some(value.to_string()),
-        None => {
-            tracing::debug!("no {} in cookie", SESSION_ID_COOKIE_NAME);
-            None
-        }
-    }
-}
-
 /// ユーザーの情報にアクセスするためのID
 ///
 /// ハンドラ関数内でユーザーの情報にアクセスしたい場合、原則としてこの型をパラメータとして受け付ける。
@@ -96,27 +77,17 @@ where
     type Rejection = ErrResp;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let Extension(cookies) = Extension::<Cookies>::from_request(req).await.map_err(|e| {
+            tracing::error!("failed to get cookies: {}", e);
+            unexpected_err_resp()
+        })?;
         let Extension(store) = Extension::<RedisSessionStore>::from_request(req)
             .await
             .map_err(|e| {
                 tracing::error!("failed to get session store: {}", e);
                 unexpected_err_resp()
             })?;
-        let headers = match req.headers() {
-            Some(h) => h,
-            None => {
-                tracing::debug!("no headers found");
-                return Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError { code: UNAUTHORIZED }),
-                ));
-            }
-        };
-        let option_cookie = headers.typed_try_get::<headers::Cookie>().map_err(|e| {
-            tracing::error!("failed to get Cookie: {}", e);
-            unexpected_err_resp()
-        })?;
-        let user = get_user_by_cookie(option_cookie, &store).await?;
+        let user = get_user_by_cookie(cookies, &store).await?;
 
         let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
             .await
@@ -150,11 +121,12 @@ where
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
 pub(crate) async fn get_user_by_cookie(
-    option_cookie: Option<headers::Cookie>,
+    cookies: Cookies,
     store: &impl SessionStore,
 ) -> Result<User, ErrResp> {
-    let session_id_value = match extract_session_id(option_cookie) {
-        Some(s) => s,
+    let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
+    let session_id_value = match option_cookie {
+        Some(session_id) => session_id.value().to_string(),
         None => {
             tracing::debug!("no valid cookie on request");
             return Err((
@@ -235,13 +207,13 @@ pub(crate) mod tests {
     use chrono::TimeZone;
     use common::{model::user::TermsOfUse, ErrResp};
     use cookie::{Cookie, SameSite};
-    use headers::{HeaderMap, HeaderMapExt, HeaderValue};
+    use headers::HeaderValue;
     use tower_cookies::Cookies;
 
     use crate::{
         err_code,
         util::{
-            session::{create_cookie_format, get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID},
+            session::{get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID},
             terms_of_use::TermsOfUseLoadOperation,
             ROOT_PATH,
         },
@@ -287,16 +259,6 @@ pub(crate) mod tests {
             .expect("failed to get value")
     }
 
-    // TODO: 更新する
-    pub(crate) fn prepare_cookie_temp(session_id_value: &str) -> Option<headers::Cookie> {
-        let mut headers = HeaderMap::new();
-        let header_value = create_cookie_format(session_id_value)
-            .parse::<HeaderValue>()
-            .expect("failed to get Ok");
-        headers.insert("cookie", header_value);
-        headers.typed_get::<headers::Cookie>()
-    }
-
     pub(crate) fn prepare_cookies(session_id_value: &str) -> Cookies {
         let cookie = Cookie::build(SESSION_ID_COOKIE_NAME, session_id_value.to_string())
             .same_site(SameSite::Strict)
@@ -329,10 +291,10 @@ pub(crate) mod tests {
         let store = MemoryStore::new();
         let user_account_id = 15001;
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie_temp(&session_id_value);
+        let cookies = prepare_cookies(&session_id_value);
         assert_eq!(1, store.count().await);
 
-        let user = get_user_by_cookie(option_cookie, &store)
+        let user = get_user_by_cookie(cookies, &store)
             .await
             .expect("failed to get Ok");
 
@@ -347,10 +309,10 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn get_user_by_cookie_fail_no_cookie() {
-        let option_cookie: Option<headers::Cookie> = None;
+        let cookies = Cookies::default();
         let store = MemoryStore::new();
 
-        let result = get_user_by_cookie(option_cookie, &store)
+        let result = get_user_by_cookie(cookies, &store)
             .await
             .expect_err("failed to get Err");
 
@@ -360,15 +322,12 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn get_user_by_cookie_fail_incorrect_cookie() {
-        let mut headers = HeaderMap::new();
-        let header_value = "name=taro"
-            .parse::<HeaderValue>()
-            .expect("failed to get Ok");
-        headers.insert("cookie", header_value);
-        let option_cookie = headers.typed_get::<headers::Cookie>();
+        let cookies = Cookies::default();
+        let cookie = Cookie::new("name", "taro");
+        cookies.add(cookie);
         let store = MemoryStore::new();
 
-        let result = get_user_by_cookie(option_cookie, &store)
+        let result = get_user_by_cookie(cookies, &store)
             .await
             .expect_err("failed to get Err");
 
@@ -381,12 +340,12 @@ pub(crate) mod tests {
         let user_account_id = 10002;
         let store = MemoryStore::new();
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie_temp(&session_id_value);
+        let cookies = prepare_cookies(&session_id_value);
         // リクエストのプリプロセス前ににセッションを削除
         let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
 
-        let result = get_user_by_cookie(option_cookie, &store)
+        let result = get_user_by_cookie(cookies, &store)
             .await
             .expect_err("failed to get Err");
 

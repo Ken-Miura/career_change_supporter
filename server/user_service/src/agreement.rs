@@ -1,22 +1,23 @@
 // Copyright 2021 Ken Miura
 
 use async_redis_session::RedisSessionStore;
+use axum::extract::Extension;
+use axum::http::StatusCode;
 use axum::Json;
-use axum::{body::Body, http::Request, http::StatusCode};
 use chrono::{DateTime, Utc};
-use common::ApiError;
-use common::{model::user::Account, ConnectionPool, ErrResp};
+use common::{model::user::Account, ErrResp};
 use common::{
     model::user::NewTermsOfUse,
     schema::ccs_schema::terms_of_use::dsl::terms_of_use as terms_of_use_table,
     schema::ccs_schema::user_account::dsl::user_account as user_account_table,
 };
+use common::{ApiError, DatabaseConnection};
 use diesel::{
     insert_into,
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection, QueryDsl, RunQueryDsl,
 };
-use headers::{Cookie, HeaderMapExt};
+use tower_cookies::Cookies;
 
 use crate::err_code::ALREADY_AGREED_TERMS_OF_USE;
 use crate::util::{
@@ -24,27 +25,12 @@ use crate::util::{
 };
 
 /// ユーザーが利用規約に同意したことを記録する
-pub(crate) async fn post_agreement(req: Request<Body>) -> Result<StatusCode, ErrResp> {
-    let headers = req.headers();
-    let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
-        tracing::error!("failed to get cookie: {}", e);
-        unexpected_err_resp()
-    })?;
-    let extentions = req.extensions();
-    let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
-        tracing::error!("failed to get session store");
-        unexpected_err_resp()
-    })?;
-    let user = get_user_by_cookie(option_cookie, store).await?;
-
-    let pool = extentions.get::<ConnectionPool>().ok_or_else(|| {
-        tracing::error!("failed to get session store");
-        unexpected_err_resp()
-    })?;
-    let conn = pool.get().map_err(|e| {
-        tracing::error!("failed to get connection from pool: {}", e);
-        unexpected_err_resp()
-    })?;
+pub(crate) async fn post_agreement(
+    cookies: Cookies,
+    Extension(store): Extension<RedisSessionStore>,
+    DatabaseConnection(conn): DatabaseConnection,
+) -> Result<StatusCode, ErrResp> {
+    let user = get_user_by_cookie(cookies, &store).await?;
     let op = AgreementOperationImpl::new(conn);
     let agreed_time = Utc::now();
     let result =
