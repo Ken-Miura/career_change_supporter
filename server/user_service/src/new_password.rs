@@ -101,7 +101,14 @@ async fn post_new_password_internal(
             hashed_password: &hashed_pwd,
             created_at: register_time,
         };
-        op.create_new_password(&new_password)
+        let _ = op.create_new_password(&new_password);
+        tracing::info!(
+            "{} created new password with id: {} at {}",
+            email_addr,
+            simple_uuid,
+            register_time
+        );
+        Ok(())
     }
     .await?;
     let text = create_text(url, &uuid_for_url);

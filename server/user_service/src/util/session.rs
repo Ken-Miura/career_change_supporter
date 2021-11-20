@@ -178,7 +178,7 @@ fn check_if_user_has_already_agreed(
     let len = results.len();
     if len == 0 {
         tracing::info!(
-            "id ({}) has not agreed terms of use version ({}) yet",
+            "id ({}) has not agreed terms of use version {} yet",
             id,
             terms_of_use_version
         );

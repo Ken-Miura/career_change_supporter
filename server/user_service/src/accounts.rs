@@ -106,6 +106,11 @@ async fn post_accounts_internal(
             created_at: current_date_time,
         };
         let _ = op.create_account(&account)?;
+        tracing::info!(
+            "accout ({}) was created at {}",
+            temp_account.email_address,
+            current_date_time
+        );
         Ok(temp_account.email_address)
     }
     .await?;

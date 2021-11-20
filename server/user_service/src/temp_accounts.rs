@@ -100,7 +100,14 @@ async fn post_temp_accounts_internal(
             hashed_password: &hashed_pwd,
             created_at: register_time,
         };
-        op.create_temp_account(&temp_account)
+        let _ = op.create_temp_account(&temp_account);
+        tracing::info!(
+            "{} created temporary account with id: {} at {}",
+            email_addr,
+            simple_uuid,
+            register_time
+        );
+        Ok(())
     }
     .await?;
     let text = create_text(url, &uuid_for_url);

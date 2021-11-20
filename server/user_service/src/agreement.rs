@@ -148,7 +148,15 @@ async fn post_agreement_internal(
             // そのため、unexpected errとして処理する。
             return Err(unexpected_err_resp());
         }
-        op.agree_terms_of_use(id, version, &accounts[0].email_address, agreed_at)
+        let _ = op.agree_terms_of_use(id, version, &accounts[0].email_address, agreed_at)?;
+        tracing::info!(
+            "{} (id: {}) agreed terms of use version {} at {}",
+            &accounts[0].email_address,
+            id,
+            version,
+            agreed_at
+        );
+        Ok(())
     }
     .await?;
     Ok(StatusCode::OK)
