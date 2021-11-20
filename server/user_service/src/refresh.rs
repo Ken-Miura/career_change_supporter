@@ -4,10 +4,10 @@ use std::time::Duration;
 
 use async_redis_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
-use axum::{body::Body, http::Request, http::StatusCode};
-use headers::{Cookie, HeaderMapExt};
+use axum::{extract::Extension, http::StatusCode};
+use tower_cookies::Cookies;
 
-use crate::util::session::{extract_session_id, LOGIN_SESSION_EXPIRY};
+use crate::util::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 
 /// ログインセッションを延長する<br>
 /// セッションが有効な間に呼び出すと、セッションの有効期限を[LOGIN_SESSION_EXPIRY]だけ延長し、ステータスコード200を返す。<br>
@@ -19,29 +19,23 @@ use crate::util::session::{extract_session_id, LOGIN_SESSION_EXPIRY};
 ///   <li>CookieにセッションIDが含まれていない場合</li>
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
-pub(crate) async fn get_refresh(req: Request<Body>) -> Result<StatusCode, StatusCode> {
-    let headers = req.headers();
-    let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
-        tracing::error!("failed to get cookie: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    let extentions = req.extensions();
-    let store = extentions.get::<RedisSessionStore>().ok_or_else(|| {
-        tracing::error!("failed to get session store");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+pub(crate) async fn get_refresh(
+    cookies: Cookies,
+    Extension(store): Extension<RedisSessionStore>,
+) -> Result<StatusCode, StatusCode> {
     let op = RefreshOperationImpl {};
-    get_refresh_internal(option_cookie, store, op, LOGIN_SESSION_EXPIRY).await
+    get_refresh_internal(cookies, &store, op, LOGIN_SESSION_EXPIRY).await
 }
 
 async fn get_refresh_internal(
-    option_cookie: Option<Cookie>,
+    cookies: Cookies,
     store: &impl SessionStore,
     op: impl RefreshOperation,
     expiry: Duration,
 ) -> Result<StatusCode, StatusCode> {
-    let session_id_value = match extract_session_id(option_cookie) {
-        Some(s) => s,
+    let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
+    let session_id_value = match option_cookie {
+        Some(session_id) => session_id.value().to_string(),
         None => {
             tracing::debug!("no valid cookie on refresh");
             return Err(StatusCode::UNAUTHORIZED);
@@ -93,13 +87,13 @@ impl RefreshOperation for RefreshOperationImpl {
 #[cfg(test)]
 mod tests {
     use async_session::MemoryStore;
-    use headers::{Cookie, HeaderMap, HeaderMapExt, HeaderValue};
     use hyper::StatusCode;
+    use tower_cookies::{Cookie, Cookies};
 
     use crate::{
         refresh::get_refresh_internal,
         util::session::{
-            tests::{prepare_cookie_temp, prepare_session, remove_session_from_store},
+            tests::{prepare_cookies, prepare_session, remove_session_from_store},
             LOGIN_SESSION_EXPIRY,
         },
     };
@@ -125,14 +119,13 @@ mod tests {
         let store = MemoryStore::new();
         let user_account_id = 555;
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie_temp(&session_id_value);
+        let cookies = prepare_cookies(&session_id_value);
         assert_eq!(1, store.count().await);
         let op_mock = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
 
-        let result =
-            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+        let result = get_refresh_internal(cookies, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
 
         assert_eq!(1, store.count().await);
         let code = result.expect("failed to get Ok");
@@ -141,14 +134,13 @@ mod tests {
 
     #[tokio::test]
     async fn refresh_fail_no_cookie() {
-        let option_cookie: Option<Cookie> = None;
+        let cookies = Cookies::default();
         let store = MemoryStore::new();
         let op_mock = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
 
-        let result =
-            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+        let result = get_refresh_internal(cookies, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
 
         let code = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::UNAUTHORIZED, code);
@@ -156,19 +148,15 @@ mod tests {
 
     #[tokio::test]
     async fn refresh_fail_incorrect_cookie() {
-        let mut headers = HeaderMap::new();
-        let header_value = "name=taro"
-            .parse::<HeaderValue>()
-            .expect("failed to get Ok");
-        headers.insert("cookie", header_value);
-        let option_cookie = headers.typed_get::<Cookie>();
+        let cookies = Cookies::default();
+        let cookie = Cookie::new("name", "taro");
+        cookies.add(cookie);
         let store = MemoryStore::new();
         let op_mock = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
 
-        let result =
-            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+        let result = get_refresh_internal(cookies, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
 
         let code = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::UNAUTHORIZED, code);
@@ -179,7 +167,7 @@ mod tests {
         let store = MemoryStore::new();
         let user_account_id = 203;
         let session_id_value = prepare_session(user_account_id, &store).await;
-        let option_cookie = prepare_cookie_temp(&session_id_value);
+        let cookies = prepare_cookies(&session_id_value);
         // リフレッシュ前にセッションを削除
         let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
@@ -187,8 +175,7 @@ mod tests {
             expiry: LOGIN_SESSION_EXPIRY,
         };
 
-        let result =
-            get_refresh_internal(option_cookie, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
+        let result = get_refresh_internal(cookies, &store, op_mock, LOGIN_SESSION_EXPIRY).await;
 
         assert_eq!(0, store.count().await);
         let code = result.expect_err("failed to get Err");
