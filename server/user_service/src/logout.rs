@@ -69,7 +69,7 @@ async fn post_logout_internal(cookies: Cookies, store: &impl SessionStore) -> Lo
         unexpected_err_resp()
     })?;
     let mut headers = HeaderMap::new();
-    let expired_cookie = create_expired_cookie_format(&session_id_value)
+    let expired_cookie = create_expired_cookie_format()
         .parse::<HeaderValue>()
         .map_err(|e| {
             tracing::error!("failed to parse cookie ({}): {}", session_id_value, e);

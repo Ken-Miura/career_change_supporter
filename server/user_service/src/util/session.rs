@@ -44,8 +44,8 @@ pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
 
 /// [SESSION_ID_COOKIE_NAME]を含む、有効期限切れのSet-Cookie用の文字列を返す<br>
 /// ブラウザに保存されたCookieの削除指示を出したいときに使う。
-pub(crate) fn create_expired_cookie_format(session_id_value: &str) -> String {
-    let mut cookie = Cookie::build(SESSION_ID_COOKIE_NAME, session_id_value)
+pub(crate) fn create_expired_cookie_format() -> String {
+    let mut cookie = Cookie::build(SESSION_ID_COOKIE_NAME, "")
         .same_site(SameSite::Strict)
         .path(ROOT_PATH)
         .secure(true)
