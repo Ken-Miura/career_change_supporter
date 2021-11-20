@@ -22,7 +22,7 @@ use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
 
-pub(crate) const COOKIE_NAME: &str = "session_id";
+pub(crate) const SESSION_ID_COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 const LENGTH_OF_MEETING: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
@@ -31,24 +31,24 @@ const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
-/// [COOKIE_NAME]を含むSet-Cookie用の文字列を返す。
+/// [SESSION_ID_COOKIE_NAME]を含むSet-Cookie用の文字列を返す。
 pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
     format!(
         "{}={}; SameSite=Strict; Path={}/; Secure; HttpOnly",
-        COOKIE_NAME, session_id_value, ROOT_PATH
+        SESSION_ID_COOKIE_NAME, session_id_value, ROOT_PATH
     )
 }
 
-/// [COOKIE_NAME]を含む、有効期限切れのSet-Cookie用の文字列を返す<br>
+/// [SESSION_ID_COOKIE_NAME]を含む、有効期限切れのSet-Cookie用の文字列を返す<br>
 /// ブラウザに保存されたCookieの削除指示を出したいときに使う。
 pub(crate) fn create_expired_cookie_format(session_id_value: &str) -> String {
     format!(
         "{}={}; SameSite=Strict; Path={}/; Max-Age=-1; Secure; HttpOnly",
-        COOKIE_NAME, session_id_value, ROOT_PATH
+        SESSION_ID_COOKIE_NAME, session_id_value, ROOT_PATH
     )
 }
 
-/// Cookieが存在し、[COOKIE_NAME]を含む場合、対応する値を返す
+/// Cookieが存在し、[SESSION_ID_COOKIE_NAME]を含む場合、対応する値を返す
 pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String> {
     let cookie = match option_cookie {
         Some(c) => c,
@@ -57,10 +57,10 @@ pub(crate) fn extract_session_id(option_cookie: Option<Cookie>) -> Option<String
             return None;
         }
     };
-    match cookie.get(COOKIE_NAME) {
+    match cookie.get(SESSION_ID_COOKIE_NAME) {
         Some(value) => Some(value.to_string()),
         None => {
-            tracing::debug!("no {} in cookie", COOKIE_NAME);
+            tracing::debug!("no {} in cookie", SESSION_ID_COOKIE_NAME);
             None
         }
     }
@@ -236,13 +236,13 @@ pub(crate) mod tests {
         },
     };
 
-    use super::{check_if_user_has_already_agreed, COOKIE_NAME};
+    use super::{check_if_user_has_already_agreed, SESSION_ID_COOKIE_NAME};
 
     pub(crate) fn extract_session_id_value(header_value: &HeaderValue) -> String {
         let set_cookie = header_value.to_str().expect("failed to get value");
         let cookie_name = set_cookie
             .split(";")
-            .find(|s| s.contains(COOKIE_NAME))
+            .find(|s| s.contains(SESSION_ID_COOKIE_NAME))
             .expect("failed to get session")
             .trim()
             .split_once("=")

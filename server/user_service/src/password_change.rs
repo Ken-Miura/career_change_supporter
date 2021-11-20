@@ -30,7 +30,7 @@ use tower_cookies::Cookies;
 use crate::err_code::{
     INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND,
 };
-use crate::util::session::COOKIE_NAME;
+use crate::util::session::SESSION_ID_COOKIE_NAME;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
@@ -49,7 +49,7 @@ pub(crate) async fn post_password_change(
     Json(new_pwd): Json<NewPasswordId>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<PasswordChangeResult> {
-    let option_cookie = cookies.get(COOKIE_NAME);
+    let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
     if let Some(session_id) = option_cookie {
         let _ = destroy_session_if_exists(session_id.value(), &store).await?;
     }
