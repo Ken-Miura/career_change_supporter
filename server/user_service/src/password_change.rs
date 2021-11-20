@@ -5,7 +5,6 @@ use async_session::SessionStore;
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
-use axum::{body::Body, http::Request};
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use common::model::user::Account;
@@ -23,15 +22,15 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::result::Error::NotFound;
 use diesel::{update, RunQueryDsl};
 use diesel::{ExpressionMethods, PgConnection, QueryDsl};
-use headers::{Cookie, HeaderMapExt};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
+use tower_cookies::Cookies;
 
 use crate::err_code::{
     INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND,
 };
-use crate::util::session::extract_session_id;
+use crate::util::session::COOKIE_NAME;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
@@ -45,19 +44,14 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 /// 新しいパスワードが見つからない場合、ステータスコード400、エラーコード[NO_NEW_PASSWORD_FOUND]を返す<br>
 /// 新しいパスワードが期限切れの場合、ステータスコード400、エラーコード[NEW_PASSWORD_EXPIRED]を返す<br>
 pub(crate) async fn post_password_change(
-    req: Request<Body>,
+    cookies: Cookies,
     Extension(store): Extension<RedisSessionStore>,
     Json(new_pwd): Json<NewPasswordId>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<PasswordChangeResult> {
-    let headers = req.headers();
-    let option_cookie = headers.typed_try_get::<Cookie>().map_err(|e| {
-        tracing::error!("failed to get cookie: {}", e);
-        unexpected_err_resp()
-    })?;
-    let session_id_value_option = extract_session_id(option_cookie);
-    if let Some(session_id_value) = session_id_value_option {
-        let _ = destroy_session_if_exists(&session_id_value, &store).await?;
+    let option_cookie = cookies.get(COOKIE_NAME);
+    if let Some(session_id) = option_cookie {
+        let _ = destroy_session_if_exists(session_id.value(), &store).await?;
     }
 
     let current_date_time = chrono::Utc::now();

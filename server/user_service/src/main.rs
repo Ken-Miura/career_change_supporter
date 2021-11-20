@@ -37,6 +37,7 @@ use dotenv::dotenv;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
+use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
@@ -117,6 +118,7 @@ async fn main_internal(num_of_cpus: u32) {
         )
         .layer(AddExtensionLayer::new(pool))
         .layer(AddExtensionLayer::new(store))
+        .layer(CookieManagerLayer::new())
         .layer(TraceLayer::new_for_http());
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {

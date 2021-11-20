@@ -22,7 +22,7 @@ use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
 
-const COOKIE_NAME: &str = "session_id";
+pub(crate) const COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 const LENGTH_OF_MEETING: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
