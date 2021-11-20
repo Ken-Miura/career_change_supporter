@@ -107,7 +107,10 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         let header_value = result.1.get(SET_COOKIE).expect("failed to get value");
         assert_eq!("", extract_session_id_value(header_value));
-        assert_eq!("0", extract_cookie_max_age_value(header_value));
+        let max_age_value = extract_cookie_max_age_value(header_value)
+            .parse::<i64>()
+            .expect("failed to parse max age");
+        assert!(max_age_value <= 0);
     }
 
     #[tokio::test]
