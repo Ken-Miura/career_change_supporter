@@ -76,22 +76,24 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
-  //   it(`displays ${Message.INVALID_UUID_MESSAGE} when invalid uuid format is passed`, async () => {
-  //     const apiErr = ApiError.create(Code.INVALID_UUID)
-  //     applyNewPasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
-  //     queryObject = { 'new-password-id': /* 31桁 */ 'bc999c52f1cc4801bfd9216cdebc076' }
-  //     const wrapper = mount(PasswordChangeConfirmationPage, {
-  //       global: {
-  //         stubs: {
-  //           RouterLink: RouterLinkStub
-  //         }
-  //       }
-  //     })
-  //     await flushPromises()
-  //     const mainTag = wrapper.find('main')
-  //     const h3Tag = mainTag.find('h3')
-  //     expect(h3Tag.text()).toMatch(`${Message.INVALID_UUID_MESSAGE}`)
-  //   })
+  it(`moves to ApplyNewPasswordResultPage with ${Message.INVALID_UUID_MESSAGE} when invalid uuid format is passed`, async () => {
+    const apiErr = ApiError.create(Code.INVALID_UUID)
+    applyNewPasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    queryObject = { 'new-password-id': /* 31桁 */ 'bc999c52f1cc4801bfd9216cdebc076' }
+    const wrapper = mount(PasswordChangeConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('button')
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.INVALID_UUID_MESSAGE} (${Code.INVALID_UUID})"} }`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
 
   //   it(`displays ${Message.ACCOUNT_ALREADY_EXISTS_MESSAGE} when account has already existed`, async () => {
   //     const apiErr = ApiError.create(Code.ACCOUNT_ALREADY_EXISTS)
