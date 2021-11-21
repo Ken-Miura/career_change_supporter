@@ -2,7 +2,6 @@ import PasswordChangeConfirmationPage from '@/views/PasswordChangeConfirmationPa
 import { applyNewPassword } from '@/util/password/ApplyNewPassword'
 import { mount, RouterLinkStub } from '@vue/test-utils'
 import { ApplyNewPasswordResp } from '@/util/password/ApplyNewPasswordResp'
-import flushPromises from 'flush-promises'
 import { Message } from '@/util/Message'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
@@ -114,22 +113,24 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
-  //   it(`displays ${Message.NO_TEMP_ACCOUNT_FOUND_MESSAGE} when temp account id is not found`, async () => {
-  //     const apiErr = ApiError.create(Code.NO_TEMP_ACCOUNT_FOUND)
-  //     applyNewPasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
-  //     queryObject = { 'new-password-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
-  //     const wrapper = mount(PasswordChangeConfirmationPage, {
-  //       global: {
-  //         stubs: {
-  //           RouterLink: RouterLinkStub
-  //         }
-  //       }
-  //     })
-  //     await flushPromises()
-  //     const mainTag = wrapper.find('main')
-  //     const h3Tag = mainTag.find('h3')
-  //     expect(h3Tag.text()).toMatch(`${Message.NO_TEMP_ACCOUNT_FOUND_MESSAGE}`)
-  //   })
+  it(`moves to ApplyNewPasswordResultPage with ${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} when new password is not found`, async () => {
+    const apiErr = ApiError.create(Code.NO_NEW_PASSWORD_FOUND)
+    applyNewPasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    queryObject = { 'new-password-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
+    const wrapper = mount(PasswordChangeConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('button')
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} (${Code.NO_NEW_PASSWORD_FOUND})"} }`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
 
 //   it(`displays ${Message.TEMP_ACCOUNT_EXPIRED_MESSAGE} when temp account id has aleady expired`, async () => {
 //     const apiErr = ApiError.create(Code.TEMP_ACCOUNT_EXPIRED)

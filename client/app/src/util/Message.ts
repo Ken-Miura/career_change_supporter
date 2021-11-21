@@ -25,4 +25,5 @@ export namespace Message {
     export const NEW_PASSWORD_EXPIRED_MESSAGE = TEMP_ACCOUNT_EXPIRED_MESSAGE
     export const NEW_PASSWORD_APPLIED_MESSAGE = 'パスワードを変更しました'
     export const NO_ACCOUNT_FOUND_MESSAGE = 'アカウントが存在しません'
+    export const NO_NEW_PASSWORD_FOUND_MESSAGE = NO_TEMP_ACCOUNT_FOUND_MESSAGE
 }
