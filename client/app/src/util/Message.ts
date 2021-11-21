@@ -24,4 +24,5 @@ export namespace Message {
     export const REACH_NEW_PASSWORDS_LIMIT_MESSAGE = 'パスワード変更試行回数の上限に達しました。数日後、再度新規登録を行って下さい'
     export const NEW_PASSWORD_EXPIRED_MESSAGE = TEMP_ACCOUNT_EXPIRED_MESSAGE
     export const NEW_PASSWORD_APPLIED_MESSAGE = 'パスワードを変更しました'
+    export const NO_ACCOUNT_FOUND_MESSAGE = 'アカウントが存在しません'
 }
