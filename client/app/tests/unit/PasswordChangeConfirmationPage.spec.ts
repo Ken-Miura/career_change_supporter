@@ -40,7 +40,7 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(buttons.length).toBe(1)
   })
 
-  it('moves to ApplyNewPasswordResultPage when new password is applied', async () => {
+  it(`moves to ApplyNewPasswordResultPage with ${Message.NEW_PASSWORD_APPLIED_MESSAGE} when new password is applied`, async () => {
     applyNewPasswordMock.mockResolvedValue(ApplyNewPasswordResp.create())
     queryObject = { 'new-password-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
     const wrapper = mount(PasswordChangeConfirmationPage, {
@@ -58,21 +58,23 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
-  //   it(`displays ${Message.INVALID_QUERY_PARAM} when query has no new-password-id`, async () => {
-  //     applyNewPasswordMock.mockResolvedValue(ApplyNewPasswordResp.create())
-  //     queryObject = { 'temp-acc': 'bc999c52f1cc4801bfd9216cdebc0763' }
-  //     const wrapper = mount(PasswordChangeConfirmationPage, {
-  //       global: {
-  //         stubs: {
-  //           RouterLink: RouterLinkStub
-  //         }
-  //       }
-  //     })
-  //     await flushPromises()
-  //     const mainTag = wrapper.find('main')
-  //     const h3Tag = mainTag.find('h3')
-  //     expect(h3Tag.text()).toMatch(`${Message.INVALID_QUERY_PARAM}`)
-  //   })
+  it(`moves to ApplyNewPasswordResultPage with ${Message.INVALID_QUERY_PARAM} when query has no new-password-id`, async () => {
+    applyNewPasswordMock.mockResolvedValue(ApplyNewPasswordResp.create())
+    queryObject = { 'new-pwd': 'bc999c52f1cc4801bfd9216cdebc0763' }
+    const wrapper = mount(PasswordChangeConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('button')
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.INVALID_QUERY_PARAM}"} }`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
 
   //   it(`displays ${Message.INVALID_UUID_MESSAGE} when invalid uuid format is passed`, async () => {
   //     const apiErr = ApiError.create(Code.INVALID_UUID)
