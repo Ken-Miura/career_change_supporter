@@ -1,7 +1,7 @@
 <template>
   <div v-on:click="switchNavContentState" class="leading-normal tracking-normal text-white bg-gradient-to-r from-gray-500 to-gray-900" style="font-family: 'Source Sans Pro', sans-serif;">
     <!--Nav-->
-    <nav id="header" class="fixed w-full z-30 top-0 text-white">
+    <nav id="header" class="fixed w-full z-30 top-0 text-white bg-gradient-to-r from-gray-500 to-gray-900">
       <div class="w-full container mx-auto flex flex-wrap items-center justify-between mt-0 py-2">
         <div class="pl-4 flex items-center">
           <p class="toggleColour text-white no-underline hover:no-underline font-bold text-2xl lg:text-4xl">
@@ -16,7 +16,7 @@
             </svg>
           </button>
         </div>
-        <div v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-gray-600', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']" id="nav-content">
+        <div v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-gray-500', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']" id="nav-content">
           <ul class="list-reset lg:flex justify-end flex-1 items-center">
             <li class="mr-3">
               <router-link class="inline-block text-white no-underline py-2 px-4" to="/new-account">新規登録</router-link>
