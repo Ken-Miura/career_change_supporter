@@ -1,5 +1,9 @@
 import TheHeader from '@/components/TheHeader.vue'
+import { logout } from '@/util/logout/Logout'
 import { RouterLinkStub, mount } from '@vue/test-utils'
+
+jest.mock('@/util/logout/Logout')
+const logoutMock = logout as jest.MockedFunction<typeof logout>
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -11,6 +15,7 @@ jest.mock('vue-router', () => ({
 describe('TheHeader.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
+    logoutMock.mockReset()
   })
 
   it('has one button, one list and one logout handle', () => {
@@ -69,6 +74,23 @@ describe('TheHeader.vue', () => {
   })
 
   it('moves LoginPage when logoutHandle is pushed', async () => {
+    const wrapper = mount(TheHeader, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const logoutHandle = wrapper.find('[data-test="p"]')
+    await logoutHandle.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('login')
+  })
+
+  it('moves LoginPage when connection error occurred', async () => {
+    const errDetail = 'connection error'
+    logoutMock.mockRejectedValue(new Error(errDetail))
     const wrapper = mount(TheHeader, {
       global: {
         stubs: {
