@@ -1,8 +1,37 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 bo min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <h3 class="font-bold text-lg">{{ message }}</h3>
+    <main>
+      <div class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-lg">Eメールアドレス</h3>
+        <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
+        <p class="mt-4 text-lg">{{ message }}</p>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-lg">ユーザー情報</h3>
+        <p class="mt-2 text-lg">相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
+        <p class="mt-4 text-lg">ユーザー情報サンプル</p>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-lg">職務経歴</h3>
+        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
+        <p class="mt-4 text-lg">職務経歴サンプル</p>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-lg">相談受け付けが可能な日時</h3>
+        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
+        <p class="mt-4 text-lg">相談を受け付ける日時</p>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-lg">相談一回（１時間）あたりの相談料</h3>
+        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
+        <p class="mt-4 text-lg">相談一回（１時間）あたりの相談料サンプル</p>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-lg">相談料の入金口座</h3>
+        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
+        <p class="mt-4 text-lg">相談料の入金口座サンプル</p>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
