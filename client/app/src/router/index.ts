@@ -2,6 +2,9 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ProfilePage from '../views/personalized/ProfilePage.vue'
+import SchedulePage from '../views/personalized/SchedulePage.vue'
+import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
+import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -65,15 +68,30 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/ApplyNewPasswordResultPage.vue')
   },
   {
+    path: '/terms-of-use',
+    name: 'TermsOfUsePage',
+    // 利用規約の同意は頻繁に起こらないと思われるため、lazy loading
+    component: () => import('../views/personalized/TermsOfUsePage.vue')
+  },
+  {
     path: '/profile',
     name: 'ProfilePage',
     component: ProfilePage
   },
   {
-    path: '/terms-of-use',
-    name: 'TermsOfUsePage',
-    // 利用規約の同意は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/personalized/TermsOfUsePage.vue')
+    path: '/schedule',
+    name: 'SchedulePage',
+    component: SchedulePage
+  },
+  {
+    path: '/request-consultation',
+    name: 'RequestConsultationPage',
+    component: RequestConsultationPage
+  },
+  {
+    path: '/accept-consultation',
+    name: 'AcceptConsultionPage',
+    component: AcceptConsultionPage
   }
 ]
 
