@@ -13,11 +13,7 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { refresh } from '@/util/refresh/Refresh'
-import { ApiErrorResp } from '@/util/ApiError'
-import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
-import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
-import { Code } from '@/util/Error'
+import { checkWhatKindOfPageShouldBeDisplayed } from '@/util/CheckWhatKindOfPageShouldBeDisplayed'
 import TheHeader from '@/components/TheHeader.vue'
 
 export default defineComponent({
@@ -29,28 +25,15 @@ export default defineComponent({
     const message = ref('プロファイル用テストページ')
     const router = useRouter()
     onMounted(async () => {
-      try {
-        const result = await refresh()
-        if (!result) {
-          await router.push('login')
-          return
-        }
-        // セッションが存在するので、利用規約の確認
-        const agreementStatus = await checkAgreementStatus()
-        if (agreementStatus instanceof CheckAgreementStatusResp) {
-          // セッションが存在し、利用規約に同意済のため、profileをそのまま表示する
-        } else if (agreementStatus instanceof ApiErrorResp) {
-          const code = agreementStatus.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
-          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
-          } else {
-            throw new Error(`unexpected result: ${agreementStatus}`)
-          }
-        }
-      } catch (e) {
-        await router.push('login')
+      const result = await checkWhatKindOfPageShouldBeDisplayed()
+      if (result === 'personalized-page') {
+        // 遷移せずにページを表示
+      } else if (result === 'login') {
+        router.push('login')
+      } else if (result === 'term-of-use') {
+        router.push('terms-of-use')
+      } else {
+        throw new Error('Assertion Error: must not reach this line')
       }
     })
     return { message }
