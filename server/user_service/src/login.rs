@@ -104,7 +104,12 @@ async fn post_login_internal(
         }
     };
     let _ = op.update_last_login(user_account_id, login_time)?;
-    tracing::info!("{} logged-in at {}", email_addr, login_time);
+    tracing::info!(
+        "{} (id: {}) logged-in at {}",
+        email_addr,
+        user_account_id,
+        login_time
+    );
     let mut headers = HeaderMap::new();
     let cookie = create_cookie_format(&session_id_value)
         .parse::<HeaderValue>()
