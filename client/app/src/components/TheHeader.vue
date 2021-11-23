@@ -12,7 +12,7 @@
           </svg>
         </button>
       </div>
-      <div v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-gray-500', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']">
+      <div data-test="div" v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-gray-500', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']">
         <ul class="list-reset lg:flex justify-end flex-1 items-center">
           <li class="mr-3">
             <router-link class="inline-block text-white no-underline py-2 px-4" to="/#">プロフィール</router-link>
@@ -27,7 +27,7 @@
             <router-link class="inline-block text-white no-underline py-2 px-4" to="/#">スケジュール</router-link>
           </li>
           <li class="mr-3">
-            <p class="inline-block text-white no-underline py-2 px-4 cursor-pointer" v-on:click="logoutHandler">ログアウト</p>
+            <p data-test="p" class="inline-block text-white no-underline py-2 px-4 cursor-pointer" v-on:click="logoutHandler">ログアウト</p>
           </li>
         </ul>
       </div>
