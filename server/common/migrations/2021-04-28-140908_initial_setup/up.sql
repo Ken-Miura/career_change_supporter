@@ -12,8 +12,8 @@ GRANT USAGE ON SCHEMA ccs_schema TO admin_account_app;
 /* TODO: dieselでenumがサポートされた後に採用する
    CREATE TYPE ccs_schema.sex_enum AS ENUM ('male', 'female');
  */
-CREATE DOMAIN ccs_schema.sex AS VARCHAR (6) NOT NULL CHECK (VALUE ~ 'male' OR VALUE ~ 'female');
-CREATE DOMAIN ccs_schema.email_address AS VARCHAR (254) NOT NULL CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
+CREATE DOMAIN ccs_schema.sex AS VARCHAR (6) CHECK (VALUE ~ 'male' OR VALUE ~ 'female');
+CREATE DOMAIN ccs_schema.email_address AS VARCHAR (254) CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
 /* simpleフォーム (半角英数字32文字。ハイフン、波括弧を含まない) での入出力を行いたいので、標準のUUID型を使わない */
 CREATE DOMAIN ccs_schema.uuid_simple_form AS CHAR (32) CHECK ( VALUE ~ '^[a-zA-Z0-9]+$' );
 /* PAY.JPより回答してもらった仕様をそのままチェック */
@@ -22,7 +22,7 @@ CREATE DOMAIN ccs_schema.tenant_id AS VARCHAR (100) CHECK ( VALUE ~ '^[-_0-9a-zA
 CREATE TABLE ccs_schema.user_account (
   user_account_id SERIAL PRIMARY KEY,
   /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
-  email_address ccs_schema.email_address UNIQUE,
+  email_address ccs_schema.email_address NOT NULL UNIQUE,
   hashed_password BYTEA NOT NULL,
   last_login_time TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
@@ -37,7 +37,7 @@ GRANT USAGE ON SEQUENCE ccs_schema.user_account_user_account_id_seq TO user_app;
 CREATE TABLE ccs_schema.user_temp_account (
   user_temp_account_id ccs_schema.uuid_simple_form PRIMARY KEY,
   /* 一度仮登録した後、それを忘れてしまいもう一度仮登録したいケースを考え、UNIQUEにしない。user_temp_account_idがPRIMARY KEYなので一意に検索は可能 */
-  email_address ccs_schema.email_address,
+  email_address ccs_schema.email_address NOT NULL,
   hashed_password BYTEA NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -51,7 +51,7 @@ GRANT SELECT, INSERT ON ccs_schema.user_temp_account To user_app;
 CREATE TABLE ccs_schema.terms_of_use (
   user_account_id INTEGER NOT NULL,
   ver INTEGER NOT NULL,
-  email_address ccs_schema.email_address,
+  email_address ccs_schema.email_address NOT NULL,
   agreed_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (user_account_id, ver)
 );
@@ -60,20 +60,78 @@ GRANT SELECT, INSERT ON ccs_schema.terms_of_use To user_app;
 CREATE TABLE ccs_schema.new_password (
   new_password_id ccs_schema.uuid_simple_form PRIMARY KEY,
   /* 一度パスワード変更依頼を出した後、もう一度パスワード変更依頼を出したいケースを考慮し、UNIQUEにしない。new_password_idがPRIMARY KEYなので一意に検索は可能 */
-  email_address ccs_schema.email_address,
+  email_address ccs_schema.email_address NOT NULL,
   hashed_password BYTEA NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT ON ccs_schema.new_password To user_app;
 
+/* user_account一つに対して、identity_infoは0もしくは1の関係とする */
+/* そのため、user_account_idを外部キーかつ主キーとして扱う */
+CREATE TABLE ccs_schema.identity_info (
+  /* PRIMARY KEY = NOT NULLのためNOT NULLはつけない */
+  user_account_id INTEGER PRIMARY KEY REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  last_name VARCHAR (128) NOT NULL,
+  first_name VARCHAR (128) NOT NULL,
+  last_name_furigana VARCHAR (128) NOT NULL,
+  first_name_furigana VARCHAR (128) NOT NULL,
+  sex ccs_schema.sex NOT NULL,
+  date_of_birth DATE NOT NULL,
+  /* 都道府県の最大文字数は4文字（神奈川県、鹿児島県、和歌山県） */
+  prefecture VARCHAR (4) NOT NULL,
+  /* 市区町村の最大文字数は6文字。しかし、市区町村は頻繁に名前が変更される可能性があるので長さに余裕をもたせる */
+  city VARCHAR (32) NOT NULL,
+  address_line1 VARCHAR (128) NOT NULL,
+  address_line2 VARCHAR (128),
+  /*
+   * 電話番号の最大桁数は15桁、国内向けのみのサービスを考えているので最大13桁とする。 
+   * 参考: https://www.accumu.jp/vol22-23/%E3%82%84%E3%81%95%E3%81%97%E3%81%9D%E3%81%86%E3%81%AB%E8%A6%8B%E3%81%88%E3%82%8B%E9%9B%BB%E8%A9%B1%E7%95%AA%E5%8F%B7%E3%81%AE%E9%9B%A3%E3%81%97%E3%81%95%20%E7%B7%8F%E5%8B%99%E5%A4%A7%E8%87%A3%E8%B3%9E%E3%82%92%E5%8F%97%E8%B3%9E%E3%81%97%E3%81%A6.html#:~:text=%E6%97%A5%E6%9C%AC%E3%81%AE%E5%A0%B4%E5%90%88%EF%BC%8C%E5%9B%BD%E7%95%AA%E5%8F%B7,%E3%81%AF%E9%99%A4%E3%81%84%E3%81%A6%E6%95%B0%E3%81%88%E3%81%BE%E3%81%99%E3%80%82
+   */
+  telephone_number VARCHAR (13) NOT NULL
+);
+/* 身分情報は、管理者 (admin_app) が提出されたエビデンスを確認し、レコードを挿入、更新する。従って、ユーザー (user_app) には挿入、更新権限は持たせない。*/
+/* アカウント削除はユーザー自身が行う。そのため削除権限はユーザー (user_app) に付与する */
+GRANT SELECT, DELETE ON ccs_schema.identity_info To user_app;
+GRANT SELECT, INSERT, UPDATE ON ccs_schema.identity_info To admin_app;
+
+CREATE TABLE ccs_schema.career_info (
+  career_info_id SERIAL PRIMARY KEY,
+  user_account_id INTEGER NOT NULL REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT
+  /* TODO: 検討追加 */
+);
+/* 職務経歴は、管理者 (admin_app) が提出されたエビデンスを確認し、レコードを挿入、更新する。従って、ユーザー (user_app) には挿入、更新権限は持たせない。*/
+/* アカウント削除はユーザー自身が行う。そのため削除権限はユーザー (user_app) に付与する */
+GRANT SELECT, DELETE ON ccs_schema.career_info To user_app;
+GRANT SELECT, INSERT, UPDATE ON ccs_schema.career_info To admin_app;
+GRANT USAGE ON SEQUENCE ccs_schema.career_info_career_info_id_seq TO admin_app;
+
+/* user_account一つに対して、consulting_feeは0もしくは1の関係とする */
+/* そのため、user_account_idを外部キーかつ主キーとして扱う */
+CREATE TABLE ccs_schema.consulting_fee (
+  /* PRIMARY KEY = NOT NULLのためNOT NULLはつけない */
+  user_account_id INTEGER PRIMARY KEY REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  fee_per_hour_in_yen INTEGER NOT NULL
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.consulting_fee To user_app;
+
+/* user_account一つに対して、tenantは0もしくは1の関係とする */
+/* そのため、user_account_idを外部キーかつ主キーとして扱う */
+CREATE TABLE ccs_schema.tenant (
+  /* PRIMARY KEY = NOT NULLのためNOT NULLはつけない */
+  user_account_id INTEGER PRIMARY KEY REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  tenant_id ccs_schema.tenant_id UNIQUE NOT NULL
+);
+/* 一度作成したtenant_idは、payjpとの連携に必要となる */
+/* 障害や脆弱性を作り込むことを避けるため、ユーザーからのUPDATEは許可しない */
+GRANT SELECT, INSERT, DELETE ON ccs_schema.tenant To user_app;
+
 CREATE TABLE ccs_schema.admin_account (
   admin_account_id SERIAL PRIMARY KEY,
-  email_address ccs_schema.email_address UNIQUE,
+  email_address ccs_schema.email_address NOT NULL UNIQUE,
   hashed_password BYTEA NOT NULL,
   last_login_time TIMESTAMP WITH TIME ZONE
 );
 GRANT SELECT ON ccs_schema.admin_account To admin_app;
 GRANT UPDATE (last_login_time) ON ccs_schema.admin_account To admin_app;
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.admin_account To admin_account_app;
 GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_account_app;
