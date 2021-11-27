@@ -12,6 +12,18 @@ pub mod ccs_schema {
         ccs_schema.career_info (career_info_id) {
             career_info_id -> Int4,
             user_account_id -> Int4,
+            company_name -> Varchar,
+            department_name -> Nullable<Varchar>,
+            office -> Nullable<Varchar>,
+            career_start_date -> Date,
+            career_end_date -> Nullable<Date>,
+            contract_type -> Varchar,
+            profession -> Nullable<Varchar>,
+            annual_income_in_man_yen -> Nullable<Int4>,
+            is_manager -> Bool,
+            position_name -> Nullable<Varchar>,
+            is_new_graduate -> Bool,
+            note -> Nullable<Varchar>,
         }
     }
 

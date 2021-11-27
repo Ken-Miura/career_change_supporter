@@ -9,8 +9,9 @@ GRANT USAGE ON SCHEMA ccs_schema TO user_app;
 GRANT USAGE ON SCHEMA ccs_schema TO admin_app;
 GRANT USAGE ON SCHEMA ccs_schema TO admin_account_app;
 
-/* TODO: dieselでenumがサポートされた後に採用する
-   CREATE TYPE ccs_schema.sex_enum AS ENUM ('male', 'female');
+/* 
+ * TODO: dieselでenumがサポートされた後に採用する
+ * CREATE TYPE ccs_schema.sex_enum AS ENUM ('male', 'female');
  */
 CREATE DOMAIN ccs_schema.sex AS VARCHAR (6) CHECK (VALUE ~ 'male' OR VALUE ~ 'female');
 CREATE DOMAIN ccs_schema.email_address AS VARCHAR (254) CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
@@ -18,6 +19,11 @@ CREATE DOMAIN ccs_schema.email_address AS VARCHAR (254) CHECK ( VALUE ~ '^[a-zA-
 CREATE DOMAIN ccs_schema.uuid_simple_form AS CHAR (32) CHECK ( VALUE ~ '^[a-zA-Z0-9]+$' );
 /* PAY.JPより回答してもらった仕様をそのままチェック */
 CREATE DOMAIN ccs_schema.tenant_id AS VARCHAR (100) CHECK ( VALUE ~ '^[-_0-9a-zA-Z]{1,100}$' );
+/* 
+ * regular: 正社員、contract: 契約社員、other: その他
+ * TODO: dieselでenumがサポートされた後、修正する
+ */
+CREATE DOMAIN ccs_schema.contract_type AS VARCHAR (8) CHECK (VALUE ~ 'regular' OR VALUE ~ 'contract' OR VALUE ~ 'other');
 
 CREATE TABLE ccs_schema.user_account (
   user_account_id SERIAL PRIMARY KEY,
@@ -96,8 +102,20 @@ GRANT SELECT, INSERT, UPDATE ON ccs_schema.identity_info To admin_app;
 
 CREATE TABLE ccs_schema.career_info (
   career_info_id SERIAL PRIMARY KEY,
-  user_account_id INTEGER NOT NULL REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT
-  /* TODO: 検討追加 */
+  user_account_id INTEGER NOT NULL REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  company_name VARCHAR (256) NOT NULL,
+  department_name VARCHAR (256),
+  office VARCHAR (256),
+  career_start_date DATE NOT NULL,
+  career_end_date DATE,
+  contract_type ccs_schema.contract_type NOT NULL,
+  profession VARCHAR (128),
+  /* 万円単位での年収 */
+  annual_income_in_man_yen INTEGER,
+  is_manager BOOLEAN NOT NULL,
+  position_name VARCHAR (128),
+  is_new_graduate BOOLEAN NOT NULL,
+  note VARCHAR (2048)
 );
 /* 職務経歴は、管理者 (admin_app) が提出されたエビデンスを確認し、レコードを挿入、更新する。従って、ユーザー (user_app) には挿入、更新権限は持たせない。*/
 /* アカウント削除はユーザー自身が行う。そのため削除権限はユーザー (user_app) に付与する */
