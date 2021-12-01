@@ -2,6 +2,10 @@
 
 use axum::{http::StatusCode, Json};
 use common::{DatabaseConnection, RespResult};
+use diesel::{
+    r2d2::{ConnectionManager, PooledConnection},
+    PgConnection,
+};
 use serde::Serialize;
 
 use crate::util::session::User;
@@ -9,6 +13,15 @@ use crate::util::session::User;
 pub(crate) async fn get_profile(
     User { account_id }: User,
     DatabaseConnection(conn): DatabaseConnection,
+) -> RespResult<ProfileResult> {
+    // + pay.jpクライアントは必要になりそう
+    let op = ProfileOperationImpl::new(conn);
+    get_profile_internal(account_id, op).await
+}
+
+async fn get_profile_internal(
+    account_id: i32,
+    op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
     tracing::info!("id: {}", account_id);
     let profile_result = ProfileResult {
@@ -77,3 +90,20 @@ pub(crate) struct BankAccount {
     pub account_number: String,
     pub account_holder_name: String,
 }
+
+trait ProfileOperation {
+    // DBの分離レベルにはREAD COMITTEDを想定。
+    // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
+}
+
+struct ProfileOperationImpl {
+    conn: PooledConnection<ConnectionManager<PgConnection>>,
+}
+
+impl ProfileOperationImpl {
+    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
+        Self { conn }
+    }
+}
+
+impl ProfileOperation for ProfileOperationImpl {}

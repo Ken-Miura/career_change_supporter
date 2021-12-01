@@ -7,6 +7,7 @@ extern crate diesel;
 
 mod err_code;
 pub mod model;
+pub mod payment;
 pub mod redis;
 pub mod schema;
 pub mod smtp;
