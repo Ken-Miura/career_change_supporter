@@ -55,7 +55,7 @@ pub struct TenantOperationImpl<'a> {
 }
 
 impl<'a> TenantOperationImpl<'a> {
-    fn new(access_info: &'a AccessInfo) -> Self {
+    pub fn new(access_info: &'a AccessInfo) -> Self {
         Self { access_info }
     }
 }

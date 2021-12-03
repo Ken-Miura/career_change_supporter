@@ -1,20 +1,25 @@
 // Copyright 2021 Ken Miura
 
 use axum::{http::StatusCode, Json};
-use common::{DatabaseConnection, RespResult};
+use common::{
+    payment_platform::tenant::{TenantOperation, TenantOperationImpl},
+    DatabaseConnection, RespResult,
+};
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
 use serde::Serialize;
 
-use crate::util::session::User;
+use crate::util::{session::User, ACCESS_INFO};
 
 pub(crate) async fn get_profile(
     User { account_id }: User,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<ProfileResult> {
-    // + pay.jpクライアントは必要になりそう
+    // TODO: profileの実装
+    let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
+    let _ = tenant_op.find_tenant_by_tenant_id("aaa").await;
     let op = ProfileOperationImpl::new(conn);
     get_profile_internal(account_id, op).await
 }

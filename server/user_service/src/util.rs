@@ -3,8 +3,11 @@
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
 
+use std::env::var;
+
 use axum::{http::StatusCode, Json};
-use common::{ApiError, ErrResp};
+use common::{payment_platform::access_info::AccessInfo, ApiError, ErrResp};
+use once_cell::sync::Lazy;
 
 use crate::err_code;
 
@@ -20,6 +23,33 @@ pub(crate) fn unexpected_err_resp() -> ErrResp {
         }),
     )
 }
+
+pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_URL: &str = "PAYMENT_PLATFORM_API_URL";
+pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_USERNAME: &str = "PAYMENT_PLATFORM_API_USERNAME";
+pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_PASSWORD: &str = "PAYMENT_PLATFORM_API_PASSWORD";
+/// PAY.JPにアクセスするための情報を保持する変数
+pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
+    let url_without_path = var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_PAYMENT_PLATFORM_API_URL
+        )
+    });
+    let username = var(KEY_TO_PAYMENT_PLATFORM_API_USERNAME).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_PAYMENT_PLATFORM_API_USERNAME
+        )
+    });
+    let password = var(KEY_TO_PAYMENT_PLATFORM_API_PASSWORD).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_PAYMENT_PLATFORM_API_PASSWORD
+        )
+    });
+    let access_info = AccessInfo::new(url_without_path, username, password);
+    access_info.expect("failed to get Ok")
+});
 
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]

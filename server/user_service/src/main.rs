@@ -24,7 +24,10 @@ use crate::profile::get_profile;
 use crate::refresh::get_refresh;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
-use crate::util::ROOT_PATH;
+use crate::util::{
+    KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+    KEY_TO_PAYMENT_PLATFORM_API_USERNAME, ROOT_PATH,
+};
 use async_redis_session::RedisSessionStore;
 use axum::routing::{get, post};
 use axum::{AddExtensionLayer, Router};
@@ -53,6 +56,9 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_URL_FOR_FRONT_END.to_string(),
         KEY_TO_URL_FOR_REDIS_SERVER.to_string(),
         KEY_TO_TERMS_OF_USE_VERSION.to_string(),
+        KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
+        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
     ]
 });
 

@@ -56,7 +56,7 @@ impl AccessInfo {
                 url_without_path
             )));
         }
-        if url_without_path.ends_with("/") {
+        if url_without_path.ends_with('/') {
             return Err(InvalidParamError::UrlWithoutPath(
                 "Trailing slash is not allowed".to_string(),
             ));
