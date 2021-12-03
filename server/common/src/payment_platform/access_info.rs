@@ -105,3 +105,104 @@ impl Display for InvalidParamError {
 }
 
 impl Error for InvalidParamError {}
+
+#[cfg(test)]
+mod tests {
+    use crate::payment_platform::access_info::{InvalidParamError, API_VERSION_PATH};
+
+    use super::AccessInfo;
+
+    #[test]
+    fn new_success() {
+        let url_without_path = String::from("https://api.pay.jp");
+        let username = String::from("test_user");
+        let password = String::from("test_password");
+
+        let result = AccessInfo::new(url_without_path.clone(), username.clone(), password.clone());
+
+        let access_info = result.expect("failed to get Ok");
+        assert_eq!(url_without_path + API_VERSION_PATH, access_info.base_url());
+        assert_eq!(username, access_info.username());
+        assert_eq!(password, access_info.password());
+    }
+
+    #[test]
+    fn new_fail_empty_url() {
+        let url_without_path = String::from("");
+        let username = String::from("test_user");
+        let password = String::from("test_password");
+
+        let result = AccessInfo::new(url_without_path.clone(), username.clone(), password.clone());
+
+        let invalid_param_err = result.expect_err("failed to get Err");
+        match invalid_param_err {
+            InvalidParamError::UrlWithoutPath(_) => { /* pass test */ }
+            InvalidParamError::Username(_) => panic!("Username"),
+            InvalidParamError::Password(_) => panic!("Password"),
+        }
+    }
+
+    #[test]
+    fn new_fail_not_https() {
+        let url_without_path = String::from("http://api.pay.jp");
+        let username = String::from("test_user");
+        let password = String::from("test_password");
+
+        let result = AccessInfo::new(url_without_path.clone(), username.clone(), password.clone());
+
+        let invalid_param_err = result.expect_err("failed to get Err");
+        match invalid_param_err {
+            InvalidParamError::UrlWithoutPath(_) => { /* pass test */ }
+            InvalidParamError::Username(_) => panic!("Username"),
+            InvalidParamError::Password(_) => panic!("Password"),
+        }
+    }
+
+    #[test]
+    fn new_fail_trailing_slash_exists() {
+        let url_without_path = String::from("https://api.pay.jp/");
+        let username = String::from("test_user");
+        let password = String::from("test_password");
+
+        let result = AccessInfo::new(url_without_path.clone(), username.clone(), password.clone());
+
+        let invalid_param_err = result.expect_err("failed to get Err");
+        match invalid_param_err {
+            InvalidParamError::UrlWithoutPath(_) => { /* pass test */ }
+            InvalidParamError::Username(_) => panic!("Username"),
+            InvalidParamError::Password(_) => panic!("Password"),
+        }
+    }
+
+    #[test]
+    fn new_fail_empty_username() {
+        let url_without_path = String::from("https://api.pay.jp");
+        let username = String::from("");
+        let password = String::from("test_password");
+
+        let result = AccessInfo::new(url_without_path.clone(), username.clone(), password.clone());
+
+        let invalid_param_err = result.expect_err("failed to get Err");
+        match invalid_param_err {
+            InvalidParamError::UrlWithoutPath(_) => panic!("UrlWithoutPath"),
+            InvalidParamError::Username(_) => { /* pass test */ }
+            InvalidParamError::Password(_) => panic!("Password"),
+        }
+    }
+
+    #[test]
+    fn new_fail_empty_password() {
+        let url_without_path = String::from("https://api.pay.jp");
+        let username = String::from("test_user");
+        let password = String::from("");
+
+        let result = AccessInfo::new(url_without_path.clone(), username.clone(), password.clone());
+
+        let invalid_param_err = result.expect_err("failed to get Err");
+        match invalid_param_err {
+            InvalidParamError::UrlWithoutPath(_) => panic!("UrlWithoutPath"),
+            InvalidParamError::Username(_) => panic!("Username"),
+            InvalidParamError::Password(_) => { /* pass test */ }
+        }
+    }
+}
