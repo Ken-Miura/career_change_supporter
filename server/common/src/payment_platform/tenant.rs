@@ -33,6 +33,8 @@ pub struct Tenant {
     pub currencies_supported: Vec<String>,
     pub default_currency: String,
     pub reviewed_brands: Vec<ReviewedBrands>,
+    /// 一つのオブジェクトには最大20キーまで保存でき、キーは40文字まで、バリューは500文字までの文字列
+    /// <https://pay.jp/docs/api/?java#metadata>
     pub metadata: Option<HashMap<String, String>>,
 }
 
