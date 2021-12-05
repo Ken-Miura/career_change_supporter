@@ -19,7 +19,15 @@ pub(crate) async fn get_profile(
 ) -> RespResult<ProfileResult> {
     // TODO: profileの実装
     let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
-    let _ = tenant_op.find_tenant_by_tenant_id("aaa").await;
+    let result = tenant_op
+        .find_tenant_by_tenant_id("c8f0aa44901940849cbdb8b3e7d9f305")
+        .await;
+    match result {
+        Ok(tenant) => {
+            tracing::info!("{}", tenant.bank_account_holder_name);
+        }
+        Err(err) => tracing::info!("err: {}", err),
+    };
     let op = ProfileOperationImpl::new(conn);
     get_profile_internal(account_id, op).await
 }
@@ -66,9 +74,9 @@ pub(crate) struct Identity {
 
 #[derive(Serialize, Debug)]
 pub(crate) struct Ymd {
-    pub year: i32,
-    pub month: i32,
-    pub day: i32,
+    pub year: u32,
+    pub month: u32,
+    pub day: u32,
 }
 
 #[derive(Serialize, Debug)]
