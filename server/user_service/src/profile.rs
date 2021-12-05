@@ -28,13 +28,13 @@ pub(crate) async fn get_profile(
         }
         Err(err) => tracing::info!("err: {}", err),
     };
-    let op = ProfileOperationImpl::new(conn);
-    get_profile_internal(account_id, op).await
+    let profile_op = ProfileOperationImpl::new(conn);
+    get_profile_internal(account_id, profile_op).await
 }
 
 async fn get_profile_internal(
     account_id: i32,
-    op: impl ProfileOperation,
+    profile_op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
     tracing::info!("id: {}", account_id);
     let profile_result = ProfileResult {
@@ -44,6 +44,8 @@ async fn get_profile_internal(
         fee_per_hour_in_yen: None,
         bank_account: None,
         profit: None,
+        last_month_transfer: None,
+        this_month_transfer: None,
     };
     Ok((StatusCode::OK, Json(profile_result)))
 }
@@ -56,6 +58,8 @@ pub(crate) struct ProfileResult {
     fee_per_hour_in_yen: Option<i32>,
     bank_account: Option<BankAccount>,
     profit: Option<u32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
+    last_month_transfer: Option<Transfer>,
+    this_month_transfer: Option<Transfer>,
 }
 
 #[derive(Serialize, Debug)]
@@ -102,6 +106,13 @@ pub(crate) struct BankAccount {
     pub account_type: String,
     pub account_number: String,
     pub account_holder_name: String,
+}
+
+#[derive(Serialize, Debug)]
+pub(crate) struct Transfer {
+    pub status: String,
+    pub amount: u32,
+    pub scheduled_date_in_jst: Option<Ymd>,
 }
 
 trait ProfileOperation {
