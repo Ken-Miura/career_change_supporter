@@ -75,17 +75,94 @@ pub struct Card {
 
 #[async_trait]
 pub trait ChargeOperation {
-    async fn search_charges(&self, tenant_id: &str) -> Result<List<Charge>, Error>;
+    async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error>;
 }
 
-pub struct Condition {
+pub struct Query {
     limit: Option<u32>,
-    offset: u32,
-    since: u64,
-    until: u64,
-    customer: String,
-    subscription: String,
-    tenant: String,
+    offset: Option<u32>,
+    since: Option<u64>,
+    until: Option<u64>,
+    customer: Option<String>,
+    subscription: Option<String>,
+    tenant: Option<String>,
+}
+
+impl Query {
+    pub fn build() -> QueryBuilder {
+        QueryBuilder::new()
+    }
+}
+
+pub struct QueryBuilder {
+    limit: Option<u32>,
+    offset: Option<u32>,
+    since: Option<u64>,
+    until: Option<u64>,
+    customer: Option<String>,
+    subscription: Option<String>,
+    tenant: Option<String>,
+}
+
+impl QueryBuilder {
+    fn new() -> Self {
+        Self {
+            limit: None,
+            offset: None,
+            since: None,
+            until: None,
+            customer: None,
+            subscription: None,
+            tenant: None,
+        }
+    }
+
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    pub fn offset(mut self, offset: u32) -> Self {
+        self.offset = Some(offset);
+        self
+    }
+
+    pub fn since(mut self, since: u64) -> Self {
+        self.since = Some(since);
+        self
+    }
+
+    pub fn until(mut self, until: u64) -> Self {
+        self.until = Some(until);
+        self
+    }
+
+    pub fn customer(mut self, customer: String) -> Self {
+        self.customer = Some(customer);
+        self
+    }
+
+    pub fn subscription(mut self, subscription: String) -> Self {
+        self.subscription = Some(subscription);
+        self
+    }
+
+    pub fn tenant(mut self, tenant: String) -> Self {
+        self.tenant = Some(tenant);
+        self
+    }
+
+    pub fn finish(self) -> Query {
+        Query {
+            limit: self.limit,
+            offset: self.offset,
+            since: self.since,
+            until: self.until,
+            customer: self.customer,
+            subscription: self.subscription,
+            tenant: self.tenant,
+        }
+    }
 }
 
 pub struct ChargeOperationImpl<'a> {
@@ -100,7 +177,7 @@ impl<'a> ChargeOperationImpl<'a> {
 
 #[async_trait]
 impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
-    async fn search_charges(&self, tenant_id: &str) -> Result<List<Charge>, Error> {
+    async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error> {
         todo!()
     }
     // async fn find_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error> {
