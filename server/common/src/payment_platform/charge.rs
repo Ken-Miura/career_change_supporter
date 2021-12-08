@@ -1,8 +1,7 @@
 // Copyright 2021 Ken Miura
 
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, error::Error as StdError, fmt::Display};
 
 use super::{
     access_info::AccessInfo,
@@ -24,14 +23,14 @@ pub struct Charge {
     pub amount: u32,
     pub currency: String,
     pub paid: bool,
-    pub expired_at: u64,
+    pub expired_at: Option<u64>,
     pub captured: bool,
     pub captured_at: u64,
     pub card: Card,
-    pub customer: String,
-    pub description: String,
-    pub failure_code: String,
-    pub failure_message: String,
+    pub customer: Option<String>,
+    pub description: Option<String>,
+    pub failure_code: Option<String>,
+    pub failure_message: Option<String>,
     pub fee_rate: String,
     pub refunded: bool,
     pub amount_refunded: u32,
@@ -78,6 +77,7 @@ pub trait ChargeOperation {
     async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error>;
 }
 
+#[derive(Serialize, Debug)]
 pub struct Query {
     limit: Option<u32>,
     offset: Option<u32>,
@@ -92,7 +92,91 @@ impl Query {
     pub fn build() -> QueryBuilder {
         QueryBuilder::new()
     }
+
+    fn new(
+        limit: Option<u32>,
+        offset: Option<u32>,
+        since: Option<u64>,
+        until: Option<u64>,
+        customer: Option<String>,
+        subscription: Option<String>,
+        tenant: Option<String>,
+    ) -> Result<Self, InvalidParamError> {
+        if let Some(l) = limit {
+            if !(1..=100).contains(&l) {
+                return Err(InvalidParamError::Limit(l));
+            };
+        };
+        if let Some(s) = since {
+            if let Some(u) = until {
+                if s > u {
+                    return Err(InvalidParamError::SinceExceedsUntil { since: s, until: u });
+                };
+            };
+        };
+        Ok(Query {
+            limit,
+            offset,
+            since,
+            until,
+            customer,
+            subscription,
+            tenant,
+        })
+    }
+
+    pub fn limit(&self) -> Option<u32> {
+        self.limit
+    }
+
+    pub fn offset(&self) -> Option<u32> {
+        self.offset
+    }
+
+    pub fn since(&self) -> Option<u64> {
+        self.since
+    }
+
+    pub fn until(&self) -> Option<u64> {
+        self.until
+    }
+
+    pub fn customer(&self) -> Option<String> {
+        self.customer.clone()
+    }
+
+    pub fn subscription(&self) -> Option<String> {
+        self.subscription.clone()
+    }
+
+    pub fn tenant(&self) -> Option<String> {
+        self.tenant.clone()
+    }
 }
+
+/// [Query] 生成時に返却される可能性のあるエラー
+#[derive(Debug)]
+pub enum InvalidParamError {
+    Limit(u32),
+    SinceExceedsUntil { since: u64, until: u64 },
+}
+
+impl Display for InvalidParamError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InvalidParamError::Limit(limit) => {
+                write!(f, "limit must be 1 or more, or 100 or less: {}", limit)
+            }
+            InvalidParamError::SinceExceedsUntil { since, until } => write!(
+                f,
+                "since timestamp exeeds until timestamp (since: {}, until: {})",
+                since, until
+            ),
+        }
+    }
+}
+
+impl StdError for InvalidParamError {}
 
 pub struct QueryBuilder {
     limit: Option<u32>,
@@ -137,31 +221,31 @@ impl QueryBuilder {
         self
     }
 
-    pub fn customer(mut self, customer: String) -> Self {
-        self.customer = Some(customer);
+    pub fn customer(mut self, customer: &str) -> Self {
+        self.customer = Some(customer.to_string());
         self
     }
 
-    pub fn subscription(mut self, subscription: String) -> Self {
-        self.subscription = Some(subscription);
+    pub fn subscription(mut self, subscription: &str) -> Self {
+        self.subscription = Some(subscription.to_string());
         self
     }
 
-    pub fn tenant(mut self, tenant: String) -> Self {
-        self.tenant = Some(tenant);
+    pub fn tenant(mut self, tenant: &str) -> Self {
+        self.tenant = Some(tenant.to_string());
         self
     }
 
-    pub fn finish(self) -> Query {
-        Query {
-            limit: self.limit,
-            offset: self.offset,
-            since: self.since,
-            until: self.until,
-            customer: self.customer,
-            subscription: self.subscription,
-            tenant: self.tenant,
-        }
+    pub fn finish(self) -> Result<Query, InvalidParamError> {
+        Query::new(
+            self.limit,
+            self.offset,
+            self.since,
+            self.until,
+            self.customer,
+            self.subscription,
+            self.tenant,
+        )
     }
 }
 
@@ -178,31 +262,29 @@ impl<'a> ChargeOperationImpl<'a> {
 #[async_trait]
 impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
     async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error> {
-        todo!()
+        let operation_url = self.access_info.base_url() + CHARGES_OPERATION_PATH;
+        let username = self.access_info.username();
+        let password = self.access_info.password();
+        let client = reqwest::Client::new();
+        let resp = client
+            .get(operation_url)
+            .basic_auth(username, Some(password))
+            .query(query)
+            .send()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        let status_code = resp.status();
+        if status_code.is_client_error() || status_code.is_server_error() {
+            let err = resp
+                .json::<ErrorInfo>()
+                .await
+                .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+            return Err(Error::ApiError(err));
+        };
+        let charge_list = resp
+            .json::<List<Charge>>()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        return Ok(charge_list);
     }
-    // async fn find_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error> {
-    //     let operation_url = self.access_info.base_url() + CHARGES_OPERATION_PATH + "/" + tenant_id;
-    //     let username = self.access_info.username();
-    //     let password = self.access_info.password();
-    //     let client = reqwest::Client::new();
-    //     let resp = client
-    //         .get(operation_url)
-    //         .basic_auth(username, Some(password))
-    //         .send()
-    //         .await
-    //         .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-    //     let status_code = resp.status();
-    //     if status_code.is_client_error() || status_code.is_server_error() {
-    //         let err = resp
-    //             .json::<ErrorInfo>()
-    //             .await
-    //             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-    //         return Err(Error::ApiError(err));
-    //     };
-    //     let tenant = resp
-    //         .json::<Tenant>()
-    //         .await
-    //         .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-    //     return Ok(tenant);
-    // }
 }

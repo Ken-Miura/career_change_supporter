@@ -2,7 +2,10 @@
 
 use axum::{http::StatusCode, Json};
 use common::{
-    payment_platform::tenant::{TenantOperation, TenantOperationImpl},
+    payment_platform::{
+        charge::{ChargeOperation, ChargeOperationImpl, Query},
+        tenant::{TenantOperation, TenantOperationImpl},
+    },
     DatabaseConnection, RespResult,
 };
 use diesel::{
@@ -28,6 +31,21 @@ pub(crate) async fn get_profile(
         }
         Err(err) => tracing::info!("err: {}", err),
     };
+
+    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+    let query = Query::build()
+        .tenant("c8f0aa44901940849cbdb8b3e7d9f305")
+        .since(1628270154)
+        .finish()
+        .expect("failed to get Ok");
+    let result = charge_op.search_charges(&query).await;
+    match result {
+        Ok(charge_list) => {
+            tracing::info!("{:?}", charge_list);
+        }
+        Err(err) => tracing::info!("err: {}", err),
+    };
+
     let profile_op = ProfileOperationImpl::new(conn);
     get_profile_internal(account_id, profile_op).await
 }

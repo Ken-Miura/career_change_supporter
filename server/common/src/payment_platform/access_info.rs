@@ -20,7 +20,7 @@ impl AccessInfo {
     /// * `password` - PAY.JP APIにアクセスするためのパスワード
     ///
     /// # Errors
-    /// base_urlが下記の場合、InvalidParamError::UrlWithoutPathを返す
+    /// base_urlが下記の場合、InvalidParamError::BaseUrlを返す
     /// <ul>
     ///   <li>base_urlが空の場合</li>
     ///   <li>base_urlがhttpsで始まっていない場合</li>
@@ -34,7 +34,7 @@ impl AccessInfo {
         password: String,
     ) -> Result<Self, InvalidParamError> {
         if base_url.is_empty() {
-            return Err(InvalidParamError::UrlWithoutPath(
+            return Err(InvalidParamError::BaseUrl(
                 "Empty url is not allowed".to_string(),
             ));
         }
@@ -49,13 +49,13 @@ impl AccessInfo {
             ));
         }
         if !base_url.starts_with("https://") {
-            return Err(InvalidParamError::UrlWithoutPath(format!(
+            return Err(InvalidParamError::BaseUrl(format!(
                 "Schemes other than 'https://' are not allowed: {}",
                 base_url
             )));
         }
         if base_url.ends_with('/') {
-            return Err(InvalidParamError::UrlWithoutPath(
+            return Err(InvalidParamError::BaseUrl(
                 "Trailing slash is not allowed".to_string(),
             ));
         }
@@ -66,7 +66,7 @@ impl AccessInfo {
         })
     }
 
-    /// PAY.JP APIにアクセスするためのURLを返す。バージョンを示すパスも含む。最後に"/"は含まない (ex. <https://api.pay.jp/v1>)
+    /// PAY.JP APIにアクセスするためのURLを返す。最後に"/"は含まない (ex. <https://api.pay.jp>)
     pub fn base_url(&self) -> String {
         self.base_url.clone()
     }
@@ -85,7 +85,7 @@ impl AccessInfo {
 /// [AccessInfo] 生成時に返却される可能性のあるエラー
 #[derive(Debug)]
 pub enum InvalidParamError {
-    UrlWithoutPath(String),
+    BaseUrl(String),
     Username(String),
     Password(String),
 }
@@ -93,8 +93,8 @@ pub enum InvalidParamError {
 impl Display for InvalidParamError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InvalidParamError::UrlWithoutPath(s) => {
-                write!(f, "InvalidParamError::UrlWithoutPath: {}", s)
+            InvalidParamError::BaseUrl(s) => {
+                write!(f, "InvalidParamError::BaseUrl: {}", s)
             }
             InvalidParamError::Username(s) => write!(f, "InvalidParamError::Username: {}", s),
             InvalidParamError::Password(s) => write!(f, "InvalidParamError::Password: {}", s),
@@ -134,7 +134,7 @@ mod tests {
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
-            InvalidParamError::UrlWithoutPath(_) => { /* pass test */ }
+            InvalidParamError::BaseUrl(_) => { /* pass test */ }
             InvalidParamError::Username(_) => panic!("Username"),
             InvalidParamError::Password(_) => panic!("Password"),
         }
@@ -150,7 +150,7 @@ mod tests {
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
-            InvalidParamError::UrlWithoutPath(_) => { /* pass test */ }
+            InvalidParamError::BaseUrl(_) => { /* pass test */ }
             InvalidParamError::Username(_) => panic!("Username"),
             InvalidParamError::Password(_) => panic!("Password"),
         }
@@ -166,7 +166,7 @@ mod tests {
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
-            InvalidParamError::UrlWithoutPath(_) => { /* pass test */ }
+            InvalidParamError::BaseUrl(_) => { /* pass test */ }
             InvalidParamError::Username(_) => panic!("Username"),
             InvalidParamError::Password(_) => panic!("Password"),
         }
@@ -182,7 +182,7 @@ mod tests {
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
-            InvalidParamError::UrlWithoutPath(_) => panic!("UrlWithoutPath"),
+            InvalidParamError::BaseUrl(_) => panic!("BaseUrl"),
             InvalidParamError::Username(_) => { /* pass test */ }
             InvalidParamError::Password(_) => panic!("Password"),
         }
@@ -198,7 +198,7 @@ mod tests {
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
-            InvalidParamError::UrlWithoutPath(_) => panic!("UrlWithoutPath"),
+            InvalidParamError::BaseUrl(_) => panic!("BaseUrl"),
             InvalidParamError::Username(_) => panic!("Username"),
             InvalidParamError::Password(_) => { /* pass test */ }
         }
