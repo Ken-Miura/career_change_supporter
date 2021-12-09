@@ -262,6 +262,7 @@ impl<'a> ChargeOperationImpl<'a> {
 #[async_trait]
 impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
     async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error> {
+        tracing::info!("search_charges: query = {:?}", query);
         let operation_url = self.access_info.base_url() + CHARGES_OPERATION_PATH;
         let username = self.access_info.username();
         let password = self.access_info.password();
