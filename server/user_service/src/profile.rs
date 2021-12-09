@@ -62,8 +62,8 @@ async fn get_profile_internal(
         fee_per_hour_in_yen: None,
         bank_account: None,
         profit: None,
-        last_month_transfer: None,
-        this_month_transfer: None,
+        last_time_transfer: None,
+        most_recent_transfer: None,
     };
     Ok((StatusCode::OK, Json(profile_result)))
 }
@@ -76,8 +76,8 @@ pub(crate) struct ProfileResult {
     fee_per_hour_in_yen: Option<i32>,
     bank_account: Option<BankAccount>,
     profit: Option<u32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
-    last_month_transfer: Option<Transfer>,
-    this_month_transfer: Option<Transfer>,
+    last_time_transfer: Option<Transfer>,
+    most_recent_transfer: Option<Transfer>,
 }
 
 #[derive(Serialize, Debug)]
