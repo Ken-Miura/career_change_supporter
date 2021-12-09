@@ -72,11 +72,13 @@ pub struct Card {
     pub metadata: Option<HashMap<String, String>>,
 }
 
+/// 支払い <https://pay.jp/docs/api/?shell#charge-%E6%94%AF%E6%89%95%E3%81%84> に関連する操作を提供する
 #[async_trait]
 pub trait ChargeOperation {
     async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error>;
 }
 
+/// 支払いリストを取得 <https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97> の際に渡すクエリ
 #[derive(Serialize, Debug)]
 pub struct Query {
     limit: Option<u32>,
@@ -89,6 +91,7 @@ pub struct Query {
 }
 
 impl Query {
+    /// クエリを生成するための[QueryBuilder]を生成する
     pub fn build() -> QueryBuilder {
         QueryBuilder::new()
     }
@@ -178,6 +181,7 @@ impl Display for InvalidParamError {
 
 impl StdError for InvalidParamError {}
 
+/// [Query]を生成するためのヘルパー
 pub struct QueryBuilder {
     limit: Option<u32>,
     offset: Option<u32>,
@@ -201,41 +205,52 @@ impl QueryBuilder {
         }
     }
 
+    /// [Query]に設定するlimitをセットする
     pub fn limit(mut self, limit: u32) -> Self {
         self.limit = Some(limit);
         self
     }
 
+    /// [Query]に設定するoffsetをセットする
     pub fn offset(mut self, offset: u32) -> Self {
         self.offset = Some(offset);
         self
     }
 
+    /// [Query]に設定するsinceをセットする
     pub fn since(mut self, since: u64) -> Self {
         self.since = Some(since);
         self
     }
 
+    /// [Query]に設定するuntilをセットする
     pub fn until(mut self, until: u64) -> Self {
         self.until = Some(until);
         self
     }
 
+    /// [Query]に設定するcustomerをセットする
     pub fn customer(mut self, customer: &str) -> Self {
         self.customer = Some(customer.to_string());
         self
     }
 
+    /// [Query]に設定するsubscriptionをセットする
     pub fn subscription(mut self, subscription: &str) -> Self {
         self.subscription = Some(subscription.to_string());
         self
     }
 
+    /// [Query]に設定するtenantをセットする
     pub fn tenant(mut self, tenant: &str) -> Self {
         self.tenant = Some(tenant.to_string());
         self
     }
 
+    /// [Query]を生成する
+    /// # Errors
+    /// * `InvalidParamError::Limit` - [QueryBuilder]にセットしたリミットが0以下、もしくは101以上の場合
+    /// * `InvalidParamError::SinceExceedsUntil` - [QueryBuilder]にセットしたsinceがuntilより大きい場合
     pub fn finish(self) -> Result<Query, InvalidParamError> {
         Query::new(
             self.limit,
