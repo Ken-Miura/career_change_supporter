@@ -78,13 +78,14 @@ pub trait ChargeOperation {
     async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error>;
 }
 
-/// 支払いリストを取得 <https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97> の際に渡すクエリ
+/// 支払いリストを取得 <https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97> の際に渡すクエリ<br>
+/// 複数値がセットされた場合、AND検索となる。値が空の場合、（limit=10の制限の中で）すべての値を取得する
 #[derive(Serialize, Debug)]
 pub struct Query {
     limit: Option<u32>,
     offset: Option<u32>,
-    since: Option<u64>,
-    until: Option<u64>,
+    since: Option<i64>,
+    until: Option<i64>,
     customer: Option<String>,
     subscription: Option<String>,
     tenant: Option<String>,
@@ -99,8 +100,8 @@ impl Query {
     fn new(
         limit: Option<u32>,
         offset: Option<u32>,
-        since: Option<u64>,
-        until: Option<u64>,
+        since: Option<i64>,
+        until: Option<i64>,
         customer: Option<String>,
         subscription: Option<String>,
         tenant: Option<String>,
@@ -136,11 +137,11 @@ impl Query {
         self.offset
     }
 
-    pub fn since(&self) -> Option<u64> {
+    pub fn since(&self) -> Option<i64> {
         self.since
     }
 
-    pub fn until(&self) -> Option<u64> {
+    pub fn until(&self) -> Option<i64> {
         self.until
     }
 
@@ -161,7 +162,7 @@ impl Query {
 #[derive(Debug)]
 pub enum InvalidParamError {
     Limit(u32),
-    SinceExceedsUntil { since: u64, until: u64 },
+    SinceExceedsUntil { since: i64, until: i64 },
 }
 
 impl Display for InvalidParamError {
@@ -185,8 +186,8 @@ impl StdError for InvalidParamError {}
 pub struct QueryBuilder {
     limit: Option<u32>,
     offset: Option<u32>,
-    since: Option<u64>,
-    until: Option<u64>,
+    since: Option<i64>,
+    until: Option<i64>,
     customer: Option<String>,
     subscription: Option<String>,
     tenant: Option<String>,
@@ -218,13 +219,13 @@ impl QueryBuilder {
     }
 
     /// [Query]に設定するsinceをセットする
-    pub fn since(mut self, since: u64) -> Self {
+    pub fn since(mut self, since: i64) -> Self {
         self.since = Some(since);
         self
     }
 
     /// [Query]に設定するuntilをセットする
-    pub fn until(mut self, until: u64) -> Self {
+    pub fn until(mut self, until: i64) -> Self {
         self.until = Some(until);
         self
     }
@@ -302,5 +303,111 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
             .await
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
         return Ok(charge_list);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::TimeZone;
+
+    use crate::payment_platform::charge::InvalidParamError;
+
+    use super::Query;
+
+    #[test]
+    fn empty_query_allowed() {
+        let result = Query::build().finish();
+        let query = result.expect("failed to get Ok");
+        assert_eq!(None, query.limit());
+        assert_eq!(None, query.offset());
+        assert_eq!(None, query.since());
+        assert_eq!(None, query.until());
+        assert_eq!(None, query.customer());
+        assert_eq!(None, query.subscription());
+        assert_eq!(None, query.tenant());
+    }
+
+    #[test]
+    fn query_has_value_that_is_passed_on_query_builder() {
+        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let until = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 41).timestamp();
+        let customer = "cus_4df4b5ed720933f4fb9e28857517";
+        let subscription = "sub_567a1e44562932ec1a7682d746e0 ";
+        let tenant = "ten_121673955bd7aa144de5a8f6c262";
+        let result = Query::build()
+            .limit(100)
+            .offset(0)
+            .since(since)
+            .until(until)
+            .customer(customer)
+            .subscription(subscription)
+            .tenant(tenant)
+            .finish();
+        let query = result.expect("failed to get Ok");
+        assert_eq!(Some(100), query.limit());
+        assert_eq!(Some(0), query.offset());
+        assert_eq!(Some(since), query.since());
+        assert_eq!(Some(until), query.until());
+        assert_eq!(Some(customer.to_string()), query.customer());
+        assert_eq!(Some(subscription.to_string()), query.subscription());
+        assert_eq!(Some(tenant.to_string()), query.tenant());
+    }
+
+    #[test]
+    fn query_accepts_limit_value_that_is_between_1_and_100() {
+        let result = Query::build().limit(1).finish();
+        result.expect("failed to get Ok");
+        let result = Query::build().limit(100).finish();
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn query_rejects_limit_value_that_is_0_or_less_and_101_or_more() {
+        let result = Query::build().limit(0).finish();
+        let err = result.expect_err("failed to get Err");
+        match err {
+            InvalidParamError::Limit(l) => {
+                assert_eq!(0, l);
+            }
+            InvalidParamError::SinceExceedsUntil { since, until } => {
+                panic!("SinceExceedsUntil{{ since: {}, until: {} }}", since, until)
+            }
+        }
+        let result = Query::build().limit(101).finish();
+        let err = result.expect_err("failed to get Err");
+        match err {
+            InvalidParamError::Limit(l) => {
+                assert_eq!(101, l);
+            }
+            InvalidParamError::SinceExceedsUntil { since, until } => {
+                panic!("SinceExceedsUntil{{ since: {}, until: {} }}", since, until)
+            }
+        }
+    }
+
+    #[test]
+    fn query_accepts_same_since_and_until() {
+        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let until = since;
+        let result = Query::build().since(since).until(until).finish();
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn query_fail_to_create_query_when_since_exceeds_until() {
+        let since_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let until_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 39).timestamp();
+        let result = Query::build()
+            .since(since_timestamp)
+            .until(until_timestamp)
+            .finish();
+        let err = result.expect_err("failed to get Ok");
+        match err {
+            InvalidParamError::Limit(l) => panic!("Limit: {}", l),
+            InvalidParamError::SinceExceedsUntil { since, until } => {
+                assert_eq!(since, since_timestamp);
+                assert_eq!(until, until_timestamp);
+            }
+        }
     }
 }
