@@ -32,8 +32,8 @@ pub struct TenantTransfer {
     pub summary: Summary,
     pub term_start: i64,
     pub term_end: i64,
-    pub transfer_amount: u32,
-    pub transfer_date: String, // String?
+    pub transfer_amount: Option<u32>,
+    pub transfer_date: Option<String>, // String?
     pub carried_balance: u32,
     pub tenant_id: Option<String>,
 }
@@ -49,7 +49,7 @@ pub struct Summary {
     pub refund_count: u32,
     pub dispute_amount: u32,
     pub dispute_count: u32,
-    pub platform_charge_fee: u32,
+    pub platform_charge_fee: Option<u32>,
     pub total_platform_fee: u32,
 }
 
@@ -67,8 +67,10 @@ pub struct Query {
     offset: Option<u32>,
     since: Option<i64>,
     until: Option<i64>,
-    customer: Option<String>,
-    subscription: Option<String>,
+    since_scheduled_date: Option<i64>,
+    until_scheduled_date: Option<i64>,
+    status: Option<String>,
+    transfer: Option<String>,
     tenant: Option<String>,
 }
 
@@ -78,13 +80,17 @@ impl Query {
         QueryBuilder::new()
     }
 
+    // NOTE: 可能な限り提供されるPAY.JPのAPIに沿った形にしたいため、引数が多いが許容する
+    #[allow(clippy::too_many_arguments)]
     fn new(
         limit: Option<u32>,
         offset: Option<u32>,
         since: Option<i64>,
         until: Option<i64>,
-        customer: Option<String>,
-        subscription: Option<String>,
+        since_scheduled_date: Option<i64>,
+        until_scheduled_date: Option<i64>,
+        status: Option<String>,
+        transfer: Option<String>,
         tenant: Option<String>,
     ) -> Result<Self, InvalidParamError> {
         if let Some(l) = limit {
@@ -99,13 +105,27 @@ impl Query {
                 };
             };
         };
+        if let Some(s) = since_scheduled_date {
+            if let Some(u) = until_scheduled_date {
+                if s > u {
+                    return Err(
+                        InvalidParamError::SinceScheduledDateExceedsUntilScheduledDate {
+                            since_scheduled_date: s,
+                            until_scheduled_date: u,
+                        },
+                    );
+                };
+            };
+        };
         Ok(Query {
             limit,
             offset,
             since,
             until,
-            customer,
-            subscription,
+            since_scheduled_date,
+            until_scheduled_date,
+            status,
+            transfer,
             tenant,
         })
     }
@@ -126,12 +146,20 @@ impl Query {
         self.until
     }
 
-    pub fn customer(&self) -> Option<String> {
-        self.customer.clone()
+    pub fn since_scheduled_date(&self) -> Option<i64> {
+        self.since_scheduled_date
     }
 
-    pub fn subscription(&self) -> Option<String> {
-        self.subscription.clone()
+    pub fn until_scheduled_date(&self) -> Option<i64> {
+        self.until_scheduled_date
+    }
+
+    pub fn status(&self) -> Option<String> {
+        self.status.clone()
+    }
+
+    pub fn transfer(&self) -> Option<String> {
+        self.transfer.clone()
     }
 
     pub fn tenant(&self) -> Option<String> {
@@ -143,7 +171,14 @@ impl Query {
 #[derive(Debug)]
 pub enum InvalidParamError {
     Limit(u32),
-    SinceExceedsUntil { since: i64, until: i64 },
+    SinceExceedsUntil {
+        since: i64,
+        until: i64,
+    },
+    SinceScheduledDateExceedsUntilScheduledDate {
+        since_scheduled_date: i64,
+        until_scheduled_date: i64,
+    },
 }
 
 impl Display for InvalidParamError {
@@ -157,6 +192,11 @@ impl Display for InvalidParamError {
                 "since timestamp exeeds until timestamp (since: {}, until: {})",
                 since, until
             ),
+            InvalidParamError::SinceScheduledDateExceedsUntilScheduledDate { since_scheduled_date, until_scheduled_date } => write!(
+                f,
+                "since_scheduled_date timestamp exeeds until_scheduled_date timestamp (since_scheduled_date: {}, until_scheduled_date: {})",
+                since_scheduled_date, until_scheduled_date
+            ),
         }
     }
 }
@@ -169,8 +209,10 @@ pub struct QueryBuilder {
     offset: Option<u32>,
     since: Option<i64>,
     until: Option<i64>,
-    customer: Option<String>,
-    subscription: Option<String>,
+    since_scheduled_date: Option<i64>,
+    until_scheduled_date: Option<i64>,
+    status: Option<String>,
+    transfer: Option<String>,
     tenant: Option<String>,
 }
 
@@ -181,8 +223,10 @@ impl QueryBuilder {
             offset: None,
             since: None,
             until: None,
-            customer: None,
-            subscription: None,
+            since_scheduled_date: None,
+            until_scheduled_date: None,
+            status: None,
+            transfer: None,
             tenant: None,
         }
     }
@@ -211,15 +255,27 @@ impl QueryBuilder {
         self
     }
 
-    /// [Query]に設定するcustomerをセットする
-    pub fn customer(mut self, customer: &str) -> Self {
-        self.customer = Some(customer.to_string());
+    /// [Query]に設定するsince_scheduled_dateをセットする
+    pub fn since_scheduled_date(mut self, since_scheduled_date: i64) -> Self {
+        self.since_scheduled_date = Some(since_scheduled_date);
         self
     }
 
-    /// [Query]に設定するsubscriptionをセットする
-    pub fn subscription(mut self, subscription: &str) -> Self {
-        self.subscription = Some(subscription.to_string());
+    /// [Query]に設定するuntil_scheduled_dateをセットする
+    pub fn until_scheduled_date(mut self, until_scheduled_date: i64) -> Self {
+        self.until_scheduled_date = Some(until_scheduled_date);
+        self
+    }
+
+    /// [Query]に設定するstatusをセットする
+    pub fn status(mut self, status: &str) -> Self {
+        self.status = Some(status.to_string());
+        self
+    }
+
+    /// [Query]に設定するtransferをセットする
+    pub fn transfer(mut self, transfer: &str) -> Self {
+        self.transfer = Some(transfer.to_string());
         self
     }
 
@@ -233,14 +289,17 @@ impl QueryBuilder {
     /// # Errors
     /// * `InvalidParamError::Limit` - [QueryBuilder]にセットしたリミットが0以下、もしくは101以上の場合
     /// * `InvalidParamError::SinceExceedsUntil` - [QueryBuilder]にセットしたsinceがuntilより大きい場合
+    /// * `InvalidParamError::SinceScheduledDateExceedsUntilScheduledDate` - [QueryBuilder]にセットしたsince_scheduled_dateがuntil_scheduled_dateより大きい場合
     pub fn finish(self) -> Result<Query, InvalidParamError> {
         Query::new(
             self.limit,
             self.offset,
             self.since,
             self.until,
-            self.customer,
-            self.subscription,
+            self.since_scheduled_date,
+            self.until_scheduled_date,
+            self.status,
+            self.transfer,
             self.tenant,
         )
     }

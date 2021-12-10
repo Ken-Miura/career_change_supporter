@@ -3,8 +3,12 @@
 use axum::{http::StatusCode, Json};
 use common::{
     payment_platform::{
-        charge::{ChargeOperation, ChargeOperationImpl, Query},
+        charge::{ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
+        tenant_transfer::{
+            Query as SearchTenantTransfersQuery, TenantTransferOperation,
+            TenantTransferOperationImpl,
+        },
     },
     DatabaseConnection, RespResult,
 };
@@ -21,27 +25,39 @@ pub(crate) async fn get_profile(
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<ProfileResult> {
     // TODO: profileの実装
-    let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
-    let result = tenant_op
-        .find_tenant_by_tenant_id("c8f0aa44901940849cbdb8b3e7d9f305")
-        .await;
-    match result {
-        Ok(tenant) => {
-            tracing::info!("{}", tenant.bank_account_holder_name);
-        }
-        Err(err) => tracing::info!("err: {}", err),
-    };
+    // let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
+    // let result = tenant_op
+    //     .find_tenant_by_tenant_id("c8f0aa44901940849cbdb8b3e7d9f305")
+    //     .await;
+    // match result {
+    //     Ok(tenant) => {
+    //         tracing::info!("{}", tenant.bank_account_holder_name);
+    //     }
+    //     Err(err) => tracing::info!("err: {}", err),
+    // };
 
-    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-    let query = Query::build()
-        .tenant("c8f0aa44901940849cbdb8b3e7d9f305")
-        .since(1628270154)
+    // let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+    // let query = SearchChargesQuery::build()
+    //     .tenant("c8f0aa44901940849cbdb8b3e7d9f305")
+    //     .since(1628270154)
+    //     .finish()
+    //     .expect("failed to get Ok");
+    // let result = charge_op.search_charges(&query).await;
+    // match result {
+    //     Ok(charge_list) => {
+    //         tracing::info!("{:?}", charge_list);
+    //     }
+    //     Err(err) => tracing::info!("err: {}", err),
+    // };
+
+    let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
+    let query = SearchTenantTransfersQuery::build()
         .finish()
         .expect("failed to get Ok");
-    let result = charge_op.search_charges(&query).await;
+    let result = tenant_transfer_op.search_tenant_transfers(&query).await;
     match result {
-        Ok(charge_list) => {
-            tracing::info!("{:?}", charge_list);
+        Ok(transfer_list) => {
+            tracing::info!("{:?}", transfer_list);
         }
         Err(err) => tracing::info!("err: {}", err),
     };
