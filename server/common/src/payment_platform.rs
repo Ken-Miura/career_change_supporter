@@ -5,6 +5,7 @@
 //! <https://pay.jp/docs/library>
 
 pub mod access_info;
+pub mod card;
 pub mod charge;
 pub mod err;
 pub mod list;
