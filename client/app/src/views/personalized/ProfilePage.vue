@@ -67,6 +67,14 @@ export default defineComponent({
       } else {
         throw new Error('Assertion Error: must not reach this line')
       }
+      const response = await fetch('/api/profile', {
+        method: 'GET'
+      })
+      if (response.ok) {
+        console.log('success')
+      } else {
+        console.log('fail')
+      }
     })
     return { message }
   }
