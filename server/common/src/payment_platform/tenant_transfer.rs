@@ -24,36 +24,35 @@ pub struct TenantTransfer {
     pub id: String,
     pub livemode: bool,
     pub created: i64,
-    pub amount: u32,
+    pub amount: i32,
     pub currency: String,
     pub status: String,
     pub charges: List<Charge>,
-    pub scheduled_date: String, // String?
+    pub scheduled_date: String,
     pub summary: Summary,
     pub term_start: i64,
     pub term_end: i64,
-    pub transfer_amount: Option<u32>,
-    pub transfer_date: Option<String>, // String?
-    pub carried_balance: u32,
-    pub tenant_id: Option<String>,
+    pub transfer_amount: Option<i32>,
+    pub transfer_date: Option<String>,
+    pub carried_balance: Option<i32>,
+    pub tenant_id: String,
 }
 
-// TODO: 負の数があり得るのか確認する
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Summary {
-    pub charge_count: u32,
-    pub charge_fee: u32,
-    pub charge_gross: u32,
-    pub net: u32,
-    pub refund_amount: u32,
-    pub refund_count: u32,
-    pub dispute_amount: u32,
-    pub dispute_count: u32,
-    pub platform_charge_fee: Option<u32>,
-    pub total_platform_fee: u32,
+    pub charge_count: i32,
+    pub charge_fee: i32,
+    pub charge_gross: i32,
+    pub net: i32,
+    pub refund_amount: i32,
+    pub refund_count: i32,
+    pub dispute_amount: i32,
+    pub dispute_count: i32,
+    pub platform_charge_fee: Option<i32>,
+    pub total_platform_fee: i32,
 }
 
-/// 入金 <https://pay.jp/docs/api/?shell#tenant-transfer-%E5%85%A5%E9%87%91> に関連する操作を提供する
+/// テナントの入金 <https://pay.jp/docs/api/?shell#tenant-transfer-%E5%85%A5%E9%87%91> に関連する操作を提供する
 #[async_trait]
 pub trait TenantTransferOperation {
     async fn search_tenant_transfers(&self, query: &Query) -> Result<List<TenantTransfer>, Error>;

@@ -11,5 +11,5 @@ pub struct List<T> {
     pub has_more: bool,
     pub url: String,
     pub data: Vec<T>,
-    pub count: u32,
+    pub count: i32,
 }
