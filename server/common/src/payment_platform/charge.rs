@@ -306,7 +306,7 @@ mod tests {
         let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
         let until = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 41).timestamp();
         let customer = "cus_4df4b5ed720933f4fb9e28857517";
-        let subscription = "sub_567a1e44562932ec1a7682d746e0 ";
+        let subscription = "sub_567a1e44562932ec1a7682d746e0";
         let tenant = "ten_121673955bd7aa144de5a8f6c262";
         let result = Query::build()
             .limit(100)

@@ -346,4 +346,184 @@ impl<'a> TenantTransferOperation for TenantTransferOperationImpl<'a> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use chrono::TimeZone;
+
+    use super::{InvalidParamError, Query};
+
+    #[test]
+    fn empty_query_allowed() {
+        let result = Query::build().finish();
+        let query = result.expect("failed to get Ok");
+        assert_eq!(None, query.limit());
+        assert_eq!(None, query.offset());
+        assert_eq!(None, query.since());
+        assert_eq!(None, query.until());
+        assert_eq!(None, query.since_scheduled_date());
+        assert_eq!(None, query.until_scheduled_date());
+        assert_eq!(None, query.status());
+        assert_eq!(None, query.transfer());
+        assert_eq!(None, query.tenant());
+    }
+
+    #[test]
+    fn query_has_value_that_is_passed_on_query_builder() {
+        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let until = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 41).timestamp();
+        let since_scheduled_date = chrono::Utc
+            .ymd(2021, 12, 11)
+            .and_hms(23, 00, 40)
+            .timestamp();
+        let until_scheduled_date = chrono::Utc
+            .ymd(2021, 12, 11)
+            .and_hms(23, 00, 41)
+            .timestamp();
+        let status = "pending";
+        let transfer = "tr_8f0c0fe2c9f8a47f9d18f03959ba1";
+        let tenant = "ten_121673955bd7aa144de5a8f6c262";
+        let result = Query::build()
+            .limit(100)
+            .offset(0)
+            .since(since)
+            .until(until)
+            .since_scheduled_date(since_scheduled_date)
+            .until_scheduled_date(until_scheduled_date)
+            .status(status)
+            .transfer(transfer)
+            .tenant(tenant)
+            .finish();
+        let query = result.expect("failed to get Ok");
+        assert_eq!(Some(100), query.limit());
+        assert_eq!(Some(0), query.offset());
+        assert_eq!(Some(since), query.since());
+        assert_eq!(Some(until), query.until());
+        assert_eq!(Some(since_scheduled_date), query.since_scheduled_date());
+        assert_eq!(Some(until_scheduled_date), query.until_scheduled_date());
+        assert_eq!(Some(status.to_string()), query.status());
+        assert_eq!(Some(transfer.to_string()), query.transfer());
+        assert_eq!(Some(tenant.to_string()), query.tenant());
+    }
+
+    #[test]
+    fn query_accepts_limit_value_that_is_between_1_and_100() {
+        let result = Query::build().limit(1).finish();
+        result.expect("failed to get Ok");
+        let result = Query::build().limit(100).finish();
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn query_rejects_limit_value_that_is_0_or_less_and_101_or_more() {
+        let result = Query::build().limit(0).finish();
+        let err = result.expect_err("failed to get Err");
+        match err {
+            InvalidParamError::Limit(l) => {
+                assert_eq!(0, l);
+            }
+            InvalidParamError::SinceExceedsUntil { since, until } => {
+                panic!("SinceExceedsUntil{{ since: {}, until: {} }}", since, until)
+            }
+            InvalidParamError::SinceScheduledDateExceedsUntilScheduledDate {
+                since_scheduled_date,
+                until_scheduled_date,
+            } => panic!(
+                "SinceScheduledDateExceedsUntilScheduledDate{{ since_scheduled_date: {}, until_scheduled_date: {} }}",
+                since_scheduled_date, until_scheduled_date
+            ),
+        }
+        let result = Query::build().limit(101).finish();
+        let err = result.expect_err("failed to get Err");
+        match err {
+            InvalidParamError::Limit(l) => {
+                assert_eq!(101, l);
+            }
+            InvalidParamError::SinceExceedsUntil { since, until } => {
+                panic!("SinceExceedsUntil{{ since: {}, until: {} }}", since, until)
+            }
+            InvalidParamError::SinceScheduledDateExceedsUntilScheduledDate {
+                since_scheduled_date,
+                until_scheduled_date,
+            } => panic!(
+                "SinceScheduledDateExceedsUntilScheduledDate{{ since_scheduled_date: {}, until_scheduled_date: {} }}",
+                since_scheduled_date, until_scheduled_date
+            ),
+        }
+    }
+
+    #[test]
+    fn query_accepts_same_since_and_until() {
+        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let until = since;
+        let result = Query::build().since(since).until(until).finish();
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn query_fail_to_create_query_when_since_exceeds_until() {
+        let since_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let until_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 39).timestamp();
+        let result = Query::build()
+            .since(since_timestamp)
+            .until(until_timestamp)
+            .finish();
+        let err = result.expect_err("failed to get Ok");
+        match err {
+            InvalidParamError::Limit(l) => panic!("Limit: {}", l),
+            InvalidParamError::SinceExceedsUntil { since, until } => {
+                assert_eq!(since, since_timestamp);
+                assert_eq!(until, until_timestamp);
+            }
+            InvalidParamError::SinceScheduledDateExceedsUntilScheduledDate {
+                since_scheduled_date,
+                until_scheduled_date,
+            } => panic!(
+                "SinceScheduledDateExceedsUntilScheduledDate{{ since_scheduled_date: {}, until_scheduled_date: {} }}",
+                since_scheduled_date, until_scheduled_date
+            ),
+        }
+    }
+
+    #[test]
+    fn query_accepts_same_since_scheduled_date_and_until_scheduled_date() {
+        let since_scheduled_date = chrono::Utc
+            .ymd(2021, 12, 11)
+            .and_hms(23, 00, 40)
+            .timestamp();
+        let until_scheduled_date = since_scheduled_date;
+        let result = Query::build()
+            .since_scheduled_date(since_scheduled_date)
+            .until_scheduled_date(until_scheduled_date)
+            .finish();
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn query_fail_to_create_query_when_since_scheduled_date_exceeds_until_scheduled_date() {
+        let since_scheduled_date_timestamp = chrono::Utc
+            .ymd(2021, 12, 11)
+            .and_hms(23, 00, 40)
+            .timestamp();
+        let until_scheduled_date_timestamp = chrono::Utc
+            .ymd(2021, 12, 11)
+            .and_hms(23, 00, 39)
+            .timestamp();
+        let result = Query::build()
+            .since_scheduled_date(since_scheduled_date_timestamp)
+            .until_scheduled_date(until_scheduled_date_timestamp)
+            .finish();
+        let err = result.expect_err("failed to get Ok");
+        match err {
+            InvalidParamError::Limit(l) => panic!("Limit: {}", l),
+            InvalidParamError::SinceExceedsUntil { since, until } => {
+                panic!("SinceExceedsUntil{{ since: {}, until: {} }}", since, until)
+            }
+            InvalidParamError::SinceScheduledDateExceedsUntilScheduledDate {
+                since_scheduled_date,
+                until_scheduled_date,
+            } => {
+                assert_eq!(since_scheduled_date, since_scheduled_date_timestamp);
+                assert_eq!(until_scheduled_date, until_scheduled_date_timestamp);
+            }
+        }
+    }
+}
