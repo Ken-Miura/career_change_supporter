@@ -2,6 +2,7 @@
 
 use axum::{http::StatusCode, Json};
 use common::{
+    model::user::{Account, CareerInfo, IdentityInfo},
     payment_platform::{
         charge::{ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
@@ -10,67 +11,47 @@ use common::{
             TenantTransferOperationImpl,
         },
     },
-    DatabaseConnection, RespResult,
+    schema::ccs_schema::{identity_info::dsl::identity_info, user_account::dsl::user_account},
+    ApiError, DatabaseConnection, ErrResp, RespResult,
 };
+use diesel::QueryDsl;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
+use diesel::{result::Error::NotFound, RunQueryDsl};
 use serde::Serialize;
 
-use crate::util::{session::User, ACCESS_INFO};
+use crate::{
+    err_code::NO_ACCOUNT_FOUND,
+    util::{session::User, unexpected_err_resp, ACCESS_INFO},
+};
 
 pub(crate) async fn get_profile(
     User { account_id }: User,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<ProfileResult> {
-    // TODO: profileの実装
-    // let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
-    // let result = tenant_op
-    //     .find_tenant_by_tenant_id("c8f0aa44901940849cbdb8b3e7d9f305")
-    //     .await;
-    // match result {
-    //     Ok(tenant) => {
-    //         tracing::info!("{}", tenant.bank_account_holder_name);
-    //     }
-    //     Err(err) => tracing::info!("err: {}", err),
-    // };
-
-    // let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-    // let query = SearchChargesQuery::build()
-    //     .tenant("c8f0aa44901940849cbdb8b3e7d9f305")
-    //     .since(1628270154)
-    //     .finish()
-    //     .expect("failed to get Ok");
-    // let result = charge_op.search_charges(&query).await;
-    // match result {
-    //     Ok(charge_list) => {
-    //         tracing::info!("{:?}", charge_list);
-    //     }
-    //     Err(err) => tracing::info!("err: {}", err),
-    // };
-
-    let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
-    let query = SearchTenantTransfersQuery::build()
-        .finish()
-        .expect("failed to get Ok");
-    let result = tenant_transfer_op.search_tenant_transfers(&query).await;
-    match result {
-        Ok(transfer_list) => {
-            tracing::info!("{:?}", transfer_list);
-        }
-        Err(err) => tracing::info!("err: {}", err),
-    };
-
     let profile_op = ProfileOperationImpl::new(conn);
-    get_profile_internal(account_id, profile_op).await
+    let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
+    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+    let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
+    get_profile_internal(
+        account_id,
+        profile_op,
+        tenant_op,
+        charge_op,
+        tenant_transfer_op,
+    )
+    .await
 }
 
 async fn get_profile_internal(
     account_id: i32,
     profile_op: impl ProfileOperation,
+    tenant_op: impl TenantOperation,
+    charge_op: impl ChargeOperation,
+    tenant_transfer_op: impl TenantTransferOperation,
 ) -> RespResult<ProfileResult> {
-    tracing::info!("id: {}", account_id);
     let profile_result = ProfileResult {
         email_address: "test@test.com".to_string(),
         identity: None,
@@ -145,13 +126,17 @@ pub(crate) struct BankAccount {
 #[derive(Serialize, Debug)]
 pub(crate) struct Transfer {
     pub status: String,
-    pub amount: u32,
+    pub amount: i32,
     pub scheduled_date_in_jst: Option<Ymd>,
 }
 
 trait ProfileOperation {
-    // DBの分離レベルにはREAD COMITTEDを想定。
-    // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
+    fn find_user_account_by_user_account_id(&self, id: i32) -> Result<Account, ErrResp>;
+    fn find_identity_info_by_user_account_id(
+        &self,
+        id: i32,
+    ) -> Result<Option<IdentityInfo>, ErrResp>;
+    fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp>;
 }
 
 struct ProfileOperationImpl {
@@ -164,4 +149,44 @@ impl ProfileOperationImpl {
     }
 }
 
-impl ProfileOperation for ProfileOperationImpl {}
+impl ProfileOperation for ProfileOperationImpl {
+    fn find_user_account_by_user_account_id(&self, id: i32) -> Result<Account, ErrResp> {
+        let result = user_account.find(id).first::<Account>(&self.conn);
+        match result {
+            Ok(new_pwd) => Ok(new_pwd),
+            Err(e) => {
+                if e == NotFound {
+                    Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: NO_ACCOUNT_FOUND,
+                        }),
+                    ))
+                } else {
+                    Err(unexpected_err_resp())
+                }
+            }
+        }
+    }
+
+    fn find_identity_info_by_user_account_id(
+        &self,
+        id: i32,
+    ) -> Result<Option<IdentityInfo>, ErrResp> {
+        let result = identity_info.find(id).first::<IdentityInfo>(&self.conn);
+        match result {
+            Ok(id_info) => Ok(Some(id_info)),
+            Err(e) => {
+                if e == NotFound {
+                    Ok(None)
+                } else {
+                    Err(unexpected_err_resp())
+                }
+            }
+        }
+    }
+
+    fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp> {
+        todo!()
+    }
+}

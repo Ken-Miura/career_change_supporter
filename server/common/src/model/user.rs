@@ -96,6 +96,7 @@ pub struct NewIdentityInfo<'a> {
     pub city: &'a str,
     pub address_line1: &'a str,
     pub address_line2: Option<&'a str>,
+    pub telephone_number: &'a str,
 }
 
 #[derive(Clone, Queryable)]
@@ -111,6 +112,7 @@ pub struct IdentityInfo {
     pub city: String,
     pub address_line1: String,
     pub address_line2: Option<String>,
+    pub telephone_number: String,
 }
 
 #[derive(Insertable, Debug)]
