@@ -2,7 +2,7 @@
 
 use axum::{http::StatusCode, Json};
 use common::{
-    model::user::{Account, CareerInfo, IdentityInfo},
+    model::user::{Account, CareerInfo, IdentityInfo, Tenant},
     payment_platform::{
         charge::{ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
@@ -11,15 +11,19 @@ use common::{
             TenantTransferOperationImpl,
         },
     },
-    schema::ccs_schema::{identity_info::dsl::identity_info, user_account::dsl::user_account},
-    ApiError, DatabaseConnection, ErrResp, RespResult,
+    schema::ccs_schema::{
+        career_info::{dsl::career_info, user_account_id},
+        identity_info::dsl::identity_info,
+        tenant::dsl::tenant,
+        user_account::dsl::user_account,
+    },
+    ApiError, DatabaseConnection, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT,
 };
-use diesel::QueryDsl;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
-    PgConnection,
+    result::Error::NotFound,
+    ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl,
 };
-use diesel::{result::Error::NotFound, RunQueryDsl};
 use serde::Serialize;
 
 use crate::{
@@ -137,6 +141,7 @@ trait ProfileOperation {
         id: i32,
     ) -> Result<Option<IdentityInfo>, ErrResp>;
     fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp>;
+    fn find_tenant_by_user_account_id(&self, id: i32) -> Result<Option<Tenant>, ErrResp>;
 }
 
 struct ProfileOperationImpl {
@@ -187,6 +192,28 @@ impl ProfileOperation for ProfileOperationImpl {
     }
 
     fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp> {
-        todo!()
+        let result = career_info
+            .filter(user_account_id.eq(id))
+            .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
+            .load::<CareerInfo>(&self.conn)
+            .map_err(|e| {
+                tracing::error!("failed to filter career info by id {}: {}", id, e);
+                unexpected_err_resp()
+            })?;
+        Ok(result)
+    }
+
+    fn find_tenant_by_user_account_id(&self, id: i32) -> Result<Option<Tenant>, ErrResp> {
+        let result = tenant.find(id).first::<Tenant>(&self.conn);
+        match result {
+            Ok(t) => Ok(Some(t)),
+            Err(e) => {
+                if e == NotFound {
+                    Ok(None)
+                } else {
+                    Err(unexpected_err_resp())
+                }
+            }
+        }
     }
 }
