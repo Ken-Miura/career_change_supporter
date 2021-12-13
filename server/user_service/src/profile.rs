@@ -2,7 +2,7 @@
 
 use axum::{http::StatusCode, Json};
 use common::{
-    model::user::{Account, CareerInfo, IdentityInfo, Tenant},
+    model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo, Tenant},
     payment_platform::{
         charge::{ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
@@ -147,6 +147,10 @@ trait ProfileOperation {
     ) -> Result<Option<IdentityInfo>, ErrResp>;
     fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp>;
     fn find_tenant_by_user_account_id(&self, id: i32) -> Result<Option<Tenant>, ErrResp>;
+    fn find_consulting_fee_by_user_account_id(
+        &self,
+        id: i32,
+    ) -> Result<Option<ConsultingFee>, ErrResp>;
 }
 
 struct ProfileOperationImpl {
@@ -220,5 +224,12 @@ impl ProfileOperation for ProfileOperationImpl {
                 }
             }
         }
+    }
+
+    fn find_consulting_fee_by_user_account_id(
+        &self,
+        id: i32,
+    ) -> Result<Option<ConsultingFee>, ErrResp> {
+        todo!()
     }
 }
