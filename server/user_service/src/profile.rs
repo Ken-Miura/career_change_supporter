@@ -56,6 +56,11 @@ async fn get_profile_internal(
     charge_op: impl ChargeOperation,
     tenant_transfer_op: impl TenantTransferOperation,
 ) -> RespResult<ProfileResult> {
+    let account = profile_op.find_user_account_by_user_account_id(account_id)?;
+    let identity_info_option = profile_op.find_identity_info_by_user_account_id(account_id)?;
+    let careers = profile_op.filter_career_info_by_user_account_id(account_id)?;
+    let tenant_option = profile_op.find_tenant_by_user_account_id(account_id)?;
+
     let profile_result = ProfileResult {
         email_address: "test@test.com".to_string(),
         identity: None,
