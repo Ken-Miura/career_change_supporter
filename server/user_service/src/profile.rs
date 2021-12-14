@@ -82,7 +82,7 @@ async fn get_profile_internal(
     let consulting_fee_option = profile_op.find_consulting_fee_by_user_account_id(account_id)?;
     let fee_per_hour_in_yen = consulting_fee_option.map(|c| c.fee_per_hour_in_yen);
     let tenant_option = profile_op.find_tenant_by_user_account_id(account_id)?;
-    let search_results_by_tenant_id = if let Some(tenant) = tenant_option {
+    let payjp_related_info = if let Some(tenant) = tenant_option {
         let a = tenant_op.find_tenant_by_tenant_id(&tenant.tenant_id).await;
         // TODO: sinceとuntilを指定
         let search_charges_query = SearchChargesQuery::build()
@@ -110,10 +110,10 @@ async fn get_profile_internal(
             identity,
             careers,
             fee_per_hour_in_yen,
-            bank_account: search_results_by_tenant_id.0,
-            profit: search_results_by_tenant_id.1,
-            last_time_transfer: search_results_by_tenant_id.2,
-            most_recent_transfer: search_results_by_tenant_id.3,
+            bank_account: payjp_related_info.0,
+            profit: payjp_related_info.1,
+            last_time_transfer: payjp_related_info.2,
+            most_recent_transfer: payjp_related_info.3,
         }),
     ))
 }
