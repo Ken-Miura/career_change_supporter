@@ -79,7 +79,7 @@ async fn get_profile_internal(
     let payment_platform_results = if let Some(tenant) = tenant_option {
         let bank_account = get_bank_account_by_tenant_id(tenant_op, &tenant.tenant_id).await?;
         let profit = get_profit_of_the_month(charge_op, &tenant.tenant_id).await?;
-        let (last_time_transfer, most_recent_transfer) =
+        let (most_recent_transfer, last_time_transfer) =
             get_latest_two_tenant_transfers(tenant_transfer_op, &tenant.tenant_id).await?;
         (
             bank_account,
