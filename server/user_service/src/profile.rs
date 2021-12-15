@@ -56,22 +56,16 @@ async fn get_profile_internal(
     profile_op: impl ProfileOperation,
     tenant_op: impl TenantOperation,
     charge_op: impl ChargeOperation,
+    // TODO: 売上を計上する西暦と月が必要？
     tenant_transfer_op: impl TenantTransferOperation,
 ) -> RespResult<ProfileResult> {
     let account = profile_op.find_user_account_by_user_account_id(account_id)?;
     let identity_info_option = profile_op.find_identity_info_by_user_account_id(account_id)?;
     if identity_info_option.is_none() {
-        let profile_result = ProfileResult {
-            email_address: account.email_address,
-            identity: None,
-            careers: vec![],
-            fee_per_hour_in_yen: None,
-            bank_account: None,
-            profit: None,
-            last_time_transfer: None,
-            most_recent_transfer: None,
-        };
-        return Ok((StatusCode::OK, Json(profile_result)));
+        return Ok((
+            StatusCode::OK,
+            Json(ProfileResult::email_address(account.email_address).finish()),
+        ));
     };
     let identity = identity_info_option.map(convert_identity_info_to_identity);
     let careers_info = profile_op.filter_career_info_by_user_account_id(account_id)?;
@@ -82,88 +76,34 @@ async fn get_profile_internal(
     let consulting_fee_option = profile_op.find_consulting_fee_by_user_account_id(account_id)?;
     let fee_per_hour_in_yen = consulting_fee_option.map(|c| c.fee_per_hour_in_yen);
     let tenant_option = profile_op.find_tenant_by_user_account_id(account_id)?;
-    let payjp_related_info = if let Some(tenant) = tenant_option {
-        let a = tenant_op.find_tenant_by_tenant_id(&tenant.tenant_id).await;
-        // TODO: sinceとuntilを指定
-        let search_charges_query = SearchChargesQuery::build()
-            .tenant(&tenant.tenant_id)
-            .finish()
-            .expect("failed to get Ok");
-        let b = charge_op.search_charges(&search_charges_query).await;
-        // TODO: 2を定数化
-        let search_tenant_transfers_query = SearchTenantTransfersQuery::build()
-            .limit(2)
-            .tenant(&tenant.tenant_id)
-            .finish()
-            .expect("failed to get Ok");
-        let c = tenant_transfer_op
-            .search_tenant_transfers(&search_tenant_transfers_query)
-            .await;
-        (None, None, None, None)
+    let payment_platform_results = if let Some(tenant) = tenant_option {
+        let bank_account = get_bank_account_by_tenant_id(tenant_op, &tenant.tenant_id).await?;
+        let profit = get_profit_of_the_month(charge_op, &tenant.tenant_id).await?;
+        let (last_time_transfer, most_recent_transfer) =
+            get_latest_two_tenant_transfers(tenant_transfer_op, &tenant.tenant_id).await?;
+        (
+            bank_account,
+            profit,
+            last_time_transfer,
+            most_recent_transfer,
+        )
     } else {
         (None, None, None, None)
     };
     Ok((
         StatusCode::OK,
-        Json(ProfileResult {
-            email_address: account.email_address,
-            identity,
-            careers,
-            fee_per_hour_in_yen,
-            bank_account: payjp_related_info.0,
-            profit: payjp_related_info.1,
-            last_time_transfer: payjp_related_info.2,
-            most_recent_transfer: payjp_related_info.3,
-        }),
+        Json(
+            ProfileResult::email_address(account.email_address)
+                .identity(identity)
+                .careers(careers)
+                .fee_per_hour_in_yen(fee_per_hour_in_yen)
+                .bank_account(payment_platform_results.0)
+                .profit(payment_platform_results.1)
+                .last_time_transfer(payment_platform_results.2)
+                .most_recent_transfer(payment_platform_results.3)
+                .finish(),
+        ),
     ))
-}
-
-fn convert_identity_info_to_identity(identity_info: IdentityInfo) -> Identity {
-    let date = identity_info.date_of_birth;
-    let ymd = Ymd {
-        year: date.year(),
-        month: date.month(),
-        day: date.day(),
-    };
-    Identity {
-        last_name: identity_info.last_name,
-        first_name: identity_info.first_name,
-        last_name_furigana: identity_info.last_name_furigana,
-        first_name_furigana: identity_info.first_name_furigana,
-        sex: identity_info.sex,
-        date_of_birth: ymd,
-        prefecture: identity_info.prefecture,
-        city: identity_info.city,
-        address_line1: identity_info.address_line1,
-        address_line2: identity_info.address_line2,
-    }
-}
-
-fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
-    let career_start_date = Ymd {
-        year: career_info.career_start_date.year(),
-        month: career_info.career_start_date.month(),
-        day: career_info.career_start_date.day(),
-    };
-    let career_end_date = career_info.career_end_date.map(|end_date| Ymd {
-        year: end_date.year(),
-        month: end_date.month(),
-        day: end_date.day(),
-    });
-    Career {
-        company_name: career_info.company_name,
-        department_name: career_info.department_name,
-        office: career_info.office,
-        career_start_date,
-        career_end_date,
-        contract_type: career_info.contract_type,
-        profession: career_info.profession,
-        annual_income_in_man_yen: career_info.annual_income_in_man_yen,
-        is_manager: career_info.is_manager,
-        position_name: career_info.position_name,
-        is_new_graduate: career_info.is_new_graduate,
-        note: career_info.note,
-    }
 }
 
 #[derive(Serialize, Debug)]
@@ -229,6 +169,176 @@ pub(crate) struct Transfer {
     pub status: String,
     pub amount: i32,
     pub scheduled_date_in_jst: Ymd,
+}
+
+impl ProfileResult {
+    fn email_address(email_address: String) -> ProfileResultBuilder {
+        ProfileResultBuilder {
+            email_address,
+            identity: None,
+            careers: vec![],
+            fee_per_hour_in_yen: None,
+            bank_account: None,
+            profit: None,
+            last_time_transfer: None,
+            most_recent_transfer: None,
+        }
+    }
+}
+
+struct ProfileResultBuilder {
+    email_address: String,
+    identity: Option<Identity>,
+    careers: Vec<Career>,
+    fee_per_hour_in_yen: Option<i32>,
+    bank_account: Option<BankAccount>,
+    profit: Option<u32>,
+    last_time_transfer: Option<Transfer>,
+    most_recent_transfer: Option<Transfer>,
+}
+
+impl ProfileResultBuilder {
+    fn identity(mut self, identity: Option<Identity>) -> ProfileResultBuilder {
+        self.identity = identity;
+        self
+    }
+
+    fn careers(mut self, careers: Vec<Career>) -> ProfileResultBuilder {
+        self.careers = careers;
+        self
+    }
+
+    fn fee_per_hour_in_yen(mut self, fee_per_hour_in_yen: Option<i32>) -> ProfileResultBuilder {
+        self.fee_per_hour_in_yen = fee_per_hour_in_yen;
+        self
+    }
+
+    fn bank_account(mut self, bank_account: Option<BankAccount>) -> ProfileResultBuilder {
+        self.bank_account = bank_account;
+        self
+    }
+
+    fn profit(mut self, profit: Option<u32>) -> ProfileResultBuilder {
+        self.profit = profit;
+        self
+    }
+
+    fn last_time_transfer(mut self, last_time_transfer: Option<Transfer>) -> ProfileResultBuilder {
+        self.last_time_transfer = last_time_transfer;
+        self
+    }
+
+    fn most_recent_transfer(
+        mut self,
+        most_recent_transfer: Option<Transfer>,
+    ) -> ProfileResultBuilder {
+        self.most_recent_transfer = most_recent_transfer;
+        self
+    }
+
+    fn finish(self) -> ProfileResult {
+        ProfileResult {
+            email_address: self.email_address,
+            identity: self.identity,
+            careers: self.careers,
+            fee_per_hour_in_yen: self.fee_per_hour_in_yen,
+            bank_account: self.bank_account,
+            profit: self.profit,
+            last_time_transfer: self.last_time_transfer,
+            most_recent_transfer: self.most_recent_transfer,
+        }
+    }
+}
+
+fn convert_identity_info_to_identity(identity_info: IdentityInfo) -> Identity {
+    let date = identity_info.date_of_birth;
+    let ymd = Ymd {
+        year: date.year(),
+        month: date.month(),
+        day: date.day(),
+    };
+    Identity {
+        last_name: identity_info.last_name,
+        first_name: identity_info.first_name,
+        last_name_furigana: identity_info.last_name_furigana,
+        first_name_furigana: identity_info.first_name_furigana,
+        sex: identity_info.sex,
+        date_of_birth: ymd,
+        prefecture: identity_info.prefecture,
+        city: identity_info.city,
+        address_line1: identity_info.address_line1,
+        address_line2: identity_info.address_line2,
+    }
+}
+
+fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
+    let career_start_date = Ymd {
+        year: career_info.career_start_date.year(),
+        month: career_info.career_start_date.month(),
+        day: career_info.career_start_date.day(),
+    };
+    let career_end_date = career_info.career_end_date.map(|end_date| Ymd {
+        year: end_date.year(),
+        month: end_date.month(),
+        day: end_date.day(),
+    });
+    Career {
+        company_name: career_info.company_name,
+        department_name: career_info.department_name,
+        office: career_info.office,
+        career_start_date,
+        career_end_date,
+        contract_type: career_info.contract_type,
+        profession: career_info.profession,
+        annual_income_in_man_yen: career_info.annual_income_in_man_yen,
+        is_manager: career_info.is_manager,
+        position_name: career_info.position_name,
+        is_new_graduate: career_info.is_new_graduate,
+        note: career_info.note,
+    }
+}
+
+async fn get_bank_account_by_tenant_id(
+    tenant_op: impl TenantOperation,
+    tenant_id: &str,
+) -> Result<Option<BankAccount>, ErrResp> {
+    let tenant = tenant_op
+        .find_tenant_by_tenant_id(tenant_id)
+        .await
+        .map_err(|e| match e {
+            common::payment_platform::err::Error::RequestProcessingError(err) => todo!(),
+            common::payment_platform::err::Error::ApiError(err) => todo!(),
+        });
+    todo!()
+}
+
+async fn get_profit_of_the_month(
+    charge_op: impl ChargeOperation,
+    tenant_id: &str,
+) -> Result<Option<u32>, ErrResp> {
+    // TODO: sinceとuntilを指定
+    let search_charges_query = SearchChargesQuery::build()
+        .tenant(tenant_id)
+        .finish()
+        .expect("failed to get Ok");
+    let b = charge_op.search_charges(&search_charges_query).await;
+    todo!()
+}
+
+async fn get_latest_two_tenant_transfers(
+    tenant_transfer_op: impl TenantTransferOperation,
+    tenant_id: &str,
+) -> Result<(Option<Transfer>, Option<Transfer>), ErrResp> {
+    // TODO: 2を定数化
+    let search_tenant_transfers_query = SearchTenantTransfersQuery::build()
+        .limit(2)
+        .tenant(tenant_id)
+        .finish()
+        .expect("failed to get Ok");
+    let c = tenant_transfer_op
+        .search_tenant_transfers(&search_tenant_transfers_query)
+        .await;
+    todo!()
 }
 
 trait ProfileOperation {
