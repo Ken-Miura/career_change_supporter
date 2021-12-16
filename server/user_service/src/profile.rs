@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use axum::{http::StatusCode, Json};
-use chrono::Datelike;
+use chrono::{DateTime, Datelike, FixedOffset, Utc};
 use common::{
     model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo, Tenant},
     payment_platform::{
@@ -30,7 +30,7 @@ use serde::Serialize;
 
 use crate::{
     err_code::NO_ACCOUNT_FOUND,
-    util::{session::User, unexpected_err_resp, ACCESS_INFO},
+    util::{session::User, unexpected_err_resp, ACCESS_INFO, JAPANESE_TIME_ZONE},
 };
 
 pub(crate) async fn get_profile(
@@ -41,11 +41,13 @@ pub(crate) async fn get_profile(
     let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
     let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
     let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
+    let current_datetime = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     get_profile_internal(
         account_id,
         profile_op,
         tenant_op,
         charge_op,
+        current_datetime,
         tenant_transfer_op,
     )
     .await
@@ -56,7 +58,7 @@ async fn get_profile_internal(
     profile_op: impl ProfileOperation,
     tenant_op: impl TenantOperation,
     charge_op: impl ChargeOperation,
-    // TODO: 売上を計上する西暦と月が必要？
+    current_time: DateTime<FixedOffset>,
     tenant_transfer_op: impl TenantTransferOperation,
 ) -> RespResult<ProfileResult> {
     let account = profile_op.find_user_account_by_user_account_id(account_id)?;
@@ -78,11 +80,12 @@ async fn get_profile_internal(
     let tenant_option = profile_op.find_tenant_by_user_account_id(account_id)?;
     let payment_platform_results = if let Some(tenant) = tenant_option {
         let bank_account = get_bank_account_by_tenant_id(tenant_op, &tenant.tenant_id).await?;
-        let profit = get_profit_of_the_month(charge_op, &tenant.tenant_id).await?;
+        let profit =
+            get_profit_of_current_month(charge_op, &tenant.tenant_id, current_time).await?;
         let (most_recent_transfer, last_time_transfer) =
             get_latest_two_tenant_transfers(tenant_transfer_op, &tenant.tenant_id).await?;
         (
-            bank_account,
+            Some(bank_account),
             profit,
             last_time_transfer,
             most_recent_transfer,
@@ -301,26 +304,43 @@ fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
 async fn get_bank_account_by_tenant_id(
     tenant_op: impl TenantOperation,
     tenant_id: &str,
-) -> Result<Option<BankAccount>, ErrResp> {
+) -> Result<BankAccount, ErrResp> {
     let tenant = tenant_op
         .find_tenant_by_tenant_id(tenant_id)
         .await
         .map_err(|e| match e {
-            common::payment_platform::err::Error::RequestProcessingError(err) => todo!(),
-            common::payment_platform::err::Error::ApiError(err) => todo!(),
-        });
-    todo!()
+            common::payment_platform::err::Error::RequestProcessingError(err) => {
+                tracing::error!("failed to process request: {}", err);
+                unexpected_err_resp()
+            }
+            common::payment_platform::err::Error::ApiError(err) => {
+                tracing::error!("failed to request tenant operation: {}", err);
+                // TODO: このためのエラーコードを用意するか検討
+                unexpected_err_resp()
+            }
+        })?;
+    Ok(BankAccount {
+        bank_code: tenant.bank_code,
+        branch_code: tenant.bank_branch_code,
+        account_type: tenant.bank_account_type,
+        account_number: tenant.bank_account_number,
+        account_holder_name: tenant.bank_account_holder_name,
+    })
 }
 
-async fn get_profit_of_the_month(
+async fn get_profit_of_current_month(
     charge_op: impl ChargeOperation,
     tenant_id: &str,
+    current_time: DateTime<FixedOffset>,
 ) -> Result<Option<u32>, ErrResp> {
     // TODO: sinceとuntilを指定
     let search_charges_query = SearchChargesQuery::build()
         .tenant(tenant_id)
         .finish()
-        .expect("failed to get Ok");
+        .map_err(|e| {
+            tracing::error!("failed to build search charges query: {}", e);
+            unexpected_err_resp()
+        })?;
     let b = charge_op.search_charges(&search_charges_query).await;
     todo!()
 }

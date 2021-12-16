@@ -6,6 +6,7 @@ pub(crate) mod terms_of_use;
 use std::env::var;
 
 use axum::{http::StatusCode, Json};
+use chrono::FixedOffset;
 use common::{payment_platform::access_info::AccessInfo, ApiError, ErrResp};
 use once_cell::sync::Lazy;
 
@@ -90,3 +91,7 @@ pub(crate) mod tests {
         }
     }
 }
+
+/// UTCにおける日本のタイムゾーン（正確には、UTCで日本時間を表すためのオフセットだが、タイムゾーンと同等の意味で利用）
+/// [chrono::DateTime] で日本時間を扱う際に利用する。
+pub(crate) static JAPANESE_TIME_ZONE: Lazy<FixedOffset> = Lazy::new(|| FixedOffset::east(9 * 3600));
