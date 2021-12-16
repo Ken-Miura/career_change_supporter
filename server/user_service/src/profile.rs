@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use axum::{http::StatusCode, Json};
-use chrono::{DateTime, Datelike, FixedOffset, Utc};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, TimeZone, Utc};
 use common::{
     model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo, Tenant},
     payment_platform::{
@@ -333,8 +333,21 @@ async fn get_profit_of_current_month(
     tenant_id: &str,
     current_time: DateTime<FixedOffset>,
 ) -> Result<Option<u32>, ErrResp> {
-    // TODO: sinceとuntilを指定
+    let current_year = current_time.year();
+    let current_month = current_time.month();
+    let since_timestamp = chrono::Utc
+        .ymd(current_year, current_month, 1)
+        .and_hms(0, 0, 0)
+        .timestamp();
+    let next_month = current_month + 1; // 12月のときを考える必要あり？
+    let until_timestamp = (chrono::Utc
+        .ymd(current_year, next_month, 1)
+        .and_hms(23, 59, 59)
+        - Duration::days(1))
+    .timestamp();
     let search_charges_query = SearchChargesQuery::build()
+        .since(since_timestamp)
+        .until(until_timestamp)
         .tenant(tenant_id)
         .finish()
         .map_err(|e| {
