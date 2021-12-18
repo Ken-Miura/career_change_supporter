@@ -10,7 +10,7 @@ use axum::async_trait;
 
 const TENANTS_OPERATION_PATH: &str = "/v1/tenants";
 
-/// PAY.JP APIにおけるテナントを示す <https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88>
+/// [tenantオブジェクト](https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)を示す構造体
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tenant {
     pub id: String,
@@ -33,8 +33,9 @@ pub struct Tenant {
     pub metadata: Option<Metadata>,
 }
 
-/// [Tenant] 内で利用される型
-/// 申請情報を提出済のブランド
+/// 申請情報を提出済のブランドを示す構造体
+///
+/// [Tenant] 内で利用される
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ReviewedBrands {
     pub brand: String,
@@ -42,11 +43,10 @@ pub struct ReviewedBrands {
     pub available_date: Option<i64>,
 }
 
-/// テナント <https://pay.jp/docs/api/?shell#tenant-%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88> に関する操作を提供する
 #[async_trait]
 pub trait TenantOperation {
-    /// テナントの情報を取得 <https://pay.jp/docs/api/?shell#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E6%83%85%E5%A0%B1%E3%82%92%E5%8F%96%E5%BE%97>
-    async fn find_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error>;
+    /// [テナントの情報を取得](https://pay.jp/docs/api/?shell#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E6%83%85%E5%A0%B1%E3%82%92%E5%8F%96%E5%BE%97)
+    async fn get_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error>;
 }
 
 pub struct TenantOperationImpl<'a> {
@@ -61,7 +61,7 @@ impl<'a> TenantOperationImpl<'a> {
 
 #[async_trait]
 impl<'a> TenantOperation for TenantOperationImpl<'a> {
-    async fn find_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error> {
+    async fn get_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error> {
         let operation_url = self.access_info.base_url() + TENANTS_OPERATION_PATH + "/" + tenant_id;
         let username = self.access_info.username();
         let password = self.access_info.password();

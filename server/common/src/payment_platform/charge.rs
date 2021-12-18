@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{error::Error as StdError, fmt::Display};
 
 use super::{
-    card::Card,
+    customer::Card,
     AccessInfo, List, Metadata, {Error, ErrorInfo},
 };
 
@@ -12,7 +12,7 @@ use axum::async_trait;
 
 const CHARGES_OPERATION_PATH: &str = "/v1/charges";
 
-/// PAY.JP APIにおけるCharge (支払い) を示す <https://pay.jp/docs/api/#charge%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88>
+/// [chargeオブジェクト](https://pay.jp/docs/api/#charge%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)を示す構造体
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Charge {
     pub id: String,
@@ -42,14 +42,15 @@ pub struct Charge {
     pub total_platform_fee: Option<u32>,
 }
 
-/// 支払い <https://pay.jp/docs/api/?shell#charge-%E6%94%AF%E6%89%95%E3%81%84> に関連する操作を提供する
 #[async_trait]
 pub trait ChargeOperation {
+    /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)
     async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error>;
 }
 
-/// 支払いリストを取得 <https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97> の際に渡すクエリ<br>
-/// 複数値がセットされた場合、AND検索となる。値が空の場合、（limit=10の制限の中で）すべての値を取得する
+/// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
+///
+/// 複数値がセットされた場合、AND検索となる。値が空の場合、（limit=10の制限の中で）すべての値を取得しようと試みる
 #[derive(Serialize, Debug)]
 pub struct Query {
     limit: Option<u32>,

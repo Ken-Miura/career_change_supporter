@@ -306,7 +306,7 @@ async fn get_bank_account_by_tenant_id(
     tenant_id: &str,
 ) -> Result<BankAccount, ErrResp> {
     let tenant = tenant_op
-        .find_tenant_by_tenant_id(tenant_id)
+        .get_tenant_by_tenant_id(tenant_id)
         .await
         .map_err(|e| match e {
             common::payment_platform::Error::RequestProcessingError(err) => {

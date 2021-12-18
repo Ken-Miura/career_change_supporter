@@ -4,8 +4,8 @@
 //! レスポンスのJSONオブジェクトのプロパティに関して、プロパティの値の型は公式のSDKの[Go](https://github.com/payjp/payjp-go)と[Java](https://github.com/payjp/payjp-java)を参考に実装。
 //! プロパティが存在するかどうか、そのプロパティの値がnullableかどうかは、公式のSDKの[Node](https://github.com/payjp/payjp-node)のtypescriptの宣言を参照し実装。<br>
 
-pub mod card;
 pub mod charge;
+pub mod customer;
 pub mod tenant;
 pub mod tenant_transfer;
 

@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::Metadata;
 
-/// [Charge] 内で利用される型
-/// 支払いに利用されたクレジットカードを示す
-/// <https://pay.jp/docs/api/#card%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88>
+/// [cardオブジェクト](https://pay.jp/docs/api/#card%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)を示す構造体
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Card {
     pub object: String,

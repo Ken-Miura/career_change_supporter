@@ -12,10 +12,7 @@ use axum::async_trait;
 
 const TENANT_TRANSFER_OPERATION_PATH: &str = "/v1/tenant_transfers";
 
-/// PAY.JP APIにおけるTenant Transfer (入金) を示す<br>
-/// 参考<br>
-/// transfer: <https://pay.jp/docs/api/?shell#transfer%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88><br>
-/// tenant transfer: <https://pay.jp/docs/api/?shell#tenant_transfer%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88><br>
+/// [tenant_transferオブジェクト](https://pay.jp/docs/api/?shell#tenant_transfer%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)を示す構造体
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TenantTransfer {
     pub object: String,
@@ -50,13 +47,14 @@ pub struct Summary {
     pub total_platform_fee: i32,
 }
 
-/// テナントの入金 <https://pay.jp/docs/api/?shell#tenant-transfer-%E5%85%A5%E9%87%91> に関連する操作を提供する
 #[async_trait]
 pub trait TenantTransferOperation {
+    /// [テナントの入金リストを取得](https://pay.jp/docs/api/?shell#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E3%81%AE%E5%85%A5%E9%87%91%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)
     async fn search_tenant_transfers(&self, query: &Query) -> Result<List<TenantTransfer>, Error>;
 }
 
-/// 入金リストを取得 <https://pay.jp/docs/api/?shell#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E3%81%AE%E5%85%A5%E9%87%91%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97> の際に渡すクエリ<br>
+/// [テナントの入金リストを取得](https://pay.jp/docs/api/?shell#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E3%81%AE%E5%85%A5%E9%87%91%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
+///
 /// 複数値がセットされた場合、AND検索となる。値が空の場合、（limit=10の制限の中で）すべての値を取得する
 #[derive(Serialize, Debug)]
 pub struct Query {
@@ -77,7 +75,7 @@ impl Query {
         QueryBuilder::new()
     }
 
-    // NOTE: 可能な限り提供されるPAY.JPのAPIに沿った形にしたいため、引数が多いが許容する
+    // NOTE: PAY.JPのクエリパラメータが多いことに起因する問題なので許容する
     #[allow(clippy::too_many_arguments)]
     fn new(
         limit: Option<u32>,
