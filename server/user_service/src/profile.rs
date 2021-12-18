@@ -345,6 +345,24 @@ async fn get_profit_of_current_month(
         .and_hms(23, 59, 59)
         - Duration::days(1))
     .timestamp();
+    // let current_year = 2021;
+    // let current_month = 12;
+    // let since = chrono::Utc
+    //     .ymd(current_year, current_month, 1)
+    //     .and_hms(0, 0, 0);
+    // println!("{}", since);
+    // let mut n_y = current_year;
+    // let next_month = if current_month == 12 {
+    //     n_y = current_year + 1;
+    //     1
+    // } else {
+    //     current_month + 1 // 12月のときを考える必要あり
+    // };
+    // let until = chrono::Utc
+    //     .ymd(n_y, next_month, 1)
+    //     .and_hms(23, 59, 59)
+    //     - Duration::days(1);
+    // println!("{}", until);
     let search_charges_query = SearchChargesQuery::build()
         .since(since_timestamp)
         .until(until_timestamp)
