@@ -1,8 +1,8 @@
 // Copyright 2021 Ken Miura
 
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+
+use super::Metadata;
 
 /// [Charge] 内で利用される型
 /// 支払いに利用されたクレジットカードを示す
@@ -26,7 +26,5 @@ pub struct Card {
     pub country: Option<String>,
     pub address_zip: Option<String>,
     pub address_zip_check: String,
-    /// 一つのオブジェクトには最大20キーまで保存でき、キーは40文字まで、バリューは500文字までの文字列
-    /// <https://pay.jp/docs/api/?java#metadata>
-    pub metadata: Option<HashMap<String, String>>,
+    pub metadata: Option<Metadata>,
 }

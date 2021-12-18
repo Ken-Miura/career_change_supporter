@@ -1,12 +1,9 @@
 // Copyright 2021 Ken Miura
 
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 
 use super::{
-    access_info::AccessInfo,
-    err::{Error, ErrorInfo},
+    AccessInfo, Metadata, {Error, ErrorInfo},
 };
 
 use axum::async_trait;
@@ -33,9 +30,7 @@ pub struct Tenant {
     pub currencies_supported: Vec<String>,
     pub default_currency: String,
     pub reviewed_brands: Vec<ReviewedBrands>,
-    /// 一つのオブジェクトには最大20キーまで保存でき、キーは40文字まで、バリューは500文字までの文字列
-    /// <https://pay.jp/docs/api/?java#metadata>
-    pub metadata: Option<HashMap<String, String>>,
+    pub metadata: Option<Metadata>,
 }
 
 /// [Tenant] 内で利用される型
@@ -44,7 +39,7 @@ pub struct Tenant {
 pub struct ReviewedBrands {
     pub brand: String,
     pub status: String,
-    pub available_date: Option<u64>,
+    pub available_date: Option<i64>,
 }
 
 /// テナント <https://pay.jp/docs/api/?shell#tenant-%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88> に関する操作を提供する

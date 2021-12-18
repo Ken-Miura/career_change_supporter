@@ -309,11 +309,11 @@ async fn get_bank_account_by_tenant_id(
         .find_tenant_by_tenant_id(tenant_id)
         .await
         .map_err(|e| match e {
-            common::payment_platform::err::Error::RequestProcessingError(err) => {
+            common::payment_platform::Error::RequestProcessingError(err) => {
                 tracing::error!("failed to process request: {}", err);
                 unexpected_err_resp()
             }
-            common::payment_platform::err::Error::ApiError(err) => {
+            common::payment_platform::Error::ApiError(err) => {
                 tracing::error!("failed to request tenant operation: {}", err);
                 // TODO: このためのエラーコードを用意するか検討
                 unexpected_err_resp()

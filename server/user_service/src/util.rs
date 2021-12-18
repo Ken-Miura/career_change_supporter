@@ -7,7 +7,7 @@ use std::env::var;
 
 use axum::{http::StatusCode, Json};
 use chrono::FixedOffset;
-use common::{payment_platform::access_info::AccessInfo, ApiError, ErrResp};
+use common::{payment_platform::AccessInfo, ApiError, ErrResp};
 use once_cell::sync::Lazy;
 
 use crate::err_code;

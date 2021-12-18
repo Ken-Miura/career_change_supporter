@@ -1,13 +1,11 @@
 // Copyright 2021 Ken Miura
 
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error as StdError, fmt::Display};
+use std::{error::Error as StdError, fmt::Display};
 
 use super::{
-    access_info::AccessInfo,
     card::Card,
-    err::{Error, ErrorInfo},
-    list::List,
+    AccessInfo, List, Metadata, {Error, ErrorInfo},
 };
 
 use axum::async_trait;
@@ -37,9 +35,7 @@ pub struct Charge {
     pub amount_refunded: i32,
     pub refund_reason: Option<String>,
     pub subscription: Option<String>,
-    /// 一つのオブジェクトには最大20キーまで保存でき、キーは40文字まで、バリューは500文字までの文字列
-    /// <https://pay.jp/docs/api/?java#metadata>
-    pub metadata: Option<HashMap<String, String>>,
+    pub metadata: Option<Metadata>,
     pub platform_fee: Option<u32>,
     pub tenant: Option<String>,
     pub platform_fee_rate: Option<String>,
