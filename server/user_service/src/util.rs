@@ -52,6 +52,10 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     access_info.expect("failed to get Ok")
 });
 
+/// UTCにおける日本のタイムゾーン（正確には、UTCで日本時間を表すためのオフセットだが、タイムゾーンと同等の意味で利用）
+/// [chrono::DateTime] で日本時間を扱う際に利用する。
+pub(crate) static JAPANESE_TIME_ZONE: Lazy<FixedOffset> = Lazy::new(|| FixedOffset::east(9 * 3600));
+
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 pub(crate) mod tests {
@@ -91,7 +95,3 @@ pub(crate) mod tests {
         }
     }
 }
-
-/// UTCにおける日本のタイムゾーン（正確には、UTCで日本時間を表すためのオフセットだが、タイムゾーンと同等の意味で利用）
-/// [chrono::DateTime] で日本時間を扱う際に利用する。
-pub(crate) static JAPANESE_TIME_ZONE: Lazy<FixedOffset> = Lazy::new(|| FixedOffset::east(9 * 3600));
