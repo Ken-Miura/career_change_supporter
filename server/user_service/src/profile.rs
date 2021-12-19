@@ -86,7 +86,7 @@ async fn get_profile_internal(
             get_latest_two_tenant_transfers(tenant_transfer_op, &tenant.tenant_id).await?;
         (
             Some(bank_account),
-            profit,
+            Some(profit),
             last_time_transfer,
             most_recent_transfer,
         )
@@ -116,7 +116,7 @@ pub(crate) struct ProfileResult {
     careers: Vec<Career>,
     fee_per_hour_in_yen: Option<i32>,
     bank_account: Option<BankAccount>,
-    profit: Option<u32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
+    profit: Option<i32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
     last_time_transfer: Option<Transfer>,
     most_recent_transfer: Option<Transfer>,
 }
@@ -195,7 +195,7 @@ struct ProfileResultBuilder {
     careers: Vec<Career>,
     fee_per_hour_in_yen: Option<i32>,
     bank_account: Option<BankAccount>,
-    profit: Option<u32>,
+    profit: Option<i32>,
     last_time_transfer: Option<Transfer>,
     most_recent_transfer: Option<Transfer>,
 }
@@ -221,7 +221,7 @@ impl ProfileResultBuilder {
         self
     }
 
-    fn profit(mut self, profit: Option<u32>) -> ProfileResultBuilder {
+    fn profit(mut self, profit: Option<i32>) -> ProfileResultBuilder {
         self.profit = profit;
         self
     }
@@ -310,12 +310,11 @@ async fn get_bank_account_by_tenant_id(
         .await
         .map_err(|e| match e {
             common::payment_platform::Error::RequestProcessingError(err) => {
-                tracing::error!("failed to process request: {}", err);
+                tracing::error!("failed to process request on getting tenant: {}", err);
                 unexpected_err_resp()
             }
             common::payment_platform::Error::ApiError(err) => {
                 tracing::error!("failed to request tenant operation: {}", err);
-                // TODO: このためのエラーコードを用意するか検討
                 unexpected_err_resp()
             }
         })?;
@@ -332,37 +331,11 @@ async fn get_profit_of_current_month(
     charge_op: impl ChargeOperation,
     tenant_id: &str,
     current_time: DateTime<FixedOffset>,
-) -> Result<Option<u32>, ErrResp> {
+) -> Result<i32, ErrResp> {
     let current_year = current_time.year();
     let current_month = current_time.month();
-    let since_timestamp = chrono::Utc
-        .ymd(current_year, current_month, 1)
-        .and_hms(0, 0, 0)
-        .timestamp();
-    let next_month = current_month + 1; // 12月のときを考える必要あり？
-    let until_timestamp = (chrono::Utc
-        .ymd(current_year, next_month, 1)
-        .and_hms(23, 59, 59)
-        - Duration::days(1))
-    .timestamp();
-    // let current_year = 2021;
-    // let current_month = 12;
-    // let since = chrono::Utc
-    //     .ymd(current_year, current_month, 1)
-    //     .and_hms(0, 0, 0);
-    // println!("{}", since);
-    // let mut n_y = current_year;
-    // let next_month = if current_month == 12 {
-    //     n_y = current_year + 1;
-    //     1
-    // } else {
-    //     current_month + 1 // 12月のときを考える必要あり
-    // };
-    // let until = chrono::Utc
-    //     .ymd(n_y, next_month, 1)
-    //     .and_hms(23, 59, 59)
-    //     - Duration::days(1);
-    // println!("{}", until);
+    let (since_timestamp, until_timestamp) =
+        create_start_and_end_timestamps_of_current_month(current_year, current_month);
     let search_charges_query = SearchChargesQuery::build()
         .since(since_timestamp)
         .until(until_timestamp)
@@ -372,8 +345,71 @@ async fn get_profit_of_current_month(
             tracing::error!("failed to build search charges query: {}", e);
             unexpected_err_resp()
         })?;
-    let b = charge_op.search_charges(&search_charges_query).await;
-    todo!()
+    let mut has_more_charges = true;
+    let mut profit = 0;
+    while has_more_charges {
+        let charges = charge_op
+            .search_charges(&search_charges_query)
+            .await
+            .map_err(|err| match err {
+                common::payment_platform::Error::RequestProcessingError(err) => {
+                    tracing::error!("failed to process request on getting charges: {}", err);
+                    unexpected_err_resp()
+                }
+                common::payment_platform::Error::ApiError(err) => {
+                    tracing::error!("failed to request charge operation: {}", err);
+                    unexpected_err_resp()
+                }
+            })?;
+        let sum_of_charges = charges
+            .data
+            .into_iter()
+            .filter(|charge| charge.captured)
+            .filter(|charge| !charge.refunded)
+            .fold(0, |sum, charge| {
+                if let Some(fee) = charge.total_platform_fee {
+                    let amount = charge.amount - fee;
+                    if amount < 0 {
+                        // TODO: refundで全額返金した場合、手数料がどうなるか確認する
+                        tracing::warn!(
+                            "amount - total_platform_fee is negative in the charge: {:?}",
+                            charge
+                        );
+                    }
+                    sum + amount
+                } else {
+                    tracing::error!("No total_platform_fee found in the charge: {:?}", charge);
+                    sum + charge.amount
+                }
+            });
+        // TODO: 0未満の場合、0を返す
+        profit += sum_of_charges;
+        has_more_charges = charges.has_more;
+    }
+    Ok(profit)
+}
+
+fn create_start_and_end_timestamps_of_current_month(
+    current_year: i32,
+    current_month: u32,
+) -> (i64, i64) {
+    let start_timestamp = chrono::Utc
+        .ymd(current_year, current_month, 1)
+        .and_hms(0, 0, 0)
+        .timestamp();
+
+    let (year_for_until, month_for_until) = if current_month >= 12 {
+        (current_year + 1, 1)
+    } else {
+        (current_year, current_month + 1)
+    };
+    let end_timestamp = (chrono::Utc
+        .ymd(year_for_until, month_for_until, 1)
+        .and_hms(23, 59, 59)
+        - Duration::days(1))
+    .timestamp();
+
+    (start_timestamp, end_timestamp)
 }
 
 async fn get_latest_two_tenant_transfers(
@@ -386,7 +422,7 @@ async fn get_latest_two_tenant_transfers(
         .tenant(tenant_id)
         .finish()
         .expect("failed to get Ok");
-    let c = tenant_transfer_op
+    let _c = tenant_transfer_op
         .search_tenant_transfers(&search_tenant_transfers_query)
         .await;
     todo!()
