@@ -5,7 +5,7 @@ use chrono::{DateTime, Datelike, Duration, FixedOffset, TimeZone, Utc};
 use common::{
     model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo, Tenant},
     payment_platform::{
-        charge::{ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
+        charge::{Charge, ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
         tenant_transfer::{
             Query as SearchTenantTransfersQuery, TenantTransferOperation,
@@ -365,20 +365,7 @@ async fn get_profit_of_current_month(
             .data
             .into_iter()
             .filter(|charge| charge.captured)
-            .try_fold(0, |sum, charge| {
-                let sales = charge.amount - charge.amount_refunded;
-                if let Some(fee) = charge.total_platform_fee {
-                    let profit_of_the_charge = sales - fee;
-                    if profit_of_the_charge < 0 {
-                        tracing::error!("negative profit_of_the_charge: {:?}", charge);
-                        return Err(unexpected_err_resp());
-                    }
-                    Ok(sum + profit_of_the_charge)
-                } else {
-                    tracing::error!("No total_platform_fee found in the charge: {:?}", charge);
-                    Err(unexpected_err_resp())
-                }
-            })?;
+            .try_fold(0, accumulate_profit_of_charges)?;
         profit += profit_of_charges;
         has_more_charges = charges.has_more;
     }
@@ -406,6 +393,21 @@ fn create_start_and_end_timestamps_of_current_month(
     .timestamp();
 
     (start_timestamp, end_timestamp)
+}
+
+fn accumulate_profit_of_charges(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
+    let sales = charge.amount - charge.amount_refunded;
+    if let Some(fee) = charge.total_platform_fee {
+        let profit_of_the_charge = sales - fee;
+        if profit_of_the_charge < 0 {
+            tracing::error!("negative profit_of_the_charge: {:?}", charge);
+            return Err(unexpected_err_resp());
+        }
+        Ok(sum + profit_of_the_charge)
+    } else {
+        tracing::error!("No total_platform_fee found in the charge: {:?}", charge);
+        Err(unexpected_err_resp())
+    }
 }
 
 async fn get_latest_two_tenant_transfers(
