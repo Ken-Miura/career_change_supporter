@@ -361,29 +361,24 @@ async fn get_profit_of_current_month(
                     unexpected_err_resp()
                 }
             })?;
-        let sum_of_charges = charges
+        let profit_of_charges = charges
             .data
             .into_iter()
             .filter(|charge| charge.captured)
-            .filter(|charge| !charge.refunded)
             .fold(0, |sum, charge| {
+                let sales = charge.amount - charge.amount_refunded;
                 if let Some(fee) = charge.total_platform_fee {
-                    let amount = charge.amount - fee;
-                    if amount < 0 {
-                        // TODO: refundで全額返金した場合、手数料がどうなるか確認する
-                        tracing::warn!(
-                            "amount - total_platform_fee is negative in the charge: {:?}",
-                            charge
-                        );
+                    let profit_of_the_charge = sales - fee;
+                    if profit_of_the_charge < 0 {
+                        tracing::error!("negative profit_of_the_charge: {:?}", charge);
                     }
-                    sum + amount
+                    sum + profit_of_the_charge
                 } else {
                     tracing::error!("No total_platform_fee found in the charge: {:?}", charge);
-                    sum + charge.amount
+                    sum
                 }
             });
-        // TODO: 0未満の場合、0を返す
-        profit += sum_of_charges;
+        profit += profit_of_charges;
         has_more_charges = charges.has_more;
     }
     Ok(profit)
