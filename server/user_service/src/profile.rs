@@ -1,14 +1,14 @@
 // Copyright 2021 Ken Miura
 
 use axum::{http::StatusCode, Json};
-use chrono::{DateTime, Datelike, Duration, FixedOffset, TimeZone, Utc};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, TimeZone, Utc};
 use common::{
     model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo, Tenant},
     payment_platform::{
         charge::{Charge, ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
         tenant_transfer::{
-            Query as SearchTenantTransfersQuery, TenantTransferOperation,
+            Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
             TenantTransferOperationImpl,
         },
     },
@@ -32,6 +32,9 @@ use crate::{
     err_code::NO_ACCOUNT_FOUND,
     util::{session::User, unexpected_err_resp, ACCESS_INFO, JAPANESE_TIME_ZONE},
 };
+
+const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 32;
+const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
 
 pub(crate) async fn get_profile(
     User { account_id }: User,
@@ -82,16 +85,11 @@ async fn get_profile_internal(
         let bank_account = get_bank_account_by_tenant_id(tenant_op, &tenant.tenant_id).await?;
         let profit =
             get_profit_of_current_month(charge_op, &tenant.tenant_id, current_time).await?;
-        let (most_recent_transfer, last_time_transfer) =
+        let transfers =
             get_latest_two_tenant_transfers(tenant_transfer_op, &tenant.tenant_id).await?;
-        (
-            Some(bank_account),
-            Some(profit),
-            last_time_transfer,
-            most_recent_transfer,
-        )
+        (Some(bank_account), Some(profit), transfers)
     } else {
-        (None, None, None, None)
+        (None, None, vec![])
     };
     Ok((
         StatusCode::OK,
@@ -102,8 +100,7 @@ async fn get_profile_internal(
                 .fee_per_hour_in_yen(fee_per_hour_in_yen)
                 .bank_account(payment_platform_results.0)
                 .profit(payment_platform_results.1)
-                .last_time_transfer(payment_platform_results.2)
-                .most_recent_transfer(payment_platform_results.3)
+                .latest_two_transfers(payment_platform_results.2)
                 .finish(),
         ),
     ))
@@ -117,8 +114,7 @@ pub(crate) struct ProfileResult {
     fee_per_hour_in_yen: Option<i32>,
     bank_account: Option<BankAccount>,
     profit: Option<i32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
-    last_time_transfer: Option<Transfer>,
-    most_recent_transfer: Option<Transfer>,
+    latest_two_transfers: Vec<Transfer>,
 }
 
 #[derive(Serialize, Debug)]
@@ -170,8 +166,14 @@ pub(crate) struct BankAccount {
 #[derive(Serialize, Debug)]
 pub(crate) struct Transfer {
     pub status: String,
+    // status == "pending"
     pub amount: i32,
     pub scheduled_date_in_jst: Ymd,
+    // status == "paid"
+    pub transfer_amount: Option<i32>,
+    pub transfer_date_in_jst: Option<Ymd>,
+    // status == "carried_over"
+    pub carried_balance: Option<i32>,
 }
 
 impl ProfileResult {
@@ -183,8 +185,7 @@ impl ProfileResult {
             fee_per_hour_in_yen: None,
             bank_account: None,
             profit: None,
-            last_time_transfer: None,
-            most_recent_transfer: None,
+            latest_two_transfers: vec![],
         }
     }
 }
@@ -196,8 +197,7 @@ struct ProfileResultBuilder {
     fee_per_hour_in_yen: Option<i32>,
     bank_account: Option<BankAccount>,
     profit: Option<i32>,
-    last_time_transfer: Option<Transfer>,
-    most_recent_transfer: Option<Transfer>,
+    latest_two_transfers: Vec<Transfer>,
 }
 
 impl ProfileResultBuilder {
@@ -226,16 +226,8 @@ impl ProfileResultBuilder {
         self
     }
 
-    fn last_time_transfer(mut self, last_time_transfer: Option<Transfer>) -> ProfileResultBuilder {
-        self.last_time_transfer = last_time_transfer;
-        self
-    }
-
-    fn most_recent_transfer(
-        mut self,
-        most_recent_transfer: Option<Transfer>,
-    ) -> ProfileResultBuilder {
-        self.most_recent_transfer = most_recent_transfer;
+    fn latest_two_transfers(mut self, latest_two_transfers: Vec<Transfer>) -> ProfileResultBuilder {
+        self.latest_two_transfers = latest_two_transfers;
         self
     }
 
@@ -247,8 +239,7 @@ impl ProfileResultBuilder {
             fee_per_hour_in_yen: self.fee_per_hour_in_yen,
             bank_account: self.bank_account,
             profit: self.profit,
-            last_time_transfer: self.last_time_transfer,
-            most_recent_transfer: self.most_recent_transfer,
+            latest_two_transfers: self.latest_two_transfers,
         }
     }
 }
@@ -337,6 +328,7 @@ async fn get_profit_of_current_month(
     let (since_timestamp, until_timestamp) =
         create_start_and_end_timestamps_of_current_month(current_year, current_month);
     let search_charges_query = SearchChargesQuery::build()
+        .limit(MAX_NUM_OF_CHARGES_PER_REQUEST)
         .since(since_timestamp)
         .until(until_timestamp)
         .tenant(tenant_id)
@@ -413,17 +405,77 @@ fn accumulate_profit_of_charges(sum: i32, charge: Charge) -> Result<i32, ErrResp
 async fn get_latest_two_tenant_transfers(
     tenant_transfer_op: impl TenantTransferOperation,
     tenant_id: &str,
-) -> Result<(Option<Transfer>, Option<Transfer>), ErrResp> {
-    // TODO: 2を定数化
+) -> Result<Vec<Transfer>, ErrResp> {
     let search_tenant_transfers_query = SearchTenantTransfersQuery::build()
-        .limit(2)
+        .limit(MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST)
         .tenant(tenant_id)
         .finish()
-        .expect("failed to get Ok");
-    let _c = tenant_transfer_op
+        .map_err(|e| {
+            tracing::error!("failed to build search tenant transfers query: {}", e);
+            unexpected_err_resp()
+        })?;
+
+    let tenant_transfers = tenant_transfer_op
         .search_tenant_transfers(&search_tenant_transfers_query)
-        .await;
-    todo!()
+        .await
+        .map_err(|err| match err {
+            common::payment_platform::Error::RequestProcessingError(err) => {
+                tracing::error!("failed to process request on getting charges: {}", err);
+                unexpected_err_resp()
+            }
+            common::payment_platform::Error::ApiError(err) => {
+                tracing::error!("failed to request charge operation: {}", err);
+                unexpected_err_resp()
+            }
+        })?;
+
+    let mut transfers = vec![];
+    for tenant_transfer in tenant_transfers.data {
+        let transfer = convert_tenant_transfer_to_transfer(tenant_transfer)?;
+        transfers.push(transfer);
+    }
+    Ok(transfers)
+}
+
+fn convert_tenant_transfer_to_transfer(
+    tenant_transfer: TenantTransfer,
+) -> Result<Transfer, ErrResp> {
+    let scheduled_date = NaiveDate::parse_from_str(&tenant_transfer.scheduled_date, "%Y-%m-%d")
+        .map_err(|e| {
+            tracing::error!(
+                "failed to parse scheduled_date {}: {}",
+                tenant_transfer.scheduled_date,
+                e
+            );
+            unexpected_err_resp()
+        })?;
+    let scheduled_date_in_jst = Ymd {
+        year: scheduled_date.year(),
+        month: scheduled_date.month(),
+        day: scheduled_date.day(),
+    };
+    let transfer_date_in_jst = if let Some(d) = tenant_transfer.transfer_date {
+        let parsed_date = NaiveDate::parse_from_str(&d, "%Y-%m-%d").map_err(|e| {
+            tracing::error!("failed to parse transfer_date {}: {}", d, e);
+            unexpected_err_resp()
+        })?;
+        let date = Ymd {
+            year: parsed_date.year(),
+            month: parsed_date.month(),
+            day: parsed_date.day(),
+        };
+        Some(date)
+    } else {
+        None
+    };
+    Ok(Transfer {
+        status: tenant_transfer.status,
+        amount: tenant_transfer.amount,
+        scheduled_date_in_jst,
+        transfer_amount: tenant_transfer.transfer_amount,
+        transfer_date_in_jst,
+        carried_balance: tenant_transfer.carried_balance,
+    })
 }
 
 trait ProfileOperation {
