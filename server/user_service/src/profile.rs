@@ -166,13 +166,12 @@ pub(crate) struct BankAccount {
 #[derive(Serialize, Debug)]
 pub(crate) struct Transfer {
     pub status: String,
-    // status == "pending"
     pub amount: i32,
     pub scheduled_date_in_jst: Ymd,
-    // status == "paid"
+    // status == "paid"のときのみ存在
     pub transfer_amount: Option<i32>,
     pub transfer_date_in_jst: Option<Ymd>,
-    // status == "carried_over"
+    // status == "carried_over"のときのみ存在
     pub carried_balance: Option<i32>,
 }
 
