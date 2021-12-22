@@ -72,6 +72,8 @@ export default defineComponent({
       })
       if (response.ok) {
         console.log('success')
+        const text = await response.json()
+        console.log(text)
       } else {
         console.log('fail')
       }
