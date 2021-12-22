@@ -108,13 +108,13 @@ async fn get_profile_internal(
 
 #[derive(Serialize, Debug)]
 pub(crate) struct ProfileResult {
-    email_address: String,
-    identity: Option<Identity>,
-    careers: Vec<Career>,
-    fee_per_hour_in_yen: Option<i32>,
-    bank_account: Option<BankAccount>,
-    profit: Option<i32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
-    latest_two_transfers: Vec<Transfer>,
+    pub email_address: String,
+    pub identity: Option<Identity>,
+    pub careers: Vec<Career>,
+    pub fee_per_hour_in_yen: Option<i32>,
+    pub bank_account: Option<BankAccount>,
+    pub profit: Option<i32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
+    pub latest_two_transfers: Vec<Transfer>,
 }
 
 #[derive(Serialize, Debug)]
