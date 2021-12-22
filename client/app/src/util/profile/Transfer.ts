@@ -1,4 +1,4 @@
-import { Ymd } from './Ymd'
+import { Ymd } from '../Ymd'
 
 export type Transfer = {
     /* eslint-disable camelcase */

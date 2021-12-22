@@ -47,6 +47,9 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { checkWhatKindOfPageShouldBeDisplayed } from '@/util/CheckWhatKindOfPageShouldBeDisplayed'
 import TheHeader from '@/components/TheHeader.vue'
+import { getProfile } from '@/util/profile/GetProfile'
+import { GetProfileResp } from '@/util/profile/GetProfileResp'
+import { ApiErrorResp } from '@/util/ApiError'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -67,15 +70,14 @@ export default defineComponent({
       } else {
         throw new Error('Assertion Error: must not reach this line')
       }
-      const response = await fetch('/api/profile', {
-        method: 'GET'
-      })
-      if (response.ok) {
-        console.log('success')
-        const text = await response.json()
-        console.log(text)
+      const response = await getProfile()
+      if (response instanceof GetProfileResp) {
+        console.log('GetProfileResp')
+        console.log(response.getProfile())
+      } else if (response instanceof ApiErrorResp) {
+        console.log('ApiErrorResp')
       } else {
-        console.log('fail')
+        console.log('else')
       }
     })
     return { message }

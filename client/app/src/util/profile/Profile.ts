@@ -1,15 +1,16 @@
-import { ApiErrorResp, ApiError } from '../ApiError'
-import { GetProfileResp } from './ProfileResp'
+import { Identity } from './Identity'
+import { Career } from './Career'
+import { BankAccount } from './BankAccount'
+import { Transfer } from './Transfer'
 
-export async function getProfile (): Promise<GetProfileResp | ApiErrorResp> {
-  const response = await fetch('/api/profile', {
-    method: 'GET'
-  })
-  if (!response.ok) {
-    const apiErr = await response.json() as { code: number }
-    return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
-  }
-  // eslint-disable-next-line
-  const result = await response.json() as { email_address: string }
-  return GetProfileResp.create(result.email_address)
+export type Profile = {
+    /* eslint-disable camelcase */
+    email_address: string,
+    identity: Identity | null,
+    careers: Career[],
+    fee_per_hour_in_yen: number | null,
+    bank_account: BankAccount | null,
+    profit: number | null,
+    latest_two_transfers: Transfer[],
+    /* eslint-enable camelcase */
 }
