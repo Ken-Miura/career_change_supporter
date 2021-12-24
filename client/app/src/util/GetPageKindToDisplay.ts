@@ -6,7 +6,7 @@ import { refresh } from './refresh/Refresh'
 
 export type PageKind = 'login' | 'term-of-use' | 'personalized-page'
 
-export async function checkWhatKindOfPageShouldBeDisplayed (): Promise<PageKind> {
+export async function getPageKindToDisplay (): Promise<PageKind> {
   try {
     const result = await refresh()
     if (!result) {

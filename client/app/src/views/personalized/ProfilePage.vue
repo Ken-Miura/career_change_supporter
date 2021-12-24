@@ -5,7 +5,7 @@
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">Eメールアドレス</h3>
         <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
-        <p class="mt-4 text-lg">{{ message }}</p>
+        <p class="mt-4 text-lg">{{ emailAddress }}</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">ユーザー情報</h3>
@@ -45,7 +45,7 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { checkWhatKindOfPageShouldBeDisplayed } from '@/util/CheckWhatKindOfPageShouldBeDisplayed'
+import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
 import { getProfile } from '@/util/profile/GetProfile'
 import { GetProfileResp } from '@/util/profile/GetProfileResp'
@@ -57,10 +57,10 @@ export default defineComponent({
     TheHeader
   },
   setup () {
-    const message = ref('プロファイル用テストページ')
+    const emailAddress = ref('')
     const router = useRouter()
     onMounted(async () => {
-      const result = await checkWhatKindOfPageShouldBeDisplayed()
+      const result = await getPageKindToDisplay()
       if (result === 'personalized-page') {
         // 遷移せずにページを表示
       } else if (result === 'login') {
@@ -72,15 +72,18 @@ export default defineComponent({
       }
       const response = await getProfile()
       if (response instanceof GetProfileResp) {
-        console.log('GetProfileResp')
         console.log(response.getProfile())
+        const profile = response.getProfile()
+        /* eslint-disable camelcase */
+        emailAddress.value = profile.email_address
+        /* eslint-enable camelcase */
       } else if (response instanceof ApiErrorResp) {
         console.log('ApiErrorResp')
       } else {
         console.log('else')
       }
     })
-    return { message }
+    return { emailAddress }
   }
 })
 </script>

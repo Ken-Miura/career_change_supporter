@@ -13,7 +13,7 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { checkWhatKindOfPageShouldBeDisplayed } from '@/util/CheckWhatKindOfPageShouldBeDisplayed'
+import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
 
 export default defineComponent({
@@ -25,7 +25,7 @@ export default defineComponent({
     const message = ref('スケジュール用テストページ')
     const router = useRouter()
     onMounted(async () => {
-      const result = await checkWhatKindOfPageShouldBeDisplayed()
+      const result = await getPageKindToDisplay()
       if (result === 'personalized-page') {
         // 遷移せずにページを表示
       } else if (result === 'login') {
