@@ -28,9 +28,14 @@
         <p class="mt-4 text-lg">相談料の入金口座サンプル</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">受け取った相談料の合計</h3>
-        <p class="mt-2 text-lg">受け取った相談料の合計です。他のユーザーに公開されることはありません。毎月25日に相談料の入金口座に設定された口座に入金され、合計がリセットされます（TODO: payjpの仕様を確認）</p>
-        <p class="mt-4 text-lg">相談料の入金口座サンプル</p>
+        <h3 class="font-bold text-lg">今月の相談料の合計</h3>
+        <p class="mt-2 text-lg">今月承諾した相談の相談料の合計です。他のユーザーに公開されることはありません。</p>
+        <p class="mt-4 text-lg">サンプル</p>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-lg">入金情報</h3>
+        <p class="mt-2 text-lg">受け取った相談料に関する直近二回分の入金情報です。毎月月末に、前月の相談料の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
+        <p class="mt-4 text-lg">サンプル</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <button v-on:click="TODO" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
