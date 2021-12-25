@@ -129,6 +129,7 @@ pub(crate) struct Identity {
     pub city: String,
     pub address_line1: String,
     pub address_line2: Option<String>,
+    pub telephone_number: String,
 }
 
 #[derive(Serialize, Debug)]
@@ -261,6 +262,7 @@ fn convert_identity_info_to_identity(identity_info: IdentityInfo) -> Identity {
         city: identity_info.city,
         address_line1: identity_info.address_line1,
         address_line2: identity_info.address_line2,
+        telephone_number: identity_info.telephone_number,
     }
 }
 
