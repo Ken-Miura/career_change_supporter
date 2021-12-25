@@ -5,12 +5,17 @@
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">Eメールアドレス</h3>
         <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
-        <p class="mt-4 text-lg">{{ emailAddress }}</p>
+        <p class="mt-4 ml-4 text-2xl">{{ emailAddress }}</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">ユーザー情報</h3>
         <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
-        <p class="mt-4 text-lg">ユーザー情報サンプル</p>
+        <div v-if="identity != null" class="m-4 text-2xl grid grid-cols-2">
+          <div class="justify-self-end">名前：</div><div class="justify-self-start">{{identity.last_name}} {{identity.first_name}}</div>
+          <div class="justify-self-end">電話番号：</div><div class="justify-self-start">{{identity.telephone_number}}</div>
+        </div>
+        <p v-else class="m-4 text-xl">ユーザー情報が設定されていません。</p>
+        <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">職務経歴</h3>
@@ -18,9 +23,11 @@
         <p class="mt-4 text-lg">職務経歴サンプル</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">相談一回（１時間）あたりの相談料</h3>
+        <h3 class="font-bold text-lg">相談一回（１時間）の相談料</h3>
         <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
-        <p class="mt-4 text-lg">相談一回（１時間）あたりの相談料サンプル</p>
+        <p v-if="feePerHourInYen != null" class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
+        <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
+        <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">相談料の入金口座</h3>
@@ -55,6 +62,7 @@ import TheHeader from '@/components/TheHeader.vue'
 import { getProfile } from '@/util/profile/GetProfile'
 import { GetProfileResp } from '@/util/profile/GetProfileResp'
 import { ApiErrorResp } from '@/util/ApiError'
+import { Identity } from '@/util/profile/Identity'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -63,6 +71,8 @@ export default defineComponent({
   },
   setup () {
     const emailAddress = ref('')
+    const feePerHourInYen = ref(0 as number | null)
+    const identity = ref(null as Identity | null)
     const router = useRouter()
     onMounted(async () => {
       const result = await getPageKindToDisplay()
@@ -81,6 +91,8 @@ export default defineComponent({
         const profile = response.getProfile()
         /* eslint-disable camelcase */
         emailAddress.value = profile.email_address
+        feePerHourInYen.value = profile.fee_per_hour_in_yen
+        identity.value = profile.identity
         /* eslint-enable camelcase */
       } else if (response instanceof ApiErrorResp) {
         console.log('ApiErrorResp')
@@ -88,7 +100,7 @@ export default defineComponent({
         console.log('else')
       }
     })
-    return { emailAddress }
+    return { emailAddress, identity, feePerHourInYen }
   }
 })
 </script>

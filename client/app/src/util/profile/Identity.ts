@@ -12,5 +12,6 @@ export type Identity = {
     city: string,
     address_line1: string,
     address_line2: string | null,
+    telephone_number: string,
     /* eslint-enable camelcase */
 }
