@@ -10,11 +10,11 @@
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">ユーザー情報</h3>
         <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
-        <div v-if="identity != null" class="m-4 text-2xl grid grid-cols-2">
-          <div class="justify-self-start">名前</div><div class="justify-self-start">{{identity.last_name}} {{identity.first_name}}</div>
-          <div class="justify-self-start">電話番号</div><div class="justify-self-start">{{identity.telephone_number}}</div>
-          <div class="justify-self-start">test1</div><div class="justify-self-start">あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ</div>
-          <div class="justify-self-start">test2</div><div class="justify-self-start break-all">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</div>
+        <div v-if="identity != null" class="m-4 text-2xl grid grid-cols-4">
+          <div class="mt-2 justify-self-start">名前</div><div class="justify-self-start col-span-3">{{identity.last_name}} {{identity.first_name}}</div>
+          <div class="mt-2 justify-self-start">電話番号</div><div class="justify-self-start col-span-3">{{identity.telephone_number}}</div>
+          <div class="mt-2 justify-self-start">test1</div><div class="justify-self-start col-span-3">あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ</div>
+          <div class="mt-2 justify-self-start">test2</div><div class="justify-self-start col-span-3 break-all">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</div>
         </div>
         <p v-else class="m-4 text-xl">ユーザー情報が設定されていません。</p>
         <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
