@@ -1,7 +1,10 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 bo min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main>
+    <div v-if="!getProfileDone">
+      ダウンロード中
+    </div>
+    <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-lg">Eメールアドレス</h3>
         <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
@@ -78,6 +81,7 @@ export default defineComponent({
     TheHeader
   },
   setup () {
+    const getProfileDone = ref(false)
     const emailAddress = ref('')
     const feePerHourInYen = ref(0 as number | null)
     const identity = ref(null as Identity | null)
@@ -94,6 +98,7 @@ export default defineComponent({
         throw new Error('Assertion Error: must not reach this line')
       }
       const response = await getProfile()
+      getProfileDone.value = true
       if (response instanceof GetProfileResp) {
         console.log(response.getProfile())
         const profile = response.getProfile()
@@ -108,7 +113,7 @@ export default defineComponent({
         console.log('else')
       }
     })
-    return { emailAddress, identity, feePerHourInYen }
+    return { getProfileDone, emailAddress, identity, feePerHourInYen }
   }
 })
 </script>
