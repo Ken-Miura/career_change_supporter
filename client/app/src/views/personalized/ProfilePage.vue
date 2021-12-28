@@ -1,11 +1,8 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getProfileDone">
-      <div class="m-6 flex justify-center">
-        <!-- https://github.com/tailwindlabs/tailwindcss/discussions/2945#discussioncomment-143252 -->
-        <svg class="animate-spin h-16 w-16 rounded-full bg-transparent border-2 border-transparent border-opacity-50" style="border-right-color: white; border-top-color: white;" viewBox="0 0 24 24"></svg>
-      </div>
+    <div v-if="!getProfileDone" class="m-6">
+      <WaitingCircle />
     </div>
     <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
@@ -73,6 +70,7 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 import { GetProfileResp } from '@/util/profile/GetProfileResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Identity } from '@/util/profile/Identity'
@@ -81,7 +79,8 @@ import { useGetProfile } from './useGetProfile'
 export default defineComponent({
   name: 'ProfilePage',
   components: {
-    TheHeader
+    TheHeader,
+    WaitingCircle
   },
   setup () {
     const { getProfileDone, getProfileFunc } = useGetProfile()
