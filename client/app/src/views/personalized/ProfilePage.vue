@@ -2,7 +2,7 @@
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getProfileDone">
-      <div class="flex justify-center">
+      <div class="m-6 flex justify-center">
         <!-- https://github.com/tailwindlabs/tailwindcss/discussions/2945#discussioncomment-143252 -->
         <svg class="animate-spin h-16 w-16 rounded-full bg-transparent border-2 border-transparent border-opacity-50" style="border-right-color: white; border-top-color: white;" viewBox="0 0 24 24"></svg>
       </div>
