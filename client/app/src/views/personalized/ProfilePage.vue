@@ -2,7 +2,11 @@
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 bo min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getProfileDone">
-      ダウンロード中
+      <!-- https://tailwindcomponents.com/component/windows-10-fluent-design-progress-bar -->
+      <!-- https://www.npmjs.com/package/vue-ellipse-progress/v/0.18.7 もいいかも？-->
+      <div class="w-full overflow-hidden">
+        <div class="w-1/2 inline-block relative fluentProgressBar-waiting"></div>
+      </div>
     </div>
     <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
@@ -70,10 +74,10 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
-import { getProfile } from '@/util/profile/GetProfile'
 import { GetProfileResp } from '@/util/profile/GetProfileResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Identity } from '@/util/profile/Identity'
+import { useGetProfile } from './useGetProfile'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -81,7 +85,7 @@ export default defineComponent({
     TheHeader
   },
   setup () {
-    const getProfileDone = ref(false)
+    const { getProfileDone, getProfileFunc } = useGetProfile()
     const emailAddress = ref('')
     const feePerHourInYen = ref(0 as number | null)
     const identity = ref(null as Identity | null)
@@ -97,10 +101,8 @@ export default defineComponent({
       } else {
         throw new Error('Assertion Error: must not reach this line')
       }
-      const response = await getProfile()
-      getProfileDone.value = true
+      const response = await getProfileFunc()
       if (response instanceof GetProfileResp) {
-        console.log(response.getProfile())
         const profile = response.getProfile()
         /* eslint-disable camelcase */
         emailAddress.value = profile.email_address
@@ -117,3 +119,28 @@ export default defineComponent({
   }
 })
 </script>
+
+<style scoped>
+.fluentProgressBar-waiting {
+  background: rgba(0,120,212,0);
+  background: -moz-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
+  background: -webkit-gradient(left top, right top, color-stop(0%, rgba(0,120,212,0)), color-stop(51%, rgba(0,120,212,1)), color-stop(100%, rgba(0,120,212,0)));
+  background: -webkit-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
+  background: -o-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
+  background: -ms-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
+  background: linear-gradient(to right, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0078d4', endColorstr='#0078d4', GradientType=1 );
+  height: 4px;
+  -webkit-animation: progressBarAnimation 2s linear infinite;
+  animation: progressBarAnimation 2s linear infinite;
+}
+
+@keyframes progressBarAnimation {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+</style>
