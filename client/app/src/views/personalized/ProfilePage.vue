@@ -1,11 +1,10 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 bo min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getProfileDone">
-      <!-- https://tailwindcomponents.com/component/windows-10-fluent-design-progress-bar -->
-      <!-- https://www.npmjs.com/package/vue-ellipse-progress/v/0.18.7 もいいかも？-->
-      <div class="w-full overflow-hidden">
-        <div class="w-1/2 inline-block relative fluentProgressBar-waiting"></div>
+      <div class="flex justify-center">
+        <!-- https://github.com/tailwindlabs/tailwindcss/discussions/2945#discussioncomment-143252 -->
+        <svg class="animate-spin h-16 w-16 rounded-full bg-transparent border-2 border-transparent border-opacity-50" style="border-right-color: white; border-top-color: white;" viewBox="0 0 24 24"></svg>
       </div>
     </div>
     <main v-else>
@@ -119,28 +118,3 @@ export default defineComponent({
   }
 })
 </script>
-
-<style scoped>
-.fluentProgressBar-waiting {
-  background: rgba(0,120,212,0);
-  background: -moz-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
-  background: -webkit-gradient(left top, right top, color-stop(0%, rgba(0,120,212,0)), color-stop(51%, rgba(0,120,212,1)), color-stop(100%, rgba(0,120,212,0)));
-  background: -webkit-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
-  background: -o-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
-  background: -ms-linear-gradient(left, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
-  background: linear-gradient(to right, rgba(0,120,212,0) 0%, rgba(0,120,212,1) 51%, rgba(0,120,212,0) 100%);
-  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0078d4', endColorstr='#0078d4', GradientType=1 );
-  height: 4px;
-  -webkit-animation: progressBarAnimation 2s linear infinite;
-  animation: progressBarAnimation 2s linear infinite;
-}
-
-@keyframes progressBarAnimation {
-  0% {
-    left: -50%;
-  }
-  100% {
-    left: 100%;
-  }
-}
-</style>
