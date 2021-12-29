@@ -6,12 +6,12 @@
     </div>
     <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">Eメールアドレス</h3>
+        <h3 class="font-bold text-2xl">Eメールアドレス</h3>
         <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
         <p class="mt-4 ml-4 text-2xl">{{ emailAddress }}</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">ユーザー情報</h3>
+        <h3 class="font-bold text-2xl">ユーザー情報</h3>
         <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
         <div v-if="identity !== null" class="m-4 text-2xl grid grid-cols-3">
           <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{identity.last_name}} {{identity.first_name}}</div>
@@ -29,29 +29,31 @@
         <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">職務経歴</h3>
+        <h3 class="font-bold text-2xl">職務経歴</h3>
         <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
         <p class="mt-4 text-lg">職務経歴サンプル</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">相談一回（１時間）の相談料</h3>
+        <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
         <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
-        <p v-if="feePerHourInYen != null" class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
+        <div v-if="feePerHourInYen != null" class="flex justify-end">
+          <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
+        </div>
         <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
         <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">相談料の入金口座</h3>
+        <h3 class="font-bold text-2xl">相談料の入金口座</h3>
         <p class="mt-2 text-lg">受け取った相談料を入金するための口座で、相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。ユーザー情報で身分証明が完了した姓名と異なる名義の口座は設定できません。</p>
         <p class="mt-4 text-lg">相談料の入金口座サンプル</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">今月の相談料の合計</h3>
+        <h3 class="font-bold text-2xl">今月の相談料の合計</h3>
         <p class="mt-2 text-lg">今月承諾した相談の相談料の合計です。他のユーザーに公開されることはありません。</p>
         <p class="mt-4 text-lg">サンプル</p>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-lg">入金情報</h3>
+        <h3 class="font-bold text-2xl">入金情報</h3>
         <p class="mt-2 text-lg">受け取った相談料に関する直近二回分の入金情報です。毎月月末に、前月の相談料の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
         <p class="mt-4 text-lg">サンプル</p>
       </div>
