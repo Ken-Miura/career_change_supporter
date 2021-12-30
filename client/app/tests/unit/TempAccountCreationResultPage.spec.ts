@@ -12,9 +12,18 @@ describe('TempAccountCreationResultPage.vue', () => {
         }
       }
     })
-    const mainTag = wrapper.find('main')
-    const h3Tag = mainTag.find('h3')
-    expect(h3Tag.text()).toMatch(`${emailAddress}宛にメールを送信しました。メールを確認し、新規登録を完了させて下さい（メールが届いていない場合、迷惑メールに振り分けられていないか、もしくは本サイトのドメインのメールの受信が許可されているかご確認下さい）`)
+    const title = wrapper.find('[data-test="title"]')
+    const message = wrapper.find('[data-test="message"]')
+    const noteTitle = wrapper.find('[data-test="note-title"]')
+    const noteMessage = wrapper.find('[data-test="note-message"]')
+
+    expect(title.text()).toMatch('まだ新規登録は完了していません')
+    expect(message.text()).toMatch(`${emailAddress}宛にメールを送信しました。メールに記載されたURLをクリックし、新規登録を完了させて下さい。`)
+    expect(noteTitle.text()).toMatch('メールが届かない場合')
+    expect(noteMessage.text()).toContain('下記の項目についてご確認下さい。')
+    expect(noteMessage.text()).toContain('本サイトのドメインのメールの受信が許可されているかどうか')
+    expect(noteMessage.text()).toContain('迷惑メールに振り分けられているかどうか、もしくはゴミ箱に入っているかどうか')
+    expect(noteMessage.text()).toContain('URL付きのメール受信を許可しているかどうか')
   })
 
   it('does not render message when no props passed', () => {
@@ -25,8 +34,7 @@ describe('TempAccountCreationResultPage.vue', () => {
         }
       }
     })
-    const mainTag = wrapper.find('main')
-    const h3Tag = mainTag.find('h3')
-    expect(h3Tag.exists()).toBe(false)
+    const body = wrapper.find('[data-test="body"]')
+    expect(body.exists()).toBe(false)
   })
 })

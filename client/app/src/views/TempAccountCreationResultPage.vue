@@ -6,14 +6,12 @@
       </router-link>
     </header>
     <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <div v-if="emailAddress !== undefined" class="flex flex-col justify-center">
-        <p class="font-bold text-2xl">まだ新規登録は完了していません</p>
-        <p class="mt-4 font-bold text-lg">{{ emailAddress }}宛にメールを送信しました。メールに記載されたURLをクリックし、新規登録を完了させて下さい。</p>
+      <div data-test="body" v-if="emailAddress !== undefined" class="flex flex-col justify-center">
+        <p data-test="title" class="font-bold text-2xl">まだ新規登録は完了していません</p>
+        <p data-test="message" class="mt-4 font-bold text-lg">{{ emailAddress }}宛にメールを送信しました。メールに記載されたURLをクリックし、新規登録を完了させて下さい。</p>
         <div class="mt-4" role="note">
-          <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">
-            メールが届かない場合
-          </div>
-          <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black">
+          <div data-test="note-title" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">メールが届かない場合</div>
+          <div data-test="note-message" class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black">
             下記の項目についてご確認下さい。
             <ul class="list-disc list-inside">
               <li>本サイトのドメインのメールの受信が許可されているかどうか</li>
