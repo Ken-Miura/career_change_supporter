@@ -6,7 +6,7 @@
       </router-link>
     </header>
     <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <div v-if="emailAddress === undefined" class="flex flex-col justify-center">
+      <div v-if="emailAddress !== undefined" class="flex flex-col justify-center">
         <p class="font-bold text-2xl">まだ新規登録は完了していません</p>
         <p class="mt-4 font-bold text-lg">{{ emailAddress }}宛にメールを送信しました。メールに記載されたURLをクリックし、新規登録を完了させて下さい。</p>
         <div class="mt-4" role="note">
