@@ -66,7 +66,31 @@
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">入金情報</h3>
         <p class="mt-2 text-lg">受け取った相談料に関する直近二回分の入金情報です。毎月月末に、前月の相談料の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
-        <p class="mt-4 text-lg">サンプル</p>
+        <div v-if="latestTwoTransfers.length === 0" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
+        <div v-else>
+          <ul>
+            <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="transfer">
+              <div class="mt-4">
+                <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">入金情報{{ index + 1 }}</div>
+                <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                  <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">
+                    <div v-if="transfer.status === 'pending'">入金前</div>
+                    <div v-else-if="transfer.status === 'paid'">入金完了</div>
+                    <div v-else-if="transfer.status === 'failed'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
+                    <div v-else-if="transfer.status === 'stop'">入金差し止め（詳細な情報はお問い合わせ下さい）</div>
+                    <div v-else-if="transfer.status === 'carried_over'">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
+                    <div v-else-if="transfer.status === 'recombination'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
+                    <div v-else>想定されない処理状態（こちらの状態が表示された場合、お手数ですがお問い合わせより、その旨ご連絡下さい）</div>
+                  </div>
+                  <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
+                  <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
+                  <div v-if="transfer.transfer_amount !== null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount !== null" class="justify-self-start col-span-2">{{ transfer.transfer_amount }}円</div>
+                  <div v-if="transfer.transfer_date_in_jst !== null" class="mt-2 justify-self-start col-span-1">入金日</div><div v-if="transfer.transfer_date_in_jst !== null" class="justify-self-start col-span-2">{{ transfer.transfer_date_in_jst.year }}年{{ transfer.transfer_date_in_jst.month }}月{{ transfer.transfer_date_in_jst.day }}日</div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <button v-on:click="TODO" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
@@ -89,6 +113,7 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Identity } from '@/util/profile/Identity'
 import { useGetProfile } from './useGetProfile'
 import { BankAccount } from '@/util/profile/BankAccount'
+import { Transfer } from '@/util/profile/Transfer'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -103,6 +128,7 @@ export default defineComponent({
     const feePerHourInYen = ref(0 as number | null)
     const bankAccount = ref(null as BankAccount | null)
     const profit = ref(null as number | null)
+    const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
     onMounted(async () => {
       const result = await getPageKindToDisplay()
@@ -124,6 +150,7 @@ export default defineComponent({
         feePerHourInYen.value = profile.fee_per_hour_in_yen
         bankAccount.value = profile.bank_account
         profit.value = profile.profit
+        latestTwoTransfers.value = profile.latest_two_transfers
         /* eslint-enable camelcase */
       } else if (response instanceof ApiErrorResp) {
         console.log('ApiErrorResp')
@@ -131,7 +158,7 @@ export default defineComponent({
         console.log('else')
       }
     })
-    return { getProfileDone, emailAddress, identity, feePerHourInYen, bankAccount, profit }
+    return { getProfileDone, emailAddress, identity, feePerHourInYen, bankAccount, profit, latestTwoTransfers }
   }
 })
 </script>
