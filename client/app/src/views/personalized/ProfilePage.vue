@@ -31,7 +31,20 @@
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">職務経歴</h3>
         <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
-        <p class="mt-4 text-lg">職務経歴サンプル</p>
+        <div v-if="careers.length === 0" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
+        <div v-else>
+          <ul>
+            <li v-for="(career, index) in careers" v-bind:key="career">
+              <div class="mt-4">
+                <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
+                <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                  <button v-on:click="TODO" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
@@ -114,6 +127,7 @@ import { Identity } from '@/util/profile/Identity'
 import { useGetProfile } from './useGetProfile'
 import { BankAccount } from '@/util/profile/BankAccount'
 import { Transfer } from '@/util/profile/Transfer'
+import { Career } from '@/util/profile/Career'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -125,6 +139,7 @@ export default defineComponent({
     const { getProfileDone, getProfileFunc } = useGetProfile()
     const emailAddress = ref('')
     const identity = ref(null as Identity | null)
+    const careers = ref([] as Career[])
     const feePerHourInYen = ref(0 as number | null)
     const bankAccount = ref(null as BankAccount | null)
     const profit = ref(null as number | null)
@@ -147,6 +162,7 @@ export default defineComponent({
         /* eslint-disable camelcase */
         emailAddress.value = profile.email_address
         identity.value = profile.identity
+        careers.value = profile.careers
         feePerHourInYen.value = profile.fee_per_hour_in_yen
         bankAccount.value = profile.bank_account
         profit.value = profile.profit
@@ -158,7 +174,7 @@ export default defineComponent({
         console.log('else')
       }
     })
-    return { getProfileDone, emailAddress, identity, feePerHourInYen, bankAccount, profit, latestTwoTransfers }
+    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, bankAccount, profit, latestTwoTransfers }
   }
 })
 </script>
