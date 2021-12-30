@@ -7,7 +7,7 @@
     </header>
     <main class="flex justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <div class="flex flex-col justify-center">
-        <p class="font-bold text-xl">まだパスワード変更は完了していません</p>
+        <p data-test="title" class="font-bold text-xl">まだパスワード変更は完了していません</p>
         <p data-test="message" class="mt-4 font-bold text-lg">
           <span v-if="emailAddress !== undefined">{{ emailAddress }}宛にメールを送信しました。</span>
           <span v-else>指定されたメールアドレスにメールを送信しました。</span>
