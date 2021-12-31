@@ -29,7 +29,7 @@ use diesel::{
 use serde::Serialize;
 
 use crate::{
-    err_code::NO_ACCOUNT_FOUND,
+    err_code::{self, NO_ACCOUNT_FOUND},
     util::{
         session::User, unexpected_err_resp, BankAccount, Career, Identity, Ymd, ACCESS_INFO,
         JAPANESE_TIME_ZONE,
@@ -264,6 +264,15 @@ async fn get_bank_account_by_tenant_id(
             }
             common::payment_platform::Error::ApiError(err) => {
                 tracing::error!("failed to request tenant operation: {}", err);
+                let status_code = err.error.status as u16;
+                if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
+                    return (
+                        StatusCode::TOO_MANY_REQUESTS,
+                        Json(ApiError {
+                            code: err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                        }),
+                    );
+                }
                 unexpected_err_resp()
             }
         })?;
@@ -308,6 +317,15 @@ async fn get_profit_of_current_month(
                 }
                 common::payment_platform::Error::ApiError(err) => {
                     tracing::error!("failed to request charge operation: {}", err);
+                    let status_code = err.error.status as u16;
+                    if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
+                        return (
+                            StatusCode::TOO_MANY_REQUESTS,
+                            Json(ApiError {
+                                code: err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                            }),
+                        );
+                    }
                     unexpected_err_resp()
                 }
             })?;
@@ -383,6 +401,15 @@ async fn get_latest_two_tenant_transfers(
             }
             common::payment_platform::Error::ApiError(err) => {
                 tracing::error!("failed to request charge operation: {}", err);
+                let status_code = err.error.status as u16;
+                if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
+                    return (
+                        StatusCode::TOO_MANY_REQUESTS,
+                        Json(ApiError {
+                            code: err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                        }),
+                    );
+                }
                 unexpected_err_resp()
             }
         })?;
@@ -542,5 +569,151 @@ impl ProfileOperation for ProfileOperationImpl {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use async_session::async_trait;
+    use axum::{http::StatusCode, Json};
+    use chrono::{TimeZone, Utc};
+    use common::{
+        payment_platform::{
+            charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
+            tenant::{Tenant, TenantOperation},
+            tenant_transfer::{
+                Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
+            },
+            Error, List,
+        },
+        ApiError,
+    };
+
+    use crate::{err_code::NO_ACCOUNT_FOUND, util::JAPANESE_TIME_ZONE};
+
+    use super::{get_profile_internal, ProfileOperation};
+
+    struct ProfileOperationMock {
+        account: common::model::user::Account,
+        identity_info_option: Option<common::model::user::IdentityInfo>,
+        careers_info: Vec<common::model::user::CareerInfo>,
+        tenant_option: Option<common::model::user::Tenant>,
+        consulting_fee_option: Option<common::model::user::ConsultingFee>,
+    }
+
+    impl ProfileOperation for ProfileOperationMock {
+        fn find_user_account_by_user_account_id(
+            &self,
+            id: i32,
+        ) -> Result<common::model::user::Account, common::ErrResp> {
+            if self.account.user_account_id != id {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: NO_ACCOUNT_FOUND,
+                    }),
+                ));
+            }
+            Ok(self.account.clone())
+        }
+
+        fn find_identity_info_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Option<common::model::user::IdentityInfo>, common::ErrResp> {
+            Ok(self.identity_info_option.clone())
+        }
+
+        fn filter_career_info_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Vec<common::model::user::CareerInfo>, common::ErrResp> {
+            Ok(self.careers_info.clone())
+        }
+
+        fn find_tenant_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Option<common::model::user::Tenant>, common::ErrResp> {
+            Ok(self.tenant_option.clone())
+        }
+
+        fn find_consulting_fee_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Option<common::model::user::ConsultingFee>, common::ErrResp> {
+            Ok(self.consulting_fee_option.clone())
+        }
+    }
+
+    struct TenantOperationMock<'a> {
+        tenant_id: &'a str,
+    }
+
+    #[async_trait]
+    impl<'a> TenantOperation for TenantOperationMock<'a> {
+        async fn get_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error> {
+            todo!()
+        }
+    }
+
+    struct ChargeOperationMock<'a> {
+        query: &'a SearchChargesQuery,
+    }
+
+    #[async_trait]
+    impl<'a> ChargeOperation for ChargeOperationMock<'a> {
+        async fn search_charges(&self, query: &SearchChargesQuery) -> Result<List<Charge>, Error> {
+            todo!()
+        }
+    }
+
+    struct TenantTransferOperationMock<'a> {
+        query: &'a SearchTenantTransfersQuery,
+    }
+
+    #[async_trait]
+    impl<'a> TenantTransferOperation for TenantTransferOperationMock<'a> {
+        async fn search_tenant_transfers(
+            &self,
+            query: &SearchTenantTransfersQuery,
+        ) -> Result<List<TenantTransfer>, Error> {
+            todo!()
+        }
+    }
+
+    #[tokio::test]
+    async fn success_return_profile() {
+        // let account_id = 51351;
+        // let profile_op = ProfileOperationMock { account_id };
+        // let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        // let tenant_op = TenantOperationMock { tenant_id };
+        // let search_charges_query = SearchChargesQuery::build()
+        //     .finish()
+        //     .expect("failed to get Ok");
+        // let charge_op = ChargeOperationMock {
+        //     query: &search_charges_query,
+        // };
+        // let current_datetime = Utc
+        //     .ymd(2021, 12, 31)
+        //     .and_hms(7, 0, 0)
+        //     .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        // let search_tenant_transfers_query = SearchTenantTransfersQuery::build()
+        //     .finish()
+        //     .expect("failed to get Ok");
+        // let tenant_transfer_op = TenantTransferOperationMock {
+        //     query: &search_tenant_transfers_query,
+        // };
+
+        // let result = get_profile_internal(
+        //     account_id,
+        //     profile_op,
+        //     tenant_op,
+        //     charge_op,
+        //     current_datetime,
+        //     tenant_transfer_op,
+        // )
+        // .await
+        // .expect("failed to get Ok");
     }
 }

@@ -17,3 +17,4 @@ pub(crate) const REACH_NEW_PASSWORDS_LIMIT: u32 = 20010;
 pub(crate) const NO_ACCOUNT_FOUND: u32 = 20011;
 pub(crate) const NO_NEW_PASSWORD_FOUND: u32 = 20012;
 pub(crate) const NEW_PASSWORD_EXPIRED: u32 = 20013;
+pub(crate) const REACH_PAYMENT_PLATFORM_RATE_LIMIT: u32 = 20014;
