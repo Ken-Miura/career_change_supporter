@@ -22,6 +22,7 @@ export namespace Code {
   export const NO_ACCOUNT_FOUND = 20011
   export const NO_NEW_PASSWORD_FOUND = 20012
   export const NEW_PASSWORD_EXPIRED = 20013
+  export const REACH_PAYMENT_PLATFORM_RATE_LIMIT = 20014
 }
 
 export function createErrorMessage (code: number): string {
@@ -53,6 +54,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.NO_ACCOUNT_FOUND_MESSAGE} (${code})`
   } else if (code === Code.NO_NEW_PASSWORD_FOUND) {
     return `${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} (${code})`
+  } else if (code === Code.REACH_PAYMENT_PLATFORM_RATE_LIMIT) {
+    return `${Message.REACH_PAYMENT_PLATFORM_RATE_LIMIT_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
