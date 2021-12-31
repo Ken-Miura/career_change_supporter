@@ -5,126 +5,133 @@
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">Eメールアドレス</h3>
-        <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
-        <p class="mt-4 ml-4 text-2xl">{{ emailAddress }}</p>
-      </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">ユーザー情報</h3>
-        <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
-        <div v-if="identity !== null" class="m-4 text-2xl grid grid-cols-3">
-          <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{ identity.last_name }} {{ identity.first_name }}</div>
-          <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div>
-          <div class="mt-2 justify-self-start col-span-1">性別</div><div v-if="identity.sex === 'male'" class="justify-self-start col-span-2">男性</div><div v-else class="justify-self-start col-span-2">女性</div>
-          <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="justify-self-start col-span-2">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
-          <div class="mt-2 justify-self-start col-span-3">住所</div>
-          <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="justify-self-start col-span-2">{{ identity.prefecture }}</div>
-          <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="justify-self-start col-span-2">{{ identity.city }}</div>
-          <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="justify-self-start col-span-2">{{ identity.address_line1 }}</div>
-          <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="justify-self-start col-span-2">{{ identity.address_line2 }}</div>
-          <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ identity.telephone_number }}</div>
+      <div v-if="errorExists">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <AlertMessage class="mt-2" v-bind:message="errorMessage"/>
         </div>
-        <p v-else class="m-4 text-xl">ユーザー情報が設定されていません。</p>
-        <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">職務経歴</h3>
-        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
-        <div v-if="careers.length === 0" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
-        <div v-else>
-          <ul>
-            <li v-for="(career, index) in careers" v-bind:key="career">
-              <div class="mt-4">
-                <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
-                <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                  <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ career.company_name }}</div>
-                  <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
-                  <div class="justify-self-start col-span-2">
-                    <div v-if="career.contract_type === 'regular'">
-                      正社員
+      <div v-else>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">Eメールアドレス</h3>
+          <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
+          <p class="mt-4 ml-4 text-2xl">{{ emailAddress }}</p>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">ユーザー情報</h3>
+          <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
+          <div v-if="identity !== null" class="m-4 text-2xl grid grid-cols-3">
+            <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{ identity.last_name }} {{ identity.first_name }}</div>
+            <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div>
+            <div class="mt-2 justify-self-start col-span-1">性別</div><div v-if="identity.sex === 'male'" class="justify-self-start col-span-2">男性</div><div v-else class="justify-self-start col-span-2">女性</div>
+            <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="justify-self-start col-span-2">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
+            <div class="mt-2 justify-self-start col-span-3">住所</div>
+            <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="justify-self-start col-span-2">{{ identity.prefecture }}</div>
+            <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="justify-self-start col-span-2">{{ identity.city }}</div>
+            <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="justify-self-start col-span-2">{{ identity.address_line1 }}</div>
+            <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="justify-self-start col-span-2">{{ identity.address_line2 }}</div>
+            <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ identity.telephone_number }}</div>
+          </div>
+          <p v-else class="m-4 text-xl">ユーザー情報が設定されていません。</p>
+          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">職務経歴</h3>
+          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
+          <div v-if="careers.length === 0" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
+          <div v-else>
+            <ul>
+              <li v-for="(career, index) in careers" v-bind:key="career">
+                <div class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ career.company_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
+                    <div class="justify-self-start col-span-2">
+                      <div v-if="career.contract_type === 'regular'">
+                        正社員
+                      </div>
+                      <div v-else-if="career.contract_type === 'contract'">
+                        契約社員
+                      </div>
+                      <div v-else-if="career.contract_type === 'other'">
+                        その他
+                      </div>
+                      <div v-else>
+                        その他
+                      </div>
                     </div>
-                    <div v-else-if="career.contract_type === 'contract'">
-                      契約社員
-                    </div>
-                    <div v-else-if="career.contract_type === 'other'">
-                      その他
-                    </div>
-                    <div v-else>
-                      その他
-                    </div>
+                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ career.career_start_date.year }}年{{ career.career_start_date.month }}月{{ career.career_start_date.day }}日</div>
+                    <div v-if="career.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="career.career_end_date !== null" class="justify-self-start col-span-2">{{ career.career_end_date.year }}年{{ career.career_end_date.month }}月{{ career.career_end_date.day }}日</div>
+                    <button v-on:click="TODO" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
                   </div>
-                  <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ career.career_start_date.year }}年{{ career.career_start_date.month }}月{{ career.career_start_date.day }}日</div>
-                  <div v-if="career.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="career.career_end_date !== null" class="justify-self-start col-span-2">{{ career.career_end_date.year }}年{{ career.career_end_date.month }}月{{ career.career_end_date.day }}日</div>
-                  <button v-on:click="TODO" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
                 </div>
-              </div>
-            </li>
-          </ul>
+              </li>
+            </ul>
+          </div>
+          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
         </div>
-        <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
-      </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
-        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
-        <div v-if="feePerHourInYen !== null" class="flex justify-end">
-          <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
+          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
+          <div v-if="feePerHourInYen !== null" class="flex justify-end">
+            <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
+          </div>
+          <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
+          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
         </div>
-        <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
-        <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
-      </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">相談料の入金口座</h3>
-        <p class="mt-2 text-lg">受け取った相談料を入金するための口座で、相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。ユーザー情報で身分証明が完了した姓名と異なる名義の口座は設定できません。</p>
-        <div v-if="bankAccount !== null" class="m-4 text-2xl grid grid-cols-3">
-          <div class="mt-2 justify-self-start col-span-1">銀行コード</div><div class="justify-self-start col-span-2">{{ bankAccount.bank_code }}</div>
-          <div class="mt-2 justify-self-start col-span-1">支店コード</div><div class="justify-self-start col-span-2">{{ bankAccount.branch_code }}</div>
-          <div class="mt-2 justify-self-start col-span-1">預金種別</div><div class="justify-self-start col-span-2">{{ bankAccount.account_type }}</div>
-          <div class="mt-2 justify-self-start col-span-1">口座番号</div><div class="justify-self-start col-span-2">{{ bankAccount.account_number }}</div>
-          <div class="mt-2 justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">相談料の入金口座</h3>
+          <p class="mt-2 text-lg">受け取った相談料を入金するための口座で、相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。ユーザー情報で身分証明が完了した姓名と異なる名義の口座は設定できません。</p>
+          <div v-if="bankAccount !== null" class="m-4 text-2xl grid grid-cols-3">
+            <div class="mt-2 justify-self-start col-span-1">銀行コード</div><div class="justify-self-start col-span-2">{{ bankAccount.bank_code }}</div>
+            <div class="mt-2 justify-self-start col-span-1">支店コード</div><div class="justify-self-start col-span-2">{{ bankAccount.branch_code }}</div>
+            <div class="mt-2 justify-self-start col-span-1">預金種別</div><div class="justify-self-start col-span-2">{{ bankAccount.account_type }}</div>
+            <div class="mt-2 justify-self-start col-span-1">口座番号</div><div class="justify-self-start col-span-2">{{ bankAccount.account_number }}</div>
+            <div class="mt-2 justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
+          </div>
+          <p v-else class="m-4 text-xl">相談料の入金口座が設定されていません。</p>
+          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料の入金口座を編集する</button>
         </div>
-        <p v-else class="m-4 text-xl">相談料の入金口座が設定されていません。</p>
-        <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料の入金口座を編集する</button>
-      </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">今月の相談料の合計</h3>
-        <p class="mt-2 text-lg">今月受け付けし、承諾した相談の相談料の合計です。他のユーザーに公開されることはありません。</p>
-        <div v-if="profit !== null" class="flex justify-end">
-          <p class="m-4 text-2xl">{{ profit }}円</p>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">今月の相談料の合計</h3>
+          <p class="mt-2 text-lg">今月受け付けし、承諾した相談の相談料の合計です。他のユーザーに公開されることはありません。</p>
+          <div v-if="profit !== null" class="flex justify-end">
+            <p class="m-4 text-2xl">{{ profit }}円</p>
+          </div>
+          <p v-else class="m-4 text-xl">まだ相談を受け付けていません。</p>
         </div>
-        <p v-else class="m-4 text-xl">まだ相談を受け付けていません。</p>
-      </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">入金情報</h3>
-        <p class="mt-2 text-lg">受け取った相談料に関する直近二回分の入金情報です。毎月月末に、前月の相談料の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
-        <div v-if="latestTwoTransfers.length === 0" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
-        <div v-else>
-          <ul>
-            <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="transfer">
-              <div class="mt-4">
-                <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">入金情報{{ index + 1 }}</div>
-                <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                  <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">
-                    <div v-if="transfer.status === 'pending'">入金前</div>
-                    <div v-else-if="transfer.status === 'paid'">入金完了</div>
-                    <div v-else-if="transfer.status === 'failed'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
-                    <div v-else-if="transfer.status === 'stop'">入金差し止め（詳細な情報はお問い合わせ下さい）</div>
-                    <div v-else-if="transfer.status === 'carried_over'">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
-                    <div v-else-if="transfer.status === 'recombination'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
-                    <div v-else>想定されない処理状態（こちらの状態が表示された場合、お手数ですがお問い合わせより、その旨ご連絡下さい）</div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">入金情報</h3>
+          <p class="mt-2 text-lg">受け取った相談料に関する直近二回分の入金情報です。毎月月末に、前月の相談料の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
+          <div v-if="latestTwoTransfers.length === 0" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
+          <div v-else>
+            <ul>
+              <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="transfer">
+                <div class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">入金情報{{ index + 1 }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">
+                      <div v-if="transfer.status === 'pending'">入金前</div>
+                      <div v-else-if="transfer.status === 'paid'">入金完了</div>
+                      <div v-else-if="transfer.status === 'failed'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
+                      <div v-else-if="transfer.status === 'stop'">入金差し止め（詳細な情報はお問い合わせ下さい）</div>
+                      <div v-else-if="transfer.status === 'carried_over'">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
+                      <div v-else-if="transfer.status === 'recombination'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
+                      <div v-else>想定されない処理状態（こちらの状態が表示された場合、お手数ですがお問い合わせより、その旨ご連絡下さい）</div>
+                    </div>
+                    <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
+                    <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
+                    <div v-if="transfer.transfer_amount !== null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount !== null" class="justify-self-start col-span-2">{{ transfer.transfer_amount }}円</div>
+                    <div v-if="transfer.transfer_date_in_jst !== null" class="mt-2 justify-self-start col-span-1">入金日</div><div v-if="transfer.transfer_date_in_jst !== null" class="justify-self-start col-span-2">{{ transfer.transfer_date_in_jst.year }}年{{ transfer.transfer_date_in_jst.month }}月{{ transfer.transfer_date_in_jst.day }}日</div>
                   </div>
-                  <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
-                  <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
-                  <div v-if="transfer.transfer_amount !== null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount !== null" class="justify-self-start col-span-2">{{ transfer.transfer_amount }}円</div>
-                  <div v-if="transfer.transfer_date_in_jst !== null" class="mt-2 justify-self-start col-span-1">入金日</div><div v-if="transfer.transfer_date_in_jst !== null" class="justify-self-start col-span-2">{{ transfer.transfer_date_in_jst.year }}年{{ transfer.transfer_date_in_jst.month }}月{{ transfer.transfer_date_in_jst.day }}日</div>
                 </div>
-              </div>
-            </li>
-          </ul>
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <button v-on:click="TODO" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <button v-on:click="TODO" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
@@ -138,6 +145,7 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { GetProfileResp } from '@/util/profile/GetProfileResp'
 import { ApiErrorResp } from '@/util/ApiError'
@@ -146,11 +154,14 @@ import { useGetProfile } from './useGetProfile'
 import { BankAccount } from '@/util/profile/BankAccount'
 import { Transfer } from '@/util/profile/Transfer'
 import { Career } from '@/util/profile/Career'
+import { Message } from '@/util/Message'
+import { createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
   name: 'ProfilePage',
   components: {
     TheHeader,
+    AlertMessage,
     WaitingCircle
   },
   setup () {
@@ -163,6 +174,8 @@ export default defineComponent({
     const profit = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
+    const errorExists = ref(false)
+    const errorMessage = ref('')
     onMounted(async () => {
       const result = await getPageKindToDisplay()
       if (result === 'personalized-page') {
@@ -174,25 +187,31 @@ export default defineComponent({
       } else {
         throw new Error('Assertion Error: must not reach this line')
       }
-      const response = await getProfileFunc()
-      if (response instanceof GetProfileResp) {
-        const profile = response.getProfile()
-        /* eslint-disable camelcase */
-        emailAddress.value = profile.email_address
-        identity.value = profile.identity
-        careers.value = profile.careers
-        feePerHourInYen.value = profile.fee_per_hour_in_yen
-        bankAccount.value = profile.bank_account
-        profit.value = profile.profit
-        latestTwoTransfers.value = profile.latest_two_transfers
-        /* eslint-enable camelcase */
-      } else if (response instanceof ApiErrorResp) {
-        console.log('ApiErrorResp')
-      } else {
-        console.log('else')
+      try {
+        const response = await getProfileFunc()
+        if (response instanceof GetProfileResp) {
+          const profile = response.getProfile()
+          /* eslint-disable camelcase */
+          emailAddress.value = profile.email_address
+          identity.value = profile.identity
+          careers.value = profile.careers
+          feePerHourInYen.value = profile.fee_per_hour_in_yen
+          bankAccount.value = profile.bank_account
+          profit.value = profile.profit
+          latestTwoTransfers.value = profile.latest_two_transfers
+          /* eslint-enable camelcase */
+        } else if (response instanceof ApiErrorResp) {
+          errorExists.value = true
+          errorMessage.value = createErrorMessage(response.getApiError().getCode())
+        } else {
+          throw new Error(`unexpected result: ${response}`)
+        }
+      } catch (e) {
+        errorExists.value = true
+        errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
-    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, bankAccount, profit, latestTwoTransfers }
+    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, bankAccount, profit, latestTwoTransfers, errorExists, errorMessage }
   }
 })
 </script>
