@@ -30,7 +30,7 @@
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">職務経歴</h3>
-        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
+        <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
         <div v-if="careers.length === 0" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
         <div v-else>
           <ul>
@@ -38,6 +38,24 @@
               <div class="mt-4">
                 <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
                 <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                  <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ career.company_name }}</div>
+                  <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
+                  <div class="justify-self-start col-span-2">
+                    <div v-if="career.contract_type === 'regular'">
+                      正社員
+                    </div>
+                    <div v-else-if="career.contract_type === 'contract'">
+                      契約社員
+                    </div>
+                    <div v-else-if="career.contract_type === 'other'">
+                      その他
+                    </div>
+                    <div v-else>
+                      その他
+                    </div>
+                  </div>
+                  <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ career.career_start_date.year }}年{{ career.career_start_date.month }}月{{ career.career_start_date.day }}日</div>
+                  <div v-if="career.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="career.career_end_date !== null" class="justify-self-start col-span-2">{{ career.career_end_date.year }}年{{ career.career_end_date.month }}月{{ career.career_end_date.day }}日</div>
                   <button v-on:click="TODO" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
                 </div>
               </div>
