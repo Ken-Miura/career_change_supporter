@@ -141,6 +141,7 @@ pub(crate) struct Ymd {
 
 #[derive(Serialize, Debug)]
 pub(crate) struct Career {
+    pub id: i32,
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,
@@ -278,6 +279,7 @@ fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
         day: end_date.day(),
     });
     Career {
+        id: career_info.career_info_id,
         company_name: career_info.company_name,
         department_name: career_info.department_name,
         office: career_info.office,
