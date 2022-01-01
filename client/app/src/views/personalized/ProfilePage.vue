@@ -71,17 +71,17 @@
           <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
+          <h3 class="font-bold text-2xl">相談一回（１時間）の報酬</h3>
           <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
           <div v-if="feePerHourInYen !== null" class="flex justify-end">
             <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
           </div>
-          <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
-          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
+          <p v-else class="m-4 text-xl">報酬が設定されていません。</p>
+          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬を編集する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談料の入金口座</h3>
-          <p class="mt-2 text-lg">受け取った相談料を入金するための口座で、相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。ユーザー情報で身分証明が完了した姓名と異なる名義の口座は設定できません。</p>
+          <h3 class="font-bold text-2xl">報酬の入金口座</h3>
+          <p class="mt-2 text-lg">受け取った報酬を入金するための口座で、相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。ユーザー情報で身分証明が完了した姓名と異なる名義の口座は設定できません。</p>
           <div v-if="bankAccount !== null" class="m-4 text-2xl grid grid-cols-3">
             <div class="mt-2 justify-self-start col-span-1">銀行コード</div><div class="justify-self-start col-span-2">{{ bankAccount.bank_code }}</div>
             <div class="mt-2 justify-self-start col-span-1">支店コード</div><div class="justify-self-start col-span-2">{{ bankAccount.branch_code }}</div>
@@ -89,12 +89,12 @@
             <div class="mt-2 justify-self-start col-span-1">口座番号</div><div class="justify-self-start col-span-2">{{ bankAccount.account_number }}</div>
             <div class="mt-2 justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
           </div>
-          <p v-else class="m-4 text-xl">相談料の入金口座が設定されていません。</p>
-          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料の入金口座を編集する</button>
+          <p v-else class="m-4 text-xl">報酬の入金口座が設定されていません。</p>
+          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">今月の相談料の合計</h3>
-          <p class="mt-2 text-lg">今月受け付けし、承諾した相談の相談料の合計です。他のユーザーに公開されることはありません。</p>
+          <h3 class="font-bold text-2xl">今月の報酬の合計</h3>
+          <p class="mt-2 text-lg">今月受け付けし、承諾した相談の報酬の合計です。他のユーザーに公開されることはありません。</p>
           <div v-if="profit !== null" class="flex justify-end">
             <p class="m-4 text-2xl">{{ profit }}円</p>
           </div>
@@ -102,7 +102,7 @@
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">入金情報</h3>
-          <p class="mt-2 text-lg">受け取った相談料に関する直近二回分の入金情報です。毎月月末に、前月の相談料の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
+          <p class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
           <div v-if="latestTwoTransfers.length === 0" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
           <div v-else>
             <ul>
@@ -113,10 +113,10 @@
                     <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">
                       <div v-if="transfer.status === 'pending'">入金前</div>
                       <div v-else-if="transfer.status === 'paid'">入金完了</div>
-                      <div v-else-if="transfer.status === 'failed'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
+                      <div v-else-if="transfer.status === 'failed'">入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
                       <div v-else-if="transfer.status === 'stop'">入金差し止め（詳細な情報はお問い合わせ下さい）</div>
                       <div v-else-if="transfer.status === 'carried_over'">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
-                      <div v-else-if="transfer.status === 'recombination'">入金失敗（次回の入金時までに相談料の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
+                      <div v-else-if="transfer.status === 'recombination'">入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
                       <div v-else>想定されない処理状態（こちらの状態が表示された場合、お手数ですがお問い合わせより、その旨ご連絡下さい）</div>
                     </div>
                     <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
