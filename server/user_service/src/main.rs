@@ -123,7 +123,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/new-password", post(post_new_password))
                 .route("/password-change", post(post_password_change))
                 .route("/profile", get(get_profile))
-                .route("/reward", get(get_reward)),
+                .route("/rewards", get(get_reward)),
         )
         .layer(AddExtensionLayer::new(pool))
         .layer(AddExtensionLayer::new(store))
