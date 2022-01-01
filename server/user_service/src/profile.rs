@@ -324,8 +324,116 @@ mod tests {
         }
     }
 
+    fn create_dummy_identity_info(account_id: i32) -> IdentityInfo {
+        let date = NaiveDate::from_ymd(1990, 4, 5);
+        IdentityInfo {
+            user_account_id: account_id,
+            last_name: "田中".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "タナカ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            sex: "male".to_string(),
+            date_of_birth: date,
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野2-2-22".to_string(),
+            address_line2: None,
+            telephone_number: "12345678901".to_string(),
+        }
+    }
+
+    fn create_dummy_career_info_1(account_id: i32) -> CareerInfo {
+        let start_date = NaiveDate::from_ymd(2013, 4, 1);
+        CareerInfo {
+            career_info_id: 1,
+            user_account_id: account_id,
+            company_name: "テスト株式会社".to_string(),
+            department_name: None,
+            office: None,
+            career_start_date: start_date,
+            career_end_date: None,
+            contract_type: "regular".to_string(),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: true,
+            note: Some("備考テスト".to_string()),
+        }
+    }
+
+    fn create_dummy_8careers_info(account_id: i32) -> Vec<CareerInfo> {
+        let mut careers = Vec::with_capacity(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT as usize);
+        let mut start_date = NaiveDate::from_ymd(2013, 4, 1);
+        let mut end_date = Some(start_date + chrono::Duration::days(365));
+        for i in 0..MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT {
+            let career_info = CareerInfo {
+                career_info_id: (i + 1) as i32,
+                user_account_id: account_id,
+                company_name: format!("テスト{}株式会社", i + 1),
+                department_name: Some(format!("部署{}", i + 1)),
+                office: Some(format!("事業所{}", i + 1)),
+                career_start_date: start_date.clone(),
+                career_end_date: end_date.clone(),
+                contract_type: "contract".to_string(),
+                profession: Some(format!("職種{}", i + 1)),
+                annual_income_in_man_yen: Some(((i + 1) * 100) as i32),
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            start_date = end_date.expect("failed to get Ok") + chrono::Duration::days(1);
+            end_date = Some(start_date + chrono::Duration::days(30));
+            careers.push(career_info);
+        }
+        careers
+    }
+
+    fn create_dummy_consulting_fee(account_id: i32) -> ConsultingFee {
+        ConsultingFee {
+            user_account_id: account_id,
+            fee_per_hour_in_yen: 3000,
+        }
+    }
+
     #[tokio::test]
-    async fn success_return_profile_1() {
+    async fn success_return_profile_when_there_is_no_identity() {
+        let account_id = 51351;
+        let email = "profile.test@test.com";
+        let pwd = "vvvvvvvvvV";
+        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
+        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: account_id,
+            email_address: email.to_string(),
+            hashed_password: hashed_pwd,
+            last_login_time: Some(last_login),
+            created_at: creation_time,
+        };
+        let profile_op = ProfileOperationMock {
+            account: account.clone(),
+            identity_info_option: None,
+            // ユーザー情報 (IdentityInfo) がない場合、職務経歴と相談料の登録は許可しないので、必ず空VecとNoneとなる
+            careers_info: vec![],
+            consulting_fee_option: None,
+        };
+
+        let result = get_profile_internal(account_id, profile_op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert_eq!(account.email_address, result.1 .0.email_address);
+        assert_eq!(None, result.1 .0.identity);
+        let careers: Vec<Career> = vec![];
+        assert_eq!(careers, result.1 .0.careers);
+        assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
+    }
+
+    #[tokio::test]
+    async fn success_return_profile_with_identity_1career_fee() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -370,87 +478,8 @@ mod tests {
         );
     }
 
-    fn create_dummy_identity_info(account_id: i32) -> IdentityInfo {
-        let date = NaiveDate::from_ymd(1990, 4, 5);
-        IdentityInfo {
-            user_account_id: account_id,
-            last_name: "田中".to_string(),
-            first_name: "太郎".to_string(),
-            last_name_furigana: "タナカ".to_string(),
-            first_name_furigana: "タロウ".to_string(),
-            sex: "male".to_string(),
-            date_of_birth: date,
-            prefecture: "東京都".to_string(),
-            city: "町田市".to_string(),
-            address_line1: "森野2-2-22".to_string(),
-            address_line2: None,
-            telephone_number: "12345678901".to_string(),
-        }
-    }
-
-    fn create_dummy_career_info_1(account_id: i32) -> CareerInfo {
-        let start_date = NaiveDate::from_ymd(2013, 4, 1);
-        CareerInfo {
-            career_info_id: 1,
-            user_account_id: account_id,
-            company_name: "テスト株式会社".to_string(),
-            department_name: None,
-            office: None,
-            career_start_date: start_date,
-            career_end_date: None,
-            contract_type: "regular".to_string(),
-            profession: None,
-            annual_income_in_man_yen: None,
-            is_manager: false,
-            position_name: None,
-            is_new_graduate: true,
-            note: Some("備考テスト".to_string()),
-        }
-    }
-
-    fn create_dummy_consulting_fee(account_id: i32) -> ConsultingFee {
-        ConsultingFee {
-            user_account_id: account_id,
-            fee_per_hour_in_yen: 3000,
-        }
-    }
-
     #[tokio::test]
-    async fn success_return_profile_2() {
-        let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
-        };
-        let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: None,
-            careers_info: vec![],
-            consulting_fee_option: None,
-        };
-
-        let result = get_profile_internal(account_id, profile_op)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(StatusCode::OK, result.0);
-        assert_eq!(account.email_address, result.1 .0.email_address);
-        assert_eq!(None, result.1 .0.identity);
-        let careers: Vec<Career> = vec![];
-        assert_eq!(careers, result.1 .0.careers);
-        assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
-    }
-
-    #[tokio::test]
-    async fn success_return_profile_3() {
+    async fn success_return_profile_with_identity_8careers_fee() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -465,87 +494,7 @@ mod tests {
             created_at: creation_time,
         };
         let identity_info = create_dummy_identity_info(account_id);
-        let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: Some(identity_info.clone()),
-            careers_info: vec![],
-            consulting_fee_option: None,
-        };
-
-        let result = get_profile_internal(account_id, profile_op)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(StatusCode::OK, result.0);
-        assert_eq!(account.email_address, result.1 .0.email_address);
-        assert_eq!(
-            Some(convert_identity_info_to_identity(identity_info)),
-            result.1 .0.identity
-        );
-        let careers: Vec<Career> = vec![];
-        assert_eq!(careers, result.1 .0.careers);
-        assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
-    }
-
-    #[tokio::test]
-    async fn success_return_profile_4() {
-        let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
-        };
-        let identity_info = create_dummy_identity_info(account_id);
-        let fee = create_dummy_consulting_fee(account_id);
-        let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: Some(identity_info.clone()),
-            careers_info: vec![],
-            consulting_fee_option: Some(fee.clone()),
-        };
-
-        let result = get_profile_internal(account_id, profile_op)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(StatusCode::OK, result.0);
-        assert_eq!(account.email_address, result.1 .0.email_address);
-        assert_eq!(
-            Some(convert_identity_info_to_identity(identity_info)),
-            result.1 .0.identity
-        );
-        let careers: Vec<Career> = vec![];
-        assert_eq!(careers, result.1 .0.careers);
-        assert_eq!(
-            Some(fee.fee_per_hour_in_yen),
-            result.1 .0.fee_per_hour_in_yen
-        );
-    }
-
-    #[tokio::test]
-    async fn success_return_profile_5() {
-        let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
-        };
-        let identity_info = create_dummy_identity_info(account_id);
-        let careers_info = create_dummy_careers_info_1(account_id);
+        let careers_info = create_dummy_8careers_info(account_id);
         let fee = create_dummy_consulting_fee(account_id);
         let profile_op = ProfileOperationMock {
             account: account.clone(),
@@ -575,32 +524,42 @@ mod tests {
         );
     }
 
-    fn create_dummy_careers_info_1(account_id: i32) -> Vec<CareerInfo> {
-        let mut careers = Vec::with_capacity(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT as usize);
-        let mut start_date = NaiveDate::from_ymd(2013, 4, 1);
-        let mut end_date = Some(start_date + chrono::Duration::days(365));
-        for i in 0..MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT {
-            let career_info = CareerInfo {
-                career_info_id: (i + 1) as i32,
-                user_account_id: account_id,
-                company_name: format!("テスト{}株式会社", i + 1),
-                department_name: Some(format!("部署{}", i + 1)),
-                office: Some(format!("事業所{}", i + 1)),
-                career_start_date: start_date.clone(),
-                career_end_date: end_date.clone(),
-                contract_type: "contract".to_string(),
-                profession: Some(format!("職種{}", i + 1)),
-                annual_income_in_man_yen: Some(((i + 1) * 100) as i32),
-                is_manager: true,
-                position_name: None,
-                is_new_graduate: false,
-                note: None,
-            };
-            start_date = end_date.expect("failed to get Ok") + chrono::Duration::days(1);
-            end_date = Some(start_date + chrono::Duration::days(30));
-            careers.push(career_info);
-        }
-        careers
+    #[tokio::test]
+    async fn success_return_profile_with_identity_without_career_fee() {
+        let account_id = 51351;
+        let email = "profile.test@test.com";
+        let pwd = "vvvvvvvvvV";
+        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
+        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: account_id,
+            email_address: email.to_string(),
+            hashed_password: hashed_pwd,
+            last_login_time: Some(last_login),
+            created_at: creation_time,
+        };
+        let identity_info = create_dummy_identity_info(account_id);
+        let profile_op = ProfileOperationMock {
+            account: account.clone(),
+            identity_info_option: Some(identity_info.clone()),
+            careers_info: vec![],
+            consulting_fee_option: None,
+        };
+
+        let result = get_profile_internal(account_id, profile_op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert_eq!(account.email_address, result.1 .0.email_address);
+        assert_eq!(
+            Some(convert_identity_info_to_identity(identity_info)),
+            result.1 .0.identity
+        );
+        let careers: Vec<Career> = vec![];
+        assert_eq!(careers, result.1 .0.careers);
+        assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
     }
 
     #[tokio::test]
