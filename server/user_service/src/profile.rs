@@ -379,7 +379,7 @@ mod tests {
             account: account.clone(),
             identity_info_option: Some(identity_info.clone()),
             careers_info: vec![career.clone()],
-            consulting_fee_option: Some(fee),
+            consulting_fee_option: Some(fee.clone()),
         };
 
         let result = get_profile_internal(account_id, profile_op)
@@ -397,5 +397,9 @@ mod tests {
             .map(|c| convert_career_info_to_career(c))
             .collect::<Vec<Career>>();
         assert_eq!(careers, result.1 .0.careers);
+        assert_eq!(
+            Some(fee.fee_per_hour_in_yen),
+            result.1 .0.fee_per_hour_in_yen
+        );
     }
 }
