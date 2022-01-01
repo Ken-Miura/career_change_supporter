@@ -57,7 +57,7 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
 /// [chrono::DateTime] で日本時間を扱う際に利用する。
 pub(crate) static JAPANESE_TIME_ZONE: Lazy<FixedOffset> = Lazy::new(|| FixedOffset::east(9 * 3600));
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub(crate) struct Identity {
     pub last_name: String,
     pub first_name: String,
@@ -72,14 +72,14 @@ pub(crate) struct Identity {
     pub telephone_number: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub(crate) struct Ymd {
     pub year: i32,
     pub month: u32,
     pub day: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub(crate) struct Career {
     pub id: i32,
     pub company_name: String,

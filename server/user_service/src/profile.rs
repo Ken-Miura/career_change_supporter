@@ -260,141 +260,142 @@ impl ProfileOperation for ProfileOperationImpl {
     }
 }
 
+// TODO: 事前準備に用意するデータ (IdentitiInfo、CareerInfo、ConsultingFee) に関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
 #[cfg(test)]
 mod tests {
-    // use async_session::async_trait;
-    // use axum::{http::StatusCode, Json};
-    // use chrono::{TimeZone, Utc};
-    // use common::{
-    //     payment_platform::{
-    //         charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
-    //         tenant::{Tenant, TenantOperation},
-    //         tenant_transfer::{
-    //             Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
-    //         },
-    //         Error, List,
-    //     },
-    //     ApiError,
-    // };
+    use axum::{http::StatusCode, Json};
+    use chrono::{NaiveDate, TimeZone, Utc};
+    use common::{
+        model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo},
+        util::hash_password,
+        ApiError,
+    };
 
-    // use crate::{err_code::NO_ACCOUNT_FOUND, util::JAPANESE_TIME_ZONE};
+    use crate::{
+        err_code::NO_ACCOUNT_FOUND,
+        profile::{convert_career_info_to_career, convert_identity_info_to_identity},
+        util::Career,
+    };
 
-    // use super::{get_profile_internal, ProfileOperation};
+    use super::{get_profile_internal, ProfileOperation};
 
-    // struct ProfileOperationMock {
-    //     account: common::model::user::Account,
-    //     identity_info_option: Option<common::model::user::IdentityInfo>,
-    //     careers_info: Vec<common::model::user::CareerInfo>,
-    //     tenant_option: Option<common::model::user::Tenant>,
-    //     consulting_fee_option: Option<common::model::user::ConsultingFee>,
-    // }
+    struct ProfileOperationMock {
+        account: Account,
+        identity_info_option: Option<IdentityInfo>,
+        careers_info: Vec<CareerInfo>,
+        consulting_fee_option: Option<ConsultingFee>,
+    }
 
-    // impl ProfileOperation for ProfileOperationMock {
-    //     fn find_user_account_by_user_account_id(
-    //         &self,
-    //         id: i32,
-    //     ) -> Result<common::model::user::Account, common::ErrResp> {
-    //         if self.account.user_account_id != id {
-    //             return Err((
-    //                 StatusCode::BAD_REQUEST,
-    //                 Json(ApiError {
-    //                     code: NO_ACCOUNT_FOUND,
-    //                 }),
-    //             ));
-    //         }
-    //         Ok(self.account.clone())
-    //     }
+    impl ProfileOperation for ProfileOperationMock {
+        fn find_user_account_by_user_account_id(
+            &self,
+            id: i32,
+        ) -> Result<Account, common::ErrResp> {
+            if self.account.user_account_id != id {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: NO_ACCOUNT_FOUND,
+                    }),
+                ));
+            }
+            Ok(self.account.clone())
+        }
 
-    //     fn find_identity_info_by_user_account_id(
-    //         &self,
-    //         _id: i32,
-    //     ) -> Result<Option<common::model::user::IdentityInfo>, common::ErrResp> {
-    //         Ok(self.identity_info_option.clone())
-    //     }
+        fn find_identity_info_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Option<IdentityInfo>, common::ErrResp> {
+            Ok(self.identity_info_option.clone())
+        }
 
-    //     fn filter_career_info_by_user_account_id(
-    //         &self,
-    //         _id: i32,
-    //     ) -> Result<Vec<common::model::user::CareerInfo>, common::ErrResp> {
-    //         Ok(self.careers_info.clone())
-    //     }
+        fn filter_career_info_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Vec<CareerInfo>, common::ErrResp> {
+            Ok(self.careers_info.clone())
+        }
 
-    //     fn find_consulting_fee_by_user_account_id(
-    //         &self,
-    //         _id: i32,
-    //     ) -> Result<Option<common::model::user::ConsultingFee>, common::ErrResp> {
-    //         Ok(self.consulting_fee_option.clone())
-    //     }
-    // }
-
-    // struct TenantOperationMock<'a> {
-    //     tenant_id: &'a str,
-    // }
-
-    // #[async_trait]
-    // impl<'a> TenantOperation for TenantOperationMock<'a> {
-    //     async fn get_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error> {
-    //         todo!()
-    //     }
-    // }
-
-    // struct ChargeOperationMock<'a> {
-    //     query: &'a SearchChargesQuery,
-    // }
-
-    // #[async_trait]
-    // impl<'a> ChargeOperation for ChargeOperationMock<'a> {
-    //     async fn search_charges(&self, query: &SearchChargesQuery) -> Result<List<Charge>, Error> {
-    //         todo!()
-    //     }
-    // }
-
-    // struct TenantTransferOperationMock<'a> {
-    //     query: &'a SearchTenantTransfersQuery,
-    // }
-
-    // #[async_trait]
-    // impl<'a> TenantTransferOperation for TenantTransferOperationMock<'a> {
-    //     async fn search_tenant_transfers(
-    //         &self,
-    //         query: &SearchTenantTransfersQuery,
-    //     ) -> Result<List<TenantTransfer>, Error> {
-    //         todo!()
-    //     }
-    // }
+        fn find_consulting_fee_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Option<ConsultingFee>, common::ErrResp> {
+            Ok(self.consulting_fee_option.clone())
+        }
+    }
 
     #[tokio::test]
     async fn success_return_profile() {
-        // let account_id = 51351;
-        // let profile_op = ProfileOperationMock { account_id };
-        // let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        // let tenant_op = TenantOperationMock { tenant_id };
-        // let search_charges_query = SearchChargesQuery::build()
-        //     .finish()
-        //     .expect("failed to get Ok");
-        // let charge_op = ChargeOperationMock {
-        //     query: &search_charges_query,
-        // };
-        // let current_datetime = Utc
-        //     .ymd(2021, 12, 31)
-        //     .and_hms(7, 0, 0)
-        //     .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-        // let search_tenant_transfers_query = SearchTenantTransfersQuery::build()
-        //     .finish()
-        //     .expect("failed to get Ok");
-        // let tenant_transfer_op = TenantTransferOperationMock {
-        //     query: &search_tenant_transfers_query,
-        // };
+        let account_id = 51351;
+        let email = "profile.test@test.com";
+        let pwd = "vvvvvvvvvV";
+        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
+        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: account_id,
+            email_address: email.to_string(),
+            hashed_password: hashed_pwd,
+            last_login_time: Some(last_login),
+            created_at: creation_time,
+        };
+        let date = NaiveDate::from_ymd(1990, 4, 5);
+        let identity_info = IdentityInfo {
+            user_account_id: account_id,
+            last_name: "田中".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "タナカ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            sex: "male".to_string(),
+            date_of_birth: date,
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野2-2-22".to_string(),
+            address_line2: None,
+            telephone_number: "12345678901".to_string(),
+        };
+        let start_date = NaiveDate::from_ymd(2013, 4, 1);
+        let career = CareerInfo {
+            career_info_id: 1,
+            user_account_id: account_id,
+            company_name: "テスト株式会社".to_string(),
+            department_name: None,
+            office: None,
+            career_start_date: start_date,
+            career_end_date: None,
+            contract_type: "regular".to_string(),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: true,
+            note: Some("備考テスト".to_string()),
+        };
+        let fee = ConsultingFee {
+            user_account_id: account_id,
+            fee_per_hour_in_yen: 3000,
+        };
+        let profile_op = ProfileOperationMock {
+            account: account.clone(),
+            identity_info_option: Some(identity_info.clone()),
+            careers_info: vec![career.clone()],
+            consulting_fee_option: Some(fee),
+        };
 
-        // let result = get_profile_internal(
-        //     account_id,
-        //     profile_op,
-        //     tenant_op,
-        //     charge_op,
-        //     current_datetime,
-        //     tenant_transfer_op,
-        // )
-        // .await
-        // .expect("failed to get Ok");
+        let result = get_profile_internal(account_id, profile_op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert_eq!(account.email_address, result.1 .0.email_address);
+        assert_eq!(
+            Some(convert_identity_info_to_identity(identity_info)),
+            result.1 .0.identity
+        );
+        let careers = vec![career.clone()]
+            .into_iter()
+            .map(|c| convert_career_info_to_career(c))
+            .collect::<Vec<Career>>();
+        assert_eq!(careers, result.1 .0.careers);
     }
 }
