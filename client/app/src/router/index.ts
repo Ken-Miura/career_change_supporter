@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ProfilePage from '../views/personalized/ProfilePage.vue'
+import RewardPage from '../views/personalized/RewardPage.vue'
 import SchedulePage from '../views/personalized/SchedulePage.vue'
 import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
@@ -77,6 +78,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/profile',
     name: 'ProfilePage',
     component: ProfilePage
+  },
+  {
+    path: '/reward',
+    name: 'RewardPage',
+    component: RewardPage
   },
   {
     path: '/schedule',
