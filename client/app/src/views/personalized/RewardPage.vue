@@ -12,15 +12,6 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談一回（１時間）の報酬</h3>
-          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span></p>
-          <div v-if="feePerHourInYen !== null" class="flex justify-end">
-            <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
-          </div>
-          <p v-else class="m-4 text-xl">報酬が設定されていません。</p>
-          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬を編集する</button>
-        </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">報酬の入金口座</h3>
           <p class="mt-2 text-lg">受け取った報酬を入金するための口座で、相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。ユーザー情報で身分証明が完了した姓名と異なる名義の口座は設定できません。</p>
           <div v-if="bankAccount !== null" class="m-4 text-2xl grid grid-cols-3">
@@ -102,7 +93,6 @@ export default defineComponent({
   },
   setup () {
     const { getProfileDone, getProfileFunc } = useGetProfile()
-    const feePerHourInYen = ref(0 as number | null)
     const bankAccount = ref(null as BankAccount | null)
     const profit = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
@@ -125,10 +115,9 @@ export default defineComponent({
         if (response instanceof GetProfileResp) {
           const profile = response.getProfile()
           /* eslint-disable camelcase */
-          feePerHourInYen.value = profile.fee_per_hour_in_yen
-          bankAccount.value = profile.bank_account
-          profit.value = profile.profit
-          latestTwoTransfers.value = profile.latest_two_transfers
+          bankAccount.value = null // profile.bank_account
+          profit.value = null // profile.profit
+          latestTwoTransfers.value = [] // profile.latest_two_transfers
           /* eslint-enable camelcase */
         } else if (response instanceof ApiErrorResp) {
           errorExists.value = true
@@ -141,7 +130,7 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
-    return { getProfileDone, feePerHourInYen, bankAccount, profit, latestTwoTransfers, errorExists, errorMessage }
+    return { getProfileDone, bankAccount, profit, latestTwoTransfers, errorExists, errorMessage }
   }
 })
 </script>
