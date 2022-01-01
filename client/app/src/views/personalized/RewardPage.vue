@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getProfileDone" class="m-6">
+    <div v-if="!getRewardsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -27,8 +27,8 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">今月の報酬の合計</h3>
           <p class="mt-2 text-lg">今月受け付けし、承諾した相談の報酬の合計です。他のユーザーに公開されることはありません。</p>
-          <div v-if="profit !== null" class="flex justify-end">
-            <p class="m-4 text-2xl">{{ profit }}円</p>
+          <div v-if="rewardsOfTheMonth !== null" class="flex justify-end">
+            <p class="m-4 text-2xl">{{ rewardsOfTheMonth }}円</p>
           </div>
           <p v-else class="m-4 text-xl">まだ相談を受け付けていません。</p>
         </div>
@@ -76,25 +76,25 @@ import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { GetProfileResp } from '@/util/profile/GetProfileResp'
 import { ApiErrorResp } from '@/util/ApiError'
-import { useGetProfile } from './useGetProfile'
-import { BankAccount } from '@/util/profile/BankAccount'
-import { Transfer } from '@/util/profile/Transfer'
+import { useGetRewards } from '../../util/reward/useGetRewards'
+import { BankAccount } from '@/util/reward/BankAccount'
+import { Transfer } from '@/util/reward/Transfer'
 import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
+import { GetRewardsResp } from '@/util/reward/GetRewardsResp'
 
 export default defineComponent({
-  name: 'ProfilePage',
+  name: 'RewardPage',
   components: {
     TheHeader,
     AlertMessage,
     WaitingCircle
   },
   setup () {
-    const { getProfileDone, getProfileFunc } = useGetProfile()
+    const { getRewardsDone, getRewardsFunc } = useGetRewards()
     const bankAccount = ref(null as BankAccount | null)
-    const profit = ref(null as number | null)
+    const rewardsOfTheMonth = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
     const errorExists = ref(false)
@@ -111,13 +111,13 @@ export default defineComponent({
         throw new Error('Assertion Error: must not reach this line')
       }
       try {
-        const response = await getProfileFunc()
-        if (response instanceof GetProfileResp) {
-          const profile = response.getProfile()
+        const response = await getRewardsFunc()
+        if (response instanceof GetRewardsResp) {
+          const rewards = response.getRewards()
           /* eslint-disable camelcase */
-          bankAccount.value = null // profile.bank_account
-          profit.value = null // profile.profit
-          latestTwoTransfers.value = [] // profile.latest_two_transfers
+          bankAccount.value = rewards.bank_account
+          rewardsOfTheMonth.value = rewards.rewards_of_the_month
+          latestTwoTransfers.value = rewards.latest_two_transfers
           /* eslint-enable camelcase */
         } else if (response instanceof ApiErrorResp) {
           errorExists.value = true
@@ -130,7 +130,7 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
-    return { getProfileDone, bankAccount, profit, latestTwoTransfers, errorExists, errorMessage }
+    return { getRewardsDone, bankAccount, rewardsOfTheMonth, latestTwoTransfers, errorExists, errorMessage }
   }
 })
 </script>
