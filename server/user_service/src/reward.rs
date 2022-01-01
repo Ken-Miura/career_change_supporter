@@ -3,7 +3,7 @@
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, TimeZone, Utc};
 use common::{
-    model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo, Tenant},
+    model::user::Tenant,
     payment_platform::{
         charge::{Charge, ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
@@ -12,45 +12,36 @@ use common::{
             TenantTransferOperationImpl,
         },
     },
-    schema::ccs_schema::{
-        career_info::{dsl::career_info as career_info_table, user_account_id},
-        consulting_fee::dsl::consulting_fee as consulting_fee_table,
-        identity_info::dsl::identity_info as identity_info_table,
-        tenant::dsl::tenant as tenant_table,
-        user_account::dsl::user_account,
-    },
-    ApiError, DatabaseConnection, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT,
+    schema::ccs_schema::tenant::dsl::tenant as tenant_table,
+    ApiError, DatabaseConnection, ErrResp, RespResult,
 };
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     result::Error::NotFound,
-    ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl,
+    PgConnection, QueryDsl, RunQueryDsl,
 };
 use serde::Serialize;
 
 use crate::{
-    err_code::{self, NO_ACCOUNT_FOUND},
-    util::{
-        session::User, unexpected_err_resp, BankAccount, Career, Identity, Ymd, ACCESS_INFO,
-        JAPANESE_TIME_ZONE,
-    },
+    err_code::{self},
+    util::{session::User, unexpected_err_resp, BankAccount, Ymd, ACCESS_INFO, JAPANESE_TIME_ZONE},
 };
 
 const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 32;
 const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
 
-pub(crate) async fn get_profile(
+pub(crate) async fn get_reward(
     User { account_id }: User,
     DatabaseConnection(conn): DatabaseConnection,
-) -> RespResult<ProfileResult> {
-    let profile_op = ProfileOperationImpl::new(conn);
+) -> RespResult<RewardResult> {
+    let reward_op = RewardOperationImpl::new(conn);
     let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
     let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
     let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
     let current_datetime = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    get_profile_internal(
+    get_reward_internal(
         account_id,
-        profile_op,
+        reward_op,
         tenant_op,
         charge_op,
         current_datetime,
@@ -59,50 +50,31 @@ pub(crate) async fn get_profile(
     .await
 }
 
-async fn get_profile_internal(
+async fn get_reward_internal(
     account_id: i32,
-    profile_op: impl ProfileOperation,
+    reward_op: impl RewardOperation,
     tenant_op: impl TenantOperation,
     charge_op: impl ChargeOperation,
     current_time: DateTime<FixedOffset>,
     tenant_transfer_op: impl TenantTransferOperation,
-) -> RespResult<ProfileResult> {
-    let account = profile_op.find_user_account_by_user_account_id(account_id)?;
-    let identity_info_option = profile_op.find_identity_info_by_user_account_id(account_id)?;
-    if identity_info_option.is_none() {
-        return Ok((
-            StatusCode::OK,
-            Json(ProfileResult::email_address(account.email_address).finish()),
-        ));
-    };
-    let identity = identity_info_option.map(convert_identity_info_to_identity);
-    let careers_info = profile_op.filter_career_info_by_user_account_id(account_id)?;
-    let careers = careers_info
-        .into_iter()
-        .map(convert_career_info_to_career)
-        .collect::<Vec<Career>>();
-    let consulting_fee_option = profile_op.find_consulting_fee_by_user_account_id(account_id)?;
-    let fee_per_hour_in_yen = consulting_fee_option.map(|c| c.fee_per_hour_in_yen);
-    let tenant_option = profile_op.find_tenant_by_user_account_id(account_id)?;
+) -> RespResult<RewardResult> {
+    let tenant_option = reward_op.find_tenant_by_user_account_id(account_id)?;
     let payment_platform_results = if let Some(tenant) = tenant_option {
         let bank_account = get_bank_account_by_tenant_id(tenant_op, &tenant.tenant_id).await?;
-        let profit =
-            get_profit_of_current_month(charge_op, &tenant.tenant_id, current_time).await?;
+        let rewards_of_the_month =
+            get_rewards_of_current_month(charge_op, &tenant.tenant_id, current_time).await?;
         let transfers =
             get_latest_two_tenant_transfers(tenant_transfer_op, &tenant.tenant_id).await?;
-        (Some(bank_account), Some(profit), transfers)
+        (Some(bank_account), Some(rewards_of_the_month), transfers)
     } else {
         (None, None, vec![])
     };
     Ok((
         StatusCode::OK,
         Json(
-            ProfileResult::email_address(account.email_address)
-                .identity(identity)
-                .careers(careers)
-                .fee_per_hour_in_yen(fee_per_hour_in_yen)
+            RewardResult::build()
                 .bank_account(payment_platform_results.0)
-                .profit(payment_platform_results.1)
+                .rewards_of_the_month(payment_platform_results.1)
                 .latest_two_transfers(payment_platform_results.2)
                 .finish(),
         ),
@@ -110,13 +82,9 @@ async fn get_profile_internal(
 }
 
 #[derive(Serialize, Debug)]
-pub(crate) struct ProfileResult {
-    pub email_address: String,
-    pub identity: Option<Identity>,
-    pub careers: Vec<Career>,
-    pub fee_per_hour_in_yen: Option<i32>,
+pub(crate) struct RewardResult {
     pub bank_account: Option<BankAccount>,
-    pub profit: Option<i32>, // プラットフォーム利用の取り分は引く。振込手数料は引かない。
+    pub rewards_of_the_month: Option<i32>, // 一ヶ月の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
     pub latest_two_transfers: Vec<Transfer>,
 }
 
@@ -132,121 +100,44 @@ pub(crate) struct Transfer {
     pub carried_balance: Option<i32>,
 }
 
-impl ProfileResult {
-    fn email_address(email_address: String) -> ProfileResultBuilder {
-        ProfileResultBuilder {
-            email_address,
-            identity: None,
-            careers: vec![],
-            fee_per_hour_in_yen: None,
+impl RewardResult {
+    fn build() -> RewardResultBuilder {
+        RewardResultBuilder {
             bank_account: None,
-            profit: None,
+            rewards_of_the_month: None,
             latest_two_transfers: vec![],
         }
     }
 }
 
-struct ProfileResultBuilder {
-    email_address: String,
-    identity: Option<Identity>,
-    careers: Vec<Career>,
-    fee_per_hour_in_yen: Option<i32>,
+struct RewardResultBuilder {
     bank_account: Option<BankAccount>,
-    profit: Option<i32>,
+    rewards_of_the_month: Option<i32>,
     latest_two_transfers: Vec<Transfer>,
 }
 
-impl ProfileResultBuilder {
-    fn identity(mut self, identity: Option<Identity>) -> ProfileResultBuilder {
-        self.identity = identity;
-        self
-    }
-
-    fn careers(mut self, careers: Vec<Career>) -> ProfileResultBuilder {
-        self.careers = careers;
-        self
-    }
-
-    fn fee_per_hour_in_yen(mut self, fee_per_hour_in_yen: Option<i32>) -> ProfileResultBuilder {
-        self.fee_per_hour_in_yen = fee_per_hour_in_yen;
-        self
-    }
-
-    fn bank_account(mut self, bank_account: Option<BankAccount>) -> ProfileResultBuilder {
+impl RewardResultBuilder {
+    fn bank_account(mut self, bank_account: Option<BankAccount>) -> RewardResultBuilder {
         self.bank_account = bank_account;
         self
     }
 
-    fn profit(mut self, profit: Option<i32>) -> ProfileResultBuilder {
-        self.profit = profit;
+    fn rewards_of_the_month(mut self, rewards_of_the_month: Option<i32>) -> RewardResultBuilder {
+        self.rewards_of_the_month = rewards_of_the_month;
         self
     }
 
-    fn latest_two_transfers(mut self, latest_two_transfers: Vec<Transfer>) -> ProfileResultBuilder {
+    fn latest_two_transfers(mut self, latest_two_transfers: Vec<Transfer>) -> RewardResultBuilder {
         self.latest_two_transfers = latest_two_transfers;
         self
     }
 
-    fn finish(self) -> ProfileResult {
-        ProfileResult {
-            email_address: self.email_address,
-            identity: self.identity,
-            careers: self.careers,
-            fee_per_hour_in_yen: self.fee_per_hour_in_yen,
+    fn finish(self) -> RewardResult {
+        RewardResult {
             bank_account: self.bank_account,
-            profit: self.profit,
+            rewards_of_the_month: self.rewards_of_the_month,
             latest_two_transfers: self.latest_two_transfers,
         }
-    }
-}
-
-fn convert_identity_info_to_identity(identity_info: IdentityInfo) -> Identity {
-    let date = identity_info.date_of_birth;
-    let ymd = Ymd {
-        year: date.year(),
-        month: date.month(),
-        day: date.day(),
-    };
-    Identity {
-        last_name: identity_info.last_name,
-        first_name: identity_info.first_name,
-        last_name_furigana: identity_info.last_name_furigana,
-        first_name_furigana: identity_info.first_name_furigana,
-        sex: identity_info.sex,
-        date_of_birth: ymd,
-        prefecture: identity_info.prefecture,
-        city: identity_info.city,
-        address_line1: identity_info.address_line1,
-        address_line2: identity_info.address_line2,
-        telephone_number: identity_info.telephone_number,
-    }
-}
-
-fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
-    let career_start_date = Ymd {
-        year: career_info.career_start_date.year(),
-        month: career_info.career_start_date.month(),
-        day: career_info.career_start_date.day(),
-    };
-    let career_end_date = career_info.career_end_date.map(|end_date| Ymd {
-        year: end_date.year(),
-        month: end_date.month(),
-        day: end_date.day(),
-    });
-    Career {
-        id: career_info.career_info_id,
-        company_name: career_info.company_name,
-        department_name: career_info.department_name,
-        office: career_info.office,
-        career_start_date,
-        career_end_date,
-        contract_type: career_info.contract_type,
-        profession: career_info.profession,
-        annual_income_in_man_yen: career_info.annual_income_in_man_yen,
-        is_manager: career_info.is_manager,
-        position_name: career_info.position_name,
-        is_new_graduate: career_info.is_new_graduate,
-        note: career_info.note,
     }
 }
 
@@ -285,7 +176,7 @@ async fn get_bank_account_by_tenant_id(
     })
 }
 
-async fn get_profit_of_current_month(
+async fn get_rewards_of_current_month(
     charge_op: impl ChargeOperation,
     tenant_id: &str,
     current_time: DateTime<FixedOffset>,
@@ -305,7 +196,7 @@ async fn get_profit_of_current_month(
             unexpected_err_resp()
         })?;
     let mut has_more_charges = true;
-    let mut profit = 0;
+    let mut rewards_of_the_month = 0;
     while has_more_charges {
         let charges = charge_op
             .search_charges(&search_charges_query)
@@ -329,15 +220,15 @@ async fn get_profit_of_current_month(
                     unexpected_err_resp()
                 }
             })?;
-        let profit_of_charges = charges
+        let rewards = charges
             .data
             .into_iter()
             .filter(|charge| charge.captured)
-            .try_fold(0, accumulate_profit_of_charges)?;
-        profit += profit_of_charges;
+            .try_fold(0, accumulate_rewards)?;
+        rewards_of_the_month += rewards;
         has_more_charges = charges.has_more;
     }
-    Ok(profit)
+    Ok(rewards_of_the_month)
 }
 
 fn create_start_and_end_timestamps_of_current_month(
@@ -363,15 +254,15 @@ fn create_start_and_end_timestamps_of_current_month(
     (start_timestamp, end_timestamp)
 }
 
-fn accumulate_profit_of_charges(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
+fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
     let sales = charge.amount - charge.amount_refunded;
-    if let Some(fee) = charge.total_platform_fee {
-        let profit_of_the_charge = sales - fee;
-        if profit_of_the_charge < 0 {
-            tracing::error!("negative profit_of_the_charge: {:?}", charge);
+    if let Some(total_platform_fee) = charge.total_platform_fee {
+        let reward_of_the_charge = sales - total_platform_fee;
+        if reward_of_the_charge < 0 {
+            tracing::error!("negative reward_of_the_charge: {:?}", charge);
             return Err(unexpected_err_resp());
         }
-        Ok(sum + profit_of_the_charge)
+        Ok(sum + reward_of_the_charge)
     } else {
         tracing::error!("No total_platform_fee found in the charge: {:?}", charge);
         Err(unexpected_err_resp())
@@ -463,81 +354,21 @@ fn convert_tenant_transfer_to_transfer(
     })
 }
 
-trait ProfileOperation {
-    fn find_user_account_by_user_account_id(&self, id: i32) -> Result<Account, ErrResp>;
-    fn find_identity_info_by_user_account_id(
-        &self,
-        id: i32,
-    ) -> Result<Option<IdentityInfo>, ErrResp>;
-    fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp>;
+trait RewardOperation {
     fn find_tenant_by_user_account_id(&self, id: i32) -> Result<Option<Tenant>, ErrResp>;
-    fn find_consulting_fee_by_user_account_id(
-        &self,
-        id: i32,
-    ) -> Result<Option<ConsultingFee>, ErrResp>;
 }
 
-struct ProfileOperationImpl {
+struct RewardOperationImpl {
     conn: PooledConnection<ConnectionManager<PgConnection>>,
 }
 
-impl ProfileOperationImpl {
+impl RewardOperationImpl {
     fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
         Self { conn }
     }
 }
 
-impl ProfileOperation for ProfileOperationImpl {
-    fn find_user_account_by_user_account_id(&self, id: i32) -> Result<Account, ErrResp> {
-        let result = user_account.find(id).first::<Account>(&self.conn);
-        match result {
-            Ok(account) => Ok(account),
-            Err(e) => {
-                if e == NotFound {
-                    Err((
-                        StatusCode::BAD_REQUEST,
-                        Json(ApiError {
-                            code: NO_ACCOUNT_FOUND,
-                        }),
-                    ))
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
-    }
-
-    fn find_identity_info_by_user_account_id(
-        &self,
-        id: i32,
-    ) -> Result<Option<IdentityInfo>, ErrResp> {
-        let result = identity_info_table
-            .find(id)
-            .first::<IdentityInfo>(&self.conn);
-        match result {
-            Ok(identity_info) => Ok(Some(identity_info)),
-            Err(e) => {
-                if e == NotFound {
-                    Ok(None)
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
-    }
-
-    fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp> {
-        let result = career_info_table
-            .filter(user_account_id.eq(id))
-            .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
-            .load::<CareerInfo>(&self.conn)
-            .map_err(|e| {
-                tracing::error!("failed to filter career info by id {}: {}", id, e);
-                unexpected_err_resp()
-            })?;
-        Ok(result)
-    }
-
+impl RewardOperation for RewardOperationImpl {
     fn find_tenant_by_user_account_id(&self, id: i32) -> Result<Option<Tenant>, ErrResp> {
         let result = tenant_table.find(id).first::<Tenant>(&self.conn);
         match result {
@@ -551,169 +382,10 @@ impl ProfileOperation for ProfileOperationImpl {
             }
         }
     }
-
-    fn find_consulting_fee_by_user_account_id(
-        &self,
-        id: i32,
-    ) -> Result<Option<ConsultingFee>, ErrResp> {
-        let result = consulting_fee_table
-            .find(id)
-            .first::<ConsultingFee>(&self.conn);
-        match result {
-            Ok(consulting_fee) => Ok(Some(consulting_fee)),
-            Err(e) => {
-                if e == NotFound {
-                    Ok(None)
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use async_session::async_trait;
-    use axum::{http::StatusCode, Json};
-    use chrono::{TimeZone, Utc};
-    use common::{
-        payment_platform::{
-            charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
-            tenant::{Tenant, TenantOperation},
-            tenant_transfer::{
-                Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
-            },
-            Error, List,
-        },
-        ApiError,
-    };
-
-    use crate::{err_code::NO_ACCOUNT_FOUND, util::JAPANESE_TIME_ZONE};
-
-    use super::{get_profile_internal, ProfileOperation};
-
-    struct ProfileOperationMock {
-        account: common::model::user::Account,
-        identity_info_option: Option<common::model::user::IdentityInfo>,
-        careers_info: Vec<common::model::user::CareerInfo>,
-        tenant_option: Option<common::model::user::Tenant>,
-        consulting_fee_option: Option<common::model::user::ConsultingFee>,
-    }
-
-    impl ProfileOperation for ProfileOperationMock {
-        fn find_user_account_by_user_account_id(
-            &self,
-            id: i32,
-        ) -> Result<common::model::user::Account, common::ErrResp> {
-            if self.account.user_account_id != id {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: NO_ACCOUNT_FOUND,
-                    }),
-                ));
-            }
-            Ok(self.account.clone())
-        }
-
-        fn find_identity_info_by_user_account_id(
-            &self,
-            _id: i32,
-        ) -> Result<Option<common::model::user::IdentityInfo>, common::ErrResp> {
-            Ok(self.identity_info_option.clone())
-        }
-
-        fn filter_career_info_by_user_account_id(
-            &self,
-            _id: i32,
-        ) -> Result<Vec<common::model::user::CareerInfo>, common::ErrResp> {
-            Ok(self.careers_info.clone())
-        }
-
-        fn find_tenant_by_user_account_id(
-            &self,
-            _id: i32,
-        ) -> Result<Option<common::model::user::Tenant>, common::ErrResp> {
-            Ok(self.tenant_option.clone())
-        }
-
-        fn find_consulting_fee_by_user_account_id(
-            &self,
-            _id: i32,
-        ) -> Result<Option<common::model::user::ConsultingFee>, common::ErrResp> {
-            Ok(self.consulting_fee_option.clone())
-        }
-    }
-
-    struct TenantOperationMock<'a> {
-        tenant_id: &'a str,
-    }
-
-    #[async_trait]
-    impl<'a> TenantOperation for TenantOperationMock<'a> {
-        async fn get_tenant_by_tenant_id(&self, tenant_id: &str) -> Result<Tenant, Error> {
-            todo!()
-        }
-    }
-
-    struct ChargeOperationMock<'a> {
-        query: &'a SearchChargesQuery,
-    }
-
-    #[async_trait]
-    impl<'a> ChargeOperation for ChargeOperationMock<'a> {
-        async fn search_charges(&self, query: &SearchChargesQuery) -> Result<List<Charge>, Error> {
-            todo!()
-        }
-    }
-
-    struct TenantTransferOperationMock<'a> {
-        query: &'a SearchTenantTransfersQuery,
-    }
-
-    #[async_trait]
-    impl<'a> TenantTransferOperation for TenantTransferOperationMock<'a> {
-        async fn search_tenant_transfers(
-            &self,
-            query: &SearchTenantTransfersQuery,
-        ) -> Result<List<TenantTransfer>, Error> {
-            todo!()
-        }
-    }
-
     #[tokio::test]
-    async fn success_return_profile() {
-        // let account_id = 51351;
-        // let profile_op = ProfileOperationMock { account_id };
-        // let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        // let tenant_op = TenantOperationMock { tenant_id };
-        // let search_charges_query = SearchChargesQuery::build()
-        //     .finish()
-        //     .expect("failed to get Ok");
-        // let charge_op = ChargeOperationMock {
-        //     query: &search_charges_query,
-        // };
-        // let current_datetime = Utc
-        //     .ymd(2021, 12, 31)
-        //     .and_hms(7, 0, 0)
-        //     .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-        // let search_tenant_transfers_query = SearchTenantTransfersQuery::build()
-        //     .finish()
-        //     .expect("failed to get Ok");
-        // let tenant_transfer_op = TenantTransferOperationMock {
-        //     query: &search_tenant_transfers_query,
-        // };
-
-        // let result = get_profile_internal(
-        //     account_id,
-        //     profile_op,
-        //     tenant_op,
-        //     charge_op,
-        //     current_datetime,
-        //     tenant_transfer_op,
-        // )
-        // .await
-        // .expect("failed to get Ok");
-    }
+    async fn test() {}
 }

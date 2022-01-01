@@ -10,6 +10,7 @@ mod new_password;
 mod password_change;
 mod profile;
 mod refresh;
+mod reward;
 mod temp_accounts;
 mod util;
 
@@ -22,6 +23,7 @@ use crate::new_password::post_new_password;
 use crate::password_change::post_password_change;
 use crate::profile::get_profile;
 use crate::refresh::get_refresh;
+use crate::reward::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::{
@@ -120,7 +122,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/agreement", post(post_agreement))
                 .route("/new-password", post(post_new_password))
                 .route("/password-change", post(post_password_change))
-                .route("/profile", get(get_profile)),
+                .route("/profile", get(get_profile))
+                .route("/reward", get(get_reward)),
         )
         .layer(AddExtensionLayer::new(pool))
         .layer(AddExtensionLayer::new(store))
