@@ -362,7 +362,7 @@ mod tests {
         }
     }
 
-    fn create_dummy_8careers_info(account_id: i32) -> Vec<CareerInfo> {
+    fn create_max_num_of_dummy_careers_info(account_id: i32) -> Vec<CareerInfo> {
         let mut careers = Vec::with_capacity(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT as usize);
         let mut start_date = NaiveDate::from_ymd(2013, 4, 1);
         let mut end_date = Some(start_date + chrono::Duration::days(365));
@@ -479,7 +479,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn success_return_profile_with_identity_8careers_fee() {
+    async fn success_return_profile_with_identity_max_num_of_careers_fee() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -494,7 +494,7 @@ mod tests {
             created_at: creation_time,
         };
         let identity_info = create_dummy_identity_info(account_id);
-        let careers_info = create_dummy_8careers_info(account_id);
+        let careers_info = create_max_num_of_dummy_careers_info(account_id);
         let fee = create_dummy_consulting_fee(account_id);
         let profile_op = ProfileOperationMock {
             account: account.clone(),

@@ -58,7 +58,7 @@ async fn get_reward_internal(
     current_time: DateTime<FixedOffset>,
     tenant_transfer_op: impl TenantTransferOperation,
 ) -> RespResult<RewardResult> {
-    let tenant_option = reward_op.find_tenant_by_user_account_id(account_id)?;
+    let tenant_option = async move { reward_op.find_tenant_by_user_account_id(account_id) }.await?;
     let payment_platform_results = if let Some(tenant) = tenant_option {
         let bank_account = get_bank_account_by_tenant_id(tenant_op, &tenant.tenant_id).await?;
         let rewards_of_the_month =
@@ -177,7 +177,7 @@ async fn get_bank_account_by_tenant_id(
 }
 
 async fn get_rewards_of_current_month(
-    charge_op: impl ChargeOperation,
+    mut charge_op: impl ChargeOperation,
     tenant_id: &str,
     current_time: DateTime<FixedOffset>,
 ) -> Result<i32, ErrResp> {
@@ -384,8 +384,218 @@ impl RewardOperation for RewardOperationImpl {
     }
 }
 
+// TODO: 事前準備に用意するデータに関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
 #[cfg(test)]
 mod tests {
+    use async_session::async_trait;
+    use axum::{http::StatusCode, Json};
+    use chrono::{TimeZone, Utc};
+    use common::{
+        model::user::Tenant,
+        payment_platform::{
+            charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
+            tenant::{ReviewedBrands, TenantOperation},
+            tenant_transfer::{
+                Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
+            },
+            ErrorDetail, ErrorInfo, List,
+        },
+    };
+
+    use crate::{err_code, util::JAPANESE_TIME_ZONE};
+
+    use super::RewardOperation;
+
+    struct RewardOperationMock {
+        tenant_option: Option<Tenant>,
+    }
+
+    impl RewardOperation for RewardOperationMock {
+        fn find_tenant_by_user_account_id(
+            &self,
+            _id: i32,
+        ) -> Result<Option<Tenant>, common::ErrResp> {
+            Ok(self.tenant_option.clone())
+        }
+    }
+
+    struct TenantOperationMock {
+        tenant: common::payment_platform::tenant::Tenant,
+        too_many_requests: bool,
+    }
+
+    #[async_trait]
+    impl TenantOperation for TenantOperationMock {
+        async fn get_tenant_by_tenant_id(
+            &self,
+            _tenant_id: &str,
+        ) -> Result<common::payment_platform::tenant::Tenant, common::payment_platform::Error>
+        {
+            if self.too_many_requests {
+                let err_detail = ErrorDetail {
+                    message: "message".to_string(),
+                    status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
+                    r#type: "type".to_string(),
+                    code: None,
+                    param: None,
+                    charge: None,
+                };
+                let err_info = ErrorInfo { error: err_detail };
+                return Err(common::payment_platform::Error::ApiError(err_info));
+            }
+            return Ok(self.tenant.clone());
+        }
+    }
+
+    struct ChargeOperationMock {
+        num_of_search_trial: usize,
+        lists: Vec<List<Charge>>,
+        too_many_requests: bool,
+    }
+
+    #[async_trait]
+    impl ChargeOperation for ChargeOperationMock {
+        async fn search_charges(
+            &mut self,
+            _query: &SearchChargesQuery,
+        ) -> Result<List<Charge>, common::payment_platform::Error> {
+            if self.too_many_requests {
+                let err_detail = ErrorDetail {
+                    message: "message".to_string(),
+                    status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
+                    r#type: "type".to_string(),
+                    code: None,
+                    param: None,
+                    charge: None,
+                };
+                let err_info = ErrorInfo { error: err_detail };
+                return Err(common::payment_platform::Error::ApiError(err_info));
+            }
+            let result = self.lists[self.num_of_search_trial].clone();
+            self.num_of_search_trial += 1;
+            Ok(result)
+        }
+    }
+
+    struct TenantTransferOperationMock {
+        tenant_transfers: List<TenantTransfer>,
+        too_many_requests: bool,
+    }
+
+    #[async_trait]
+    impl TenantTransferOperation for TenantTransferOperationMock {
+        async fn search_tenant_transfers(
+            &self,
+            _query: &SearchTenantTransfersQuery,
+        ) -> Result<List<TenantTransfer>, common::payment_platform::Error> {
+            if self.too_many_requests {
+                let err_detail = ErrorDetail {
+                    message: "message".to_string(),
+                    status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
+                    r#type: "type".to_string(),
+                    code: None,
+                    param: None,
+                    charge: None,
+                };
+                let err_info = ErrorInfo { error: err_detail };
+                return Err(common::payment_platform::Error::ApiError(err_info));
+            }
+            Ok(self.tenant_transfers.clone())
+        }
+    }
+
     #[tokio::test]
-    async fn test() {}
+    async fn return_empty_rewards() {
+        let reward_op = RewardOperationMock {
+            tenant_option: None,
+        };
+        let tenant = create_dummy_tenant();
+        let tenant_op = TenantOperationMock {
+            tenant,
+            too_many_requests: false,
+        };
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/charges".to_string(),
+                data: vec![],
+                count: 0,
+            }],
+            too_many_requests: false,
+        };
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![],
+                count: 0,
+            },
+            too_many_requests: false,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(23, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    }
+
+    fn create_dummy_tenant() -> common::payment_platform::tenant::Tenant {
+        let reviewed_brands = vec![
+            ReviewedBrands {
+                brand: "Visa".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "MasterCard".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "JCB".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "AmericanExpress".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "DinersClub".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+        ];
+        common::payment_platform::tenant::Tenant {
+            id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
+            name: "タナカ　タロウ".to_string(),
+            object: "tenant".to_string(),
+            livemode: false,
+            created: 1626016999,
+            platform_fee_rate: "10.15".to_string(),
+            payjp_fee_included: false,
+            minimum_transfer_amount: 1000,
+            bank_code: "0001".to_string(),
+            bank_branch_code: "123".to_string(),
+            bank_account_type: "普通".to_string(),
+            bank_account_number: "1111222".to_string(),
+            bank_account_holder_name: "タナカ　タロウ".to_string(),
+            bank_account_status: "pending".to_string(),
+            currencies_supported: vec!["jpy".to_string()],
+            default_currency: "jpy".to_string(),
+            reviewed_brands,
+            metadata: None,
+        }
+    }
+    // 全部空のパターン
+    // 全部あるパターン
+    // searchが0のパターン
+    // searchが32のパターン
+    // searchが33のパターン
+    // transferが2つのパターン
+    // transferが3つのパターンはいらない。なぜなら2つ返すのはpayjpの責務だから。
+    // too many requestsパターン
 }

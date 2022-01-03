@@ -11,7 +11,7 @@ use axum::async_trait;
 const TENANTS_OPERATION_PATH: &str = "/v1/tenants";
 
 /// [tenantオブジェクト](https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)を示す構造体
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Tenant {
     pub id: String,
     pub name: String,
@@ -36,7 +36,7 @@ pub struct Tenant {
 /// 申請情報を提出済のブランドを示す構造体
 ///
 /// [Tenant] 内で利用される
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReviewedBrands {
     pub brand: String,
     pub status: String,

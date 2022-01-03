@@ -117,7 +117,7 @@ impl Display for InvalidParamError {
 impl StdError for InvalidParamError {}
 
 /// [listオブジェクト](https://pay.jp/docs/api/#list%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88) を示す構造体
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct List<T> {
     pub object: String,
     pub has_more: bool,

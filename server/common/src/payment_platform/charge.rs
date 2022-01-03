@@ -13,7 +13,7 @@ use axum::async_trait;
 const CHARGES_OPERATION_PATH: &str = "/v1/charges";
 
 /// [chargeオブジェクト](https://pay.jp/docs/api/#charge%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)を示す構造体
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Charge {
     pub id: String,
     pub object: String,
@@ -44,8 +44,9 @@ pub struct Charge {
 
 #[async_trait]
 pub trait ChargeOperation {
+    // NOTE: 単体テストのために&selfでなく、&mut selfとしている。単体テストでの利用時に&selfを利用可能な解決策が見つかった場合、&selfに変更
     /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)
-    async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error>;
+    async fn search_charges(&mut self, query: &Query) -> Result<List<Charge>, Error>;
 }
 
 /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
@@ -248,7 +249,7 @@ impl<'a> ChargeOperationImpl<'a> {
 
 #[async_trait]
 impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
-    async fn search_charges(&self, query: &Query) -> Result<List<Charge>, Error> {
+    async fn search_charges(&mut self, query: &Query) -> Result<List<Charge>, Error> {
         tracing::info!("search_charges: query = {:?}", query);
         let operation_url = self.access_info.base_url() + CHARGES_OPERATION_PATH;
         let username = self.access_info.username();

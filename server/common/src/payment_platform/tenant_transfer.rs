@@ -13,7 +13,7 @@ use axum::async_trait;
 const TENANT_TRANSFER_OPERATION_PATH: &str = "/v1/tenant_transfers";
 
 /// [tenant_transferオブジェクト](https://pay.jp/docs/api/?shell#tenant_transfer%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)を示す構造体
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TenantTransfer {
     pub object: String,
     pub id: String,
@@ -33,7 +33,7 @@ pub struct TenantTransfer {
     pub tenant_id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Summary {
     pub charge_count: i32,
     pub charge_fee: i32,
