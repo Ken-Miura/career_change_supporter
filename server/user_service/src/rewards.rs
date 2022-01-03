@@ -394,9 +394,11 @@ mod tests {
         model::user::Tenant,
         payment_platform::{
             charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
+            customer::Card,
             tenant::{ReviewedBrands, TenantOperation},
             tenant_transfer::{
-                Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
+                Query as SearchTenantTransfersQuery, Summary, TenantTransfer,
+                TenantTransferOperation,
             },
             ErrorDetail, ErrorInfo, List,
         },
@@ -507,10 +509,11 @@ mod tests {
     #[tokio::test]
     async fn return_empty_rewards() {
         let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
             tenant_option: None,
         };
-        let tenant = create_dummy_tenant();
+        let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
             too_many_requests: false,
@@ -559,7 +562,7 @@ mod tests {
         assert_eq!(empty, result.1 .0.latest_two_transfers);
     }
 
-    fn create_dummy_tenant() -> common::payment_platform::tenant::Tenant {
+    fn create_dummy_tenant(tenant_id: &str) -> common::payment_platform::tenant::Tenant {
         let reviewed_brands = vec![
             ReviewedBrands {
                 brand: "Visa".to_string(),
@@ -588,7 +591,7 @@ mod tests {
             },
         ];
         common::payment_platform::tenant::Tenant {
-            id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
+            id: tenant_id.to_string(),
             name: "タナカ　タロウ".to_string(),
             object: "tenant".to_string(),
             livemode: false,
@@ -612,13 +615,14 @@ mod tests {
     #[tokio::test]
     async fn fail_tenant_too_many_requests() {
         let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
             tenant_option: Some(Tenant {
                 user_account_id: account_id,
                 tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
             }),
         };
-        let tenant = create_dummy_tenant();
+        let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
             too_many_requests: true,
@@ -670,13 +674,14 @@ mod tests {
     #[tokio::test]
     async fn fail_charges_too_many_requests() {
         let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
             tenant_option: Some(Tenant {
                 user_account_id: account_id,
                 tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
             }),
         };
-        let tenant = create_dummy_tenant();
+        let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
             too_many_requests: false,
@@ -728,13 +733,14 @@ mod tests {
     #[tokio::test]
     async fn fail_tenant_transfers_too_many_requests() {
         let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
             tenant_option: Some(Tenant {
                 user_account_id: account_id,
                 tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
             }),
         };
-        let tenant = create_dummy_tenant();
+        let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
             too_many_requests: false,
@@ -783,8 +789,183 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn return_reward_with_tenant_1charge_1tenant_transfer() {
+        let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let reward_op = RewardOperationMock {
+            tenant_option: Some(Tenant {
+                user_account_id: account_id,
+                tenant_id: tenant_id.to_string(),
+            }),
+        };
+        let tenant = create_dummy_tenant(tenant_id);
+        let tenant_op = TenantOperationMock {
+            tenant,
+            too_many_requests: false,
+        };
+        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
+        let charge = create_dummy_charge(charge_id, tenant_id);
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/charges".to_string(),
+                data: vec![charge.clone()],
+                count: 1,
+            }],
+            too_many_requests: false,
+        };
+        let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
+        let tenant_transfer = create_dummy_tenant_transfer1(transfer_id, tenant_id);
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![tenant_transfer.clone()],
+                count: 1,
+            },
+            too_many_requests: false,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert_eq!(None, result.1 .0.bank_account);
+        assert_eq!(None, result.1 .0.rewards_of_the_month);
+        let empty = Vec::<Transfer>::with_capacity(0);
+        assert_eq!(empty, result.1 .0.latest_two_transfers);
+    }
+
+    fn create_dummy_charge(charge_id: &str, tenant_id: &str) -> Charge {
+        Charge {
+            id: charge_id.to_string(),
+            object: "charge".to_string(),
+            livemode: false,
+            created: 1639931415,
+            amount: 4000,
+            currency: "jpy".to_string(),
+            paid: true,
+            expired_at: None,
+            captured: true,
+            captured_at: Some(1639931415),
+            card: Some(Card {
+                object: "card".to_string(),
+                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
+                created: 1639931415,
+                name: None,
+                last4: "4242".to_string(),
+                exp_month: 12,
+                exp_year: 2022,
+                brand: "Visa".to_string(),
+                cvc_check: "passed".to_string(),
+                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
+                address_state: None,
+                address_city: None,
+                address_line1: None,
+                address_line2: None,
+                country: None,
+                address_zip: None,
+                address_zip_check: "unchecked".to_string(),
+                metadata: None,
+            }),
+            customer: None,
+            description: None,
+            failure_code: None,
+            failure_message: None,
+            fee_rate: Some("3.00".to_string()),
+            refunded: true,
+            amount_refunded: 1000,
+            refund_reason: Some("テスト".to_string()),
+            subscription: None,
+            metadata: None,
+            platform_fee: None,
+            tenant: Some(tenant_id.to_string()),
+            platform_fee_rate: Some("10.15".to_string()),
+            total_platform_fee: Some(304),
+        }
+    }
+
+    fn create_dummy_tenant_transfer1(transfer_id: &str, tenant_id: &str) -> TenantTransfer {
+        TenantTransfer {
+            object: "tenant_transfer".to_string(),
+            id: transfer_id.to_string(),
+            livemode: false,
+            created: 1641055119,
+            amount: 2606,
+            currency: "jpy".to_string(),
+            status: "pending".to_string(),
+            charges: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: format!("/v1/tenant_transfers/{}/charges", transfer_id),
+                data: vec![Charge {
+                    id: "ch_7fb5aea258910da9a756985cbe51f".to_string(),
+                    object: "charge".to_string(),
+                    livemode: false,
+                    created: todo!(),
+                    amount: todo!(),
+                    currency: todo!(),
+                    paid: todo!(),
+                    expired_at: todo!(),
+                    captured: todo!(),
+                    captured_at: todo!(),
+                    card: todo!(),
+                    customer: todo!(),
+                    description: todo!(),
+                    failure_code: todo!(),
+                    failure_message: todo!(),
+                    fee_rate: todo!(),
+                    refunded: todo!(),
+                    amount_refunded: todo!(),
+                    refund_reason: todo!(),
+                    subscription: todo!(),
+                    metadata: None,
+                    platform_fee: todo!(),
+                    tenant: Some(tenant_id.to_string()),
+                    platform_fee_rate: todo!(),
+                    total_platform_fee: todo!(),
+                }],
+                count: 1,
+            },
+            scheduled_date: "2022-01-31".to_string(),
+            summary: Summary {
+                charge_count: 1,
+                charge_fee: 90,
+                charge_gross: 4000,
+                net: 3606,
+                refund_amount: 1000,
+                refund_count: 1,
+                dispute_amount: 0,
+                dispute_count: 0,
+                total_platform_fee: 304,
+            },
+            term_start: 1638284400,
+            term_end: 1640962800,
+            transfer_amount: None,
+            transfer_date: None,
+            carried_balance: Some(0),
+            tenant_id: tenant_id.to_string(),
+        }
+    }
+
     // 全部あるパターン
-    // searchが0のパターン
+    // search 2つ、capturedは弾いていること
     // searchが32のパターン
     // searchが33のパターン
     // transferが2つのパターン

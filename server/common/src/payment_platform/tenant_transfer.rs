@@ -43,7 +43,6 @@ pub struct Summary {
     pub refund_count: i32,
     pub dispute_amount: i32,
     pub dispute_count: i32,
-    pub platform_charge_fee: Option<i32>,
     pub total_platform_fee: i32,
 }
 
