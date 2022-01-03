@@ -88,7 +88,7 @@ pub(crate) struct RewardResult {
     pub latest_two_transfers: Vec<Transfer>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct Transfer {
     pub status: String,
     pub amount: i32,
@@ -402,9 +402,9 @@ mod tests {
         },
     };
 
-    use crate::{err_code, util::JAPANESE_TIME_ZONE};
+    use crate::{err_code, rewards::Transfer, util::JAPANESE_TIME_ZONE};
 
-    use super::RewardOperation;
+    use super::{get_reward_internal, RewardOperation};
 
     struct RewardOperationMock {
         tenant_option: Option<Tenant>,
@@ -506,6 +506,7 @@ mod tests {
 
     #[tokio::test]
     async fn return_empty_rewards() {
+        let account_id = 9853;
         let reward_op = RewardOperationMock {
             tenant_option: None,
         };
@@ -537,8 +538,25 @@ mod tests {
         };
         let current_datetime = Utc
             .ymd(2021, 12, 31)
-            .and_hms(23, 59, 59)
+            .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert_eq!(None, result.1 .0.bank_account);
+        assert_eq!(None, result.1 .0.rewards_of_the_month);
+        let empty = Vec::<Transfer>::with_capacity(0);
+        assert_eq!(empty, result.1 .0.latest_two_transfers);
     }
 
     fn create_dummy_tenant() -> common::payment_platform::tenant::Tenant {

@@ -96,7 +96,7 @@ pub(crate) struct Career {
     pub note: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub(crate) struct BankAccount {
     pub bank_code: String, // 明確な仕様は見つからなかったが数字4桁が最も普及しているように見える
     pub branch_code: String,
