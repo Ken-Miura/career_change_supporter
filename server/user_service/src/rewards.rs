@@ -388,7 +388,7 @@ impl RewardOperation for RewardOperationImpl {
 #[cfg(test)]
 mod tests {
     use async_session::async_trait;
-    use axum::{http::StatusCode, Json};
+    use axum::http::StatusCode;
     use chrono::{TimeZone, Utc};
     use common::{
         model::user::Tenant,
@@ -608,12 +608,185 @@ mod tests {
             metadata: None,
         }
     }
-    // 全部空のパターン
+
+    #[tokio::test]
+    async fn fail_tenant_too_many_requests() {
+        let account_id = 9853;
+        let reward_op = RewardOperationMock {
+            tenant_option: Some(Tenant {
+                user_account_id: account_id,
+                tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
+            }),
+        };
+        let tenant = create_dummy_tenant();
+        let tenant_op = TenantOperationMock {
+            tenant,
+            too_many_requests: true,
+        };
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/charges".to_string(),
+                data: vec![],
+                count: 0,
+            }],
+            too_many_requests: false,
+        };
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![],
+                count: 0,
+            },
+            too_many_requests: false,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
+        assert_eq!(
+            err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+            result.1 .0.code
+        );
+    }
+
+    #[tokio::test]
+    async fn fail_charges_too_many_requests() {
+        let account_id = 9853;
+        let reward_op = RewardOperationMock {
+            tenant_option: Some(Tenant {
+                user_account_id: account_id,
+                tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
+            }),
+        };
+        let tenant = create_dummy_tenant();
+        let tenant_op = TenantOperationMock {
+            tenant,
+            too_many_requests: false,
+        };
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/charges".to_string(),
+                data: vec![],
+                count: 0,
+            }],
+            too_many_requests: true,
+        };
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![],
+                count: 0,
+            },
+            too_many_requests: false,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
+        assert_eq!(
+            err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+            result.1 .0.code
+        );
+    }
+
+    #[tokio::test]
+    async fn fail_tenant_transfers_too_many_requests() {
+        let account_id = 9853;
+        let reward_op = RewardOperationMock {
+            tenant_option: Some(Tenant {
+                user_account_id: account_id,
+                tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
+            }),
+        };
+        let tenant = create_dummy_tenant();
+        let tenant_op = TenantOperationMock {
+            tenant,
+            too_many_requests: false,
+        };
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/charges".to_string(),
+                data: vec![],
+                count: 0,
+            }],
+            too_many_requests: false,
+        };
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![],
+                count: 0,
+            },
+            too_many_requests: true,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
+        assert_eq!(
+            err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+            result.1 .0.code
+        );
+    }
+
     // 全部あるパターン
     // searchが0のパターン
     // searchが32のパターン
     // searchが33のパターン
     // transferが2つのパターン
     // transferが3つのパターンはいらない。なぜなら2つ返すのはpayjpの責務だから。
-    // too many requestsパターン
 }
