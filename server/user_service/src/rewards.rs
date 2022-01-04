@@ -295,7 +295,7 @@ fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
             tracing::error!("failed to parse fee_decimal ({}): {}", fee_decimal, e);
             unexpected_err_resp()
         })?;
-        let reward_of_the_charge: i32 = sales - fee;
+        let reward_of_the_charge = sales - fee;
         if reward_of_the_charge < 0 {
             tracing::error!("negative reward_of_the_charge: {:?}", charge);
             return Err(unexpected_err_resp());
