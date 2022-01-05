@@ -1146,7 +1146,141 @@ mod tests {
         }
     }
 
-    // searchが32のパターン
+    #[tokio::test]
+    async fn return_reward_with_tenant_32charge_1tenant_transfer() {
+        let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let reward_op = RewardOperationMock {
+            tenant_option: Some(Tenant {
+                user_account_id: account_id,
+                tenant_id: tenant_id.to_string(),
+            }),
+        };
+        let tenant = create_dummy_tenant(tenant_id);
+        let tenant_op = TenantOperationMock {
+            tenant: tenant.clone(),
+            too_many_requests: false,
+        };
+        let charges = create_dummy_32charges(tenant_id);
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/charges".to_string(),
+                data: charges,
+                count: 1,
+            }],
+            too_many_requests: false,
+        };
+        let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
+        let tenant_transfer = create_dummy_tenant_transfer1(transfer_id, tenant_id);
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![tenant_transfer.clone()],
+                count: 1,
+            },
+            too_many_requests: false,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        let bank_account = BankAccount {
+            bank_code: tenant.bank_code.to_string(),
+            branch_code: tenant.bank_branch_code.to_string(),
+            account_type: tenant.bank_account_type.to_string(),
+            account_number: tenant.bank_account_number.to_string(),
+            account_holder_name: tenant.bank_account_holder_name.to_string(),
+        };
+        assert_eq!(Some(bank_account), result.1 .0.bank_account);
+        assert_eq!(Some(2696 * 32), result.1 .0.rewards_of_the_month);
+        // create_dummy_transfer1から導出される結果
+        let transfer = Transfer {
+            status: "pending".to_string(),
+            amount: 2696,
+            scheduled_date_in_jst: Ymd {
+                year: 2022,
+                month: 1,
+                day: 31,
+            },
+            transfer_amount: None,
+            transfer_date_in_jst: None,
+            carried_balance: Some(0),
+        };
+        assert_eq!(vec![transfer], result.1 .0.latest_two_transfers);
+    }
+
+    fn create_dummy_32charges(tenant_id: &str) -> Vec<Charge> {
+        let mut charges = Vec::with_capacity(32);
+        for i in 0..32 {
+            let charge = Charge {
+                id: format!("ch_7fb5aea258910da9a756985cbe5{:02}", i),
+                object: "charge".to_string(),
+                livemode: false,
+                created: 1639931415,
+                amount: 4000,
+                currency: "jpy".to_string(),
+                paid: true,
+                expired_at: None,
+                captured: true,
+                captured_at: Some(1639931415),
+                card: Some(Card {
+                    object: "card".to_string(),
+                    id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
+                    created: 1639931415,
+                    name: None,
+                    last4: "4242".to_string(),
+                    exp_month: 12,
+                    exp_year: 2022,
+                    brand: "Visa".to_string(),
+                    cvc_check: "passed".to_string(),
+                    fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
+                    address_state: None,
+                    address_city: None,
+                    address_line1: None,
+                    address_line2: None,
+                    country: None,
+                    address_zip: None,
+                    address_zip_check: "unchecked".to_string(),
+                    metadata: None,
+                }),
+                customer: None,
+                description: None,
+                failure_code: None,
+                failure_message: None,
+                fee_rate: Some("3.00".to_string()),
+                refunded: true,
+                amount_refunded: 1000,
+                refund_reason: Some("テスト".to_string()),
+                subscription: None,
+                metadata: None,
+                platform_fee: None,
+                tenant: Some(tenant_id.to_string()),
+                platform_fee_rate: Some("10.15".to_string()),
+                total_platform_fee: Some(214),
+            };
+            charges.push(charge);
+        }
+        charges
+    }
+
     // searchが33のパターン
     // transferが2つのパターン
     // transferが3つのパターンはいらない。なぜなら2つ返すのはpayjpの責務だから。
