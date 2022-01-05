@@ -283,13 +283,13 @@ fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
     }
 }
 
-// rateは少数を示す文字列。feeは、sales * rateの結果の少数部分を切り捨てた値。
-fn calculate_fee(sales: i32, rate: &str) -> Result<i32, ErrResp> {
-    let percentage = Decimal::from_str(rate).map_err(|e| {
-        tracing::error!("failed to parse rate ({}): {}", rate, e);
+// percentageはパーセンテージを示す少数の文字列。feeは、sales * (percentage/100) の結果の少数部分を切り捨てた値。
+fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
+    let percentage_decimal = Decimal::from_str(percentage).map_err(|e| {
+        tracing::error!("failed to parse percentage ({}): {}", percentage, e);
         unexpected_err_resp()
     })?;
-    let one_handred = Decimal::from_str("100").map_err(|e| {
+    let one_handred_decimal = Decimal::from_str("100").map_err(|e| {
         tracing::error!("failed to parse str literal: {}", e);
         unexpected_err_resp()
     })?;
@@ -300,7 +300,7 @@ fn calculate_fee(sales: i32, rate: &str) -> Result<i32, ErrResp> {
             return Err(unexpected_err_resp());
         }
     };
-    let fee_decimal = (sales_decimal * (percentage / one_handred))
+    let fee_decimal = (sales_decimal * (percentage_decimal / one_handred_decimal))
         .round_dp_with_strategy(0, RoundingStrategy::ToZero);
     let fee = fee_decimal.to_string().parse::<i32>().map_err(|e| {
         tracing::error!("failed to parse fee_decimal ({}): {}", fee_decimal, e);
