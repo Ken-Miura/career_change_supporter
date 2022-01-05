@@ -270,31 +270,7 @@ fn create_start_and_end_timestamps_of_current_month(
 fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
     let sales = charge.amount - charge.amount_refunded;
     if let Some(platform_fee_rate) = charge.platform_fee_rate.clone() {
-        let percentage = Decimal::from_str(&platform_fee_rate).map_err(|e| {
-            tracing::error!(
-                "failed to parse platform_fee_rate ({}): {}",
-                platform_fee_rate,
-                e
-            );
-            unexpected_err_resp()
-        })?;
-        let one_handred = Decimal::from_str("100").map_err(|e| {
-            tracing::error!("failed to parse str literal: {}", e);
-            unexpected_err_resp()
-        })?;
-        let sales_decimal = match Decimal::from_i32(sales) {
-            Some(s) => s,
-            None => {
-                tracing::error!("failed to parse sales value ({})", sales);
-                return Err(unexpected_err_resp());
-            }
-        };
-        let fee_decimal = (sales_decimal * (percentage / one_handred))
-            .round_dp_with_strategy(0, RoundingStrategy::ToZero);
-        let fee = fee_decimal.to_string().parse::<i32>().map_err(|e| {
-            tracing::error!("failed to parse fee_decimal ({}): {}", fee_decimal, e);
-            unexpected_err_resp()
-        })?;
+        let fee = calculate_fee(sales, &platform_fee_rate)?;
         let reward_of_the_charge = sales - fee;
         if reward_of_the_charge < 0 {
             tracing::error!("negative reward_of_the_charge: {:?}", charge);
@@ -305,6 +281,32 @@ fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
         tracing::error!("No platform_fee_rate found in the charge: {:?}", charge);
         Err(unexpected_err_resp())
     }
+}
+
+// rateは少数を示す文字列。feeは、sales * rateの結果の少数部分を切り捨てた値。
+fn calculate_fee(sales: i32, rate: &str) -> Result<i32, ErrResp> {
+    let percentage = Decimal::from_str(rate).map_err(|e| {
+        tracing::error!("failed to parse rate ({}): {}", rate, e);
+        unexpected_err_resp()
+    })?;
+    let one_handred = Decimal::from_str("100").map_err(|e| {
+        tracing::error!("failed to parse str literal: {}", e);
+        unexpected_err_resp()
+    })?;
+    let sales_decimal = match Decimal::from_i32(sales) {
+        Some(s) => s,
+        None => {
+            tracing::error!("failed to parse sales value ({})", sales);
+            return Err(unexpected_err_resp());
+        }
+    };
+    let fee_decimal = (sales_decimal * (percentage / one_handred))
+        .round_dp_with_strategy(0, RoundingStrategy::ToZero);
+    let fee = fee_decimal.to_string().parse::<i32>().map_err(|e| {
+        tracing::error!("failed to parse fee_decimal ({}): {}", fee_decimal, e);
+        unexpected_err_resp()
+    })?;
+    Ok(fee)
 }
 
 async fn get_latest_two_tenant_transfers(
