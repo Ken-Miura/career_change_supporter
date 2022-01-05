@@ -425,8 +425,10 @@ impl RewardOperation for RewardOperationImpl {
 }
 
 // TODO: 事前準備に用意するデータに関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
+// TODO: payjp_fee_includedがtrueのテナントで作成された入金データを実際のテスト環境から取得し、それを使ってコードを改善する
 #[cfg(test)]
 mod tests {
+
     use async_session::async_trait;
     use axum::http::StatusCode;
     use chrono::{TimeZone, Utc};
@@ -444,7 +446,11 @@ mod tests {
         },
     };
 
-    use crate::{err_code, rewards::Transfer, util::JAPANESE_TIME_ZONE};
+    use crate::{
+        err_code,
+        rewards::Transfer,
+        util::{BankAccount, Ymd, JAPANESE_TIME_ZONE},
+    };
 
     use super::{get_reward_internal, RewardOperation};
 
@@ -831,65 +837,93 @@ mod tests {
 
     #[tokio::test]
     async fn return_reward_with_tenant_1charge_1tenant_transfer() {
-        // let account_id = 9853;
-        // let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        // let reward_op = RewardOperationMock {
-        //     tenant_option: Some(Tenant {
-        //         user_account_id: account_id,
-        //         tenant_id: tenant_id.to_string(),
-        //     }),
-        // };
-        // let tenant = create_dummy_tenant(tenant_id);
-        // let tenant_op = TenantOperationMock {
-        //     tenant,
-        //     too_many_requests: false,
-        // };
-        // let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
-        // let charge = create_dummy_charge(charge_id, tenant_id);
-        // let charge_op = ChargeOperationMock {
-        //     num_of_search_trial: 0,
-        //     lists: vec![List {
-        //         object: "list".to_string(),
-        //         has_more: false,
-        //         url: "/v1/charges".to_string(),
-        //         data: vec![charge.clone()],
-        //         count: 1,
-        //     }],
-        //     too_many_requests: false,
-        // };
-        // let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
-        // let tenant_transfer = create_dummy_tenant_transfer1(transfer_id, tenant_id);
-        // let tenant_transfer_op = TenantTransferOperationMock {
-        //     tenant_transfers: List {
-        //         object: "list".to_string(),
-        //         has_more: false,
-        //         url: "/v1/tenant_transfers".to_string(),
-        //         data: vec![tenant_transfer.clone()],
-        //         count: 1,
-        //     },
-        //     too_many_requests: false,
-        // };
-        // let current_datetime = Utc
-        //     .ymd(2021, 12, 31)
-        //     .and_hms(14, 59, 59)
-        //     .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let reward_op = RewardOperationMock {
+            tenant_option: Some(Tenant {
+                user_account_id: account_id,
+                tenant_id: tenant_id.to_string(),
+            }),
+        };
+        let tenant = create_dummy_tenant(tenant_id);
+        let tenant_op = TenantOperationMock {
+            tenant: tenant.clone(),
+            too_many_requests: false,
+        };
+        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
+        let charge = create_dummy_charge(charge_id, tenant_id);
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/charges".to_string(),
+                data: vec![charge.clone()],
+                count: 1,
+            }],
+            too_many_requests: false,
+        };
+        let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
+        let tenant_transfer = create_dummy_tenant_transfer1(transfer_id, tenant_id);
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![tenant_transfer.clone()],
+                count: 1,
+            },
+            too_many_requests: false,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        // let result = get_reward_internal(
-        //     account_id,
-        //     reward_op,
-        //     tenant_op,
-        //     charge_op,
-        //     current_datetime,
-        //     tenant_transfer_op,
-        // )
-        // .await
-        // .expect("failed to get Ok");
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect("failed to get Ok");
 
-        // assert_eq!(StatusCode::OK, result.0);
-        // assert_eq!(None, result.1 .0.bank_account);
-        // assert_eq!(None, result.1 .0.rewards_of_the_month);
-        // let empty = Vec::<Transfer>::with_capacity(0);
-        // assert_eq!(empty, result.1 .0.latest_two_transfers);
+        assert_eq!(StatusCode::OK, result.0);
+        let bank_account = BankAccount {
+            bank_code: tenant.bank_code.to_string(),
+            branch_code: tenant.bank_branch_code.to_string(),
+            account_type: tenant.bank_account_type.to_string(),
+            account_number: tenant.bank_account_number.to_string(),
+            account_holder_name: tenant.bank_account_holder_name.to_string(),
+        };
+        assert_eq!(Some(bank_account), result.1 .0.bank_account);
+        // create_dummy_chargeから計算される値。詳細は下記の通り。
+        // 売上 = amount - refunded_amount
+        // 手数料 = 売上 * platform_fee_rate/100 (小数点切り捨て)
+        // 結果 = 売上 - 手数料
+        // なので
+        // 売上 = 4000 - 1000 = 3000
+        // 手数料 = 3000 * 10.15/100 = 304
+        // 結果 = 3000 - 304 = 2696
+        // 本テストでは、chargeは一つなので2696で確定
+        assert_eq!(Some(2696), result.1 .0.rewards_of_the_month);
+        // create_dummy_transfer1から導出される結果
+        let transfer = Transfer {
+            status: "pending".to_string(),
+            amount: 2696,
+            scheduled_date_in_jst: Ymd {
+                year: 2022,
+                month: 1,
+                day: 31,
+            },
+            transfer_amount: None,
+            transfer_date_in_jst: None,
+            carried_balance: Some(0),
+        };
+        assert_eq!(vec![transfer], result.1 .0.latest_two_transfers);
     }
 
     fn create_dummy_charge(charge_id: &str, tenant_id: &str) -> Charge {
@@ -937,50 +971,25 @@ mod tests {
             platform_fee: None,
             tenant: Some(tenant_id.to_string()),
             platform_fee_rate: Some("10.15".to_string()),
-            total_platform_fee: Some(304),
+            total_platform_fee: Some(214),
         }
     }
 
     fn create_dummy_tenant_transfer1(transfer_id: &str, tenant_id: &str) -> TenantTransfer {
+        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
         TenantTransfer {
             object: "tenant_transfer".to_string(),
             id: transfer_id.to_string(),
             livemode: false,
             created: 1641055119,
-            amount: 2606,
+            amount: 2696,
             currency: "jpy".to_string(),
             status: "pending".to_string(),
             charges: List {
                 object: "list".to_string(),
                 has_more: false,
                 url: format!("/v1/tenant_transfers/{}/charges", transfer_id),
-                data: vec![Charge {
-                    id: "ch_7fb5aea258910da9a756985cbe51f".to_string(),
-                    object: "charge".to_string(),
-                    livemode: false,
-                    created: todo!(),
-                    amount: todo!(),
-                    currency: todo!(),
-                    paid: todo!(),
-                    expired_at: todo!(),
-                    captured: todo!(),
-                    captured_at: todo!(),
-                    card: todo!(),
-                    customer: todo!(),
-                    description: todo!(),
-                    failure_code: todo!(),
-                    failure_message: todo!(),
-                    fee_rate: todo!(),
-                    refunded: todo!(),
-                    amount_refunded: todo!(),
-                    refund_reason: todo!(),
-                    subscription: todo!(),
-                    metadata: None,
-                    platform_fee: todo!(),
-                    tenant: Some(tenant_id.to_string()),
-                    platform_fee_rate: todo!(),
-                    total_platform_fee: todo!(),
-                }],
+                data: vec![create_dummy_charge(charge_id, tenant_id)],
                 count: 1,
             },
             scheduled_date: "2022-01-31".to_string(),
@@ -988,12 +997,12 @@ mod tests {
                 charge_count: 1,
                 charge_fee: 90,
                 charge_gross: 4000,
-                net: 3606,
+                net: 3696,
                 refund_amount: 1000,
                 refund_count: 1,
                 dispute_amount: 0,
                 dispute_count: 0,
-                total_platform_fee: 304,
+                total_platform_fee: 214,
             },
             term_start: 1638284400,
             term_end: 1640962800,
@@ -1004,7 +1013,6 @@ mod tests {
         }
     }
 
-    // 全部あるパターン
     // search 2つ、capturedは弾いていること
     // searchが32のパターン
     // searchが33のパターン
