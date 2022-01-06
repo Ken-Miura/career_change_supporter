@@ -1169,7 +1169,7 @@ mod tests {
                 has_more: false,
                 url: "/v1/charges".to_string(),
                 data: charges,
-                count: 1,
+                count: 32,
             }],
             too_many_requests: false,
         };
@@ -1281,7 +1281,98 @@ mod tests {
         charges
     }
 
-    // searchが33のパターン
+    #[tokio::test]
+    async fn return_reward_with_tenant_33charge_1tenant_transfer() {
+        let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let reward_op = RewardOperationMock {
+            tenant_option: Some(Tenant {
+                user_account_id: account_id,
+                tenant_id: tenant_id.to_string(),
+            }),
+        };
+        let tenant = create_dummy_tenant(tenant_id);
+        let tenant_op = TenantOperationMock {
+            tenant: tenant.clone(),
+            too_many_requests: false,
+        };
+        let charges = create_dummy_32charges(tenant_id);
+        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
+        let charge = create_dummy_charge(charge_id, tenant_id);
+        let charge_op = ChargeOperationMock {
+            num_of_search_trial: 0,
+            lists: vec![
+                List {
+                    object: "list".to_string(),
+                    has_more: true,
+                    url: "/v1/charges".to_string(),
+                    data: charges,
+                    count: 32,
+                },
+                List {
+                    object: "list".to_string(),
+                    has_more: false,
+                    url: "/v1/charges".to_string(),
+                    data: vec![charge],
+                    count: 1,
+                },
+            ],
+            too_many_requests: false,
+        };
+        let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
+        let tenant_transfer = create_dummy_tenant_transfer1(transfer_id, tenant_id);
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![tenant_transfer.clone()],
+                count: 1,
+            },
+            too_many_requests: false,
+        };
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+
+        let result = get_reward_internal(
+            account_id,
+            reward_op,
+            tenant_op,
+            charge_op,
+            current_datetime,
+            tenant_transfer_op,
+        )
+        .await
+        .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        let bank_account = BankAccount {
+            bank_code: tenant.bank_code.to_string(),
+            branch_code: tenant.bank_branch_code.to_string(),
+            account_type: tenant.bank_account_type.to_string(),
+            account_number: tenant.bank_account_number.to_string(),
+            account_holder_name: tenant.bank_account_holder_name.to_string(),
+        };
+        assert_eq!(Some(bank_account), result.1 .0.bank_account);
+        assert_eq!(Some(2696 * 33), result.1 .0.rewards_of_the_month);
+        // create_dummy_transfer1から導出される結果
+        let transfer = Transfer {
+            status: "pending".to_string(),
+            amount: 2696,
+            scheduled_date_in_jst: Ymd {
+                year: 2022,
+                month: 1,
+                day: 31,
+            },
+            transfer_amount: None,
+            transfer_date_in_jst: None,
+            carried_balance: Some(0),
+        };
+        assert_eq!(vec![transfer], result.1 .0.latest_two_transfers);
+    }
+
     // transferが2つのパターン
     // transferが3つのパターンはいらない。なぜなら2つ返すのはpayjpの責務だから。
 }
