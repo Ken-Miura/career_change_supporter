@@ -9,9 +9,7 @@
       <div class="flex flex-col justify-center">
         <p data-test="title" class="font-bold text-2xl">まだ新規登録は完了していません</p>
         <p data-test="message" class="mt-4 font-bold text-lg">
-          <span v-if="emailAddress !== undefined">{{ emailAddress }}宛にメールを送信しました。</span>
-          <span v-else>指定されたメールアドレスにメールを送信しました。</span>
-          メールに記載されたURLをクリックし、新規登録を完了させて下さい。
+          指定されたメールアドレスにメールを送信しました。メールに記載されたURLをクリックし、新規登録を完了させて下さい。
         </p>
         <div class="mt-4" role="note">
           <div data-test="note-title" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">メールが届かない場合</div>
@@ -36,9 +34,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'TempAccountCreationResultPage',
-  props: {
-    emailAddress: String
-  }
+  name: 'TempAccountCreationResultPage'
 })
 </script>

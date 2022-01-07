@@ -32,7 +32,6 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/temp-account-creation-result',
     name: 'TempAccountCreationResultPage',
-    props: true,
     // 新規登録は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/TempAccountCreationResultPage.vue')
   },
@@ -51,7 +50,6 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/new-password-creation-result',
     name: 'NewPasswordCreationResultPage',
-    props: true,
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/NewPasswordCreationResultPage.vue')
   },
