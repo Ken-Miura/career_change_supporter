@@ -63,9 +63,7 @@ pub(crate) async fn post_temp_accounts(
 }
 
 #[derive(Serialize, Debug)]
-pub(crate) struct TempAccountsResult {
-    email_address: String,
-}
+pub(crate) struct TempAccountsResult {}
 
 // これをテスト対象と考える。
 async fn post_temp_accounts_internal(
@@ -113,12 +111,7 @@ async fn post_temp_accounts_internal(
     let text = create_text(url, &uuid_for_url);
     let _ =
         async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
-    Ok((
-        StatusCode::OK,
-        Json(TempAccountsResult {
-            email_address: email_addr.to_string(),
-        }),
-    ))
+    Ok((StatusCode::OK, Json(TempAccountsResult {})))
 }
 
 fn create_text(url: &str, uuid_str: &str) -> String {
@@ -287,7 +280,6 @@ mod tests {
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(resp.0, StatusCode::OK);
-        assert_eq!(resp.1.email_address, email_address);
     }
 
     #[tokio::test]
