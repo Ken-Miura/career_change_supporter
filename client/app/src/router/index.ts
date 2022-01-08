@@ -62,7 +62,6 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/apply-new-password-result',
     name: 'ApplyNewPasswordResultPage',
-    props: true,
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/ApplyNewPasswordResultPage.vue')
   },

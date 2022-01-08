@@ -6,7 +6,7 @@
       </router-link>
     </header>
     <main class="flex justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <h3 v-if="message != undefined" class="font-bold text-lg">{{ message }}</h3>
+      <h3 v-if="message != null" class="font-bold text-lg">{{ message }}</h3>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
@@ -16,11 +16,14 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
+import { useStore } from '@/store/useStore'
 
 export default defineComponent({
   name: 'ApplyNewPasswordResultPage',
-  props: {
-    message: String
+  setup () {
+    const store = useStore()
+    const message = store.state.applyNewPasswordResultMessage
+    return { message }
   }
 })
 </script>

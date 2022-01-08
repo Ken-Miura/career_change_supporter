@@ -12,8 +12,8 @@
       <section class="mt-10">
         <form class="flex flex-col" @submit.prevent="createNewPasswordHandler">
           <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
-          <PasswordInput class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
-          <PasswordInput class="mb-6" @on-password-updated="setPasswordConfirmation" label="パスワード（確認）"/>
+          <PasswordInput class="mb-6" @on-password-updated="setPassword" label="新しいパスワード"/>
+          <PasswordInput class="mb-6" @on-password-updated="setPasswordConfirmation" label="新しいパスワード（確認）"/>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
