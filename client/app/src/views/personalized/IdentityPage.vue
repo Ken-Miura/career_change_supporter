@@ -4,7 +4,7 @@
     <main>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">ユーザー情報</h3>
-        <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
+        <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。下記の項目を入力し、本人確認を依頼すると、審査後に入力した値が反映されます。ユーザー情報が他のユーザーに公開されることはありません。</p>
         <form @submit.prevent="submitIdentity">
           <div class="m-4 text-2xl grid grid-cols-4">
             <div class="mt-2 justify-self-start col-span-2 pt-3 rounded bg-gray-200">
@@ -16,7 +16,7 @@
               <input v-bind:value="form.firstName" v-on:input="setFirstName" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
           </div>
-          <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ユーザー情報を編集する</button>
+          <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">本人確認を依頼する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
       </div>
