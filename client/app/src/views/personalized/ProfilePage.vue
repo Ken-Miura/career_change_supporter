@@ -80,7 +80,7 @@
           <button v-on:click="moveToFeePerHourInYenPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button v-on:click="TODO" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
+          <button v-on:click="moveToDeleteAccountConfirmationPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
         </div>
       </div>
     </main>
@@ -165,7 +165,10 @@ export default defineComponent({
     const moveToFeePerHourInYenPage = async () => {
       await router.push('fee-per-hour-in-yen')
     }
-    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage, moveToFeePerHourInYenPage }
+    const moveToDeleteAccountConfirmationPage = async () => {
+      await router.push('delete-account-confirmation')
+    }
+    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage, moveToFeePerHourInYenPage, moveToDeleteAccountConfirmationPage }
   }
 })
 </script>
