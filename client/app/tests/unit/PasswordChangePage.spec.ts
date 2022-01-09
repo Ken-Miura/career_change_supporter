@@ -61,7 +61,7 @@ describe('PasswordChangePage.vue', () => {
   })
 
   it('moves to NewPasswordCreationResultPage when email address and password are passed', async () => {
-    createNewPasswordMock.mockResolvedValue(CreateNewPasswordResp.create(EMAIL_ADDRESS))
+    createNewPasswordMock.mockResolvedValue(CreateNewPasswordResp.create())
 
     const wrapper = mount(PasswordChangePage, {
       global: {
@@ -85,8 +85,7 @@ describe('PasswordChangePage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "NewPasswordCreationResultPage", "params": {"emailAddress": "${EMAIL_ADDRESS}"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('new-password-creation-result')
   })
 
   it(`displays alert message ${Message.REACH_NEW_PASSWORDS_LIMIT_MESSAGE} when reach new password limit`, async () => {

@@ -70,7 +70,7 @@ export default defineComponent({
         // 下記の関数では1の機能を提供する
         const result = await createNewPassword(form.emailAddress, form.password)
         if (result instanceof CreateNewPasswordResp) {
-          await router.push({ name: 'NewPasswordCreationResultPage', params: { emailAddress: result.getEmailAddress() } })
+          await router.push('new-password-creation-result')
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())

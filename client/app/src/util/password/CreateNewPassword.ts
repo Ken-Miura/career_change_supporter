@@ -13,7 +13,5 @@ export async function createNewPassword (emailAddress: string, password: string)
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  // eslint-disable-next-line
-  const result = await response.json() as { email_address: string }
-  return CreateNewPasswordResp.create(result.email_address)
+  return CreateNewPasswordResp.create()
 }
