@@ -20,11 +20,19 @@ jest.mock('vue-router', () => ({
   })
 }))
 
+const storeCommitMock = jest.fn()
+jest.mock('vuex', () => ({
+  useStore: () => ({
+    commit: storeCommitMock
+  })
+}))
+
 describe('PasswordChangeConfirmationPage.vue', () => {
   beforeEach(() => {
     applyNewPasswordMock.mockReset()
     queryObject = null
     routerPushMock.mockClear()
+    storeCommitMock.mockClear()
   })
 
   it('has one button', () => {
@@ -53,8 +61,9 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.NEW_PASSWORD_APPLIED_MESSAGE}"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NEW_PASSWORD_APPLIED_MESSAGE}`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.INVALID_QUERY_PARAM} when query has no new-password-id`, async () => {
@@ -71,8 +80,9 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.INVALID_QUERY_PARAM}"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.INVALID_QUERY_PARAM}`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.INVALID_UUID_MESSAGE} when invalid uuid format is passed`, async () => {
@@ -90,8 +100,9 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.INVALID_UUID_MESSAGE} (${Code.INVALID_UUID})"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.INVALID_UUID_MESSAGE} (${Code.INVALID_UUID})`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.NO_ACCOUNT_FOUND_MESSAGE} when account does not exist`, async () => {
@@ -109,8 +120,9 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.NO_ACCOUNT_FOUND_MESSAGE} (${Code.NO_ACCOUNT_FOUND})"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NO_ACCOUNT_FOUND_MESSAGE} (${Code.NO_ACCOUNT_FOUND})`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} when new password is not found`, async () => {
@@ -128,8 +140,9 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} (${Code.NO_NEW_PASSWORD_FOUND})"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} (${Code.NO_NEW_PASSWORD_FOUND})`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.NEW_PASSWORD_EXPIRED_MESSAGE} when new password has already expired`, async () => {
@@ -147,7 +160,8 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "ApplyNewPasswordResultPage", "params": {"message": "${Message.NEW_PASSWORD_EXPIRED_MESSAGE} (${Code.NEW_PASSWORD_EXPIRED})"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NEW_PASSWORD_EXPIRED_MESSAGE} (${Code.NEW_PASSWORD_EXPIRED})`)
   })
 })
