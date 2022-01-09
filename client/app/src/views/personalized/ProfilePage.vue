@@ -105,6 +105,7 @@ import { Career } from '@/util/profile/Career'
 import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
+import { SET_IDENTITY } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -157,7 +158,7 @@ export default defineComponent({
     })
     const moveToIdentityPage = async () => {
       const id = unref(identity.value)
-      store.commit('setIdentity', id)
+      store.commit(SET_IDENTITY, id)
       await router.push('profile/identity')
     }
     return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage }

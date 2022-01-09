@@ -5,6 +5,7 @@ import { ApplyNewPasswordResp } from '@/util/password/ApplyNewPasswordResp'
 import { Message } from '@/util/Message'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
+import { SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE } from '@/store/mutationTypes'
 
 jest.mock('@/util/password/ApplyNewPassword')
 const applyNewPasswordMock = applyNewPassword as jest.MockedFunction<typeof applyNewPassword>
@@ -63,7 +64,7 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NEW_PASSWORD_APPLIED_MESSAGE}`)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, `${Message.NEW_PASSWORD_APPLIED_MESSAGE}`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.INVALID_QUERY_PARAM} when query has no new-password-id`, async () => {
@@ -82,7 +83,7 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.INVALID_QUERY_PARAM}`)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, `${Message.INVALID_QUERY_PARAM}`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.INVALID_UUID_MESSAGE} when invalid uuid format is passed`, async () => {
@@ -102,7 +103,7 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.INVALID_UUID_MESSAGE} (${Code.INVALID_UUID})`)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, `${Message.INVALID_UUID_MESSAGE} (${Code.INVALID_UUID})`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.NO_ACCOUNT_FOUND_MESSAGE} when account does not exist`, async () => {
@@ -122,7 +123,7 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NO_ACCOUNT_FOUND_MESSAGE} (${Code.NO_ACCOUNT_FOUND})`)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, `${Message.NO_ACCOUNT_FOUND_MESSAGE} (${Code.NO_ACCOUNT_FOUND})`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} when new password is not found`, async () => {
@@ -142,7 +143,7 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} (${Code.NO_NEW_PASSWORD_FOUND})`)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, `${Message.NO_NEW_PASSWORD_FOUND_MESSAGE} (${Code.NO_NEW_PASSWORD_FOUND})`)
   })
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.NEW_PASSWORD_EXPIRED_MESSAGE} when new password has already expired`, async () => {
@@ -162,6 +163,6 @@ describe('PasswordChangeConfirmationPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('apply-new-password-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith('setApplyNewPasswordResultMessage', `${Message.NEW_PASSWORD_EXPIRED_MESSAGE} (${Code.NEW_PASSWORD_EXPIRED})`)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, `${Message.NEW_PASSWORD_EXPIRED_MESSAGE} (${Code.NEW_PASSWORD_EXPIRED})`)
   })
 })

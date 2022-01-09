@@ -23,6 +23,7 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
+import { SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'NewPassword',
@@ -33,7 +34,7 @@ export default defineComponent({
       const query = router.currentRoute.value.query
       const data = JSON.stringify(query)
       if (!data.match('"new-password-id"')) {
-        store.commit('setApplyNewPasswordResultMessage', Message.INVALID_QUERY_PARAM)
+        store.commit(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, Message.INVALID_QUERY_PARAM)
         await router.push('apply-new-password-result')
         return
       }
@@ -50,7 +51,7 @@ export default defineComponent({
       } catch (e) {
         message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      store.commit('setApplyNewPasswordResultMessage', message)
+      store.commit(SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, message)
       await router.push('apply-new-password-result')
     }
     return { applyNewPasswordHandler }
