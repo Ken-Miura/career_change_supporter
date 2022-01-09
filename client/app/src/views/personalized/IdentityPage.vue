@@ -16,7 +16,8 @@
               <input v-bind:value="form.firstName" v-on:input="setFirstName" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
           </div>
-          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ユーザー情報を編集する</button>
+          <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ユーザー情報を編集する</button>
+          <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
       </div>
     </main>
@@ -27,21 +28,25 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import { useIdentity } from '@/views/personalized/useIdentity'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRouter } from 'vue-router'
 import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
+import AlertMessage from '@/components/AlertMessage.vue'
 
 export default defineComponent({
   name: 'IdentityPage',
   components: {
-    TheHeader
+    TheHeader,
+    AlertMessage
   },
   setup () {
     const router = useRouter()
     const store = useStore()
+    const isHidden = ref(true)
+    const errorMessage = ref('')
     const { form, setLastName, setFirstName } = useIdentity()
     onMounted(async () => {
       const result = await getPageKindToDisplay()
@@ -67,7 +72,7 @@ export default defineComponent({
       console.log(form.lastName)
       console.log(form.firstName)
     }
-    return { form, setLastName, setFirstName, submitIdentity }
+    return { isHidden, errorMessage, form, setLastName, setFirstName, submitIdentity }
   }
 })
 </script>
