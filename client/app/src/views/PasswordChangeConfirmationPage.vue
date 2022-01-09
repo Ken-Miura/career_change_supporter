@@ -22,7 +22,7 @@ import { ApplyNewPasswordResp } from '@/util/password/ApplyNewPasswordResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
-import { useStore } from '@/store/useStore'
+import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'NewPassword',
