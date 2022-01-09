@@ -159,7 +159,7 @@ export default defineComponent({
     const moveToIdentityPage = async () => {
       const id = unref(identity.value)
       store.commit(SET_IDENTITY, id)
-      await router.push('profile/identity')
+      await router.push('identity')
     }
     return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage }
   }

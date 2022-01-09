@@ -75,15 +75,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/profile',
     name: 'ProfilePage',
-    component: ProfilePage,
-    // TODO: 表示されるように修正
-    children: [
-      {
-        path: 'identity',
-        name: 'IdentityPage',
-        component: IdentityPage
-      }
-    ]
+    component: ProfilePage
+  },
+  {
+    path: '/identity',
+    name: 'IdentityPage',
+    component: IdentityPage
   },
   {
     path: '/reward',

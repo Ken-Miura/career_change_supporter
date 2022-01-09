@@ -28,14 +28,18 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive } from 'vue'
+import { defineComponent, ref } from 'vue'
 import { useStore } from 'vuex'
+import TheHeader from '@/components/TheHeader.vue'
 
 export default defineComponent({
   name: 'IdentityPage',
+  components: {
+    TheHeader
+  },
   setup () {
     const store = useStore()
-    const identity = reactive(store.state.identity)
+    const identity = ref(store.state.identity)
     return { identity }
   }
 })
