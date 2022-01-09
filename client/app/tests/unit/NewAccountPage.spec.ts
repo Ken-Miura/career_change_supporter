@@ -61,7 +61,7 @@ describe('NewAccountPage.vue', () => {
   })
 
   it('moves to TempAccountCreationResultPage when email address and password are passed', async () => {
-    createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create(EMAIL_ADDRESS))
+    createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create())
 
     const wrapper = mount(NewAccountPage, {
       global: {
@@ -85,8 +85,7 @@ describe('NewAccountPage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{ "name": "TempAccountCreationResultPage", "params": {"emailAddress": "${EMAIL_ADDRESS}"} }`)
-    expect(routerPushMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledWith('temp-account-creation-result')
   })
 
   it(`displays alert message ${Message.REACH_TEMP_ACCOUNTS_LIMIT_MESSAGE} when reach new account limit`, async () => {

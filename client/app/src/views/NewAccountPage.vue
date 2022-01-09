@@ -70,7 +70,7 @@ export default defineComponent({
         // 下記の関数では1の機能を提供する
         const result = await createTempAccount(form.emailAddress, form.password)
         if (result instanceof CreateTempAccountResp) {
-          await router.push({ name: 'TempAccountCreationResultPage', params: { emailAddress: result.getEmailAddress() } })
+          await router.push('temp-account-creation-result')
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())
