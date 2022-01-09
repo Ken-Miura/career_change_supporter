@@ -32,7 +32,7 @@
             <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ identity.telephone_number }}</div>
           </div>
           <p v-else class="m-4 text-xl">ユーザー情報が設定されていません。</p>
-          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
+          <button v-on:click="moveToIdentityPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">職務経歴</h3>
@@ -91,7 +91,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, onMounted, ref, unref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
@@ -104,6 +104,7 @@ import { useGetProfile } from '../../util/profile/useGetProfile'
 import { Career } from '@/util/profile/Career'
 import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
+import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -119,6 +120,7 @@ export default defineComponent({
     const careers = ref([] as Career[])
     const feePerHourInYen = ref(0 as number | null)
     const router = useRouter()
+    const store = useStore()
     const errorExists = ref(false)
     const errorMessage = ref('')
     onMounted(async () => {
@@ -153,7 +155,12 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
-    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage }
+    const moveToIdentityPage = async () => {
+      const id = unref(identity.value)
+      store.commit('setIdentity', id)
+      await router.push('profile/identity')
+    }
+    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage }
   }
 })
 </script>

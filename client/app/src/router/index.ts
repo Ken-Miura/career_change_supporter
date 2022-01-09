@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ProfilePage from '../views/personalized/ProfilePage.vue'
+import IdentityPage from '../views/personalized/IdentityPage.vue'
 import RewardPage from '../views/personalized/RewardPage.vue'
 import SchedulePage from '../views/personalized/SchedulePage.vue'
 import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
@@ -74,7 +75,15 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/profile',
     name: 'ProfilePage',
-    component: ProfilePage
+    component: ProfilePage,
+    // TODO: 表示されるように修正
+    children: [
+      {
+        path: 'identity',
+        name: 'IdentityPage',
+        component: IdentityPage
+      }
+    ]
   },
   {
     path: '/reward',

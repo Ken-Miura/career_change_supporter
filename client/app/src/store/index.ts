@@ -1,7 +1,9 @@
+import { Identity } from '@/util/profile/Identity'
 import { createStore } from 'vuex'
 
 export type State = {
   applyNewPasswordResultMessage: string | null
+  identity: Identity | null
 };
 
 // 下記URLにVuexにてTypescriptの型推論を有効にするためにkeyが必要と記載されているが
@@ -12,11 +14,15 @@ export type State = {
 
 export default createStore<State>({
   state: {
-    applyNewPasswordResultMessage: null
+    applyNewPasswordResultMessage: null,
+    identity: null
   },
   mutations: {
     setApplyNewPasswordResultMessage (state: State, message: string) {
       state.applyNewPasswordResultMessage = message
+    },
+    setIdentity (state: State, identity: Identity | null) {
+      state.identity = identity
     }
   },
   actions: {

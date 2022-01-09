@@ -28,13 +28,15 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue'
-import { Identity } from '@/util/profile/Identity'
+import { defineComponent, reactive } from 'vue'
+import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'IdentityPage',
-  props: {
-    identity: { type: Object as PropType<Identity> | null }
+  setup () {
+    const store = useStore()
+    const identity = reactive(store.state.identity)
+    return { identity }
   }
 })
 </script>
