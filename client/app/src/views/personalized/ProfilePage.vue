@@ -77,7 +77,7 @@
             <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
           </div>
           <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
-          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
+          <button v-on:click="moveToFeePerHourInYenPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <button v-on:click="TODO" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
@@ -91,7 +91,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref, unref } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
@@ -105,7 +105,7 @@ import { Career } from '@/util/profile/Career'
 import { Message } from '@/util/Message'
 import { createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
-import { SET_IDENTITY } from '@/store/mutationTypes'
+import { SET_CAREERS, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -145,6 +145,9 @@ export default defineComponent({
           careers.value = profile.careers
           feePerHourInYen.value = profile.fee_per_hour_in_yen
           /* eslint-enable camelcase */
+          store.commit(SET_IDENTITY, profile.identity)
+          store.commit(SET_CAREERS, profile.careers)
+          store.commit(SET_FEE_PER_HOUR_IN_YEN, profile.fee_per_hour_in_yen)
         } else if (response instanceof ApiErrorResp) {
           errorExists.value = true
           errorMessage.value = createErrorMessage(response.getApiError().getCode())
@@ -157,11 +160,12 @@ export default defineComponent({
       }
     })
     const moveToIdentityPage = async () => {
-      const id = unref(identity.value)
-      store.commit(SET_IDENTITY, id)
       await router.push('identity')
     }
-    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage }
+    const moveToFeePerHourInYenPage = async () => {
+      await router.push('fee-per-hour-in-yen')
+    }
+    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage, moveToFeePerHourInYenPage }
   }
 })
 </script>
