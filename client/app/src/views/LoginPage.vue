@@ -65,12 +65,15 @@ export default defineComponent({
         const agreementStatus = await checkAgreementStatus()
         if (agreementStatus instanceof CheckAgreementStatusResp) {
           await router.push('profile')
+          return
         } else if (agreementStatus instanceof ApiErrorResp) {
           const code = agreementStatus.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('login')
+            return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
             await router.push('terms-of-use')
+            return
           } else {
             throw new Error(`unexpected result: ${agreementStatus}`)
           }

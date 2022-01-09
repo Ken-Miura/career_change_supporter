@@ -129,9 +129,11 @@ export default defineComponent({
       if (result === 'personalized-page') {
         // 遷移せずにページを表示
       } else if (result === 'login') {
-        router.push('login')
+        await router.push('login')
+        return
       } else if (result === 'term-of-use') {
-        router.push('terms-of-use')
+        await router.push('terms-of-use')
+        return
       } else {
         throw new Error('Assertion Error: must not reach this line')
       }
