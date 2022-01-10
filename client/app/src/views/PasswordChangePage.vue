@@ -71,6 +71,7 @@ export default defineComponent({
         const result = await createNewPassword(form.emailAddress, form.password)
         if (result instanceof CreateNewPasswordResp) {
           await router.push('new-password-creation-result')
+          return
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())

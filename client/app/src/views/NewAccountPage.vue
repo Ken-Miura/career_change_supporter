@@ -71,6 +71,7 @@ export default defineComponent({
         const result = await createTempAccount(form.emailAddress, form.password)
         if (result instanceof CreateTempAccountResp) {
           await router.push('temp-account-creation-result')
+          return
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())
