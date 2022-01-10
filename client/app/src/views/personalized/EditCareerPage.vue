@@ -4,7 +4,8 @@
     <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <h3 class="font-bold text-lg">{{ message }}</h3>
       <div v-if="careers.length !== 0" class="font-bold text-lg">
-        <div>props: {{ careerId }}</div>
+        <div>props: {{ id }}</div>
+        <div>careers</div>
         <div>{{ careers }}</div>
       </div>
       <p v-else class="font-bold text-lg">careers.length === 0</p>
@@ -29,7 +30,7 @@ export default defineComponent({
     TheHeader
   },
   props: {
-    careerId: Number
+    id: String
   },
   setup () {
     const message = ref('相談料編集用テストページ')

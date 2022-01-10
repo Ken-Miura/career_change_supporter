@@ -3,6 +3,8 @@ import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ProfilePage from '../views/personalized/ProfilePage.vue'
 import IdentityPage from '../views/personalized/IdentityPage.vue'
+import AddCareerPage from '../views/personalized/AddCareerPage.vue'
+import EditCareerPage from '../views/personalized/EditCareerPage.vue'
 import FeePerHourInYenPage from '../views/personalized/FeePerHourInYenPage.vue'
 import DeleteAccountConfirmationPage from '../views/personalized/DeleteAccountConfirmationPage.vue'
 import RewardPage from '../views/personalized/RewardPage.vue'
@@ -83,6 +85,17 @@ const routes: Array<RouteRecordRaw> = [
     path: '/identity',
     name: 'IdentityPage',
     component: IdentityPage
+  },
+  {
+    path: '/careers/:id',
+    name: 'EditCareerPage',
+    props: true,
+    component: EditCareerPage
+  },
+  {
+    path: '/careers',
+    name: 'AddCareerPage',
+    component: AddCareerPage
   },
   {
     path: '/fee-per-hour-in-yen',

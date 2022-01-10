@@ -62,13 +62,13 @@
                     </div>
                     <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ career.career_start_date.year }}年{{ career.career_start_date.month }}月{{ career.career_start_date.day }}日</div>
                     <div v-if="career.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="career.career_end_date !== null" class="justify-self-start col-span-2">{{ career.career_end_date.year }}年{{ career.career_end_date.month }}月{{ career.career_end_date.day }}日</div>
-                    <button v-on:click="TODO" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
+                    <button v-on:click="moveToEditCareerPage(career.id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
                   </div>
                 </div>
               </li>
             </ul>
           </div>
-          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
+          <button v-on:click="moveToAddCareerPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
@@ -164,13 +164,19 @@ export default defineComponent({
     const moveToIdentityPage = async () => {
       await router.push('identity')
     }
+    const moveToAddCareerPage = async () => {
+      await router.push('careers')
+    }
+    const moveToEditCareerPage = async (careerId: number) => {
+      await router.push({ name: 'EditCareerPage', params: { id: careerId } })
+    }
     const moveToFeePerHourInYenPage = async () => {
       await router.push('fee-per-hour-in-yen')
     }
     const moveToDeleteAccountConfirmationPage = async () => {
       await router.push('delete-account-confirmation')
     }
-    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage, moveToFeePerHourInYenPage, moveToDeleteAccountConfirmationPage }
+    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage, moveToAddCareerPage, moveToEditCareerPage, moveToFeePerHourInYenPage, moveToDeleteAccountConfirmationPage }
   }
 })
 </script>
