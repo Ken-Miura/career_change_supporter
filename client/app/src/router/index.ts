@@ -89,7 +89,6 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/careers/:id',
     name: 'EditCareerPage',
-    props: true,
     component: EditCareerPage
   },
   {
