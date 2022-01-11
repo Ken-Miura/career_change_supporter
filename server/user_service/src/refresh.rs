@@ -84,6 +84,7 @@ impl RefreshOperation for RefreshOperationImpl {
     }
 }
 
+// TODO: テストコードをsession.rsのget_user_by_cookieに移動
 #[cfg(test)]
 mod tests {
     use async_session::MemoryStore;
