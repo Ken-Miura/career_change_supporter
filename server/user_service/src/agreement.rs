@@ -20,6 +20,7 @@ use diesel::{
 use tower_cookies::Cookies;
 
 use crate::err_code::ALREADY_AGREED_TERMS_OF_USE;
+use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use crate::util::{
     session::get_user_by_cookie, terms_of_use::TERMS_OF_USE_VERSION, unexpected_err_resp,
 };
@@ -30,7 +31,8 @@ pub(crate) async fn post_agreement(
     Extension(store): Extension<RedisSessionStore>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> Result<StatusCode, ErrResp> {
-    let user = get_user_by_cookie(cookies, &store).await?;
+    let op = RefreshOperationImpl {};
+    let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
     let op = AgreementOperationImpl::new(conn);
     let agreed_time = Utc::now();
     let result =

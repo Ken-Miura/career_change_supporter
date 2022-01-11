@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use async_redis_session::RedisSessionStore;
-use async_session::{async_trait, SessionStore};
+use async_session::{async_trait, Session, SessionStore};
 use axum::{
     extract::{Extension, FromRequest, RequestParts},
     http::StatusCode,
@@ -87,7 +87,8 @@ where
                 tracing::error!("failed to get session store: {}", e);
                 unexpected_err_resp()
             })?;
-        let user = get_user_by_cookie(cookies, &store).await?;
+        let op = RefreshOperationImpl {};
+        let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
 
         let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
             .await
@@ -106,9 +107,17 @@ where
     }
 }
 
-/// cookieからUserを取得する<br>
-/// Userを取得するには、セッションが有効な期間中に呼び出す必要がある<br>
+/// storeからcookieを使い、Userを取得する。<br>
+/// Userを取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
+/// Userの取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
 /// <br>
+/// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
+/// リニューアルタイムアウトが必要になった場合は、セッションを保存しているキャッシュシステムの定期再起動により実装する。<br>
+/// 参考:
+///   セッションタイムアウトの種類: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#automatic-session-expiration
+///   著名なフレームワークにおいてもアイドルタイムアウトが一般的で、アブソリュートタイムアウトは実装されていない
+///     1. https://stackoverflow.com/questions/62964012/how-to-set-absolute-session-timeout-for-a-spring-session
+///     2. https://www.webdevqa.jp.net/ja/authentication/%E3%82%BB%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E7%B5%B6%E5%AF%BE%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E3%81%AF%E3%81%A9%E3%82%8C%E3%81%8F%E3%82%89%E3%81%84%E3%81%AE%E9%95%B7%E3%81%95%E3%81%A7%E3%81%99%E3%81%8B%EF%BC%9F/l968265546/
 /// # NOTE
 /// Userを利用するときは、原則としてハンドラのパラメータにUserを指定する方法を選択する（前記方法だと利用規約の同意しているかの確認も同時に行うため）
 /// 本関数は、Userの情報を使いたいが、利用規約の同意を確認したくないケース（ex. ユーザーから利用規約の同意を得るケース）のみに利用する<br>
@@ -123,6 +132,8 @@ where
 pub(crate) async fn get_user_by_cookie(
     cookies: Cookies,
     store: &impl SessionStore,
+    op: impl RefreshOperation,
+    expiry: Duration,
 ) -> Result<User, ErrResp> {
     let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
     let session_id_value = match option_cookie {
@@ -146,7 +157,7 @@ pub(crate) async fn get_user_by_cookie(
             );
             unexpected_err_resp()
         })?;
-    let session = match option_session {
+    let mut session = match option_session {
         Some(s) => s,
         None => {
             tracing::debug!("no valid session on request");
@@ -166,7 +177,29 @@ pub(crate) async fn get_user_by_cookie(
             return Err(unexpected_err_resp());
         }
     };
+    op.set_login_session_expiry(&mut session, expiry);
+    // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
+    let _ = store.store_session(session).await.map_err(|e| {
+        tracing::error!(
+            "failed to store session (session_id={}): {}",
+            session_id_value,
+            e
+        );
+        unexpected_err_resp()
+    })?;
     Ok(User { account_id: id })
+}
+
+pub(crate) trait RefreshOperation {
+    fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration);
+}
+
+pub(crate) struct RefreshOperationImpl {}
+
+impl RefreshOperation for RefreshOperationImpl {
+    fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration) {
+        session.expire_in(expiry);
+    }
 }
 
 fn check_if_user_has_already_agreed(
@@ -213,7 +246,10 @@ pub(crate) mod tests {
     use crate::{
         err_code,
         util::{
-            session::{get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID},
+            session::{
+                get_user_by_cookie, RefreshOperationImpl, KEY_TO_USER_ACCOUNT_ID,
+                LOGIN_SESSION_EXPIRY,
+            },
             terms_of_use::TermsOfUseLoadOperation,
             ROOT_PATH,
         },
@@ -294,7 +330,8 @@ pub(crate) mod tests {
         let cookies = prepare_cookies(&session_id_value);
         assert_eq!(1, store.count().await);
 
-        let user = get_user_by_cookie(cookies, &store)
+        let op = RefreshOperationImpl {};
+        let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect("failed to get Ok");
 
@@ -312,7 +349,8 @@ pub(crate) mod tests {
         let cookies = Cookies::default();
         let store = MemoryStore::new();
 
-        let result = get_user_by_cookie(cookies, &store)
+        let op = RefreshOperationImpl {};
+        let result = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect_err("failed to get Err");
 
@@ -327,7 +365,8 @@ pub(crate) mod tests {
         cookies.add(cookie);
         let store = MemoryStore::new();
 
-        let result = get_user_by_cookie(cookies, &store)
+        let op = RefreshOperationImpl {};
+        let result = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect_err("failed to get Err");
 
@@ -345,7 +384,8 @@ pub(crate) mod tests {
         let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
 
-        let result = get_user_by_cookie(cookies, &store)
+        let op = RefreshOperationImpl {};
+        let result = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect_err("failed to get Err");
 
