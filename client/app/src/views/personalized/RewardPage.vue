@@ -106,7 +106,7 @@ export default defineComponent({
       } else if (result === 'login') {
         await router.push('login')
         return
-      } else if (result === 'term-of-use') {
+      } else if (result === 'terms-of-use') {
         await router.push('terms-of-use')
         return
       } else {

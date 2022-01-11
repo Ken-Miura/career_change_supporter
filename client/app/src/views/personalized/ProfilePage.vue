@@ -93,7 +93,6 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -103,9 +102,10 @@ import { Identity } from '@/util/profile/Identity'
 import { useGetProfile } from '../../util/profile/useGetProfile'
 import { Career } from '@/util/profile/Career'
 import { Message } from '@/util/Message'
-import { createErrorMessage } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
 import { SET_CAREERS, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from '@/store/mutationTypes'
+import { refresh } from '@/util/refresh/Refresh'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -125,17 +125,10 @@ export default defineComponent({
     const errorExists = ref(false)
     const errorMessage = ref('')
     onMounted(async () => {
-      const result = await getPageKindToDisplay()
-      if (result === 'personalized-page') {
-        // 遷移せずにページを表示
-      } else if (result === 'login') {
+      const result = await refresh()
+      if (!result) {
         await router.push('login')
         return
-      } else if (result === 'term-of-use') {
-        await router.push('terms-of-use')
-        return
-      } else {
-        throw new Error('Assertion Error: must not reach this line')
       }
       try {
         const response = await getProfileFunc()
@@ -151,6 +144,14 @@ export default defineComponent({
           store.commit(SET_CAREERS, profile.careers)
           store.commit(SET_FEE_PER_HOUR_IN_YEN, profile.fee_per_hour_in_yen)
         } else if (response instanceof ApiErrorResp) {
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('terms-of-use')
+            return
+          }
           errorExists.value = true
           errorMessage.value = createErrorMessage(response.getApiError().getCode())
         } else {

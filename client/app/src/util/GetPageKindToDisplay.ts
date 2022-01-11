@@ -4,7 +4,7 @@ import { ApiErrorResp } from './ApiError'
 import { Code } from './Error'
 import { refresh } from './refresh/Refresh'
 
-export type PageKind = 'login' | 'term-of-use' | 'personalized-page'
+export type PageKind = 'login' | 'terms-of-use' | 'personalized-page'
 
 export async function getPageKindToDisplay (): Promise<PageKind> {
   try {
@@ -22,7 +22,7 @@ export async function getPageKindToDisplay (): Promise<PageKind> {
       if (code === Code.UNAUTHORIZED) {
         return 'login'
       } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-        return 'term-of-use'
+        return 'terms-of-use'
       } else {
         throw new Error(`unexpected result: ${agreementStatus}`)
       }
