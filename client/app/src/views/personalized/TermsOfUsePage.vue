@@ -21,7 +21,6 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { refresh } from '@/util/refresh/Refresh'
 import { ApiErrorResp } from '@/util/ApiError'
 import { agreeTermsOfUse } from '@/util/terms-of-use/AgreeTermsOfUse'
 import { AgreeTermsOfUseResp } from '@/util/terms-of-use/AgreeTermsOfUseResp'
@@ -41,16 +40,10 @@ export default defineComponent({
     const isHidden = ref(true)
     const errorMessage = ref('')
     onMounted(async () => {
-      try {
-        const result = await refresh()
-        if (result) {
-          // セッションが存在するので、このまま現在のページを表示する
-          return
-        }
-        await router.push('login')
-      } catch (e) {
-        await router.push('login')
-      }
+      // NOTE:
+      // ログインセッションの延長のためのリクエストは実施しない。<br>
+      // このページに遷移してくるのは、ログインセッションがあることが確認でき、利用規約が同意されていなかった場合である。
+      // ログインセッションがあることが確認できた際にログインセッションの延長がされているため、ここでわざわざログインセッション延長のためのリクエストを送る必要がない。
     })
     const agreeTermsOfUseHandler = async () => {
       try {

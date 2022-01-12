@@ -18,10 +18,13 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
 import { useStore } from 'vuex'
 import { Career } from '@/util/profile/Career'
+import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
+import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
 
 export default defineComponent({
   name: 'EditCareerPage',
@@ -35,24 +38,29 @@ export default defineComponent({
     const router = useRouter()
     const store = useStore()
     onMounted(async () => {
-      const result = await getPageKindToDisplay()
-      if (result === 'personalized-page') {
-        // 遷移せずにページを表示
-      } else if (result === 'login') {
-        await router.push('login')
-        return
-      } else if (result === 'terms-of-use') {
-        await router.push('terms-of-use')
-        return
-      } else {
-        throw new Error('Assertion Error: must not reach this line')
+      try {
+        const agreementStatus = await checkAgreementStatus()
+        if (agreementStatus instanceof CheckAgreementStatusResp) {
+          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
+          // TODO: 正常系の処理
+          // TODO: 実装メモ
+          // store.state.careersのlengthが0 -> profileへ移動
+          // idに一致するcareerがない -> Not Foundを表示 (TODO: そのようなケースがあるのか確認)
+          const careers = store.state.careers
+          const id = route.params.id as string
+          career.value = findCareerById(id, careers)
+        } else if (agreementStatus instanceof ApiErrorResp) {
+          const code = agreementStatus.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('terms-of-use')
+          }
+          // TODO: エラー処理
+        }
+      } catch (e) {
+        // TODO: エラー処理
       }
-      // TODO: 実装メモ
-      // store.state.careersのlengthが0 -> profileへ移動
-      // idに一致するcareerがない -> Not Foundを表示 (TODO: そのようなケースがあるのか確認)
-      const careers = store.state.careers
-      const id = route.params.id as string
-      career.value = findCareerById(id, careers)
     })
     // router-linkで違うparamsを指定した際に備えてwatchを使う
     //  (TODO: そのようなケースがあるのか確認)

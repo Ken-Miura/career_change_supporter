@@ -39,7 +39,6 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
 import { login } from '@/util/login/Login'
-import { refresh } from '@/util/refresh/Refresh'
 import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
 import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
 
@@ -56,12 +55,6 @@ export default defineComponent({
     const errorMessage = ref('')
     onMounted(async () => {
       try {
-        const result = await refresh()
-        if (!result) {
-          // refreshに失敗 => セッションが切れている => ログイン画面へ遷移となる
-          // ただ、もともとログインページなのでrouteを更新する必要はない。なので何もしない
-          return
-        }
         const agreementStatus = await checkAgreementStatus()
         if (agreementStatus instanceof CheckAgreementStatusResp) {
           await router.push('profile')

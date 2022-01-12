@@ -72,7 +72,6 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -81,8 +80,10 @@ import { useGetRewards } from '../../util/reward/useGetRewards'
 import { BankAccount } from '@/util/reward/BankAccount'
 import { Transfer } from '@/util/reward/Transfer'
 import { Message } from '@/util/Message'
-import { createErrorMessage } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 import { GetRewardsResp } from '@/util/reward/GetRewardsResp'
+import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
+import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
 
 export default defineComponent({
   name: 'RewardPage',
@@ -100,17 +101,26 @@ export default defineComponent({
     const errorExists = ref(false)
     const errorMessage = ref('')
     onMounted(async () => {
-      const result = await getPageKindToDisplay()
-      if (result === 'personalized-page') {
-        // 遷移せずにページを表示
-      } else if (result === 'login') {
+      try {
+        const agreementStatus = await checkAgreementStatus()
+        if (agreementStatus instanceof CheckAgreementStatusResp) {
+          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
+          // TODO: 正常系の処理
+        } else if (agreementStatus instanceof ApiErrorResp) {
+          const code = agreementStatus.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('terms-of-use')
+            return
+          } else {
+            throw new Error('Assertion Error: must not reach this line')
+          }
+        }
+      } catch (e) {
         await router.push('login')
         return
-      } else if (result === 'terms-of-use') {
-        await router.push('terms-of-use')
-        return
-      } else {
-        throw new Error('Assertion Error: must not reach this line')
       }
       try {
         const response = await getRewardsFunc()

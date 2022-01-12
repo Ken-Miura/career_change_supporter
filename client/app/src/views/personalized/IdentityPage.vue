@@ -33,8 +33,11 @@ import { useStore } from 'vuex'
 import { useIdentity } from '@/views/personalized/useIdentity'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRouter } from 'vue-router'
-import { getPageKindToDisplay } from '@/util/GetPageKindToDisplay'
 import AlertMessage from '@/components/AlertMessage.vue'
+import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
+import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
 
 export default defineComponent({
   name: 'IdentityPage',
@@ -49,26 +52,34 @@ export default defineComponent({
     const errorMessage = ref('')
     const { form, setLastName, setFirstName } = useIdentity()
     onMounted(async () => {
-      const result = await getPageKindToDisplay()
-      if (result === 'personalized-page') {
-        // 遷移せずにページを表示
-      } else if (result === 'login') {
-        await router.push('login')
-        return
-      } else if (result === 'terms-of-use') {
-        await router.push('terms-of-use')
-        return
-      } else {
-        throw new Error('Assertion Error: must not reach this line')
+      try {
+        const agreementStatus = await checkAgreementStatus()
+        if (agreementStatus instanceof CheckAgreementStatusResp) {
+          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
+          // TODO: 正常系の処理
+          // 表示する際の初期値として使いたいだけなので、identityはrefとして宣言しない（リアクティブとしない）
+          const identity = store.state.identity
+          if (identity !== null) {
+            /* eslint-disable camelcase */
+            form.lastName = identity.last_name
+            form.firstName = identity.first_name
+            /* eslint-enable camelcase */
+          }
+        } else if (agreementStatus instanceof ApiErrorResp) {
+          const code = agreementStatus.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('terms-of-use')
+            return
+          }
+          // TODO: エラー処理
+        }
+      } catch (e) {
+        // TODO: エラー処理
       }
-      // 表示する際の初期値として使いたいだけなので、identityはrefとして宣言しない（リアクティブとしない）
-      const identity = store.state.identity
-      if (identity !== null) {
-      /* eslint-disable camelcase */
-        form.lastName = identity.last_name
-        form.firstName = identity.first_name
-      /* eslint-enable camelcase */
-      }
+      console.log('TODO: 実装後削除')
     })
     const submitIdentity = async () => {
       console.log(form.lastName)

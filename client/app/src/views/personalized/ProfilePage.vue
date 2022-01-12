@@ -105,7 +105,6 @@ import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
 import { SET_CAREERS, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from '@/store/mutationTypes'
-import { refresh } from '@/util/refresh/Refresh'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -125,11 +124,6 @@ export default defineComponent({
     const errorExists = ref(false)
     const errorMessage = ref('')
     onMounted(async () => {
-      const result = await refresh()
-      if (!result) {
-        await router.push('login')
-        return
-      }
       try {
         const response = await getProfileFunc()
         if (response instanceof GetProfileResp) {
