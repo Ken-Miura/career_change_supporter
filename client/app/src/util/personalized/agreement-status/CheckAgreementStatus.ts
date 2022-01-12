@@ -8,7 +8,9 @@ import { CheckAgreementStatusResp } from './CheckAgreementStatusResp'
  *   <li>ログインセッションが存在するかどうか確認する（ログインセッションが存在しない場合、Code.UNAUTHORIZEDを返す）</li>
  *   <li>ログインセッションが存在する場合、ログインセッションを延長する</li>
  * </ul>
- *
+ * POST /api/agreementを除くpersonalized以下にあるAPI呼び出しは、そのAPIの処理の前にこのAPI呼び出しでの処理と同じ処理を行う。<br>
+ * そのため、何かpersonalizedでのAPI呼び出しをする際は、このAPIを明示的に呼び出す必要はない。<br>
+ * サーバからデータを取得する必要がないログイン後のページを表示する際での利用を想定<br>
  * @returns Promise<CheckAgreementStatusResp | ApiErrorResp>
  */
 export async function checkAgreementStatus (): Promise<CheckAgreementStatusResp | ApiErrorResp> {
