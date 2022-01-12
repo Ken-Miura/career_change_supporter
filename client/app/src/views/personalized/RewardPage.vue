@@ -82,8 +82,6 @@ import { Transfer } from '@/util/personalized/reward/Transfer'
 import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { GetRewardsResp } from '@/util/personalized/reward/GetRewardsResp'
-import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
 
 export default defineComponent({
   name: 'RewardPage',
@@ -102,27 +100,6 @@ export default defineComponent({
     const errorMessage = ref('')
     onMounted(async () => {
       try {
-        const agreementStatus = await checkAgreementStatus()
-        if (agreementStatus instanceof CheckAgreementStatusResp) {
-          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
-        } else if (agreementStatus instanceof ApiErrorResp) {
-          const code = agreementStatus.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
-            return
-          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
-            return
-          } else {
-            throw new Error('Assertion Error: must not reach this line')
-          }
-        }
-      } catch (e) {
-        await router.push('login')
-        return
-      }
-      try {
         const response = await getRewardsFunc()
         if (response instanceof GetRewardsResp) {
           const rewards = response.getRewards()
@@ -132,6 +109,14 @@ export default defineComponent({
           latestTwoTransfers.value = rewards.latest_two_transfers
           /* eslint-enable camelcase */
         } else if (response instanceof ApiErrorResp) {
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('terms-of-use')
+            return
+          }
           errorExists.value = true
           errorMessage.value = createErrorMessage(response.getApiError().getCode())
         } else {
