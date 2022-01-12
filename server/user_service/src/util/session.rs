@@ -246,16 +246,13 @@ pub(crate) mod tests {
     use crate::{
         err_code,
         util::{
-            session::{
-                get_user_by_cookie, RefreshOperationImpl, KEY_TO_USER_ACCOUNT_ID,
-                LOGIN_SESSION_EXPIRY,
-            },
+            session::{get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
             terms_of_use::TermsOfUseLoadOperation,
             ROOT_PATH,
         },
     };
 
-    use super::{check_if_user_has_already_agreed, SESSION_ID_COOKIE_NAME};
+    use super::{check_if_user_has_already_agreed, RefreshOperation, SESSION_ID_COOKIE_NAME};
 
     pub(crate) fn extract_session_id_value(header_value: &HeaderValue) -> String {
         let set_cookie = header_value.to_str().expect("failed to get value");
@@ -322,6 +319,20 @@ pub(crate) mod tests {
             .expect("failed to get Ok");
     }
 
+    struct RefreshOperationMock {
+        expiry: std::time::Duration,
+    }
+
+    impl RefreshOperation for RefreshOperationMock {
+        fn set_login_session_expiry(
+            &self,
+            _session: &mut async_session::Session,
+            expiry: std::time::Duration,
+        ) {
+            assert_eq!(self.expiry, expiry);
+        }
+    }
+
     #[tokio::test]
     async fn get_user_by_cookie_success() {
         let store = MemoryStore::new();
@@ -330,7 +341,9 @@ pub(crate) mod tests {
         let cookies = prepare_cookies(&session_id_value);
         assert_eq!(1, store.count().await);
 
-        let op = RefreshOperationImpl {};
+        let op = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
         let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect("failed to get Ok");
@@ -349,7 +362,9 @@ pub(crate) mod tests {
         let cookies = Cookies::default();
         let store = MemoryStore::new();
 
-        let op = RefreshOperationImpl {};
+        let op = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
         let result = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect_err("failed to get Err");
@@ -365,7 +380,9 @@ pub(crate) mod tests {
         cookies.add(cookie);
         let store = MemoryStore::new();
 
-        let op = RefreshOperationImpl {};
+        let op = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
         let result = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect_err("failed to get Err");
@@ -384,7 +401,9 @@ pub(crate) mod tests {
         let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
 
-        let op = RefreshOperationImpl {};
+        let op = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
         let result = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY)
             .await
             .expect_err("failed to get Err");
