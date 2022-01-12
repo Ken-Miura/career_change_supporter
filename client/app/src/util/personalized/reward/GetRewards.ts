@@ -1,4 +1,4 @@
-import { ApiErrorResp, ApiError } from '../ApiError'
+import { ApiErrorResp, ApiError } from '../../ApiError'
 import { GetRewardsResp } from './GetRewardsResp'
 import { Rewards } from './Rewards'
 

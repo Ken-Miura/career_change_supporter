@@ -1,4 +1,4 @@
-import { ApiErrorResp, ApiError } from '../ApiError'
+import { ApiErrorResp, ApiError } from '../../ApiError'
 import { GetProfileResp } from './GetProfileResp'
 import { Profile } from './Profile'
 

@@ -1,4 +1,4 @@
-import { getRewards } from '@/util/reward/GetRewards'
+import { getRewards } from '@/util/personalized/reward/GetRewards'
 import { ref } from 'vue'
 
 // eslint-disable-next-line

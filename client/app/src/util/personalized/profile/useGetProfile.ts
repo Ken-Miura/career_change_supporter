@@ -1,4 +1,4 @@
-import { getProfile } from '@/util/profile/GetProfile'
+import { getProfile } from '@/util/personalized/profile/GetProfile'
 import { ref } from 'vue'
 
 // eslint-disable-next-line

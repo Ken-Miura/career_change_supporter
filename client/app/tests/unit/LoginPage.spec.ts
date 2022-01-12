@@ -9,13 +9,13 @@ import { LoginResp } from '@/util/login/LoginResp'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { nextTick } from 'vue'
-import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
+import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
+import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
 
 jest.mock('@/util/login/Login')
 const loginMock = login as jest.MockedFunction<typeof login>
 
-jest.mock('@/util/agreement-status/CheckAgreementStatus')
+jest.mock('@/util/personalized/agreement-status/CheckAgreementStatus')
 const checkAgreementStatusMock = checkAgreementStatus as jest.MockedFunction<typeof checkAgreementStatus>
 
 const routerPushMock = jest.fn()

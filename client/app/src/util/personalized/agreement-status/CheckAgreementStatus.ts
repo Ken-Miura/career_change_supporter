@@ -1,4 +1,4 @@
-import { ApiError, ApiErrorResp } from '../ApiError'
+import { ApiError, ApiErrorResp } from '../../ApiError'
 import { CheckAgreementStatusResp } from './CheckAgreementStatusResp'
 
 /**

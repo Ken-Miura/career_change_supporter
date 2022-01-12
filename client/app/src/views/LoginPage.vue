@@ -39,8 +39,8 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
 import { login } from '@/util/login/Login'
-import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
+import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
+import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
 
 export default defineComponent({
   name: 'LoginPage',

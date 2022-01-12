@@ -2,8 +2,8 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import TermsOfUsePage from '@/views/personalized/TermsOfUsePage.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import TermsOfUse from '@/components/TermsOfUse.vue'
-import { agreeTermsOfUse } from '@/util/terms-of-use/AgreeTermsOfUse'
-import { AgreeTermsOfUseResp } from '@/util/terms-of-use/AgreeTermsOfUseResp'
+import { agreeTermsOfUse } from '@/util/personalized/terms-of-use/AgreeTermsOfUse'
+import { AgreeTermsOfUseResp } from '@/util/personalized/terms-of-use/AgreeTermsOfUseResp'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
@@ -16,7 +16,7 @@ jest.mock('vue-router', () => ({
   })
 }))
 
-jest.mock('@/util/terms-of-use/AgreeTermsOfUse')
+jest.mock('@/util/personalized/terms-of-use/AgreeTermsOfUse')
 const agreeTermsOfUseMock = agreeTermsOfUse as jest.MockedFunction<typeof agreeTermsOfUse>
 
 describe('TermsOfUsePage.vue', () => {

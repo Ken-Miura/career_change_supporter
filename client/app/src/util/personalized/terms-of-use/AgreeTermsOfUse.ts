@@ -1,4 +1,4 @@
-import { ApiError, ApiErrorResp } from '../ApiError'
+import { ApiError, ApiErrorResp } from '../../ApiError'
 import { AgreeTermsOfUseResp } from './AgreeTermsOfUseResp'
 
 export async function agreeTermsOfUse (): Promise<AgreeTermsOfUseResp | ApiErrorResp> {

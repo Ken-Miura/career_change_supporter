@@ -14,8 +14,8 @@
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
-import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
+import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
+import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 

@@ -1,5 +1,5 @@
-import { Career } from '@/util/profile/Career'
-import { Identity } from '@/util/profile/Identity'
+import { Career } from '@/util/personalized/profile/Career'
+import { Identity } from '@/util/personalized/profile/Identity'
 import { createStore } from 'vuex'
 import { SET_APPLY_NEW_PASSWORD_RESULT_MESSAGE, SET_CAREERS, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from './mutationTypes'
 
