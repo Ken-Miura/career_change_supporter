@@ -1,6 +1,5 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import LoginPage from '@/views/LoginPage.vue'
-import { refresh } from '@/util/refresh/Refresh'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
@@ -12,9 +11,6 @@ import { Code } from '@/util/Error'
 import { nextTick } from 'vue'
 import { checkAgreementStatus } from '@/util/agreement-status/CheckAgreementStatus'
 import { CheckAgreementStatusResp } from '@/util/agreement-status/CheckAgreementStatusResp'
-
-jest.mock('@/util/refresh/Refresh')
-const refreshMock = refresh as jest.MockedFunction<typeof refresh>
 
 jest.mock('@/util/login/Login')
 const loginMock = login as jest.MockedFunction<typeof login>
@@ -35,7 +31,6 @@ const PWD = 'abcdABCD1234'
 describe('LoginPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
-    refreshMock.mockReset()
     loginMock.mockReset()
     checkAgreementStatusMock.mockReset()
   })
@@ -70,7 +65,6 @@ describe('LoginPage.vue', () => {
   })
 
   it('moves to profile when session has already existed and user has already agreed terms of use', async () => {
-    refreshMock.mockResolvedValue(true)
     checkAgreementStatusMock.mockResolvedValue(CheckAgreementStatusResp.create())
 
     mount(LoginPage, {
@@ -87,7 +81,6 @@ describe('LoginPage.vue', () => {
   })
 
   it('moves to terms-of-use when session has already existed and user has not agreed terms of use yet', async () => {
-    refreshMock.mockResolvedValue(true)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
     checkAgreementStatusMock.mockResolvedValue(apiErrResp)
 
@@ -104,27 +97,9 @@ describe('LoginPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
   })
 
-  // かなりのレアケースなのでテストは必要ないと思われる。このテストが開発の進行を阻害する場合、削除を検討する。
-  it('moves to login when sessoin has expired on checking agreement status', async () => {
-    refreshMock.mockResolvedValue(true)
+  it('does not move when session has not existed yet', async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     checkAgreementStatusMock.mockResolvedValue(apiErrResp)
-
-    mount(LoginPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
-  })
-
-  it('does not move when session has not existed yet', async () => {
-    refreshMock.mockResolvedValue(false)
 
     mount(LoginPage, {
       global: {
@@ -140,7 +115,7 @@ describe('LoginPage.vue', () => {
 
   it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happened on opening login page`, async () => {
     const errDetail = 'connection error'
-    refreshMock.mockRejectedValue(new Error(errDetail))
+    checkAgreementStatusMock.mockRejectedValue(new Error(errDetail))
 
     const wrapper = mount(LoginPage, {
       global: {
@@ -161,7 +136,8 @@ describe('LoginPage.vue', () => {
   })
 
   it('moves to profile when login is successful', async () => {
-    refreshMock.mockResolvedValue(false)
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    checkAgreementStatusMock.mockResolvedValue(apiErrResp)
     loginMock.mockResolvedValue(LoginResp.create())
 
     const wrapper = mount(LoginPage, {
@@ -188,7 +164,8 @@ describe('LoginPage.vue', () => {
   })
 
   it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {
-    refreshMock.mockResolvedValue(false)
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    checkAgreementStatusMock.mockResolvedValue(apiErrResp)
     loginMock.mockResolvedValue(ApiErrorResp.create(401, ApiError.create(Code.EMAIL_OR_PWD_INCORRECT)))
 
     const wrapper = mount(LoginPage, {

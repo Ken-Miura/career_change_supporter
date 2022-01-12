@@ -62,8 +62,7 @@ export default defineComponent({
         } else if (agreementStatus instanceof ApiErrorResp) {
           const code = agreementStatus.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
-            return
+            // ログインセッションが存在しないため、そのままログインページを表示する
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
             await router.push('terms-of-use')
             return
