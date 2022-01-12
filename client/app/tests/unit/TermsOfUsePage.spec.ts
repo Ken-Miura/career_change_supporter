@@ -1,5 +1,4 @@
-import { refresh } from '@/util/refresh/Refresh'
-import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import TermsOfUsePage from '@/views/personalized/TermsOfUsePage.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import TermsOfUse from '@/components/TermsOfUse.vue'
@@ -9,9 +8,6 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { nextTick } from 'vue'
-
-jest.mock('@/util/refresh/Refresh')
-const refreshMock = refresh as jest.MockedFunction<typeof refresh>
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -26,7 +22,6 @@ const agreeTermsOfUseMock = agreeTermsOfUse as jest.MockedFunction<typeof agreeT
 describe('TermsOfUsePage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
-    refreshMock.mockReset()
     agreeTermsOfUseMock.mockReset()
   })
 
@@ -57,60 +52,7 @@ describe('TermsOfUsePage.vue', () => {
     expect(classes).toContain('hidden')
   })
 
-  it('has AlertMessage with a hidden attribute and does not move when refresh is success', async () => {
-    refreshMock.mockResolvedValue(true)
-
-    const wrapper = mount(TermsOfUsePage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    const alertMessage = wrapper.findComponent(AlertMessage)
-    const classes = alertMessage.classes()
-    expect(classes).toContain('hidden')
-
-    expect(routerPushMock).toHaveBeenCalledTimes(0)
-  })
-
-  it('moves to login when refresh is failure', async () => {
-    refreshMock.mockResolvedValue(false)
-
-    mount(TermsOfUsePage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
-  })
-
-  it('moves to login when connection error happens', async () => {
-    const errDetail = 'connection error'
-    refreshMock.mockRejectedValue(new Error(errDetail))
-
-    mount(TermsOfUsePage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
-  })
-
   it('moves to profile after user agrees terms of use', async () => {
-    refreshMock.mockResolvedValue(true)
     agreeTermsOfUseMock.mockResolvedValue(AgreeTermsOfUseResp.create())
 
     const wrapper = mount(TermsOfUsePage, {
@@ -128,7 +70,6 @@ describe('TermsOfUsePage.vue', () => {
   })
 
   it('moves to profile when user has already agreed terms of use', async () => {
-    refreshMock.mockResolvedValue(true)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ALREADY_AGREED_TERMS_OF_USE))
     agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
 
@@ -147,7 +88,6 @@ describe('TermsOfUsePage.vue', () => {
   })
 
   it('moves to login when session has already exipired', async () => {
-    refreshMock.mockResolvedValue(true)
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     agreeTermsOfUseMock.mockResolvedValue(apiErrResp)
 
@@ -166,7 +106,6 @@ describe('TermsOfUsePage.vue', () => {
   })
 
   it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happens`, async () => {
-    refreshMock.mockResolvedValue(true)
     const errDetail = 'connection error'
     agreeTermsOfUseMock.mockRejectedValue(new Error(errDetail))
 
