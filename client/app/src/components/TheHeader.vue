@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import { logout } from '@/util/logout/Logout'
+import { logout } from '@/util/personalized/logout/Logout'
 import { defineComponent, ref } from 'vue'
 import { useRouter } from 'vue-router'
 

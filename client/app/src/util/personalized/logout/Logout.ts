@@ -1,4 +1,4 @@
-import { ApiErrorResp, ApiError } from '../ApiError'
+import { ApiErrorResp, ApiError } from '../../ApiError'
 import { LogoutResp } from './LogoutResp'
 
 export async function logout (): Promise<LogoutResp | ApiErrorResp> {

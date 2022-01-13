@@ -1,8 +1,8 @@
 import TheHeader from '@/components/TheHeader.vue'
-import { logout } from '@/util/logout/Logout'
+import { logout } from '@/util/personalized/logout/Logout'
 import { RouterLinkStub, mount } from '@vue/test-utils'
 
-jest.mock('@/util/logout/Logout')
+jest.mock('@/util/personalized/logout/Logout')
 const logoutMock = logout as jest.MockedFunction<typeof logout>
 
 const routerPushMock = jest.fn()
