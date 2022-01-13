@@ -39,8 +39,8 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
 import { login } from '@/util/login/Login'
-import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
+import { refresh } from '@/util/personalized/refresh/Refresh'
+import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 
 export default defineComponent({
   name: 'LoginPage',
@@ -55,19 +55,19 @@ export default defineComponent({
     const errorMessage = ref('')
     onMounted(async () => {
       try {
-        const agreementStatus = await checkAgreementStatus()
-        if (agreementStatus instanceof CheckAgreementStatusResp) {
+        const resp = await refresh()
+        if (resp instanceof RefreshResp) {
           await router.push('profile')
           return
-        } else if (agreementStatus instanceof ApiErrorResp) {
-          const code = agreementStatus.getApiError().getCode()
+        } else if (resp instanceof ApiErrorResp) {
+          const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             // ログインセッションが存在しないため、そのままログインページを表示する
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
             await router.push('terms-of-use')
             return
           } else {
-            throw new Error(`unexpected result: ${agreementStatus}`)
+            throw new Error(`unexpected result: ${resp}`)
           }
         }
       } catch (e) {

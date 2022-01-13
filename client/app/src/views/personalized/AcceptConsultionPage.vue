@@ -14,8 +14,8 @@
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
-import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
+import { refresh } from '@/util/personalized/refresh/Refresh'
+import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 
@@ -29,12 +29,12 @@ export default defineComponent({
     const router = useRouter()
     onMounted(async () => {
       try {
-        const agreementStatus = await checkAgreementStatus()
-        if (agreementStatus instanceof CheckAgreementStatusResp) {
+        const resp = await refresh()
+        if (resp instanceof RefreshResp) {
           // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
           // TODO: 正常系の処理
-        } else if (agreementStatus instanceof ApiErrorResp) {
-          const code = agreementStatus.getApiError().getCode()
+        } else if (resp instanceof ApiErrorResp) {
+          const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('login')
             return

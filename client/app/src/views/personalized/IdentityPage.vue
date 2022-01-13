@@ -34,8 +34,8 @@ import { useIdentity } from '@/views/personalized/useIdentity'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRouter } from 'vue-router'
 import AlertMessage from '@/components/AlertMessage.vue'
-import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
+import { refresh } from '@/util/personalized/refresh/Refresh'
+import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 
@@ -53,8 +53,8 @@ export default defineComponent({
     const { form, setLastName, setFirstName } = useIdentity()
     onMounted(async () => {
       try {
-        const agreementStatus = await checkAgreementStatus()
-        if (agreementStatus instanceof CheckAgreementStatusResp) {
+        const resp = await refresh()
+        if (resp instanceof RefreshResp) {
           // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
           // TODO: 正常系の処理
           // 表示する際の初期値として使いたいだけなので、identityはrefとして宣言しない（リアクティブとしない）
@@ -65,8 +65,8 @@ export default defineComponent({
             form.firstName = identity.first_name
             /* eslint-enable camelcase */
           }
-        } else if (agreementStatus instanceof ApiErrorResp) {
-          const code = agreementStatus.getApiError().getCode()
+        } else if (resp instanceof ApiErrorResp) {
+          const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('login')
             return

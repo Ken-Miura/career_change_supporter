@@ -21,8 +21,8 @@ import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import { useStore } from 'vuex'
 import { Career } from '@/util/personalized/profile/Career'
-import { checkAgreementStatus } from '@/util/personalized/agreement-status/CheckAgreementStatus'
-import { CheckAgreementStatusResp } from '@/util/personalized/agreement-status/CheckAgreementStatusResp'
+import { refresh } from '@/util/personalized/refresh/Refresh'
+import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 
@@ -39,8 +39,8 @@ export default defineComponent({
     const store = useStore()
     onMounted(async () => {
       try {
-        const agreementStatus = await checkAgreementStatus()
-        if (agreementStatus instanceof CheckAgreementStatusResp) {
+        const resp = await refresh()
+        if (resp instanceof RefreshResp) {
           // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
           // TODO: 正常系の処理
           // TODO: 実装メモ
@@ -49,8 +49,8 @@ export default defineComponent({
           const careers = store.state.careers
           const id = route.params.id as string
           career.value = findCareerById(id, careers)
-        } else if (agreementStatus instanceof ApiErrorResp) {
-          const code = agreementStatus.getApiError().getCode()
+        } else if (resp instanceof ApiErrorResp) {
+          const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('login')
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
