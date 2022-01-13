@@ -2,25 +2,25 @@
 
 mod accounts;
 mod agreement;
-mod agreement_status;
 mod err_code;
 mod login;
 mod logout;
 mod new_password;
 mod password_change;
 mod profile;
+mod refresh;
 mod rewards;
 mod temp_accounts;
 mod util;
 
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
-use crate::agreement_status::get_agreement_status;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::new_password::post_new_password;
 use crate::password_change::post_password_change;
 use crate::profile::get_profile;
+use crate::refresh::get_refresh;
 use crate::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
@@ -115,7 +115,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/accounts", post(post_accounts))
                 .route("/login", post(post_login))
                 .route("/logout", post(post_logout))
-                .route("/agreement-status", get(get_agreement_status))
+                .route("/refresh", get(get_refresh))
                 .route("/agreement", post(post_agreement))
                 .route("/new-password", post(post_new_password))
                 .route("/password-change", post(post_password_change))
