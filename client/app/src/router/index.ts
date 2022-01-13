@@ -8,6 +8,7 @@ import EditCareerPage from '../views/personalized/EditCareerPage.vue'
 import FeePerHourInYenPage from '../views/personalized/FeePerHourInYenPage.vue'
 import DeleteAccountConfirmationPage from '../views/personalized/DeleteAccountConfirmationPage.vue'
 import RewardPage from '../views/personalized/RewardPage.vue'
+import BankAccountPage from '../views/personalized/BankAccountPage.vue'
 import SchedulePage from '../views/personalized/SchedulePage.vue'
 import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
@@ -110,6 +111,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/reward',
     name: 'RewardPage',
     component: RewardPage
+  },
+  {
+    path: '/bank-account',
+    name: 'BankAccountPage',
+    component: BankAccountPage
   },
   {
     path: '/schedule',

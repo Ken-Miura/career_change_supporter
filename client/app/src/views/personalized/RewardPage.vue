@@ -22,7 +22,8 @@
             <div class="mt-2 justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
           </div>
           <p v-else class="m-4 text-xl">報酬の入金口座が設定されていません。</p>
-          <button v-on:click="TODO" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
+          <button v-on:click="moveToBankAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
+          <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditBankAccount }]" v-bind:message="canEditBankAccountErrMessage"/>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">今月の報酬の合計</h3>
@@ -82,6 +83,7 @@ import { Transfer } from '@/util/personalized/reward/Transfer'
 import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { GetRewardsResp } from '@/util/personalized/reward/GetRewardsResp'
+import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'RewardPage',
@@ -93,9 +95,12 @@ export default defineComponent({
   setup () {
     const { getRewardsDone, getRewardsFunc } = useGetRewards()
     const bankAccount = ref(null as BankAccount | null)
+    const canEditBankAccount = ref(true)
+    const canEditBankAccountErrMessage = ref('')
     const rewardsOfTheMonth = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
+    const store = useStore()
     const errorExists = ref(false)
     const errorMessage = ref('')
     onMounted(async () => {
@@ -127,7 +132,16 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
-    return { getRewardsDone, bankAccount, rewardsOfTheMonth, latestTwoTransfers, errorExists, errorMessage }
+    const moveToBankAccountPage = async () => {
+      const identity = store.state.identity
+      if (identity === null) {
+        canEditBankAccount.value = false
+        canEditBankAccountErrMessage.value = Message.NO_IDENTITY_FOUND
+        return
+      }
+      await router.push('bank-account')
+    }
+    return { getRewardsDone, bankAccount, canEditBankAccount, canEditBankAccountErrMessage, rewardsOfTheMonth, latestTwoTransfers, errorExists, errorMessage, moveToBankAccountPage }
   }
 })
 </script>
