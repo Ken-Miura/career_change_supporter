@@ -27,4 +27,5 @@ export namespace Message {
     export const NO_ACCOUNT_FOUND_MESSAGE = 'アカウントが存在しません'
     export const NO_NEW_PASSWORD_FOUND_MESSAGE = NO_TEMP_ACCOUNT_FOUND_MESSAGE
     export const REACH_PAYMENT_PLATFORM_RATE_LIMIT_MESSAGE = '多量のリクエストを処理しているため、サーバーに負荷がかかっています。一定時間後に再度お試し下さい。'
+    export const NO_IDENTITY_FOUND = 'ユーザー情報が設定されていません。先にユーザー情報を設定して下さい。'
 }

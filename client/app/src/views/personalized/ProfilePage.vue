@@ -69,6 +69,7 @@
             </ul>
           </div>
           <button v-on:click="moveToAddCareerPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
+          <AlertMessage v-bind:class="['mt-6', { 'hidden': canAddCareer }]" v-bind:message="canAddCareerErrMessage"/>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
@@ -78,6 +79,7 @@
           </div>
           <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
           <button v-on:click="moveToFeePerHourInYenPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
+          <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditFeePerHourInYen }]" v-bind:message="canEditFeePerHourInYenErrMessage"/>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <button v-on:click="moveToDeleteAccountConfirmationPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
@@ -118,7 +120,11 @@ export default defineComponent({
     const emailAddress = ref('')
     const identity = ref(null as Identity | null)
     const careers = ref([] as Career[])
+    const canAddCareer = ref(true)
+    const canAddCareerErrMessage = ref('')
     const feePerHourInYen = ref(0 as number | null)
+    const canEditFeePerHourInYen = ref(true)
+    const canEditFeePerHourInYenErrMessage = ref('')
     const router = useRouter()
     const store = useStore()
     const errorExists = ref(false)
@@ -160,18 +166,30 @@ export default defineComponent({
       await router.push('identity')
     }
     const moveToAddCareerPage = async () => {
+      const identity = store.state.identity
+      if (identity === null) {
+        canAddCareer.value = false
+        canAddCareerErrMessage.value = Message.NO_IDENTITY_FOUND
+        return
+      }
       await router.push('careers')
     }
     const moveToEditCareerPage = async (careerId: number) => {
       await router.push({ name: 'EditCareerPage', params: { id: careerId } })
     }
     const moveToFeePerHourInYenPage = async () => {
+      const identity = store.state.identity
+      if (identity === null) {
+        canEditFeePerHourInYen.value = false
+        canEditFeePerHourInYenErrMessage.value = Message.NO_IDENTITY_FOUND
+        return
+      }
       await router.push('fee-per-hour-in-yen')
     }
     const moveToDeleteAccountConfirmationPage = async () => {
       await router.push('delete-account-confirmation')
     }
-    return { getProfileDone, emailAddress, identity, careers, feePerHourInYen, errorExists, errorMessage, moveToIdentityPage, moveToAddCareerPage, moveToEditCareerPage, moveToFeePerHourInYenPage, moveToDeleteAccountConfirmationPage }
+    return { getProfileDone, emailAddress, identity, careers, canAddCareer, canAddCareerErrMessage, feePerHourInYen, canEditFeePerHourInYen, canEditFeePerHourInYenErrMessage, errorExists, errorMessage, moveToIdentityPage, moveToAddCareerPage, moveToEditCareerPage, moveToFeePerHourInYenPage, moveToDeleteAccountConfirmationPage }
   }
 })
 </script>
