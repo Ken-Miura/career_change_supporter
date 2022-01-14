@@ -1,13 +1,9 @@
-import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RouterLinkStub, mount, flushPromises } from '@vue/test-utils'
 import ProfilePage from '@/views/personalized/ProfilePage.vue'
 import { ref } from '@vue/runtime-dom'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { GetProfileResp } from '@/util/personalized/profile/GetProfileResp'
 import { Identity } from '@/util/personalized/profile/Identity'
-
-jest.mock('@/util/personalized/refresh/Refresh')
-const refreshMock = refresh as jest.MockedFunction<typeof refresh>
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -41,7 +37,6 @@ describe('ProfilePage.vue', () => {
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
     identityMock = null
-    refreshMock.mockReset()
     getProfileDoneMock.value = false
     getProfileFuncMock.mockReset()
   })
