@@ -118,4 +118,21 @@ describe('ProfilePage.vue', () => {
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
   })
+
+  it(`moves to login if ${Code.UNAUTHORIZED} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    getProfileFuncMock.mockResolvedValue(apiErrResp)
+    getProfileDoneMock.value = true
+    mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('login')
+  })
 })
