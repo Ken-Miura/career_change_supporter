@@ -2,8 +2,12 @@ import { RouterLinkStub, mount, flushPromises } from '@vue/test-utils'
 import ProfilePage from '@/views/personalized/ProfilePage.vue'
 import { ref } from '@vue/runtime-dom'
 import WaitingCircle from '@/components/WaitingCircle.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import { GetProfileResp } from '@/util/personalized/profile/GetProfileResp'
 import { Identity } from '@/util/personalized/profile/Identity'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
+import { Message } from '@/util/Message'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -64,6 +68,30 @@ describe('ProfilePage.vue', () => {
 
     const waitingCircles = wrapper.findAllComponents(WaitingCircle)
     expect(waitingCircles.length).toBe(1)
-    // mainが出ていないことも確認？
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it(`displays ${Message.UNEXPECTED_ERR} if unexpected error exists`, async () => {
+    const apiErrResp = ApiErrorResp.create(500, ApiError.create(Code.UNEXPECTED_ERR_USER))
+    getProfileFuncMock.mockResolvedValue(apiErrResp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.UNEXPECTED_ERR} (${Code.UNEXPECTED_ERR_USER})`)
   })
 })
