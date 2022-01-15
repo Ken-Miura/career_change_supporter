@@ -8,6 +8,7 @@ import { Identity } from '@/util/personalized/profile/Identity'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
+import TheHeader from '@/components/TheHeader.vue'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -45,7 +46,7 @@ describe('ProfilePage.vue', () => {
     getProfileFuncMock.mockReset()
   })
 
-  it('has WaitingCircle while api call finishes', async () => {
+  it('has WaitingCircle and TheHeader while api call finishes', async () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
@@ -68,6 +69,8 @@ describe('ProfilePage.vue', () => {
 
     const waitingCircles = wrapper.findAllComponents(WaitingCircle)
     expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
   })
@@ -151,5 +154,59 @@ describe('ProfilePage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+  })
+
+  it('has TheHeader after api call finishes', async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      careers: [],
+      fee_per_hour_in_yen: null
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+  })
+
+  it('displays email address after api call finishes', async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      careers: [],
+      fee_per_hour_in_yen: null
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const emailAddressDiv = wrapper.find('[data-test="email-address"]')
+    expect(emailAddressDiv.exists)
+    const message = emailAddressDiv.text()
+    expect(message).toContain('Eメールアドレス')
+    expect(message).toContain('登録したEメールアドレスです。他のユーザーに公開されることはありません。')
+    expect(message).toContain(`${profile.email_address}`)
   })
 })
