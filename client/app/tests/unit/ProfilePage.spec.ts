@@ -209,4 +209,41 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain('登録したEメールアドレスです。他のユーザーに公開されることはありません。')
     expect(message).toContain(`${profile.email_address}`)
   })
+
+  it('display that if no setting information found', async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      careers: [],
+      fee_per_hour_in_yen: null
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const noIdentitySetDiv = wrapper.find('[data-test="no-identity-set"]')
+    expect(noIdentitySetDiv.exists)
+    const noIdentitySetMessage = noIdentitySetDiv.text()
+    expect(noIdentitySetMessage).toContain('ユーザー情報が設定されていません。')
+
+    const noCareersSetDiv = wrapper.find('[data-test="no-careers-set"]')
+    expect(noCareersSetDiv.exists)
+    const noCareersSetMessage = noCareersSetDiv.text()
+    expect(noCareersSetMessage).toContain('職務経歴は登録されていません。')
+
+    const noFeePerHourInYerSetDiv = wrapper.find('[data-test="no-fee-per-hour-in-yen-set"]')
+    expect(noFeePerHourInYerSetDiv.exists)
+    const noFeePerHourInYerSetMessage = noFeePerHourInYerSetDiv.text()
+    expect(noFeePerHourInYerSetMessage).toContain('相談料が設定されていません。')
+  })
 })

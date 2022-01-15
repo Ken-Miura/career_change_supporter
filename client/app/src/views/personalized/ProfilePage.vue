@@ -31,13 +31,13 @@
             <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="justify-self-start col-span-2">{{ identity.address_line2 }}</div>
             <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ identity.telephone_number }}</div>
           </div>
-          <p v-else class="m-4 text-xl">ユーザー情報が設定されていません。</p>
+          <p v-else data-test="no-identity-set" class="m-4 text-xl">ユーザー情報が設定されていません。</p>
           <button v-on:click="moveToIdentityPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">職務経歴</h3>
           <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
-          <div v-if="careers.length === 0" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
+          <div v-if="careers.length === 0" data-test="no-careers-set" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
           <div v-else>
             <ul>
               <li v-for="(career, index) in careers" v-bind:key="career">
@@ -77,7 +77,7 @@
           <div v-if="feePerHourInYen !== null" class="flex justify-end">
             <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
           </div>
-          <p v-else class="m-4 text-xl">相談料が設定されていません。</p>
+          <p v-else data-test="no-fee-per-hour-in-yen-set" class="m-4 text-xl">相談料が設定されていません。</p>
           <button v-on:click="moveToFeePerHourInYenPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditFeePerHourInYen }]" v-bind:message="canEditFeePerHourInYenErrMessage"/>
         </div>
