@@ -94,4 +94,28 @@ describe('ProfilePage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(`${Message.UNEXPECTED_ERR} (${Code.UNEXPECTED_ERR_USER})`)
   })
+
+  it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happened`, async () => {
+    const errDetail = 'connection error'
+    getProfileFuncMock.mockRejectedValue(new Error(errDetail))
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
+  })
 })
