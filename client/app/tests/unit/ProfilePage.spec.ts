@@ -246,4 +246,60 @@ describe('ProfilePage.vue', () => {
     const noFeePerHourInYerSetMessage = noFeePerHourInYerSetDiv.text()
     expect(noFeePerHourInYerSetMessage).toContain('相談料が設定されていません。')
   })
+
+  it('displays identity information after api call finishes', async () => {
+    const identity = {
+    /* eslint-disable camelcase */
+      last_name: '山田',
+      first_name: '太郎',
+      last_name_furigana: 'ヤマダ',
+      first_name_furigana: 'タロウ',
+      sex: 'male' as 'male' | 'female',
+      date_of_birth: {
+        year: 1990,
+        month: 6,
+        day: 14
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '２−２−２２',
+      address_line2: 'ライオンズマンション４０５',
+      telephone_number: '08012345678'
+    /* eslint-enable camelcase */
+    }
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: identity,
+      careers: [],
+      fee_per_hour_in_yen: null
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const identitySetDiv = wrapper.find('[data-test="identity-set"]')
+    expect(identitySetDiv.exists)
+    const message = identitySetDiv.text()
+    expect(message).toContain('名前')
+    expect(message).toContain('フリガナ')
+    expect(message).toContain('性別')
+    expect(message).toContain('生年月日')
+    expect(message).toContain('住所')
+    expect(message).toContain('都道府県')
+    expect(message).toContain('市区町村')
+    expect(message).toContain('番地')
+    expect(message).toContain('建物名・部屋番号')
+    expect(message).toContain('電話番号')
+    // TODO: 実装
+  })
 })

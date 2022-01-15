@@ -19,7 +19,7 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">ユーザー情報</h3>
           <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。他のユーザーに公開されることはありません。</p>
-          <div v-if="identity !== null" class="m-4 text-2xl grid grid-cols-3">
+          <div v-if="identity !== null" data-test="identity-set" class="m-4 text-2xl grid grid-cols-3">
             <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{ identity.last_name }} {{ identity.first_name }}</div>
             <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div>
             <div class="mt-2 justify-self-start col-span-1">性別</div><div v-if="identity.sex === 'male'" class="justify-self-start col-span-2">男性</div><div v-else class="justify-self-start col-span-2">女性</div>
