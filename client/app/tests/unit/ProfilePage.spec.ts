@@ -311,4 +311,51 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain('電話番号')
     expect(message).toContain(`${identity.telephone_number}`)
   })
+
+  it('displays fee information after api call finishes', async () => {
+    const identity = {
+    /* eslint-disable camelcase */
+      last_name: '山田',
+      first_name: '太郎',
+      last_name_furigana: 'ヤマダ',
+      first_name_furigana: 'タロウ',
+      sex: 'male' as 'male' | 'female',
+      date_of_birth: {
+        year: 1990,
+        month: 6,
+        day: 14
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '２−２−２２',
+      address_line2: 'ライオンズマンション４０５',
+      telephone_number: '08012345678'
+    /* eslint-enable camelcase */
+    }
+    const feePerHourInYen = 3000
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: identity,
+      careers: [],
+      fee_per_hour_in_yen: feePerHourInYen
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const feePerHourInYenDiv = wrapper.find('[data-test="fee-per-hour-in-yen-set"]')
+    expect(feePerHourInYenDiv.exists)
+    const message = feePerHourInYenDiv.text()
+    expect(message).toContain(`${feePerHourInYen}円`)
+  })
 })
