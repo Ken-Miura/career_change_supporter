@@ -189,7 +189,24 @@ export default defineComponent({
     const moveToDeleteAccountConfirmationPage = async () => {
       await router.push('delete-account-confirmation')
     }
-    return { getProfileDone, emailAddress, identity, careers, canAddCareer, canAddCareerErrMessage, feePerHourInYen, canEditFeePerHourInYen, canEditFeePerHourInYenErrMessage, errorExists, errorMessage, moveToIdentityPage, moveToAddCareerPage, moveToEditCareerPage, moveToFeePerHourInYenPage, moveToDeleteAccountConfirmationPage }
+    return {
+      getProfileDone,
+      emailAddress,
+      identity,
+      careers,
+      canAddCareer,
+      canAddCareerErrMessage,
+      feePerHourInYen,
+      canEditFeePerHourInYen,
+      canEditFeePerHourInYenErrMessage,
+      errorExists,
+      errorMessage,
+      moveToIdentityPage,
+      moveToAddCareerPage,
+      moveToEditCareerPage,
+      moveToFeePerHourInYenPage,
+      moveToDeleteAccountConfirmationPage
+    }
   }
 })
 </script>
