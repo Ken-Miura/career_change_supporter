@@ -489,6 +489,9 @@ describe('ProfilePage.vue', () => {
     const message = feePerHourInYenDiv.text()
     expect(message).toContain(`${feePerHourInYen}円`)
   })
+
+  // TODO: ボタン押したときに画面遷移するテスト
+  // TODO: ボタン押したときにユーザー情報がないとエラーメッセージを表示するテスト
 })
 
 function createMaxNumDummyCareers (): Career[] {
