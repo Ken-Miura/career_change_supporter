@@ -5,9 +5,12 @@ import { ref } from 'vue'
 export function useGetRewards () {
   const getRewardsDone = ref(false)
   const getRewardsFunc = async () => {
-    const response = await getRewards()
-    getRewardsDone.value = true
-    return response
+    try {
+      const response = await getRewards()
+      return response
+    } finally {
+      getRewardsDone.value = true
+    }
   }
   return {
     getRewardsDone,

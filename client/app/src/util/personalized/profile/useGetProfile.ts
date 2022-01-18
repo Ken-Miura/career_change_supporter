@@ -7,11 +7,9 @@ export function useGetProfile () {
   const getProfileFunc = async () => {
     try {
       const response = await getProfile()
-      getProfileDone.value = true
       return response
-    } catch (e) {
+    } finally {
       getProfileDone.value = true
-      throw e
     }
   }
   return {
