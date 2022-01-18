@@ -211,7 +211,7 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain(`${profile.email_address}`)
   })
 
-  it('display that if no setting information found', async () => {
+  it(', if no setting information found, displays that', async () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
@@ -412,7 +412,7 @@ describe('ProfilePage.vue', () => {
       telephone_number: '08012345678'
     /* eslint-enable camelcase */
     }
-    const careers = createDummyCareers()
+    const careers = createMaxNumDummyCareers()
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
@@ -491,7 +491,7 @@ describe('ProfilePage.vue', () => {
   })
 })
 
-function createDummyCareers (): Career[] {
+function createMaxNumDummyCareers (): Career[] {
   const MAX_NUM_OF_CAREERS = 8
   const careers = []
   for (let i = 0; i < MAX_NUM_OF_CAREERS; i++) {
