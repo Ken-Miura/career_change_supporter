@@ -38,7 +38,7 @@
           <h3 class="font-bold text-2xl">職務経歴</h3>
           <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
           <div v-if="careers.length === 0" data-test="no-careers-set" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
-          <div v-else>
+          <div v-else data-test="careers-set">
             <ul>
               <li v-for="(career, index) in careers" v-bind:key="career">
                 <div class="mt-4">

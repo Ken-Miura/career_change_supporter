@@ -312,6 +312,79 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain(`${identity.telephone_number}`)
   })
 
+  it('displays 1 career information after api call finishes', async () => {
+    const identity = {
+    /* eslint-disable camelcase */
+      last_name: '山田',
+      first_name: '太郎',
+      last_name_furigana: 'ヤマダ',
+      first_name_furigana: 'タロウ',
+      sex: 'male' as 'male' | 'female',
+      date_of_birth: {
+        year: 1990,
+        month: 6,
+        day: 14
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '２−２−２２',
+      address_line2: 'ライオンズマンション４０５',
+      telephone_number: '08012345678'
+    /* eslint-enable camelcase */
+    }
+    const career = {
+      /* eslint-disable camelcase */
+      id: 203,
+      company_name: 'テスト株式会社',
+      department_name: '営業部',
+      office: '町田オフィス',
+      career_start_date: {
+        year: 2010,
+        month: 4,
+        day: 1
+      },
+      career_end_date: null,
+      contract_type: 'regular' as 'regular' | 'contract' | 'other',
+      profession: '営業',
+      annual_income_in_man_yen: 400,
+      is_manager: false,
+      position_name: null,
+      is_new_graduate: true,
+      note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      /* eslint-enable camelcase */
+    }
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: identity,
+      careers: [career],
+      fee_per_hour_in_yen: null
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const oneCereerDiv = wrapper.find('[data-test="careers-set"]')
+    expect(oneCereerDiv.exists)
+    const message = oneCereerDiv.text()
+    expect(message).toContain('勤務先名称')
+    expect(message).toContain(`${career.company_name}`)
+    expect(message).toContain('雇用形態')
+    // career.contract_type === 'regular' -> 正社員
+    expect(message).toContain('正社員')
+    expect(message).toContain('入社日')
+    expect(message).toContain(`${career.career_start_date.year}年${career.career_start_date.month}月${career.career_start_date.day}日`)
+  })
+
   it('displays fee information after api call finishes', async () => {
     const identity = {
     /* eslint-disable camelcase */
