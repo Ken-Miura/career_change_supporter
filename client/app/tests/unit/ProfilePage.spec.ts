@@ -9,6 +9,7 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
 import TheHeader from '@/components/TheHeader.vue'
+import { Career } from '@/util/personalized/profile/Career'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -343,7 +344,11 @@ describe('ProfilePage.vue', () => {
         month: 4,
         day: 1
       },
-      career_end_date: null,
+      career_end_date: {
+        year: 2016,
+        month: 8,
+        day: 1
+      },
       contract_type: 'regular' as 'regular' | 'contract' | 'other',
       profession: '営業',
       annual_income_in_man_yen: 400,
@@ -383,6 +388,59 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain('正社員')
     expect(message).toContain('入社日')
     expect(message).toContain(`${career.career_start_date.year}年${career.career_start_date.month}月${career.career_start_date.day}日`)
+    expect(message).toContain('退社日')
+    expect(message).toContain(`${career.career_end_date.year}年${career.career_end_date.month}月${career.career_end_date.day}日`)
+  })
+
+  it('displays max num of careers information after api call finishes', async () => {
+    const identity = {
+    /* eslint-disable camelcase */
+      last_name: '山田',
+      first_name: '太郎',
+      last_name_furigana: 'ヤマダ',
+      first_name_furigana: 'タロウ',
+      sex: 'male' as 'male' | 'female',
+      date_of_birth: {
+        year: 1990,
+        month: 6,
+        day: 14
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '２−２−２２',
+      address_line2: 'ライオンズマンション４０５',
+      telephone_number: '08012345678'
+    /* eslint-enable camelcase */
+    }
+    const careers = createDummyCareers()
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: identity,
+      careers,
+      fee_per_hour_in_yen: null
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const oneCereerDiv = wrapper.find('[data-test="careers-set"]')
+    expect(oneCereerDiv.exists)
+    const message = oneCereerDiv.text()
+    // 一つの職務経歴を表示したときにその他の表示を確認しているので、
+    // ここでは最大数分会社名が表示されていることのみ確認する
+    for (const career of careers) {
+      expect(message).toContain(`${career.company_name}`)
+    }
   })
 
   it('displays fee information after api call finishes', async () => {
@@ -432,3 +490,41 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain(`${feePerHourInYen}円`)
   })
 })
+
+function createDummyCareers (): Career[] {
+  const MAX_NUM_OF_CAREERS = 8
+  const careers = []
+  for (let i = 0; i < MAX_NUM_OF_CAREERS; i++) {
+    let careerEndDate = null
+    if (i !== (MAX_NUM_OF_CAREERS - 1)) {
+      careerEndDate = {
+        year: 2010 + (i + 1),
+        month: 3,
+        day: 31
+      }
+    }
+    const career = {
+      /* eslint-disable camelcase */
+      id: i + 1,
+      company_name: `テスト${i}株式会社`,
+      department_name: '営業部',
+      office: '町田オフィス',
+      career_start_date: {
+        year: 2010 + i,
+        month: 4,
+        day: 1
+      },
+      career_end_date: careerEndDate,
+      contract_type: 'regular' as 'regular' | 'contract' | 'other',
+      profession: '営業',
+      annual_income_in_man_yen: 400,
+      is_manager: false,
+      position_name: null,
+      is_new_graduate: (i === 0),
+      note: `テスト${i}株式会社の営業での仕事内容や職場の雰囲気を教えることができます。`
+      /* eslint-enable camelcase */
+    }
+    careers.push(career)
+  }
+  return careers
+}
