@@ -5,9 +5,14 @@ import { ref } from 'vue'
 export function useGetProfile () {
   const getProfileDone = ref(false)
   const getProfileFunc = async () => {
-    const response = await getProfile()
-    getProfileDone.value = true
-    return response
+    try {
+      const response = await getProfile()
+      getProfileDone.value = true
+      return response
+    } catch (e) {
+      getProfileDone.value = true
+      throw e
+    }
   }
   return {
     getProfileDone,
