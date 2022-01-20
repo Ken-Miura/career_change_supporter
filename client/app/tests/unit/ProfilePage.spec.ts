@@ -564,6 +564,79 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('careers')
   })
 
+  it('moves to EditCareerPage when "詳細を確認・編集する" is pushed', async () => {
+    const identity = {
+    /* eslint-disable camelcase */
+      last_name: '山田',
+      first_name: '太郎',
+      last_name_furigana: 'ヤマダ',
+      first_name_furigana: 'タロウ',
+      sex: 'male' as 'male' | 'female',
+      date_of_birth: {
+        year: 1990,
+        month: 6,
+        day: 14
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '２−２−２２',
+      address_line2: 'ライオンズマンション４０５',
+      telephone_number: '08012345678'
+    /* eslint-enable camelcase */
+    }
+    const career = {
+      /* eslint-disable camelcase */
+      id: 203,
+      company_name: 'テスト株式会社',
+      department_name: '営業部',
+      office: '町田オフィス',
+      career_start_date: {
+        year: 2010,
+        month: 4,
+        day: 1
+      },
+      career_end_date: {
+        year: 2016,
+        month: 8,
+        day: 1
+      },
+      contract_type: 'regular' as 'regular' | 'contract' | 'other',
+      profession: '営業',
+      annual_income_in_man_yen: 400,
+      is_manager: false,
+      position_name: null,
+      is_new_graduate: true,
+      note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      /* eslint-enable camelcase */
+    }
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: identity,
+      careers: [career],
+      fee_per_hour_in_yen: null
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises() // 描画が終わっていること（onMountedが完了していること）を保証するために実施
+    const button = wrapper.find(`[data-test="move-to-edit-career-page-${career.id}-button"]`)
+    expect(button.exists)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"name": "EditCareerPage", "params": {"id": ${career.id}}}`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
+
   it('moves to FeePerHourInYenPage when "相談料を編集する" is pushed', async () => {
     const identity = {
       /* eslint-disable camelcase */
@@ -638,7 +711,6 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('delete-account-confirmation')
   })
 
-  // TODO: ボタン押したときに画面遷移するテスト
   // TODO: ボタン押したときにユーザー情報がないとエラーメッセージを表示するテスト
 })
 
