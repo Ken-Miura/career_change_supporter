@@ -611,6 +611,33 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('fee-per-hour-in-yen')
   })
 
+  it('moves to DeleteAccountConfirmationPage when "アカウントを削除する" is pushed', async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      careers: [],
+      fee_per_hour_in_yen: null
+      /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('[data-test="move-to-delete-account-confirmation-page-button"]')
+    expect(button.exists)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('delete-account-confirmation')
+  })
+
   // TODO: ボタン押したときに画面遷移するテスト
   // TODO: ボタン押したときにユーザー情報がないとエラーメッセージを表示するテスト
 })

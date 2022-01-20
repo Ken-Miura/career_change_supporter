@@ -82,7 +82,7 @@
           <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditFeePerHourInYen }]" v-bind:message="canEditFeePerHourInYenErrMessage"/>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button v-on:click="moveToDeleteAccountConfirmationPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
+          <button data-test="move-to-delete-account-confirmation-page-button" v-on:click="moveToDeleteAccountConfirmationPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
         </div>
       </div>
     </main>
