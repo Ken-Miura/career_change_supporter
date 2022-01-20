@@ -517,6 +517,53 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('identity')
   })
 
+  it('moves to AddCareerPage when "職務経歴を追加する" is pushed', async () => {
+    const identity = {
+      /* eslint-disable camelcase */
+      last_name: '山田',
+      first_name: '太郎',
+      last_name_furigana: 'ヤマダ',
+      first_name_furigana: 'タロウ',
+      sex: 'male' as 'male' | 'female',
+      date_of_birth: {
+        year: 1990,
+        month: 6,
+        day: 14
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '２−２−２２',
+      address_line2: 'ライオンズマンション４０５',
+      telephone_number: '08012345678'
+      /* eslint-enable camelcase */
+    }
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: identity,
+      careers: [],
+      fee_per_hour_in_yen: null
+      /* eslint-enable camelcase */
+    }
+    identityMock = identity
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('[data-test="move-to-add-career-page-button"]')
+    expect(button.exists)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('careers')
+  })
+
   // TODO: ボタン押したときに画面遷移するテスト
   // TODO: ボタン押したときにユーザー情報がないとエラーメッセージを表示するテスト
 })
