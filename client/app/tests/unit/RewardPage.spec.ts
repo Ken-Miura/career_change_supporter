@@ -201,10 +201,19 @@ describe('RewardPage.vue', () => {
     expect(noLatestTwoTransfersSetMessage).toContain('入金情報はありません。')
   })
 
-  it(', if no setting information found, displays that', async () => {
+  it('displays bank account if bank account is set', async () => {
+    const bankAccount = {
+      /* eslint-disable camelcase */
+      bank_code: '0001',
+      branch_code: '001',
+      account_type: '普通',
+      account_number: '00010000',
+      account_holder_name: 'ヤマダ タロウ'
+    /* eslint-enable camelcase */
+    }
     const reward = {
       /* eslint-disable camelcase */
-      bank_account: null,
+      bank_account: bankAccount,
       rewards_of_the_month: null,
       latest_two_transfers: []
     /* eslint-enable camelcase */
@@ -221,9 +230,18 @@ describe('RewardPage.vue', () => {
     })
     await flushPromises()
 
-    const noBankAccountSetDiv = wrapper.find('[data-test="no-bank-account-set"]')
-    expect(noBankAccountSetDiv.exists)
-    const noBankAccountSetMessage = noBankAccountSetDiv.text()
-    expect(noBankAccountSetMessage).toContain('報酬の入金口座が設定されていません。')
+    const bankAccountSetDiv = wrapper.find('[data-test="bank-account-set"]')
+    expect(bankAccountSetDiv.exists)
+    const bankAccountSetMessage = bankAccountSetDiv.text()
+    expect(bankAccountSetMessage).toContain('銀行コード')
+    expect(bankAccountSetMessage).toContain(`${bankAccount.bank_code}`)
+    expect(bankAccountSetMessage).toContain('支店コード')
+    expect(bankAccountSetMessage).toContain(`${bankAccount.branch_code}`)
+    expect(bankAccountSetMessage).toContain('預金種別')
+    expect(bankAccountSetMessage).toContain(`${bankAccount.account_type}`)
+    expect(bankAccountSetMessage).toContain('口座番号')
+    expect(bankAccountSetMessage).toContain(`${bankAccount.account_number}`)
+    expect(bankAccountSetMessage).toContain('口座名義')
+    expect(bankAccountSetMessage).toContain(`${bankAccount.account_holder_name}`)
   })
 })
