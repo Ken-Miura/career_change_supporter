@@ -165,31 +165,39 @@ describe('RewardPage.vue', () => {
     expect(headers.length).toBe(1)
   })
 
-  // it('displays email address after api call finishes', async () => {
-  //   const reward = {
-  //     /* eslint-disable camelcase */
-  //     bank_account: null,
-  //     rewards_of_the_month: null,
-  //     latest_two_transfers: [],
-  //   /* eslint-enable camelcase */
-  //   }
-  //   const resp = GetRewardsResp.create(reward)
-  //   getRewardsFuncMock.mockResolvedValue(resp)
-  //   getRewardsDoneMock.value = true
-  //   const wrapper = mount(RewardPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   await flushPromises()
+  it(', if no setting information found, displays that', async () => {
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: null,
+      rewards_of_the_month: null,
+      latest_two_transfers: []
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   const emailAddressDiv = wrapper.find('[data-test="email-address"]')
-  //   expect(emailAddressDiv.exists)
-  //   const message = emailAddressDiv.text()
-  //   expect(message).toContain('Eメールアドレス')
-  //   expect(message).toContain('登録したEメールアドレスです。他のユーザーに公開されることはありません。')
-  //   expect(message).toContain(`${profile.email_address}`)
-  // })
+    const noBankAccountSetDiv = wrapper.find('[data-test="no-bank-account-set"]')
+    expect(noBankAccountSetDiv.exists)
+    const noBankAccountSetMessage = noBankAccountSetDiv.text()
+    expect(noBankAccountSetMessage).toContain('報酬の入金口座が設定されていません。')
+
+    const noRewardsOfTheMonthSetDiv = wrapper.find('[data-test="no-rewards-of-the-month-set"]')
+    expect(noRewardsOfTheMonthSetDiv.exists)
+    const noRewardsOfTheMonthSetMessage = noRewardsOfTheMonthSetDiv.text()
+    expect(noRewardsOfTheMonthSetMessage).toContain('まだ相談を受け付けていません。')
+
+    const noLatestTwoTransfersSetDiv = wrapper.find('[data-test="no-latest-two-transfers-set"]')
+    expect(noLatestTwoTransfersSetDiv.exists)
+    const noLatestTwoTransfersSetMessage = noLatestTwoTransfersSetDiv.text()
+    expect(noLatestTwoTransfersSetMessage).toContain('入金情報はありません。')
+  })
 })

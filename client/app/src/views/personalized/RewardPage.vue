@@ -21,7 +21,7 @@
             <div class="mt-2 justify-self-start col-span-1">口座番号</div><div class="justify-self-start col-span-2">{{ bankAccount.account_number }}</div>
             <div class="mt-2 justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
           </div>
-          <p v-else class="m-4 text-xl">報酬の入金口座が設定されていません。</p>
+          <p v-else data-test="no-bank-account-set" class="m-4 text-xl">報酬の入金口座が設定されていません。</p>
           <button v-on:click="moveToBankAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditBankAccount }]" v-bind:message="canEditBankAccountErrMessage"/>
         </div>
@@ -31,12 +31,12 @@
           <div v-if="rewardsOfTheMonth !== null" class="flex justify-end">
             <p class="m-4 text-2xl">{{ rewardsOfTheMonth }}円</p>
           </div>
-          <p v-else class="m-4 text-xl">まだ相談を受け付けていません。</p>
+          <p v-else data-test="no-rewards-of-the-month-set" class="m-4 text-xl">まだ相談を受け付けていません。</p>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">入金情報</h3>
           <p class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
-          <div v-if="latestTwoTransfers.length === 0" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
+          <div v-if="latestTwoTransfers.length === 0" data-test="no-latest-two-transfers-set" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
           <div v-else>
             <ul>
               <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="transfer">
