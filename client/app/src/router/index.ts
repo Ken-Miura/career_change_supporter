@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
+import InformationPage from '../views/InformationPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ProfilePage from '../views/personalized/ProfilePage.vue'
 import IdentityPage from '../views/personalized/IdentityPage.vue'
@@ -76,6 +77,17 @@ const routes: Array<RouteRecordRaw> = [
     name: 'TermsOfUsePage',
     // 利用規約の同意は頻繁に起こらないと思われるため、lazy loading
     component: () => import('../views/personalized/TermsOfUsePage.vue')
+  },
+  {
+    path: '/information',
+    name: 'InformationPage',
+    component: InformationPage
+  },
+  {
+    path: '/published-terms-of-use',
+    name: 'PublishedTermsOfUsePage',
+    // 利用規約の確認は頻繁に起こらないと思われるため、lazy loading
+    component: () => import('../views/PublishedTermsOfUsePage.vue')
   },
   {
     path: '/profile',
