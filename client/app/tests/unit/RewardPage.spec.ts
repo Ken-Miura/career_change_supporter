@@ -200,4 +200,30 @@ describe('RewardPage.vue', () => {
     const noLatestTwoTransfersSetMessage = noLatestTwoTransfersSetDiv.text()
     expect(noLatestTwoTransfersSetMessage).toContain('入金情報はありません。')
   })
+
+  it(', if no setting information found, displays that', async () => {
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: null,
+      rewards_of_the_month: null,
+      latest_two_transfers: []
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const noBankAccountSetDiv = wrapper.find('[data-test="no-bank-account-set"]')
+    expect(noBankAccountSetDiv.exists)
+    const noBankAccountSetMessage = noBankAccountSetDiv.text()
+    expect(noBankAccountSetMessage).toContain('報酬の入金口座が設定されていません。')
+  })
 })

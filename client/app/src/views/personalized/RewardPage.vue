@@ -23,7 +23,6 @@
           </div>
           <p v-else data-test="no-bank-account-set" class="m-4 text-xl">報酬の入金口座が設定されていません。</p>
           <button v-on:click="moveToBankAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
-          <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditBankAccount }]" v-bind:message="canEditBankAccountErrMessage"/>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">今月の報酬の合計</h3>
@@ -94,8 +93,6 @@ export default defineComponent({
   setup () {
     const { getRewardsDone, getRewardsFunc } = useGetRewards()
     const bankAccount = ref(null as BankAccount | null)
-    const canEditBankAccount = ref(true)
-    const canEditBankAccountErrMessage = ref('')
     const rewardsOfTheMonth = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
@@ -138,8 +135,6 @@ export default defineComponent({
     return {
       getRewardsDone,
       bankAccount,
-      canEditBankAccount,
-      canEditBankAccountErrMessage,
       rewardsOfTheMonth,
       latestTwoTransfers,
       errorExists,
