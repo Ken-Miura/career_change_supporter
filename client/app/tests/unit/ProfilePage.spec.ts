@@ -711,7 +711,69 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('delete-account-confirmation')
   })
 
-  // TODO: ボタン押したときにユーザー情報がないとエラーメッセージを表示するテスト
+  it(`display ${Message.NO_IDENTITY_FOUND} on career area when identity is null and "職務経歴を追加する" is pushed`, async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      careers: [],
+      fee_per_hour_in_yen: null
+      /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('[data-test="move-to-add-career-page-button"]')
+    expect(button.exists)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const career = wrapper.find('[data-test="career"]')
+    const alertMessage = career.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.NO_IDENTITY_FOUND}`)
+  })
+
+  it(`display ${Message.NO_IDENTITY_FOUND} on fee area when identity is null and "相談料を編集する" is pushed`, async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      careers: [],
+      fee_per_hour_in_yen: null
+      /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('[data-test="move-to-fee-per-hour-in-yen-page-button"]')
+    expect(button.exists)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const career = wrapper.find('[data-test="fee-per-hour-in-yen"]')
+    const alertMessage = career.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.NO_IDENTITY_FOUND}`)
+  })
 })
 
 function createMaxNumDummyCareers (): Career[] {
