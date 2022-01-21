@@ -83,7 +83,6 @@ import { Transfer } from '@/util/personalized/reward/Transfer'
 import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { GetRewardsResp } from '@/util/personalized/reward/GetRewardsResp'
-import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'RewardPage',
@@ -100,7 +99,6 @@ export default defineComponent({
     const rewardsOfTheMonth = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
-    const store = useStore()
     const errorExists = ref(false)
     const errorMessage = ref('')
     onMounted(async () => {
@@ -133,12 +131,8 @@ export default defineComponent({
       }
     })
     const moveToBankAccountPage = async () => {
-      const identity = store.state.identity
-      if (identity === null) {
-        canEditBankAccount.value = false
-        canEditBankAccountErrMessage.value = Message.NO_IDENTITY_FOUND
-        return
-      }
+      // F5更新で最初にRewardPageに来た場合、ユーザー情報が設定されていてもidentityがnullとなるので
+      // vuexにidentityがあるかどうかはチェックしない
       await router.push('bank-account')
     }
     return { getRewardsDone, bankAccount, canEditBankAccount, canEditBankAccountErrMessage, rewardsOfTheMonth, latestTwoTransfers, errorExists, errorMessage, moveToBankAccountPage }
