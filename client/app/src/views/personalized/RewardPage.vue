@@ -135,7 +135,17 @@ export default defineComponent({
       // vuexにidentityがあるかどうかはチェックしない
       await router.push('bank-account')
     }
-    return { getRewardsDone, bankAccount, canEditBankAccount, canEditBankAccountErrMessage, rewardsOfTheMonth, latestTwoTransfers, errorExists, errorMessage, moveToBankAccountPage }
+    return {
+      getRewardsDone,
+      bankAccount,
+      canEditBankAccount,
+      canEditBankAccountErrMessage,
+      rewardsOfTheMonth,
+      latestTwoTransfers,
+      errorExists,
+      errorMessage,
+      moveToBankAccountPage
+    }
   }
 })
 </script>
