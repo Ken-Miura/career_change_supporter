@@ -628,7 +628,7 @@ describe('ProfilePage.vue', () => {
       }
     })
     await flushPromises() // 描画が終わっていること（onMountedが完了していること）を保証するために実施
-    const button = wrapper.find(`[data-test="move-to-edit-career-page-${career.id}-button"]`)
+    const button = wrapper.find('[data-test="move-to-edit-career-page-button"]')
     expect(button.exists)
     await button.trigger('click')
 
