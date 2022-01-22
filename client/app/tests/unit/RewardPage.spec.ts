@@ -201,7 +201,7 @@ describe('RewardPage.vue', () => {
     expect(noLatestTwoTransfersSetMessage).toContain('入金情報はありません。')
   })
 
-  it('displays bank account if bank account is set', async () => {
+  it('displays bank account if it is set', async () => {
     const bankAccount = {
       /* eslint-disable camelcase */
       bank_code: '0001',
@@ -243,5 +243,41 @@ describe('RewardPage.vue', () => {
     expect(bankAccountSetMessage).toContain(`${bankAccount.account_number}`)
     expect(bankAccountSetMessage).toContain('口座名義')
     expect(bankAccountSetMessage).toContain(`${bankAccount.account_holder_name}`)
+  })
+
+  it('displays rewards of the month if it is set', async () => {
+    const bankAccount = {
+      /* eslint-disable camelcase */
+      bank_code: '0001',
+      branch_code: '001',
+      account_type: '普通',
+      account_number: '00010000',
+      account_holder_name: 'ヤマダ タロウ'
+    /* eslint-enable camelcase */
+    }
+    const rewardsOfTheMonth = 2100
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: bankAccount,
+      rewards_of_the_month: rewardsOfTheMonth,
+      latest_two_transfers: []
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rewardsOfTheMonthSetDiv = wrapper.find('[data-test="rewards-of-the-month-set"]')
+    expect(rewardsOfTheMonthSetDiv.exists)
+    const rewardsOfTheMonthSetMessage = rewardsOfTheMonthSetDiv.text()
+    expect(rewardsOfTheMonthSetMessage).toContain(`${rewardsOfTheMonth}円`)
   })
 })

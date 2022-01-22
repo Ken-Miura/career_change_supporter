@@ -27,7 +27,7 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">今月の報酬の合計</h3>
           <p class="mt-2 text-lg">今月受け付けし、承諾した相談の報酬の合計です。他のユーザーに公開されることはありません。</p>
-          <div v-if="rewardsOfTheMonth !== null" class="flex justify-end">
+          <div v-if="rewardsOfTheMonth !== null" data-test="rewards-of-the-month-set" class="flex justify-end">
             <p class="m-4 text-2xl">{{ rewardsOfTheMonth }}円</p>
           </div>
           <p v-else data-test="no-rewards-of-the-month-set" class="m-4 text-xl">まだ相談を受け付けていません。</p>
