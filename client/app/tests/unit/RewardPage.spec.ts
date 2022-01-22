@@ -375,4 +375,30 @@ describe('RewardPage.vue', () => {
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円`)
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
   })
+
+  it('moves to bank account page when "報酬の入金口座を編集する" is pushed', async () => {
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: null,
+      rewards_of_the_month: null,
+      latest_two_transfers: []
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const button = wrapper.find('[data-test="move-to-bank-account-page-button"]')
+    expect(button.exists)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('bank-account')
+  })
 })
