@@ -3,6 +3,7 @@
 mod accounts;
 mod agreement;
 mod err_code;
+mod identity;
 mod login;
 mod logout;
 mod new_password;
@@ -15,6 +16,7 @@ mod util;
 
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
+use crate::identity::post_identity;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::new_password::post_new_password;
@@ -120,7 +122,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/new-password", post(post_new_password))
                 .route("/password-change", post(post_password_change))
                 .route("/profile", get(get_profile))
-                .route("/rewards", get(get_reward)),
+                .route("/rewards", get(get_reward))
+                .route("/identity", post(post_identity)),
         )
         .layer(AddExtensionLayer::new(pool))
         .layer(AddExtensionLayer::new(store))
