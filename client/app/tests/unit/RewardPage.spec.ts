@@ -8,11 +8,23 @@ import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
 import TheHeader from '@/components/TheHeader.vue'
 import RewardPage from '@/views/personalized/RewardPage.vue'
+import { BankAccount } from '@/util/personalized/reward/BankAccount'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
   useRouter: () => ({
     push: routerPushMock
+  })
+}))
+
+const bankAccountMock = null as BankAccount | null
+const storeCommitMock = jest.fn()
+jest.mock('vuex', () => ({
+  useStore: () => ({
+    commit: storeCommitMock,
+    state: {
+      bankAccount: bankAccountMock
+    }
   })
 }))
 

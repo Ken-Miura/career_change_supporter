@@ -22,7 +22,7 @@
             <div class="mt-2 justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
           </div>
           <p v-else data-test="no-bank-account-set" class="m-4 text-xl">報酬の入金口座が設定されていません。</p>
-          <button v-on:click="moveToBankAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
+          <button v-on:click="moveToBankAccountPage" data-test="move-to-bank-account-page-button" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">今月の報酬の合計</h3>
@@ -82,6 +82,8 @@ import { Transfer } from '@/util/personalized/reward/Transfer'
 import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { GetRewardsResp } from '@/util/personalized/reward/GetRewardsResp'
+import { useStore } from 'vuex'
+import { SET_BANK_ACCOUNT } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'RewardPage',
@@ -96,6 +98,7 @@ export default defineComponent({
     const rewardsOfTheMonth = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
+    const store = useStore()
     const errorExists = ref(false)
     const errorMessage = ref('')
     onMounted(async () => {
@@ -108,6 +111,7 @@ export default defineComponent({
           rewardsOfTheMonth.value = rewards.rewards_of_the_month
           latestTwoTransfers.value = rewards.latest_two_transfers
           /* eslint-enable camelcase */
+          store.commit(SET_BANK_ACCOUNT, rewards.bank_account)
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
