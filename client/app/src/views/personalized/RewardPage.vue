@@ -36,7 +36,7 @@
           <h3 class="font-bold text-2xl">入金情報</h3>
           <p class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
           <div v-if="latestTwoTransfers.length === 0" data-test="no-latest-two-transfers-set" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
-          <div v-else>
+          <div v-else data-test="latest-two-transfers-set">
             <ul>
               <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="transfer">
                 <div class="mt-4">
