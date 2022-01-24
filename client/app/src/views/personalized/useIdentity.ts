@@ -4,7 +4,18 @@ import { reactive } from 'vue'
 export function useIdentity () {
   const form = reactive({
     lastName: '',
-    firstName: ''
+    firstName: '',
+    lastNameFurigana: '',
+    firstNameFurigana: '',
+    sex: '' as 'male' | 'female' | string,
+    dayOfBirth: '',
+    monthOfBirth: '',
+    yearOfBirth: '',
+    prefecture: '',
+    city: '',
+    addressLine1: '',
+    address_line2: '',
+    telephone_number: ''
   })
   const setLastName = (e: Event) => {
     const target = (e && e.target)
@@ -22,9 +33,27 @@ export function useIdentity () {
     }
     form.firstName = target.value
   }
+  const setLastNameFurigana = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      // HTMLInputElement以外が来るときはinputタグ以外に関数が指定されている。
+      // inputタグ以外にしていすることは想定していないため、Errorとする。
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.lastNameFurigana = target.value
+  }
+  const setFirstNameFurigana = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.firstNameFurigana = target.value
+  }
   return {
     form,
     setLastName,
-    setFirstName
+    setFirstName,
+    setLastNameFurigana,
+    setFirstNameFurigana
   }
 }
