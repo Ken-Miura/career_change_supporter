@@ -1,11 +1,14 @@
 import { createDayList } from '@/util/DayList'
 import { createMonthList } from '@/util/MonthList'
 import { createPrefectureList } from '@/util/personalized/profile/PrefectureList'
+import { createYearOfBirthList, MIN_AGE, START_YEAR } from '@/util/personalized/profile/YearOfBirthList'
 import { reactive } from 'vue'
 
 // eslint-disable-next-line
 export function useIdentity () {
   const initialValueOfPrefecture = createPrefectureList()[0]
+  const currentYear = new Date().getFullYear()
+  const initialValueOfYear = createYearOfBirthList(START_YEAR, currentYear, MIN_AGE)[0]
   const initialValueOfDay = createDayList()[0]
   const initialValueOfMonth = createMonthList()[0]
   const form = reactive({
@@ -14,7 +17,7 @@ export function useIdentity () {
     lastNameFurigana: '',
     firstNameFurigana: '',
     sex: 'male' as 'male' | 'female',
-    yearOfBirth: '',
+    yearOfBirth: initialValueOfYear,
     monthOfBirth: initialValueOfMonth,
     dayOfBirth: initialValueOfDay,
     prefecture: initialValueOfPrefecture,

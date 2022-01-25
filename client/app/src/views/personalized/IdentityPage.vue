@@ -42,9 +42,8 @@
               生年月日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option>1990</option>
-                <option>1989</option>
+              <select v-model="form.yearOfBirth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
@@ -119,6 +118,7 @@ import { Message } from '@/util/Message'
 import { createPrefectureList } from '@/util/personalized/profile/PrefectureList'
 import { createDayList } from '@/util/DayList'
 import { createMonthList } from '@/util/MonthList'
+import { createYearOfBirthList, MIN_AGE, START_YEAR } from '@/util/personalized/profile/YearOfBirthList'
 
 export default defineComponent({
   name: 'IdentityPage',
@@ -142,6 +142,8 @@ export default defineComponent({
       setAddressLine2,
       setTelephoneNumber
     } = useIdentity()
+    const currentYear = new Date().getFullYear()
+    const yearList = ref(createYearOfBirthList(START_YEAR, currentYear, MIN_AGE))
     const monthList = ref(createMonthList())
     const dayList = ref(createDayList())
     const prefectureList = ref(createPrefectureList())
@@ -158,6 +160,7 @@ export default defineComponent({
             form.firstName = identity.first_name
             form.lastNameFurigana = identity.last_name_furigana
             form.firstNameFurigana = identity.first_name_furigana
+            form.yearOfBirth = identity.date_of_birth.year
             form.monthOfBirth = identity.date_of_birth.month
             form.dayOfBirth = identity.date_of_birth.day
             form.prefecture = identity.prefecture
@@ -193,6 +196,7 @@ export default defineComponent({
       console.log(form.lastNameFurigana)
       console.log(form.firstNameFurigana)
       console.log(form.sex)
+      console.log(form.yearOfBirth)
       console.log(form.monthOfBirth)
       console.log(form.dayOfBirth)
       console.log(form.prefecture)
@@ -213,6 +217,7 @@ export default defineComponent({
       setAddressLine1,
       setAddressLine2,
       setTelephoneNumber,
+      yearList,
       monthList,
       dayList,
       prefectureList,
