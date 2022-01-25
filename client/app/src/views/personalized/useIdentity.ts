@@ -14,8 +14,8 @@ export function useIdentity () {
     prefecture: '',
     city: '',
     addressLine1: '',
-    address_line2: '',
-    telephone_number: ''
+    addressLine2: '',
+    telephoneNumber: ''
   })
   const setLastName = (e: Event) => {
     const target = (e && e.target)
@@ -49,11 +49,43 @@ export function useIdentity () {
     }
     form.firstNameFurigana = target.value
   }
+  const setPrefecture = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.prefecture = target.value
+  }
+  const setCity = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.city = target.value
+  }
+  const setAddressLine1 = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.addressLine1 = target.value
+  }
+  const setAddressLine2 = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.addressLine2 = target.value
+  }
   return {
     form,
     setLastName,
     setFirstName,
     setLastNameFurigana,
-    setFirstNameFurigana
+    setFirstNameFurigana,
+    setPrefecture,
+    setCity,
+    setAddressLine1,
+    setAddressLine2
   }
 }
