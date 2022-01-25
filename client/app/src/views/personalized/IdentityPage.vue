@@ -4,7 +4,7 @@
     <main>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">ユーザー情報</h3>
-        <p class="mt-2 text-lg">身分証明のために入力する情報で、相談申し込みを行うために必要となる情報です。下記の項目を入力し、本人確認を依頼すると、審査後に入力した値が反映されます。ユーザー情報が他のユーザーに公開されることはありません。</p>
+        <p class="mt-2 text-lg">本人確認のために利用される情報です（本人確認の完了後、相談申し込みが可能となります）本人確認の依頼後、入力した値がユーザー情報に反映された時点で、本人確認が完了となります。ユーザー情報が他のユーザーに公開されることはありません。</p>
         <form @submit.prevent="submitIdentity">
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
