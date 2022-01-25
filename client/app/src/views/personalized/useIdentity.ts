@@ -77,6 +77,13 @@ export function useIdentity () {
     }
     form.addressLine2 = target.value
   }
+  const setTelephoneNumber = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.telephoneNumber = target.value
+  }
   return {
     form,
     setLastName,
@@ -86,6 +93,7 @@ export function useIdentity () {
     setPrefecture,
     setCity,
     setAddressLine1,
-    setAddressLine2
+    setAddressLine2,
+    setTelephoneNumber
   }
 }

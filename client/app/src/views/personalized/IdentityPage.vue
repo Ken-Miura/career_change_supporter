@@ -110,21 +110,27 @@
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               住所
             </div>
-            <div class="mt-2 w-5/6 justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">都道府県</label>
               <input v-bind:value="form.prefecture" v-on:input="setPrefecture" type="text" required minlength="1" maxlength="4" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 w-5/6 justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">市区町村</label>
               <input v-bind:value="form.city" v-on:input="setCity" type="text" required minlength="1" maxlength="32" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 w-5/6 justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">番地</label>
               <input v-bind:value="form.addressLine1" v-on:input="setAddressLine1" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 w-5/6 justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">建物名・部屋番号</label>
               <input v-bind:value="form.addressLine2" v-on:input="setAddressLine2" type="text" minlength="0" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              電話番号
+            </div>
+            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+              <input v-bind:value="form.telephoneNumber" v-on:input="setTelephoneNumber" type="text" inputmode="tel" pattern="\d*" title="半角数字以外が入力されています。半角数字を用いてご入力下さい。" required minlength="10" maxlength="13" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
           </div>
           <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">本人確認を依頼する</button>
@@ -171,7 +177,8 @@ export default defineComponent({
       setPrefecture,
       setCity,
       setAddressLine1,
-      setAddressLine2
+      setAddressLine2,
+      setTelephoneNumber
     } = useIdentity()
     onMounted(async () => {
       try {
@@ -193,6 +200,7 @@ export default defineComponent({
             if (identity.address_line2 !== null) {
               form.addressLine2 = identity.address_line2
             }
+            form.telephoneNumber = identity.telephone_number
             /* eslint-enable camelcase */
           }
         } else if (resp instanceof ApiErrorResp) {
@@ -222,6 +230,7 @@ export default defineComponent({
       console.log(form.city)
       console.log(form.addressLine1)
       console.log(form.addressLine2)
+      console.log(form.telephoneNumber)
     }
     return {
       isHidden,
@@ -235,6 +244,7 @@ export default defineComponent({
       setCity,
       setAddressLine1,
       setAddressLine2,
+      setTelephoneNumber,
       submitIdentity
     }
   }
