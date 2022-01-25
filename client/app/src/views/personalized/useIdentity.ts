@@ -1,17 +1,19 @@
+import { createPrefectureList } from '@/util/personalized/profile/createPrefectureList'
 import { reactive } from 'vue'
 
 // eslint-disable-next-line
 export function useIdentity () {
+  const initialValue = createPrefectureList()[0]
   const form = reactive({
     lastName: '',
     firstName: '',
     lastNameFurigana: '',
     firstNameFurigana: '',
-    sex: '' as 'male' | 'female' | string,
+    sex: 'male' as 'male' | 'female',
     dayOfBirth: '',
     monthOfBirth: '',
     yearOfBirth: '',
-    prefecture: '',
+    prefecture: initialValue,
     city: '',
     addressLine1: '',
     addressLine2: '',
@@ -49,13 +51,6 @@ export function useIdentity () {
     }
     form.firstNameFurigana = target.value
   }
-  const setPrefecture = (e: Event) => {
-    const target = (e && e.target)
-    if (!(target instanceof HTMLInputElement)) {
-      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
-    }
-    form.prefecture = target.value
-  }
   const setCity = (e: Event) => {
     const target = (e && e.target)
     if (!(target instanceof HTMLInputElement)) {
@@ -90,7 +85,6 @@ export function useIdentity () {
     setFirstName,
     setLastNameFurigana,
     setFirstNameFurigana,
-    setPrefecture,
     setCity,
     setAddressLine1,
     setAddressLine2,

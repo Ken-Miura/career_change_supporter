@@ -110,9 +110,10 @@
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               住所
             </div>
-            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
-              <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">都道府県</label>
-              <input v-bind:value="form.prefecture" v-on:input="setPrefecture" type="text" required minlength="1" maxlength="4" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-6">
+              <select v-model="form.prefecture" class="block w-full px-3 py-6 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="prefecture in prefectureList" v-bind:key="prefecture" v-bind:value="prefecture">{{ prefecture }}</option>
+              </select>
             </div>
             <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">市区町村</label>
@@ -156,6 +157,7 @@ import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
+import { createPrefectureList } from '@/util/personalized/profile/createPrefectureList'
 
 export default defineComponent({
   name: 'IdentityPage',
@@ -174,18 +176,18 @@ export default defineComponent({
       setFirstName,
       setLastNameFurigana,
       setFirstNameFurigana,
-      setPrefecture,
       setCity,
       setAddressLine1,
       setAddressLine2,
       setTelephoneNumber
     } = useIdentity()
+    const prefectureList = ref([] as string[])
+    prefectureList.value = createPrefectureList()
     onMounted(async () => {
       try {
         const resp = await refresh()
         if (resp instanceof RefreshResp) {
           // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
           // 表示する際の初期値として使いたいだけなので、identityはrefとして宣言しない（リアクティブとしない）
           const identity = store.state.identity
           if (identity !== null) {
@@ -240,11 +242,11 @@ export default defineComponent({
       setFirstName,
       setLastNameFurigana,
       setFirstNameFurigana,
-      setPrefecture,
       setCity,
       setAddressLine1,
       setAddressLine2,
       setTelephoneNumber,
+      prefectureList,
       submitIdentity
     }
   }
