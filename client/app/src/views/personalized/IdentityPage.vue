@@ -33,9 +33,9 @@
               性別
             </div>
             <div class="mt-2 w-5/6 text-2xl justify-self-start col-span-6">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option>男性</option>
-                <option>女性</option>
+              <select v-model="form.sex" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option value="male">男性</option>
+                <option value="female">女性</option>
               </select>
             </div>
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
@@ -51,57 +51,16 @@
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>4</option>
-                <option>5</option>
-                <option>6</option>
-                <option>7</option>
-                <option>8</option>
-                <option>9</option>
-                <option>10</option>
-                <option>11</option>
-                <option>12</option>
+              <select v-model="form.monthOfBirth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>4</option>
-                <option>5</option>
-                <option>6</option>
-                <option>7</option>
-                <option>8</option>
-                <option>9</option>
-                <option>10</option>
-                <option>11</option>
-                <option>12</option>
-                <option>13</option>
-                <option>14</option>
-                <option>15</option>
-                <option>16</option>
-                <option>17</option>
-                <option>18</option>
-                <option>19</option>
-                <option>20</option>
-                <option>21</option>
-                <option>22</option>
-                <option>23</option>
-                <option>24</option>
-                <option>25</option>
-                <option>26</option>
-                <option>27</option>
-                <option>28</option>
-                <option>29</option>
-                <option>30</option>
-                <option>31</option>
+              <select v-model="form.dayOfBirth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
@@ -157,7 +116,9 @@ import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
-import { createPrefectureList } from '@/util/personalized/profile/createPrefectureList'
+import { createPrefectureList } from '@/util/personalized/profile/PrefectureList'
+import { createDayList } from '@/util/DayList'
+import { createMonthList } from '@/util/MonthList'
 
 export default defineComponent({
   name: 'IdentityPage',
@@ -181,8 +142,9 @@ export default defineComponent({
       setAddressLine2,
       setTelephoneNumber
     } = useIdentity()
-    const prefectureList = ref([] as string[])
-    prefectureList.value = createPrefectureList()
+    const monthList = ref(createMonthList())
+    const dayList = ref(createDayList())
+    const prefectureList = ref(createPrefectureList())
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -196,6 +158,8 @@ export default defineComponent({
             form.firstName = identity.first_name
             form.lastNameFurigana = identity.last_name_furigana
             form.firstNameFurigana = identity.first_name_furigana
+            form.monthOfBirth = identity.date_of_birth.month
+            form.dayOfBirth = identity.date_of_birth.day
             form.prefecture = identity.prefecture
             form.city = identity.city
             form.addressLine1 = identity.address_line1
@@ -228,6 +192,9 @@ export default defineComponent({
       console.log(form.firstName)
       console.log(form.lastNameFurigana)
       console.log(form.firstNameFurigana)
+      console.log(form.sex)
+      console.log(form.monthOfBirth)
+      console.log(form.dayOfBirth)
       console.log(form.prefecture)
       console.log(form.city)
       console.log(form.addressLine1)
@@ -246,6 +213,8 @@ export default defineComponent({
       setAddressLine1,
       setAddressLine2,
       setTelephoneNumber,
+      monthList,
+      dayList,
       prefectureList,
       submitIdentity
     }

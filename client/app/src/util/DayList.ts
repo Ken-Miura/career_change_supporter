@@ -1,0 +1,37 @@
+export type Day = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '13' | '14' | '15' | '16' | '17' | '18' | '19' | '20' | '21' | '22' | '23' | '24' | '25' | '26' | '27' | '28' | '29' | '30' | '31'
+
+export function createDayList (): Day[] {
+  const list = [] as Day[]
+  list.push('1')
+  list.push('2')
+  list.push('3')
+  list.push('4')
+  list.push('5')
+  list.push('6')
+  list.push('7')
+  list.push('8')
+  list.push('9')
+  list.push('10')
+  list.push('11')
+  list.push('12')
+  list.push('13')
+  list.push('14')
+  list.push('15')
+  list.push('16')
+  list.push('17')
+  list.push('18')
+  list.push('19')
+  list.push('20')
+  list.push('21')
+  list.push('22')
+  list.push('23')
+  list.push('24')
+  list.push('25')
+  list.push('26')
+  list.push('27')
+  list.push('28')
+  list.push('29')
+  list.push('30')
+  list.push('31')
+  return list
+}

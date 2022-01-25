@@ -1,19 +1,23 @@
-import { createPrefectureList } from '@/util/personalized/profile/createPrefectureList'
+import { createDayList } from '@/util/DayList'
+import { createMonthList } from '@/util/MonthList'
+import { createPrefectureList } from '@/util/personalized/profile/PrefectureList'
 import { reactive } from 'vue'
 
 // eslint-disable-next-line
 export function useIdentity () {
-  const initialValue = createPrefectureList()[0]
+  const initialValueOfPrefecture = createPrefectureList()[0]
+  const initialValueOfDay = createDayList()[0]
+  const initialValueOfMonth = createMonthList()[0]
   const form = reactive({
     lastName: '',
     firstName: '',
     lastNameFurigana: '',
     firstNameFurigana: '',
     sex: 'male' as 'male' | 'female',
-    dayOfBirth: '',
-    monthOfBirth: '',
     yearOfBirth: '',
-    prefecture: initialValue,
+    monthOfBirth: initialValueOfMonth,
+    dayOfBirth: initialValueOfDay,
+    prefecture: initialValueOfPrefecture,
     city: '',
     addressLine1: '',
     addressLine2: '',
