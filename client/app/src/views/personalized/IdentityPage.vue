@@ -91,6 +91,24 @@
             <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <input v-bind:value="form.telephoneNumber" v-on:input="setTelephoneNumber" type="text" inputmode="tel" pattern="\d*" title="半角数字以外が入力されています。半角数字を用いてご入力下さい。" required minlength="10" maxlength="13" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              身分証明書
+            </div>
+            <div class="mt-2 text-xl justify-self-start col-span-6 pt-3 pl-3">
+              身分証明書の画像は<span class=" text-red-500">pngまたはjpegで、サイズが7MB以下</span>である必要が有ります。<span class=" text-red-500">運転免許証、マイナンバーカードまたはパスポート</span>を身分証明書としてご利用可能です。運転免許証は表面と裏面、マイナンバーカードは表面（顔写真記載面）のみ、パスポートは顔写真記載面と現住所記載面をアップロードしてください（<span class=" text-red-500">身分証明書は有効期限内</span>のものをアップロードください。また、マイナンバーカードは必ず<span class=" text-red-500">マイナンバーをマスキング</span>した状態でアップロードして下さい）
+            </div>
+            <div class="mt-6 w-full justify-self-start col-span-1">
+              表面
+            </div>
+            <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+              <input type="file" name="file1" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div class="mt-6 w-full justify-self-start col-span-1">
+              裏面
+            </div>
+            <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+              <input type="file" name="file2" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
           </div>
           <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">本人確認を依頼する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
