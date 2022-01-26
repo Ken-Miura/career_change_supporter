@@ -86,7 +86,7 @@
               身分証明書
             </div>
             <div class="mt-2 text-xl justify-self-start col-span-6 pt-3 pl-3">
-              身分証明書の画像は<span class=" text-red-500">pngまたはjpegで、サイズが7MB以下</span>である必要が有ります。<span class=" text-red-500">運転免許証、マイナンバーカードまたはパスポート</span>を身分証明書としてご利用可能です。運転免許証は表面と裏面、マイナンバーカードは表面（顔写真記載面）のみ、パスポートは顔写真記載面と現住所記載面をアップロードしてください（<span class=" text-red-500">身分証明書は有効期限内</span>のものをアップロードください。また、マイナンバーカードは必ず<span class=" text-red-500">マイナンバーをマスキング</span>した状態でアップロードして下さい）
+              身分証明書の画像は<span class=" text-red-500">pngまたはjpegで、サイズが7MB以下</span>である必要が有ります。<span class=" text-red-500">運転免許証、マイナンバーカードまたはパスポート</span>を身分証明書としてご利用可能です。運転免許証は表面と裏面、マイナンバーカードは表面（顔写真記載面）のみ、パスポートは顔写真記載面と現住所記載面をアップロードしてください（いずれも<span class=" text-red-500">有効期限内</span>のものをアップロードください）運転免許証は<span class=" text-red-500">臓器提供に関する意思（裏面下半分）</span>、マイナンバーカードは<span class=" text-red-500">性別、臓器提供意思</span>、パスポートは<span class=" text-red-500">性別、本籍</span>を<span class=" text-red-500">マスキング</span>した状態でアップロードして下さい）
             </div>
             <div class="mt-6 pl-3 w-full justify-self-start col-span-1">
               表面
