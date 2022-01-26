@@ -63,7 +63,6 @@ pub(crate) struct Identity {
     pub first_name: String,
     pub last_name_furigana: String,
     pub first_name_furigana: String,
-    pub sex: String,
     pub date_of_birth: Ymd,
     pub prefecture: String,
     pub city: String,

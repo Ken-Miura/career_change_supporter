@@ -9,11 +9,6 @@ GRANT USAGE ON SCHEMA ccs_schema TO user_app;
 GRANT USAGE ON SCHEMA ccs_schema TO admin_app;
 GRANT USAGE ON SCHEMA ccs_schema TO admin_account_app;
 
-/* 
- * TODO: dieselでenumがサポートされた後に採用する
- * CREATE TYPE ccs_schema.sex_enum AS ENUM ('male', 'female');
- */
-CREATE DOMAIN ccs_schema.sex AS VARCHAR (6) CHECK (VALUE ~ 'male' OR VALUE ~ 'female');
 CREATE DOMAIN ccs_schema.email_address AS VARCHAR (254) CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
 /* simpleフォーム (半角英数字32文字。ハイフン、波括弧を含まない) での入出力を行いたいので、標準のUUID型を使わない */
 CREATE DOMAIN ccs_schema.uuid_simple_form AS CHAR (32) CHECK ( VALUE ~ '^[a-zA-Z0-9]+$' );
@@ -81,7 +76,6 @@ CREATE TABLE ccs_schema.identity_info (
   first_name VARCHAR (128) NOT NULL,
   last_name_furigana VARCHAR (128) NOT NULL,
   first_name_furigana VARCHAR (128) NOT NULL,
-  sex ccs_schema.sex NOT NULL,
   date_of_birth DATE NOT NULL,
   /* 都道府県の最大文字数は4文字（神奈川県、鹿児島県、和歌山県） */
   prefecture VARCHAR (4) NOT NULL,
@@ -99,6 +93,13 @@ CREATE TABLE ccs_schema.identity_info (
 /* アカウント削除はユーザー自身が行う。そのため削除権限はユーザー (user_app) に付与する */
 GRANT SELECT, DELETE ON ccs_schema.identity_info To user_app;
 GRANT SELECT, INSERT, UPDATE ON ccs_schema.identity_info To admin_app;
+/* 
+ * 管理者が本人確認の際に、既に登録済のユーザー情報があるかどうか確認する必要がある。
+ * 既に登録済のユーザー情報かどうかを調べるため、生年月日が一致するユーザー情報を抽出 (*) し、その他の項目が一致するか確認し、ユーザー情報が既に登録済か確認する。
+ * (*) 生年月日がユーザー情報の中で最も一致率が低いと考えられるため、生年月日を利用する
+ *（住所を示す複数カラムにインデックスを張る選択肢もあるが、住所は変更され、インデックス張り直しの可能性があるため避ける）
+ */
+CREATE INDEX identity_info_date_of_birth_idx ON ccs_schema.identity_info (date_of_birth);
 
 CREATE TABLE ccs_schema.career_info (
   career_info_id SERIAL PRIMARY KEY,

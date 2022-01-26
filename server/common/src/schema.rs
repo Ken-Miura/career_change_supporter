@@ -41,7 +41,6 @@ pub mod ccs_schema {
             first_name -> Varchar,
             last_name_furigana -> Varchar,
             first_name_furigana -> Varchar,
-            sex -> Varchar,
             date_of_birth -> Date,
             prefecture -> Varchar,
             city -> Varchar,
