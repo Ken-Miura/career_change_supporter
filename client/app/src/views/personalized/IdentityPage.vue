@@ -92,13 +92,13 @@
               表面
             </div>
             <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
-              <input type="file" name="file1" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input type="file" name="image1" v-on:change="onImage1StateChange" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-6 pl-3 w-full justify-self-start col-span-1">
               裏面
             </div>
             <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
-              <input type="file" name="file2" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input type="file" name="image2" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
           </div>
           <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">本人確認を依頼する</button>
@@ -116,6 +116,7 @@
 import { defineComponent, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import { useIdentity } from '@/views/personalized/useIdentity'
+import { useImages } from '@/views/personalized/useImages'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRouter } from 'vue-router'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -156,6 +157,10 @@ export default defineComponent({
     const monthList = ref(createMonthList())
     const dayList = ref(createDayList())
     const prefectureList = ref(createPrefectureList())
+    const {
+      images,
+      onImage1StateChange
+    } = useImages()
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -212,6 +217,9 @@ export default defineComponent({
       console.log(form.addressLine1)
       console.log(form.addressLine2)
       console.log(form.telephoneNumber)
+      console.log('images.image1')
+      console.log(images.image1?.name)
+      console.log(images.image1?.size)
     }
     return {
       isHidden,
@@ -229,6 +237,7 @@ export default defineComponent({
       monthList,
       dayList,
       prefectureList,
+      onImage1StateChange,
       submitIdentity
     }
   }
