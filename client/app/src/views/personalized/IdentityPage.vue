@@ -30,15 +30,6 @@
               <input v-bind:value="form.firstNameFurigana" v-on:input="setFirstNameFurigana" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
-              性別
-            </div>
-            <div class="mt-2 w-5/6 text-2xl justify-self-start col-span-6">
-              <select v-model="form.sex" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option value="male">男性</option>
-                <option value="female">女性</option>
-              </select>
-            </div>
-            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               生年月日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -213,7 +204,6 @@ export default defineComponent({
       console.log(form.firstName)
       console.log(form.lastNameFurigana)
       console.log(form.firstNameFurigana)
-      console.log(form.sex)
       console.log(form.yearOfBirth)
       console.log(form.monthOfBirth)
       console.log(form.dayOfBirth)

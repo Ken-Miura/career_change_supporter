@@ -16,7 +16,6 @@ export function useIdentity () {
     firstName: '',
     lastNameFurigana: '',
     firstNameFurigana: '',
-    sex: 'male' as 'male' | 'female',
     yearOfBirth: initialValueOfYear,
     monthOfBirth: initialValueOfMonth,
     dayOfBirth: initialValueOfDay,

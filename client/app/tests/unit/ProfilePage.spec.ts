@@ -255,7 +255,6 @@ describe('ProfilePage.vue', () => {
       first_name: '太郎',
       last_name_furigana: 'ヤマダ',
       first_name_furigana: 'タロウ',
-      sex: 'male' as 'male' | 'female',
       date_of_birth: {
         year: 1990,
         month: 6,
@@ -295,9 +294,6 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain(`${identity.last_name} ${identity.first_name}`)
     expect(message).toContain('フリガナ')
     expect(message).toContain(`${identity.last_name_furigana} ${identity.first_name_furigana}`)
-    expect(message).toContain('性別')
-    // identity.sex === 'male' => 男
-    expect(message).toContain('男')
     expect(message).toContain('生年月日')
     expect(message).toContain(`${identity.date_of_birth.year}年${identity.date_of_birth.month}月${identity.date_of_birth.day}日`)
     expect(message).toContain('住所')
@@ -320,7 +316,6 @@ describe('ProfilePage.vue', () => {
       first_name: '太郎',
       last_name_furigana: 'ヤマダ',
       first_name_furigana: 'タロウ',
-      sex: 'male' as 'male' | 'female',
       date_of_birth: {
         year: 1990,
         month: 6,
@@ -399,7 +394,6 @@ describe('ProfilePage.vue', () => {
       first_name: '太郎',
       last_name_furigana: 'ヤマダ',
       first_name_furigana: 'タロウ',
-      sex: 'male' as 'male' | 'female',
       date_of_birth: {
         year: 1990,
         month: 6,
@@ -450,7 +444,6 @@ describe('ProfilePage.vue', () => {
       first_name: '太郎',
       last_name_furigana: 'ヤマダ',
       first_name_furigana: 'タロウ',
-      sex: 'male' as 'male' | 'female',
       date_of_birth: {
         year: 1990,
         month: 6,
@@ -524,7 +517,6 @@ describe('ProfilePage.vue', () => {
       first_name: '太郎',
       last_name_furigana: 'ヤマダ',
       first_name_furigana: 'タロウ',
-      sex: 'male' as 'male' | 'female',
       date_of_birth: {
         year: 1990,
         month: 6,
@@ -571,7 +563,6 @@ describe('ProfilePage.vue', () => {
       first_name: '太郎',
       last_name_furigana: 'ヤマダ',
       first_name_furigana: 'タロウ',
-      sex: 'male' as 'male' | 'female',
       date_of_birth: {
         year: 1990,
         month: 6,
@@ -644,7 +635,6 @@ describe('ProfilePage.vue', () => {
       first_name: '太郎',
       last_name_furigana: 'ヤマダ',
       first_name_furigana: 'タロウ',
-      sex: 'male' as 'male' | 'female',
       date_of_birth: {
         year: 1990,
         month: 6,

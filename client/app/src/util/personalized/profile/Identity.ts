@@ -6,7 +6,6 @@ export type Identity = {
     first_name: string,
     last_name_furigana: string,
     first_name_furigana: string,
-    sex: 'male' | 'female',
     date_of_birth: Ymd,
     prefecture: string,
     city: string,
