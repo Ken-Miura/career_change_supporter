@@ -98,7 +98,7 @@
               裏面
             </div>
             <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
-              <input type="file" name="image2" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input type="file" name="image2" v-on:change="onImage2StateChange" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
           </div>
           <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">本人確認を依頼する</button>
@@ -129,6 +129,7 @@ import { createPrefectureList } from '@/util/personalized/profile/PrefectureList
 import { createDayList } from '@/util/DayList'
 import { createMonthList } from '@/util/MonthList'
 import { createYearOfBirthList, MIN_AGE, START_YEAR } from '@/util/personalized/profile/YearOfBirthList'
+import { Identity } from '@/util/personalized/profile/Identity'
 
 export default defineComponent({
   name: 'IdentityPage',
@@ -159,7 +160,8 @@ export default defineComponent({
     const prefectureList = ref(createPrefectureList())
     const {
       images,
-      onImage1StateChange
+      onImage1StateChange,
+      onImage2StateChange
     } = useImages()
     onMounted(async () => {
       try {
@@ -220,6 +222,38 @@ export default defineComponent({
       console.log('images.image1')
       console.log(images.image1?.name)
       console.log(images.image1?.size)
+      console.log('images.image2')
+      console.log(images.image2?.name)
+      console.log(images.image2?.size)
+      const formData = new FormData()
+      const identity = {
+        last_name: form.lastName,
+        first_name: form.firstName,
+        last_name_furigana: form.lastNameFurigana,
+        first_name_furigana: form.firstNameFurigana,
+        date_of_birth: {
+          year: parseInt(form.yearOfBirth),
+          month: parseInt(form.monthOfBirth),
+          day: parseInt(form.dayOfBirth)
+        },
+        prefecture: form.prefecture,
+        city: form.prefecture,
+        address_line1: form.addressLine1,
+        address_line2: form.addressLine2 !== '' ? form.addressLine2 : null,
+        telephone_number: form.telephoneNumber
+      } as Identity
+      formData.append('identity', JSON.stringify(identity))
+      if (images.image1 !== null) {
+        formData.append('identity-image1', images.image1)
+      }
+      if (images.image2 !== null) {
+        formData.append('identity-image2', images.image2)
+      }
+      const response = await fetch('/api/identity', {
+        method: 'POST',
+        body: formData
+      })
+      console.log(response)
     }
     return {
       isHidden,
@@ -238,6 +272,7 @@ export default defineComponent({
       dayList,
       prefectureList,
       onImage1StateChange,
+      onImage2StateChange,
       submitIdentity
     }
   }
