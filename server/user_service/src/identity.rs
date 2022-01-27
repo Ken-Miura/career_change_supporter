@@ -38,6 +38,15 @@ pub(crate) async fn post_identity(
             println!("identity:  `{:?}`", identity);
         } else if name == "identity-image1" {
             println!("identity-image1");
+            // pngのマジックナンバー => バイト配列先頭から 89 50 4E 47 0D 0A 1A 0A
+            let magic_number_option = data.get(0..8);
+            if let Some(magic_number) = magic_number_option {
+                println!("magic_number: ");
+                for n in magic_number {
+                    print!("{:02X} ", n);
+                }
+                println!();
+            }
         } else if name == "identity-image2" {
             println!("identity-image2");
         } else {
