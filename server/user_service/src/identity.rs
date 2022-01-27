@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+use async_session::serde_json;
 use axum::{
     extract::{ContentLengthLimit, Multipart},
     http::StatusCode,
@@ -8,7 +9,7 @@ use axum::{
 use common::RespResult;
 use serde::Serialize;
 
-use crate::util::session::User;
+use crate::util::{session::User, Identity};
 
 pub(crate) async fn post_identity(
     User { account_id }: User,
@@ -28,6 +29,14 @@ pub(crate) async fn post_identity(
         }
         let data = field.bytes().await.unwrap();
         println!("Length of `{}` is {} bytes", name, data.len());
+        if name == "identity" {
+            let identity_str = std::str::from_utf8(&data)
+                .unwrap()
+                .parse::<String>()
+                .unwrap();
+            let identity = serde_json::from_str::<Identity>(&identity_str).unwrap();
+            println!("identity:  `{:?}`", identity);
+        }
     }
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
