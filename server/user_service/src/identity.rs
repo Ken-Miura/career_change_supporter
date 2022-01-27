@@ -36,6 +36,12 @@ pub(crate) async fn post_identity(
                 .unwrap();
             let identity = serde_json::from_str::<Identity>(&identity_str).unwrap();
             println!("identity:  `{:?}`", identity);
+        } else if name == "identity-image1" {
+            println!("identity-image1");
+        } else if name == "identity-image2" {
+            println!("identity-image2");
+        } else {
+            println!("else");
         }
     }
     Ok((StatusCode::OK, Json(IdentityResult {})))
