@@ -237,7 +237,7 @@ export default defineComponent({
           day: parseInt(form.dayOfBirth)
         },
         prefecture: form.prefecture,
-        city: form.prefecture,
+        city: form.city,
         address_line1: form.addressLine1,
         address_line2: form.addressLine2 !== '' ? form.addressLine2 : null,
         telephone_number: form.telephoneNumber
