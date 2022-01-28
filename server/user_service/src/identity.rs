@@ -1,5 +1,7 @@
 // Copyright 2021 Ken Miura
 
+use std::io::Cursor;
+
 use async_session::serde_json;
 use axum::{
     extract::{ContentLengthLimit, Multipart},
@@ -7,6 +9,7 @@ use axum::{
     Json,
 };
 use common::RespResult;
+use image::ImageFormat;
 use serde::Serialize;
 
 use crate::util::{session::User, Identity};
@@ -38,8 +41,13 @@ pub(crate) async fn post_identity(
             println!("identity:  `{:?}`", identity);
         } else if name == "identity-image1" {
             println!("identity-image1");
-            // pngのマジックナンバー => バイト配列先頭から 89 50 4E 47 0D 0A 1A 0A
-            let magic_number_option = data.get(0..8);
+            let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
+                .decode()
+                .expect("failed to decode");
+            let mut bytes: Vec<u8> = Vec::new();
+            img.write_to(&mut bytes, image::ImageOutputFormat::Png)
+                .expect("failed to write_to");
+            let magic_number_option = bytes.get(0..8);
             if let Some(magic_number) = magic_number_option {
                 println!("magic_number: ");
                 for n in magic_number {
@@ -47,6 +55,7 @@ pub(crate) async fn post_identity(
                 }
                 println!();
             }
+            //img.save("test.png").expect("failed to save");
         } else if name == "identity-image2" {
             println!("identity-image2");
         } else {
