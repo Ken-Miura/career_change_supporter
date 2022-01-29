@@ -2,6 +2,7 @@
 
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
+pub(crate) mod validator;
 
 use std::env::var;
 

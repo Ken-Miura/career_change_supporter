@@ -19,7 +19,7 @@ pub(crate) async fn post_identity(
     ContentLengthLimit(mut multipart): ContentLengthLimit<
         Multipart,
         {
-            250 * 1024 * 1024 /* 250mb */
+            9 * 1024 * 1024 /* 9mb */
         },
     >,
 ) -> RespResult<IdentityResult> {
@@ -38,6 +38,7 @@ pub(crate) async fn post_identity(
                 .parse::<String>()
                 .unwrap();
             let identity = serde_json::from_str::<Identity>(&identity_str).unwrap();
+            // validate, trim, sanitize
             println!("identity:  `{:?}`", identity);
         } else if name == "identity-image1" {
             println!("identity-image1");
