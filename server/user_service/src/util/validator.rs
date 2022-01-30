@@ -126,7 +126,7 @@ pub(crate) fn validate_identity(
 }
 
 fn validate_last_name(last_name: &str) -> Result<(), IdentityValidationError> {
-    let last_name_length = last_name.len();
+    let last_name_length = last_name.chars().count();
     if !(LAST_NAME_MIN_LENGTH..=LAST_NAME_MAX_LENGTH).contains(&last_name_length) {
         return Err(IdentityValidationError::InvalidLastNameLength {
             length: last_name_length,
@@ -148,7 +148,7 @@ fn validate_last_name(last_name: &str) -> Result<(), IdentityValidationError> {
 }
 
 fn validate_first_name(first_name: &str) -> Result<(), IdentityValidationError> {
-    let first_name_length = first_name.len();
+    let first_name_length = first_name.chars().count();
     if !(FIRST_NAME_MIN_LENGTH..=FIRST_NAME_MAX_LENGTH).contains(&first_name_length) {
         return Err(IdentityValidationError::InvalidFirstNameLength {
             length: first_name_length,
@@ -170,7 +170,7 @@ fn validate_first_name(first_name: &str) -> Result<(), IdentityValidationError> 
 }
 
 fn validate_last_name_furigana(last_name_furigana: &str) -> Result<(), IdentityValidationError> {
-    let last_name_furigana_length = last_name_furigana.len();
+    let last_name_furigana_length = last_name_furigana.chars().count();
     if !(LAST_NAME_FURIGANA_MIN_LENGTH..=LAST_NAME_FURIGANA_MAX_LENGTH)
         .contains(&last_name_furigana_length)
     {
@@ -189,7 +189,7 @@ fn validate_last_name_furigana(last_name_furigana: &str) -> Result<(), IdentityV
 }
 
 fn validate_first_name_furigana(first_name_furigana: &str) -> Result<(), IdentityValidationError> {
-    let first_name_furigana_length = first_name_furigana.len();
+    let first_name_furigana_length = first_name_furigana.chars().count();
     if !(FIRST_NAME_FURIGANA_MIN_LENGTH..=FIRST_NAME_FURIGANA_MAX_LENGTH)
         .contains(&first_name_furigana_length)
     {
@@ -298,7 +298,7 @@ fn validate_prefecture(prefecture: &str) -> Result<(), IdentityValidationError> 
 }
 
 fn validate_city(city: &str) -> Result<(), IdentityValidationError> {
-    let city_length = city.len();
+    let city_length = city.chars().count();
     if !(CITY_MIN_LENGTH..=CITY_MAX_LENGTH).contains(&city_length) {
         return Err(IdentityValidationError::InvalidCityLength {
             length: city_length,
@@ -316,7 +316,7 @@ fn validate_city(city: &str) -> Result<(), IdentityValidationError> {
 }
 
 fn validate_address_line1(address_line1: &str) -> Result<(), IdentityValidationError> {
-    let address_line1_length = address_line1.len();
+    let address_line1_length = address_line1.chars().count();
     if !(ADDRESS_LINE1_MIN_LENGTH..=ADDRESS_LINE1_MAX_LENGTH).contains(&address_line1_length) {
         return Err(IdentityValidationError::InvalidAddressLine1Length {
             length: address_line1_length,
@@ -338,7 +338,7 @@ fn validate_address_line1(address_line1: &str) -> Result<(), IdentityValidationE
 }
 
 fn validate_address_line2(address_line2: &str) -> Result<(), IdentityValidationError> {
-    let address_line2_length = address_line2.len();
+    let address_line2_length = address_line2.chars().count();
     if !(ADDRESS_LINE2_MIN_LENGTH..=ADDRESS_LINE2_MAX_LENGTH).contains(&address_line2_length) {
         return Err(IdentityValidationError::InvalidAddressLine2Length {
             length: address_line2_length,
