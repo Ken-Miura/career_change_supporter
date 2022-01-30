@@ -4,6 +4,7 @@ use std::{collections::HashSet, error::Error, fmt::Display};
 
 use chrono::{Datelike, NaiveDate};
 use once_cell::sync::Lazy;
+use regex::Regex;
 
 use super::{Identity, Ymd};
 
@@ -75,6 +76,11 @@ static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     set
 });
 
+/// 国内の電話番号を示す正規表現
+const TEL_NUM_REGEXP: &str = "^[0-9]{10,13}$";
+static TEL_NUM_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(TEL_NUM_REGEXP).expect("failed to compile telephone number regexp"));
+
 pub(crate) fn validate_identity(
     identity: &Identity,
     current_date: &NaiveDate,
@@ -90,6 +96,7 @@ pub(crate) fn validate_identity(
     if let Some(address_line2) = identity.address_line2.clone() {
         let _ = validate_address_line2(&address_line2)?;
     }
+    let _ = validate_telephone_number(&identity.telephone_number)?;
     Ok(())
 }
 
@@ -304,6 +311,15 @@ fn validate_address_line2(address_line2: &str) -> Result<(), IdentityValidationE
     Ok(())
 }
 
+fn validate_telephone_number(telephone_number: &str) -> Result<(), IdentityValidationError> {
+    if !TEL_NUM_RE.is_match(telephone_number) {
+        return Err(IdentityValidationError::InvalidTelNumFormat(
+            telephone_number.to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_identity()]
 #[derive(Debug)]
 pub(crate) enum IdentityValidationError {
@@ -363,6 +379,7 @@ pub(crate) enum IdentityValidationError {
         max_length: usize,
     },
     IllegalCharInAddressLine2(String),
+    InvalidTelNumFormat(String),
 }
 
 impl Display for IdentityValidationError {
