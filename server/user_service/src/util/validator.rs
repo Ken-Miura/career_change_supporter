@@ -78,7 +78,7 @@ static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
 
 // 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d
 // \p{katakana}は、半角カタカナも含むので使わない
-const ZENKAKU_KATAKANA_REGEXP: &str = r"[ァ-ヴー]+";
+const ZENKAKU_KATAKANA_REGEXP: &str = r"^[ァ-ヴー]+$";
 static ZENKAKU_KATAKANA_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(ZENKAKU_KATAKANA_REGEXP).expect("failed to compile zenkaku katakana regexp")
 });
