@@ -76,6 +76,7 @@ static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     set
 });
 
+/// 全角カタカナのみのケース
 // 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d
 // \p{katakana}は、半角カタカナも含むので使わない
 const ZENKAKU_KATAKANA_REGEXP: &str = r"^[ァ-ヴー]+$";
@@ -83,12 +84,27 @@ static ZENKAKU_KATAKANA_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(ZENKAKU_KATAKANA_REGEXP).expect("failed to compile zenkaku katakana regexp")
 });
 
-/// 国内の電話番号を示す正規表現
+/// 国内の電話番号を示す正規表現 (10桁から13桁の数字のみにケース)
 const TEL_NUM_REGEXP: &str = "^[0-9]{10,13}$";
 static TEL_NUM_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(TEL_NUM_REGEXP).expect("failed to compile telephone number regexp"));
 
-const SYMBOL_NUM_CHAR_REGEXP: &str = r"^[!-@]";
+/// 記号 (ASCIIの0x21(!)から0x2f(/)、0x3a(:)から0x40(@)、0x5b([)から0x60(`)、0x7b({)から0x7e(~)) を一つ以上含むケース
+const SYMBOL_CHAR_REGEXP: &str = r"[!-\/:-@\[-`\{-~]+";
+static SYMBOL_CHAR_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(SYMBOL_CHAR_REGEXP).expect("failed to compile symbol char regexp"));
+
+/// 数字を一つ以上含むケース
+const NUM_CHAR_REGEXP: &str = r"[0-9]+";
+static NUM_CHAR_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(NUM_CHAR_REGEXP).expect("failed to compile num char regexp"));
+
+/// 0x2d(-)以外の記号を一つ以上含むケース
+const SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP: &str = r"[!-,\.\/:-@\[-`\{-~]+";
+static SYMBOL_CHAR_WITHOUT_HYPHEN_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP)
+        .expect("failed to compile symbol char without hyphen regexp")
+});
 
 pub(crate) fn validate_identity(
     identity: &Identity,
@@ -123,6 +139,11 @@ fn validate_last_name(last_name: &str) -> Result<(), IdentityValidationError> {
             last_name.to_string(),
         ));
     }
+    if SYMBOL_CHAR_RE.is_match(last_name) || NUM_CHAR_RE.is_match(last_name) {
+        return Err(IdentityValidationError::IllegalCharInLastName(
+            last_name.to_string(),
+        ));
+    }
     Ok(())
 }
 
@@ -136,6 +157,11 @@ fn validate_first_name(first_name: &str) -> Result<(), IdentityValidationError> 
         });
     }
     if has_control_char(first_name) {
+        return Err(IdentityValidationError::IllegalCharInFirstName(
+            first_name.to_string(),
+        ));
+    }
+    if SYMBOL_CHAR_RE.is_match(first_name) || NUM_CHAR_RE.is_match(first_name) {
         return Err(IdentityValidationError::IllegalCharInFirstName(
             first_name.to_string(),
         ));
@@ -283,6 +309,9 @@ fn validate_city(city: &str) -> Result<(), IdentityValidationError> {
     if has_control_char(city) {
         return Err(IdentityValidationError::IllegalCharInCity(city.to_string()));
     }
+    if SYMBOL_CHAR_RE.is_match(city) || NUM_CHAR_RE.is_match(city) {
+        return Err(IdentityValidationError::IllegalCharInCity(city.to_string()));
+    }
     Ok(())
 }
 
@@ -300,6 +329,11 @@ fn validate_address_line1(address_line1: &str) -> Result<(), IdentityValidationE
             address_line1.to_string(),
         ));
     }
+    if SYMBOL_CHAR_WITHOUT_HYPHEN_RE.is_match(address_line1) {
+        return Err(IdentityValidationError::IllegalCharInAddressLine1(
+            address_line1.to_string(),
+        ));
+    }
     Ok(())
 }
 
@@ -313,6 +347,11 @@ fn validate_address_line2(address_line2: &str) -> Result<(), IdentityValidationE
         });
     }
     if has_control_char(address_line2) {
+        return Err(IdentityValidationError::IllegalCharInAddressLine2(
+            address_line2.to_string(),
+        ));
+    }
+    if SYMBOL_CHAR_WITHOUT_HYPHEN_RE.is_match(address_line2) {
         return Err(IdentityValidationError::IllegalCharInAddressLine2(
             address_line2.to_string(),
         ));
