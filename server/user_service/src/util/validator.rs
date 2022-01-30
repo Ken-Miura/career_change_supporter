@@ -549,3 +549,6 @@ impl Display for IdentityValidationError {
 }
 
 impl Error for IdentityValidationError {}
+
+#[cfg(test)]
+mod tests {}
