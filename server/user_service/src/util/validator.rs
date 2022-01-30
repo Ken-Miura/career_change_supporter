@@ -76,10 +76,19 @@ static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     set
 });
 
+// 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d
+// \p{katakana}は、半角カタカナも含むので使わない
+const ZENKAKU_KATAKANA_REGEXP: &str = r"[ァ-ヴー]+";
+static ZENKAKU_KATAKANA_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(ZENKAKU_KATAKANA_REGEXP).expect("failed to compile zenkaku katakana regexp")
+});
+
 /// 国内の電話番号を示す正規表現
 const TEL_NUM_REGEXP: &str = "^[0-9]{10,13}$";
 static TEL_NUM_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(TEL_NUM_REGEXP).expect("failed to compile telephone number regexp"));
+
+const SYMBOL_NUM_CHAR_REGEXP: &str = r"^[!-@]";
 
 pub(crate) fn validate_identity(
     identity: &Identity,
@@ -145,7 +154,7 @@ fn validate_last_name_furigana(last_name_furigana: &str) -> Result<(), IdentityV
             max_length: LAST_NAME_FURIGANA_MAX_LENGTH,
         });
     }
-    if has_control_char(last_name_furigana) {
+    if !ZENKAKU_KATAKANA_RE.is_match(last_name_furigana) {
         return Err(IdentityValidationError::IllegalCharInLastNameFurigana(
             last_name_furigana.to_string(),
         ));
@@ -164,8 +173,8 @@ fn validate_first_name_furigana(first_name_furigana: &str) -> Result<(), Identit
             max_length: LAST_NAME_MAX_LENGTH,
         });
     }
-    if has_control_char(first_name_furigana) {
-        return Err(IdentityValidationError::IllegalCharInFirstNameFurigana(
+    if !ZENKAKU_KATAKANA_RE.is_match(first_name_furigana) {
+        return Err(IdentityValidationError::IllegalCharInLastNameFurigana(
             first_name_furigana.to_string(),
         ));
     }
