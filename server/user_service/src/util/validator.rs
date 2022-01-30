@@ -200,7 +200,7 @@ fn validate_first_name_furigana(first_name_furigana: &str) -> Result<(), Identit
         });
     }
     if !ZENKAKU_KATAKANA_RE.is_match(first_name_furigana) {
-        return Err(IdentityValidationError::IllegalCharInLastNameFurigana(
+        return Err(IdentityValidationError::IllegalCharInFirstNameFurigana(
             first_name_furigana.to_string(),
         ));
     }
@@ -432,17 +432,119 @@ pub(crate) enum IdentityValidationError {
 
 impl Display for IdentityValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
-        // match self {
-        //     IdentityValidationError::InvalidLastNameLength {
-        //         length,
-        //         min_length,
-        //         max_length,
-        //     } => todo!(),
-        //     IdentityValidationError::IllegalCharInLastName(last_name) => {
-        //         write!(f, "illegal charcter included: {:X?}", last_name.as_bytes().to_vec())
-        //     }
-        // }
+        match self {
+            IdentityValidationError::InvalidLastNameLength {
+                length,
+                min_length,
+                max_length,
+            } => todo!(),
+            IdentityValidationError::IllegalCharInLastName(last_name) => {
+                write!(
+                    f,
+                    "last_name: illegal charcter included: {} (binary: {:X?})",
+                    last_name,
+                    last_name.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::InvalidFirstNameLength {
+                length,
+                min_length,
+                max_length,
+            } => todo!(),
+            IdentityValidationError::IllegalCharInFirstName(first_name) => {
+                write!(
+                    f,
+                    "first_name: illegal charcter included: {} (binary: {:X?})",
+                    first_name,
+                    first_name.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::InvalidLastNameFuriganaLength {
+                length,
+                min_length,
+                max_length,
+            } => todo!(),
+            IdentityValidationError::IllegalCharInLastNameFurigana(last_name_furigana) => {
+                write!(
+                    f,
+                    "last_name_furigana: illegal charcter included: {} (binary: {:X?})",
+                    last_name_furigana,
+                    last_name_furigana.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::InvalidFirstNameFuriganaLength {
+                length,
+                min_length,
+                max_length,
+            } => todo!(),
+            IdentityValidationError::IllegalCharInFirstNameFurigana(first_name_furigana) => {
+                write!(
+                    f,
+                    "first_name_furigana: illegal charcter included: {} (binary: {:X?})",
+                    first_name_furigana,
+                    first_name_furigana.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::IllegalDate { year, month, day } => todo!(),
+            IdentityValidationError::IllegalAge {
+                birth_year,
+                birth_month,
+                birth_day,
+                current_year,
+                current_month,
+                current_day,
+            } => todo!(),
+            IdentityValidationError::InvalidPrefecture(prefecture) => {
+                write!(
+                    f,
+                    "invalid prefecture: {} (binary: {:X?})",
+                    prefecture,
+                    prefecture.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::InvalidCityLength {
+                length,
+                min_length,
+                max_length,
+            } => todo!(),
+            IdentityValidationError::IllegalCharInCity(city) => {
+                write!(
+                    f,
+                    "city: illegal charcter included: {} (binary: {:X?})",
+                    city,
+                    city.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::InvalidAddressLine1Length {
+                length,
+                min_length,
+                max_length,
+            } => todo!(),
+            IdentityValidationError::IllegalCharInAddressLine1(address_line1) => {
+                write!(
+                    f,
+                    "address_line1: illegal charcter included: {} (binary: {:X?})",
+                    address_line1,
+                    address_line1.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::InvalidAddressLine2Length {
+                length,
+                min_length,
+                max_length,
+            } => todo!(),
+            IdentityValidationError::IllegalCharInAddressLine2(address_line2) => {
+                write!(
+                    f,
+                    "address_line2: illegal charcter included: {} (binary: {:X?})",
+                    address_line2,
+                    address_line2.as_bytes().to_vec()
+                )
+            }
+            IdentityValidationError::InvalidTelNumFormat(tel_num) => {
+                write!(f, "invalid tel_num format: {}", tel_num)
+            }
+        }
     }
 }
 
