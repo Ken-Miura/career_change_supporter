@@ -1,8 +1,9 @@
 // Copyright 2021 Ken Miura
 
-use std::{error::Error, fmt::Display};
+use std::{collections::HashSet, error::Error, fmt::Display};
 
 use chrono::{Datelike, NaiveDate};
+use once_cell::sync::Lazy;
 
 use super::{Identity, Ymd};
 
@@ -15,6 +16,64 @@ const LAST_NAME_FURIGANA_MAX_LENGTH: usize = 128;
 const FIRST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
 const FIRST_NAME_FURIGANA_MAX_LENGTH: usize = 128;
 const MIN_AGE_REQUIREMENT: i32 = 18;
+const CITY_MIN_LENGTH: usize = 1;
+const CITY_MAX_LENGTH: usize = 32;
+const ADDRESS_LINE1_MIN_LENGTH: usize = 1;
+const ADDRESS_LINE1_MAX_LENGTH: usize = 128;
+const ADDRESS_LINE2_MIN_LENGTH: usize = 1;
+const ADDRESS_LINE2_MAX_LENGTH: usize = 128;
+
+static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
+    let mut set: HashSet<String> = HashSet::with_capacity(47);
+    set.insert("北海道".to_string());
+    set.insert("青森県".to_string());
+    set.insert("秋田県".to_string());
+    set.insert("岩手県".to_string());
+    set.insert("山形県".to_string());
+    set.insert("宮城県".to_string());
+    set.insert("新潟県".to_string());
+    set.insert("福島県".to_string());
+    set.insert("群馬県".to_string());
+    set.insert("栃木県".to_string());
+    set.insert("茨城県".to_string());
+    set.insert("埼玉県".to_string());
+    set.insert("東京都".to_string());
+    set.insert("千葉県".to_string());
+    set.insert("神奈川県".to_string());
+    set.insert("石川県".to_string());
+    set.insert("富山県".to_string());
+    set.insert("福井県".to_string());
+    set.insert("岐阜県".to_string());
+    set.insert("長野県".to_string());
+    set.insert("愛知県".to_string());
+    set.insert("静岡県".to_string());
+    set.insert("山梨県".to_string());
+    set.insert("兵庫県".to_string());
+    set.insert("京都府".to_string());
+    set.insert("滋賀県".to_string());
+    set.insert("大阪府".to_string());
+    set.insert("奈良県".to_string());
+    set.insert("三重県".to_string());
+    set.insert("和歌山県".to_string());
+    set.insert("香川県".to_string());
+    set.insert("愛媛県".to_string());
+    set.insert("徳島県".to_string());
+    set.insert("高知県".to_string());
+    set.insert("山口県".to_string());
+    set.insert("島根県".to_string());
+    set.insert("鳥取県".to_string());
+    set.insert("広島県".to_string());
+    set.insert("岡山県".to_string());
+    set.insert("福岡県".to_string());
+    set.insert("佐賀県".to_string());
+    set.insert("長崎県".to_string());
+    set.insert("大分県".to_string());
+    set.insert("熊本県".to_string());
+    set.insert("宮崎県".to_string());
+    set.insert("鹿児島県".to_string());
+    set.insert("沖縄県".to_string());
+    set
+});
 
 pub(crate) fn validate_identity(
     identity: &Identity,
@@ -25,6 +84,12 @@ pub(crate) fn validate_identity(
     let _ = validate_last_name_furigana(&identity.last_name_furigana)?;
     let _ = validate_first_name_furigana(&identity.first_name_furigana)?;
     let _ = validate_date_of_birth(&identity.date_of_birth, current_date)?;
+    let _ = validate_prefecture(&identity.prefecture)?;
+    let _ = validate_city(&identity.city)?;
+    let _ = validate_address_line1(&identity.address_line1)?;
+    if let Some(address_line2) = identity.address_line2.clone() {
+        let _ = validate_address_line2(&address_line2)?;
+    }
     Ok(())
 }
 
@@ -181,6 +246,64 @@ fn validate_current_day_passes_birthday(
     }
 }
 
+fn validate_prefecture(prefecture: &str) -> Result<(), IdentityValidationError> {
+    if !PREFECTURE_SET.contains(prefecture) {
+        return Err(IdentityValidationError::InvalidPrefecture(
+            prefecture.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_city(city: &str) -> Result<(), IdentityValidationError> {
+    let city_length = city.len();
+    if !(CITY_MIN_LENGTH..=CITY_MAX_LENGTH).contains(&city_length) {
+        return Err(IdentityValidationError::InvalidCityLength {
+            length: city_length,
+            min_length: CITY_MIN_LENGTH,
+            max_length: CITY_MAX_LENGTH,
+        });
+    }
+    if has_control_char(city) {
+        return Err(IdentityValidationError::IllegalCharInCity(city.to_string()));
+    }
+    Ok(())
+}
+
+fn validate_address_line1(address_line1: &str) -> Result<(), IdentityValidationError> {
+    let address_line1_length = address_line1.len();
+    if !(ADDRESS_LINE1_MIN_LENGTH..=ADDRESS_LINE1_MAX_LENGTH).contains(&address_line1_length) {
+        return Err(IdentityValidationError::InvalidAddressLine1Length {
+            length: address_line1_length,
+            min_length: ADDRESS_LINE1_MIN_LENGTH,
+            max_length: ADDRESS_LINE1_MAX_LENGTH,
+        });
+    }
+    if has_control_char(address_line1) {
+        return Err(IdentityValidationError::IllegalCharInAddressLine1(
+            address_line1.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_address_line2(address_line2: &str) -> Result<(), IdentityValidationError> {
+    let address_line2_length = address_line2.len();
+    if !(ADDRESS_LINE2_MIN_LENGTH..=ADDRESS_LINE2_MAX_LENGTH).contains(&address_line2_length) {
+        return Err(IdentityValidationError::InvalidAddressLine2Length {
+            length: address_line2_length,
+            min_length: ADDRESS_LINE2_MIN_LENGTH,
+            max_length: ADDRESS_LINE2_MAX_LENGTH,
+        });
+    }
+    if has_control_char(address_line2) {
+        return Err(IdentityValidationError::IllegalCharInAddressLine2(
+            address_line2.to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_identity()]
 #[derive(Debug)]
 pub(crate) enum IdentityValidationError {
@@ -221,6 +344,25 @@ pub(crate) enum IdentityValidationError {
         current_month: u32,
         current_day: u32,
     },
+    InvalidPrefecture(String),
+    InvalidCityLength {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInCity(String),
+    InvalidAddressLine1Length {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInAddressLine1(String),
+    InvalidAddressLine2Length {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInAddressLine2(String),
 }
 
 impl Display for IdentityValidationError {

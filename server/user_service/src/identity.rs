@@ -8,11 +8,12 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use chrono::NaiveDate;
 use common::RespResult;
 use image::ImageFormat;
 use serde::Serialize;
 
-use crate::util::{session::User, Identity};
+use crate::util::{session::User, validator::validate_identity, Identity};
 
 pub(crate) async fn post_identity(
     User { account_id }: User,
@@ -38,7 +39,9 @@ pub(crate) async fn post_identity(
                 .parse::<String>()
                 .unwrap();
             let identity = serde_json::from_str::<Identity>(&identity_str).unwrap();
-            // validate, trim, sanitize
+            // validate, trim
+            let current_date = NaiveDate::from_ymd(2022, 1, 30);
+            let _ = validate_identity(&identity, &current_date).map_err(|e| println!("{:?}", e));
             println!("identity:  `{:?}`", identity);
         } else if name == "identity-image1" {
             println!("identity-image1");
