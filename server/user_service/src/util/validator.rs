@@ -606,7 +606,7 @@ mod tests {
             },
             prefecture: "東京都".to_string(),
             city: "町田市".to_string(),
-            address_line1: "山田".to_string(),
+            address_line1: "森野2-2-22".to_string(),
             address_line2: None,
             telephone_number: "09012345678".to_string(),
         };
