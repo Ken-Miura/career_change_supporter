@@ -614,4 +614,27 @@ mod tests {
 
         let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
+
+    #[test]
+    fn validate_identity_returns_ok_if_1_char_last_name_is_passed() {
+        let identity = Identity {
+            last_name: "あ".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野2-2-22".to_string(),
+            address_line2: None,
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
 }
