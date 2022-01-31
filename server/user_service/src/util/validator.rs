@@ -437,7 +437,11 @@ impl Display for IdentityValidationError {
                 length,
                 min_length,
                 max_length,
-            } => todo!(),
+            } => write!(
+                f,
+                "invalid last_name length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
             IdentityValidationError::IllegalCharInLastName(last_name) => {
                 write!(
                     f,
@@ -450,7 +454,11 @@ impl Display for IdentityValidationError {
                 length,
                 min_length,
                 max_length,
-            } => todo!(),
+            } => write!(
+                f,
+                "invalid first_name length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
             IdentityValidationError::IllegalCharInFirstName(first_name) => {
                 write!(
                     f,
@@ -463,7 +471,11 @@ impl Display for IdentityValidationError {
                 length,
                 min_length,
                 max_length,
-            } => todo!(),
+            } => write!(
+                f,
+                "invalid last_name_furigana length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
             IdentityValidationError::IllegalCharInLastNameFurigana(last_name_furigana) => {
                 write!(
                     f,
@@ -476,7 +488,11 @@ impl Display for IdentityValidationError {
                 length,
                 min_length,
                 max_length,
-            } => todo!(),
+            } => write!(
+                f,
+                "invalid first_name_furigana length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
             IdentityValidationError::IllegalCharInFirstNameFurigana(first_name_furigana) => {
                 write!(
                     f,
@@ -485,7 +501,11 @@ impl Display for IdentityValidationError {
                     first_name_furigana.as_bytes().to_vec()
                 )
             }
-            IdentityValidationError::IllegalDate { year, month, day } => todo!(),
+            IdentityValidationError::IllegalDate { year, month, day } => write!(
+                f,
+                "illegal date (year: {}, month: {}, day: {})",
+                year, month, day
+            ),
             IdentityValidationError::IllegalAge {
                 birth_year,
                 birth_month,
@@ -493,7 +513,11 @@ impl Display for IdentityValidationError {
                 current_year,
                 current_month,
                 current_day,
-            } => todo!(),
+            } => write!(
+                f,
+                "illegal age (birthday = year: {}, month: {}, day: {}, current date = year: {}, month: {}, day: {})",
+                birth_year, birth_month, birth_day, current_year, current_month, current_day
+            ),
             IdentityValidationError::InvalidPrefecture(prefecture) => {
                 write!(
                     f,
@@ -506,7 +530,11 @@ impl Display for IdentityValidationError {
                 length,
                 min_length,
                 max_length,
-            } => todo!(),
+            } => write!(
+                f,
+                "invalid city length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
             IdentityValidationError::IllegalCharInCity(city) => {
                 write!(
                     f,
@@ -519,7 +547,11 @@ impl Display for IdentityValidationError {
                 length,
                 min_length,
                 max_length,
-            } => todo!(),
+            } => write!(
+                f,
+                "invalid address_line1 length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
             IdentityValidationError::IllegalCharInAddressLine1(address_line1) => {
                 write!(
                     f,
@@ -532,7 +564,11 @@ impl Display for IdentityValidationError {
                 length,
                 min_length,
                 max_length,
-            } => todo!(),
+            } => write!(
+                f,
+                "invalid address_line2 length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
             IdentityValidationError::IllegalCharInAddressLine2(address_line2) => {
                 write!(
                     f,
