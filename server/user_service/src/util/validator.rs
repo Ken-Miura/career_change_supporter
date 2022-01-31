@@ -716,7 +716,7 @@ mod tests {
     #[test]
     fn validate_identity_returns_err_if_empty_last_name_is_passed() {
         let identity = Identity {
-            last_name: "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
+            last_name: "".to_string(),
             first_name: "太郎".to_string(),
             last_name_furigana: "ヤマダ".to_string(),
             first_name_furigana: "タロウ".to_string(),
@@ -748,7 +748,7 @@ mod tests {
     #[test]
     fn validate_identity_returns_err_if_129_chars_last_name_is_passed() {
         let identity = Identity {
-            last_name: "".to_string(),
+            last_name: "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
             first_name: "太郎".to_string(),
             last_name_furigana: "ヤマダ".to_string(),
             first_name_furigana: "タロウ".to_string(),
