@@ -369,7 +369,7 @@ fn validate_telephone_number(telephone_number: &str) -> Result<(), IdentityValid
 }
 
 /// Error related to [validate_identity()]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum IdentityValidationError {
     InvalidLastNameLength {
         length: usize,
@@ -590,7 +590,12 @@ impl Error for IdentityValidationError {}
 mod tests {
     use chrono::NaiveDate;
 
-    use crate::util::{validator::validate_identity, Identity, Ymd};
+    use crate::util::{
+        validator::{
+            validate_identity, IdentityValidationError, LAST_NAME_MAX_LENGTH, LAST_NAME_MIN_LENGTH,
+        },
+        Identity, Ymd,
+    };
 
     #[test]
     fn validate_identity_returns_ok_if_valid_identity_is_passed() {
@@ -709,7 +714,39 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_ok_if_empty_last_name_is_passed() {
+    fn validate_identity_returns_err_if_empty_last_name_is_passed() {
+        let identity = Identity {
+            last_name: "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+
+        assert_eq!(
+            IdentityValidationError::InvalidLastNameLength {
+                length: identity.last_name.chars().count(),
+                min_length: LAST_NAME_MIN_LENGTH,
+                max_length: LAST_NAME_MAX_LENGTH
+            },
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_129_chars_last_name_is_passed() {
         let identity = Identity {
             last_name: "".to_string(),
             first_name: "太郎".to_string(),
@@ -728,6 +765,15 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+
+        assert_eq!(
+            IdentityValidationError::InvalidLastNameLength {
+                length: identity.last_name.chars().count(),
+                min_length: LAST_NAME_MIN_LENGTH,
+                max_length: LAST_NAME_MAX_LENGTH
+            },
+            err
+        );
     }
 }
