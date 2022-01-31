@@ -676,8 +676,8 @@ mod tests {
             },
             prefecture: "東京都".to_string(),
             city: "町田市".to_string(),
-            address_line1: "森野2-2-22".to_string(),
-            address_line2: None,
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
@@ -699,8 +699,8 @@ mod tests {
             },
             prefecture: "東京都".to_string(),
             city: "町田市".to_string(),
-            address_line1: "森野2-2-22".to_string(),
-            address_line2: None,
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
@@ -722,8 +722,8 @@ mod tests {
             },
             prefecture: "東京都".to_string(),
             city: "町田市".to_string(),
-            address_line1: "森野2-2-22".to_string(),
-            address_line2: None,
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
