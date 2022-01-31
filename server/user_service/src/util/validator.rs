@@ -90,7 +90,7 @@ static TEL_NUM_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(TEL_NUM_REGEXP).expect("failed to compile telephone number regexp"));
 
 /// 記号 (ASCIIの0x21(!)から0x2f(/)、0x3a(:)から0x40(@)、0x5b([)から0x60(`)、0x7b({)から0x7e(~)) を一つ以上含むケース
-const SYMBOL_CHAR_REGEXP: &str = r"[!-\/:-@\[-`\{-~]+";
+const SYMBOL_CHAR_REGEXP: &str = r"[!-/:-@\[-`\{-~]+";
 static SYMBOL_CHAR_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(SYMBOL_CHAR_REGEXP).expect("failed to compile symbol char regexp"));
 
@@ -100,7 +100,7 @@ static NUM_CHAR_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(NUM_CHAR_REGEXP).expect("failed to compile num char regexp"));
 
 /// 0x2d(-)以外の記号を一つ以上含むケース
-const SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP: &str = r"[!-,\.\/:-@\[-`\{-~]+";
+const SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP: &str = r"[!-,\./:-@\[-`\{-~]+";
 static SYMBOL_CHAR_WITHOUT_HYPHEN_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP)
         .expect("failed to compile symbol char without hyphen regexp")
@@ -587,4 +587,31 @@ impl Display for IdentityValidationError {
 impl Error for IdentityValidationError {}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use chrono::NaiveDate;
+
+    use crate::util::{validator::validate_identity, Identity, Ymd};
+
+    #[test]
+    fn validate_identity_returns_ok_if_valid_identity_is_passed() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "山田".to_string(),
+            address_line2: None,
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+}
