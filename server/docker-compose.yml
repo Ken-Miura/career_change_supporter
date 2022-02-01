@@ -4,12 +4,15 @@ version: '3.1'
 services:
 
   db:
-    image: postgres:13.2
+    image: postgres:13.5
     restart: always
     ports:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: example
+      # localeを設定したい理由がないので、localeを設定しない (localeをCに設定する)
+      # postgresql.org/docs/13/locale.html 23.1.2. Behavior
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
   
   cache:
     image: redis:6.2.1
