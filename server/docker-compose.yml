@@ -21,7 +21,7 @@ services:
       - "6379:6379"
 
   adminer:
-    image: adminer:4.8.0
+    image: adminer:4.8.1
     restart: always
     ports:
       - "8081:8080"
