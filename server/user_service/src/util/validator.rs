@@ -241,19 +241,19 @@ fn validate_age_satisfies_min_age_requirement(
     current_date: &NaiveDate,
 ) -> Result<(), IdentityValidationError> {
     let year_diff = current_date.year() - date_of_birth.year();
-    if year_diff > MIN_AGE_REQUIREMENT {
-        Ok(())
-    } else if year_diff == MIN_AGE_REQUIREMENT {
-        validate_current_day_passes_birthday(date_of_birth, current_date)
-    } else {
-        Err(IdentityValidationError::IllegalAge {
+    match year_diff.cmp(&MIN_AGE_REQUIREMENT) {
+        std::cmp::Ordering::Greater => Ok(()),
+        std::cmp::Ordering::Equal => {
+            validate_current_day_passes_birthday(date_of_birth, current_date)
+        }
+        std::cmp::Ordering::Less => Err(IdentityValidationError::IllegalAge {
             birth_year: date_of_birth.year(),
             birth_month: date_of_birth.month(),
             birth_day: date_of_birth.day(),
             current_year: current_date.year(),
             current_month: current_date.month(),
             current_day: current_date.day(),
-        })
+        }),
     }
 }
 
@@ -261,30 +261,32 @@ fn validate_current_day_passes_birthday(
     date_of_birth: &NaiveDate,
     current_date: &NaiveDate,
 ) -> Result<(), IdentityValidationError> {
-    if current_date.month() > date_of_birth.month() {
-        Ok(())
-    } else if current_date.month() == date_of_birth.month() {
-        if current_date.day() >= date_of_birth.day() {
-            Ok(())
-        } else {
-            Err(IdentityValidationError::IllegalAge {
-                birth_year: date_of_birth.year(),
-                birth_month: date_of_birth.month(),
-                birth_day: date_of_birth.day(),
-                current_year: current_date.year(),
-                current_month: current_date.month(),
-                current_day: current_date.day(),
-            })
+    let current_month = current_date.month();
+    let birth_month = date_of_birth.month();
+    match current_month.cmp(&birth_month) {
+        std::cmp::Ordering::Greater => Ok(()),
+        std::cmp::Ordering::Equal => {
+            if current_date.day() >= date_of_birth.day() {
+                Ok(())
+            } else {
+                Err(IdentityValidationError::IllegalAge {
+                    birth_year: date_of_birth.year(),
+                    birth_month: date_of_birth.month(),
+                    birth_day: date_of_birth.day(),
+                    current_year: current_date.year(),
+                    current_month: current_date.month(),
+                    current_day: current_date.day(),
+                })
+            }
         }
-    } else {
-        Err(IdentityValidationError::IllegalAge {
+        std::cmp::Ordering::Less => Err(IdentityValidationError::IllegalAge {
             birth_year: date_of_birth.year(),
             birth_month: date_of_birth.month(),
             birth_day: date_of_birth.day(),
             current_year: current_date.year(),
             current_month: current_date.month(),
             current_day: current_date.day(),
-        })
+        }),
     }
 }
 
