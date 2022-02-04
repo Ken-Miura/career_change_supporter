@@ -728,6 +728,104 @@ mod tests {
         set
     });
 
+    static ZENKAKU_KANA_SET_FOR_NAME: Lazy<HashSet<String>> = Lazy::new(|| {
+        // http://www.asahi-net.or.jp/~ax2s-kmtn/ref/unicode/u30a0.html
+        // から名前の入力に必要な項目（30A1から30F4、30FC）をリストアップ
+        // 上記以外の全角カナは名前入力に必要ないので候補に入れない
+        let mut set: HashSet<String> = HashSet::with_capacity(85);
+        set.insert('\u{30A1}'.to_string());
+        set.insert('\u{30A2}'.to_string());
+        set.insert('\u{30A3}'.to_string());
+        set.insert('\u{30A4}'.to_string());
+        set.insert('\u{30A5}'.to_string());
+        set.insert('\u{30A6}'.to_string());
+        set.insert('\u{30A7}'.to_string());
+        set.insert('\u{30A8}'.to_string());
+        set.insert('\u{30A9}'.to_string());
+        set.insert('\u{30AA}'.to_string());
+        set.insert('\u{30AB}'.to_string());
+        set.insert('\u{30AC}'.to_string());
+        set.insert('\u{30AD}'.to_string());
+        set.insert('\u{30AE}'.to_string());
+        set.insert('\u{30AF}'.to_string());
+        set.insert('\u{30B0}'.to_string());
+        set.insert('\u{30B1}'.to_string());
+        set.insert('\u{30B2}'.to_string());
+        set.insert('\u{30B3}'.to_string());
+        set.insert('\u{30B4}'.to_string());
+        set.insert('\u{30B5}'.to_string());
+        set.insert('\u{30B6}'.to_string());
+        set.insert('\u{30B7}'.to_string());
+        set.insert('\u{30B8}'.to_string());
+        set.insert('\u{30B9}'.to_string());
+        set.insert('\u{30BA}'.to_string());
+        set.insert('\u{30BB}'.to_string());
+        set.insert('\u{30BC}'.to_string());
+        set.insert('\u{30BD}'.to_string());
+        set.insert('\u{30BE}'.to_string());
+        set.insert('\u{30BF}'.to_string());
+        set.insert('\u{30C0}'.to_string());
+        set.insert('\u{30C1}'.to_string());
+        set.insert('\u{30C2}'.to_string());
+        set.insert('\u{30C3}'.to_string());
+        set.insert('\u{30C4}'.to_string());
+        set.insert('\u{30C5}'.to_string());
+        set.insert('\u{30C6}'.to_string());
+        set.insert('\u{30C7}'.to_string());
+        set.insert('\u{30C8}'.to_string());
+        set.insert('\u{30C9}'.to_string());
+        set.insert('\u{30CA}'.to_string());
+        set.insert('\u{30CB}'.to_string());
+        set.insert('\u{30CC}'.to_string());
+        set.insert('\u{30CD}'.to_string());
+        set.insert('\u{30CE}'.to_string());
+        set.insert('\u{30CF}'.to_string());
+        set.insert('\u{30D0}'.to_string());
+        set.insert('\u{30D1}'.to_string());
+        set.insert('\u{30D2}'.to_string());
+        set.insert('\u{30D3}'.to_string());
+        set.insert('\u{30D4}'.to_string());
+        set.insert('\u{30D5}'.to_string());
+        set.insert('\u{30D6}'.to_string());
+        set.insert('\u{30D7}'.to_string());
+        set.insert('\u{30D8}'.to_string());
+        set.insert('\u{30D9}'.to_string());
+        set.insert('\u{30DA}'.to_string());
+        set.insert('\u{30DB}'.to_string());
+        set.insert('\u{30DC}'.to_string());
+        set.insert('\u{30DD}'.to_string());
+        set.insert('\u{30DE}'.to_string());
+        set.insert('\u{30DF}'.to_string());
+        set.insert('\u{30E0}'.to_string());
+        set.insert('\u{30E1}'.to_string());
+        set.insert('\u{30E2}'.to_string());
+        set.insert('\u{30E3}'.to_string());
+        set.insert('\u{30E4}'.to_string());
+        set.insert('\u{30E5}'.to_string());
+        set.insert('\u{30E6}'.to_string());
+        set.insert('\u{30E7}'.to_string());
+        set.insert('\u{30E8}'.to_string());
+        set.insert('\u{30E9}'.to_string());
+        set.insert('\u{30EA}'.to_string());
+        set.insert('\u{30EB}'.to_string());
+        set.insert('\u{30EC}'.to_string());
+        set.insert('\u{30ED}'.to_string());
+        set.insert('\u{30EE}'.to_string());
+        set.insert('\u{30EF}'.to_string());
+        set.insert('\u{30F0}'.to_string());
+        set.insert('\u{30F1}'.to_string());
+        set.insert('\u{30F2}'.to_string());
+        set.insert('\u{30F3}'.to_string());
+        set.insert('\u{30F4}'.to_string());
+        set.insert('\u{30FC}'.to_string());
+        set
+    });
+
+    static HANKAKU_KANA_SET: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut set: HashSet<String> = HashSet::with_capacity(32);
+        set
+    });
+
     #[test]
     fn validate_identity_returns_ok_if_valid_identity_is_passed() {
         let identity = Identity {
@@ -1783,6 +1881,34 @@ mod tests {
                 IdentityValidationError::IllegalCharInFirstName(id.first_name.to_string()),
                 err
             );
+        }
+    }
+
+    #[test]
+    fn validate_identity_accepts_zenkaku_kana_on_last_name_furigana() {
+        let mut identity_list = Vec::with_capacity(ZENKAKU_KANA_SET_FOR_NAME.len());
+        for s in ZENKAKU_KANA_SET_FOR_NAME.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string(),
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 }
