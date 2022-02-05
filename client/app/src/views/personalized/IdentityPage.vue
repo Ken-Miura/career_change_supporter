@@ -12,22 +12,22 @@
             </div>
             <div class="mt-2 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">姓</label>
-              <input v-bind:value="form.lastName" v-on:input="setLastName" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input v-bind:value="form.lastName" v-on:input="setLastName" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-2 ml-1 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">名</label>
-              <input v-bind:value="form.firstName" v-on:input="setFirstName" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input v-bind:value="form.firstName" v-on:input="setFirstName" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
               フリガナ
             </div>
             <div class="mt-2 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">セイ</label>
-              <input v-bind:value="form.lastNameFurigana" v-on:input="setLastNameFurigana" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input v-bind:value="form.lastNameFurigana" v-on:input="setLastNameFurigana" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-2 ml-1 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">メイ</label>
-              <input v-bind:value="form.firstNameFurigana" v-on:input="setFirstNameFurigana" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input v-bind:value="form.firstNameFurigana" v-on:input="setFirstNameFurigana" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               生年月日
