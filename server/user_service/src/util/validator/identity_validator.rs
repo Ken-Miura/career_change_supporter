@@ -603,7 +603,7 @@ impl Error for IdentityValidationError {}
 mod tests {
     use std::collections::HashSet;
 
-    use chrono::NaiveDate;
+    use chrono::{Datelike, NaiveDate};
     use once_cell::sync::Lazy;
 
     use crate::util::{
@@ -3747,5 +3747,73 @@ mod tests {
         let current_date = NaiveDate::from_ymd(2022, 1, 2);
 
         let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_user_is_17_years_old_and_day_before_birth_day() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 2004,
+                month: 1,
+                day: 2,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 1);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalAge {
+                birth_year: identity.date_of_birth.year,
+                birth_month: identity.date_of_birth.month,
+                birth_day: identity.date_of_birth.day,
+                current_year: current_date.year(),
+                current_month: current_date.month(),
+                current_day: current_date.day()
+            },
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_user_is_17_years_old_and_month_before_birth_month() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 2004,
+                month: 1,
+                day: 2,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2021, 12, 2);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalAge {
+                birth_year: identity.date_of_birth.year,
+                birth_month: identity.date_of_birth.month,
+                birth_day: identity.date_of_birth.day,
+                current_year: current_date.year(),
+                current_month: current_date.month(),
+                current_day: current_date.day()
+            },
+            err
+        );
     }
 }
