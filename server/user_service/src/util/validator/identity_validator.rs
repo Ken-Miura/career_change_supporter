@@ -3884,4 +3884,38 @@ mod tests {
             err
         );
     }
+
+    #[test]
+    fn validate_identity_returns_err_if_user_is_16_years_old_or_less() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 2006,
+                month: 1,
+                day: 2,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 20);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalAge {
+                birth_year: identity.date_of_birth.year,
+                birth_month: identity.date_of_birth.month,
+                birth_day: identity.date_of_birth.day,
+                current_year: current_date.year(),
+                current_month: current_date.month(),
+                current_day: current_date.day()
+            },
+            err
+        );
+    }
 }
