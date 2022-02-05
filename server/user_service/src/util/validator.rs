@@ -822,7 +822,70 @@ mod tests {
     });
 
     static HANKAKU_KANA_SET: Lazy<HashSet<String>> = Lazy::new(|| {
-        let mut set: HashSet<String> = HashSet::with_capacity(32);
+        let mut set: HashSet<String> = HashSet::with_capacity(63);
+        set.insert('\u{FF61}'.to_string());
+        set.insert('\u{FF62}'.to_string());
+        set.insert('\u{FF63}'.to_string());
+        set.insert('\u{FF64}'.to_string());
+        set.insert('\u{FF65}'.to_string());
+        set.insert('\u{FF66}'.to_string());
+        set.insert('\u{FF67}'.to_string());
+        set.insert('\u{FF68}'.to_string());
+        set.insert('\u{FF69}'.to_string());
+        set.insert('\u{FF6A}'.to_string());
+        set.insert('\u{FF6B}'.to_string());
+        set.insert('\u{FF6C}'.to_string());
+        set.insert('\u{FF6D}'.to_string());
+        set.insert('\u{FF6E}'.to_string());
+        set.insert('\u{FF6F}'.to_string());
+        set.insert('\u{FF70}'.to_string());
+        set.insert('\u{FF71}'.to_string());
+        set.insert('\u{FF72}'.to_string());
+        set.insert('\u{FF73}'.to_string());
+        set.insert('\u{FF74}'.to_string());
+        set.insert('\u{FF75}'.to_string());
+        set.insert('\u{FF76}'.to_string());
+        set.insert('\u{FF77}'.to_string());
+        set.insert('\u{FF78}'.to_string());
+        set.insert('\u{FF79}'.to_string());
+        set.insert('\u{FF7A}'.to_string());
+        set.insert('\u{FF7B}'.to_string());
+        set.insert('\u{FF7C}'.to_string());
+        set.insert('\u{FF7D}'.to_string());
+        set.insert('\u{FF7E}'.to_string());
+        set.insert('\u{FF7F}'.to_string());
+        set.insert('\u{FF80}'.to_string());
+        set.insert('\u{FF81}'.to_string());
+        set.insert('\u{FF82}'.to_string());
+        set.insert('\u{FF83}'.to_string());
+        set.insert('\u{FF84}'.to_string());
+        set.insert('\u{FF85}'.to_string());
+        set.insert('\u{FF86}'.to_string());
+        set.insert('\u{FF87}'.to_string());
+        set.insert('\u{FF88}'.to_string());
+        set.insert('\u{FF89}'.to_string());
+        set.insert('\u{FF8A}'.to_string());
+        set.insert('\u{FF8B}'.to_string());
+        set.insert('\u{FF8C}'.to_string());
+        set.insert('\u{FF8D}'.to_string());
+        set.insert('\u{FF8E}'.to_string());
+        set.insert('\u{FF8F}'.to_string());
+        set.insert('\u{FF90}'.to_string());
+        set.insert('\u{FF91}'.to_string());
+        set.insert('\u{FF92}'.to_string());
+        set.insert('\u{FF93}'.to_string());
+        set.insert('\u{FF94}'.to_string());
+        set.insert('\u{FF95}'.to_string());
+        set.insert('\u{FF96}'.to_string());
+        set.insert('\u{FF97}'.to_string());
+        set.insert('\u{FF98}'.to_string());
+        set.insert('\u{FF99}'.to_string());
+        set.insert('\u{FF9A}'.to_string());
+        set.insert('\u{FF9B}'.to_string());
+        set.insert('\u{FF9C}'.to_string());
+        set.insert('\u{FF9D}'.to_string());
+        set.insert('\u{FF9E}'.to_string());
+        set.insert('\u{FF9F}'.to_string());
         set
     });
 
@@ -1909,6 +1972,38 @@ mod tests {
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
             let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+        }
+    }
+
+    #[test]
+    fn validate_identity_rejects_hankaku_kana_on_last_name_furigana() {
+        let mut identity_list = Vec::with_capacity(HANKAKU_KANA_SET.len());
+        for s in HANKAKU_KANA_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string(),
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(id.last_name_furigana.to_string()),
+                err
+            );
         }
     }
 }
