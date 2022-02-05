@@ -106,6 +106,11 @@ static SYMBOL_CHAR_WITHOUT_HYPHEN_RE: Lazy<Regex> = Lazy::new(|| {
         .expect("failed to compile symbol char without hyphen regexp")
 });
 
+/// 半角スペース、または全角スペースを一つ以上含むケース
+const SPACE_REGEXP: &str = r"[ 　]+";
+static SPACE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(SPACE_REGEXP).expect("failed to compile space regexp"));
+
 pub(crate) fn validate_identity(
     identity: &Identity,
     current_date: &NaiveDate,
@@ -139,7 +144,10 @@ fn validate_last_name(last_name: &str) -> Result<(), IdentityValidationError> {
             last_name.to_string(),
         ));
     }
-    if SYMBOL_CHAR_RE.is_match(last_name) || NUM_CHAR_RE.is_match(last_name) {
+    if SYMBOL_CHAR_RE.is_match(last_name)
+        || NUM_CHAR_RE.is_match(last_name)
+        || SPACE_RE.is_match(last_name)
+    {
         return Err(IdentityValidationError::IllegalCharInLastName(
             last_name.to_string(),
         ));
@@ -161,7 +169,10 @@ fn validate_first_name(first_name: &str) -> Result<(), IdentityValidationError> 
             first_name.to_string(),
         ));
     }
-    if SYMBOL_CHAR_RE.is_match(first_name) || NUM_CHAR_RE.is_match(first_name) {
+    if SYMBOL_CHAR_RE.is_match(first_name)
+        || NUM_CHAR_RE.is_match(first_name)
+        || SPACE_RE.is_match(first_name)
+    {
         return Err(IdentityValidationError::IllegalCharInFirstName(
             first_name.to_string(),
         ));
@@ -311,7 +322,7 @@ fn validate_city(city: &str) -> Result<(), IdentityValidationError> {
     if has_control_char(city) {
         return Err(IdentityValidationError::IllegalCharInCity(city.to_string()));
     }
-    if SYMBOL_CHAR_RE.is_match(city) || NUM_CHAR_RE.is_match(city) {
+    if SYMBOL_CHAR_RE.is_match(city) || NUM_CHAR_RE.is_match(city) || SPACE_RE.is_match(city) {
         return Err(IdentityValidationError::IllegalCharInCity(city.to_string()));
     }
     Ok(())
@@ -1454,6 +1465,214 @@ mod tests {
     }
 
     #[test]
+    fn validate_identity_returns_err_if_last_name_is_space() {
+        let identity = Identity {
+            last_name: " ".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_includes_space() {
+        let identity = Identity {
+            last_name: "山 田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_starts_with_space() {
+        let identity = Identity {
+            last_name: " 山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_ends_with_space() {
+        let identity = Identity {
+            last_name: "山田 ".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_is_zenkaku_space() {
+        let identity = Identity {
+            last_name: "　".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_includes_zenkaku_space() {
+        let identity = Identity {
+            last_name: "山　田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_starts_with_zenkaku_space() {
+        let identity = Identity {
+            last_name: "　山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_ends_with_zenkaku_space() {
+        let identity = Identity {
+            last_name: "山田　".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::IllegalCharInLastName(identity.last_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
     fn validate_identity_returns_ok_if_1_char_first_name_is_passed() {
         let identity = Identity {
             last_name: "山田".to_string(),
@@ -2001,7 +2220,9 @@ mod tests {
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
-                IdentityValidationError::IllegalCharInLastNameFurigana(id.last_name_furigana.to_string()),
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
                 err
             );
         }
