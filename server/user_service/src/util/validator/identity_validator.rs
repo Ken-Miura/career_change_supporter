@@ -3656,4 +3656,96 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_identity_returns_ok_if_user_is_19_years_old_or_more() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 2003,
+                month: 1,
+                day: 1,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_returns_ok_if_user_is_18_years_old_and_already_passed_birth_month() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 2004,
+                month: 1,
+                day: 1,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 2, 1);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_returns_ok_if_user_is_18_years_old_and_already_passed_birth_day() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 2004,
+                month: 1,
+                day: 1,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 2);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_returns_ok_if_user_is_just_18_years_old() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 2004,
+                month: 1,
+                day: 2,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 2);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
 }
