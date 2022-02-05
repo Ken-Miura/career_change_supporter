@@ -72,10 +72,10 @@ GRANT SELECT, INSERT ON ccs_schema.new_password To user_app;
 CREATE TABLE ccs_schema.identity_info (
   /* PRIMARY KEY = NOT NULLのためNOT NULLはつけない */
   user_account_id INTEGER PRIMARY KEY REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
-  last_name VARCHAR (128) NOT NULL,
-  first_name VARCHAR (128) NOT NULL,
-  last_name_furigana VARCHAR (128) NOT NULL,
-  first_name_furigana VARCHAR (128) NOT NULL,
+  last_name VARCHAR (64) NOT NULL,
+  first_name VARCHAR (64) NOT NULL,
+  last_name_furigana VARCHAR (64) NOT NULL,
+  first_name_furigana VARCHAR (64) NOT NULL,
   date_of_birth DATE NOT NULL,
   /* 都道府県の最大文字数は4文字（神奈川県、鹿児島県、和歌山県） */
   prefecture VARCHAR (4) NOT NULL,

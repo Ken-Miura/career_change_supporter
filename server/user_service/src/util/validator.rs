@@ -9,13 +9,13 @@ use regex::Regex;
 use super::{Identity, Ymd};
 
 const LAST_NAME_MIN_LENGTH: usize = 1;
-const LAST_NAME_MAX_LENGTH: usize = 128;
+const LAST_NAME_MAX_LENGTH: usize = 64;
 const FIRST_NAME_MIN_LENGTH: usize = 1;
-const FIRST_NAME_MAX_LENGTH: usize = 128;
+const FIRST_NAME_MAX_LENGTH: usize = 64;
 const LAST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
-const LAST_NAME_FURIGANA_MAX_LENGTH: usize = 128;
+const LAST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
 const FIRST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
-const FIRST_NAME_FURIGANA_MAX_LENGTH: usize = 128;
+const FIRST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
 const MIN_AGE_REQUIREMENT: i32 = 18;
 const CITY_MIN_LENGTH: usize = 1;
 const CITY_MAX_LENGTH: usize = 32;
@@ -1003,9 +1003,9 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_ok_if_128_char_last_name_is_passed() {
+    fn validate_identity_returns_ok_if_64_char_last_name_is_passed() {
         let identity = Identity {
-            last_name: "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
+            last_name: "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
             first_name: "太郎".to_string(),
             last_name_furigana: "ヤマダ".to_string(),
             first_name_furigana: "タロウ".to_string(),
@@ -1058,9 +1058,9 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_129_chars_last_name_is_passed() {
+    fn validate_identity_returns_err_if_65_chars_last_name_is_passed() {
         let identity = Identity {
-            last_name: "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
+            last_name: "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
             first_name: "太郎".to_string(),
             last_name_furigana: "ヤマダ".to_string(),
             first_name_furigana: "タロウ".to_string(),
@@ -1625,10 +1625,10 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_ok_if_128_char_first_name_is_passed() {
+    fn validate_identity_returns_ok_if_64_char_first_name_is_passed() {
         let identity = Identity {
             last_name: "山田".to_string(),
-            first_name: "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
+            first_name: "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
             last_name_furigana: "ヤマダ".to_string(),
             first_name_furigana: "タロウ".to_string(),
             date_of_birth: Ymd {
@@ -1680,10 +1680,10 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_129_chars_first_name_is_passed() {
+    fn validate_identity_returns_err_if_65_chars_first_name_is_passed() {
         let identity = Identity {
             last_name: "山田".to_string(),
-            first_name: "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
+            first_name: "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string(),
             last_name_furigana: "ヤマダ".to_string(),
             first_name_furigana: "タロウ".to_string(),
             date_of_birth: Ymd {
