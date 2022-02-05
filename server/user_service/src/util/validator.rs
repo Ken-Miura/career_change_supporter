@@ -609,7 +609,8 @@ mod tests {
     use crate::util::{
         validator::{
             validate_identity, IdentityValidationError, FIRST_NAME_MAX_LENGTH,
-            FIRST_NAME_MIN_LENGTH, LAST_NAME_MAX_LENGTH, LAST_NAME_MIN_LENGTH,
+            FIRST_NAME_MIN_LENGTH, LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH,
+            LAST_NAME_MAX_LENGTH, LAST_NAME_MIN_LENGTH,
         },
         Identity, Ymd,
     };
@@ -1154,7 +1155,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_last_name_starts_with_symbol() {
+    fn validate_identity_returns_err_if_last_name_ends_with_symbol() {
         let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
         for s in SYMBOL_SET.iter() {
             let identity = Identity {
@@ -1186,7 +1187,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_last_name_ends_with_symbol() {
+    fn validate_identity_returns_err_if_last_name_starts_with_symbol() {
         let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
         for s in SYMBOL_SET.iter() {
             let identity = Identity {
@@ -1282,7 +1283,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_last_name_starts_with_number() {
+    fn validate_identity_returns_err_if_last_name_ends_with_number() {
         let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
         for s in NUMBER_SET.iter() {
             let identity = Identity {
@@ -1314,7 +1315,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_last_name_ends_with_number() {
+    fn validate_identity_returns_err_if_last_name_starts_with_number() {
         let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
         for s in NUMBER_SET.iter() {
             let identity = Identity {
@@ -1410,7 +1411,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_last_name_starts_with_control_char() {
+    fn validate_identity_returns_err_if_last_name_ends_with_control_char() {
         let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
         for s in CONTROL_CHAR_SET.iter() {
             let identity = Identity {
@@ -1442,7 +1443,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_last_name_ends_with_control_char() {
+    fn validate_identity_returns_err_if_last_name_starts_with_control_char() {
         let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
         for s in CONTROL_CHAR_SET.iter() {
             let identity = Identity {
@@ -1776,7 +1777,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_first_name_starts_with_symbol() {
+    fn validate_identity_returns_err_if_first_name_ends_with_symbol() {
         let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
         for s in SYMBOL_SET.iter() {
             let identity = Identity {
@@ -1808,7 +1809,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_first_name_ends_with_symbol() {
+    fn validate_identity_returns_err_if_first_name_starts_with_symbol() {
         let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
         for s in SYMBOL_SET.iter() {
             let identity = Identity {
@@ -1904,7 +1905,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_first_name_starts_with_number() {
+    fn validate_identity_returns_err_if_first_name_ends_with_number() {
         let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
         for s in NUMBER_SET.iter() {
             let identity = Identity {
@@ -1936,7 +1937,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_first_name_ends_with_number() {
+    fn validate_identity_returns_err_if_first_name_starts_with_number() {
         let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
         for s in NUMBER_SET.iter() {
             let identity = Identity {
@@ -2032,7 +2033,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_first_name_starts_with_control_char() {
+    fn validate_identity_returns_err_if_first_name_ends_with_control_char() {
         let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
         for s in CONTROL_CHAR_SET.iter() {
             let identity = Identity {
@@ -2064,7 +2065,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_identity_returns_err_if_first_name_ends_with_control_char() {
+    fn validate_identity_returns_err_if_first_name_starts_with_control_char() {
         let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
         for s in CONTROL_CHAR_SET.iter() {
             let identity = Identity {
@@ -2259,6 +2260,660 @@ mod tests {
                 last_name: "山田".to_string(),
                 first_name: "太郎".to_string(),
                 last_name_furigana: s.to_string(),
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_ok_if_1_char_last_name_furigana_is_passed() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ア".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_returns_ok_if_64_char_last_name_furigana_is_passed() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "アアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアア".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_empty_last_name_furigana_is_passed() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+
+        assert_eq!(
+            IdentityValidationError::InvalidLastNameFuriganaLength {
+                length: identity.last_name_furigana.chars().count(),
+                min_length: LAST_NAME_FURIGANA_MIN_LENGTH,
+                max_length: LAST_NAME_FURIGANA_MAX_LENGTH
+            },
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_65_chars_last_name_furigana_is_passed() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "アアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアア".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "09012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+
+        assert_eq!(
+            IdentityValidationError::InvalidLastNameFuriganaLength {
+                length: identity.last_name_furigana.chars().count(),
+                min_length: LAST_NAME_FURIGANA_MIN_LENGTH,
+                max_length: LAST_NAME_FURIGANA_MAX_LENGTH
+            },
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_is_symbol() {
+        let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string(),
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_includes_symbol() {
+        let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤ".to_string() + s + "マダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_ends_with_symbol() {
+        let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤマダ".to_string() + s,
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_starts_with_symbol() {
+        let mut identity_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string() + "ヤマダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_is_number() {
+        let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string(),
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_includes_number() {
+        let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤ".to_string() + s + "マダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_ends_with_number() {
+        let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤマダ".to_string() + s,
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_starts_with_number() {
+        let mut identity_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string() + "ヤマダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_is_control_char() {
+        let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string(),
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_includes_control_char() {
+        let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤ".to_string() + s + "マダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_ends_with_control_char() {
+        let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤマダ".to_string() + s,
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_starts_with_control_char() {
+        let mut identity_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string() + "ヤマダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_is_space() {
+        let mut identity_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string(),
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_includes_space() {
+        let mut identity_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤ".to_string() + s + "マダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_starts_with_space() {
+        let mut identity_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: s.to_string() + "ヤマダ",
+                first_name_furigana: "タロウ".to_string(),
+                date_of_birth: Ymd {
+                    year: 1990,
+                    month: 10,
+                    day: 11,
+                },
+                prefecture: "東京都".to_string(),
+                city: "町田市".to_string(),
+                address_line1: "森野２−２−２２".to_string(),
+                address_line2: Some("サーパスマンション　１０１号室".to_string()),
+                telephone_number: "09012345678".to_string(),
+            };
+            identity_list.push(identity);
+        }
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        for id in identity_list {
+            let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
+            assert_eq!(
+                IdentityValidationError::IllegalCharInLastNameFurigana(
+                    id.last_name_furigana.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_identity_returns_err_if_last_name_furigana_ends_with_space() {
+        let mut identity_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let identity = Identity {
+                last_name: "山田".to_string(),
+                first_name: "太郎".to_string(),
+                last_name_furigana: "ヤマダ".to_string() + s,
                 first_name_furigana: "タロウ".to_string(),
                 date_of_birth: Ymd {
                     year: 1990,
