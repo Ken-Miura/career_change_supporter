@@ -13,7 +13,7 @@ use common::RespResult;
 use image::ImageFormat;
 use serde::Serialize;
 
-use crate::util::{session::User, validator::validate_identity, Identity};
+use crate::util::{session::User, validator::identity_validator::validate_identity, Identity};
 
 pub(crate) async fn post_identity(
     User { account_id }: User,
