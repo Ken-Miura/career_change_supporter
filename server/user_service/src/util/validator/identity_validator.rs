@@ -6051,4 +6051,104 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_identity_accepts_10_digits_telephone_number() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "0123456789".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_accepts_13_digits_telephone_number() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "0123456789012".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_identity_rejects_9_digits_telephone_number() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "012345678".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::InvalidTelNumFormat(identity.telephone_number.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_identity_rejects_14_digits_telephone_number() {
+        let identity = Identity {
+            last_name: "山田".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "ヤマダ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1990,
+                month: 10,
+                day: 11,
+            },
+            prefecture: "東京都".to_string(),
+            city: "町田市".to_string(),
+            address_line1: "森野２−２−２２".to_string(),
+            address_line2: Some("サーパスマンション　１０１号室".to_string()),
+            telephone_number: "01234567890123".to_string(),
+        };
+        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+        let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
+        assert_eq!(
+            IdentityValidationError::InvalidTelNumFormat(identity.telephone_number.to_string()),
+            err
+        );
+    }
 }
