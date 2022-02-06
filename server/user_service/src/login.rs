@@ -20,7 +20,7 @@ use diesel::{
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
-use crate::err::EMAIL_OR_PWD_INCORRECT;
+use crate::err::Code::EmailOrPwdIncorrect;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
 use crate::util::{
     session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID, unexpected_err_resp,
@@ -68,7 +68,7 @@ async fn post_login_internal(
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(ApiError {
-                code: EMAIL_OR_PWD_INCORRECT,
+                code: EmailOrPwdIncorrect as u32,
             }),
         ));
     }
@@ -132,7 +132,7 @@ fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(ApiError {
-                code: EMAIL_OR_PWD_INCORRECT,
+                code: EmailOrPwdIncorrect as u32,
             }),
         ));
     }
@@ -309,7 +309,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
-        assert_eq!(EMAIL_OR_PWD_INCORRECT, resp.1.code);
+        assert_eq!(EmailOrPwdIncorrect as u32, resp.1.code);
         assert_eq!(0, store.count().await);
     }
 
@@ -341,7 +341,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
-        assert_eq!(EMAIL_OR_PWD_INCORRECT, resp.1.code);
+        assert_eq!(EmailOrPwdIncorrect as u32, resp.1.code);
         assert_eq!(0, store.count().await);
     }
 }

@@ -103,37 +103,39 @@ fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::INVALID_LAST_NAME_LENGTH,
-        IdentityValidationError::IllegalCharInLastName(_) => code = err::ILLEGAL_CHAR_IN_LAST_NAME,
+        } => code = err::Code::InvalidLastNameLength,
+        IdentityValidationError::IllegalCharInLastName(_) => {
+            code = err::Code::IllegalCharInLastName
+        }
         IdentityValidationError::InvalidFirstNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::INVALID_FIRST_NAME_LENGTH,
+        } => code = err::Code::InvalidFirstNameLength,
         IdentityValidationError::IllegalCharInFirstName(_) => {
-            code = err::ILLEGAL_CHAR_IN_FIRST_NAME
+            code = err::Code::IllegalCharInFirstName
         }
         IdentityValidationError::InvalidLastNameFuriganaLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::INVALID_LAST_NAME_FURIGANA_LENGTH,
+        } => code = err::Code::InvalidLastNameFuriganaLength,
         IdentityValidationError::IllegalCharInLastNameFurigana(_) => {
-            code = err::ILLEGAL_CHAR_IN_LAST_NAME_FURIGANA
+            code = err::Code::IllegalCharInLastNameFurigana
         }
         IdentityValidationError::InvalidFirstNameFuriganaLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::INVALID_FIRST_NAME_FURIGANA_LENGTH,
+        } => code = err::Code::InvalidFirstNameFuriganaLength,
         IdentityValidationError::IllegalCharInFirstNameFurigana(_) => {
-            code = err::ILLEGAL_CHAR_IN_FIRST_NAME_FURIGANA
+            code = err::Code::IllegalCharInFirstNameFurigana
         }
         IdentityValidationError::IllegalDate {
             year: _,
             month: _,
             day: _,
-        } => code = err::ILLEGAL_DATE,
+        } => code = err::Code::IllegalDate,
         IdentityValidationError::IllegalAge {
             birth_year: _,
             birth_month: _,
@@ -141,33 +143,36 @@ fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
             current_year: _,
             current_month: _,
             current_day: _,
-        } => code = err::ILLEGAL_AGE,
-        IdentityValidationError::InvalidPrefecture(_) => code = err::INVALID_PREFECTURE,
+        } => code = err::Code::IllegalAge,
+        IdentityValidationError::InvalidPrefecture(_) => code = err::Code::InvalidPrefecture,
         IdentityValidationError::InvalidCityLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::INVALID_CITY_LENGTH,
-        IdentityValidationError::IllegalCharInCity(_) => code = err::ILLEGAL_CHAR_IN_CITY,
+        } => code = err::Code::InvalidCityLength,
+        IdentityValidationError::IllegalCharInCity(_) => code = err::Code::IllegalCharInCity,
         IdentityValidationError::InvalidAddressLine1Length {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::INVALID_ADDRESS_LINE1_LENGTH,
+        } => code = err::Code::InvalidAddressLine1Length,
         IdentityValidationError::IllegalCharInAddressLine1(_) => {
-            code = err::ILLEGAL_CHAR_IN_ADDRESS_LINE1
+            code = err::Code::IllegalCharInAddressLine1
         }
         IdentityValidationError::InvalidAddressLine2Length {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::INVALID_ADDRESS_LINE2_LENGTH,
+        } => code = err::Code::InvalidAddressLine2Length,
         IdentityValidationError::IllegalCharInAddressLine2(_) => {
-            code = err::ILLEGAL_CHAR_IN_ADDRESS_LINE2
+            code = err::Code::IllegalCharInAddressLine2
         }
-        IdentityValidationError::InvalidTelNumFormat(_) => code = err::INVALID_TEL_NUM_FORMAT,
+        IdentityValidationError::InvalidTelNumFormat(_) => code = err::Code::InvalidTelNumFormat,
     }
-    (StatusCode::BAD_REQUEST, Json(ApiError { code }))
+    (
+        StatusCode::BAD_REQUEST,
+        Json(ApiError { code: code as u32 }),
+    )
 }
 
 fn trim_space_from_identity(identity: Identity) -> Identity {

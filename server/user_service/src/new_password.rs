@@ -27,7 +27,7 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
-use crate::err::REACH_NEW_PASSWORDS_LIMIT;
+use crate::err::Code::ReachNewPasswordsLimit;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
@@ -89,7 +89,7 @@ async fn post_new_password_internal(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: REACH_NEW_PASSWORDS_LIMIT,
+                    code: ReachNewPasswordsLimit as u32,
                 }),
             ));
         }
@@ -198,7 +198,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        err::REACH_NEW_PASSWORDS_LIMIT,
+        err::Code::ReachNewPasswordsLimit,
         new_password::{
             create_text, post_new_password_internal, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT,
         },
@@ -328,6 +328,6 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1.code, REACH_NEW_PASSWORDS_LIMIT);
+        assert_eq!(resp.1.code, ReachNewPasswordsLimit as u32);
     }
 }

@@ -24,9 +24,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::err::{
-    ACCOUNT_ALREADY_EXISTS, INVALID_UUID, NO_TEMP_ACCOUNT_FOUND, TEMP_ACCOUNT_EXPIRED,
-};
+use crate::err::Code::{AccountAlreadyExists, InvalidUuid, NoTempAccountFound, TempAccountExpired};
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
@@ -67,7 +65,9 @@ async fn post_accounts_internal(
         tracing::error!("failed to validate uuid: {}", e);
         (
             StatusCode::BAD_REQUEST,
-            Json(ApiError { code: INVALID_UUID }),
+            Json(ApiError {
+                code: InvalidUuid as u32,
+            }),
         )
     })?;
     let email_addr = async move {
@@ -82,7 +82,7 @@ async fn post_accounts_internal(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: TEMP_ACCOUNT_EXPIRED,
+                    code: TempAccountExpired as u32,
                 }),
             ));
         }
@@ -95,7 +95,7 @@ async fn post_accounts_internal(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: ACCOUNT_ALREADY_EXISTS,
+                    code: AccountAlreadyExists as u32,
                 }),
             ));
         }
@@ -178,7 +178,7 @@ impl AccountsOperation for AccountsOperationImpl {
                     Err((
                         StatusCode::BAD_REQUEST,
                         Json(ApiError {
-                            code: NO_TEMP_ACCOUNT_FOUND,
+                            code: NoTempAccountFound as u32,
                         }),
                     ))
                 } else {
@@ -259,7 +259,7 @@ mod tests {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: NO_TEMP_ACCOUNT_FOUND,
+                        code: NoTempAccountFound as u32,
                     }),
                 ));
             }
@@ -337,7 +337,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(INVALID_UUID, resp.1.code);
+        assert_eq!(InvalidUuid as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -372,7 +372,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(TEMP_ACCOUNT_EXPIRED, resp.1.code);
+        assert_eq!(TempAccountExpired as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -406,7 +406,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(NO_TEMP_ACCOUNT_FOUND, resp.1.code);
+        assert_eq!(NoTempAccountFound as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -440,6 +440,6 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(ACCOUNT_ALREADY_EXISTS, resp.1.code);
+        assert_eq!(AccountAlreadyExists as u32, resp.1.code);
     }
 }

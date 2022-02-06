@@ -27,7 +27,7 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
-use crate::err::REACH_TEMP_ACCOUNTS_LIMIT;
+use crate::err::Code::ReachTempAccountsLimit;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
@@ -88,7 +88,7 @@ async fn post_temp_accounts_internal(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: REACH_TEMP_ACCOUNTS_LIMIT,
+                    code: ReachTempAccountsLimit as u32,
                 }),
             ));
         }
@@ -319,6 +319,6 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1.code, REACH_TEMP_ACCOUNTS_LIMIT);
+        assert_eq!(resp.1.code, ReachTempAccountsLimit as u32);
     }
 }

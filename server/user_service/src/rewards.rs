@@ -177,7 +177,7 @@ async fn get_tenant_obj_by_tenant_id(
                     return (
                         StatusCode::TOO_MANY_REQUESTS,
                         Json(ApiError {
-                            code: err::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                            code: err::Code::ReachPaymentPlatformRateLimit as u32,
                         }),
                     );
                 }
@@ -224,7 +224,7 @@ async fn get_rewards_of_current_month(
                         return (
                             StatusCode::TOO_MANY_REQUESTS,
                             Json(ApiError {
-                                code: err::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                                code: err::Code::ReachPaymentPlatformRateLimit as u32,
                             }),
                         );
                     }
@@ -337,7 +337,7 @@ async fn get_latest_two_tenant_transfers(
                     return (
                         StatusCode::TOO_MANY_REQUESTS,
                         Json(ApiError {
-                            code: err::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                            code: err::Code::ReachPaymentPlatformRateLimit as u32,
                         }),
                     );
                 }
@@ -711,7 +711,10 @@ mod tests {
         .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
-        assert_eq!(err::REACH_PAYMENT_PLATFORM_RATE_LIMIT, result.1 .0.code);
+        assert_eq!(
+            err::Code::ReachPaymentPlatformRateLimit as u32,
+            result.1 .0.code
+        );
     }
 
     #[tokio::test]
@@ -767,7 +770,10 @@ mod tests {
         .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
-        assert_eq!(err::REACH_PAYMENT_PLATFORM_RATE_LIMIT, result.1 .0.code);
+        assert_eq!(
+            err::Code::ReachPaymentPlatformRateLimit as u32,
+            result.1 .0.code
+        );
     }
 
     #[tokio::test]
@@ -823,7 +829,10 @@ mod tests {
         .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
-        assert_eq!(err::REACH_PAYMENT_PLATFORM_RATE_LIMIT, result.1 .0.code);
+        assert_eq!(
+            err::Code::ReachPaymentPlatformRateLimit as u32,
+            result.1 .0.code
+        );
     }
 
     #[tokio::test]

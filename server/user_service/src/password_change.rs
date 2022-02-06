@@ -27,7 +27,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use tower_cookies::Cookies;
 
-use crate::err::{INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND};
+use crate::err::Code::{InvalidUuid, NewPasswordExpired, NoAccountFound, NoNewPasswordFound};
 use crate::util::session::SESSION_ID_COOKIE_NAME;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
@@ -77,7 +77,9 @@ async fn post_password_change_internal(
         tracing::error!("failed to validate uuid: {}", e);
         (
             StatusCode::BAD_REQUEST,
-            Json(ApiError { code: INVALID_UUID }),
+            Json(ApiError {
+                code: InvalidUuid as u32,
+            }),
         )
     })?;
     let email_addr = async move {
@@ -92,7 +94,7 @@ async fn post_password_change_internal(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: NEW_PASSWORD_EXPIRED,
+                    code: NewPasswordExpired as u32,
                 }),
             ));
         }
@@ -155,7 +157,7 @@ fn find_account_by_email_address(
         Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: NO_ACCOUNT_FOUND,
+                code: NoAccountFound as u32,
             }),
         ))
     } else if cnt == 1 {
@@ -220,7 +222,7 @@ impl PasswordChangeOperation for PasswordChangeOperationImpl {
                     Err((
                         StatusCode::BAD_REQUEST,
                         Json(ApiError {
-                            code: NO_NEW_PASSWORD_FOUND,
+                            code: NoNewPasswordFound as u32,
                         }),
                     ))
                 } else {
@@ -273,7 +275,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        err::{INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND},
+        err::Code::{InvalidUuid, NewPasswordExpired, NoAccountFound, NoNewPasswordFound},
         password_change::{
             create_text, post_password_change_internal, PasswordChangeResult, SUBJECT,
         },
@@ -326,7 +328,7 @@ mod tests {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: NO_NEW_PASSWORD_FOUND,
+                        code: NoNewPasswordFound as u32,
                     }),
                 ));
             }
@@ -342,7 +344,7 @@ mod tests {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: NO_ACCOUNT_FOUND,
+                        code: NoAccountFound as u32,
                     }),
                 ));
             }
@@ -548,7 +550,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(INVALID_UUID, resp.1.code);
+        assert_eq!(InvalidUuid as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -593,7 +595,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(NO_ACCOUNT_FOUND, resp.1.code);
+        assert_eq!(NoAccountFound as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -638,7 +640,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(NO_NEW_PASSWORD_FOUND, resp.1.code);
+        assert_eq!(NoNewPasswordFound as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -684,7 +686,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(NEW_PASSWORD_EXPIRED, resp.1.code);
+        assert_eq!(NewPasswordExpired as u32, resp.1.code);
     }
 
     #[tokio::test]

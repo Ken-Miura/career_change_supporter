@@ -14,7 +14,7 @@ use std::time::Duration;
 use tower_cookies::{Cookie, Cookies};
 
 use crate::{
-    err::{NOT_TERMS_OF_USE_AGREED_YET, UNAUTHORIZED},
+    err::Code::{NotTermsOfUseAgreedYet, Unauthorized},
     util::{unexpected_err_resp, ROOT_PATH},
 };
 
@@ -142,7 +142,9 @@ pub(crate) async fn get_user_by_cookie(
             tracing::debug!("no valid cookie on request");
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiError { code: UNAUTHORIZED }),
+                Json(ApiError {
+                    code: Unauthorized as u32,
+                }),
             ));
         }
     };
@@ -163,7 +165,9 @@ pub(crate) async fn get_user_by_cookie(
             tracing::debug!("no valid session on request");
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiError { code: UNAUTHORIZED }),
+                Json(ApiError {
+                    code: Unauthorized as u32,
+                }),
             ));
         }
     };
@@ -218,7 +222,7 @@ fn check_if_user_has_already_agreed(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: NOT_TERMS_OF_USE_AGREED_YET,
+                code: NotTermsOfUseAgreedYet as u32,
             }),
         ));
     }
@@ -370,7 +374,7 @@ pub(crate) mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err::UNAUTHORIZED, result.1 .0.code);
+        assert_eq!(err::Code::Unauthorized as u32, result.1 .0.code);
     }
 
     #[tokio::test]
@@ -388,7 +392,7 @@ pub(crate) mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err::UNAUTHORIZED, result.1 .0.code);
+        assert_eq!(err::Code::Unauthorized as u32, result.1 .0.code);
     }
 
     #[tokio::test]
@@ -410,7 +414,7 @@ pub(crate) mod tests {
 
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err::UNAUTHORIZED, result.1 .0.code);
+        assert_eq!(err::Code::Unauthorized as u32, result.1 .0.code);
     }
 
     struct TermsOfUseLoadOperationMock {
@@ -459,6 +463,6 @@ pub(crate) mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(err::NOT_TERMS_OF_USE_AGREED_YET, result.1 .0.code);
+        assert_eq!(err::Code::NotTermsOfUseAgreedYet as u32, result.1 .0.code);
     }
 }

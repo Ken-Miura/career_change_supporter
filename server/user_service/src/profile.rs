@@ -20,7 +20,7 @@ use diesel::{
 use serde::Serialize;
 
 use crate::{
-    err::NO_ACCOUNT_FOUND,
+    err::Code::NoAccountFound,
     util::{session::User, unexpected_err_resp, Career, Identity, Ymd},
 };
 
@@ -198,7 +198,7 @@ impl ProfileOperation for ProfileOperationImpl {
                     Err((
                         StatusCode::BAD_REQUEST,
                         Json(ApiError {
-                            code: NO_ACCOUNT_FOUND,
+                            code: NoAccountFound as u32,
                         }),
                     ))
                 } else {
@@ -271,7 +271,7 @@ mod tests {
     };
 
     use crate::{
-        err::{self, NO_ACCOUNT_FOUND},
+        err::{self, Code::NoAccountFound},
         profile::{convert_career_info_to_career, convert_identity_info_to_identity},
         util::Career,
     };
@@ -294,7 +294,7 @@ mod tests {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: NO_ACCOUNT_FOUND,
+                        code: NoAccountFound as u32,
                     }),
                 ));
             }
@@ -588,6 +588,6 @@ mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(err::NO_ACCOUNT_FOUND, result.1.code);
+        assert_eq!(err::Code::NoAccountFound as u32, result.1.code);
     }
 }

@@ -19,7 +19,7 @@ use diesel::{
 };
 use tower_cookies::Cookies;
 
-use crate::err::ALREADY_AGREED_TERMS_OF_USE;
+use crate::err::Code::AlreadyAgreedTermsOfUse;
 use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use crate::util::{
     session::get_user_by_cookie, terms_of_use::TERMS_OF_USE_VERSION, unexpected_err_resp,
@@ -110,7 +110,7 @@ impl AgreementOperation for AgreementOperationImpl {
                     return (
                         StatusCode::BAD_REQUEST,
                         Json(ApiError {
-                            code: ALREADY_AGREED_TERMS_OF_USE,
+                            code: AlreadyAgreedTermsOfUse as u32,
                         }),
                     );
                 }
@@ -171,7 +171,7 @@ mod tests {
     use common::{model::user::Account, util::hash_password, ApiError, ErrResp};
     use hyper::StatusCode;
 
-    use crate::err::ALREADY_AGREED_TERMS_OF_USE;
+    use crate::err::Code::AlreadyAgreedTermsOfUse;
 
     use super::{post_agreement_internal, AgreementOperation};
 
@@ -233,7 +233,7 @@ mod tests {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: ALREADY_AGREED_TERMS_OF_USE,
+                        code: AlreadyAgreedTermsOfUse as u32,
                     }),
                 ));
             }
@@ -269,6 +269,6 @@ mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(ALREADY_AGREED_TERMS_OF_USE, result.1 .0.code);
+        assert_eq!(AlreadyAgreedTermsOfUse as u32, result.1 .0.code);
     }
 }

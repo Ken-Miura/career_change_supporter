@@ -22,7 +22,7 @@ pub(crate) fn unexpected_err_resp() -> ErrResp {
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(ApiError {
-            code: err::UNEXPECTED_ERR,
+            code: err::Code::UnexpectedErr as u32,
         }),
     )
 }
