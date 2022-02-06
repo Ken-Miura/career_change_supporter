@@ -8,7 +8,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use chrono::NaiveDate;
+use chrono::Utc;
 use common::{ApiError, ErrResp, RespResult};
 use image::ImageFormat;
 use serde::Serialize;
@@ -19,7 +19,7 @@ use crate::{
         session::User,
         unexpected_err_resp,
         validator::identity_validator::{validate_identity, IdentityValidationError},
-        Identity,
+        Identity, JAPANESE_TIME_ZONE,
     },
 };
 
@@ -32,6 +32,9 @@ pub(crate) async fn post_identity(
         },
     >,
 ) -> RespResult<IdentityResult> {
+    let mut identity_option = None;
+    // let mut identity_image1_option = None;
+    // let mut identity_image2_option = None;
     while let Some(field) = multipart.next_field().await.map_err(|e| {
         tracing::error!("failed to get next_field: {}", e);
         unexpected_err_resp()
@@ -49,13 +52,16 @@ pub(crate) async fn post_identity(
                 .parse::<String>()
                 .unwrap();
             let identity = serde_json::from_str::<Identity>(&identity_str).unwrap();
-            // validate, trim
-            let current_date = NaiveDate::from_ymd(2022, 1, 30);
+
+            let current_date = Utc::now()
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .naive_local()
+                .date();
             let _ = validate_identity(&identity, &current_date).map_err(|e| {
                 tracing::error!("invalid identity: {}", e);
                 create_invalid_identity_err(&e)
             })?;
-            println!("identity:  `{:?}`", identity);
+            identity_option = Some(trim_space_from_identity(identity));
         } else if name == "identity-image1" {
             println!("identity-image1");
             let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
@@ -79,6 +85,7 @@ pub(crate) async fn post_identity(
             println!("else");
         }
     }
+    println!("{:?}", identity_option);
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
 
