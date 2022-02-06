@@ -9,11 +9,19 @@ use axum::{
     Json,
 };
 use chrono::NaiveDate;
-use common::RespResult;
+use common::{ApiError, ErrResp, RespResult};
 use image::ImageFormat;
 use serde::Serialize;
 
-use crate::util::{session::User, validator::identity_validator::validate_identity, Identity};
+use crate::{
+    err_code,
+    util::{
+        session::User,
+        unexpected_err_resp,
+        validator::identity_validator::{validate_identity, IdentityValidationError},
+        Identity,
+    },
+};
 
 pub(crate) async fn post_identity(
     User { account_id }: User,
@@ -24,8 +32,10 @@ pub(crate) async fn post_identity(
         },
     >,
 ) -> RespResult<IdentityResult> {
-    println!("account id: {}", account_id);
-    while let Some(field) = multipart.next_field().await.unwrap() {
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        tracing::error!("failed to get next_field: {}", e);
+        unexpected_err_resp()
+    })? {
         let name = field.name().unwrap().to_string();
         let file_name_option = field.file_name();
         if let Some(file_name) = file_name_option {
@@ -41,7 +51,10 @@ pub(crate) async fn post_identity(
             let identity = serde_json::from_str::<Identity>(&identity_str).unwrap();
             // validate, trim
             let current_date = NaiveDate::from_ymd(2022, 1, 30);
-            let _ = validate_identity(&identity, &current_date).map_err(|e| println!("{:?}", e));
+            let _ = validate_identity(&identity, &current_date).map_err(|e| {
+                tracing::error!("invalid identity: {}", e);
+                create_invalid_identity_err(&e)
+            })?;
             println!("identity:  `{:?}`", identity);
         } else if name == "identity-image1" {
             println!("identity-image1");
@@ -71,3 +84,96 @@ pub(crate) async fn post_identity(
 
 #[derive(Serialize, Debug)]
 pub(crate) struct IdentityResult {}
+
+fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
+    let code;
+    match e {
+        IdentityValidationError::InvalidLastNameLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = err_code::INVALID_LAST_NAME_LENGTH,
+        IdentityValidationError::IllegalCharInLastName(_) => {
+            code = err_code::ILLEGAL_CHAR_IN_LAST_NAME
+        }
+        IdentityValidationError::InvalidFirstNameLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = err_code::INVALID_FIRST_NAME_LENGTH,
+        IdentityValidationError::IllegalCharInFirstName(_) => {
+            code = err_code::ILLEGAL_CHAR_IN_FIRST_NAME
+        }
+        IdentityValidationError::InvalidLastNameFuriganaLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = err_code::INVALID_LAST_NAME_FURIGANA_LENGTH,
+        IdentityValidationError::IllegalCharInLastNameFurigana(_) => {
+            code = err_code::ILLEGAL_CHAR_IN_LAST_NAME_FURIGANA
+        }
+        IdentityValidationError::InvalidFirstNameFuriganaLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = err_code::INVALID_FIRST_NAME_FURIGANA_LENGTH,
+        IdentityValidationError::IllegalCharInFirstNameFurigana(_) => {
+            code = err_code::ILLEGAL_CHAR_IN_FIRST_NAME_FURIGANA
+        }
+        IdentityValidationError::IllegalDate {
+            year: _,
+            month: _,
+            day: _,
+        } => code = err_code::ILLEGAL_DATE,
+        IdentityValidationError::IllegalAge {
+            birth_year: _,
+            birth_month: _,
+            birth_day: _,
+            current_year: _,
+            current_month: _,
+            current_day: _,
+        } => code = err_code::ILLEGAL_AGE,
+        IdentityValidationError::InvalidPrefecture(_) => code = err_code::INVALID_PREFECTURE,
+        IdentityValidationError::InvalidCityLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = err_code::INVALID_CITY_LENGTH,
+        IdentityValidationError::IllegalCharInCity(_) => code = err_code::ILLEGAL_CHAR_IN_CITY,
+        IdentityValidationError::InvalidAddressLine1Length {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = err_code::INVALID_ADDRESS_LINE1_LENGTH,
+        IdentityValidationError::IllegalCharInAddressLine1(_) => {
+            code = err_code::ILLEGAL_CHAR_IN_ADDRESS_LINE1
+        }
+        IdentityValidationError::InvalidAddressLine2Length {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = err_code::INVALID_ADDRESS_LINE2_LENGTH,
+        IdentityValidationError::IllegalCharInAddressLine2(_) => {
+            code = err_code::ILLEGAL_CHAR_IN_ADDRESS_LINE2
+        }
+        IdentityValidationError::InvalidTelNumFormat(_) => code = err_code::INVALID_TEL_NUM_FORMAT,
+    }
+    (StatusCode::BAD_REQUEST, Json(ApiError { code }))
+}
+
+fn trim_space_from_identity(identity: Identity) -> Identity {
+    Identity {
+        last_name: identity.last_name.trim().to_string(),
+        first_name: identity.first_name.trim().to_string(),
+        last_name_furigana: identity.last_name_furigana.trim().to_string(),
+        first_name_furigana: identity.first_name_furigana.trim().to_string(),
+        date_of_birth: identity.date_of_birth,
+        prefecture: identity.prefecture.trim().to_string(),
+        city: identity.city.trim().to_string(),
+        address_line1: identity.address_line1.trim().to_string(),
+        address_line2: identity
+            .address_line2
+            .map(|address_line2| address_line2.trim().to_string()),
+        telephone_number: identity.telephone_number.trim().to_string(),
+    }
+}
