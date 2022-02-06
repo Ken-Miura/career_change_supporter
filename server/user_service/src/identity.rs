@@ -14,7 +14,7 @@ use image::ImageFormat;
 use serde::Serialize;
 
 use crate::{
-    err::{self, unexpected_err_resp},
+    err::{self, unexpected_err_resp, Code},
     util::{
         session::User,
         validator::identity_validator::{validate_identity, IdentityValidationError},
@@ -40,13 +40,25 @@ pub(crate) async fn post_identity(
     })? {
         let name = match field.name() {
             Some(n) => n.to_string(),
-            None => todo!(),
+            None => {
+                tracing::error!("failed to get name in field");
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoNameFound as u32,
+                    }),
+                ));
+            }
         };
-        let file_name_option = field.file_name();
+        let file_name_option = field.file_name().map(|s| s.to_string());
         let data = field.bytes().await.map_err(|e| {
             tracing::error!("failed to get data in field: {}", e);
-            // BAD REQにする
-            unexpected_err_resp()
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::DataParseFailure as u32,
+                }),
+            )
         })?;
         println!("Length of `{}` is {} bytes", name, data.len());
         if name == "identity" {
@@ -66,7 +78,19 @@ pub(crate) async fn post_identity(
             })?;
             identity_option = Some(trim_space_from_identity(identity));
         } else if name == "identity-image1" {
-            println!("identity-image1");
+            let file_name = match file_name_option {
+                Some(f) => f,
+                None => {
+                    tracing::error!("failed to get file name in field");
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::NoFileNameFound as u32,
+                        }),
+                    ));
+                }
+            };
+            println!("{}", file_name);
             let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
                 .decode()
                 .expect("failed to decode");

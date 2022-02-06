@@ -41,6 +41,9 @@ pub(crate) enum Code {
     InvalidAddressLine2Length = 20030,
     IllegalCharInAddressLine2 = 20031,
     InvalidTelNumFormat = 20032,
+    NoNameFound = 20033,
+    NoFileNameFound = 20034,
+    DataParseFailure = 20035,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
