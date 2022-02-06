@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 use std::env::var;
 use std::net::SocketAddr;
 
-use crate::{err_code, ApiError, ErrResp};
+use crate::{err, ApiError, ErrResp};
 
 // TODO: 実際にメールアドレスを取得した後、修正する
 pub const SYSTEM_EMAIL_ADDRESS: &str = "admin@test.com";
@@ -53,7 +53,7 @@ impl SendMail for SmtpClient {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ApiError {
-                        code: err_code::UNEXPECTED_ERR,
+                        code: err::Code::UnexpectedErr as u32,
                     }),
                 )
             })?;
@@ -62,7 +62,7 @@ impl SendMail for SmtpClient {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
-                    code: err_code::UNEXPECTED_ERR,
+                    code: err::Code::UnexpectedErr as u32,
                 }),
             )
         })?;
@@ -71,7 +71,7 @@ impl SendMail for SmtpClient {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
-                    code: err_code::UNEXPECTED_ERR,
+                    code: err::Code::UnexpectedErr as u32,
                 }),
             )
         })?;
@@ -81,7 +81,7 @@ impl SendMail for SmtpClient {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
-                    code: err_code::UNEXPECTED_ERR,
+                    code: err::Code::UnexpectedErr as u32,
                 }),
             )
         })?;

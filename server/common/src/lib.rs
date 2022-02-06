@@ -5,7 +5,7 @@
 #[macro_use]
 extern crate diesel;
 
-mod err_code;
+mod err;
 pub mod model;
 pub mod payment_platform;
 pub mod redis;
@@ -75,7 +75,7 @@ where
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ApiError {
-                        code: err_code::UNEXPECTED_ERR,
+                        code: err::Code::UnexpectedErr as u32,
                     }),
                 )
             })?;
@@ -84,7 +84,7 @@ where
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
-                    code: err_code::UNEXPECTED_ERR,
+                    code: err::Code::UnexpectedErr as u32,
                 }),
             )
         })?;
@@ -123,7 +123,7 @@ where
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ApiError {
-                        code: err_code::UNEXPECTED_ERR,
+                        code: err::Code::UnexpectedErr as u32,
                     }),
                 )
             })?;
@@ -133,7 +133,7 @@ where
             (
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: err_code::INVALID_EMAIL_ADDRESS_FORMAT,
+                    code: err::Code::InvalidEmailAddressFormat as u32,
                 }),
             )
         })?;
@@ -142,7 +142,7 @@ where
             (
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: err_code::INVALID_PASSWORD_FORMAT,
+                    code: err::Code::InvalidPasswordFormat as u32,
                 }),
             )
         })?;
