@@ -14,8 +14,11 @@ use std::time::Duration;
 use tower_cookies::{Cookie, Cookies};
 
 use crate::{
-    err::Code::{NotTermsOfUseAgreedYet, Unauthorized},
-    util::{unexpected_err_resp, ROOT_PATH},
+    err::{
+        unexpected_err_resp,
+        Code::{NotTermsOfUseAgreedYet, Unauthorized},
+    },
+    util::ROOT_PATH,
 };
 
 use super::terms_of_use::{

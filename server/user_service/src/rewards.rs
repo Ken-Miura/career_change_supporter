@@ -26,8 +26,8 @@ use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use serde::Serialize;
 
 use crate::{
-    err::{self},
-    util::{session::User, unexpected_err_resp, BankAccount, Ymd, ACCESS_INFO, JAPANESE_TIME_ZONE},
+    err::{self, unexpected_err_resp},
+    util::{session::User, BankAccount, Ymd, ACCESS_INFO, JAPANESE_TIME_ZONE},
 };
 
 const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 32;

@@ -20,11 +20,10 @@ use diesel::{
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
+use crate::err::unexpected_err_resp;
 use crate::err::Code::EmailOrPwdIncorrect;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
-use crate::util::{
-    session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID, unexpected_err_resp,
-};
+use crate::util::{session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID};
 
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcoookieをセットして応答する<br>

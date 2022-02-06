@@ -8,9 +8,9 @@ use headers::{HeaderMap, HeaderValue};
 use hyper::header::SET_COOKIE;
 use tower_cookies::Cookies;
 
-use crate::util::{
-    session::{create_expired_cookie_format, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
-    unexpected_err_resp,
+use crate::{
+    err::unexpected_err_resp,
+    util::session::{create_expired_cookie_format, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
 };
 
 /// ログアウトを行う

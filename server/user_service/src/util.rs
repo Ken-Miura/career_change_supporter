@@ -6,26 +6,14 @@ pub(crate) mod validator;
 
 use std::env::var;
 
-use axum::{http::StatusCode, Json};
 use chrono::FixedOffset;
-use common::{payment_platform::AccessInfo, ApiError, ErrResp};
+use common::payment_platform::AccessInfo;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-
-use crate::err;
 
 pub(crate) const WEB_SITE_NAME: &str = "就職先・転職先を見極めるためのサイト";
 
 pub(crate) const ROOT_PATH: &str = "/api";
-
-pub(crate) fn unexpected_err_resp() -> ErrResp {
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ApiError {
-            code: err::Code::UnexpectedErr as u32,
-        }),
-    )
-}
 
 pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_URL: &str = "PAYMENT_PLATFORM_API_URL";
 pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_USERNAME: &str = "PAYMENT_PLATFORM_API_USERNAME";

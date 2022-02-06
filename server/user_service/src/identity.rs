@@ -14,10 +14,9 @@ use image::ImageFormat;
 use serde::Serialize;
 
 use crate::{
-    err,
+    err::{self, unexpected_err_resp},
     util::{
         session::User,
-        unexpected_err_resp,
         validator::identity_validator::{validate_identity, IdentityValidationError},
         Identity, JAPANESE_TIME_ZONE,
     },

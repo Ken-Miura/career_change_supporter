@@ -14,7 +14,7 @@ use diesel::{QueryDsl, RunQueryDsl};
 use once_cell::sync::Lazy;
 use std::env::var;
 
-use crate::util::unexpected_err_resp;
+use crate::err::unexpected_err_resp;
 
 pub(crate) const KEY_TO_TERMS_OF_USE_VERSION: &str = "TERMS_OF_USE_VERSION";
 pub(crate) static TERMS_OF_USE_VERSION: Lazy<i32> = Lazy::new(|| {

@@ -27,8 +27,9 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
+use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachTempAccountsLimit;
-use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
+use crate::util::WEB_SITE_NAME;
 
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_TEMP_ACCOUNTS: i64 = 5;

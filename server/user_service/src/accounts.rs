@@ -24,8 +24,9 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountAlreadyExists, InvalidUuid, NoTempAccountFound, TempAccountExpired};
-use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
+use crate::util::WEB_SITE_NAME;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 

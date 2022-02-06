@@ -20,8 +20,8 @@ use diesel::{
 use serde::Serialize;
 
 use crate::{
-    err::Code::NoAccountFound,
-    util::{session::User, unexpected_err_resp, Career, Identity, Ymd},
+    err::{unexpected_err_resp, Code::NoAccountFound},
+    util::{session::User, Career, Identity, Ymd},
 };
 
 pub(crate) async fn get_profile(

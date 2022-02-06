@@ -27,9 +27,10 @@ use serde::Deserialize;
 use serde::Serialize;
 use tower_cookies::Cookies;
 
+use crate::err::unexpected_err_resp;
 use crate::err::Code::{InvalidUuid, NewPasswordExpired, NoAccountFound, NoNewPasswordFound};
 use crate::util::session::SESSION_ID_COOKIE_NAME;
-use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
+use crate::util::WEB_SITE_NAME;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
