@@ -27,7 +27,7 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
-use crate::err_code::REACH_NEW_PASSWORDS_LIMIT;
+use crate::err::REACH_NEW_PASSWORDS_LIMIT;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
@@ -198,7 +198,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        err_code::REACH_NEW_PASSWORDS_LIMIT,
+        err::REACH_NEW_PASSWORDS_LIMIT,
         new_password::{
             create_text, post_new_password_internal, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT,
         },

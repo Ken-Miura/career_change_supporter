@@ -19,7 +19,7 @@ use diesel::{
 };
 use tower_cookies::Cookies;
 
-use crate::err_code::ALREADY_AGREED_TERMS_OF_USE;
+use crate::err::ALREADY_AGREED_TERMS_OF_USE;
 use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use crate::util::{
     session::get_user_by_cookie, terms_of_use::TERMS_OF_USE_VERSION, unexpected_err_resp,
@@ -171,7 +171,7 @@ mod tests {
     use common::{model::user::Account, util::hash_password, ApiError, ErrResp};
     use hyper::StatusCode;
 
-    use crate::err_code::ALREADY_AGREED_TERMS_OF_USE;
+    use crate::err::ALREADY_AGREED_TERMS_OF_USE;
 
     use super::{post_agreement_internal, AgreementOperation};
 

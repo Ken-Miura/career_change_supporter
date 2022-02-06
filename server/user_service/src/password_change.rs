@@ -27,9 +27,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use tower_cookies::Cookies;
 
-use crate::err_code::{
-    INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND,
-};
+use crate::err::{INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND};
 use crate::util::session::SESSION_ID_COOKIE_NAME;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
@@ -275,7 +273,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        err_code::{INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND},
+        err::{INVALID_UUID, NEW_PASSWORD_EXPIRED, NO_ACCOUNT_FOUND, NO_NEW_PASSWORD_FOUND},
         password_change::{
             create_text, post_password_change_internal, PasswordChangeResult, SUBJECT,
         },

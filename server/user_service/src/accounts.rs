@@ -24,7 +24,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::err_code::{
+use crate::err::{
     ACCOUNT_ALREADY_EXISTS, INVALID_UUID, NO_TEMP_ACCOUNT_FOUND, TEMP_ACCOUNT_EXPIRED,
 };
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};

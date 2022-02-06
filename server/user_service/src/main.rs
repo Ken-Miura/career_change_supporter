@@ -2,7 +2,7 @@
 
 mod accounts;
 mod agreement;
-mod err_code;
+mod err;
 mod identity;
 mod login;
 mod logout;

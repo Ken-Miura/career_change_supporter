@@ -27,7 +27,7 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
-use crate::err_code::REACH_TEMP_ACCOUNTS_LIMIT;
+use crate::err::REACH_TEMP_ACCOUNTS_LIMIT;
 use crate::util::{unexpected_err_resp, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する

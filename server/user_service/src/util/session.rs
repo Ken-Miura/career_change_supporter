@@ -14,7 +14,7 @@ use std::time::Duration;
 use tower_cookies::{Cookie, Cookies};
 
 use crate::{
-    err_code::{NOT_TERMS_OF_USE_AGREED_YET, UNAUTHORIZED},
+    err::{NOT_TERMS_OF_USE_AGREED_YET, UNAUTHORIZED},
     util::{unexpected_err_resp, ROOT_PATH},
 };
 
@@ -244,7 +244,7 @@ pub(crate) mod tests {
     use tower_cookies::Cookies;
 
     use crate::{
-        err_code,
+        err,
         util::{
             session::{get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
             terms_of_use::TermsOfUseLoadOperation,
@@ -370,7 +370,7 @@ pub(crate) mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
+        assert_eq!(err::UNAUTHORIZED, result.1 .0.code);
     }
 
     #[tokio::test]
@@ -388,7 +388,7 @@ pub(crate) mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
+        assert_eq!(err::UNAUTHORIZED, result.1 .0.code);
     }
 
     #[tokio::test]
@@ -410,7 +410,7 @@ pub(crate) mod tests {
 
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err_code::UNAUTHORIZED, result.1 .0.code);
+        assert_eq!(err::UNAUTHORIZED, result.1 .0.code);
     }
 
     struct TermsOfUseLoadOperationMock {
@@ -459,6 +459,6 @@ pub(crate) mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(err_code::NOT_TERMS_OF_USE_AGREED_YET, result.1 .0.code);
+        assert_eq!(err::NOT_TERMS_OF_USE_AGREED_YET, result.1 .0.code);
     }
 }

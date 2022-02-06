@@ -26,7 +26,7 @@ use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use serde::Serialize;
 
 use crate::{
-    err_code::{self},
+    err::{self},
     util::{session::User, unexpected_err_resp, BankAccount, Ymd, ACCESS_INFO, JAPANESE_TIME_ZONE},
 };
 
@@ -177,7 +177,7 @@ async fn get_tenant_obj_by_tenant_id(
                     return (
                         StatusCode::TOO_MANY_REQUESTS,
                         Json(ApiError {
-                            code: err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                            code: err::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
                         }),
                     );
                 }
@@ -224,7 +224,7 @@ async fn get_rewards_of_current_month(
                         return (
                             StatusCode::TOO_MANY_REQUESTS,
                             Json(ApiError {
-                                code: err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                                code: err::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
                             }),
                         );
                     }
@@ -337,7 +337,7 @@ async fn get_latest_two_tenant_transfers(
                     return (
                         StatusCode::TOO_MANY_REQUESTS,
                         Json(ApiError {
-                            code: err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
+                            code: err::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
                         }),
                     );
                 }
@@ -447,7 +447,7 @@ mod tests {
     };
 
     use crate::{
-        err_code,
+        err,
         rewards::Transfer,
         util::{BankAccount, Ymd, JAPANESE_TIME_ZONE},
     };
@@ -711,10 +711,7 @@ mod tests {
         .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
-        assert_eq!(
-            err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
-            result.1 .0.code
-        );
+        assert_eq!(err::REACH_PAYMENT_PLATFORM_RATE_LIMIT, result.1 .0.code);
     }
 
     #[tokio::test]
@@ -770,10 +767,7 @@ mod tests {
         .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
-        assert_eq!(
-            err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
-            result.1 .0.code
-        );
+        assert_eq!(err::REACH_PAYMENT_PLATFORM_RATE_LIMIT, result.1 .0.code);
     }
 
     #[tokio::test]
@@ -829,10 +823,7 @@ mod tests {
         .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
-        assert_eq!(
-            err_code::REACH_PAYMENT_PLATFORM_RATE_LIMIT,
-            result.1 .0.code
-        );
+        assert_eq!(err::REACH_PAYMENT_PLATFORM_RATE_LIMIT, result.1 .0.code);
     }
 
     #[tokio::test]

@@ -12,7 +12,7 @@ use common::{payment_platform::AccessInfo, ApiError, ErrResp};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::err_code;
+use crate::err;
 
 pub(crate) const WEB_SITE_NAME: &str = "就職先・転職先を見極めるためのサイト";
 
@@ -22,7 +22,7 @@ pub(crate) fn unexpected_err_resp() -> ErrResp {
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(ApiError {
-            code: err_code::UNEXPECTED_ERR,
+            code: err::UNEXPECTED_ERR,
         }),
     )
 }

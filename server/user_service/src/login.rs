@@ -20,7 +20,7 @@ use diesel::{
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use hyper::header::SET_COOKIE;
 
-use crate::err_code::EMAIL_OR_PWD_INCORRECT;
+use crate::err::EMAIL_OR_PWD_INCORRECT;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
 use crate::util::{
     session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID, unexpected_err_resp,

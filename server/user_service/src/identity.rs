@@ -14,7 +14,7 @@ use image::ImageFormat;
 use serde::Serialize;
 
 use crate::{
-    err_code,
+    err,
     util::{
         session::User,
         unexpected_err_resp,
@@ -103,39 +103,37 @@ fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err_code::INVALID_LAST_NAME_LENGTH,
-        IdentityValidationError::IllegalCharInLastName(_) => {
-            code = err_code::ILLEGAL_CHAR_IN_LAST_NAME
-        }
+        } => code = err::INVALID_LAST_NAME_LENGTH,
+        IdentityValidationError::IllegalCharInLastName(_) => code = err::ILLEGAL_CHAR_IN_LAST_NAME,
         IdentityValidationError::InvalidFirstNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err_code::INVALID_FIRST_NAME_LENGTH,
+        } => code = err::INVALID_FIRST_NAME_LENGTH,
         IdentityValidationError::IllegalCharInFirstName(_) => {
-            code = err_code::ILLEGAL_CHAR_IN_FIRST_NAME
+            code = err::ILLEGAL_CHAR_IN_FIRST_NAME
         }
         IdentityValidationError::InvalidLastNameFuriganaLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err_code::INVALID_LAST_NAME_FURIGANA_LENGTH,
+        } => code = err::INVALID_LAST_NAME_FURIGANA_LENGTH,
         IdentityValidationError::IllegalCharInLastNameFurigana(_) => {
-            code = err_code::ILLEGAL_CHAR_IN_LAST_NAME_FURIGANA
+            code = err::ILLEGAL_CHAR_IN_LAST_NAME_FURIGANA
         }
         IdentityValidationError::InvalidFirstNameFuriganaLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err_code::INVALID_FIRST_NAME_FURIGANA_LENGTH,
+        } => code = err::INVALID_FIRST_NAME_FURIGANA_LENGTH,
         IdentityValidationError::IllegalCharInFirstNameFurigana(_) => {
-            code = err_code::ILLEGAL_CHAR_IN_FIRST_NAME_FURIGANA
+            code = err::ILLEGAL_CHAR_IN_FIRST_NAME_FURIGANA
         }
         IdentityValidationError::IllegalDate {
             year: _,
             month: _,
             day: _,
-        } => code = err_code::ILLEGAL_DATE,
+        } => code = err::ILLEGAL_DATE,
         IdentityValidationError::IllegalAge {
             birth_year: _,
             birth_month: _,
@@ -143,31 +141,31 @@ fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
             current_year: _,
             current_month: _,
             current_day: _,
-        } => code = err_code::ILLEGAL_AGE,
-        IdentityValidationError::InvalidPrefecture(_) => code = err_code::INVALID_PREFECTURE,
+        } => code = err::ILLEGAL_AGE,
+        IdentityValidationError::InvalidPrefecture(_) => code = err::INVALID_PREFECTURE,
         IdentityValidationError::InvalidCityLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err_code::INVALID_CITY_LENGTH,
-        IdentityValidationError::IllegalCharInCity(_) => code = err_code::ILLEGAL_CHAR_IN_CITY,
+        } => code = err::INVALID_CITY_LENGTH,
+        IdentityValidationError::IllegalCharInCity(_) => code = err::ILLEGAL_CHAR_IN_CITY,
         IdentityValidationError::InvalidAddressLine1Length {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err_code::INVALID_ADDRESS_LINE1_LENGTH,
+        } => code = err::INVALID_ADDRESS_LINE1_LENGTH,
         IdentityValidationError::IllegalCharInAddressLine1(_) => {
-            code = err_code::ILLEGAL_CHAR_IN_ADDRESS_LINE1
+            code = err::ILLEGAL_CHAR_IN_ADDRESS_LINE1
         }
         IdentityValidationError::InvalidAddressLine2Length {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err_code::INVALID_ADDRESS_LINE2_LENGTH,
+        } => code = err::INVALID_ADDRESS_LINE2_LENGTH,
         IdentityValidationError::IllegalCharInAddressLine2(_) => {
-            code = err_code::ILLEGAL_CHAR_IN_ADDRESS_LINE2
+            code = err::ILLEGAL_CHAR_IN_ADDRESS_LINE2
         }
-        IdentityValidationError::InvalidTelNumFormat(_) => code = err_code::INVALID_TEL_NUM_FORMAT,
+        IdentityValidationError::InvalidTelNumFormat(_) => code = err::INVALID_TEL_NUM_FORMAT,
     }
     (StatusCode::BAD_REQUEST, Json(ApiError { code }))
 }

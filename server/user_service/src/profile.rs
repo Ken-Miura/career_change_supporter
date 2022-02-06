@@ -20,7 +20,7 @@ use diesel::{
 use serde::Serialize;
 
 use crate::{
-    err_code::NO_ACCOUNT_FOUND,
+    err::NO_ACCOUNT_FOUND,
     util::{session::User, unexpected_err_resp, Career, Identity, Ymd},
 };
 
@@ -271,7 +271,7 @@ mod tests {
     };
 
     use crate::{
-        err_code::{self, NO_ACCOUNT_FOUND},
+        err::{self, NO_ACCOUNT_FOUND},
         profile::{convert_career_info_to_career, convert_identity_info_to_identity},
         util::Career,
     };
@@ -588,6 +588,6 @@ mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(err_code::NO_ACCOUNT_FOUND, result.1.code);
+        assert_eq!(err::NO_ACCOUNT_FOUND, result.1.code);
     }
 }
