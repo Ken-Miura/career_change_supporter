@@ -39,12 +39,16 @@ pub(crate) async fn post_identity(
         tracing::error!("failed to get next_field: {}", e);
         unexpected_err_resp()
     })? {
-        let name = field.name().unwrap().to_string();
+        let name = match field.name() {
+            Some(n) => n.to_string(),
+            None => todo!(),
+        };
         let file_name_option = field.file_name();
-        if let Some(file_name) = file_name_option {
-            println!("file name:  `{}`", file_name);
-        }
-        let data = field.bytes().await.unwrap();
+        let data = field.bytes().await.map_err(|e| {
+            tracing::error!("failed to get data in field: {}", e);
+            // BAD REQにする
+            unexpected_err_resp()
+        })?;
         println!("Length of `{}` is {} bytes", name, data.len());
         if name == "identity" {
             let identity_str = std::str::from_utf8(&data)
