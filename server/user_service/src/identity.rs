@@ -17,7 +17,10 @@ use crate::{
     err::{self, unexpected_err_resp, Code},
     util::{
         session::User,
-        validator::identity_validator::{validate_identity, IdentityValidationError},
+        validator::{
+            file_name_validator::validate_extension_is_jpeg,
+            identity_validator::{validate_identity, IdentityValidationError},
+        },
         Identity, JAPANESE_TIME_ZONE,
     },
 };
@@ -32,8 +35,8 @@ pub(crate) async fn post_identity(
     >,
 ) -> RespResult<IdentityResult> {
     let mut identity_option = None;
-    // let mut identity_image1_option = None;
-    // let mut identity_image2_option = None;
+    let mut identity_image1_option = None;
+    let mut identity_image2_option = None;
     while let Some(field) = multipart.next_field().await.map_err(|e| {
         tracing::error!("failed to get next_field: {}", e);
         unexpected_err_resp()
@@ -101,24 +104,27 @@ pub(crate) async fn post_identity(
                     ));
                 }
             };
-            println!("{}", file_name);
+            let _ = validate_extension_is_jpeg(&file_name).map_err(|e| {
+                tracing::error!("invalid file name ({}): {}", file_name, e);
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NotJpegExtension as u32,
+                    }),
+                )
+            })?;
+            // ファイルサイズのチェック
             let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
                 .decode()
                 .expect("failed to decode");
             let mut bytes: Vec<u8> = Vec::new();
             img.write_to(&mut bytes, image::ImageOutputFormat::Png)
                 .expect("failed to write_to");
-            let magic_number_option = bytes.get(0..8);
-            if let Some(magic_number) = magic_number_option {
-                println!("magic_number: ");
-                for n in magic_number {
-                    print!("{:02X} ", n);
-                }
-                println!();
-            }
-            //img.save("test.png").expect("failed to save");
+            identity_image1_option = Some(bytes);
         } else if name == "identity-image2" {
             println!("identity-image2");
+            let bytes: Vec<u8> = Vec::new();
+            identity_image2_option = Some(bytes);
         } else {
             tracing::error!("invalid name in field: {}", name);
             return Err((
@@ -129,7 +135,10 @@ pub(crate) async fn post_identity(
             ));
         }
     }
+    println!("account_id: {}", account_id);
     println!("{:?}", identity_option);
+    println!("{:?}", identity_image1_option);
+    println!("{:?}", identity_image2_option);
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
 
