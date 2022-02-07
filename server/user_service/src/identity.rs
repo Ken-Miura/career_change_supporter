@@ -60,14 +60,25 @@ pub(crate) async fn post_identity(
                 }),
             )
         })?;
-        println!("Length of `{}` is {} bytes", name, data.len());
         if name == "identity" {
-            let identity_str = std::str::from_utf8(&data)
-                .unwrap()
-                .parse::<String>()
-                .unwrap();
-            let identity = serde_json::from_str::<Identity>(&identity_str).unwrap();
-
+            let identity_json_str = std::str::from_utf8(&data).map_err(|e| {
+                tracing::error!("invalid utf-8 sequence: {}", e);
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidUtf8Sequence as u32,
+                    }),
+                )
+            })?;
+            let identity = serde_json::from_str::<Identity>(identity_json_str).map_err(|e| {
+                tracing::error!("invalid Identity JSON object: {}", e);
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidIdentityJson as u32,
+                    }),
+                )
+            })?;
             let current_date = Utc::now()
                 .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .naive_local()
@@ -109,7 +120,13 @@ pub(crate) async fn post_identity(
         } else if name == "identity-image2" {
             println!("identity-image2");
         } else {
-            println!("else");
+            tracing::error!("invalid name in field: {}", name);
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::InvalidNameInField as u32,
+                }),
+            ));
         }
     }
     println!("{:?}", identity_option);

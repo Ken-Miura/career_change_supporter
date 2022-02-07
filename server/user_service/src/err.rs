@@ -44,6 +44,9 @@ pub(crate) enum Code {
     NoNameFound = 20033,
     NoFileNameFound = 20034,
     DataParseFailure = 20035,
+    InvalidNameInField = 20036,
+    InvalidUtf8Sequence = 20037,
+    InvalidIdentityJson = 20038,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
