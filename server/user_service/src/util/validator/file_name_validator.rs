@@ -5,15 +5,14 @@ use std::{collections::HashSet, error::Error, fmt::Display};
 use once_cell::sync::Lazy;
 
 static JPEG_EXTENTSION_SET: Lazy<HashSet<String>> = Lazy::new(|| {
-    let mut set: HashSet<String> = HashSet::with_capacity(47);
+    let mut set: HashSet<String> = HashSet::with_capacity(5);
+    // JPEGの拡張子一覧
+    // .jfif, pjpeg, pjpはサポートしない
     set.insert(".jpg".to_string());
     set.insert(".jpeg".to_string());
     set.insert(".JPG".to_string());
     set.insert(".JPEG".to_string());
     set.insert(".jpe".to_string());
-    set.insert(".jfif".to_string());
-    set.insert(".pjpeg".to_string());
-    set.insert(".pjp".to_string());
     set
 });
 
