@@ -1,7 +1,15 @@
+ローカルの開発環境をセットアップするために、下記の操作を一度実施する必要がある。
+
+DBセットアップ
+```
+cd common
+diesel setup --database-url=postgres://postgres:example@localhost/ccs_db
+```
+
 S3バケット作成
 ```
-aws --endpoint-url=http://localhost:4566 s3 mb s3://identification-images --profile=localstack
-aws --endpoint-url=http://localhost:4566 s3 mb s3://career-confirmation-images --profile=localstack
+aws --endpoint-url=http://localhost:4566 s3 mb s3://identity-images --profile=localstack
+aws --endpoint-url=http://localhost:4566 s3 mb s3://career-images --profile=localstack
 ```
 
 .envファイル例
