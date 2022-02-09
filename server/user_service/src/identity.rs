@@ -10,7 +10,7 @@ use axum::{
 };
 use chrono::Utc;
 use common::{ApiError, ErrResp, RespResult};
-use image::ImageFormat;
+use image::{ImageError, ImageFormat};
 use serde::Serialize;
 
 use crate::{
@@ -24,6 +24,9 @@ use crate::{
         Identity, JAPANESE_TIME_ZONE,
     },
 };
+
+/// 身分証の画像ファイルのバイト単位での最大値（4MB）
+const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 
 pub(crate) async fn post_identity(
     User { account_id }: User,
@@ -113,13 +116,34 @@ pub(crate) async fn post_identity(
                     }),
                 )
             })?;
-            // ファイルサイズのチェック
+            if data.len() > MAX_IDENTITY_IMAGE_SIZE_IN_BYTES {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ExceedMaxIdentityImageSizeLimit as u32,
+                    }),
+                ));
+            };
             let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
                 .decode()
-                .expect("failed to decode");
+                .map_err(|e| {
+                    tracing::error!("failed to decode jpeg image: {}", e);
+                    match e {
+                        ImageError::Decoding(_) => (
+                            StatusCode::BAD_REQUEST,
+                            Json(ApiError {
+                                code: Code::InvalidJpegImage as u32,
+                            }),
+                        ),
+                        _ => unexpected_err_resp(),
+                    }
+                })?;
             let mut bytes: Vec<u8> = Vec::new();
             img.write_to(&mut bytes, image::ImageOutputFormat::Png)
-                .expect("failed to write_to");
+                .map_err(|e| {
+                    tracing::error!("failed to write image on buffer: {}", e);
+                    unexpected_err_resp()
+                })?;
             identity_image1_option = Some(bytes);
         } else if name == "identity-image2" {
             println!("identity-image2");

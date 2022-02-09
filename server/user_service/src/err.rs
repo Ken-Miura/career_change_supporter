@@ -48,6 +48,8 @@ pub(crate) enum Code {
     InvalidUtf8Sequence = 20037,
     InvalidIdentityJson = 20038,
     NotJpegExtension = 20039,
+    ExceedMaxIdentityImageSizeLimit = 20040,
+    InvalidJpegImage = 20041,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
