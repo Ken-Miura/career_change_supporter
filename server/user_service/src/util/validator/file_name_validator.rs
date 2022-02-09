@@ -50,4 +50,26 @@ impl Display for FileNameValidationError {
 impl Error for FileNameValidationError {}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::validate_extension_is_jpeg;
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_jpg() {
+        let _ = validate_extension_is_jpeg("test.jpg").expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_jpeg() {
+        let _ = validate_extension_is_jpeg("test.jpeg").expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_upper_case_jpg() {
+        let _ = validate_extension_is_jpeg("test.JPG").expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_upper_case_jpeg() {
+        let _ = validate_extension_is_jpeg("test.JPEG").expect("failed to get Ok");
+    }
+}
