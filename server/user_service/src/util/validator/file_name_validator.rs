@@ -7,7 +7,7 @@ use regex::Regex;
 
 // JPEGを示すファイル名（任意の一文字以上＋拡張子）
 // 拡張子として.jfif, pjpeg, pjpはサポートしない
-const JPEG_FILE_NAME_REGEXP: &str = r"^.+[\.jpg|\.jpeg|\.JPG|\.JPEG|\.jpe]$";
+const JPEG_FILE_NAME_REGEXP: &str = r"^.+(\.jpg|\.jpeg|\.JPG|\.JPEG|\.jpe)$";
 static JPEG_FILE_NAME_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(JPEG_FILE_NAME_REGEXP).expect("failed to compile jpeg file name regexp")
 });
@@ -45,6 +45,8 @@ impl Error for FileNameValidationError {}
 
 #[cfg(test)]
 mod tests {
+    use crate::util::validator::file_name_validator::FileNameValidationError;
+
     use super::validate_extension_is_jpeg;
 
     #[test]
@@ -70,5 +72,55 @@ mod tests {
     #[test]
     fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_jpe() {
         let _ = validate_extension_is_jpeg("test.jpe").expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_jpg() {
+        let file_name = ".jpg";
+        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
+        assert_eq!(
+            FileNameValidationError::NotJpegExtension(file_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_jpeg() {
+        let file_name = ".jpeg";
+        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
+        assert_eq!(
+            FileNameValidationError::NotJpegExtension(file_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_upper_case_jpg() {
+        let file_name = ".JPG";
+        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
+        assert_eq!(
+            FileNameValidationError::NotJpegExtension(file_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_upper_case_jpeg() {
+        let file_name = ".JPEG";
+        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
+        assert_eq!(
+            FileNameValidationError::NotJpegExtension(file_name.to_string()),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_jpe() {
+        let file_name = ".jpe";
+        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
+        assert_eq!(
+            FileNameValidationError::NotJpegExtension(file_name.to_string()),
+            err
+        );
     }
 }
