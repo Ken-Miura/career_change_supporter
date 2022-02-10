@@ -63,6 +63,16 @@ mod tests {
         set
     });
 
+    static JPEG_EXTENTSION_SET_WITHOUT_PERIOD: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut set: HashSet<String> = HashSet::with_capacity(5);
+        set.insert("jpg".to_string());
+        set.insert("jpeg".to_string());
+        set.insert("JPG".to_string());
+        set.insert("JPEG".to_string());
+        set.insert("jpe".to_string());
+        set
+    });
+
     // JPEG以外の拡張子を列挙する。必要に応じて追加する。
     static EXTENTSION_SET_EXCEPT_JPEG: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(11);
@@ -111,6 +121,42 @@ mod tests {
     fn validate_extension_is_jpeg_returns_err_if_file_name_ends_with_ext_other_than_jpeg() {
         for ext in EXTENTSION_SET_EXCEPT_JPEG.iter() {
             let file_name = "test".to_string() + ext;
+            let err = validate_extension_is_jpeg(&file_name).expect_err("failed to get Err");
+            assert_eq!(
+                FileNameValidationError::NotJpegExtension(file_name.to_string()),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_does_not_end_with_jpeg_ext() {
+        for ext in JPEG_EXTENTSION_SET.iter() {
+            let file_name = "a".to_string() + ext + "b";
+            let err = validate_extension_is_jpeg(&file_name).expect_err("failed to get Err");
+            assert_eq!(
+                FileNameValidationError::NotJpegExtension(file_name.to_string()),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_starts_with_jpeg_ext() {
+        for ext in JPEG_EXTENTSION_SET.iter() {
+            let file_name = ext.to_string() + "a";
+            let err = validate_extension_is_jpeg(&file_name).expect_err("failed to get Err");
+            assert_eq!(
+                FileNameValidationError::NotJpegExtension(file_name.to_string()),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_ends_with_jpeg_ext_without_period() {
+        for ext_without_period in JPEG_EXTENTSION_SET_WITHOUT_PERIOD.iter() {
+            let file_name = "test".to_string() + ext_without_period;
             let err = validate_extension_is_jpeg(&file_name).expect_err("failed to get Err");
             assert_eq!(
                 FileNameValidationError::NotJpegExtension(file_name.to_string()),
