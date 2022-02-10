@@ -45,82 +45,40 @@ impl Error for FileNameValidationError {}
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
+    use once_cell::sync::Lazy;
+
     use crate::util::validator::file_name_validator::FileNameValidationError;
 
     use super::validate_extension_is_jpeg;
 
+    static JPEG_EXTENTSION_SET: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut set: HashSet<String> = HashSet::with_capacity(5);
+        set.insert(".jpg".to_string());
+        set.insert(".jpeg".to_string());
+        set.insert(".JPG".to_string());
+        set.insert(".JPEG".to_string());
+        set.insert(".jpe".to_string());
+        set
+    });
+
     #[test]
-    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_jpg() {
-        let _ = validate_extension_is_jpeg("test.jpg").expect("failed to get Ok");
+    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_supported_ext() {
+        for ext in JPEG_EXTENTSION_SET.iter() {
+            let file_name = "test".to_string() + ext;
+            let _ = validate_extension_is_jpeg(&file_name).expect("failed to get Ok");
+        }
     }
 
     #[test]
-    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_jpeg() {
-        let _ = validate_extension_is_jpeg("test.jpeg").expect("failed to get Ok");
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_upper_case_jpg() {
-        let _ = validate_extension_is_jpeg("test.JPG").expect("failed to get Ok");
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_upper_case_jpeg() {
-        let _ = validate_extension_is_jpeg("test.JPEG").expect("failed to get Ok");
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_dot_jpe() {
-        let _ = validate_extension_is_jpeg("test.jpe").expect("failed to get Ok");
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_jpg() {
-        let file_name = ".jpg";
-        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
-        assert_eq!(
-            FileNameValidationError::NotJpegExtension(file_name.to_string()),
-            err
-        );
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_jpeg() {
-        let file_name = ".jpeg";
-        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
-        assert_eq!(
-            FileNameValidationError::NotJpegExtension(file_name.to_string()),
-            err
-        );
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_upper_case_jpg() {
-        let file_name = ".JPG";
-        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
-        assert_eq!(
-            FileNameValidationError::NotJpegExtension(file_name.to_string()),
-            err
-        );
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_upper_case_jpeg() {
-        let file_name = ".JPEG";
-        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
-        assert_eq!(
-            FileNameValidationError::NotJpegExtension(file_name.to_string()),
-            err
-        );
-    }
-
-    #[test]
-    fn validate_extension_is_jpeg_returns_err_if_file_name_is_dot_jpe() {
-        let file_name = ".jpe";
-        let err = validate_extension_is_jpeg(file_name).expect_err("failed to get Err");
-        assert_eq!(
-            FileNameValidationError::NotJpegExtension(file_name.to_string()),
-            err
-        );
+    fn validate_extension_is_jpeg_returns_err_if_file_name_is_only_ext() {
+        for ext in JPEG_EXTENTSION_SET.iter() {
+            let err = validate_extension_is_jpeg(ext).expect_err("failed to get Err");
+            assert_eq!(
+                FileNameValidationError::NotJpegExtension(ext.to_string()),
+                err
+            );
+        }
     }
 }
