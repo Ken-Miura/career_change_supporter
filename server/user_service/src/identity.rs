@@ -8,6 +8,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use bytes::Bytes;
 use chrono::Utc;
 use common::{ApiError, ErrResp, RespResult};
 use image::{ImageError, ImageFormat};
@@ -30,13 +31,27 @@ const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 
 pub(crate) async fn post_identity(
     User { account_id }: User,
-    ContentLengthLimit(mut multipart): ContentLengthLimit<
+    ContentLengthLimit(multipart): ContentLengthLimit<
         Multipart,
         {
             9 * 1024 * 1024 /* 9mb */
         },
     >,
 ) -> RespResult<IdentityResult> {
+    let (identity, identity_image1, identity_image2_option) = handle_multipart(multipart).await?;
+    println!("account_id: {}", account_id);
+    println!("{:?}", identity);
+    println!("{:?}", identity_image1);
+    println!("{:?}", identity_image2_option);
+    Ok((StatusCode::OK, Json(IdentityResult {})))
+}
+
+#[derive(Serialize, Debug)]
+pub(crate) struct IdentityResult {}
+
+async fn handle_multipart(
+    mut multipart: Multipart,
+) -> Result<(Identity, Vec<u8>, Option<Vec<u8>>), ErrResp> {
     let mut identity_option = None;
     let mut identity_image1_option = None;
     let mut identity_image2_option = None;
@@ -67,24 +82,7 @@ pub(crate) async fn post_identity(
             )
         })?;
         if name == "identity" {
-            let identity_json_str = std::str::from_utf8(&data).map_err(|e| {
-                tracing::error!("invalid utf-8 sequence: {}", e);
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidUtf8Sequence as u32,
-                    }),
-                )
-            })?;
-            let identity = serde_json::from_str::<Identity>(identity_json_str).map_err(|e| {
-                tracing::error!("invalid Identity JSON object: {}", e);
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidIdentityJson as u32,
-                    }),
-                )
-            })?;
+            let identity = extract_identity(data)?;
             let current_date = Utc::now()
                 .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .naive_local()
@@ -95,60 +93,15 @@ pub(crate) async fn post_identity(
             })?;
             identity_option = Some(trim_space_from_identity(identity));
         } else if name == "identity-image1" {
-            let file_name = match file_name_option {
-                Some(f) => f,
-                None => {
-                    tracing::error!("failed to get file name in field");
-                    return Err((
-                        StatusCode::BAD_REQUEST,
-                        Json(ApiError {
-                            code: Code::NoFileNameFound as u32,
-                        }),
-                    ));
-                }
-            };
-            let _ = validate_extension_is_jpeg(&file_name).map_err(|e| {
-                tracing::error!("invalid file name ({}): {}", file_name, e);
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NotJpegExtension as u32,
-                    }),
-                )
-            })?;
-            if data.len() > MAX_IDENTITY_IMAGE_SIZE_IN_BYTES {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::ExceedMaxIdentityImageSizeLimit as u32,
-                    }),
-                ));
-            };
-            let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
-                .decode()
-                .map_err(|e| {
-                    tracing::error!("failed to decode jpeg image: {}", e);
-                    match e {
-                        ImageError::Decoding(_) => (
-                            StatusCode::BAD_REQUEST,
-                            Json(ApiError {
-                                code: Code::InvalidJpegImage as u32,
-                            }),
-                        ),
-                        _ => unexpected_err_resp(),
-                    }
-                })?;
-            let mut bytes: Vec<u8> = Vec::new();
-            img.write_to(&mut bytes, image::ImageOutputFormat::Png)
-                .map_err(|e| {
-                    tracing::error!("failed to write image on buffer: {}", e);
-                    unexpected_err_resp()
-                })?;
-            identity_image1_option = Some(bytes);
+            let _ = validate_identity_image_file_name(file_name_option)?;
+            let _ = validate_identity_image_size(data.len())?;
+            let png_binary = convert_jpeg_to_png(data)?;
+            identity_image1_option = Some(png_binary);
         } else if name == "identity-image2" {
-            println!("identity-image2");
-            let bytes: Vec<u8> = Vec::new();
-            identity_image2_option = Some(bytes);
+            let _ = validate_identity_image_file_name(file_name_option)?;
+            let _ = validate_identity_image_size(data.len())?;
+            let png_binary = convert_jpeg_to_png(data)?;
+            identity_image2_option = Some(png_binary);
         } else {
             tracing::error!("invalid name in field: {}", name);
             return Err((
@@ -159,15 +112,126 @@ pub(crate) async fn post_identity(
             ));
         }
     }
-    println!("account_id: {}", account_id);
-    println!("{:?}", identity_option);
-    println!("{:?}", identity_image1_option);
-    println!("{:?}", identity_image2_option);
-    Ok((StatusCode::OK, Json(IdentityResult {})))
+    let (identity, identity_image1) =
+        ensure_mandatory_params_exist(identity_option, identity_image1_option)?;
+    Ok((identity, identity_image1, identity_image2_option))
 }
 
-#[derive(Serialize, Debug)]
-pub(crate) struct IdentityResult {}
+fn extract_identity(data: Bytes) -> Result<Identity, ErrResp> {
+    let identity_json_str = std::str::from_utf8(&data).map_err(|e| {
+        tracing::error!("invalid utf-8 sequence: {}", e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidUtf8Sequence as u32,
+            }),
+        )
+    })?;
+    let identity = serde_json::from_str::<Identity>(identity_json_str).map_err(|e| {
+        tracing::error!("invalid Identity JSON object: {}", e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidIdentityJson as u32,
+            }),
+        )
+    })?;
+    Ok(identity)
+}
+
+fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result<(), ErrResp> {
+    let file_name = match file_name_option {
+        Some(name) => name,
+        None => {
+            tracing::error!("failed to get file name in field");
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NoFileNameFound as u32,
+                }),
+            ));
+        }
+    };
+    let _ = validate_extension_is_jpeg(&file_name).map_err(|e| {
+        tracing::error!("invalid file name ({}): {}", file_name, e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NotJpegExtension as u32,
+            }),
+        )
+    })?;
+    Ok(())
+}
+
+fn validate_identity_image_size(size: usize) -> Result<(), ErrResp> {
+    if size > MAX_IDENTITY_IMAGE_SIZE_IN_BYTES {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ExceedMaxIdentityImageSizeLimit as u32,
+            }),
+        ));
+    };
+    Ok(())
+}
+
+// 画像ファイルの中のメタデータに悪意ある内容が含まれている場合が考えられるので、画像情報以外のメタデータを取り除く必要がある。
+// メタデータを取り除くのに画像形式を変換するのが最も容易な実装のため、画像形式の変換を行っている。
+fn convert_jpeg_to_png(data: Bytes) -> Result<Vec<u8>, ErrResp> {
+    let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
+        .decode()
+        .map_err(|e| {
+            tracing::error!("failed to decode jpeg image: {}", e);
+            match e {
+                ImageError::Decoding(_) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidJpegImage as u32,
+                    }),
+                ),
+                _ => unexpected_err_resp(),
+            }
+        })?;
+    let mut bytes: Vec<u8> = Vec::new();
+    img.write_to(&mut bytes, image::ImageOutputFormat::Png)
+        .map_err(|e| {
+            tracing::error!("failed to write image on buffer: {}", e);
+            unexpected_err_resp()
+        })?;
+    Ok(bytes)
+}
+
+fn ensure_mandatory_params_exist(
+    identity_option: Option<Identity>,
+    identity_image1_option: Option<Vec<u8>>,
+) -> Result<(Identity, Vec<u8>), ErrResp> {
+    let identity = match identity_option {
+        Some(id) => id,
+        None => {
+            tracing::error!("no identity found");
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NoIdentityFound as u32,
+                }),
+            ));
+        }
+    };
+    let identity_image1 = match identity_image1_option {
+        Some(image1) => image1,
+        None => {
+            tracing::error!("no identity-image1 found");
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NoIdentityImage1Found as u32,
+                }),
+            ));
+        }
+    };
+    Ok((identity, identity_image1))
+}
 
 fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
     let code;

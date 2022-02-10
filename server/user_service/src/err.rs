@@ -50,6 +50,8 @@ pub(crate) enum Code {
     NotJpegExtension = 20039,
     ExceedMaxIdentityImageSizeLimit = 20040,
     InvalidJpegImage = 20041,
+    NoIdentityFound = 20042,
+    NoIdentityImage1Found = 20043,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
