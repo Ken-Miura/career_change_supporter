@@ -63,6 +63,23 @@ mod tests {
         set
     });
 
+    // JPEG以外の拡張子を列挙する。必要に応じて追加する。
+    static EXTENTSION_SET_EXCEPT_JPEG: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut set: HashSet<String> = HashSet::with_capacity(11);
+        set.insert(".txt".to_string());
+        set.insert(".png".to_string());
+        set.insert(".bmp".to_string());
+        set.insert(".exe".to_string());
+        set.insert(".htm".to_string());
+        set.insert(".html".to_string());
+        set.insert(".css".to_string());
+        set.insert(".js".to_string());
+        set.insert(".py".to_string());
+        set.insert(".rb".to_string());
+        set.insert(".sql".to_string());
+        set
+    });
+
     #[test]
     fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_supported_ext() {
         for ext in JPEG_EXTENTSION_SET.iter() {
@@ -87,6 +104,18 @@ mod tests {
         for ext in JPEG_EXTENTSION_SET.iter() {
             let file_name = ".test".to_string() + ext;
             let _ = validate_extension_is_jpeg(&file_name).expect("failed to get Ok");
+        }
+    }
+
+    #[test]
+    fn validate_extension_is_jpeg_returns_err_if_file_name_ends_with_ext_other_than_jpeg() {
+        for ext in EXTENTSION_SET_EXCEPT_JPEG.iter() {
+            let file_name = "test".to_string() + ext;
+            let err = validate_extension_is_jpeg(&file_name).expect_err("failed to get Err");
+            assert_eq!(
+                FileNameValidationError::NotJpegExtension(file_name.to_string()),
+                err
+            );
         }
     }
 }
