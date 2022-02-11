@@ -23,6 +23,7 @@ use diesel::{
 };
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
+use uuid::Uuid;
 
 use crate::util::WEB_SITE_NAME;
 use crate::{
@@ -60,11 +61,13 @@ pub(crate) async fn post_identity(
 
     let op = SubmitIdentityOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let image1_file_name_without_etx = Uuid::new_v4().to_simple().to_string();
+    let image2_file_name_without_etx = Uuid::new_v4().to_simple().to_string();
     let submitted_identity = SubmittedIdentity {
         account_id,
         identity,
-        identity_image1: ("image1-test.png".to_string(), identity_image1),
-        identity_image2: identity_image2_option.map(|image| ("image2-test.png".to_string(), image)),
+        identity_image1: (image1_file_name_without_etx, identity_image1),
+        identity_image2: identity_image2_option.map(|image| (image2_file_name_without_etx, image)),
     };
     let result = post_identity_internal(submitted_identity, op, smtp_client).await?;
     Ok(result)
