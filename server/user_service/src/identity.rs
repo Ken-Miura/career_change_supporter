@@ -9,7 +9,7 @@ use axum::{
     Json,
 };
 use bytes::Bytes;
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, DatabaseConnection, ErrResp, RespResult,
@@ -46,7 +46,12 @@ pub(crate) async fn post_identity(
     >,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<IdentityResult> {
-    let (identity, identity_image1, identity_image2_option) = handle_multipart(multipart).await?;
+    let current_date = Utc::now()
+        .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+        .naive_local()
+        .date();
+    let (identity, identity_image1, identity_image2_option) =
+        handle_multipart(multipart, current_date).await?;
     let op = SubmitIdentityOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let submitted_identity = SubmittedIdentity {
@@ -64,6 +69,7 @@ pub(crate) struct IdentityResult {}
 
 async fn handle_multipart(
     mut multipart: Multipart,
+    current_date: NaiveDate,
 ) -> Result<(Identity, Vec<u8>, Option<Vec<u8>>), ErrResp> {
     let mut identity_option = None;
     let mut identity_image1_option = None;
@@ -96,10 +102,6 @@ async fn handle_multipart(
         })?;
         if name == "identity" {
             let identity = extract_identity(data)?;
-            let current_date = Utc::now()
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
-                .naive_local()
-                .date();
             let _ = validate_identity(&identity, &current_date).map_err(|e| {
                 tracing::error!("invalid identity: {}", e);
                 create_invalid_identity_err(&e)
