@@ -3,6 +3,7 @@
 use std::io::Cursor;
 
 use async_session::serde_json;
+use axum::async_trait;
 use axum::{
     extract::{ContentLengthLimit, Multipart},
     http::StatusCode,
@@ -46,12 +47,14 @@ pub(crate) async fn post_identity(
     >,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<IdentityResult> {
+    let multipart_wrapper = MultipartWrapperImpl { multipart };
     let current_date = Utc::now()
         .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
         .naive_local()
         .date();
     let (identity, identity_image1, identity_image2_option) =
-        handle_multipart(multipart, current_date).await?;
+        handle_multipart(multipart_wrapper, current_date).await?;
+
     let op = SubmitIdentityOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let submitted_identity = SubmittedIdentity {
@@ -67,39 +70,74 @@ pub(crate) async fn post_identity(
 #[derive(Serialize, Debug)]
 pub(crate) struct IdentityResult {}
 
+#[async_trait]
+trait MultipartWrapper {
+    async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp>;
+}
+
+struct MultipartWrapperImpl {
+    multipart: Multipart,
+}
+
+#[async_trait]
+impl MultipartWrapper for MultipartWrapperImpl {
+    async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp> {
+        let field_option = self.multipart.next_field().await.map_err(|e| {
+            tracing::error!("failed to get next_field: {}", e);
+            unexpected_err_resp()
+        })?;
+        match field_option {
+            Some(f) => {
+                let name = match f.name() {
+                    Some(n) => n.to_string(),
+                    None => {
+                        tracing::error!("failed to get name in field");
+                        return Err((
+                            StatusCode::BAD_REQUEST,
+                            Json(ApiError {
+                                code: Code::NoNameFound as u32,
+                            }),
+                        ));
+                    }
+                };
+                let file_name = f.file_name().map(|s| s.to_string());
+                let data = f.bytes().await.map_err(|e| {
+                    tracing::error!("failed to get data in field: {}", e);
+                    (
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::DataParseFailure as u32,
+                        }),
+                    )
+                })?;
+                Ok(Some(IdentityField {
+                    name,
+                    file_name,
+                    data,
+                }))
+            }
+            None => Ok(None),
+        }
+    }
+}
+
+struct IdentityField {
+    name: String,
+    file_name: Option<String>,
+    data: Bytes,
+}
+
 async fn handle_multipart(
-    mut multipart: Multipart,
+    mut multipart: impl MultipartWrapper,
     current_date: NaiveDate,
 ) -> Result<(Identity, Vec<u8>, Option<Vec<u8>>), ErrResp> {
     let mut identity_option = None;
     let mut identity_image1_option = None;
     let mut identity_image2_option = None;
-    while let Some(field) = multipart.next_field().await.map_err(|e| {
-        tracing::error!("failed to get next_field: {}", e);
-        unexpected_err_resp()
-    })? {
-        let name = match field.name() {
-            Some(n) => n.to_string(),
-            None => {
-                tracing::error!("failed to get name in field");
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoNameFound as u32,
-                    }),
-                ));
-            }
-        };
-        let file_name_option = field.file_name().map(|s| s.to_string());
-        let data = field.bytes().await.map_err(|e| {
-            tracing::error!("failed to get data in field: {}", e);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: Code::DataParseFailure as u32,
-                }),
-            )
-        })?;
+    while let Some(field) = multipart.next_field().await? {
+        let name = field.name;
+        let file_name_option = field.file_name;
+        let data = field.data;
         if name == "identity" {
             let identity = extract_identity(data)?;
             let _ = validate_identity(&identity, &current_date).map_err(|e| {
