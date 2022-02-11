@@ -397,7 +397,7 @@ async fn post_identity_internal(
     }
     .await?;
     let text = identity_exists.to_string() + &account_id.to_string();
-    let _ = send_mail.send_mail("to", "from", "subject", &text)?;
+    let _ = async { send_mail.send_mail("to", "from", "subject", &text) }.await?;
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
 
