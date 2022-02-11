@@ -47,7 +47,6 @@ pub(crate) async fn post_identity(
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<IdentityResult> {
     let (identity, identity_image1, identity_image2_option) = handle_multipart(multipart).await?;
-    println!("{:?}", identity_image2_option);
     let op = SubmitIdentityOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let submitted_identity = SubmittedIdentity {
@@ -58,64 +57,6 @@ pub(crate) async fn post_identity(
     };
     let result = post_identity_internal(submitted_identity, op, smtp_client).await?;
     Ok(result)
-}
-
-async fn post_identity_internal(
-    submitted_identity: SubmittedIdentity,
-    op: impl SubmitIdentityOperation,
-    send_mail: impl SendMail,
-) -> RespResult<IdentityResult> {
-    let account_id = submitted_identity.account_id;
-    let identity_exists = async move {
-        let exists = op.check_if_identity_already_exists(account_id)?;
-        if exists {
-            let _ = op.update_identity(submitted_identity)?;
-        } else {
-            let _ = op.post_identity(submitted_identity)?;
-        };
-        Ok(exists)
-    }
-    .await?;
-    let text = identity_exists.to_string() + &account_id.to_string();
-    let _ = send_mail.send_mail("to", "from", "subject", &text)?;
-    Ok((StatusCode::OK, Json(IdentityResult {})))
-}
-
-struct SubmittedIdentity {
-    account_id: i32,
-    identity: Identity,
-    identity_image1: (String, Vec<u8>),
-    identity_image2: Option<(String, Vec<u8>)>,
-}
-
-trait SubmitIdentityOperation {
-    fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
-    fn post_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
-    fn update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
-}
-
-struct SubmitIdentityOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
-}
-
-impl SubmitIdentityOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
-    }
-}
-
-impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
-    fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
-        todo!()
-    }
-
-    fn post_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
-        todo!()
-    }
-
-    fn update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
-        todo!()
-    }
 }
 
 #[derive(Serialize, Debug)]
@@ -398,5 +339,63 @@ fn trim_space_from_identity(identity: Identity) -> Identity {
             .address_line2
             .map(|address_line2| address_line2.trim().to_string()),
         telephone_number: identity.telephone_number.trim().to_string(),
+    }
+}
+
+async fn post_identity_internal(
+    submitted_identity: SubmittedIdentity,
+    op: impl SubmitIdentityOperation,
+    send_mail: impl SendMail,
+) -> RespResult<IdentityResult> {
+    let account_id = submitted_identity.account_id;
+    let identity_exists = async move {
+        let exists = op.check_if_identity_already_exists(account_id)?;
+        if exists {
+            let _ = op.update_identity(submitted_identity)?;
+        } else {
+            let _ = op.post_identity(submitted_identity)?;
+        };
+        Ok(exists)
+    }
+    .await?;
+    let text = identity_exists.to_string() + &account_id.to_string();
+    let _ = send_mail.send_mail("to", "from", "subject", &text)?;
+    Ok((StatusCode::OK, Json(IdentityResult {})))
+}
+
+struct SubmittedIdentity {
+    account_id: i32,
+    identity: Identity,
+    identity_image1: (String, Vec<u8>),
+    identity_image2: Option<(String, Vec<u8>)>,
+}
+
+trait SubmitIdentityOperation {
+    fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
+    fn post_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
+    fn update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
+}
+
+struct SubmitIdentityOperationImpl {
+    conn: PooledConnection<ConnectionManager<PgConnection>>,
+}
+
+impl SubmitIdentityOperationImpl {
+    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
+        Self { conn }
+    }
+}
+
+impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
+    fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
+        todo!()
+    }
+
+    fn post_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
+        todo!()
+    }
+
+    fn update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
+        todo!()
     }
 }
