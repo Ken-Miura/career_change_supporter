@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+use std::error::Error;
 use std::io::Cursor;
 
 use async_session::serde_json;
@@ -88,28 +89,9 @@ impl MultipartWrapper for MultipartWrapperImpl {
         })?;
         match field_option {
             Some(f) => {
-                let name = match f.name() {
-                    Some(n) => n.to_string(),
-                    None => {
-                        tracing::error!("failed to get name in field");
-                        return Err((
-                            StatusCode::BAD_REQUEST,
-                            Json(ApiError {
-                                code: Code::NoNameFound as u32,
-                            }),
-                        ));
-                    }
-                };
+                let name = f.name().map(|s| s.to_string());
                 let file_name = f.file_name().map(|s| s.to_string());
-                let data = f.bytes().await.map_err(|e| {
-                    tracing::error!("failed to get data in field: {}", e);
-                    (
-                        StatusCode::BAD_REQUEST,
-                        Json(ApiError {
-                            code: Code::DataParseFailure as u32,
-                        }),
-                    )
-                })?;
+                let data = f.bytes().await.map_err(|e| e.into());
                 Ok(Some(IdentityField {
                     name,
                     file_name,
@@ -122,9 +104,9 @@ impl MultipartWrapper for MultipartWrapperImpl {
 }
 
 struct IdentityField {
-    name: String,
+    name: Option<String>,
     file_name: Option<String>,
-    data: Bytes,
+    data: Result<Bytes, Box<dyn Error>>,
 }
 
 async fn handle_multipart(
@@ -135,9 +117,25 @@ async fn handle_multipart(
     let mut identity_image1_option = None;
     let mut identity_image2_option = None;
     while let Some(field) = multipart.next_field().await? {
-        let name = field.name;
+        let name = field.name.ok_or_else(|| {
+            tracing::error!("failed to get name in field");
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NoNameFound as u32,
+                }),
+            )
+        })?;
         let file_name_option = field.file_name;
-        let data = field.data;
+        let data = field.data.map_err(|e| {
+            tracing::error!("failed to get data in field: {}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::DataParseFailure as u32,
+                }),
+            )
+        })?;
         if name == "identity" {
             let identity = extract_identity(data)?;
             let _ = validate_identity(&identity, &current_date).map_err(|e| {
