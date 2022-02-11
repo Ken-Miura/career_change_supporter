@@ -11,6 +11,8 @@ use std::net::SocketAddr;
 use crate::{err, ApiError, ErrResp};
 
 // TODO: 実際にメールアドレスを取得した後、修正する
+pub const ADMIN_EMAIL_ADDRESS: &str = "admin@test.com";
+// TODO: 実際にメールアドレスを取得した後、修正する
 pub const SYSTEM_EMAIL_ADDRESS: &str = "admin-no-reply@test.com";
 // TODO: 実際にメールアドレスを取得した後、修正する
 pub const INQUIRY_EMAIL_ADDRESS: &str = "inquiry@test.com";

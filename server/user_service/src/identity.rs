@@ -12,7 +12,7 @@ use axum::{
 };
 use bytes::Bytes;
 use chrono::{NaiveDate, Utc};
-use common::smtp::SYSTEM_EMAIL_ADDRESS;
+use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, DatabaseConnection, ErrResp, RespResult,
@@ -24,6 +24,7 @@ use diesel::{
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
 
+use crate::util::WEB_SITE_NAME;
 use crate::{
     err::{self, unexpected_err_resp, Code},
     util::{
@@ -411,8 +412,11 @@ async fn post_identity_internal(
         Ok(exists)
     }
     .await?;
-    let text = identity_exists.to_string() + &account_id.to_string();
-    let _ = async { send_mail.send_mail("to", SYSTEM_EMAIL_ADDRESS, "subject", &text) }.await?;
+    let subject = create_subject(account_id, identity_exists);
+    let text = create_text(account_id, identity_exists);
+    let _ =
+        async { send_mail.send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text) }
+            .await?;
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
 
@@ -421,6 +425,22 @@ struct SubmittedIdentity {
     identity: Identity,
     identity_image1: (String, Vec<u8>),
     identity_image2: Option<(String, Vec<u8>)>,
+}
+
+fn create_subject(id: i32, update: bool) -> String {
+    let request_type = if update { "更新" } else { "新規" };
+    format!(
+        "[{}] ユーザー (id: {}) からの本人確認依頼 ({})",
+        WEB_SITE_NAME, id, request_type
+    )
+}
+
+fn create_text(id: i32, update: bool) -> String {
+    let request_type = if update { "更新" } else { "新規" };
+    format!(
+        "ユーザー (id: {}) からの本人確認依頼 ({}) が届きました。管理者サイトから対応をお願いいたします。",
+        id, request_type
+    )
 }
 
 trait SubmitIdentityOperation {
