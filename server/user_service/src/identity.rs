@@ -12,6 +12,7 @@ use axum::{
 };
 use bytes::Bytes;
 use chrono::{NaiveDate, Utc};
+use common::smtp::SYSTEM_EMAIL_ADDRESS;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, DatabaseConnection, ErrResp, RespResult,
@@ -387,17 +388,31 @@ async fn post_identity_internal(
 ) -> RespResult<IdentityResult> {
     let account_id = submitted_identity.account_id;
     let identity_exists = async move {
-        let exists = op.check_if_identity_already_exists(account_id)?;
+        let exists = op
+            .check_if_identity_already_exists(account_id)
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to check user's identity existence (id: {})",
+                    account_id
+                );
+                e
+            })?;
         if exists {
-            let _ = op.update_identity(submitted_identity)?;
+            let _ = op.update_identity(submitted_identity).map_err(|e| {
+                tracing::error!("failed to handle update reqest (id: {})", account_id);
+                e
+            })?;
         } else {
-            let _ = op.post_identity(submitted_identity)?;
+            let _ = op.post_identity(submitted_identity).map_err(|e| {
+                tracing::error!("failed to handle post request (id: {})", account_id);
+                e
+            })?;
         };
         Ok(exists)
     }
     .await?;
     let text = identity_exists.to_string() + &account_id.to_string();
-    let _ = async { send_mail.send_mail("to", "from", "subject", &text) }.await?;
+    let _ = async { send_mail.send_mail("to", SYSTEM_EMAIL_ADDRESS, "subject", &text) }.await?;
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
 
