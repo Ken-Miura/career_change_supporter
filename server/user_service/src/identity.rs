@@ -114,7 +114,7 @@ struct IdentityField {
 async fn handle_multipart(
     mut multipart: impl MultipartWrapper,
     current_date: NaiveDate,
-) -> Result<(Identity, Vec<u8>, Option<Vec<u8>>), ErrResp> {
+) -> Result<(Identity, Cursor<Vec<u8>>, Option<Cursor<Vec<u8>>>), ErrResp> {
     let mut identity_option = None;
     let mut identity_image1_option = None;
     let mut identity_image2_option = None;
@@ -231,7 +231,7 @@ fn validate_identity_image_size(size: usize) -> Result<(), ErrResp> {
 
 // 画像ファイルの中のメタデータに悪意ある内容が含まれている場合が考えられるので、画像情報以外のメタデータを取り除く必要がある。
 // メタデータを取り除くのに画像形式を変換するのが最も容易な実装のため、画像形式の変換を行っている。
-fn convert_jpeg_to_png(data: Bytes) -> Result<Vec<u8>, ErrResp> {
+fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
     let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
         .decode()
         .map_err(|e| {
@@ -246,7 +246,7 @@ fn convert_jpeg_to_png(data: Bytes) -> Result<Vec<u8>, ErrResp> {
                 _ => unexpected_err_resp(),
             }
         })?;
-    let mut bytes: Vec<u8> = Vec::new();
+    let mut bytes = Cursor::new(vec![]);
     img.write_to(&mut bytes, image::ImageOutputFormat::Png)
         .map_err(|e| {
             tracing::error!("failed to write image on buffer: {}", e);
@@ -257,8 +257,8 @@ fn convert_jpeg_to_png(data: Bytes) -> Result<Vec<u8>, ErrResp> {
 
 fn ensure_mandatory_params_exist(
     identity_option: Option<Identity>,
-    identity_image1_option: Option<Vec<u8>>,
-) -> Result<(Identity, Vec<u8>), ErrResp> {
+    identity_image1_option: Option<Cursor<Vec<u8>>>,
+) -> Result<(Identity, Cursor<Vec<u8>>), ErrResp> {
     let identity = match identity_option {
         Some(id) => id,
         None => {
@@ -423,8 +423,8 @@ async fn post_identity_internal(
 struct SubmittedIdentity {
     account_id: i32,
     identity: Identity,
-    identity_image1: (String, Vec<u8>),
-    identity_image2: Option<(String, Vec<u8>)>,
+    identity_image1: (String, Cursor<Vec<u8>>),
+    identity_image2: Option<(String, Cursor<Vec<u8>>)>,
 }
 
 fn create_subject(id: i32, update: bool) -> String {
