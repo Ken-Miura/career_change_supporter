@@ -506,44 +506,42 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         current_date_time: DateTime<Utc>,
     ) -> Result<(), ErrResp> {
         let account_id = submitted_identity.account_id;
-        let image1_file_name_without_ext = submitted_identity.identity_image1.0.clone();
-        let mut identity_image2 = None;
-        let mut image2_file_name_without_ext = None;
-        if let Some(image2) = submitted_identity.identity_image2 {
-            identity_image2 = Some((image2.0.clone(), image2.1));
-            image2_file_name_without_ext = Some(image2.0);
-        };
+        let identity_image1 = submitted_identity.identity_image1;
+        let image1_file_name_without_ext = identity_image1.0.clone();
+        let (identity_image2, image2_file_name_without_ext) =
+            SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
+        let identity = submitted_identity.identity;
         let date_of_birth = &NaiveDate::from_ymd(
-            submitted_identity.identity.date_of_birth.year,
-            submitted_identity.identity.date_of_birth.month,
-            submitted_identity.identity.date_of_birth.day,
+            identity.date_of_birth.year,
+            identity.date_of_birth.month,
+            identity.date_of_birth.day,
         );
         let new_create_identity_info_req = NewCreateIdentityInfoReq {
             user_account_id: &submitted_identity.account_id,
-            last_name: &submitted_identity.identity.last_name,
-            first_name: &submitted_identity.identity.first_name,
-            last_name_furigana: &submitted_identity.identity.last_name_furigana,
-            first_name_furigana: &submitted_identity.identity.first_name_furigana,
+            last_name: &identity.last_name,
+            first_name: &identity.first_name,
+            last_name_furigana: &identity.last_name_furigana,
+            first_name_furigana: &identity.first_name_furigana,
             date_of_birth,
-            prefecture: &submitted_identity.identity.prefecture,
-            city: &submitted_identity.identity.city,
-            address_line1: &submitted_identity.identity.address_line1,
-            address_line2: submitted_identity.identity.address_line2.as_deref(),
-            telephone_number: &submitted_identity.identity.telephone_number,
+            prefecture: &identity.prefecture,
+            city: &identity.city,
+            address_line1: &identity.address_line1,
+            address_line2: identity.address_line2.as_deref(),
+            telephone_number: &identity.telephone_number,
             image1_file_name_without_ext: &image1_file_name_without_ext,
             image2_file_name_without_ext: image2_file_name_without_ext.as_deref(),
             requested_at: &current_date_time,
         };
         let _result = self.conn.transaction::<(), diesel::result::Error, _>(|| {
-            let _result = insert_into(create_identity_info_req_table)
+            let _ = insert_into(create_identity_info_req_table)
                 .values(new_create_identity_info_req)
                 .execute(&self.conn)
                 .map_err(|e| {
-                    tracing::error!("failed to insert to create_identity_info_req_table: {}", e);
+                    tracing::error!("failed to insert record (account id: {}) into create_identity_info_req: {}", account_id, e);
                     e
                 })?;
             println!("{:?}", account_id);
-            println!("{:?}", submitted_identity.identity_image1);
+            println!("{:?}", identity_image1);
             println!("{:?}", identity_image2);
             todo!("画像をS3に送信")
         });
@@ -556,5 +554,18 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         _current_date_time: DateTime<Utc>,
     ) -> Result<(), ErrResp> {
         todo!()
+    }
+}
+
+impl SubmitIdentityOperationImpl {
+    fn extract_file_name(
+        file_name_and_binary_option: Option<(String, Cursor<Vec<u8>>)>,
+    ) -> (Option<(String, Cursor<Vec<u8>>)>, Option<String>) {
+        if let Some(file_name_and_binary) = file_name_and_binary_option {
+            let identity_image2 = Some((file_name_and_binary.0.clone(), file_name_and_binary.1));
+            let image2_file_name_without_ext = Some(file_name_and_binary.0);
+            return (identity_image2, image2_file_name_without_ext);
+        };
+        (None, None)
     }
 }
