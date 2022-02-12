@@ -162,10 +162,11 @@ CREATE TABLE ccs_schema.create_identity_info_req (
   address_line1 VARCHAR (128) NOT NULL,
   address_line2 VARCHAR (128),
   telephone_number VARCHAR (13) NOT NULL,
-  image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
-  /* SQL標準ではNULLはUNIQUEでも複数保持可能。PostgresもSQL標準に従っている */
-  /* その他のデータベースはSQL標準に従っていないケースがあるため、他のデータベースを使う場合は注意する */
-  image2_file_name_without_ext ccs_schema.uuid_simple_form UNIQUE,
+  /* 画像ファイル名は、user_account_idと組み合わせて外部に保存する */
+  /* そのため、データベースに保管する値のUNIQUE指定は必須ではない */
+  /* UNIQUEにしたときのNULLの扱いがデータベースごとに異なる可能性があるので、その点も考慮し、NULL利用があるカラムにUNIQUE付与を避ける */
+  image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
+  image2_file_name_without_ext ccs_schema.uuid_simple_form,
   requested_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT ON ccs_schema.create_identity_info_req To user_app;
@@ -190,10 +191,11 @@ CREATE TABLE ccs_schema.update_identity_info_req (
   address_line1 VARCHAR (128) NOT NULL,
   address_line2 VARCHAR (128),
   telephone_number VARCHAR (13) NOT NULL,
-  image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
-  /* SQL標準ではNULLはUNIQUEでも複数保持可能。PostgresもSQL標準に従っている */
-  /* その他のデータベースはSQL標準に従っていないケースがあるため、他のデータベースを使う場合は注意する */
-  image2_file_name_without_ext ccs_schema.uuid_simple_form UNIQUE,
+  /* 画像ファイル名は、user_account_idと組み合わせて外部に保存する */
+  /* そのため、データベースに保管する値のUNIQUE指定は必須ではない */
+  /* UNIQUEにしたときのNULLの扱いがデータベースごとに異なる可能性があるので、その点も考慮し、NULL利用があるカラムにUNIQUE付与を避ける */
+  image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
+  image2_file_name_without_ext ccs_schema.uuid_simple_form,
   requested_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT ON ccs_schema.update_identity_info_req To user_app;
