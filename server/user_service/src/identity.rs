@@ -407,15 +407,19 @@ async fn post_identity_internal(
                 e
             })?;
         if exists {
-            let _ = op.update_identity(submitted_identity).map_err(|e| {
-                tracing::error!("failed to handle update reqest (id: {})", account_id);
-                e
-            })?;
+            let _ = op
+                .request_update_identity(submitted_identity)
+                .map_err(|e| {
+                    tracing::error!("failed to handle update reqest (id: {})", account_id);
+                    e
+                })?;
         } else {
-            let _ = op.post_identity(submitted_identity).map_err(|e| {
-                tracing::error!("failed to handle post request (id: {})", account_id);
-                e
-            })?;
+            let _ = op
+                .request_create_identity(submitted_identity)
+                .map_err(|e| {
+                    tracing::error!("failed to handle post request (id: {})", account_id);
+                    e
+                })?;
         };
         Ok(exists)
     }
@@ -453,8 +457,8 @@ fn create_text(id: i32, update: bool) -> String {
 
 trait SubmitIdentityOperation {
     fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
-    fn post_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
-    fn update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
+    fn request_create_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
+    fn request_update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
 }
 
 struct SubmitIdentityOperationImpl {
@@ -484,11 +488,11 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         }
     }
 
-    fn post_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
+    fn request_create_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
         todo!()
     }
 
-    fn update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
+    fn request_update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
         todo!()
     }
 }
