@@ -163,7 +163,9 @@ CREATE TABLE ccs_schema.create_identity_info_req (
   address_line2 VARCHAR (128),
   telephone_number VARCHAR (13) NOT NULL,
   image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
-  image2_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
+  /* SQL標準ではNULLはUNIQUEでも複数保持可能。PostgresもSQL標準に従っている */
+  /* その他のデータベースはSQL標準に従っていないケースがあるため、他のデータベースを使う場合は注意する */
+  image2_file_name_without_ext ccs_schema.uuid_simple_form UNIQUE,
   requested_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT ON ccs_schema.create_identity_info_req To user_app;
@@ -189,7 +191,9 @@ CREATE TABLE ccs_schema.update_identity_info_req (
   address_line2 VARCHAR (128),
   telephone_number VARCHAR (13) NOT NULL,
   image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
-  image2_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
+  /* SQL標準ではNULLはUNIQUEでも複数保持可能。PostgresもSQL標準に従っている */
+  /* その他のデータベースはSQL標準に従っていないケースがあるため、他のデータベースを使う場合は注意する */
+  image2_file_name_without_ext ccs_schema.uuid_simple_form UNIQUE,
   requested_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 GRANT SELECT, INSERT ON ccs_schema.update_identity_info_req To user_app;

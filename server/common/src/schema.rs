@@ -48,7 +48,7 @@ pub mod ccs_schema {
             address_line2 -> Nullable<Varchar>,
             telephone_number -> Varchar,
             image1_file_name_without_ext -> Bpchar,
-            image2_file_name_without_ext -> Bpchar,
+            image2_file_name_without_ext -> Nullable<Bpchar>,
             requested_at -> Timestamptz,
         }
     }
@@ -108,7 +108,7 @@ pub mod ccs_schema {
             address_line2 -> Nullable<Varchar>,
             telephone_number -> Varchar,
             image1_file_name_without_ext -> Bpchar,
-            image2_file_name_without_ext -> Bpchar,
+            image2_file_name_without_ext -> Nullable<Bpchar>,
             requested_at -> Timestamptz,
         }
     }
