@@ -11,6 +11,7 @@ use crate::schema::ccs_schema::identity_info;
 use crate::schema::ccs_schema::new_password;
 use crate::schema::ccs_schema::tenant;
 use crate::schema::ccs_schema::terms_of_use;
+use crate::schema::ccs_schema::update_identity_info_req;
 use crate::schema::ccs_schema::user_account;
 use crate::schema::ccs_schema::user_temp_account;
 
@@ -190,6 +191,8 @@ pub struct NewCreateIdentityInfoReq<'a> {
     pub address_line1: &'a str,
     pub address_line2: Option<&'a str>,
     pub telephone_number: &'a str,
+    pub image1_file_name_without_ext: &'a str,
+    pub image2_file_name_without_ext: Option<&'a str>,
     pub requested_at: &'a DateTime<Utc>,
 }
 
@@ -206,5 +209,44 @@ pub struct CreateIdentityInfoReq {
     pub address_line1: String,
     pub address_line2: Option<String>,
     pub telephone_number: String,
+    pub image1_file_name_without_ext: String,
+    pub image2_file_name_without_ext: Option<String>,
+    pub requested_at: DateTime<Utc>,
+}
+
+#[derive(Insertable)]
+#[table_name = "update_identity_info_req"]
+pub struct NewUpdateIdentityInfoReq<'a> {
+    pub user_account_id: &'a i32,
+    pub last_name: &'a str,
+    pub first_name: &'a str,
+    pub last_name_furigana: &'a str,
+    pub first_name_furigana: &'a str,
+    pub date_of_birth: &'a NaiveDate,
+    pub prefecture: &'a str,
+    pub city: &'a str,
+    pub address_line1: &'a str,
+    pub address_line2: Option<&'a str>,
+    pub telephone_number: &'a str,
+    pub image1_file_name_without_ext: &'a str,
+    pub image2_file_name_without_ext: Option<&'a str>,
+    pub requested_at: &'a DateTime<Utc>,
+}
+
+#[derive(Clone, Queryable)]
+pub struct UpdateIdentityInfoReq {
+    pub user_account_id: i32,
+    pub last_name: String,
+    pub first_name: String,
+    pub last_name_furigana: String,
+    pub first_name_furigana: String,
+    pub date_of_birth: NaiveDate,
+    pub prefecture: String,
+    pub city: String,
+    pub address_line1: String,
+    pub address_line2: Option<String>,
+    pub telephone_number: String,
+    pub image1_file_name_without_ext: String,
+    pub image2_file_name_without_ext: Option<String>,
     pub requested_at: DateTime<Utc>,
 }
