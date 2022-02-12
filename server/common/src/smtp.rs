@@ -18,7 +18,6 @@ pub const SYSTEM_EMAIL_ADDRESS: &str = "admin-no-reply@test.com";
 pub const INQUIRY_EMAIL_ADDRESS: &str = "inquiry@test.com";
 
 pub const KEY_TO_SOCKET_FOR_SMTP_SERVER: &str = "SOCKET_FOR_SMTP_SERVER";
-
 pub static SOCKET_FOR_SMTP_SERVER: Lazy<String> = Lazy::new(|| {
     var(KEY_TO_SOCKET_FOR_SMTP_SERVER).unwrap_or_else(|_| {
         panic!(
