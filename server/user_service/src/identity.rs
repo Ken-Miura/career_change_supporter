@@ -11,21 +11,23 @@ use axum::{
     Json,
 };
 use bytes::Bytes;
-use chrono::{NaiveDate, Utc};
-use common::model::user::IdentityInfo;
+use chrono::{DateTime, NaiveDate, Utc};
+use common::model::user::{IdentityInfo, NewCreateIdentityInfoReq};
+use common::schema::ccs_schema::create_identity_info_req::table as create_identity_info_req_table;
 use common::schema::ccs_schema::identity_info::dsl::identity_info;
+use common::schema::ccs_schema::update_identity_info_req::table as update_identity_info_req_table;
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, DatabaseConnection, ErrResp, RespResult,
 };
 use diesel::result::Error::NotFound;
-use diesel::QueryDsl;
-use diesel::RunQueryDsl;
+use diesel::{insert_into, RunQueryDsl};
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
+use diesel::{Connection, QueryDsl};
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
 use uuid::Uuid;
@@ -57,7 +59,8 @@ pub(crate) async fn post_identity(
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<IdentityResult> {
     let multipart_wrapper = MultipartWrapperImpl { multipart };
-    let current_date = Utc::now()
+    let current_date_time = Utc::now();
+    let current_date = current_date_time
         .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
         .naive_local()
         .date();
@@ -74,7 +77,8 @@ pub(crate) async fn post_identity(
         identity_image1: (image1_file_name_without_etx, identity_image1),
         identity_image2: identity_image2_option.map(|image| (image2_file_name_without_etx, image)),
     };
-    let result = post_identity_internal(submitted_identity, op, smtp_client).await?;
+    let result =
+        post_identity_internal(submitted_identity, current_date_time, op, smtp_client).await?;
     Ok(result)
 }
 
@@ -392,6 +396,7 @@ fn trim_space_from_identity(identity: Identity) -> Identity {
 
 async fn post_identity_internal(
     submitted_identity: SubmittedIdentity,
+    current_date_time: DateTime<Utc>,
     op: impl SubmitIdentityOperation,
     send_mail: impl SendMail,
 ) -> RespResult<IdentityResult> {
@@ -408,14 +413,14 @@ async fn post_identity_internal(
             })?;
         if exists {
             let _ = op
-                .request_update_identity(submitted_identity)
+                .request_update_identity(submitted_identity, current_date_time)
                 .map_err(|e| {
                     tracing::error!("failed to handle update reqest (id: {})", account_id);
                     e
                 })?;
         } else {
             let _ = op
-                .request_create_identity(submitted_identity)
+                .request_create_identity(submitted_identity, current_date_time)
                 .map_err(|e| {
                     tracing::error!("failed to handle post request (id: {})", account_id);
                     e
@@ -457,8 +462,16 @@ fn create_text(id: i32, update: bool) -> String {
 
 trait SubmitIdentityOperation {
     fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
-    fn request_create_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
-    fn request_update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp>;
+    fn request_create_identity(
+        &self,
+        identity: SubmittedIdentity,
+        current_date_time: DateTime<Utc>,
+    ) -> Result<(), ErrResp>;
+    fn request_update_identity(
+        &self,
+        identity: SubmittedIdentity,
+        current_date_time: DateTime<Utc>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct SubmitIdentityOperationImpl {
@@ -488,11 +501,51 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         }
     }
 
-    fn request_create_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
+    fn request_create_identity(
+        &self,
+        submitted_identity: SubmittedIdentity,
+        current_date_time: DateTime<Utc>,
+    ) -> Result<(), ErrResp> {
+        let date_of_birth = &NaiveDate::from_ymd(
+            submitted_identity.identity.date_of_birth.year,
+            submitted_identity.identity.date_of_birth.month,
+            submitted_identity.identity.date_of_birth.day,
+        );
+        let image2_file_name_without_ext = submitted_identity.identity_image2.clone().map(|s| s.0);
+        let new_create_identity_info_req = NewCreateIdentityInfoReq {
+            user_account_id: &submitted_identity.account_id,
+            last_name: &submitted_identity.identity.last_name,
+            first_name: &submitted_identity.identity.first_name,
+            last_name_furigana: &submitted_identity.identity.last_name_furigana,
+            first_name_furigana: &submitted_identity.identity.first_name_furigana,
+            date_of_birth,
+            prefecture: &submitted_identity.identity.prefecture,
+            city: &submitted_identity.identity.city,
+            address_line1: &submitted_identity.identity.address_line1,
+            address_line2: submitted_identity.identity.address_line2.as_deref(),
+            telephone_number: &submitted_identity.identity.telephone_number,
+            image1_file_name_without_ext: &submitted_identity.identity_image1.0,
+            image2_file_name_without_ext: image2_file_name_without_ext.as_deref(),
+            requested_at: &current_date_time,
+        };
+        let result = self.conn.transaction::<(), diesel::result::Error, _>(|| {
+            let result = insert_into(create_identity_info_req_table)
+                .values(new_create_identity_info_req)
+                .execute(&self.conn)
+                .map_err(|e| {
+                    tracing::error!("failed to insert to create_identity_info_req_table: {}", e);
+                    e
+                })?;
+            todo!("画像をS3に送信")
+        });
         todo!()
     }
 
-    fn request_update_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
+    fn request_update_identity(
+        &self,
+        identity: SubmittedIdentity,
+        current_date_time: DateTime<Utc>,
+    ) -> Result<(), ErrResp> {
         todo!()
     }
 }
