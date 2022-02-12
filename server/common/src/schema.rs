@@ -35,6 +35,25 @@ pub mod ccs_schema {
     }
 
     table! {
+        ccs_schema.create_identity_info_req (user_account_id) {
+            user_account_id -> Int4,
+            last_name -> Varchar,
+            first_name -> Varchar,
+            last_name_furigana -> Varchar,
+            first_name_furigana -> Varchar,
+            date_of_birth -> Date,
+            prefecture -> Varchar,
+            city -> Varchar,
+            address_line1 -> Varchar,
+            address_line2 -> Nullable<Varchar>,
+            telephone_number -> Varchar,
+            image1_file_name_without_ext -> Bpchar,
+            image2_file_name_without_ext -> Bpchar,
+            requested_at -> Timestamptz,
+        }
+    }
+
+    table! {
         ccs_schema.identity_info (user_account_id) {
             user_account_id -> Int4,
             last_name -> Varchar,
@@ -76,6 +95,25 @@ pub mod ccs_schema {
     }
 
     table! {
+        ccs_schema.update_identity_info_req (user_account_id) {
+            user_account_id -> Int4,
+            last_name -> Varchar,
+            first_name -> Varchar,
+            last_name_furigana -> Varchar,
+            first_name_furigana -> Varchar,
+            date_of_birth -> Date,
+            prefecture -> Varchar,
+            city -> Varchar,
+            address_line1 -> Varchar,
+            address_line2 -> Nullable<Varchar>,
+            telephone_number -> Varchar,
+            image1_file_name_without_ext -> Bpchar,
+            image2_file_name_without_ext -> Bpchar,
+            requested_at -> Timestamptz,
+        }
+    }
+
+    table! {
         ccs_schema.user_account (user_account_id) {
             user_account_id -> Int4,
             email_address -> Varchar,
@@ -103,10 +141,12 @@ pub mod ccs_schema {
         admin_account,
         career_info,
         consulting_fee,
+        create_identity_info_req,
         identity_info,
         new_password,
         tenant,
         terms_of_use,
+        update_identity_info_req,
         user_account,
         user_temp_account,
     );

@@ -144,6 +144,58 @@ CREATE TABLE ccs_schema.tenant (
 /* 障害や脆弱性を作り込むことを避けるため、ユーザーからのUPDATEは許可しない */
 GRANT SELECT, INSERT, DELETE ON ccs_schema.tenant To user_app;
 
+/* user_account一つに対して、create_identity_info_req (本人確認依頼 (新規)) は0もしくは1の関係とする */
+/* 従って、user_account_idをPRIMARY KEYに指定する */
+/* 画像ファイルの実体は、データベース外に保存している */
+/* user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、画像の実体との紐づけが知らないうちに解除される可能性がある */
+/* そのため、user_account_idは外部キーとしない */
+CREATE TABLE ccs_schema.create_identity_info_req (
+  /* PRIMARY KEY = NOT NULLのためNOT NULLはつけない */
+  user_account_id INTEGER PRIMARY KEY,
+  last_name VARCHAR (64) NOT NULL,
+  first_name VARCHAR (64) NOT NULL,
+  last_name_furigana VARCHAR (64) NOT NULL,
+  first_name_furigana VARCHAR (64) NOT NULL,
+  date_of_birth DATE NOT NULL,
+  prefecture VARCHAR (4) NOT NULL,
+  city VARCHAR (32) NOT NULL,
+  address_line1 VARCHAR (128) NOT NULL,
+  address_line2 VARCHAR (128),
+  telephone_number VARCHAR (13) NOT NULL,
+  image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
+  image2_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
+  requested_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+GRANT SELECT, INSERT ON ccs_schema.create_identity_info_req To user_app;
+GRANT SELECT, DELETE ON ccs_schema.create_identity_info_req To admin_app;
+CREATE INDEX create_identity_info_req_requested_at_idx ON ccs_schema.create_identity_info_req (requested_at);
+
+/* user_account一つに対して、update_identity_info_req (本人確認依頼 (更新)) は0もしくは1の関係とする */
+/* 従って、user_account_idをPRIMARY KEYに指定する */
+/* 画像ファイルの実体は、データベース外に保存している */
+/* user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、画像の実体との紐づけが知らないうちに解除される可能性がある */
+/* そのため、user_account_idは外部キーとしない */
+CREATE TABLE ccs_schema.update_identity_info_req (
+  /* PRIMARY KEY = NOT NULLのためNOT NULLはつけない */
+  user_account_id INTEGER PRIMARY KEY,
+  last_name VARCHAR (64) NOT NULL,
+  first_name VARCHAR (64) NOT NULL,
+  last_name_furigana VARCHAR (64) NOT NULL,
+  first_name_furigana VARCHAR (64) NOT NULL,
+  date_of_birth DATE NOT NULL,
+  prefecture VARCHAR (4) NOT NULL,
+  city VARCHAR (32) NOT NULL,
+  address_line1 VARCHAR (128) NOT NULL,
+  address_line2 VARCHAR (128),
+  telephone_number VARCHAR (13) NOT NULL,
+  image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
+  image2_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL UNIQUE,
+  requested_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+GRANT SELECT, INSERT ON ccs_schema.update_identity_info_req To user_app;
+GRANT SELECT, DELETE ON ccs_schema.update_identity_info_req To admin_app;
+CREATE INDEX update_identity_info_req_requested_at_idx ON ccs_schema.update_identity_info_req (requested_at);
+
 CREATE TABLE ccs_schema.admin_account (
   admin_account_id SERIAL PRIMARY KEY,
   email_address ccs_schema.email_address NOT NULL UNIQUE,
