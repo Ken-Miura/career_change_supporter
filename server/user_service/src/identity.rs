@@ -12,11 +12,16 @@ use axum::{
 };
 use bytes::Bytes;
 use chrono::{NaiveDate, Utc};
+use common::model::user::IdentityInfo;
+use common::schema::ccs_schema::identity_info::dsl::identity_info;
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, DatabaseConnection, ErrResp, RespResult,
 };
+use diesel::result::Error::NotFound;
+use diesel::QueryDsl;
+use diesel::RunQueryDsl;
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
@@ -464,7 +469,19 @@ impl SubmitIdentityOperationImpl {
 
 impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
     fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
-        todo!()
+        let result = identity_info
+            .find(account_id)
+            .first::<IdentityInfo>(&self.conn);
+        match result {
+            Ok(_) => Ok(true),
+            Err(e) => {
+                if e == NotFound {
+                    Ok(false)
+                } else {
+                    Err(unexpected_err_resp())
+                }
+            }
+        }
     }
 
     fn post_identity(&self, identity: SubmittedIdentity) -> Result<(), ErrResp> {
