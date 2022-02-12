@@ -15,7 +15,6 @@ use chrono::{DateTime, NaiveDate, Utc};
 use common::model::user::{IdentityInfo, NewCreateIdentityInfoReq};
 use common::schema::ccs_schema::create_identity_info_req::table as create_identity_info_req_table;
 use common::schema::ccs_schema::identity_info::dsl::identity_info;
-use common::schema::ccs_schema::update_identity_info_req::table as update_identity_info_req_table;
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
@@ -506,12 +505,19 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         submitted_identity: SubmittedIdentity,
         current_date_time: DateTime<Utc>,
     ) -> Result<(), ErrResp> {
+        let account_id = submitted_identity.account_id;
+        let image1_file_name_without_ext = submitted_identity.identity_image1.0.clone();
+        let mut identity_image2 = None;
+        let mut image2_file_name_without_ext = None;
+        if let Some(image2) = submitted_identity.identity_image2 {
+            identity_image2 = Some((image2.0.clone(), image2.1));
+            image2_file_name_without_ext = Some(image2.0);
+        };
         let date_of_birth = &NaiveDate::from_ymd(
             submitted_identity.identity.date_of_birth.year,
             submitted_identity.identity.date_of_birth.month,
             submitted_identity.identity.date_of_birth.day,
         );
-        let image2_file_name_without_ext = submitted_identity.identity_image2.clone().map(|s| s.0);
         let new_create_identity_info_req = NewCreateIdentityInfoReq {
             user_account_id: &submitted_identity.account_id,
             last_name: &submitted_identity.identity.last_name,
@@ -524,18 +530,21 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             address_line1: &submitted_identity.identity.address_line1,
             address_line2: submitted_identity.identity.address_line2.as_deref(),
             telephone_number: &submitted_identity.identity.telephone_number,
-            image1_file_name_without_ext: &submitted_identity.identity_image1.0,
+            image1_file_name_without_ext: &image1_file_name_without_ext,
             image2_file_name_without_ext: image2_file_name_without_ext.as_deref(),
             requested_at: &current_date_time,
         };
-        let result = self.conn.transaction::<(), diesel::result::Error, _>(|| {
-            let result = insert_into(create_identity_info_req_table)
+        let _result = self.conn.transaction::<(), diesel::result::Error, _>(|| {
+            let _result = insert_into(create_identity_info_req_table)
                 .values(new_create_identity_info_req)
                 .execute(&self.conn)
                 .map_err(|e| {
                     tracing::error!("failed to insert to create_identity_info_req_table: {}", e);
                     e
                 })?;
+            println!("{:?}", account_id);
+            println!("{:?}", submitted_identity.identity_image1);
+            println!("{:?}", identity_image2);
             todo!("画像をS3に送信")
         });
         todo!()
@@ -543,8 +552,8 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
 
     fn request_update_identity(
         &self,
-        identity: SubmittedIdentity,
-        current_date_time: DateTime<Utc>,
+        _identity: SubmittedIdentity,
+        _current_date_time: DateTime<Utc>,
     ) -> Result<(), ErrResp> {
         todo!()
     }
