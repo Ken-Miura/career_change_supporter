@@ -6,12 +6,6 @@ cd common
 diesel setup --database-url=postgres://postgres:example@localhost/ccs_db
 ```
 
-S3バケット作成
-```
-aws --endpoint-url=http://localhost:4566 s3 mb s3://identity-images --profile=localstack
-aws --endpoint-url=http://localhost:4566 s3 mb s3://career-images --profile=localstack
-```
-
 .envファイル例
 ```
 DB_URL_FOR_USER_APP=postgres://user_app:test1234@localhost/ccs_db
