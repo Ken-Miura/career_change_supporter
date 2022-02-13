@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   # Use postgres/example user/password credentials
-  db-server:
+  db:
     image: postgres:13.5
     restart: always
     ports:
@@ -13,12 +13,16 @@ services:
       # localeを設定したい理由がないので、localeを設定しない (localeをCに設定する)
       # postgresql.org/docs/13/locale.html 23.1.2. Behavior
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    networks:
+      - development_network
   
-  cache-server:
+  cache:
     image: redis:6.2.1
     restart: always
     ports:
       - "6379:6379"
+    networks:
+      - development_network
 
   db-management-client:
     # データベース操作が可能なWeb UIを提供するimage
@@ -26,27 +30,41 @@ services:
     restart: always
     ports:
       - "8081:8080"
+    networks:
+      - development_network
 
-  smtp-server:
+  smtp:
     # SMTPサーバとしての機能と受け取ったメールを確認するWeb UIを提供するimage
     image: schickling/mailcatcher:latest
     restart: always
     ports:
-      - "1080:1080"
-      - "1025:1025"
+      - "1080:1080" # Web UIのポート
+      - "1025:1025" # APIのポート
+    networks:
+      - development_network
 
-  # localstack:
-  #   image: localstack/localstack:latest
-  #   restart: always
-  #   environment:
-  #     - SERVICES=s3
-  #     - DEFAULT_REGION=ap-northeast-1
-  #     - DATA_DIR=/tmp/localstack/data # 永続化したいデータの保存先（コンテナ内でのデータ保存先となるので、ホスト環境に必要な場合はvolumesでマウントする必要あり）
-  #   # TODO: /docker-entrypoint-initaws.dに必要なs3バケットを作成するスクリプトを配置する（docker-entrypoint-initaws.d内のスクリプトはコンテナ生成時に実行される）
-  #   #volumes:
-  #   #   - ./docker/localstack/:/docker-entrypoint-initaws.d
-  #   ports:
-  #     - "4566:4566"
+  storage:
+    # AWS s3互換のモックサーバとしての機能と管理用のWeb UIを提供するimage
+    image: minio/minio:RELEASE.2022-02-01T18-00-14Z
+    container_name: "storage"
+    entrypoint: sh -c "
+        mkdir -p /data/mybucket;
+        mkdir -p /data/.minio.sys/buckets/mybucket;
+        minio server /data --console-address ':37135'"
+    ports:
+      - 37135:37135 # 管理画面のポート
+      - 9000:9000 # APIのポート
+    environment:
+      - MINIO_ROOT_USER=minio # 管理画面のユーザ、APIのアクセスキー
+      - MINIO_ROOT_PASSWORD=password # 管理画面のパスワード、APIのシークレット
+      - MINIO_DOMAIN=storage
+    volumes:
+      - minio:/data
+    networks:
+      development_network:
+        aliases:
+          - identity-images.storage
+          - career-images.storage
 
   elasticsearch:
     build:
@@ -66,13 +84,21 @@ services:
       - 9200:9200
     volumes:
       - es-data:/usr/share/elasticsearch/data
-      
+    networks:
+      - development_network
+
   kibana:
     image: docker.elastic.co/kibana/kibana:7.13.3
     restart: always
     ports:
       - 5601:5601
+    networks:
+      - development_network
 
 volumes:
+  minio:
   es-data:
     driver: local
+
+networks:
+  development_network:
