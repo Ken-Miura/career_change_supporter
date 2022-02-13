@@ -212,7 +212,7 @@ mod tests {
                 email_address: self.email_address.to_string(),
                 hashed_password,
                 last_login_time: Some(last_login_time),
-                created_at: created_at,
+                created_at,
             };
             Ok(vec![account])
         }
@@ -236,7 +236,7 @@ mod tests {
                     }),
                 ));
             }
-            return Ok(());
+            Ok(())
         }
     }
 

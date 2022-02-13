@@ -224,7 +224,7 @@ mod tests {
         let username = String::from("test_user");
         let password = String::from("test_password");
 
-        let result = AccessInfo::new(base_url.clone(), username.clone(), password.clone());
+        let result = AccessInfo::new(base_url, username, password);
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
@@ -240,7 +240,7 @@ mod tests {
         let username = String::from("test_user");
         let password = String::from("test_password");
 
-        let result = AccessInfo::new(base_url.clone(), username.clone(), password.clone());
+        let result = AccessInfo::new(base_url, username, password);
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
@@ -256,7 +256,7 @@ mod tests {
         let username = String::from("test_user");
         let password = String::from("test_password");
 
-        let result = AccessInfo::new(base_url.clone(), username.clone(), password.clone());
+        let result = AccessInfo::new(base_url, username, password);
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
@@ -272,7 +272,7 @@ mod tests {
         let username = String::from("");
         let password = String::from("test_password");
 
-        let result = AccessInfo::new(base_url.clone(), username.clone(), password.clone());
+        let result = AccessInfo::new(base_url, username, password);
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {
@@ -288,7 +288,7 @@ mod tests {
         let username = String::from("test_user");
         let password = String::from("");
 
-        let result = AccessInfo::new(base_url.clone(), username.clone(), password.clone());
+        let result = AccessInfo::new(base_url, username, password);
 
         let invalid_param_err = result.expect_err("failed to get Err");
         match invalid_param_err {

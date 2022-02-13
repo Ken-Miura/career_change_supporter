@@ -334,7 +334,7 @@ mod tests {
                 ));
             }
             assert_eq!(self.new_password.new_password_id, new_password_id);
-            return Ok(self.new_password.clone());
+            Ok(self.new_password.clone())
         }
 
         fn filter_account_by_email_address(
@@ -711,7 +711,7 @@ mod tests {
         let session_id_value = "KBvGQJJVyQquK5yuEcwlbfJfjNHBMAXIKRnHbVO/0QzBMHLak1xmqhaTbDuscJSeEPL2qwZfTP5BalDDMmR8eA==";
         assert_eq!(0, store.count().await);
 
-        let _ = destroy_session_if_exists(&session_id_value, &store)
+        let _ = destroy_session_if_exists(session_id_value, &store)
             .await
             .expect("failed to get Ok");
 
