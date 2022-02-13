@@ -1,9 +1,9 @@
-# Use postgres/example user/password credentials
 version: '3.1'
 
 services:
 
-  db:
+  # Use postgres/example user/password credentials
+  db-server:
     image: postgres:13.5
     restart: always
     ports:
@@ -14,19 +14,19 @@ services:
       # postgresql.org/docs/13/locale.html 23.1.2. Behavior
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
   
-  cache:
+  cache-server:
     image: redis:6.2.1
     restart: always
     ports:
       - "6379:6379"
 
-  adminer:
+  db-management-server:
     image: adminer:4.8.1
     restart: always
     ports:
       - "8081:8080"
 
-  smtp:
+  smtp-server:
     image: schickling/mailcatcher:latest
     restart: always
     ports:
