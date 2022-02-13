@@ -6,7 +6,7 @@ use lettre::{ClientSecurity, Transport};
 use lettre_email::EmailBuilder;
 use once_cell::sync::Lazy;
 use std::env::var;
-use std::net::SocketAddr;
+use std::net::ToSocketAddrs;
 
 use crate::{err, ApiError, ErrResp};
 
@@ -58,8 +58,17 @@ impl SendMail for SmtpClient {
                     }),
                 )
             })?;
-        let addr = self.socket.parse::<SocketAddr>().map_err(|e| {
-            tracing::error!("failed to parse socket str: str={}, e={}", self.socket, e);
+        let mut addrs = self.socket.to_socket_addrs().map_err(|e| {
+            tracing::error!("failed to get socket str: str={}, e={}", self.socket, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: err::Code::UnexpectedErr as u32,
+                }),
+            )
+        })?;
+        let addr = addrs.next().ok_or_else(|| {
+            tracing::error!("failed to get socket str: str={}", self.socket);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
