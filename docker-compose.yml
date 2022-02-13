@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.8'
 
 services:
 
@@ -20,31 +20,33 @@ services:
     ports:
       - "6379:6379"
 
-  db-management-server:
+  db-management-client:
+    # データベース操作が可能なWeb UIを提供するimage
     image: adminer:4.8.1
     restart: always
     ports:
       - "8081:8080"
 
   smtp-server:
+    # SMTPサーバとしての機能と受け取ったメールを確認するWeb UIを提供するimage
     image: schickling/mailcatcher:latest
     restart: always
     ports:
       - "1080:1080"
       - "1025:1025"
 
-  localstack:
-    image: localstack/localstack:latest
-    restart: always
-    environment:
-      - SERVICES=s3
-      - DEFAULT_REGION=ap-northeast-1
-      - DATA_DIR=/tmp/localstack/data # 永続化したいデータの保存先（コンテナ内でのデータ保存先となるので、ホスト環境に必要な場合はvolumesでマウントする必要あり）
-    # TODO: /docker-entrypoint-initaws.dに必要なs3バケットを作成するスクリプトを配置する（docker-entrypoint-initaws.d内のスクリプトはコンテナ生成時に実行される）
-    #volumes:
-    #   - ./docker/localstack/:/docker-entrypoint-initaws.d
-    ports:
-      - "4566:4566"
+  # localstack:
+  #   image: localstack/localstack:latest
+  #   restart: always
+  #   environment:
+  #     - SERVICES=s3
+  #     - DEFAULT_REGION=ap-northeast-1
+  #     - DATA_DIR=/tmp/localstack/data # 永続化したいデータの保存先（コンテナ内でのデータ保存先となるので、ホスト環境に必要な場合はvolumesでマウントする必要あり）
+  #   # TODO: /docker-entrypoint-initaws.dに必要なs3バケットを作成するスクリプトを配置する（docker-entrypoint-initaws.d内のスクリプトはコンテナ生成時に実行される）
+  #   #volumes:
+  #   #   - ./docker/localstack/:/docker-entrypoint-initaws.d
+  #   ports:
+  #     - "4566:4566"
 
   elasticsearch:
     build:
