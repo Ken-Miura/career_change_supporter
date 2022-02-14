@@ -439,9 +439,11 @@ async fn post_identity_internal(
 struct SubmittedIdentity {
     account_id: i32,
     identity: Identity,
-    identity_image1: (String, Cursor<Vec<u8>>),
-    identity_image2: Option<(String, Cursor<Vec<u8>>)>,
+    identity_image1: FileNameAndBinary,
+    identity_image2: Option<FileNameAndBinary>,
 }
+
+type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 fn create_subject(id: i32, update: bool) -> String {
     let request_type = if update { "更新" } else { "新規" };
@@ -559,8 +561,8 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
 
 impl SubmitIdentityOperationImpl {
     fn extract_file_name(
-        file_name_and_binary_option: Option<(String, Cursor<Vec<u8>>)>,
-    ) -> (Option<(String, Cursor<Vec<u8>>)>, Option<String>) {
+        file_name_and_binary_option: Option<FileNameAndBinary>,
+    ) -> (Option<FileNameAndBinary>, Option<String>) {
         if let Some(file_name_and_binary) = file_name_and_binary_option {
             let identity_image2 = Some((file_name_and_binary.0.clone(), file_name_and_binary.1));
             let image2_file_name_without_ext = Some(file_name_and_binary.0);

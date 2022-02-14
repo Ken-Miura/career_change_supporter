@@ -467,7 +467,7 @@ mod tests {
         );
         let careers = vec![career_info.clone()]
             .into_iter()
-            .map(|c| convert_career_info_to_career(c))
+            .map(convert_career_info_to_career)
             .collect::<Vec<Career>>();
         assert_eq!(careers, result.1 .0.careers);
         assert_eq!(
@@ -513,7 +513,7 @@ mod tests {
         );
         let careers = careers_info
             .into_iter()
-            .map(|c| convert_career_info_to_career(c))
+            .map(convert_career_info_to_career)
             .collect::<Vec<Career>>();
         assert_eq!(careers, result.1 .0.careers);
         assert_eq!(

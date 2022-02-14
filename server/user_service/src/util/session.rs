@@ -264,7 +264,7 @@ pub(crate) mod tests {
     pub(crate) fn extract_session_id_value(header_value: &HeaderValue) -> String {
         let set_cookie = header_value.to_str().expect("failed to get value");
         let cookie_name = set_cookie
-            .split(";")
+            .split(';')
             .find(|s| s.contains(SESSION_ID_COOKIE_NAME))
             .expect("failed to get session")
             .trim()
@@ -276,7 +276,7 @@ pub(crate) mod tests {
     pub(crate) fn extract_cookie_max_age_value(header_value: &HeaderValue) -> String {
         let set_cookie = header_value.to_str().expect("failed to get value");
         let cookie_max_age = set_cookie
-            .split(";")
+            .split(';')
             .find(|s| s.contains("Max-Age"))
             .expect("failed to get Max-Age")
             .trim()

@@ -297,6 +297,7 @@ mod tests {
         new_pwd_equals_old_one: bool,
     }
 
+    #[allow(clippy::too_many_arguments)]
     impl PasswordChangeOperationMock {
         fn new(
             no_new_password_found: bool,

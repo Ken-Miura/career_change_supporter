@@ -6120,7 +6120,7 @@ mod tests {
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
-            IdentityValidationError::InvalidTelNumFormat(identity.telephone_number.to_string()),
+            IdentityValidationError::InvalidTelNumFormat(identity.telephone_number),
             err
         );
     }
@@ -6147,7 +6147,7 @@ mod tests {
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
-            IdentityValidationError::InvalidTelNumFormat(identity.telephone_number.to_string()),
+            IdentityValidationError::InvalidTelNumFormat(identity.telephone_number),
             err
         );
     }
