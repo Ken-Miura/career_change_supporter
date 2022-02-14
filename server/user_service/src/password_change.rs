@@ -286,47 +286,37 @@ mod tests {
     use super::{destroy_session_if_exists, PasswordChangeOperation};
 
     struct PasswordChangeOperationMock {
-        no_new_password_found: bool,
+        asserted_params: AssertedParams,
+        test_case_params: TestCaseParams,
+    }
+
+    struct AssertedParams {
         new_password: NewPassword,
-        no_account_found: bool,
         user_account_id: i32,
         email_address: String,
         old_pwd: String,
         last_login_time: Option<DateTime<Utc>>,
         created_at: DateTime<Utc>,
+    }
+
+    struct TestCaseParams {
+        no_new_password_found: bool,
+        no_account_found: bool,
         new_pwd_equals_old_one: bool,
     }
 
-    #[allow(clippy::too_many_arguments)]
     impl PasswordChangeOperationMock {
-        fn new(
-            no_new_password_found: bool,
-            new_password: NewPassword,
-            no_account_found: bool,
-            user_account_id: i32,
-            email_address: String,
-            old_pwd: String,
-            last_login_time: Option<DateTime<Utc>>,
-            created_at: DateTime<Utc>,
-            new_pwd_equals_old_one: bool,
-        ) -> Self {
+        fn new(asserted_params: AssertedParams, test_case_params: TestCaseParams) -> Self {
             Self {
-                no_new_password_found,
-                new_password,
-                no_account_found,
-                user_account_id,
-                email_address,
-                old_pwd,
-                last_login_time,
-                created_at,
-                new_pwd_equals_old_one,
+                asserted_params,
+                test_case_params,
             }
         }
     }
 
     impl PasswordChangeOperation for PasswordChangeOperationMock {
         fn find_new_password_by_id(&self, new_password_id: &str) -> Result<NewPassword, ErrResp> {
-            if self.no_new_password_found {
+            if self.test_case_params.no_new_password_found {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
@@ -334,15 +324,18 @@ mod tests {
                     }),
                 ));
             }
-            assert_eq!(self.new_password.new_password_id, new_password_id);
-            Ok(self.new_password.clone())
+            assert_eq!(
+                self.asserted_params.new_password.new_password_id,
+                new_password_id
+            );
+            Ok(self.asserted_params.new_password.clone())
         }
 
         fn filter_account_by_email_address(
             &self,
             email_addr: &str,
         ) -> Result<Vec<Account>, ErrResp> {
-            if self.no_account_found {
+            if self.test_case_params.no_account_found {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
@@ -350,26 +343,34 @@ mod tests {
                     }),
                 ));
             }
-            assert_eq!(self.email_address, email_addr);
-            let _ = validate_password(&self.old_pwd).expect("failed to get Ok");
-            let hashed_pwd = hash_password(&self.old_pwd).expect("failed to get Ok");
+            assert_eq!(self.asserted_params.email_address, email_addr);
+            let _ = validate_password(&self.asserted_params.old_pwd).expect("failed to get Ok");
+            let hashed_pwd =
+                hash_password(&self.asserted_params.old_pwd).expect("failed to get Ok");
             let account = Account {
-                user_account_id: self.user_account_id,
-                email_address: self.email_address.to_string(),
+                user_account_id: self.asserted_params.user_account_id,
+                email_address: self.asserted_params.email_address.to_string(),
                 hashed_password: hashed_pwd,
-                last_login_time: self.last_login_time,
-                created_at: self.created_at,
+                last_login_time: self.asserted_params.last_login_time,
+                created_at: self.asserted_params.created_at,
             };
             Ok(vec![account])
         }
 
         fn update_password(&self, id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
-            assert_eq!(self.user_account_id, id);
-            assert_eq!(self.new_password.hashed_password, hashed_pwd);
-            if self.new_pwd_equals_old_one {
-                assert!(is_password_match(&self.old_pwd, hashed_pwd).expect("failed to get Ok"));
+            assert_eq!(self.asserted_params.user_account_id, id);
+            assert_eq!(
+                self.asserted_params.new_password.hashed_password,
+                hashed_pwd
+            );
+            if self.test_case_params.new_pwd_equals_old_one {
+                assert!(is_password_match(&self.asserted_params.old_pwd, hashed_pwd)
+                    .expect("failed to get Ok"));
             } else {
-                assert!(!is_password_match(&self.old_pwd, hashed_pwd).expect("failed to get Ok"));
+                assert!(
+                    !is_password_match(&self.asserted_params.old_pwd, hashed_pwd)
+                        .expect("failed to get Ok")
+                );
             }
             Ok(())
         }
@@ -393,15 +394,19 @@ mod tests {
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
         let op_mock = PasswordChangeOperationMock::new(
-            false,
-            new_password,
-            false,
-            52354,
-            email_addr.to_string(),
-            old_pwd.to_string(),
-            Some(new_pwd_created_at - Duration::days(1)),
-            new_pwd_created_at - Duration::days(2),
-            new_pwd == old_pwd,
+            AssertedParams {
+                new_password,
+                user_account_id: 52354,
+                email_address: email_addr.to_string(),
+                old_pwd: old_pwd.to_string(),
+                last_login_time: Some(new_pwd_created_at - Duration::days(1)),
+                created_at: new_pwd_created_at - Duration::days(2),
+            },
+            TestCaseParams {
+                no_new_password_found: false,
+                no_account_found: false,
+                new_pwd_equals_old_one: new_pwd == old_pwd,
+            },
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -438,15 +443,19 @@ mod tests {
         let old_pwd = new_pwd; // update to same password
         let _ = validate_password(old_pwd).expect("failed to get Ok");
         let op_mock = PasswordChangeOperationMock::new(
-            false,
-            new_password,
-            false,
-            52354,
-            email_addr.to_string(),
-            old_pwd.to_string(),
-            Some(new_pwd_created_at - Duration::days(1)),
-            new_pwd_created_at - Duration::days(2),
-            new_pwd == old_pwd,
+            AssertedParams {
+                new_password,
+                user_account_id: 52354,
+                email_address: email_addr.to_string(),
+                old_pwd: old_pwd.to_string(),
+                last_login_time: Some(new_pwd_created_at - Duration::days(1)),
+                created_at: new_pwd_created_at - Duration::days(2),
+            },
+            TestCaseParams {
+                no_new_password_found: false,
+                no_account_found: false,
+                new_pwd_equals_old_one: new_pwd == old_pwd,
+            },
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -483,15 +492,19 @@ mod tests {
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
         let op_mock = PasswordChangeOperationMock::new(
-            false,
-            new_password,
-            false,
-            52354,
-            email_addr.to_string(),
-            old_pwd.to_string(),
-            None,
-            new_pwd_created_at - Duration::days(2),
-            new_pwd == old_pwd,
+            AssertedParams {
+                new_password,
+                user_account_id: 52354,
+                email_address: email_addr.to_string(),
+                old_pwd: old_pwd.to_string(),
+                last_login_time: None,
+                created_at: new_pwd_created_at - Duration::days(2),
+            },
+            TestCaseParams {
+                no_new_password_found: false,
+                no_account_found: false,
+                new_pwd_equals_old_one: new_pwd == old_pwd,
+            },
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -528,15 +541,19 @@ mod tests {
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
         let op_mock = PasswordChangeOperationMock::new(
-            false,
-            new_password,
-            false,
-            52354,
-            email_addr.to_string(),
-            old_pwd.to_string(),
-            Some(new_pwd_created_at - Duration::days(1)),
-            new_pwd_created_at - Duration::days(2),
-            new_pwd == old_pwd,
+            AssertedParams {
+                new_password,
+                user_account_id: 52354,
+                email_address: email_addr.to_string(),
+                old_pwd: old_pwd.to_string(),
+                last_login_time: Some(new_pwd_created_at - Duration::days(1)),
+                created_at: new_pwd_created_at - Duration::days(2),
+            },
+            TestCaseParams {
+                no_new_password_found: false,
+                no_account_found: false,
+                new_pwd_equals_old_one: new_pwd == old_pwd,
+            },
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -573,15 +590,19 @@ mod tests {
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
         let op_mock = PasswordChangeOperationMock::new(
-            false,
-            new_password,
-            true,
-            52354,
-            email_addr.to_string(),
-            old_pwd.to_string(),
-            Some(new_pwd_created_at - Duration::days(1)),
-            new_pwd_created_at - Duration::days(2),
-            new_pwd == old_pwd,
+            AssertedParams {
+                new_password,
+                user_account_id: 52354,
+                email_address: email_addr.to_string(),
+                old_pwd: old_pwd.to_string(),
+                last_login_time: Some(new_pwd_created_at - Duration::days(1)),
+                created_at: new_pwd_created_at - Duration::days(2),
+            },
+            TestCaseParams {
+                no_new_password_found: false,
+                no_account_found: true,
+                new_pwd_equals_old_one: new_pwd == old_pwd,
+            },
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -618,15 +639,19 @@ mod tests {
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
         let op_mock = PasswordChangeOperationMock::new(
-            true,
-            new_password,
-            false,
-            52354,
-            email_addr.to_string(),
-            old_pwd.to_string(),
-            Some(new_pwd_created_at - Duration::days(1)),
-            new_pwd_created_at - Duration::days(2),
-            new_pwd == old_pwd,
+            AssertedParams {
+                new_password,
+                user_account_id: 52354,
+                email_address: email_addr.to_string(),
+                old_pwd: old_pwd.to_string(),
+                last_login_time: Some(new_pwd_created_at - Duration::days(1)),
+                created_at: new_pwd_created_at - Duration::days(2),
+            },
+            TestCaseParams {
+                no_new_password_found: true,
+                no_account_found: false,
+                new_pwd_equals_old_one: new_pwd == old_pwd,
+            },
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
@@ -663,15 +688,19 @@ mod tests {
         let old_pwd = "aaaaaaaaaB";
         let _ = validate_password(old_pwd).expect("failed to get Ok");
         let op_mock = PasswordChangeOperationMock::new(
-            false,
-            new_password,
-            false,
-            52354,
-            email_addr.to_string(),
-            old_pwd.to_string(),
-            Some(new_pwd_created_at - Duration::days(1)),
-            new_pwd_created_at - Duration::days(2),
-            new_pwd == old_pwd,
+            AssertedParams {
+                new_password,
+                user_account_id: 52354,
+                email_address: email_addr.to_string(),
+                old_pwd: old_pwd.to_string(),
+                last_login_time: Some(new_pwd_created_at - Duration::days(1)),
+                created_at: new_pwd_created_at - Duration::days(2),
+            },
+            TestCaseParams {
+                no_new_password_found: false,
+                no_account_found: false,
+                new_pwd_equals_old_one: new_pwd == old_pwd,
+            },
         );
         let send_mail_mock = SendMailMock::new(
             email_addr.to_string(),
