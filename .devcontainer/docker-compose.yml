@@ -37,7 +37,7 @@ services:
     command: /bin/sh -c "while sleep 1000; do :; done"
     
     ports:
-      - "8080:8080"
-      - "3000:3000"
+      - "8080:8080" # Web UI用のポート
+      - "3000:3000" # APIサーバ用のポート (APIサーバ用のポートはコンテナ外に公開必須ではないが、デバッグのために公開しておく)
     networks:
       - development_network
