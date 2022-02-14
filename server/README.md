@@ -3,7 +3,7 @@
 DBセットアップ
 ```
 cd common
-diesel setup --database-url=postgres://postgres:example@localhost/ccs_db
+diesel setup --database-url=postgres://postgres:example@db/ccs_db
 ```
 
 .envファイル例
@@ -18,12 +18,3 @@ PAYMENT_PLATFORM_API_URL=https://api.pay.jp
 PAYMENT_PLATFORM_API_USERNAME=${your_username}
 PAYMENT_PLATFORM_API_PASSWORD=${your_password}
 ```
-
-TODO:
-定期処理で対応する予定の処理
-- 期限切れのtemp_accountレコードの削除
-- 期限切れのnew_passwordレコードの削除
-
-パスワード変更時の仕組みを下記のように変更する
-- 変更前: 新しいパスワードを入力してからメールが届く
-- 変更後: メールが届いてから新しいパスワードを入力する
