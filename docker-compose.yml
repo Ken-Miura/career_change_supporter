@@ -99,6 +99,7 @@ services:
 
 volumes:
   minio:
+    driver: local
   es-data:
     driver: local
 
