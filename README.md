@@ -11,6 +11,8 @@
 - ステージの考え方（ビルド用イメージ、デプロイ用イメージ）を使ったDockerfileとする
 - フロントエンド、バックエンドでDockerfileを分ける
 
+ORMをasyncに対応したものに変更する（sea-ormのmigration toolがpostgresをサポートした後、またはdieselのasync版が出た後、必要に応じて書き換える）
+
 # NOTE
 ## 開発環境
 開発環境にはVS Code (IDE) とRemote Container (VS Code用拡張プラグイン) が必須となる。それらを用意し開発を行う。
