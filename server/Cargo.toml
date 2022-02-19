@@ -5,4 +5,5 @@ members = [
     "admin_service",
     "admin_account",
     "common",
+    "entity",
 ]
