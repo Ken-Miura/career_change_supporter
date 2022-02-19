@@ -75,25 +75,33 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         // その他（TABLE、INDEX等）の定義
-        // let sql = r"CREATE TABLE ccs_schema.user_account (
-        //     user_account_id SERIAL PRIMARY KEY,
-        //     /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
-        //     email_address ccs_schema.email_address NOT NULL UNIQUE,
-        //     hashed_password BYTEA NOT NULL,
-        //     last_login_time TIMESTAMP WITH TIME ZONE,
-        //     created_at TIMESTAMP WITH TIME ZONE NOT NULL
-        //   );";
-        // let stmt = Statement::from_string(db_backend, sql.to_owned());
-        // let _ = conn.execute(stmt).await.map(|_| ())?;
-
-        // let sql = r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.user_account To user_app;";
-        // let stmt = Statement::from_string(db_backend, sql.to_owned());
-        // let _ = conn.execute(stmt).await.map(|_| ())?;
-
-        // let sql =
-        //     r"GRANT USAGE ON SEQUENCE ccs_schema.user_account_user_account_id_seq TO user_app;";
-        // let stmt = Statement::from_string(db_backend, sql.to_owned());
-        // let _ = conn.execute(stmt).await.map(|_| ())?;
+        let _ = conn
+        /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
+        .execute(sql.stmt(r"CREATE TABLE ccs_schema.user_account (
+            user_account_id SERIAL PRIMARY KEY,
+            email_address ccs_schema.email_address NOT NULL UNIQUE,
+            hashed_password BYTEA NOT NULL,
+            last_login_time TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL
+          );"))
+        .await
+        .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.user_account To user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            /*
+             * NOTE: 下記の参考によると、SERIALで暗黙的に作成されるSEQUENCEはtablename_colname_seqで定められる
+             * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
+             */
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.user_account_user_account_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
 
         Ok(())
     }
