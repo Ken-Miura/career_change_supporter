@@ -1,0 +1,125 @@
+use entity::sea_orm::{DatabaseBackend, Statement};
+use sea_schema::migration::*;
+
+pub struct Migration;
+
+impl MigrationName for Migration {
+    fn name(&self) -> &str {
+        "m20220101_000001_create_table"
+    }
+}
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let conn = manager.get_connection();
+        let db_backend = manager.get_database_backend();
+        let sql = Sql::new(db_backend);
+
+        let _ = conn
+            /* TODO: パスワード変更＋管理方法の検討 */
+            .execute(sql.stmt(r"CREATE ROLE user_app WITH LOGIN PASSWORD 'test1234';"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"CREATE ROLE admin_app WITH LOGIN PASSWORD 'test13579';"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"CREATE ROLE admin_account_app WITH LOGIN PASSWORD 'test24680';"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            /* ccs = Career Change Supporter */
+            .execute(sql.stmt(r"CREATE SCHEMA ccs_schema;"))
+            .await
+            .map(|_| ())?;
+
+        // let sql = "GRANT USAGE ON SCHEMA ccs_schema TO user_app;";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = "GRANT USAGE ON SCHEMA ccs_schema TO admin_app;";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = "GRANT USAGE ON SCHEMA ccs_schema TO admin_account_app;";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = r"CREATE DOMAIN ccs_schema.email_address AS VARCHAR (254) CHECK ( VALUE ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = r"CREATE DOMAIN ccs_schema.uuid_simple_form AS CHAR (32) CHECK ( VALUE ~ '^[a-zA-Z0-9]+$' );";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = r"CREATE DOMAIN ccs_schema.tenant_id AS VARCHAR (100) CHECK ( VALUE ~ '^[-_0-9a-zA-Z]{1,100}$' );";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = r"CREATE DOMAIN ccs_schema.contract_type AS VARCHAR (8) CHECK (VALUE ~ 'regular' OR VALUE ~ 'contract' OR VALUE ~ 'other');";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = r"CREATE TABLE ccs_schema.user_account (
+        //     user_account_id SERIAL PRIMARY KEY,
+        //     /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
+        //     email_address ccs_schema.email_address NOT NULL UNIQUE,
+        //     hashed_password BYTEA NOT NULL,
+        //     last_login_time TIMESTAMP WITH TIME ZONE,
+        //     created_at TIMESTAMP WITH TIME ZONE NOT NULL
+        //   );";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql = r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.user_account To user_app;";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        // let sql =
+        //     r"GRANT USAGE ON SEQUENCE ccs_schema.user_account_user_account_id_seq TO user_app;";
+        // let stmt = Statement::from_string(db_backend, sql.to_owned());
+        // let _ = conn.execute(stmt).await.map(|_| ())?;
+
+        Ok(())
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let conn = manager.get_connection();
+        let db_backend = manager.get_database_backend();
+        let sql = Sql::new(db_backend);
+
+        let _ = conn
+            .execute(sql.stmt(r"DROP SCHEMA ccs_schema CASCADE;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"DROP ROLE user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"DROP ROLE admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"DROP ROLE admin_account_app;"))
+            .await
+            .map(|_| ())?;
+        Ok(())
+    }
+}
+
+struct Sql {
+    db_backend: DatabaseBackend,
+}
+
+impl Sql {
+    fn new(db_backend: DatabaseBackend) -> Self {
+        Self { db_backend }
+    }
+    fn stmt(&self, sql: &str) -> Statement {
+        Statement::from_string(self.db_backend, sql.to_owned())
+    }
+}
