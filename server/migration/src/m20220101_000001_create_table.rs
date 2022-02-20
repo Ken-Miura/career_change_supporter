@@ -20,7 +20,6 @@ impl MigrationTrait for Migration {
 
         // SCHEMA定義
         let _ = conn
-            /* ccs = Career Change Supporter */
             .execute(sql.stmt(r"CREATE SCHEMA ccs_schema;"))
             .await
             .map(|_| ())?;
