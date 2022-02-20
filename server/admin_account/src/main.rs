@@ -20,7 +20,7 @@ use dotenv::dotenv;
 use std::fmt::Display;
 use std::{env::args, env::var, error::Error, process::exit};
 
-const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_ACCOUNT_APP";
+const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_APP";
 
 const SUCCESS: i32 = 0;
 const NO_ENV_VAR_FOUND: i32 = 1;

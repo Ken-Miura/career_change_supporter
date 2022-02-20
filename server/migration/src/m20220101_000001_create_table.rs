@@ -24,30 +24,12 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(r"CREATE SCHEMA ccs_schema;"))
             .await
             .map(|_| ())?;
-        // ROLE定義
-        // TODO: ROLEのパスワード変更＋管理方法の検討
-        let _ = conn
-            .execute(sql.stmt(r"CREATE ROLE user_app WITH LOGIN PASSWORD 'test1234';"))
-            .await
-            .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(r"GRANT USAGE ON SCHEMA ccs_schema TO user_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"CREATE ROLE admin_app WITH LOGIN PASSWORD 'test13579';"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
             .execute(sql.stmt(r"GRANT USAGE ON SCHEMA ccs_schema TO admin_app;"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(r"CREATE ROLE admin_account_app WITH LOGIN PASSWORD 'test24680';"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(r"GRANT USAGE ON SCHEMA ccs_schema TO admin_account_app;"))
             .await
             .map(|_| ())?;
         // DOMAIN定義
@@ -397,26 +379,14 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.admin_account To admin_app;"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(
-                sql.stmt(
-                    r"GRANT UPDATE (last_login_time) ON ccs_schema.admin_account To admin_app;",
-                ),
-            )
-            .await
-            .map(|_| ())?;
-        let _ = conn
             .execute(sql.stmt(
-                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.admin_account To admin_account_app;",
+                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.admin_account To admin_app;",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_account_app;",
+                r"GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_app;",
             ))
             .await
             .map(|_| ())?;
@@ -431,18 +401,6 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             .execute(sql.stmt(r"DROP SCHEMA ccs_schema CASCADE;"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(r"DROP ROLE user_app;"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(r"DROP ROLE admin_app;"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(r"DROP ROLE admin_account_app;"))
             .await
             .map(|_| ())?;
         Ok(())
