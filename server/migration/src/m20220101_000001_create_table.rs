@@ -284,8 +284,8 @@ impl MigrationTrait for Migration {
         let _ = conn
             /*
              * user_account一つに対して、create_identity_info_req (本人確認依頼 (新規)) は0もしくは1の関係とする。従って、user_account_idをPRIMARY KEYに指定する
-             * 画像ファイルの実体は、データベース外に保存している。user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、画像の実体との紐づけが知らないうちに解除される可能性がある
-             * そのため、user_account_idは外部キーとしない
+             * 画像ファイルの実体は、データベース外に保存している。user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
+             * 画像の実体との紐づけが知らないうちに解除される可能性がある。そのため、user_account_idは外部キーとしない
              */
             /*
              * image1_file_name_without_ext, image2_file_name_without_ext
@@ -329,6 +329,58 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"CREATE INDEX create_identity_info_req_requested_at_idx ON ccs_schema.create_identity_info_req (requested_at);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /*
+             * user_account一つに対して、update_identity_info_req (本人確認依頼 (更新)) は0もしくは1の関係とする。従って、user_account_idをPRIMARY KEYに指定する
+             * 画像ファイルの実体は、データベース外に保存している。user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
+             * 画像の実体との紐づけが知らないうちに解除される可能性がある。そのため、user_account_idは外部キーとしない
+             */
+            /*
+             * image1_file_name_without_ext, image2_file_name_without_ext
+             * 画像ファイル名は、user_account_idと組み合わせて外部に保存する。そのため、データベースに保管する値のUNIQUE指定は必須ではない
+             * UNIQUEにしたときのNULLの扱いがデータベースごとに異なる可能性がある。従って、その点も考慮し、NULL利用があるカラムにUNIQUE付与を避ける
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.update_identity_info_req (
+                    user_account_id INTEGER PRIMARY KEY,
+                    last_name VARCHAR (64) NOT NULL,
+                    first_name VARCHAR (64) NOT NULL,
+                    last_name_furigana VARCHAR (64) NOT NULL,
+                    first_name_furigana VARCHAR (64) NOT NULL,
+                    date_of_birth DATE NOT NULL,
+                    prefecture VARCHAR (4) NOT NULL,
+                    city VARCHAR (32) NOT NULL,
+                    address_line1 VARCHAR (128) NOT NULL,
+                    address_line2 VARCHAR (128),
+                    telephone_number VARCHAR (13) NOT NULL,
+                    image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
+                    image2_file_name_without_ext ccs_schema.uuid_simple_form,
+                    requested_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, INSERT ON ccs_schema.update_identity_info_req To user_app;",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ =
+            conn.execute(sql.stmt(
+                r"GRANT SELECT, DELETE ON ccs_schema.update_identity_info_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX update_identity_info_req_requested_at_idx ON ccs_schema.update_identity_info_req (requested_at);",
             ))
             .await
             .map(|_| ())?;
