@@ -5,9 +5,10 @@ use common::util::validator::{validate_email_address, validate_password};
 use dotenv::dotenv;
 use entity::admin_account;
 use entity::prelude::AdminAccount;
+use entity::sea_orm::sea_query::Expr;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, IntoActiveModel,
-    QueryFilter, Set,
+    QueryFilter, Set, Value,
 };
 use std::fmt;
 use std::{env::args, env::var, error::Error, process::exit};
@@ -161,21 +162,20 @@ impl AccountOperationClient {
         let _ = validate_email_address(email_addr)?;
         let _ = validate_password(password)?;
         let hashed_pwd = hash_password(password)?;
-        let accounts = self.rt.block_on(async {
-            AdminAccount::find()
+        let result = self.rt.block_on(async {
+            admin_account::Entity::update_many()
+                .col_expr(
+                    admin_account::Column::HashedPassword,
+                    Expr::value(Value::Bytes(Some(Box::new(hashed_pwd)))),
+                )
                 .filter(admin_account::Column::EmailAddress.eq(email_addr))
-                .all(&self.conn)
+                .exec(&self.conn)
                 .await
         })?;
-        let num = accounts.len();
+        let num = result.rows_affected;
         if num == 0 {
             Err(Box::new(NoAccountFoundError(email_addr.to_string())))
         } else if num == 1 {
-            let mut account: admin_account::ActiveModel = accounts[0].clone().into();
-            account.hashed_password = Set(hashed_pwd);
-            let _ = self
-                .rt
-                .block_on(async { account.update(&self.conn).await })?;
             Ok(())
         } else {
             panic!(
