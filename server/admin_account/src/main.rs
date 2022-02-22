@@ -7,8 +7,8 @@ use entity::admin_account;
 use entity::prelude::AdminAccount;
 use entity::sea_orm::sea_query::Expr;
 use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, IntoActiveModel,
-    QueryFilter, Set, Value,
+    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    Value,
 };
 use std::fmt;
 use std::{env::args, env::var, error::Error, process::exit};
@@ -187,22 +187,16 @@ impl AccountOperationClient {
 
     fn delete_account(&self, email_addr: &str) -> Result<(), Box<dyn Error>> {
         let _ = validate_email_address(email_addr)?;
-        let accounts = self.rt.block_on(async {
-            AdminAccount::find()
+        let result = self.rt.block_on(async {
+            admin_account::Entity::delete_many()
                 .filter(admin_account::Column::EmailAddress.eq(email_addr))
-                .all(&self.conn)
+                .exec(&self.conn)
                 .await
         })?;
-        let num = accounts.len();
+        let num = result.rows_affected;
         if num == 0 {
             Err(Box::new(NoAccountFoundError(email_addr.to_string())))
         } else if num == 1 {
-            let account = accounts[0].clone().into_active_model();
-            let _ = self.rt.block_on(async {
-                admin_account::Entity::delete(account)
-                    .exec(&self.conn)
-                    .await
-            })?;
             Ok(())
         } else {
             panic!(
