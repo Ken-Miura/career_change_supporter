@@ -12,8 +12,11 @@ use common::smtp::{
 use common::util::validator::validate_uuid;
 use common::VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR;
 use common::{ApiError, ErrResp, RespResult};
-use entity::prelude::UserTempAccount;
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use entity::prelude::{UserAccount, UserTempAccount};
+use entity::sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+};
+use entity::user_account;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
@@ -213,32 +216,38 @@ impl AccountsOperation for AccountsOperationImpl {
     }
 
     async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        // let cnt = user_account
-        //     .filter(email_address.eq(email_addr))
-        //     .select(count_star())
-        //     .get_result::<i64>(&self.conn)
-        //     .map_err(|e| {
-        //         tracing::error!("failed to check user existence ({}): {}", email_addr, e);
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(cnt != 0)
-        todo!()
+        let models = UserAccount::find()
+            .filter(user_account::Column::EmailAddress.eq(email_addr))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find user account (email address: {}): {}",
+                    email_addr,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(!models.is_empty())
     }
 
     async fn create_account(&self, account: &Account) -> Result<(), ErrResp> {
-        // let _ = insert_into(user_account_table)
-        //     .values(account)
-        //     .execute(&self.conn)
-        //     .map_err(|e| {
-        //         tracing::error!(
-        //             "failed to insert user account ({}): {}",
-        //             account.email_address,
-        //             e
-        //         );
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(())
-        todo!()
+        let user_account_model = user_account::ActiveModel {
+            email_address: Set(account.email_address.clone()),
+            hashed_password: Set(account.hashed_password.clone()),
+            last_login_time: Set(account.last_login_time),
+            created_at: Set(account.created_at),
+            ..Default::default()
+        };
+        let _ = user_account_model.insert(&self.pool).await.map_err(|e| {
+            tracing::error!(
+                "failed to insert user account ({}): {}",
+                account.email_address,
+                e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(())
     }
 }
 
