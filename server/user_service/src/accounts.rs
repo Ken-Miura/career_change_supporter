@@ -44,7 +44,7 @@ pub(crate) async fn post_accounts(
     let current_date_time = chrono::Utc::now();
     let op = AccountsOperationImpl::new(conn);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    post_accounts_internal(
+    handle_accounts_req(
         &temp_account.temp_account_id,
         &current_date_time,
         op,
@@ -56,7 +56,7 @@ pub(crate) async fn post_accounts(
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct AccountsResult {}
 
-async fn post_accounts_internal(
+async fn handle_accounts_req(
     temp_account_id: &str,
     current_date_time: &DateTime<Utc>,
     op: impl AccountsOperation,
@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn accounts_success() {
+    async fn handle_accounts_req_success() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
@@ -303,8 +303,7 @@ mod tests {
             create_text(),
         );
 
-        let result =
-            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+        let result = handle_accounts_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -312,7 +311,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn accounts_fail_invalid_uuid() {
+    async fn handle_accounts_req_fail_invalid_uuid() {
         let uuid = "0123456789abcABC".to_string();
         let email_addr = "test@test.com";
         let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
@@ -333,8 +332,7 @@ mod tests {
             create_text(),
         );
 
-        let result =
-            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+        let result = handle_accounts_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -342,7 +340,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn accounts_fail_temp_account_expired() {
+    async fn handle_accounts_req_fail_temp_account_expired() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let pwd = "aaaaaaaaaA";
@@ -368,8 +366,7 @@ mod tests {
             create_text(),
         );
 
-        let result =
-            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+        let result = handle_accounts_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -377,7 +374,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn accounts_fail_no_temp_account_found() {
+    async fn handle_accounts_req_fail_no_temp_account_found() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let pwd = "aaaaaaaaaA";
@@ -402,8 +399,7 @@ mod tests {
             create_text(),
         );
 
-        let result =
-            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+        let result = handle_accounts_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -411,7 +407,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn accounts_fail_account_exists() {
+    async fn handle_accounts_req_fail_account_exists() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let pwd = "aaaaaaaaaA";
@@ -436,8 +432,7 @@ mod tests {
             create_text(),
         );
 
-        let result =
-            post_accounts_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+        let result = handle_accounts_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
