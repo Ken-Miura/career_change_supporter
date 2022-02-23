@@ -4,16 +4,16 @@ use async_session::async_trait;
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
-use chrono::{DateTime, Utc};
+use chrono::DateTime;
 use chrono::{Duration, FixedOffset};
-use common::model::user::NewAccount;
 use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::validator::validate_uuid;
 use common::VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR;
 use common::{ApiError, ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use entity::prelude::UserTempAccount;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
@@ -67,7 +67,16 @@ async fn handle_accounts_req(
         )
     })?;
 
-    let temp_account = op.find_temp_account_by_id(temp_account_id).await?;
+    let temp_account_option = op.find_temp_account_by_id(temp_account_id).await?;
+    let temp_account = temp_account_option.ok_or_else(|| {
+        tracing::error!("no temp account (id: {}) found", temp_account_id);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: NoTempAccountFound as u32,
+            }),
+        )
+    })?;
     let duration = *current_date_time - temp_account.created_at;
     if duration > Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR) {
         tracing::error!(
@@ -160,7 +169,10 @@ Email: {}",
 trait AccountsOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    async fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp>;
+    async fn find_temp_account_by_id(
+        &self,
+        temp_account_id: &str,
+    ) -> Result<Option<TempAccount>, ErrResp>;
     async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
     async fn create_account(&self, account: &Account) -> Result<(), ErrResp>;
 }
@@ -177,26 +189,27 @@ impl AccountsOperationImpl {
 
 #[async_trait]
 impl AccountsOperation for AccountsOperationImpl {
-    async fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
-        // let result = user_temp_account
-        //     .find(temp_account_id)
-        //     .first::<TempAccount>(&self.conn);
-        // match result {
-        //     Ok(temp_account) => Ok(temp_account),
-        //     Err(e) => {
-        //         if e == NotFound {
-        //             Err((
-        //                 StatusCode::BAD_REQUEST,
-        //                 Json(ApiError {
-        //                     code: NoTempAccountFound as u32,
-        //                 }),
-        //             ))
-        //         } else {
-        //             Err(unexpected_err_resp())
-        //         }
-        //     }
-        // }
-        todo!()
+    async fn find_temp_account_by_id(
+        &self,
+        temp_account_id: &str,
+    ) -> Result<Option<TempAccount>, ErrResp> {
+        let temp_account_model = UserTempAccount::find_by_id(temp_account_id.to_string())
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find temp account (id: {}): {}",
+                    temp_account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(temp_account_model.map(|model| TempAccount {
+            user_temp_account_id: model.user_temp_account_id,
+            email_address: model.email_address,
+            hashed_password: model.hashed_password,
+            created_at: model.created_at,
+        }))
     }
 
     async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
@@ -270,17 +283,12 @@ mod tests {
         async fn find_temp_account_by_id(
             &self,
             temp_account_id: &str,
-        ) -> Result<TempAccount, ErrResp> {
+        ) -> Result<Option<TempAccount>, ErrResp> {
             assert_eq!(&self.temp_account.user_temp_account_id, temp_account_id);
             if self.no_temp_account_found {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: NoTempAccountFound as u32,
-                    }),
-                ));
+                return Ok(None);
             }
-            Ok(self.temp_account.clone())
+            Ok(Some(self.temp_account.clone()))
         }
 
         async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
