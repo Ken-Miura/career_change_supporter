@@ -44,7 +44,7 @@ pub(crate) async fn post_temp_accounts(
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = TempAccountsOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    post_temp_accounts_internal(
+    handle_temp_accounts_req(
         &cred.email_address,
         &cred.password,
         &URL_FOR_FRONT_END.to_string(),
@@ -60,7 +60,7 @@ pub(crate) async fn post_temp_accounts(
 pub(crate) struct TempAccountsResult {}
 
 // これをテスト対象と考える。
-async fn post_temp_accounts_internal(
+async fn handle_temp_accounts_req(
     email_addr: &str,
     password: &str,
     url: &str,
@@ -248,7 +248,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn temp_accounts_success() {
+    async fn handle_temp_accounts_req_success() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
@@ -271,7 +271,7 @@ mod tests {
             create_text(url, &uuid_str),
         );
 
-        let result = post_temp_accounts_internal(
+        let result = handle_temp_accounts_req(
             email_address,
             password,
             url,
@@ -287,7 +287,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn temp_accounts_fail_reach_max_num_of_temp_accounts_limit() {
+    async fn handle_temp_accounts_req_fail_reach_max_num_of_temp_accounts_limit() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
@@ -310,7 +310,7 @@ mod tests {
             create_text(url, &uuid_str),
         );
 
-        let result = post_temp_accounts_internal(
+        let result = handle_temp_accounts_req(
             email_address,
             password,
             url,
