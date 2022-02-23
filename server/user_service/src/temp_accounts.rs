@@ -86,10 +86,10 @@ async fn handle_temp_accounts_req(
         ));
     }
     let temp_account = TempAccount {
-        user_temp_account_id: &uuid,
-        email_address: email_addr,
-        hashed_password: &hashed_pwd,
-        created_at: register_time,
+        user_temp_account_id: uuid,
+        email_address: email_addr.to_string(),
+        hashed_password: hashed_pwd,
+        created_at: *register_time,
     };
     let _ = op.create_temp_account(&temp_account).await?;
     tracing::info!(
@@ -167,8 +167,8 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
         let temp_account_model = user_temp_account::ActiveModel {
             user_temp_account_id: Set(temp_account.user_temp_account_id.to_string()),
             email_address: Set(temp_account.email_address.to_string()),
-            hashed_password: Set(temp_account.hashed_password.to_vec()),
-            created_at: Set(*temp_account.created_at),
+            hashed_password: Set(temp_account.hashed_password.clone()),
+            created_at: Set(temp_account.created_at),
         };
         let _ = temp_account_model.insert(&self.pool).await.map_err(|e| {
             tracing::error!(
@@ -183,12 +183,12 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
     }
 }
 
-#[derive(Debug)]
-struct TempAccount<'a> {
-    user_temp_account_id: &'a str,
-    email_address: &'a str,
-    hashed_password: &'a [u8],
-    created_at: &'a DateTime<FixedOffset>,
+#[derive(Clone, Debug)]
+struct TempAccount {
+    user_temp_account_id: String,
+    email_address: String,
+    hashed_password: Vec<u8>,
+    created_at: DateTime<FixedOffset>,
 }
 
 #[cfg(test)]
@@ -239,10 +239,10 @@ mod tests {
         async fn create_temp_account(&self, temp_account: &TempAccount) -> Result<(), ErrResp> {
             assert_eq!(self.uuid, temp_account.user_temp_account_id);
             assert_eq!(self.email_address, temp_account.email_address);
-            let result = is_password_match(self.password, temp_account.hashed_password)
+            let result = is_password_match(self.password, &temp_account.hashed_password)
                 .expect("failed to get Ok");
             assert!(result, "password not match");
-            assert_eq!(self.register_time, temp_account.created_at);
+            assert_eq!(self.register_time, &temp_account.created_at);
             Ok(())
         }
     }
