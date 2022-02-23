@@ -84,7 +84,7 @@ fn main() {
 async fn main_internal(num_of_cpus: u32) {
     set_var(
         "RUST_LOG",
-        "user_service=debug,common=debug,tower_http=debug",
+        "user_service=debug,common=debug,tower_http=debug,sea_orm=debug",
     );
     tracing_subscriber::fmt::init();
 
