@@ -1,32 +1,27 @@
 // Copyright 2021 Ken Miura
 
+use async_session::async_trait;
+use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
-use chrono::Duration;
 use chrono::{DateTime, Utc};
+use chrono::{Duration, FixedOffset};
 use common::model::user::NewAccount;
-use common::model::user::TempAccount;
-use common::schema::ccs_schema::user_account::dsl::{email_address, user_account};
-use common::schema::ccs_schema::user_account::table as user_account_table;
-use common::schema::ccs_schema::user_temp_account::dsl::user_temp_account;
 use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::validator::validate_uuid;
 use common::VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR;
-use common::{ApiError, DatabaseConnection, ErrResp, RespResult};
-use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::result::Error::NotFound;
-use diesel::{dsl::count_star, ExpressionMethods};
-use diesel::{insert_into, RunQueryDsl};
-use diesel::{PgConnection, QueryDsl};
+use common::{ApiError, ErrResp, RespResult};
+use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountAlreadyExists, InvalidUuid, NoTempAccountFound, TempAccountExpired};
-use crate::util::WEB_SITE_NAME;
+use crate::temp_accounts::TempAccount;
+use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 
@@ -39,10 +34,10 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通�
 /// 一時アカウントが期限切れの場合、ステータスコード400、エラーコード[TEMP_ACCOUNT_EXPIRED]を返す<br>
 pub(crate) async fn post_accounts(
     Json(temp_account): Json<TempAccountId>,
-    DatabaseConnection(conn): DatabaseConnection,
+    Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<AccountsResult> {
-    let current_date_time = chrono::Utc::now();
-    let op = AccountsOperationImpl::new(conn);
+    let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let op = AccountsOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     handle_accounts_req(
         &temp_account.temp_account_id,
@@ -58,7 +53,7 @@ pub(crate) struct AccountsResult {}
 
 async fn handle_accounts_req(
     temp_account_id: &str,
-    current_date_time: &DateTime<Utc>,
+    current_date_time: &DateTime<FixedOffset>,
     op: impl AccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<AccountsResult> {
@@ -71,54 +66,66 @@ async fn handle_accounts_req(
             }),
         )
     })?;
-    let email_addr = async move {
-        let temp_account = op.find_temp_account_by_id(temp_account_id)?;
-        let duration = *current_date_time - temp_account.created_at;
-        if duration > Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR) {
-            tracing::error!(
-                "temp account (created at {}) already expired at {}",
-                &temp_account.created_at,
-                current_date_time
-            );
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: TempAccountExpired as u32,
-                }),
-            ));
-        }
-        let exists = op.user_exists(&temp_account.email_address)?;
-        if exists {
-            tracing::error!(
-                "failed to create account: user account ({}) already exists",
-                &temp_account.email_address
-            );
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: AccountAlreadyExists as u32,
-                }),
-            ));
-        }
-        let account = NewAccount {
-            email_address: &temp_account.email_address,
-            hashed_password: &temp_account.hashed_password,
-            last_login_time: None,
-            created_at: current_date_time,
-        };
-        let _ = op.create_account(&account)?;
-        tracing::info!(
-            "accout ({}) was created at {}",
-            temp_account.email_address,
+
+    let temp_account = op.find_temp_account_by_id(temp_account_id).await?;
+    let duration = *current_date_time - temp_account.created_at;
+    if duration > Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR) {
+        tracing::error!(
+            "temp account (created at {}) already expired at {}",
+            &temp_account.created_at,
             current_date_time
         );
-        Ok(temp_account.email_address)
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: TempAccountExpired as u32,
+            }),
+        ));
+    }
+    let exists = op.user_exists(&temp_account.email_address).await?;
+    if exists {
+        tracing::error!(
+            "failed to create account: user account ({}) already exists",
+            &temp_account.email_address
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: AccountAlreadyExists as u32,
+            }),
+        ));
+    }
+    let account = Account {
+        email_address: temp_account.email_address.clone(),
+        hashed_password: temp_account.hashed_password,
+        last_login_time: None,
+        created_at: *current_date_time,
+    };
+    let _ = op.create_account(&account).await?;
+    tracing::info!(
+        "accout ({}) was created at {}",
+        temp_account.email_address,
+        current_date_time
+    );
+    let text = create_text();
+    let _ = async {
+        send_mail.send_mail(
+            &temp_account.email_address,
+            SYSTEM_EMAIL_ADDRESS,
+            &SUBJECT,
+            &text,
+        )
     }
     .await?;
-    let text = create_text();
-    let _ =
-        async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
     Ok((StatusCode::OK, Json(AccountsResult {})))
+}
+
+#[derive(Clone, Debug)]
+struct Account {
+    email_address: String,
+    hashed_password: Vec<u8>,
+    last_login_time: Option<DateTime<FixedOffset>>,
+    created_at: DateTime<FixedOffset>,
 }
 
 #[derive(Deserialize)]
@@ -149,71 +156,76 @@ Email: {}",
     )
 }
 
+#[async_trait]
 trait AccountsOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp>;
-    fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
-    fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp>;
+    async fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp>;
+    async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
+    async fn create_account(&self, account: &Account) -> Result<(), ErrResp>;
 }
 
 struct AccountsOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
 }
 
 impl AccountsOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
+    fn new(pool: DatabaseConnection) -> Self {
+        Self { pool }
     }
 }
 
+#[async_trait]
 impl AccountsOperation for AccountsOperationImpl {
-    fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
-        let result = user_temp_account
-            .find(temp_account_id)
-            .first::<TempAccount>(&self.conn);
-        match result {
-            Ok(temp_account) => Ok(temp_account),
-            Err(e) => {
-                if e == NotFound {
-                    Err((
-                        StatusCode::BAD_REQUEST,
-                        Json(ApiError {
-                            code: NoTempAccountFound as u32,
-                        }),
-                    ))
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
+    async fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
+        // let result = user_temp_account
+        //     .find(temp_account_id)
+        //     .first::<TempAccount>(&self.conn);
+        // match result {
+        //     Ok(temp_account) => Ok(temp_account),
+        //     Err(e) => {
+        //         if e == NotFound {
+        //             Err((
+        //                 StatusCode::BAD_REQUEST,
+        //                 Json(ApiError {
+        //                     code: NoTempAccountFound as u32,
+        //                 }),
+        //             ))
+        //         } else {
+        //             Err(unexpected_err_resp())
+        //         }
+        //     }
+        // }
+        todo!()
     }
 
-    fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
-        let cnt = user_account
-            .filter(email_address.eq(email_addr))
-            .select(count_star())
-            .get_result::<i64>(&self.conn)
-            .map_err(|e| {
-                tracing::error!("failed to check user existence ({}): {}", email_addr, e);
-                unexpected_err_resp()
-            })?;
-        Ok(cnt != 0)
+    async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
+        // let cnt = user_account
+        //     .filter(email_address.eq(email_addr))
+        //     .select(count_star())
+        //     .get_result::<i64>(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!("failed to check user existence ({}): {}", email_addr, e);
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(cnt != 0)
+        todo!()
     }
 
-    fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp> {
-        let _ = insert_into(user_account_table)
-            .values(account)
-            .execute(&self.conn)
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to insert user account ({}): {}",
-                    account.email_address,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(())
+    async fn create_account(&self, account: &Account) -> Result<(), ErrResp> {
+        // let _ = insert_into(user_account_table)
+        //     .values(account)
+        //     .execute(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!(
+        //             "failed to insert user account ({}): {}",
+        //             account.email_address,
+        //             e
+        //         );
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(())
+        todo!()
     }
 }
 
@@ -234,7 +246,7 @@ mod tests {
         temp_account: &'a TempAccount,
         no_temp_account_found: bool,
         exists: bool,
-        current_date_time: &'a DateTime<Utc>,
+        current_date_time: &'a DateTime<FixedOffset>,
     }
 
     impl<'a> AccountsOperationMock<'a> {
@@ -242,7 +254,7 @@ mod tests {
             temp_account: &'a TempAccount,
             no_temp_account_found: bool,
             exists: bool,
-            current_date_time: &'a DateTime<Utc>,
+            current_date_time: &'a DateTime<FixedOffset>,
         ) -> Self {
             Self {
                 temp_account,
@@ -253,8 +265,12 @@ mod tests {
         }
     }
 
+    #[async_trait]
     impl<'a> AccountsOperation for AccountsOperationMock<'a> {
-        fn find_temp_account_by_id(&self, temp_account_id: &str) -> Result<TempAccount, ErrResp> {
+        async fn find_temp_account_by_id(
+            &self,
+            temp_account_id: &str,
+        ) -> Result<TempAccount, ErrResp> {
             assert_eq!(&self.temp_account.user_temp_account_id, temp_account_id);
             if self.no_temp_account_found {
                 return Err((
@@ -267,16 +283,16 @@ mod tests {
             Ok(self.temp_account.clone())
         }
 
-        fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
+        async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp> {
             assert_eq!(&self.temp_account.email_address, email_addr);
             Ok(self.exists)
         }
 
-        fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp> {
-            assert_eq!(&self.temp_account.email_address, account.email_address);
-            assert_eq!(&self.temp_account.hashed_password, account.hashed_password);
+        async fn create_account(&self, account: &Account) -> Result<(), ErrResp> {
+            assert_eq!(&self.temp_account.email_address, &account.email_address);
+            assert_eq!(&self.temp_account.hashed_password, &account.hashed_password);
             assert_eq!(None, account.last_login_time);
-            assert_eq!(&self.current_date_time, &account.created_at);
+            assert_eq!(self.current_date_time, &account.created_at);
             Ok(())
         }
     }
@@ -286,7 +302,10 @@ mod tests {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
-        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let register_date_time = chrono::Utc
+            .ymd(2021, 9, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -315,7 +334,10 @@ mod tests {
         let uuid = "0123456789abcABC".to_string();
         let email_addr = "test@test.com";
         let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
-        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let register_date_time = chrono::Utc
+            .ymd(2021, 9, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -348,7 +370,10 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash password");
-        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let register_date_time = chrono::Utc
+            .ymd(2021, 9, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -382,7 +407,10 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash password");
-        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let register_date_time = chrono::Utc
+            .ymd(2021, 9, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -415,7 +443,10 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash password");
-        let register_date_time = chrono::Utc.ymd(2021, 9, 5).and_hms(21, 00, 40);
+        let register_date_time = chrono::Utc
+            .ymd(2021, 9, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),

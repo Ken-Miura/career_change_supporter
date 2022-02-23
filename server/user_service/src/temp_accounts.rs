@@ -185,10 +185,10 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
 
 #[derive(Clone, Debug)]
 pub(crate) struct TempAccount {
-    user_temp_account_id: String,
-    email_address: String,
-    hashed_password: Vec<u8>,
-    created_at: DateTime<FixedOffset>,
+    pub(crate) user_temp_account_id: String,
+    pub(crate) email_address: String,
+    pub(crate) hashed_password: Vec<u8>,
+    pub(crate) created_at: DateTime<FixedOffset>,
 }
 
 #[cfg(test)]
