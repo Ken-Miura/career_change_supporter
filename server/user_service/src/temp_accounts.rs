@@ -184,7 +184,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
 }
 
 #[derive(Clone, Debug)]
-struct TempAccount {
+pub(crate) struct TempAccount {
     user_temp_account_id: String,
     email_address: String,
     hashed_password: Vec<u8>,
