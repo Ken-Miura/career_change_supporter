@@ -3302,6 +3302,7 @@ dependencies = [
  "cookie",
  "diesel",
  "dotenv",
+ "entity",
  "headers",
  "http-body",
  "hyper",

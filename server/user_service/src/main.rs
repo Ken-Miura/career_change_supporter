@@ -36,9 +36,9 @@ use axum::{AddExtensionLayer, Router};
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::util::check_env_vars;
-use common::{ConnectionPool, KEY_TO_URL_FOR_FRONT_END};
-use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
+use common::KEY_TO_URL_FOR_FRONT_END;
 use dotenv::dotenv;
+use entity::sea_orm::{ConnectOptions, Database};
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
@@ -94,12 +94,14 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_DATABASE_URL
         )
     });
-    let manager = ConnectionManager::<PgConnection>::new(&database_url);
-    // NOTE: bb8-dieselのcrate (https://crates.io/crates/bb8-diesel) がtokio 1.0系統に対応した後、r2d2からの移行を検討する
-    let pool: ConnectionPool = Pool::builder()
-        .max_size(num_of_cpus)
-        .build(manager)
-        .expect("failed to build connection pool");
+
+    let mut opt = ConnectOptions::new(database_url.clone());
+    opt.max_connections(num_of_cpus)
+        .min_connections(num_of_cpus)
+        .sqlx_logging(true);
+    let pool = Database::connect(opt)
+        .await
+        .expect("failed to connect database");
 
     let redis_url = var(KEY_TO_URL_FOR_REDIS_SERVER).unwrap_or_else(|_| {
         panic!(
