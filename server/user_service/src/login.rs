@@ -51,8 +51,20 @@ async fn handle_login_req(
     store: impl SessionStore,
 ) -> LoginResult {
     let accounts = op.filter_account_by_email_addr(email_addr).await?;
-    let _ = ensure_account_is_only_one(email_addr, &accounts)?;
-    let account = accounts[0].clone();
+    let num = accounts.len();
+    if num > 1 {
+        tracing::error!("multiple email addresses: {}", email_addr);
+        return Err(unexpected_err_resp());
+    }
+    let account = accounts.get(0).cloned().ok_or_else(|| {
+        tracing::error!("unauthorized: {}", email_addr);
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(ApiError {
+                code: EmailOrPwdIncorrect as u32,
+            }),
+        )
+    })?;
     let matched = is_password_match(password, &account.hashed_password).map_err(|e| {
         tracing::error!("failed to handle password: {}", e);
         unexpected_err_resp()
@@ -117,24 +129,6 @@ async fn handle_login_req(
         })?;
     headers.insert(SET_COOKIE, cookie);
     Ok((StatusCode::OK, headers))
-}
-
-fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<(), ErrResp> {
-    let num = accounts.len();
-    if num == 0 {
-        tracing::error!("unauthorized: {}", email_addr);
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            Json(ApiError {
-                code: EmailOrPwdIncorrect as u32,
-            }),
-        ));
-    }
-    if num != 1 {
-        tracing::error!("multiple email addresses: {}", email_addr);
-        return Err(unexpected_err_resp());
-    }
-    Ok(())
 }
 
 #[async_trait]
