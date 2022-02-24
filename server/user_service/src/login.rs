@@ -40,7 +40,7 @@ pub(crate) async fn post_login(
     let password = cred.password;
     let current_date_time = Utc::now();
     let op = LoginOperationImpl::new(pool, LOGIN_SESSION_EXPIRY);
-    post_login_internal(&email_addr, &password, &current_date_time, op, store).await
+    handle_login_req(&email_addr, &password, &current_date_time, op, store).await
 }
 
 /// ログインリクエストの結果を示す型
@@ -49,7 +49,7 @@ pub(crate) type LoginResult = Result<LoginResp, ErrResp>;
 /// ログインに成功した場合に返却される型
 pub(crate) type LoginResp = (StatusCode, HeaderMap);
 
-async fn post_login_internal(
+async fn handle_login_req(
     email_addr: &str,
     password: &str,
     login_time: &DateTime<Utc>,
@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn login_success() {
+    async fn handle_login_req_success() {
         let id = 1102;
         let email_addr = "test@example.com";
         let pwd = "1234567890abcdABCD";
@@ -280,8 +280,7 @@ mod tests {
         let current_date_time = last_login + chrono::Duration::days(1);
         let op = LoginOperationMock::new(account, &current_date_time);
 
-        let result =
-            post_login_internal(email_addr, pwd, &current_date_time, op, store.clone()).await;
+        let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -299,7 +298,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn login_fail_no_email_addr_found() {
+    async fn handle_login_req_fail_no_email_addr_found() {
         let id = 1102;
         let email_addr1 = "test1@example.com";
         let email_addr2 = "test2@example.com";
@@ -322,7 +321,7 @@ mod tests {
         let op = LoginOperationMock::new(account, &current_date_time);
 
         let result =
-            post_login_internal(email_addr2, pwd, &current_date_time, op, store.clone()).await;
+            handle_login_req(email_addr2, pwd, &current_date_time, op, store.clone()).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
@@ -331,7 +330,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn login_fail_incorrect_password() {
+    async fn handle_login_req_fail_incorrect_password() {
         let id = 1102;
         let email_addr = "test1@example.com";
         let pwd1 = "1234567890abcdABCD";
@@ -354,7 +353,7 @@ mod tests {
         let op = LoginOperationMock::new(account, &current_date_time);
 
         let result =
-            post_login_internal(email_addr, pwd2, &current_date_time, op, store.clone()).await;
+            handle_login_req(email_addr, pwd2, &current_date_time, op, store.clone()).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
