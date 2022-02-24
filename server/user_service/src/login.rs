@@ -150,10 +150,7 @@ trait LoginOperation {
 #[derive(Clone, Debug)]
 struct Account {
     user_account_id: i32,
-    email_address: String,
     hashed_password: Vec<u8>,
-    last_login_time: Option<DateTime<FixedOffset>>,
-    created_at: DateTime<FixedOffset>,
 }
 
 struct LoginOperationImpl {
@@ -189,10 +186,7 @@ impl LoginOperation for LoginOperationImpl {
             .iter()
             .map(|model| Account {
                 user_account_id: model.user_account_id,
-                email_address: model.email_address.clone(),
                 hashed_password: model.hashed_password.clone(),
-                last_login_time: model.last_login_time,
-                created_at: model.created_at,
             })
             .collect::<Vec<Account>>())
     }
@@ -239,13 +233,19 @@ mod tests {
 
     struct LoginOperationMock<'a> {
         account: Account,
+        email_addr: &'a str,
         login_time: &'a DateTime<FixedOffset>,
     }
 
     impl<'a> LoginOperationMock<'a> {
-        fn new(account: Account, login_time: &'a DateTime<FixedOffset>) -> Self {
+        fn new(
+            account: Account,
+            email_addr: &'a str,
+            login_time: &'a DateTime<FixedOffset>,
+        ) -> Self {
             Self {
                 account,
+                email_addr,
                 login_time,
             }
         }
@@ -257,7 +257,7 @@ mod tests {
             &self,
             email_addr: &str,
         ) -> Result<Vec<Account>, ErrResp> {
-            if self.account.email_address == email_addr {
+            if self.email_addr == email_addr {
                 Ok(vec![self.account.clone()])
             } else {
                 Ok(vec![])
@@ -294,14 +294,11 @@ mod tests {
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
-            email_address: email_addr.to_string(),
             hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
-        let op = LoginOperationMock::new(account, &current_date_time);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
 
         let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
 
@@ -337,14 +334,11 @@ mod tests {
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
-            email_address: email_addr1.to_string(),
             hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
-        let op = LoginOperationMock::new(account, &current_date_time);
+        let op = LoginOperationMock::new(account, email_addr1, &current_date_time);
 
         let result =
             handle_login_req(email_addr2, pwd, &current_date_time, op, store.clone()).await;
@@ -372,14 +366,11 @@ mod tests {
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
-            email_address: email_addr.to_string(),
             hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
-        let op = LoginOperationMock::new(account, &current_date_time);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
 
         let result =
             handle_login_req(email_addr, pwd2, &current_date_time, op, store.clone()).await;
