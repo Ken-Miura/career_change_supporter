@@ -3,14 +3,14 @@
 use std::time::Duration;
 
 use async_redis_session::RedisSessionStore;
-use async_session::{Session, SessionStore};
+use async_session::{async_trait, Session, SessionStore};
 use axum::extract::Extension;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use chrono::{DateTime, Utc};
 use common::schema::ccs_schema::user_account::dsl::{email_address, last_login_time, user_account};
 use common::util::is_password_match;
-use common::{model::user::Account, DatabaseConnection, ValidCred};
+use common::{model::user::Account, ValidCred};
 use common::{ApiError, ErrResp};
 use diesel::query_builder::functions::update;
 use diesel::{
@@ -18,6 +18,7 @@ use diesel::{
     PgConnection,
 };
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use entity::sea_orm::DatabaseConnection;
 use hyper::header::SET_COOKIE;
 
 use crate::err::unexpected_err_resp;
@@ -32,13 +33,13 @@ use crate::util::{session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID
 /// email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EMAIL_OR_PWD_INCORRECT]を返す<br>
 pub(crate) async fn post_login(
     ValidCred(cred): ValidCred,
-    DatabaseConnection(conn): DatabaseConnection,
+    Extension(pool): Extension<DatabaseConnection>,
     Extension(store): Extension<RedisSessionStore>,
 ) -> LoginResult {
     let email_addr = cred.email_address;
     let password = cred.password;
     let current_date_time = Utc::now();
-    let op = LoginOperationImpl::new(conn, LOGIN_SESSION_EXPIRY);
+    let op = LoginOperationImpl::new(pool, LOGIN_SESSION_EXPIRY);
     post_login_internal(&email_addr, &password, &current_date_time, op, store).await
 }
 
@@ -55,7 +56,7 @@ async fn post_login_internal(
     op: impl LoginOperation,
     store: impl SessionStore,
 ) -> LoginResult {
-    let accounts = op.filter_account_by_email_addr(email_addr)?;
+    let accounts = op.filter_account_by_email_addr(email_addr).await?;
     let _ = ensure_account_is_only_one(email_addr, &accounts)?;
     let account = accounts[0].clone();
     let matched = is_password_match(password, &account.hashed_password).map_err(|e| {
@@ -102,7 +103,7 @@ async fn post_login_internal(
             return Err(unexpected_err_resp());
         }
     };
-    let _ = op.update_last_login(user_account_id, login_time)?;
+    let _ = op.update_last_login(user_account_id, login_time).await?;
     tracing::info!(
         "{} (id: {}) logged-in at {}",
         email_addr,
@@ -142,55 +143,64 @@ fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<
     Ok(())
 }
 
+#[async_trait]
 trait LoginOperation {
-    fn filter_account_by_email_addr(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp>;
-    fn set_login_session_expiry(&self, session: &mut Session);
-    fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp>;
+    async fn filter_account_by_email_addr(&self, email_addr: &str)
+        -> Result<Vec<Account>, ErrResp>;
+    async fn set_login_session_expiry(&self, session: &mut Session);
+    async fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp>;
 }
 
 struct LoginOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
     expiry: Duration,
 }
 
 impl LoginOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>, expiry: Duration) -> Self {
-        Self { conn, expiry }
+    fn new(pool: DatabaseConnection, expiry: Duration) -> Self {
+        Self { pool, expiry }
     }
 }
 
+#[async_trait]
 impl LoginOperation for LoginOperationImpl {
-    fn filter_account_by_email_addr(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp> {
-        let result = user_account
-            .filter(email_address.eq(email_addr))
-            .load::<Account>(&self.conn);
-        match result {
-            Ok(accounts) => Ok(accounts),
-            Err(e) => {
-                tracing::error!("failed to load accounts ({}): {}", email_addr, e);
-                Err(unexpected_err_resp())
-            }
-        }
+    async fn filter_account_by_email_addr(
+        &self,
+        email_addr: &str,
+    ) -> Result<Vec<Account>, ErrResp> {
+        // let result = user_account
+        //     .filter(email_address.eq(email_addr))
+        //     .load::<Account>(&self.conn);
+        // match result {
+        //     Ok(accounts) => Ok(accounts),
+        //     Err(e) => {
+        //         tracing::error!("failed to load accounts ({}): {}", email_addr, e);
+        //         Err(unexpected_err_resp())
+        //     }
+        // }
+        todo!()
     }
 
-    fn set_login_session_expiry(&self, session: &mut Session) {
-        session.expire_in(self.expiry);
+    async fn set_login_session_expiry(&self, session: &mut Session) {
+        // session.expire_in(self.expiry);
+        todo!()
     }
 
-    fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
-        let _ = update(user_account.find(id))
-            .set(last_login_time.eq(login_time))
-            .execute(&self.conn)
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to update last login time ({}) on id ({}): {}",
-                    login_time,
-                    id,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(())
+    async fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
+        // let _ = update(user_account.find(id))
+        //     .set(last_login_time.eq(login_time))
+        //     .execute(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!(
+        //             "failed to update last login time ({}) on id ({}): {}",
+        //             login_time,
+        //             id,
+        //             e
+        //         );
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(())
+        todo!()
     }
 }
 
@@ -221,8 +231,12 @@ mod tests {
         }
     }
 
+    #[async_trait]
     impl<'a> LoginOperation for LoginOperationMock<'a> {
-        fn filter_account_by_email_addr(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp> {
+        async fn filter_account_by_email_addr(
+            &self,
+            email_addr: &str,
+        ) -> Result<Vec<Account>, ErrResp> {
             if self.account.email_address == email_addr {
                 Ok(vec![self.account.clone()])
             } else {
@@ -230,11 +244,15 @@ mod tests {
             }
         }
 
-        fn set_login_session_expiry(&self, _session: &mut Session) {
+        async fn set_login_session_expiry(&self, _session: &mut Session) {
             // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
         }
 
-        fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
+        async fn update_last_login(
+            &self,
+            id: i32,
+            login_time: &DateTime<Utc>,
+        ) -> Result<(), ErrResp> {
             assert_eq!(self.account.user_account_id, id);
             assert_eq!(self.login_time, login_time);
             Ok(())
