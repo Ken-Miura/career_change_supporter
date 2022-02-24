@@ -138,7 +138,7 @@ trait LoginOperation {
     fn set_login_session_expiry(&self, session: &mut Session);
     async fn update_last_login(
         &self,
-        id: i32,
+        account_id: i32,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
@@ -188,7 +188,7 @@ impl LoginOperation for LoginOperationImpl {
 
     async fn update_last_login(
         &self,
-        id: i32,
+        account_id: i32,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         // let _ = update(user_account.find(id))
@@ -255,10 +255,10 @@ mod tests {
 
         async fn update_last_login(
             &self,
-            id: i32,
+            account_id: i32,
             login_time: &DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            assert_eq!(self.account.user_account_id, id);
+            assert_eq!(self.account.user_account_id, account_id);
             assert_eq!(self.login_time, login_time);
             Ok(())
         }
