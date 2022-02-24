@@ -11,7 +11,11 @@ use chrono::{DateTime, FixedOffset, Utc};
 use common::util::is_password_match;
 use common::ValidCred;
 use common::{ApiError, ErrResp};
-use entity::sea_orm::DatabaseConnection;
+use entity::prelude::UserAccount;
+use entity::sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+};
+use entity::user_account;
 use hyper::header::SET_COOKIE;
 
 use crate::err::unexpected_err_resp;
@@ -169,17 +173,28 @@ impl LoginOperation for LoginOperationImpl {
         &self,
         email_addr: &str,
     ) -> Result<Vec<Account>, ErrResp> {
-        // let result = user_account
-        //     .filter(email_address.eq(email_addr))
-        //     .load::<Account>(&self.conn);
-        // match result {
-        //     Ok(accounts) => Ok(accounts),
-        //     Err(e) => {
-        //         tracing::error!("failed to load accounts ({}): {}", email_addr, e);
-        //         Err(unexpected_err_resp())
-        //     }
-        // }
-        todo!()
+        let account_models = UserAccount::find()
+            .filter(user_account::Column::EmailAddress.eq(email_addr))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to filter user account (email address: {}): {}",
+                    email_addr,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(account_models
+            .iter()
+            .map(|model| Account {
+                user_account_id: model.user_account_id,
+                email_address: model.email_address.clone(),
+                hashed_password: model.hashed_password.clone(),
+                last_login_time: model.last_login_time,
+                created_at: model.created_at,
+            })
+            .collect::<Vec<Account>>())
     }
 
     fn set_login_session_expiry(&self, session: &mut Session) {
@@ -191,20 +206,20 @@ impl LoginOperation for LoginOperationImpl {
         account_id: i32,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        // let _ = update(user_account.find(id))
-        //     .set(last_login_time.eq(login_time))
-        //     .execute(&self.conn)
-        //     .map_err(|e| {
-        //         tracing::error!(
-        //             "failed to update last login time ({}) on id ({}): {}",
-        //             login_time,
-        //             id,
-        //             e
-        //         );
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(())
-        todo!()
+        let account_model = user_account::ActiveModel {
+            user_account_id: Set(account_id),
+            last_login_time: Set(Some(*login_time)),
+            ..Default::default()
+        };
+        let _ = account_model.update(&self.pool).await.map_err(|e| {
+            tracing::error!(
+                "failed to update user account (account id: {}): {}",
+                account_id,
+                e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(())
     }
 }
 
