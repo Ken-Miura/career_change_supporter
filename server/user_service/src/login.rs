@@ -7,23 +7,17 @@ use async_session::{async_trait, Session, SessionStore};
 use axum::extract::Extension;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
-use chrono::{DateTime, Utc};
-use common::schema::ccs_schema::user_account::dsl::{email_address, last_login_time, user_account};
+use chrono::{DateTime, FixedOffset, Utc};
 use common::util::is_password_match;
-use common::{model::user::Account, ValidCred};
+use common::ValidCred;
 use common::{ApiError, ErrResp};
-use diesel::query_builder::functions::update;
-use diesel::{
-    r2d2::{ConnectionManager, PooledConnection},
-    PgConnection,
-};
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use entity::sea_orm::DatabaseConnection;
 use hyper::header::SET_COOKIE;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::EmailOrPwdIncorrect;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
+use crate::util::JAPANESE_TIME_ZONE;
 use crate::util::{session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID};
 
 /// ログインを行う<br>
@@ -38,7 +32,7 @@ pub(crate) async fn post_login(
 ) -> LoginResult {
     let email_addr = cred.email_address;
     let password = cred.password;
-    let current_date_time = Utc::now();
+    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = LoginOperationImpl::new(pool, LOGIN_SESSION_EXPIRY);
     handle_login_req(&email_addr, &password, &current_date_time, op, store).await
 }
@@ -52,7 +46,7 @@ pub(crate) type LoginResp = (StatusCode, HeaderMap);
 async fn handle_login_req(
     email_addr: &str,
     password: &str,
-    login_time: &DateTime<Utc>,
+    login_time: &DateTime<FixedOffset>,
     op: impl LoginOperation,
     store: impl SessionStore,
 ) -> LoginResult {
@@ -148,7 +142,20 @@ trait LoginOperation {
     async fn filter_account_by_email_addr(&self, email_addr: &str)
         -> Result<Vec<Account>, ErrResp>;
     fn set_login_session_expiry(&self, session: &mut Session);
-    async fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp>;
+    async fn update_last_login(
+        &self,
+        id: i32,
+        login_time: &DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
+}
+
+#[derive(Clone, Debug)]
+struct Account {
+    user_account_id: i32,
+    email_address: String,
+    hashed_password: Vec<u8>,
+    last_login_time: Option<DateTime<FixedOffset>>,
+    created_at: DateTime<FixedOffset>,
 }
 
 struct LoginOperationImpl {
@@ -185,7 +192,11 @@ impl LoginOperation for LoginOperationImpl {
         session.expire_in(self.expiry);
     }
 
-    async fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
+    async fn update_last_login(
+        &self,
+        id: i32,
+        login_time: &DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
         // let _ = update(user_account.find(id))
         //     .set(last_login_time.eq(login_time))
         //     .execute(&self.conn)
@@ -213,16 +224,17 @@ mod tests {
     use common::util::validator::validate_password;
 
     use crate::util::session::tests::extract_session_id_value;
+    use crate::util::JAPANESE_TIME_ZONE;
 
     use super::*;
 
     struct LoginOperationMock<'a> {
         account: Account,
-        login_time: &'a DateTime<Utc>,
+        login_time: &'a DateTime<FixedOffset>,
     }
 
     impl<'a> LoginOperationMock<'a> {
-        fn new(account: Account, login_time: &'a DateTime<Utc>) -> Self {
+        fn new(account: Account, login_time: &'a DateTime<FixedOffset>) -> Self {
             Self {
                 account,
                 login_time,
@@ -250,7 +262,7 @@ mod tests {
         async fn update_last_login(
             &self,
             id: i32,
-            login_time: &DateTime<Utc>,
+            login_time: &DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
             assert_eq!(self.account.user_account_id, id);
             assert_eq!(self.login_time, login_time);
@@ -266,7 +278,10 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let creation_time = Utc
+            .ymd(2021, 9, 11)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
@@ -306,7 +321,10 @@ mod tests {
         let _ = validate_email_address(email_addr2).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let creation_time = Utc
+            .ymd(2021, 9, 11)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
@@ -338,7 +356,10 @@ mod tests {
         let _ = validate_password(pwd1).expect("failed to get Ok");
         let _ = validate_password(pwd2).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd1).expect("failed to hash pwd");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let creation_time = Utc
+            .ymd(2021, 9, 11)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,

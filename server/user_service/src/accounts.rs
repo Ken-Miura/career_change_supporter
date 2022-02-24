@@ -107,7 +107,7 @@ async fn handle_accounts_req(
             }),
         ));
     }
-    let account = Account {
+    let account = NewAccount {
         email_address: temp_account.email_address.clone(),
         hashed_password: temp_account.hashed_password,
         last_login_time: None,
@@ -133,7 +133,7 @@ async fn handle_accounts_req(
 }
 
 #[derive(Clone, Debug)]
-struct Account {
+struct NewAccount {
     email_address: String,
     hashed_password: Vec<u8>,
     last_login_time: Option<DateTime<FixedOffset>>,
@@ -177,7 +177,7 @@ trait AccountsOperation {
         temp_account_id: &str,
     ) -> Result<Option<TempAccount>, ErrResp>;
     async fn user_exists(&self, email_addr: &str) -> Result<bool, ErrResp>;
-    async fn create_account(&self, account: &Account) -> Result<(), ErrResp>;
+    async fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp>;
 }
 
 struct AccountsOperationImpl {
@@ -231,7 +231,7 @@ impl AccountsOperation for AccountsOperationImpl {
         Ok(!models.is_empty())
     }
 
-    async fn create_account(&self, account: &Account) -> Result<(), ErrResp> {
+    async fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp> {
         let user_account_model = user_account::ActiveModel {
             email_address: Set(account.email_address.clone()),
             hashed_password: Set(account.hashed_password.clone()),
@@ -305,7 +305,7 @@ mod tests {
             Ok(self.exists)
         }
 
-        async fn create_account(&self, account: &Account) -> Result<(), ErrResp> {
+        async fn create_account(&self, account: &NewAccount) -> Result<(), ErrResp> {
             assert_eq!(&self.temp_account.email_address, &account.email_address);
             assert_eq!(&self.temp_account.hashed_password, &account.hashed_password);
             assert_eq!(None, account.last_login_time);
