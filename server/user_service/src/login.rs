@@ -109,13 +109,6 @@ async fn handle_login_req(
             return Err(unexpected_err_resp());
         }
     };
-    let _ = op.update_last_login(user_account_id, login_time).await?;
-    tracing::info!(
-        "{} (id: {}) logged-in at {}",
-        email_addr,
-        user_account_id,
-        login_time
-    );
     let mut headers = HeaderMap::new();
     let cookie = create_cookie_format(&session_id_value)
         .parse::<HeaderValue>()
@@ -128,6 +121,13 @@ async fn handle_login_req(
             unexpected_err_resp()
         })?;
     headers.insert(SET_COOKIE, cookie);
+    let _ = op.update_last_login(user_account_id, login_time).await?;
+    tracing::info!(
+        "{} (id: {}) logged-in at {}",
+        email_addr,
+        user_account_id,
+        login_time
+    );
     Ok((StatusCode::OK, headers))
 }
 
