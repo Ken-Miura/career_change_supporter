@@ -147,7 +147,7 @@ fn ensure_account_is_only_one(email_addr: &str, accounts: &[Account]) -> Result<
 trait LoginOperation {
     async fn filter_account_by_email_addr(&self, email_addr: &str)
         -> Result<Vec<Account>, ErrResp>;
-    async fn set_login_session_expiry(&self, session: &mut Session);
+    fn set_login_session_expiry(&self, session: &mut Session);
     async fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp>;
 }
 
@@ -181,9 +181,8 @@ impl LoginOperation for LoginOperationImpl {
         todo!()
     }
 
-    async fn set_login_session_expiry(&self, session: &mut Session) {
-        // session.expire_in(self.expiry);
-        todo!()
+    fn set_login_session_expiry(&self, session: &mut Session) {
+        session.expire_in(self.expiry);
     }
 
     async fn update_last_login(&self, id: i32, login_time: &DateTime<Utc>) -> Result<(), ErrResp> {
@@ -244,7 +243,7 @@ mod tests {
             }
         }
 
-        async fn set_login_session_expiry(&self, _session: &mut Session) {
+        fn set_login_session_expiry(&self, _session: &mut Session) {
             // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
         }
 
