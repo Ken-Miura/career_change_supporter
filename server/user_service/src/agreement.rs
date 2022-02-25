@@ -5,25 +5,16 @@ use axum::async_trait;
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, FixedOffset, Utc};
 use common::ApiError;
-use common::{model::user::Account, ErrResp};
-use common::{
-    model::user::NewTermsOfUse,
-    schema::ccs_schema::terms_of_use::dsl::terms_of_use as terms_of_use_table,
-    schema::ccs_schema::user_account::dsl::user_account as user_account_table,
-};
-use diesel::{
-    insert_into,
-    r2d2::{ConnectionManager, PooledConnection},
-    PgConnection, QueryDsl, RunQueryDsl,
-};
+use common::ErrResp;
 use entity::sea_orm::DatabaseConnection;
 use tower_cookies::Cookies;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::AlreadyAgreedTermsOfUse;
 use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
+use crate::util::JAPANESE_TIME_ZONE;
 use crate::util::{session::get_user_by_cookie, terms_of_use::TERMS_OF_USE_VERSION};
 
 /// ユーザーが利用規約に同意したことを記録する
@@ -35,21 +26,46 @@ pub(crate) async fn post_agreement(
     let op = RefreshOperationImpl {};
     let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
     let op = AgreementOperationImpl::new(pool);
-    let agreed_time = Utc::now();
+    let agreed_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let result =
         handle_agreement_req(user.account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
     Ok(result)
 }
 
+async fn handle_agreement_req(
+    account_id: i32,
+    version: i32,
+    agreed_at: &DateTime<FixedOffset>,
+    op: impl AgreementOperation,
+) -> Result<StatusCode, ErrResp> {
+    let option = op.find_account_by_id(account_id).await?;
+    let account = option.ok_or_else(|| {
+        // 利用規約に同意するリクエストを送った後、アカウント情報が取得される前にアカウントが削除されるような事態は
+        // 通常の操作では発生し得ない。そのため、unexpected_err_respとして処理する。
+        unexpected_err_resp()
+    })?;
+    let _ = op
+        .agree_terms_of_use(account_id, version, &account.email_address, agreed_at)
+        .await?;
+    tracing::info!(
+        "{} (account id: {}) agreed terms of use version {} at {}",
+        &account.email_address,
+        account_id,
+        version,
+        agreed_at
+    );
+    Ok(StatusCode::OK)
+}
+
 #[async_trait]
 trait AgreementOperation {
-    fn find_account_by_id(&self, id: i32) -> Result<Vec<Account>, ErrResp>;
-    fn agree_terms_of_use(
+    async fn find_account_by_id(&self, account_id: i32) -> Result<Option<Account>, ErrResp>;
+    async fn agree_terms_of_use(
         &self,
-        id: i32,
+        account_id: i32,
         version: i32,
         email_address: &str,
-        agreed_at: &DateTime<Utc>,
+        agreed_at: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
@@ -75,7 +91,7 @@ impl AgreementOperationImpl {
 
 #[async_trait]
 impl AgreementOperation for AgreementOperationImpl {
-    fn find_account_by_id(&self, id: i32) -> Result<Vec<Account>, ErrResp> {
+    async fn find_account_by_id(&self, account_id: i32) -> Result<Option<Account>, ErrResp> {
         // let result = user_account_table
         //     .find(id)
         //     .load::<Account>(&self.conn)
@@ -87,12 +103,12 @@ impl AgreementOperation for AgreementOperationImpl {
         todo!()
     }
 
-    fn agree_terms_of_use(
+    async fn agree_terms_of_use(
         &self,
-        id: i32,
+        account_id: i32,
         version: i32,
         email_address: &str,
-        agreed_at: &DateTime<Utc>,
+        agreed_at: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         // let terms_of_use = NewTermsOfUse {
         //     user_account_id: &id,
@@ -131,74 +147,43 @@ impl AgreementOperation for AgreementOperationImpl {
     }
 }
 
-async fn handle_agreement_req(
-    id: i32,
-    version: i32,
-    agreed_at: &DateTime<Utc>,
-    op: impl AgreementOperation,
-) -> Result<StatusCode, ErrResp> {
-    let _ = async move {
-        let accounts = op.find_account_by_id(id)?;
-        let len = accounts.len();
-        if len != 1 {
-            // len != 1 -> アカウントが存在するかどうか（削除されていないかどうか）のチェック
-            // 利用規約同意には、アカウントを削除された後の事も想定し、アカウントID以外にも最低限のユーザー情報（Eメールアドレス）を含めたい。
-            // そのため、Eメールアドレスが取得できない場合はエラーとする。
-            // (アカウントが削除されると、アカウントIDとそれに紐付いている情報はすべて削除される。
-            // もし、アカウントIDしか利用規約に保存していないと、紐付いている連絡先（Eメールアドレス）の追跡ができなくなる）
-            tracing::error!(
-                "number of user accounts is not 1 (id: {}, length: {})",
-                id,
-                len
-            );
-            // 利用規約に同意するのリクエストを送った後、ユーザー情報の取得と利用規約同意の記録までの間にアカウントが削除されるような事態は通常の操作では発生し得ない。
-            // そのため、unexpected errとして処理する。
-            return Err(unexpected_err_resp());
-        }
-        let _ = op.agree_terms_of_use(id, version, &accounts[0].email_address, agreed_at)?;
-        tracing::info!(
-            "{} (id: {}) agreed terms of use version {} at {}",
-            &accounts[0].email_address,
-            id,
-            version,
-            agreed_at
-        );
-        Ok(())
-    }
-    .await?;
-    Ok(StatusCode::OK)
+#[derive(Clone, Debug)]
+struct Account {
+    email_address: String,
 }
 
 #[cfg(test)]
 mod tests {
+    use axum::async_trait;
     use axum::Json;
-    use chrono::{Duration, TimeZone};
-    use common::{model::user::Account, util::hash_password, ApiError, ErrResp};
+    use chrono::TimeZone;
+    use common::{ApiError, ErrResp};
     use hyper::StatusCode;
 
-    use crate::err::Code::AlreadyAgreedTermsOfUse;
+    use crate::{err::Code::AlreadyAgreedTermsOfUse, util::JAPANESE_TIME_ZONE};
 
+    use super::Account;
     use super::{handle_agreement_req, AgreementOperation};
 
     struct AgreementOperationMock<'a> {
         already_agreed_terms_of_use: bool,
-        id: i32,
+        account_id: i32,
         version: i32,
         email_address: &'a str,
-        agreed_at: &'a chrono::DateTime<chrono::Utc>,
+        agreed_at: &'a chrono::DateTime<chrono::FixedOffset>,
     }
 
     impl<'a> AgreementOperationMock<'a> {
         fn new(
             already_agreed_terms_of_use: bool,
-            id: i32,
+            account_id: i32,
             version: i32,
             email_address: &'a str,
-            agreed_at: &'a chrono::DateTime<chrono::Utc>,
+            agreed_at: &'a chrono::DateTime<chrono::FixedOffset>,
         ) -> Self {
             Self {
                 already_agreed_terms_of_use,
-                id,
+                account_id,
                 version,
                 email_address,
                 agreed_at,
@@ -206,31 +191,24 @@ mod tests {
         }
     }
 
+    #[async_trait]
     impl AgreementOperation for AgreementOperationMock<'_> {
-        fn find_account_by_id(&self, id: i32) -> Result<Vec<Account>, ErrResp> {
-            assert_eq!(self.id, id);
-            let hashed_password = hash_password("aaaaaaaaaA")
-                .map_err(|e| panic!("failed to handle password: {}", e))?;
-            let last_login_time = *self.agreed_at - Duration::minutes(10);
-            let created_at = *self.agreed_at - Duration::minutes(30);
+        async fn find_account_by_id(&self, account_id: i32) -> Result<Option<Account>, ErrResp> {
+            assert_eq!(self.account_id, account_id);
             let account = Account {
-                user_account_id: self.id,
                 email_address: self.email_address.to_string(),
-                hashed_password,
-                last_login_time: Some(last_login_time),
-                created_at,
             };
-            Ok(vec![account])
+            Ok(Some(account))
         }
 
-        fn agree_terms_of_use(
+        async fn agree_terms_of_use(
             &self,
-            id: i32,
+            account_id: i32,
             version: i32,
             email_address: &str,
-            agreed_at: &chrono::DateTime<chrono::Utc>,
+            agreed_at: &chrono::DateTime<chrono::FixedOffset>,
         ) -> Result<(), ErrResp> {
-            assert_eq!(self.id, id);
+            assert_eq!(self.account_id, account_id);
             assert_eq!(self.version, version);
             assert_eq!(self.email_address, email_address);
             assert_eq!(self.agreed_at, agreed_at);
@@ -251,7 +229,10 @@ mod tests {
         let id = 51235;
         let email_address = "test@example.com";
         let version = 1;
-        let agreed_at = chrono::Utc.ymd(2021, 11, 7).and_hms(11, 00, 40);
+        let agreed_at = chrono::Utc
+            .ymd(2021, 11, 7)
+            .and_hms(11, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op = AgreementOperationMock::new(false, id, version, email_address, &agreed_at);
 
         let result = handle_agreement_req(id, version, &agreed_at, op)
@@ -266,7 +247,10 @@ mod tests {
         let id = 82546;
         let email_address = "test1234@example.com";
         let version = 1;
-        let agreed_at = chrono::Utc.ymd(2021, 11, 7).and_hms(11, 00, 40);
+        let agreed_at = chrono::Utc
+            .ymd(2021, 11, 7)
+            .and_hms(11, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op = AgreementOperationMock::new(true, id, version, email_address, &agreed_at);
 
         let result = handle_agreement_req(id, version, &agreed_at, op)
