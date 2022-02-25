@@ -1,6 +1,6 @@
 // Copyright 2021 Ken Miura
 
-use async_session::async_trait;
+use axum::async_trait;
 use chrono::{DateTime, FixedOffset};
 use common::ErrResp;
 use core::panic;

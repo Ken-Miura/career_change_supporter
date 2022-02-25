@@ -3,7 +3,8 @@
 use std::time::Duration;
 
 use async_redis_session::RedisSessionStore;
-use async_session::{async_trait, Session, SessionStore};
+use async_session::{Session, SessionStore};
+use axum::async_trait;
 use axum::extract::Extension;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;

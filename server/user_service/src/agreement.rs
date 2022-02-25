@@ -1,22 +1,24 @@
 // Copyright 2021 Ken Miura
 
 use async_redis_session::RedisSessionStore;
+use axum::async_trait;
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, Utc};
+use common::ApiError;
 use common::{model::user::Account, ErrResp};
 use common::{
     model::user::NewTermsOfUse,
     schema::ccs_schema::terms_of_use::dsl::terms_of_use as terms_of_use_table,
     schema::ccs_schema::user_account::dsl::user_account as user_account_table,
 };
-use common::{ApiError, DatabaseConnection};
 use diesel::{
     insert_into,
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection, QueryDsl, RunQueryDsl,
 };
+use entity::sea_orm::DatabaseConnection;
 use tower_cookies::Cookies;
 
 use crate::err::unexpected_err_resp;
@@ -28,17 +30,18 @@ use crate::util::{session::get_user_by_cookie, terms_of_use::TERMS_OF_USE_VERSIO
 pub(crate) async fn post_agreement(
     cookies: Cookies,
     Extension(store): Extension<RedisSessionStore>,
-    DatabaseConnection(conn): DatabaseConnection,
+    Extension(pool): Extension<DatabaseConnection>,
 ) -> Result<StatusCode, ErrResp> {
     let op = RefreshOperationImpl {};
     let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
-    let op = AgreementOperationImpl::new(conn);
+    let op = AgreementOperationImpl::new(pool);
     let agreed_time = Utc::now();
     let result =
         handle_agreement_req(user.account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
     Ok(result)
 }
 
+#[async_trait]
 trait AgreementOperation {
     fn find_account_by_id(&self, id: i32) -> Result<Vec<Account>, ErrResp>;
     fn agree_terms_of_use(
@@ -51,12 +54,12 @@ trait AgreementOperation {
 }
 
 struct AgreementOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
 }
 
 impl AgreementOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
+    fn new(pool: DatabaseConnection) -> Self {
+        Self { pool }
     }
 
     fn check_if_unique_violation(e: &diesel::result::Error) -> bool {
@@ -70,16 +73,18 @@ impl AgreementOperationImpl {
     }
 }
 
+#[async_trait]
 impl AgreementOperation for AgreementOperationImpl {
     fn find_account_by_id(&self, id: i32) -> Result<Vec<Account>, ErrResp> {
-        let result = user_account_table
-            .find(id)
-            .load::<Account>(&self.conn)
-            .map_err(|e| {
-                tracing::error!("failed to find user account (id: {}): {}", id, e);
-                unexpected_err_resp()
-            })?;
-        Ok(result)
+        // let result = user_account_table
+        //     .find(id)
+        //     .load::<Account>(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!("failed to find user account (id: {}): {}", id, e);
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(result)
+        todo!()
     }
 
     fn agree_terms_of_use(
@@ -89,39 +94,40 @@ impl AgreementOperation for AgreementOperationImpl {
         email_address: &str,
         agreed_at: &DateTime<Utc>,
     ) -> Result<(), ErrResp> {
-        let terms_of_use = NewTermsOfUse {
-            user_account_id: &id,
-            ver: &version,
-            email_address,
-            agreed_at,
-        };
-        let _ = insert_into(terms_of_use_table)
-            .values(terms_of_use)
-            .execute(&self.conn)
-            .map_err(|e| {
-                if AgreementOperationImpl::check_if_unique_violation(&e) {
-                    tracing::error!(
-                        "id ({}) has already agreed terms of use(version: {}): {}",
-                        id,
-                        version,
-                        e
-                    );
-                    return (
-                        StatusCode::BAD_REQUEST,
-                        Json(ApiError {
-                            code: AlreadyAgreedTermsOfUse as u32,
-                        }),
-                    );
-                }
-                tracing::error!(
-                    "failed to insert terms_of_use (id: {}, version: {}): {}",
-                    id,
-                    version,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(())
+        // let terms_of_use = NewTermsOfUse {
+        //     user_account_id: &id,
+        //     ver: &version,
+        //     email_address,
+        //     agreed_at,
+        // };
+        // let _ = insert_into(terms_of_use_table)
+        //     .values(terms_of_use)
+        //     .execute(&self.conn)
+        //     .map_err(|e| {
+        //         if AgreementOperationImpl::check_if_unique_violation(&e) {
+        //             tracing::error!(
+        //                 "id ({}) has already agreed terms of use(version: {}): {}",
+        //                 id,
+        //                 version,
+        //                 e
+        //             );
+        //             return (
+        //                 StatusCode::BAD_REQUEST,
+        //                 Json(ApiError {
+        //                     code: AlreadyAgreedTermsOfUse as u32,
+        //                 }),
+        //             );
+        //         }
+        //         tracing::error!(
+        //             "failed to insert terms_of_use (id: {}, version: {}): {}",
+        //             id,
+        //             version,
+        //             e
+        //         );
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(())
+        todo!()
     }
 }
 

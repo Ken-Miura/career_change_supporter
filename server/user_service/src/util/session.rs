@@ -1,7 +1,8 @@
 // Copyright 2021 Ken Miura
 
 use async_redis_session::RedisSessionStore;
-use async_session::{async_trait, Session, SessionStore};
+use async_session::{Session, SessionStore};
+use axum::async_trait;
 use axum::{
     extract::{Extension, FromRequest, RequestParts},
     http::StatusCode,
@@ -237,7 +238,8 @@ async fn check_if_user_has_already_agreed(
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 pub(crate) mod tests {
-    use async_session::{async_trait, MemoryStore, Session, SessionStore};
+    use async_session::{MemoryStore, Session, SessionStore};
+    use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::TimeZone;
     use common::ErrResp;

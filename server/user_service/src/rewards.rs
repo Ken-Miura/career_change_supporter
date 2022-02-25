@@ -429,7 +429,7 @@ impl RewardOperation for RewardOperationImpl {
 #[cfg(test)]
 mod tests {
 
-    use async_session::async_trait;
+    use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::{TimeZone, Utc};
     use common::{
