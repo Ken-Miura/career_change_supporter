@@ -35,7 +35,7 @@ pub(crate) async fn post_agreement(
     let op = AgreementOperationImpl::new(conn);
     let agreed_time = Utc::now();
     let result =
-        post_agreement_internal(user.account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
+        handle_agreement_req(user.account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
     Ok(result)
 }
 
@@ -125,7 +125,7 @@ impl AgreementOperation for AgreementOperationImpl {
     }
 }
 
-async fn post_agreement_internal(
+async fn handle_agreement_req(
     id: i32,
     version: i32,
     agreed_at: &DateTime<Utc>,
@@ -172,7 +172,7 @@ mod tests {
 
     use crate::err::Code::AlreadyAgreedTermsOfUse;
 
-    use super::{post_agreement_internal, AgreementOperation};
+    use super::{handle_agreement_req, AgreementOperation};
 
     struct AgreementOperationMock<'a> {
         already_agreed_terms_of_use: bool,
@@ -241,14 +241,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn agreement_success() {
+    async fn handle_agreement_req_success() {
         let id = 51235;
         let email_address = "test@example.com";
         let version = 1;
         let agreed_at = chrono::Utc.ymd(2021, 11, 7).and_hms(11, 00, 40);
         let op = AgreementOperationMock::new(false, id, version, email_address, &agreed_at);
 
-        let result = post_agreement_internal(id, version, &agreed_at, op)
+        let result = handle_agreement_req(id, version, &agreed_at, op)
             .await
             .expect("failed to get Ok");
 
@@ -256,14 +256,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn agreement_fail_already_agreed() {
+    async fn handle_agreement_req_fail_already_agreed() {
         let id = 82546;
         let email_address = "test1234@example.com";
         let version = 1;
         let agreed_at = chrono::Utc.ymd(2021, 11, 7).and_hms(11, 00, 40);
         let op = AgreementOperationMock::new(true, id, version, email_address, &agreed_at);
 
-        let result = post_agreement_internal(id, version, &agreed_at, op)
+        let result = handle_agreement_req(id, version, &agreed_at, op)
             .await
             .expect_err("failed to get Err");
 
