@@ -54,7 +54,7 @@ pub(crate) async fn post_new_password(
     let current_date_time = chrono::Utc::now();
     let op = NewPasswordOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    post_new_password_internal(
+    handle_new_password_req(
         &cred.email_address,
         &cred.password,
         &URL_FOR_FRONT_END.to_string(),
@@ -70,7 +70,7 @@ pub(crate) async fn post_new_password(
 pub(crate) struct NewPasswordResult {}
 
 // これをテスト対象と考える。
-async fn post_new_password_internal(
+async fn handle_new_password_req(
     email_addr: &str,
     password: &str,
     url: &str,
@@ -204,9 +204,7 @@ mod tests {
 
     use crate::{
         err::Code::ReachNewPasswordsLimit,
-        new_password::{
-            create_text, post_new_password_internal, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT,
-        },
+        new_password::{create_text, handle_new_password_req, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT},
         util::tests::SendMailMock,
     };
 
@@ -258,7 +256,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn new_password_success() {
+    async fn handle_new_password_req_success() {
         let email_address = "test@example.com";
         let new_password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
@@ -281,7 +279,7 @@ mod tests {
             create_text(url, &uuid_str),
         );
 
-        let result = post_new_password_internal(
+        let result = handle_new_password_req(
             email_address,
             new_password,
             url,
@@ -297,7 +295,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn new_password_fail_reach_max_num_of_new_passwords_limit() {
+    async fn handle_new_password_req_fail_reach_max_num_of_new_passwords_limit() {
         let email_address = "test@example.com";
         let new_password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
@@ -320,7 +318,7 @@ mod tests {
             create_text(url, &uuid_str),
         );
 
-        let result = post_new_password_internal(
+        let result = handle_new_password_req(
             email_address,
             new_password,
             url,
