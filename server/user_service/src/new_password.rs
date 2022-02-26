@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+use axum::extract::Extension;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Utc};
 use common::model::user::NewNewPassword;
@@ -11,7 +12,7 @@ use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::hash_password;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
-    DatabaseConnection, ErrResp, RespResult, ValidCred,
+    ErrResp, RespResult, ValidCred,
 };
 use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE};
 use diesel::dsl::count_star;
@@ -23,6 +24,7 @@ use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
 };
+use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
@@ -46,11 +48,11 @@ static SUBJECT: Lazy<String> =
 /// MAX_NUM_OF_NEW_PASSWORDS以上新規パスワードがある場合、ステータスコード400、エラーコード[REACH_NEW_PASSWORDS_LIMIT]を返す
 pub(crate) async fn post_new_password(
     ValidCred(cred): ValidCred,
-    DatabaseConnection(conn): DatabaseConnection,
+    Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<NewPasswordResult> {
     let uuid = Uuid::new_v4().to_simple();
     let current_date_time = chrono::Utc::now();
-    let op = NewPasswordOperationImpl::new(conn);
+    let op = NewPasswordOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     post_new_password_internal(
         &cred.email_address,
@@ -145,42 +147,44 @@ trait NewPasswordOperation {
 }
 
 struct NewPasswordOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
 }
 
 impl NewPasswordOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
+    fn new(pool: DatabaseConnection) -> Self {
+        Self { pool }
     }
 }
 
 impl NewPasswordOperation for NewPasswordOperationImpl {
     fn num_of_new_passwords(&self, email_addr: &str) -> Result<i64, ErrResp> {
-        let cnt = new_password_col
-            .filter(new_password_email_addr.eq(email_addr))
-            .select(count_star())
-            .get_result::<i64>(&self.conn)
-            .map_err(|e| {
-                tracing::error!("failed to count new password for {}: {}", email_addr, e);
-                unexpected_err_resp()
-            })?;
-        Ok(cnt)
+        // let cnt = new_password_col
+        //     .filter(new_password_email_addr.eq(email_addr))
+        //     .select(count_star())
+        //     .get_result::<i64>(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!("failed to count new password for {}: {}", email_addr, e);
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(cnt)
+        todo!()
     }
 
     fn create_new_password(&self, new_password: &NewNewPassword) -> Result<(), ErrResp> {
-        let _ = insert_into(new_password_table)
-            .values(new_password)
-            .execute(&self.conn)
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to insert new password (id: {}, email address: {}): {}",
-                    new_password.new_password_id,
-                    new_password.email_address,
-                    e
-                );
-                unexpected_err_resp()
-            });
-        Ok(())
+        // let _ = insert_into(new_password_table)
+        //     .values(new_password)
+        //     .execute(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!(
+        //             "failed to insert new password (id: {}, email address: {}): {}",
+        //             new_password.new_password_id,
+        //             new_password.email_address,
+        //             e
+        //         );
+        //         unexpected_err_resp()
+        //     });
+        // Ok(())
+        todo!()
     }
 }
 
