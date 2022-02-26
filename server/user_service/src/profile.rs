@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
 use common::{
@@ -37,8 +38,10 @@ async fn handle_profile_req(
     account_id: i32,
     profile_op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
-    let account = profile_op.find_account_by_account_id(account_id)?;
-    let identity_info_option = profile_op.find_identity_info_by_user_account_id(account_id)?;
+    let account = profile_op.find_account_by_account_id(account_id).await?;
+    let identity_info_option = profile_op
+        .find_identity_info_by_user_account_id(account_id)
+        .await?;
     if identity_info_option.is_none() {
         return Ok((
             StatusCode::OK,
@@ -46,12 +49,16 @@ async fn handle_profile_req(
         ));
     };
     let identity = identity_info_option.map(convert_identity_info_to_identity);
-    let careers_info = profile_op.filter_career_info_by_account_id(account_id)?;
+    let careers_info = profile_op
+        .filter_career_info_by_account_id(account_id)
+        .await?;
     let careers = careers_info
         .into_iter()
         .map(convert_career_info_to_career)
         .collect::<Vec<Career>>();
-    let consulting_fee_option = profile_op.find_consulting_fee_by_account_id(account_id)?;
+    let consulting_fee_option = profile_op
+        .find_consulting_fee_by_account_id(account_id)
+        .await?;
     let fee_per_hour_in_yen = consulting_fee_option.map(|c| c.fee_per_hour_in_yen);
     Ok((
         StatusCode::OK,
@@ -166,15 +173,18 @@ fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
     }
 }
 
+#[async_trait]
 trait ProfileOperation {
-    fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp>;
-    fn find_identity_info_by_user_account_id(
+    async fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp>;
+    async fn find_identity_info_by_user_account_id(
         &self,
         account_id: i32,
     ) -> Result<Option<IdentityInfo>, ErrResp>;
-    fn filter_career_info_by_account_id(&self, account_id: i32)
-        -> Result<Vec<CareerInfo>, ErrResp>;
-    fn find_consulting_fee_by_account_id(
+    async fn filter_career_info_by_account_id(
+        &self,
+        account_id: i32,
+    ) -> Result<Vec<CareerInfo>, ErrResp>;
+    async fn find_consulting_fee_by_account_id(
         &self,
         account_id: i32,
     ) -> Result<Option<ConsultingFee>, ErrResp>;
@@ -190,8 +200,9 @@ impl ProfileOperationImpl {
     }
 }
 
+#[async_trait]
 impl ProfileOperation for ProfileOperationImpl {
-    fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp> {
+    async fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp> {
         // let result = user_account.find(id).first::<Account>(&self.conn);
         // match result {
         //     Ok(account) => Ok(account),
@@ -211,7 +222,7 @@ impl ProfileOperation for ProfileOperationImpl {
         todo!()
     }
 
-    fn find_identity_info_by_user_account_id(
+    async fn find_identity_info_by_user_account_id(
         &self,
         account_id: i32,
     ) -> Result<Option<IdentityInfo>, ErrResp> {
@@ -231,7 +242,7 @@ impl ProfileOperation for ProfileOperationImpl {
         todo!()
     }
 
-    fn filter_career_info_by_account_id(
+    async fn filter_career_info_by_account_id(
         &self,
         account_id: i32,
     ) -> Result<Vec<CareerInfo>, ErrResp> {
@@ -247,7 +258,7 @@ impl ProfileOperation for ProfileOperationImpl {
         todo!()
     }
 
-    fn find_consulting_fee_by_account_id(
+    async fn find_consulting_fee_by_account_id(
         &self,
         account_id: i32,
     ) -> Result<Option<ConsultingFee>, ErrResp> {
@@ -271,6 +282,7 @@ impl ProfileOperation for ProfileOperationImpl {
 // TODO: 事前準備に用意するデータ (IdentitiInfo、CareerInfo、ConsultingFee) に関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
 #[cfg(test)]
 mod tests {
+    use axum::async_trait;
     use axum::{http::StatusCode, Json};
     use chrono::{NaiveDate, TimeZone, Utc};
     use common::{
@@ -294,8 +306,12 @@ mod tests {
         consulting_fee_option: Option<ConsultingFee>,
     }
 
+    #[async_trait]
     impl ProfileOperation for ProfileOperationMock {
-        fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, common::ErrResp> {
+        async fn find_account_by_account_id(
+            &self,
+            account_id: i32,
+        ) -> Result<Account, common::ErrResp> {
             if self.account.user_account_id != account_id {
                 return Err((
                     StatusCode::BAD_REQUEST,
@@ -307,21 +323,21 @@ mod tests {
             Ok(self.account.clone())
         }
 
-        fn find_identity_info_by_user_account_id(
+        async fn find_identity_info_by_user_account_id(
             &self,
             _account_id: i32,
         ) -> Result<Option<IdentityInfo>, common::ErrResp> {
             Ok(self.identity_info_option.clone())
         }
 
-        fn filter_career_info_by_account_id(
+        async fn filter_career_info_by_account_id(
             &self,
             _account_id: i32,
         ) -> Result<Vec<CareerInfo>, common::ErrResp> {
             Ok(self.careers_info.clone())
         }
 
-        fn find_consulting_fee_by_account_id(
+        async fn find_consulting_fee_by_account_id(
             &self,
             _account_id: i32,
         ) -> Result<Option<ConsultingFee>, common::ErrResp> {
