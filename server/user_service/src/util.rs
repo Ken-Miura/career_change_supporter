@@ -46,7 +46,7 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
 /// [chrono::DateTime] で日本時間を扱う際に利用する。
 pub(crate) static JAPANESE_TIME_ZONE: Lazy<FixedOffset> = Lazy::new(|| FixedOffset::east(9 * 3600));
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct Identity {
     pub last_name: String,
     pub first_name: String,
@@ -60,16 +60,16 @@ pub(crate) struct Identity {
     pub telephone_number: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct Ymd {
     pub year: i32,
     pub month: u32,
     pub day: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct Career {
-    pub id: i32,
+    pub career_id: i32,
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,
@@ -84,7 +84,7 @@ pub(crate) struct Career {
     pub note: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {
     pub bank_code: String, // 明確な仕様は見つからなかったが数字4桁が最も普及しているように見える
     pub branch_code: String,

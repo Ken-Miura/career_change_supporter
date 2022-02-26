@@ -3,22 +3,10 @@
 use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
-use common::{
-    model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo},
-    schema::ccs_schema::{
-        career_info::{dsl::career_info as career_info_table, user_account_id},
-        consulting_fee::dsl::consulting_fee as consulting_fee_table,
-        identity_info::dsl::identity_info as identity_info_table,
-        user_account::dsl::user_account,
-    },
-    ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT,
-};
-use diesel::{
-    r2d2::{ConnectionManager, PooledConnection},
-    result::Error::NotFound,
-    ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl,
-};
-use entity::sea_orm::DatabaseConnection;
+use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT};
+use entity::prelude::{CareerInfo, ConsultingFee, IdentityInfo, UserAccount};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
+use entity::{career_info, identity_info};
 use serde::Serialize;
 
 use crate::{
@@ -38,33 +26,39 @@ async fn handle_profile_req(
     account_id: i32,
     profile_op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
-    let account = profile_op.find_account_by_account_id(account_id).await?;
-    let identity_info_option = profile_op
-        .find_identity_info_by_user_account_id(account_id)
+    let email_address_option = profile_op
+        .find_email_address_by_account_id(account_id)
         .await?;
-    if identity_info_option.is_none() {
-        return Ok((
-            StatusCode::OK,
-            Json(ProfileResult::email_address(account.email_address).finish()),
-        ));
+    let email_address = email_address_option.ok_or_else(|| {
+        tracing::error!("no email address (account id: {}) found", account_id);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: NoAccountFound as u32,
+            }),
+        )
+    })?;
+    let identity_option = profile_op
+        .find_identity_by_user_account_id(account_id)
+        .await?;
+    let identity = match identity_option {
+        Some(i) => i,
+        None => {
+            return Ok((
+                StatusCode::OK,
+                Json(ProfileResult::email_address(email_address).finish()),
+            ));
+        }
     };
-    let identity = identity_info_option.map(convert_identity_info_to_identity);
-    let careers_info = profile_op
-        .filter_career_info_by_account_id(account_id)
+    let careers = profile_op.filter_career_by_account_id(account_id).await?;
+    let fee_per_hour_in_yen = profile_op
+        .find_fee_per_hour_in_yen_by_account_id(account_id)
         .await?;
-    let careers = careers_info
-        .into_iter()
-        .map(convert_career_info_to_career)
-        .collect::<Vec<Career>>();
-    let consulting_fee_option = profile_op
-        .find_consulting_fee_by_account_id(account_id)
-        .await?;
-    let fee_per_hour_in_yen = consulting_fee_option.map(|c| c.fee_per_hour_in_yen);
     Ok((
         StatusCode::OK,
         Json(
-            ProfileResult::email_address(account.email_address)
-                .identity(identity)
+            ProfileResult::email_address(email_address)
+                .identity(Some(identity))
                 .careers(careers)
                 .fee_per_hour_in_yen(fee_per_hour_in_yen)
                 .finish(),
@@ -124,70 +118,21 @@ impl ProfileResultBuilder {
     }
 }
 
-fn convert_identity_info_to_identity(identity_info: IdentityInfo) -> Identity {
-    let date = identity_info.date_of_birth;
-    let ymd = Ymd {
-        year: date.year(),
-        month: date.month(),
-        day: date.day(),
-    };
-    Identity {
-        last_name: identity_info.last_name,
-        first_name: identity_info.first_name,
-        last_name_furigana: identity_info.last_name_furigana,
-        first_name_furigana: identity_info.first_name_furigana,
-        date_of_birth: ymd,
-        prefecture: identity_info.prefecture,
-        city: identity_info.city,
-        address_line1: identity_info.address_line1,
-        address_line2: identity_info.address_line2,
-        telephone_number: identity_info.telephone_number,
-    }
-}
-
-fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
-    let career_start_date = Ymd {
-        year: career_info.career_start_date.year(),
-        month: career_info.career_start_date.month(),
-        day: career_info.career_start_date.day(),
-    };
-    let career_end_date = career_info.career_end_date.map(|end_date| Ymd {
-        year: end_date.year(),
-        month: end_date.month(),
-        day: end_date.day(),
-    });
-    Career {
-        id: career_info.career_info_id,
-        company_name: career_info.company_name,
-        department_name: career_info.department_name,
-        office: career_info.office,
-        career_start_date,
-        career_end_date,
-        contract_type: career_info.contract_type,
-        profession: career_info.profession,
-        annual_income_in_man_yen: career_info.annual_income_in_man_yen,
-        is_manager: career_info.is_manager,
-        position_name: career_info.position_name,
-        is_new_graduate: career_info.is_new_graduate,
-        note: career_info.note,
-    }
-}
-
 #[async_trait]
 trait ProfileOperation {
-    async fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp>;
-    async fn find_identity_info_by_user_account_id(
+    async fn find_email_address_by_account_id(
         &self,
         account_id: i32,
-    ) -> Result<Option<IdentityInfo>, ErrResp>;
-    async fn filter_career_info_by_account_id(
+    ) -> Result<Option<String>, ErrResp>;
+    async fn find_identity_by_user_account_id(
         &self,
         account_id: i32,
-    ) -> Result<Vec<CareerInfo>, ErrResp>;
-    async fn find_consulting_fee_by_account_id(
+    ) -> Result<Option<Identity>, ErrResp>;
+    async fn filter_career_by_account_id(&self, account_id: i32) -> Result<Vec<Career>, ErrResp>;
+    async fn find_fee_per_hour_in_yen_by_account_id(
         &self,
         account_id: i32,
-    ) -> Result<Option<ConsultingFee>, ErrResp>;
+    ) -> Result<Option<i32>, ErrResp>;
 }
 
 struct ProfileOperationImpl {
@@ -202,158 +147,188 @@ impl ProfileOperationImpl {
 
 #[async_trait]
 impl ProfileOperation for ProfileOperationImpl {
-    async fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp> {
-        // let result = user_account.find(id).first::<Account>(&self.conn);
-        // match result {
-        //     Ok(account) => Ok(account),
-        //     Err(e) => {
-        //         if e == NotFound {
-        //             Err((
-        //                 StatusCode::BAD_REQUEST,
-        //                 Json(ApiError {
-        //                     code: NoAccountFound as u32,
-        //                 }),
-        //             ))
-        //         } else {
-        //             Err(unexpected_err_resp())
-        //         }
-        //     }
-        // }
-        todo!()
-    }
-
-    async fn find_identity_info_by_user_account_id(
+    async fn find_email_address_by_account_id(
         &self,
         account_id: i32,
-    ) -> Result<Option<IdentityInfo>, ErrResp> {
-        // let result = identity_info_table
-        //     .find(id)
-        //     .first::<IdentityInfo>(&self.conn);
-        // match result {
-        //     Ok(identity_info) => Ok(Some(identity_info)),
-        //     Err(e) => {
-        //         if e == NotFound {
-        //             Ok(None)
-        //         } else {
-        //             Err(unexpected_err_resp())
-        //         }
-        //     }
-        // }
-        todo!()
+    ) -> Result<Option<String>, ErrResp> {
+        let model = UserAccount::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!("failed to find account (account id: {}): {}", account_id, e);
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| m.email_address))
     }
 
-    async fn filter_career_info_by_account_id(
+    async fn find_identity_by_user_account_id(
         &self,
         account_id: i32,
-    ) -> Result<Vec<CareerInfo>, ErrResp> {
-        // let result = career_info_table
-        //     .filter(user_account_id.eq(id))
-        //     .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
-        //     .load::<CareerInfo>(&self.conn)
-        //     .map_err(|e| {
-        //         tracing::error!("failed to filter career info by id {}: {}", id, e);
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(result)
-        todo!()
+    ) -> Result<Option<Identity>, ErrResp> {
+        let model = IdentityInfo::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find IndentityInfo (account id: {}): {}",
+                    account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(ProfileOperationImpl::convert_identity_info_to_identity))
     }
 
-    async fn find_consulting_fee_by_account_id(
+    async fn filter_career_by_account_id(&self, account_id: i32) -> Result<Vec<Career>, ErrResp> {
+        let models = CareerInfo::find()
+            .filter(career_info::Column::UserAccountId.eq(account_id))
+            .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to filter career info (account id: {}): {}",
+                    account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(models
+            .into_iter()
+            .map(ProfileOperationImpl::convert_career_info_to_career)
+            .collect::<Vec<Career>>())
+    }
+
+    async fn find_fee_per_hour_in_yen_by_account_id(
         &self,
         account_id: i32,
-    ) -> Result<Option<ConsultingFee>, ErrResp> {
-        // let result = consulting_fee_table
-        //     .find(id)
-        //     .first::<ConsultingFee>(&self.conn);
-        // match result {
-        //     Ok(consulting_fee) => Ok(Some(consulting_fee)),
-        //     Err(e) => {
-        //         if e == NotFound {
-        //             Ok(None)
-        //         } else {
-        //             Err(unexpected_err_resp())
-        //         }
-        //     }
-        // }
-        todo!()
+    ) -> Result<Option<i32>, ErrResp> {
+        let model = ConsultingFee::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find consulting fee (account id: {}): {}",
+                    account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| m.fee_per_hour_in_yen))
     }
 }
 
-// TODO: 事前準備に用意するデータ (IdentitiInfo、CareerInfo、ConsultingFee) に関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
+impl ProfileOperationImpl {
+    fn convert_identity_info_to_identity(identity_info: identity_info::Model) -> Identity {
+        let date = identity_info.date_of_birth;
+        let ymd = Ymd {
+            year: date.year(),
+            month: date.month(),
+            day: date.day(),
+        };
+        Identity {
+            last_name: identity_info.last_name,
+            first_name: identity_info.first_name,
+            last_name_furigana: identity_info.last_name_furigana,
+            first_name_furigana: identity_info.first_name_furigana,
+            date_of_birth: ymd,
+            prefecture: identity_info.prefecture,
+            city: identity_info.city,
+            address_line1: identity_info.address_line1,
+            address_line2: identity_info.address_line2,
+            telephone_number: identity_info.telephone_number,
+        }
+    }
+
+    fn convert_career_info_to_career(career_info: career_info::Model) -> Career {
+        let career_start_date = Ymd {
+            year: career_info.career_start_date.year(),
+            month: career_info.career_start_date.month(),
+            day: career_info.career_start_date.day(),
+        };
+        let career_end_date = career_info.career_end_date.map(|end_date| Ymd {
+            year: end_date.year(),
+            month: end_date.month(),
+            day: end_date.day(),
+        });
+        Career {
+            career_id: career_info.career_info_id,
+            company_name: career_info.company_name,
+            department_name: career_info.department_name,
+            office: career_info.office,
+            career_start_date,
+            career_end_date,
+            contract_type: career_info.contract_type,
+            profession: career_info.profession,
+            annual_income_in_man_yen: career_info.annual_income_in_man_yen,
+            is_manager: career_info.is_manager,
+            position_name: career_info.position_name,
+            is_new_graduate: career_info.is_new_graduate,
+            note: career_info.note,
+        }
+    }
+}
+
+// TODO: 事前準備に用意するデータ (Career、fee_per_hour_in_yen) に関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
-    use axum::{http::StatusCode, Json};
-    use chrono::{NaiveDate, TimeZone, Utc};
-    use common::{
-        model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo},
-        util::hash_password,
-        ApiError, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT,
-    };
+    use axum::http::StatusCode;
+    use chrono::{Datelike, NaiveDate};
+    use common::ErrResp;
+    use common::MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT;
 
-    use crate::{
-        err::{self, Code::NoAccountFound},
-        profile::{convert_career_info_to_career, convert_identity_info_to_identity},
-        util::Career,
-    };
+    use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
+    use crate::util::{Identity, Ymd};
+    use crate::{err::Code::NoAccountFound, util::Career};
 
     use super::{handle_profile_req, ProfileOperation};
 
     struct ProfileOperationMock {
-        account: Account,
-        identity_info_option: Option<IdentityInfo>,
-        careers_info: Vec<CareerInfo>,
-        consulting_fee_option: Option<ConsultingFee>,
+        email_address_option: Option<String>,
+        identity_option: Option<Identity>,
+        careers: Vec<Career>,
+        fee_per_hour_in_yen_option: Option<i32>,
     }
 
     #[async_trait]
     impl ProfileOperation for ProfileOperationMock {
-        async fn find_account_by_account_id(
-            &self,
-            account_id: i32,
-        ) -> Result<Account, common::ErrResp> {
-            if self.account.user_account_id != account_id {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: NoAccountFound as u32,
-                    }),
-                ));
-            }
-            Ok(self.account.clone())
-        }
-
-        async fn find_identity_info_by_user_account_id(
+        async fn find_email_address_by_account_id(
             &self,
             _account_id: i32,
-        ) -> Result<Option<IdentityInfo>, common::ErrResp> {
-            Ok(self.identity_info_option.clone())
+        ) -> Result<Option<String>, ErrResp> {
+            Ok(self.email_address_option.clone())
         }
 
-        async fn filter_career_info_by_account_id(
+        async fn find_identity_by_user_account_id(
             &self,
             _account_id: i32,
-        ) -> Result<Vec<CareerInfo>, common::ErrResp> {
-            Ok(self.careers_info.clone())
+        ) -> Result<Option<Identity>, ErrResp> {
+            Ok(self.identity_option.clone())
         }
 
-        async fn find_consulting_fee_by_account_id(
+        async fn filter_career_by_account_id(
             &self,
             _account_id: i32,
-        ) -> Result<Option<ConsultingFee>, common::ErrResp> {
-            Ok(self.consulting_fee_option.clone())
+        ) -> Result<Vec<Career>, ErrResp> {
+            Ok(self.careers.clone())
+        }
+
+        async fn find_fee_per_hour_in_yen_by_account_id(
+            &self,
+            _account_id: i32,
+        ) -> Result<Option<i32>, ErrResp> {
+            Ok(self.fee_per_hour_in_yen_option)
         }
     }
 
-    fn create_dummy_identity_info(account_id: i32) -> IdentityInfo {
-        let date = NaiveDate::from_ymd(1990, 4, 5);
-        IdentityInfo {
-            user_account_id: account_id,
+    fn create_dummy_identity(date_of_birth: Ymd) -> Identity {
+        Identity {
             last_name: "田中".to_string(),
             first_name: "太郎".to_string(),
             last_name_furigana: "タナカ".to_string(),
             first_name_furigana: "タロウ".to_string(),
-            date_of_birth: date,
+            date_of_birth,
             prefecture: "東京都".to_string(),
             city: "町田市".to_string(),
             address_line1: "森野2-2-22".to_string(),
@@ -362,15 +337,18 @@ mod tests {
         }
     }
 
-    fn create_dummy_career_info_1(account_id: i32) -> CareerInfo {
-        let start_date = NaiveDate::from_ymd(2013, 4, 1);
-        CareerInfo {
-            career_info_id: 1,
-            user_account_id: account_id,
+    fn create_dummy_career() -> Career {
+        let career_start_date = Ymd {
+            year: 2013,
+            month: 4,
+            day: 1,
+        };
+        Career {
+            career_id: 1,
             company_name: "テスト株式会社".to_string(),
             department_name: None,
             office: None,
-            career_start_date: start_date,
+            career_start_date,
             career_end_date: None,
             contract_type: "regular".to_string(),
             profession: None,
@@ -382,19 +360,28 @@ mod tests {
         }
     }
 
-    fn create_max_num_of_dummy_careers_info(account_id: i32) -> Vec<CareerInfo> {
+    fn create_max_num_of_dummy_careers() -> Vec<Career> {
         let mut careers = Vec::with_capacity(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT as usize);
         let mut start_date = NaiveDate::from_ymd(2013, 4, 1);
         let mut end_date = Some(start_date + chrono::Duration::days(365));
         for i in 0..MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT {
-            let career_info = CareerInfo {
-                career_info_id: (i + 1) as i32,
-                user_account_id: account_id,
+            let career_start_date = Ymd {
+                year: start_date.year(),
+                month: start_date.month(),
+                day: start_date.day(),
+            };
+            let career_end_date = end_date.map(|date| Ymd {
+                year: date.year(),
+                month: date.month(),
+                day: date.day(),
+            });
+            let career = Career {
+                career_id: (i + 1) as i32,
                 company_name: format!("テスト{}株式会社", i + 1),
                 department_name: Some(format!("部署{}", i + 1)),
                 office: Some(format!("事業所{}", i + 1)),
-                career_start_date: start_date,
-                career_end_date: end_date,
+                career_start_date,
+                career_end_date,
                 contract_type: "contract".to_string(),
                 profession: Some(format!("職種{}", i + 1)),
                 annual_income_in_man_yen: Some(((i + 1) * 100) as i32),
@@ -405,39 +392,21 @@ mod tests {
             };
             start_date = end_date.expect("failed to get Ok") + chrono::Duration::days(1);
             end_date = Some(start_date + chrono::Duration::days(30));
-            careers.push(career_info);
+            careers.push(career);
         }
         careers
-    }
-
-    fn create_dummy_consulting_fee(account_id: i32) -> ConsultingFee {
-        ConsultingFee {
-            user_account_id: account_id,
-            fee_per_hour_in_yen: 3000,
-        }
     }
 
     #[tokio::test]
     async fn handle_profile_req_success_return_profile_when_there_is_no_identity() {
         let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
-        };
+        let email_address = "profile.test@test.com".to_string();
+        let email_address_option = Some(email_address.clone());
         let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: None,
-            // ユーザー情報 (IdentityInfo) がない場合、職務経歴と相談料の登録は許可しないので、必ず空VecとNoneとなる
-            careers_info: vec![],
-            consulting_fee_option: None,
+            email_address_option,
+            identity_option: None,
+            careers: vec![],
+            fee_per_hour_in_yen_option: None,
         };
 
         let result = handle_profile_req(account_id, profile_op)
@@ -445,7 +414,7 @@ mod tests {
             .expect("failed to get Ok");
 
         assert_eq!(StatusCode::OK, result.0);
-        assert_eq!(account.email_address, result.1 .0.email_address);
+        assert_eq!(email_address, result.1 .0.email_address);
         assert_eq!(None, result.1 .0.identity);
         let careers: Vec<Career> = vec![];
         assert_eq!(careers, result.1 .0.careers);
@@ -455,26 +424,28 @@ mod tests {
     #[tokio::test]
     async fn handle_profile_req_success_return_profile_with_identity_1career_fee() {
         let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
+        let email_address = "profile.test@test.com".to_string();
+        let email_address_option = Some(email_address.clone());
+
+        let current_date = NaiveDate::from_ymd(2022, 2, 25);
+        let date_of_birth = Ymd {
+            year: current_date.year() - MIN_AGE_REQUIREMENT,
+            month: current_date.month(),
+            day: current_date.day(),
         };
-        let identity_info = create_dummy_identity_info(account_id);
-        let career_info = create_dummy_career_info_1(account_id);
-        let fee = create_dummy_consulting_fee(account_id);
+        let identity = create_dummy_identity(date_of_birth);
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+
+        let career = create_dummy_career();
+        let careers = vec![career];
+
+        let fee_per_hour_in_yen_option = Some(3000);
+
         let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: Some(identity_info.clone()),
-            careers_info: vec![career_info.clone()],
-            consulting_fee_option: Some(fee.clone()),
+            email_address_option,
+            identity_option: Some(identity.clone()),
+            careers: careers.clone(),
+            fee_per_hour_in_yen_option,
         };
 
         let result = handle_profile_req(account_id, profile_op)
@@ -482,45 +453,36 @@ mod tests {
             .expect("failed to get Ok");
 
         assert_eq!(StatusCode::OK, result.0);
-        assert_eq!(account.email_address, result.1 .0.email_address);
-        assert_eq!(
-            Some(convert_identity_info_to_identity(identity_info)),
-            result.1 .0.identity
-        );
-        let careers = vec![career_info.clone()]
-            .into_iter()
-            .map(convert_career_info_to_career)
-            .collect::<Vec<Career>>();
+        assert_eq!(email_address, result.1 .0.email_address);
+        assert_eq!(Some(identity), result.1 .0.identity);
         assert_eq!(careers, result.1 .0.careers);
-        assert_eq!(
-            Some(fee.fee_per_hour_in_yen),
-            result.1 .0.fee_per_hour_in_yen
-        );
+        assert_eq!(fee_per_hour_in_yen_option, result.1 .0.fee_per_hour_in_yen);
     }
 
     #[tokio::test]
     async fn handle_profile_req_success_return_profile_with_identity_max_num_of_careers_fee() {
         let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
+        let email_address = "profile.test@test.com".to_string();
+        let email_address_option = Some(email_address.clone());
+
+        let current_date = NaiveDate::from_ymd(2022, 2, 25);
+        let date_of_birth = Ymd {
+            year: current_date.year() - MIN_AGE_REQUIREMENT,
+            month: current_date.month(),
+            day: current_date.day(),
         };
-        let identity_info = create_dummy_identity_info(account_id);
-        let careers_info = create_max_num_of_dummy_careers_info(account_id);
-        let fee = create_dummy_consulting_fee(account_id);
+        let identity = create_dummy_identity(date_of_birth);
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+
+        let careers = create_max_num_of_dummy_careers();
+
+        let fee_per_hour_in_yen_option = Some(3000);
+
         let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: Some(identity_info.clone()),
-            careers_info: careers_info.clone(),
-            consulting_fee_option: Some(fee.clone()),
+            email_address_option,
+            identity_option: Some(identity.clone()),
+            careers: careers.clone(),
+            fee_per_hour_in_yen_option,
         };
 
         let result = handle_profile_req(account_id, profile_op)
@@ -528,43 +490,32 @@ mod tests {
             .expect("failed to get Ok");
 
         assert_eq!(StatusCode::OK, result.0);
-        assert_eq!(account.email_address, result.1 .0.email_address);
-        assert_eq!(
-            Some(convert_identity_info_to_identity(identity_info)),
-            result.1 .0.identity
-        );
-        let careers = careers_info
-            .into_iter()
-            .map(convert_career_info_to_career)
-            .collect::<Vec<Career>>();
+        assert_eq!(email_address, result.1 .0.email_address);
+        assert_eq!(Some(identity), result.1 .0.identity);
         assert_eq!(careers, result.1 .0.careers);
-        assert_eq!(
-            Some(fee.fee_per_hour_in_yen),
-            result.1 .0.fee_per_hour_in_yen
-        );
+        assert_eq!(fee_per_hour_in_yen_option, result.1 .0.fee_per_hour_in_yen);
     }
 
     #[tokio::test]
     async fn handle_profile_req_success_return_profile_with_identity_without_career_fee() {
         let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
+        let email_address = "profile.test@test.com".to_string();
+        let email_address_option = Some(email_address.clone());
+
+        let current_date = NaiveDate::from_ymd(2022, 2, 25);
+        let date_of_birth = Ymd {
+            year: current_date.year() - MIN_AGE_REQUIREMENT,
+            month: current_date.month(),
+            day: current_date.day(),
         };
-        let identity_info = create_dummy_identity_info(account_id);
+        let identity = create_dummy_identity(date_of_birth);
+        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+
         let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: Some(identity_info.clone()),
-            careers_info: vec![],
-            consulting_fee_option: None,
+            email_address_option,
+            identity_option: Some(identity.clone()),
+            careers: vec![],
+            fee_per_hour_in_yen_option: None,
         };
 
         let result = handle_profile_req(account_id, profile_op)
@@ -572,44 +523,28 @@ mod tests {
             .expect("failed to get Ok");
 
         assert_eq!(StatusCode::OK, result.0);
-        assert_eq!(account.email_address, result.1 .0.email_address);
-        assert_eq!(
-            Some(convert_identity_info_to_identity(identity_info)),
-            result.1 .0.identity
-        );
+        assert_eq!(email_address, result.1 .0.email_address);
+        assert_eq!(Some(identity), result.1 .0.identity);
         let careers: Vec<Career> = vec![];
         assert_eq!(careers, result.1 .0.careers);
         assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
     }
 
     #[tokio::test]
-    async fn handle_profile_req_fail_return_no_account_found() {
-        let account_id = 51351;
-        let email = "profile.test@test.com";
-        let pwd = "vvvvvvvvvV";
-        let hashed_pwd = hash_password(pwd).expect("failed to get Ok");
-        let creation_time = Utc.ymd(2021, 9, 11).and_hms(15, 30, 45);
-        let last_login = creation_time + chrono::Duration::days(1);
-        let account = Account {
-            user_account_id: account_id,
-            email_address: email.to_string(),
-            hashed_password: hashed_pwd,
-            last_login_time: Some(last_login),
-            created_at: creation_time,
-        };
+    async fn handle_profile_req_fail_return_no_email_address_found() {
+        let non_existing_id = 51351;
         let profile_op = ProfileOperationMock {
-            account: account.clone(),
-            identity_info_option: None,
-            careers_info: vec![],
-            consulting_fee_option: None,
+            email_address_option: None,
+            identity_option: None,
+            careers: vec![],
+            fee_per_hour_in_yen_option: None,
         };
-        let non_existing_id = account_id + 1;
 
         let result = handle_profile_req(non_existing_id, profile_op)
             .await
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(err::Code::NoAccountFound as u32, result.1.code);
+        assert_eq!(NoAccountFound as u32, result.1.code);
     }
 }
