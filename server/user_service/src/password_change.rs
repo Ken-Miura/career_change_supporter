@@ -17,11 +17,8 @@ use common::smtp::{
 };
 use common::util::validator::validate_uuid;
 use common::VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE;
-use common::{ApiError, DatabaseConnection, ErrResp, RespResult};
-use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::result::Error::NotFound;
-use diesel::{update, RunQueryDsl};
-use diesel::{ExpressionMethods, PgConnection, QueryDsl};
+use common::{ApiError, ErrResp, RespResult};
+use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
@@ -46,7 +43,7 @@ pub(crate) async fn post_password_change(
     cookies: Cookies,
     Extension(store): Extension<RedisSessionStore>,
     Json(new_pwd): Json<NewPasswordId>,
-    DatabaseConnection(conn): DatabaseConnection,
+    Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<PasswordChangeResult> {
     let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
     if let Some(session_id) = option_cookie {
@@ -54,9 +51,9 @@ pub(crate) async fn post_password_change(
     }
 
     let current_date_time = chrono::Utc::now();
-    let op = PasswordChangeOperationImpl::new(conn);
+    let op = PasswordChangeOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    post_password_change_internal(
+    handle_password_change_req(
         &new_pwd.new_password_id,
         &current_date_time,
         op,
@@ -68,7 +65,7 @@ pub(crate) async fn post_password_change(
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct PasswordChangeResult {}
 
-async fn post_password_change_internal(
+async fn handle_password_change_req(
     new_password_id: &str,
     current_date_time: &DateTime<Utc>,
     op: impl PasswordChangeOperation,
@@ -202,59 +199,62 @@ trait PasswordChangeOperation {
 }
 
 struct PasswordChangeOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
 }
 
 impl PasswordChangeOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
+    fn new(pool: DatabaseConnection) -> Self {
+        Self { pool }
     }
 }
 
 impl PasswordChangeOperation for PasswordChangeOperationImpl {
     fn find_new_password_by_id(&self, new_password_id: &str) -> Result<NewPassword, ErrResp> {
-        let result = new_password
-            .find(new_password_id)
-            .first::<NewPassword>(&self.conn);
-        match result {
-            Ok(new_pwd) => Ok(new_pwd),
-            Err(e) => {
-                if e == NotFound {
-                    Err((
-                        StatusCode::BAD_REQUEST,
-                        Json(ApiError {
-                            code: NoNewPasswordFound as u32,
-                        }),
-                    ))
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
+        // let result = new_password
+        //     .find(new_password_id)
+        //     .first::<NewPassword>(&self.conn);
+        // match result {
+        //     Ok(new_pwd) => Ok(new_pwd),
+        //     Err(e) => {
+        //         if e == NotFound {
+        //             Err((
+        //                 StatusCode::BAD_REQUEST,
+        //                 Json(ApiError {
+        //                     code: NoNewPasswordFound as u32,
+        //                 }),
+        //             ))
+        //         } else {
+        //             Err(unexpected_err_resp())
+        //         }
+        //     }
+        // }
+        todo!()
     }
 
     fn filter_account_by_email_address(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp> {
-        let result = user_account_table
-            .filter(email_address.eq(email_addr))
-            .load::<Account>(&self.conn);
-        match result {
-            Ok(accounts) => Ok(accounts),
-            Err(e) => {
-                tracing::error!("failed to load accounts ({}): {}", email_addr, e);
-                Err(unexpected_err_resp())
-            }
-        }
+        // let result = user_account_table
+        //     .filter(email_address.eq(email_addr))
+        //     .load::<Account>(&self.conn);
+        // match result {
+        //     Ok(accounts) => Ok(accounts),
+        //     Err(e) => {
+        //         tracing::error!("failed to load accounts ({}): {}", email_addr, e);
+        //         Err(unexpected_err_resp())
+        //     }
+        // }
+        todo!()
     }
 
     fn update_password(&self, id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
-        let _ = update(user_account_table.find(id))
-            .set(hashed_password.eq(hashed_pwd))
-            .execute(&self.conn)
-            .map_err(|e| {
-                tracing::error!("failed to update password on id ({}): {}", id, e);
-                unexpected_err_resp()
-            })?;
-        Ok(())
+        // let _ = update(user_account_table.find(id))
+        //     .set(hashed_password.eq(hashed_pwd))
+        //     .execute(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!("failed to update password on id ({}): {}", id, e);
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(())
+        todo!()
     }
 }
 
@@ -277,9 +277,7 @@ mod tests {
 
     use crate::{
         err::Code::{InvalidUuid, NewPasswordExpired, NoAccountFound, NoNewPasswordFound},
-        password_change::{
-            create_text, post_password_change_internal, PasswordChangeResult, SUBJECT,
-        },
+        password_change::{create_text, handle_password_change_req, PasswordChangeResult, SUBJECT},
         util::{session::tests::prepare_session, tests::SendMailMock},
     };
 
@@ -377,7 +375,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_success() {
+    async fn handle_password_change_req_success() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -418,7 +416,7 @@ mod tests {
             new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
 
         let result =
-            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            handle_password_change_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -426,7 +424,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_success_update_to_same_password() {
+    async fn handle_password_change_req_success_update_to_same_password() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -467,7 +465,7 @@ mod tests {
             new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
 
         let result =
-            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            handle_password_change_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -475,7 +473,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_success_case_where_user_has_not_logged_in_yet() {
+    async fn handle_password_change_req_success_case_where_user_has_not_logged_in_yet() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -516,7 +514,7 @@ mod tests {
             new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
 
         let result =
-            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            handle_password_change_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -524,7 +522,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_fail_invalid_uuid() {
+    async fn handle_password_change_req_fail_invalid_uuid() {
         let uuid = "0123456789abcABC".to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -565,7 +563,7 @@ mod tests {
             new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
 
         let result =
-            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            handle_password_change_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -573,7 +571,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_fail_no_account_found() {
+    async fn handle_password_change_req_fail_no_account_found() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -614,7 +612,7 @@ mod tests {
             new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
 
         let result =
-            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            handle_password_change_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -622,7 +620,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_fail_no_new_password_found() {
+    async fn handle_password_change_req_fail_no_new_password_found() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -663,7 +661,7 @@ mod tests {
             new_pwd_created_at + Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE);
 
         let result =
-            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            handle_password_change_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
@@ -671,7 +669,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn password_change_fail_new_password_expired() {
+    async fn handle_password_change_req_fail_new_password_expired() {
         let uuid = Uuid::new_v4().to_simple().to_string();
         let email_addr = "test@test.com";
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
@@ -713,7 +711,7 @@ mod tests {
             + Duration::milliseconds(1);
 
         let result =
-            post_password_change_internal(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+            handle_password_change_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
