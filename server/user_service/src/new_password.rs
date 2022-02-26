@@ -1,13 +1,9 @@
 // Copyright 2021 Ken Miura
 
+use axum::async_trait;
 use axum::extract::Extension;
 use axum::{http::StatusCode, Json};
-use chrono::{DateTime, Utc};
-use common::model::user::NewNewPassword;
-use common::schema::ccs_schema::new_password::dsl::{
-    email_address as new_password_email_addr, new_password as new_password_col,
-};
-use common::schema::ccs_schema::new_password::table as new_password_table;
+use chrono::{DateTime, FixedOffset};
 use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::hash_password;
 use common::{
@@ -15,26 +11,22 @@ use common::{
     ErrResp, RespResult, ValidCred,
 };
 use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE};
-use diesel::dsl::count_star;
-use diesel::query_dsl::filter_dsl::FilterDsl;
-use diesel::query_dsl::select_dsl::SelectDsl;
-use diesel::RunQueryDsl;
-use diesel::{insert_into, ExpressionMethods};
-use diesel::{
-    r2d2::{ConnectionManager, PooledConnection},
-    PgConnection,
+use entity::new_password;
+use entity::prelude::NewPassword;
+use entity::sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    Set,
 };
-use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use uuid::{adapter::Simple, Uuid};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachNewPasswordsLimit;
-use crate::util::WEB_SITE_NAME;
+use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
-const MAX_NUM_OF_NEW_PASSWORDS: i64 = 5;
+const MAX_NUM_OF_NEW_PASSWORDS: usize = 8;
 
 static SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] パスワード変更用URLのお知らせ", WEB_SITE_NAME));
@@ -51,7 +43,7 @@ pub(crate) async fn post_new_password(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<NewPasswordResult> {
     let uuid = Uuid::new_v4().to_simple();
-    let current_date_time = chrono::Utc::now();
+    let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = NewPasswordOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     handle_new_password_req(
@@ -75,7 +67,7 @@ async fn handle_new_password_req(
     password: &str,
     url: &str,
     simple_uuid: &Simple,
-    register_time: &DateTime<Utc>,
+    register_time: &DateTime<FixedOffset>,
     op: impl NewPasswordOperation,
     send_mail: impl SendMail,
 ) -> RespResult<NewPasswordResult> {
@@ -85,37 +77,41 @@ async fn handle_new_password_req(
     })?;
     let uuid = simple_uuid.to_string();
     let uuid_for_url = uuid.clone();
-    let _ = async move {
-        let cnt = op.num_of_new_passwords(email_addr)?;
-        // DBの分離レベルがSerializeでないため、MAX_NUM_OF_NEW_PASSWORDSを超える可能性を考慮し、">="とする
-        if cnt >= MAX_NUM_OF_NEW_PASSWORDS {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: ReachNewPasswordsLimit as u32,
-                }),
-            ));
-        }
-        let new_password = NewNewPassword {
-            new_password_id: &uuid,
-            email_address: email_addr,
-            hashed_password: &hashed_pwd,
-            created_at: register_time,
-        };
-        let _ = op.create_new_password(&new_password);
-        tracing::info!(
-            "{} created new password with id: {} at {}",
-            email_addr,
-            simple_uuid,
-            register_time
-        );
-        Ok(())
+    let cnt = op.num_of_new_passwords(email_addr).await?;
+    // DBの分離レベルがSerializeでないため、MAX_NUM_OF_NEW_PASSWORDSを超える可能性を考慮し、">="とする
+    if cnt >= MAX_NUM_OF_NEW_PASSWORDS {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: ReachNewPasswordsLimit as u32,
+            }),
+        ));
     }
-    .await?;
+    let new_password = NewPasswordReq {
+        new_password_id: uuid,
+        email_address: email_addr.to_string(),
+        hashed_password: hashed_pwd,
+        created_at: *register_time,
+    };
+    let _ = op.create_new_password(new_password).await?;
+    tracing::info!(
+        "{} created new password with id: {} at {}",
+        email_addr,
+        simple_uuid,
+        register_time
+    );
     let text = create_text(url, &uuid_for_url);
     let _ =
         async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
     Ok((StatusCode::OK, Json(NewPasswordResult {})))
+}
+
+#[derive(Clone, Debug)]
+struct NewPasswordReq {
+    new_password_id: String,
+    email_address: String,
+    hashed_password: Vec<u8>,
+    created_at: DateTime<FixedOffset>,
 }
 
 fn create_text(url: &str, uuid_str: &str) -> String {
@@ -139,11 +135,12 @@ Email: {}",
     )
 }
 
+#[async_trait]
 trait NewPasswordOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    fn num_of_new_passwords(&self, email_addr: &str) -> Result<i64, ErrResp>;
-    fn create_new_password(&self, new_password: &NewNewPassword) -> Result<(), ErrResp>;
+    async fn num_of_new_passwords(&self, email_addr: &str) -> Result<usize, ErrResp>;
+    async fn create_new_password(&self, new_password_req: NewPasswordReq) -> Result<(), ErrResp>;
 }
 
 struct NewPasswordOperationImpl {
@@ -156,43 +153,49 @@ impl NewPasswordOperationImpl {
     }
 }
 
+#[async_trait]
 impl NewPasswordOperation for NewPasswordOperationImpl {
-    fn num_of_new_passwords(&self, email_addr: &str) -> Result<i64, ErrResp> {
-        // let cnt = new_password_col
-        //     .filter(new_password_email_addr.eq(email_addr))
-        //     .select(count_star())
-        //     .get_result::<i64>(&self.conn)
-        //     .map_err(|e| {
-        //         tracing::error!("failed to count new password for {}: {}", email_addr, e);
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(cnt)
-        todo!()
+    async fn num_of_new_passwords(&self, email_addr: &str) -> Result<usize, ErrResp> {
+        let num = NewPassword::find()
+            .filter(new_password::Column::EmailAddress.eq(email_addr))
+            .count(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to count new password (email address: {}): {}",
+                    email_addr,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(num)
     }
 
-    fn create_new_password(&self, new_password: &NewNewPassword) -> Result<(), ErrResp> {
-        // let _ = insert_into(new_password_table)
-        //     .values(new_password)
-        //     .execute(&self.conn)
-        //     .map_err(|e| {
-        //         tracing::error!(
-        //             "failed to insert new password (id: {}, email address: {}): {}",
-        //             new_password.new_password_id,
-        //             new_password.email_address,
-        //             e
-        //         );
-        //         unexpected_err_resp()
-        //     });
-        // Ok(())
-        todo!()
+    async fn create_new_password(&self, new_password_req: NewPasswordReq) -> Result<(), ErrResp> {
+        let model = new_password::ActiveModel {
+            new_password_id: Set(new_password_req.new_password_id.clone()),
+            email_address: Set(new_password_req.email_address.clone()),
+            hashed_password: Set(new_password_req.hashed_password),
+            created_at: Set(new_password_req.created_at),
+        };
+        let _ = model.insert(&self.pool).await.map_err(|e| {
+            tracing::error!(
+                "failed to insert new password (id: {}, email address: {}): {}",
+                new_password_req.new_password_id,
+                new_password_req.email_address,
+                e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use chrono::{DateTime, Utc};
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
     use common::{
-        model::user::NewNewPassword,
         smtp::SYSTEM_EMAIL_ADDRESS,
         util::{
             is_password_match,
@@ -205,28 +208,28 @@ mod tests {
     use crate::{
         err::Code::ReachNewPasswordsLimit,
         new_password::{create_text, handle_new_password_req, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT},
-        util::tests::SendMailMock,
+        util::{tests::SendMailMock, JAPANESE_TIME_ZONE},
     };
 
     use axum::http::StatusCode;
 
-    use super::NewPasswordOperation;
+    use super::{NewPasswordOperation, NewPasswordReq};
 
     struct NewPasswordOperationMock<'a> {
-        cnt: i64,
+        cnt: usize,
         uuid: &'a str,
         email_address: &'a str,
         password: &'a str,
-        register_time: &'a DateTime<Utc>,
+        register_time: &'a DateTime<FixedOffset>,
     }
 
     impl<'a> NewPasswordOperationMock<'a> {
         fn new(
-            cnt: i64,
+            cnt: usize,
             uuid: &'a str,
             email_address: &'a str,
             password: &'a str,
-            register_time: &'a DateTime<Utc>,
+            register_time: &'a DateTime<FixedOffset>,
         ) -> Self {
             Self {
                 cnt,
@@ -238,19 +241,23 @@ mod tests {
         }
     }
 
+    #[async_trait]
     impl<'a> NewPasswordOperation for NewPasswordOperationMock<'a> {
-        fn num_of_new_passwords(&self, email_addr: &str) -> Result<i64, ErrResp> {
+        async fn num_of_new_passwords(&self, email_addr: &str) -> Result<usize, ErrResp> {
             assert_eq!(self.email_address, email_addr);
             Ok(self.cnt)
         }
 
-        fn create_new_password(&self, new_password: &NewNewPassword) -> Result<(), ErrResp> {
-            assert_eq!(self.uuid, new_password.new_password_id);
-            assert_eq!(self.email_address, new_password.email_address);
-            let result = is_password_match(self.password, new_password.hashed_password)
+        async fn create_new_password(
+            &self,
+            new_password_req: NewPasswordReq,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.uuid, new_password_req.new_password_id);
+            assert_eq!(self.email_address, new_password_req.email_address);
+            let result = is_password_match(self.password, &new_password_req.hashed_password)
                 .expect("failed to get Ok");
             assert!(result, "password not match");
-            assert_eq!(self.register_time, new_password.created_at);
+            assert_eq!(self.register_time, &new_password_req.created_at);
             Ok(())
         }
     }
@@ -264,7 +271,7 @@ mod tests {
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now();
+        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = NewPasswordOperationMock::new(
             MAX_NUM_OF_NEW_PASSWORDS - 1,
             &uuid_str,
@@ -303,7 +310,7 @@ mod tests {
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now();
+        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = NewPasswordOperationMock::new(
             MAX_NUM_OF_NEW_PASSWORDS,
             &uuid_str,

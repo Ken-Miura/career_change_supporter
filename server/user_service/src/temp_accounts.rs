@@ -13,7 +13,8 @@ use common::{
 use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR};
 use entity::prelude::UserTempAccount;
 use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    Set,
 };
 use entity::user_temp_account;
 use once_cell::sync::Lazy;
@@ -148,9 +149,9 @@ impl TempAccountsOperationImpl {
 #[async_trait]
 impl TempAccountsOperation for TempAccountsOperationImpl {
     async fn num_of_temp_accounts(&self, email_addr: &str) -> Result<usize, ErrResp> {
-        let temp_accounts = UserTempAccount::find()
+        let num = UserTempAccount::find()
             .filter(user_temp_account::Column::EmailAddress.eq(email_addr))
-            .all(&self.pool)
+            .count(&self.pool)
             .await
             .map_err(|e| {
                 tracing::error!(
@@ -160,7 +161,7 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(temp_accounts.len())
+        Ok(num)
     }
 
     async fn create_temp_account(&self, temp_account: &TempAccount) -> Result<(), ErrResp> {
