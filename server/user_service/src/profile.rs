@@ -1,6 +1,6 @@
 // Copyright 2021 Ken Miura
 
-use axum::{http::StatusCode, Json};
+use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
 use common::{
     model::user::{Account, CareerInfo, ConsultingFee, IdentityInfo},
@@ -10,13 +10,14 @@ use common::{
         identity_info::dsl::identity_info as identity_info_table,
         user_account::dsl::user_account,
     },
-    ApiError, DatabaseConnection, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT,
+    ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT,
 };
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     result::Error::NotFound,
     ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl,
 };
+use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
 use crate::{
@@ -26,9 +27,9 @@ use crate::{
 
 pub(crate) async fn get_profile(
     User { account_id }: User,
-    DatabaseConnection(conn): DatabaseConnection,
+    Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<ProfileResult> {
-    let profile_op = ProfileOperationImpl::new(conn);
+    let profile_op = ProfileOperationImpl::new(pool);
     handle_profile_req(account_id, profile_op).await
 }
 
@@ -36,7 +37,7 @@ async fn handle_profile_req(
     account_id: i32,
     profile_op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
-    let account = profile_op.find_user_account_by_user_account_id(account_id)?;
+    let account = profile_op.find_account_by_account_id(account_id)?;
     let identity_info_option = profile_op.find_identity_info_by_user_account_id(account_id)?;
     if identity_info_option.is_none() {
         return Ok((
@@ -45,12 +46,12 @@ async fn handle_profile_req(
         ));
     };
     let identity = identity_info_option.map(convert_identity_info_to_identity);
-    let careers_info = profile_op.filter_career_info_by_user_account_id(account_id)?;
+    let careers_info = profile_op.filter_career_info_by_account_id(account_id)?;
     let careers = careers_info
         .into_iter()
         .map(convert_career_info_to_career)
         .collect::<Vec<Career>>();
-    let consulting_fee_option = profile_op.find_consulting_fee_by_user_account_id(account_id)?;
+    let consulting_fee_option = profile_op.find_consulting_fee_by_account_id(account_id)?;
     let fee_per_hour_in_yen = consulting_fee_option.map(|c| c.fee_per_hour_in_yen);
     Ok((
         StatusCode::OK,
@@ -166,96 +167,104 @@ fn convert_career_info_to_career(career_info: CareerInfo) -> Career {
 }
 
 trait ProfileOperation {
-    fn find_user_account_by_user_account_id(&self, id: i32) -> Result<Account, ErrResp>;
+    fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp>;
     fn find_identity_info_by_user_account_id(
         &self,
-        id: i32,
+        account_id: i32,
     ) -> Result<Option<IdentityInfo>, ErrResp>;
-    fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp>;
-    fn find_consulting_fee_by_user_account_id(
+    fn filter_career_info_by_account_id(&self, account_id: i32)
+        -> Result<Vec<CareerInfo>, ErrResp>;
+    fn find_consulting_fee_by_account_id(
         &self,
-        id: i32,
+        account_id: i32,
     ) -> Result<Option<ConsultingFee>, ErrResp>;
 }
 
 struct ProfileOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
 }
 
 impl ProfileOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
+    fn new(pool: DatabaseConnection) -> Self {
+        Self { pool }
     }
 }
 
 impl ProfileOperation for ProfileOperationImpl {
-    fn find_user_account_by_user_account_id(&self, id: i32) -> Result<Account, ErrResp> {
-        let result = user_account.find(id).first::<Account>(&self.conn);
-        match result {
-            Ok(account) => Ok(account),
-            Err(e) => {
-                if e == NotFound {
-                    Err((
-                        StatusCode::BAD_REQUEST,
-                        Json(ApiError {
-                            code: NoAccountFound as u32,
-                        }),
-                    ))
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
+    fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, ErrResp> {
+        // let result = user_account.find(id).first::<Account>(&self.conn);
+        // match result {
+        //     Ok(account) => Ok(account),
+        //     Err(e) => {
+        //         if e == NotFound {
+        //             Err((
+        //                 StatusCode::BAD_REQUEST,
+        //                 Json(ApiError {
+        //                     code: NoAccountFound as u32,
+        //                 }),
+        //             ))
+        //         } else {
+        //             Err(unexpected_err_resp())
+        //         }
+        //     }
+        // }
+        todo!()
     }
 
     fn find_identity_info_by_user_account_id(
         &self,
-        id: i32,
+        account_id: i32,
     ) -> Result<Option<IdentityInfo>, ErrResp> {
-        let result = identity_info_table
-            .find(id)
-            .first::<IdentityInfo>(&self.conn);
-        match result {
-            Ok(identity_info) => Ok(Some(identity_info)),
-            Err(e) => {
-                if e == NotFound {
-                    Ok(None)
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
+        // let result = identity_info_table
+        //     .find(id)
+        //     .first::<IdentityInfo>(&self.conn);
+        // match result {
+        //     Ok(identity_info) => Ok(Some(identity_info)),
+        //     Err(e) => {
+        //         if e == NotFound {
+        //             Ok(None)
+        //         } else {
+        //             Err(unexpected_err_resp())
+        //         }
+        //     }
+        // }
+        todo!()
     }
 
-    fn filter_career_info_by_user_account_id(&self, id: i32) -> Result<Vec<CareerInfo>, ErrResp> {
-        let result = career_info_table
-            .filter(user_account_id.eq(id))
-            .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
-            .load::<CareerInfo>(&self.conn)
-            .map_err(|e| {
-                tracing::error!("failed to filter career info by id {}: {}", id, e);
-                unexpected_err_resp()
-            })?;
-        Ok(result)
-    }
-
-    fn find_consulting_fee_by_user_account_id(
+    fn filter_career_info_by_account_id(
         &self,
-        id: i32,
+        account_id: i32,
+    ) -> Result<Vec<CareerInfo>, ErrResp> {
+        // let result = career_info_table
+        //     .filter(user_account_id.eq(id))
+        //     .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
+        //     .load::<CareerInfo>(&self.conn)
+        //     .map_err(|e| {
+        //         tracing::error!("failed to filter career info by id {}: {}", id, e);
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(result)
+        todo!()
+    }
+
+    fn find_consulting_fee_by_account_id(
+        &self,
+        account_id: i32,
     ) -> Result<Option<ConsultingFee>, ErrResp> {
-        let result = consulting_fee_table
-            .find(id)
-            .first::<ConsultingFee>(&self.conn);
-        match result {
-            Ok(consulting_fee) => Ok(Some(consulting_fee)),
-            Err(e) => {
-                if e == NotFound {
-                    Ok(None)
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
+        // let result = consulting_fee_table
+        //     .find(id)
+        //     .first::<ConsultingFee>(&self.conn);
+        // match result {
+        //     Ok(consulting_fee) => Ok(Some(consulting_fee)),
+        //     Err(e) => {
+        //         if e == NotFound {
+        //             Ok(None)
+        //         } else {
+        //             Err(unexpected_err_resp())
+        //         }
+        //     }
+        // }
+        todo!()
     }
 }
 
@@ -286,11 +295,8 @@ mod tests {
     }
 
     impl ProfileOperation for ProfileOperationMock {
-        fn find_user_account_by_user_account_id(
-            &self,
-            id: i32,
-        ) -> Result<Account, common::ErrResp> {
-            if self.account.user_account_id != id {
+        fn find_account_by_account_id(&self, account_id: i32) -> Result<Account, common::ErrResp> {
+            if self.account.user_account_id != account_id {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
@@ -303,21 +309,21 @@ mod tests {
 
         fn find_identity_info_by_user_account_id(
             &self,
-            _id: i32,
+            _account_id: i32,
         ) -> Result<Option<IdentityInfo>, common::ErrResp> {
             Ok(self.identity_info_option.clone())
         }
 
-        fn filter_career_info_by_user_account_id(
+        fn filter_career_info_by_account_id(
             &self,
-            _id: i32,
+            _account_id: i32,
         ) -> Result<Vec<CareerInfo>, common::ErrResp> {
             Ok(self.careers_info.clone())
         }
 
-        fn find_consulting_fee_by_user_account_id(
+        fn find_consulting_fee_by_account_id(
             &self,
-            _id: i32,
+            _account_id: i32,
         ) -> Result<Option<ConsultingFee>, common::ErrResp> {
             Ok(self.consulting_fee_option.clone())
         }
