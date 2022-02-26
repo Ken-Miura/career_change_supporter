@@ -59,7 +59,7 @@ async fn handle_agreement_req(
             &account.email_address,
             account_id,
             version,
-            agreement_date
+            agreement_date.with_timezone(&JAPANESE_TIME_ZONE.to_owned())
         );
         return Err((
             StatusCode::BAD_REQUEST,
