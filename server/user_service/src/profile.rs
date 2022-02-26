@@ -29,10 +29,10 @@ pub(crate) async fn get_profile(
     DatabaseConnection(conn): DatabaseConnection,
 ) -> RespResult<ProfileResult> {
     let profile_op = ProfileOperationImpl::new(conn);
-    get_profile_internal(account_id, profile_op).await
+    handle_profile_req(account_id, profile_op).await
 }
 
-async fn get_profile_internal(
+async fn handle_profile_req(
     account_id: i32,
     profile_op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
@@ -276,7 +276,7 @@ mod tests {
         util::Career,
     };
 
-    use super::{get_profile_internal, ProfileOperation};
+    use super::{handle_profile_req, ProfileOperation};
 
     struct ProfileOperationMock {
         account: Account,
@@ -396,7 +396,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn success_return_profile_when_there_is_no_identity() {
+    async fn handle_profile_req_success_return_profile_when_there_is_no_identity() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -418,7 +418,7 @@ mod tests {
             consulting_fee_option: None,
         };
 
-        let result = get_profile_internal(account_id, profile_op)
+        let result = handle_profile_req(account_id, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -431,7 +431,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn success_return_profile_with_identity_1career_fee() {
+    async fn handle_profile_req_success_return_profile_with_identity_1career_fee() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -455,7 +455,7 @@ mod tests {
             consulting_fee_option: Some(fee.clone()),
         };
 
-        let result = get_profile_internal(account_id, profile_op)
+        let result = handle_profile_req(account_id, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -477,7 +477,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn success_return_profile_with_identity_max_num_of_careers_fee() {
+    async fn handle_profile_req_success_return_profile_with_identity_max_num_of_careers_fee() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -501,7 +501,7 @@ mod tests {
             consulting_fee_option: Some(fee.clone()),
         };
 
-        let result = get_profile_internal(account_id, profile_op)
+        let result = handle_profile_req(account_id, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -523,7 +523,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn success_return_profile_with_identity_without_career_fee() {
+    async fn handle_profile_req_success_return_profile_with_identity_without_career_fee() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -545,7 +545,7 @@ mod tests {
             consulting_fee_option: None,
         };
 
-        let result = get_profile_internal(account_id, profile_op)
+        let result = handle_profile_req(account_id, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -561,7 +561,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fail_return_no_account_found() {
+    async fn handle_profile_req_fail_return_no_account_found() {
         let account_id = 51351;
         let email = "profile.test@test.com";
         let pwd = "vvvvvvvvvV";
@@ -583,7 +583,7 @@ mod tests {
         };
         let non_existing_id = account_id + 1;
 
-        let result = get_profile_internal(non_existing_id, profile_op)
+        let result = handle_profile_req(non_existing_id, profile_op)
             .await
             .expect_err("failed to get Err");
 
