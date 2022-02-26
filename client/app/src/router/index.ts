@@ -100,7 +100,7 @@ const routes: Array<RouteRecordRaw> = [
     component: IdentityPage
   },
   {
-    path: '/careers/:id',
+    path: '/careers/:career_id',
     name: 'EditCareerPage',
     component: EditCareerPage
   },

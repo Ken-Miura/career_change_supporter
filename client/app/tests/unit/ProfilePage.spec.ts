@@ -330,7 +330,7 @@ describe('ProfilePage.vue', () => {
     }
     const career = {
       /* eslint-disable camelcase */
-      id: 203,
+      career_id: 203,
       company_name: 'テスト株式会社',
       department_name: '営業部',
       office: '町田オフィス',
@@ -577,7 +577,7 @@ describe('ProfilePage.vue', () => {
     }
     const career = {
       /* eslint-disable camelcase */
-      id: 203,
+      career_id: 203,
       company_name: 'テスト株式会社',
       department_name: '営業部',
       office: '町田オフィス',
@@ -624,7 +624,7 @@ describe('ProfilePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "EditCareerPage", "params": {"id": ${career.id}}}`)
+    const data = JSON.parse(`{"name": "EditCareerPage", "params": {"career_id": ${career.career_id}}}`)
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -780,7 +780,7 @@ function createMaxNumDummyCareers (): Career[] {
     }
     const career = {
       /* eslint-disable camelcase */
-      id: i + 1,
+      career_id: i + 1,
       company_name: `テスト${i}株式会社`,
       department_name: '営業部',
       office: '町田オフィス',
