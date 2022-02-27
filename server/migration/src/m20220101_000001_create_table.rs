@@ -123,17 +123,16 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* 一度パスワード変更依頼を出した後、もう一度パスワード変更依頼を出したいケースを考慮し、email_addressをUNIQUEにしない。new_password_idがPRIMARY KEYなので一意に検索は可能 */
-            .execute(sql.stmt(r"CREATE TABLE ccs_schema.new_password (
-                new_password_id ccs_schema.uuid_simple_form PRIMARY KEY,
+            /* 一度パスワード変更依頼を出した後、もう一度パスワード変更依頼を出したいケースを考慮し、email_addressをUNIQUEにしない。pwd_change_req_idがPRIMARY KEYなので一意に検索は可能 */
+            .execute(sql.stmt(r"CREATE TABLE ccs_schema.pwd_change_req (
+                pwd_change_req_id ccs_schema.uuid_simple_form PRIMARY KEY,
                 email_address ccs_schema.email_address NOT NULL,
-                hashed_password BYTEA NOT NULL,
-                created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                requested_at TIMESTAMP WITH TIME ZONE NOT NULL
               );"))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.new_password To user_app;"))
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.pwd_change_req To user_app;"))
             .await
             .map(|_| ())?;
 

@@ -9,7 +9,7 @@ pub mod career_info;
 pub mod consulting_fee;
 pub mod create_identity_info_req;
 pub mod identity_info;
-pub mod new_password;
+pub mod pwd_change_req;
 pub mod tenant;
 pub mod terms_of_use;
 pub mod update_identity_info_req;

@@ -3,13 +3,12 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "new_password", schema_name = "ccs_schema")]
+#[sea_orm(table_name = "pwd_change_req", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub new_password_id: String,
+    pub pwd_change_req_id: String,
     pub email_address: String,
-    pub hashed_password: Vec<u8>,
-    pub created_at: DateTimeWithTimeZone,
+    pub requested_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

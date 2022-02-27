@@ -5,7 +5,7 @@ pub use super::career_info::Entity as CareerInfo;
 pub use super::consulting_fee::Entity as ConsultingFee;
 pub use super::create_identity_info_req::Entity as CreateIdentityInfoReq;
 pub use super::identity_info::Entity as IdentityInfo;
-pub use super::new_password::Entity as NewPassword;
+pub use super::pwd_change_req::Entity as PwdChangeReq;
 pub use super::tenant::Entity as Tenant;
 pub use super::terms_of_use::Entity as TermsOfUse;
 pub use super::update_identity_info_req::Entity as UpdateIdentityInfoReq;
