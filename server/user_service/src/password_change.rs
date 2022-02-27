@@ -2,23 +2,23 @@
 
 use async_redis_session::RedisSessionStore;
 use async_session::SessionStore;
+use axum::async_trait;
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
-use chrono::Duration;
-use chrono::{DateTime, Utc};
-use common::model::user::Account;
-use common::model::user::NewPassword;
-use common::schema::ccs_schema::new_password::dsl::new_password;
-use common::schema::ccs_schema::user_account::dsl::email_address;
-use common::schema::ccs_schema::user_account::{hashed_password, table as user_account_table};
+use chrono::DateTime;
+use chrono::{Duration, FixedOffset};
 use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::validator::validate_uuid;
 use common::VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE;
 use common::{ApiError, ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use entity::prelude::{NewPassword, UserAccount};
+use entity::sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+};
+use entity::{new_password, user_account};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
@@ -27,7 +27,7 @@ use tower_cookies::Cookies;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{InvalidUuid, NewPasswordExpired, NoAccountFound, NoNewPasswordFound};
 use crate::util::session::SESSION_ID_COOKIE_NAME;
-use crate::util::WEB_SITE_NAME;
+use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
@@ -42,7 +42,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 pub(crate) async fn post_password_change(
     cookies: Cookies,
     Extension(store): Extension<RedisSessionStore>,
-    Json(new_pwd): Json<NewPasswordId>,
+    Json(new_pwd): Json<NewPasswordReqId>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<PasswordChangeResult> {
     let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
@@ -50,7 +50,7 @@ pub(crate) async fn post_password_change(
         let _ = destroy_session_if_exists(session_id.value(), &store).await?;
     }
 
-    let current_date_time = chrono::Utc::now();
+    let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = PasswordChangeOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     handle_password_change_req(
@@ -67,7 +67,7 @@ pub(crate) struct PasswordChangeResult {}
 
 async fn handle_password_change_req(
     new_password_id: &str,
-    current_date_time: &DateTime<Utc>,
+    current_date_time: &DateTime<FixedOffset>,
     op: impl PasswordChangeOperation,
     send_mail: impl SendMail,
 ) -> RespResult<PasswordChangeResult> {
@@ -80,35 +80,72 @@ async fn handle_password_change_req(
             }),
         )
     })?;
-    let email_addr = async move {
-        let new_pwd = op.find_new_password_by_id(new_password_id)?;
-        let duration = *current_date_time - new_pwd.created_at;
-        if duration > Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE) {
-            tracing::error!(
-                "new password (created at {}) already expired at {}",
-                &new_pwd.created_at,
-                current_date_time
-            );
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: NewPasswordExpired as u32,
-                }),
-            ));
-        }
-        let account = find_account_by_email_address(&new_pwd.email_address, &op)?;
-        let _ = op.update_password(account.user_account_id, &new_pwd.hashed_password)?;
-        tracing::info!(
-            "{} changed password at {}",
-            new_pwd.email_address,
+    let new_pwd_option = op.find_new_password_by_id(new_password_id).await?;
+    let new_pwd = new_pwd_option.ok_or_else(|| {
+        tracing::error!("no id ({}) found", new_password_id);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: NoNewPasswordFound as u32,
+            }),
+        )
+    })?;
+    let duration = *current_date_time - new_pwd.created_at;
+    if duration > Duration::minutes(VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE) {
+        tracing::error!(
+            "new password (created at {}) already expired at {}",
+            &new_pwd.created_at,
             current_date_time
         );
-        Ok(new_pwd.email_address)
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: NewPasswordExpired as u32,
+            }),
+        ));
+    }
+    let account_ids = op
+        .filter_account_id_by_email_address(&new_pwd.email_address)
+        .await?;
+    let cnt = account_ids.len();
+    if cnt > 1 {
+        tracing::error!(
+            "found multiple accounts (email address: {})",
+            &new_pwd.email_address
+        );
+        return Err(unexpected_err_resp());
+    }
+    let account_id = account_ids.get(0).cloned().ok_or_else(|| {
+        tracing::error!(
+            "user account (email address: {}) does not exist",
+            &new_pwd.email_address
+        );
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: NoAccountFound as u32,
+            }),
+        )
+    })?;
+    let _ = op
+        .update_password(account_id, &new_pwd.hashed_password)
+        .await?;
+    tracing::info!(
+        "{} changed password at {}",
+        new_pwd.email_address,
+        current_date_time
+    );
+
+    let text = create_text();
+    let _ = async {
+        send_mail.send_mail(
+            &new_pwd.email_address,
+            SYSTEM_EMAIL_ADDRESS,
+            &SUBJECT,
+            &text,
+        )
     }
     .await?;
-    let text = create_text();
-    let _ =
-        async { send_mail.send_mail(&email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
     Ok((StatusCode::OK, Json(PasswordChangeResult {})))
 }
 
@@ -141,36 +178,8 @@ async fn destroy_session_if_exists(
     Ok(())
 }
 
-fn find_account_by_email_address(
-    email_addr: &str,
-    op: &impl PasswordChangeOperation,
-) -> Result<Account, ErrResp> {
-    let accounts = op.filter_account_by_email_address(email_addr)?;
-    let cnt = accounts.len();
-    if cnt == 0 {
-        tracing::error!(
-            "failed to change password: user account ({}) does not exist",
-            email_addr
-        );
-        Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: NoAccountFound as u32,
-            }),
-        ))
-    } else if cnt == 1 {
-        Ok(accounts[0].clone())
-    } else {
-        tracing::error!(
-            "failed to change password: found multiple accounts: {}",
-            email_addr
-        );
-        Err(unexpected_err_resp())
-    }
-}
-
 #[derive(Deserialize)]
-pub(crate) struct NewPasswordId {
+pub(crate) struct NewPasswordReqId {
     #[serde(rename = "new-password-id")]
     new_password_id: String,
 }
@@ -190,12 +199,26 @@ Email: {}",
     )
 }
 
+#[async_trait]
 trait PasswordChangeOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    fn find_new_password_by_id(&self, new_password_id: &str) -> Result<NewPassword, ErrResp>;
-    fn filter_account_by_email_address(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp>;
-    fn update_password(&self, id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp>;
+    async fn find_new_password_by_id(
+        &self,
+        new_password_id: &str,
+    ) -> Result<Option<NewPasswordReq>, ErrResp>;
+    async fn filter_account_id_by_email_address(
+        &self,
+        email_addr: &str,
+    ) -> Result<Vec<i32>, ErrResp>;
+    async fn update_password(&self, account_id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp>;
+}
+
+#[derive(Clone, Debug)]
+struct NewPasswordReq {
+    email_address: String,
+    hashed_password: Vec<u8>,
+    created_at: DateTime<FixedOffset>,
 }
 
 struct PasswordChangeOperationImpl {
@@ -208,64 +231,78 @@ impl PasswordChangeOperationImpl {
     }
 }
 
+#[async_trait]
 impl PasswordChangeOperation for PasswordChangeOperationImpl {
-    fn find_new_password_by_id(&self, new_password_id: &str) -> Result<NewPassword, ErrResp> {
-        // let result = new_password
-        //     .find(new_password_id)
-        //     .first::<NewPassword>(&self.conn);
-        // match result {
-        //     Ok(new_pwd) => Ok(new_pwd),
-        //     Err(e) => {
-        //         if e == NotFound {
-        //             Err((
-        //                 StatusCode::BAD_REQUEST,
-        //                 Json(ApiError {
-        //                     code: NoNewPasswordFound as u32,
-        //                 }),
-        //             ))
-        //         } else {
-        //             Err(unexpected_err_resp())
-        //         }
-        //     }
-        // }
-        todo!()
+    async fn find_new_password_by_id(
+        &self,
+        new_password_id: &str,
+    ) -> Result<Option<NewPasswordReq>, ErrResp> {
+        let model = NewPassword::find_by_id(new_password_id.to_string())
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find new password (new password id: {}): {}",
+                    new_password_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| NewPasswordReq {
+            email_address: m.email_address,
+            hashed_password: m.hashed_password,
+            created_at: m.created_at,
+        }))
     }
 
-    fn filter_account_by_email_address(&self, email_addr: &str) -> Result<Vec<Account>, ErrResp> {
-        // let result = user_account_table
-        //     .filter(email_address.eq(email_addr))
-        //     .load::<Account>(&self.conn);
-        // match result {
-        //     Ok(accounts) => Ok(accounts),
-        //     Err(e) => {
-        //         tracing::error!("failed to load accounts ({}): {}", email_addr, e);
-        //         Err(unexpected_err_resp())
-        //     }
-        // }
-        todo!()
+    async fn filter_account_id_by_email_address(
+        &self,
+        email_addr: &str,
+    ) -> Result<Vec<i32>, ErrResp> {
+        let models = UserAccount::find()
+            .filter(user_account::Column::EmailAddress.eq(email_addr))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to filter account id (email address: {}): {}",
+                    email_addr,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(models
+            .into_iter()
+            .map(|m| m.user_account_id)
+            .collect::<Vec<i32>>())
     }
 
-    fn update_password(&self, id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
-        // let _ = update(user_account_table.find(id))
-        //     .set(hashed_password.eq(hashed_pwd))
-        //     .execute(&self.conn)
-        //     .map_err(|e| {
-        //         tracing::error!("failed to update password on id ({}): {}", id, e);
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(())
-        todo!()
+    async fn update_password(&self, account_id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
+        let model = user_account::ActiveModel {
+            user_account_id: Set(account_id),
+            hashed_password: Set(hashed_pwd.to_vec()),
+            ..Default::default()
+        };
+        let _ = model.update(&self.pool).await.map_err(|e| {
+            tracing::error!(
+                "failed to update password (account id: {}): {}",
+                account_id,
+                e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use async_session::MemoryStore;
+    use axum::async_trait;
     use axum::http::StatusCode;
     use axum::Json;
     use chrono::{DateTime, Duration, TimeZone, Utc};
     use common::{
-        model::user::{Account, NewPassword},
         smtp::SYSTEM_EMAIL_ADDRESS,
         util::{
             hash_password, is_password_match,
@@ -281,7 +318,7 @@ mod tests {
         util::{session::tests::prepare_session, tests::SendMailMock},
     };
 
-    use super::{destroy_session_if_exists, PasswordChangeOperation};
+    use super::{destroy_session_if_exists, Account, NewPasswordReq, PasswordChangeOperation};
 
     struct PasswordChangeOperationMock {
         asserted_params: AssertedParams,
@@ -289,7 +326,7 @@ mod tests {
     }
 
     struct AssertedParams {
-        new_password: NewPassword,
+        new_password: NewPasswordReq,
         user_account_id: i32,
         email_address: String,
         old_pwd: String,
@@ -312,8 +349,12 @@ mod tests {
         }
     }
 
+    #[async_trait]
     impl PasswordChangeOperation for PasswordChangeOperationMock {
-        fn find_new_password_by_id(&self, new_password_id: &str) -> Result<NewPassword, ErrResp> {
+        async fn find_new_password_by_id(
+            &self,
+            new_password_id: &str,
+        ) -> Result<Option<NewPasswordReq>, ErrResp> {
             if self.test_case_params.no_new_password_found {
                 return Err((
                     StatusCode::BAD_REQUEST,
@@ -329,10 +370,10 @@ mod tests {
             Ok(self.asserted_params.new_password.clone())
         }
 
-        fn filter_account_by_email_address(
+        async fn filter_account_id_by_email_address(
             &self,
             email_addr: &str,
-        ) -> Result<Vec<Account>, ErrResp> {
+        ) -> Result<Vec<i32>, ErrResp> {
             if self.test_case_params.no_account_found {
                 return Err((
                     StatusCode::BAD_REQUEST,
@@ -355,7 +396,7 @@ mod tests {
             Ok(vec![account])
         }
 
-        fn update_password(&self, id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
+        async fn update_password(&self, account_id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
             assert_eq!(self.asserted_params.user_account_id, id);
             assert_eq!(
                 self.asserted_params.new_password.hashed_password,
@@ -383,7 +424,7 @@ mod tests {
         let _ = validate_password(new_pwd).expect("failed to get Ok");
         let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
         let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
-        let new_password = NewPassword {
+        let new_password = NewPasswordReq {
             new_password_id: uuid.clone(),
             email_address: email_addr.to_string(),
             hashed_password: hashed_new_pwd,
@@ -432,7 +473,7 @@ mod tests {
         let _ = validate_password(new_pwd).expect("failed to get Ok");
         let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
         let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
-        let new_password = NewPassword {
+        let new_password = NewPasswordReq {
             new_password_id: uuid.clone(),
             email_address: email_addr.to_string(),
             hashed_password: hashed_new_pwd,
@@ -481,7 +522,7 @@ mod tests {
         let _ = validate_password(new_pwd).expect("failed to get Ok");
         let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
         let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
-        let new_password = NewPassword {
+        let new_password = NewPasswordReq {
             new_password_id: uuid.clone(),
             email_address: email_addr.to_string(),
             hashed_password: hashed_new_pwd,
@@ -530,7 +571,7 @@ mod tests {
         let _ = validate_password(new_pwd).expect("failed to get Ok");
         let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
         let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
-        let new_password = NewPassword {
+        let new_password = NewPasswordReq {
             new_password_id: uuid.clone(),
             email_address: email_addr.to_string(),
             hashed_password: hashed_new_pwd,
@@ -579,7 +620,7 @@ mod tests {
         let _ = validate_password(new_pwd).expect("failed to get Ok");
         let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
         let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
-        let new_password = NewPassword {
+        let new_password = NewPasswordReq {
             new_password_id: uuid.clone(),
             email_address: email_addr.to_string(),
             hashed_password: hashed_new_pwd,
@@ -628,7 +669,7 @@ mod tests {
         let _ = validate_password(new_pwd).expect("failed to get Ok");
         let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
         let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
-        let new_password = NewPassword {
+        let new_password = NewPasswordReq {
             new_password_id: uuid.clone(),
             email_address: email_addr.to_string(),
             hashed_password: hashed_new_pwd,
@@ -665,7 +706,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(NoNewPasswordFound as u32, resp.1.code);
+        assert_eq!(NoNewPasswordReqFound as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -677,7 +718,7 @@ mod tests {
         let _ = validate_password(new_pwd).expect("failed to get Ok");
         let hashed_new_pwd = hash_password(new_pwd).expect("failed to hash password");
         let new_pwd_created_at = chrono::Utc.ymd(2021, 11, 14).and_hms(21, 22, 40);
-        let new_password = NewPassword {
+        let new_password = NewPasswordReq {
             new_password_id: uuid.clone(),
             email_address: email_addr.to_string(),
             hashed_password: hashed_new_pwd,
@@ -715,7 +756,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(NewPasswordExpired as u32, resp.1.code);
+        assert_eq!(NewPasswordReqExpired as u32, resp.1.code);
     }
 
     #[tokio::test]
