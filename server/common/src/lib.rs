@@ -5,7 +5,7 @@
 #[macro_use]
 extern crate diesel;
 
-mod err;
+pub mod err;
 pub mod model;
 pub mod payment_platform;
 pub mod redis;
@@ -150,24 +150,6 @@ where
     }
 }
 
-/// dieselのトランザクション内で発生したエラー<br>
-/// <br>
-/// アプリケーションに関連するエラーの場合、[TransactionErr::ApplicationErr]を、
-/// データベースアクセスに関連するエラー（diesel api呼び出しの結果のエラー）の場合、[TransactionErr::DatabaseErr]を利用する。<br>
-/// <br>
-/// NOTE: dieselのトランザクションは、エラーとしてFrom\<diesel::result::Error\>を実装した型を要求しているため、ErrRespを直接返却することができない。
-/// そのため、[TransactionErr]が必要となる。
-pub enum TransactionErr {
-    ApplicationErr(ErrResp),
-    DatabaseErr(diesel::result::Error),
-}
-
-impl From<diesel::result::Error> for TransactionErr {
-    fn from(e: diesel::result::Error) -> Self {
-        TransactionErr::DatabaseErr(e)
-    }
-}
-
 pub const KEY_TO_URL_FOR_FRONT_END: &str = "URL_FOR_FRONT_END";
 
 pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
@@ -183,9 +165,9 @@ pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
 /// [VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR] 丁度の期間は有効期限に含む
 pub const VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR: i64 = 24;
 
-/// 分単位での新規パスワードの有効期限<br>
-/// [VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE] 丁度の期間は有効期限に含む
-pub const VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE: i64 = 10;
+/// 分単位でのパスワード変更要求の有効期限<br>
+/// [VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE] 丁度の期間は有効期限に含む
+pub const VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE: i64 = 10;
 
 /// 1アカウント当たりに登録可能な職務経歴情報の最大数
 pub const MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT: u64 = 8;

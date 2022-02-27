@@ -6,8 +6,8 @@ mod err;
 mod identity;
 mod login;
 mod logout;
-mod new_password;
-mod password_change;
+mod password_change_req;
+mod password_update;
 mod profile;
 mod refresh;
 mod rewards;
@@ -19,8 +19,8 @@ use crate::agreement::post_agreement;
 use crate::identity::post_identity;
 use crate::login::post_login;
 use crate::logout::post_logout;
-use crate::new_password::post_new_password;
-use crate::password_change::post_password_change;
+use crate::password_change_req::post_password_change_req;
+use crate::password_update::post_password_update;
 use crate::profile::get_profile;
 use crate::refresh::get_refresh;
 use crate::rewards::get_reward;
@@ -121,8 +121,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/logout", post(post_logout))
                 .route("/refresh", get(get_refresh))
                 .route("/agreement", post(post_agreement))
-                .route("/new-password", post(post_new_password))
-                .route("/password-change", post(post_password_change))
+                .route("/password-change-req", post(post_password_change_req))
+                .route("/password-update", post(post_password_update))
                 .route("/profile", get(get_profile))
                 .route("/rewards", get(get_reward))
                 .route("/identity", post(post_identity)),

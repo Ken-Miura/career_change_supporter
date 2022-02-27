@@ -5,50 +5,59 @@ use axum::extract::Extension;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
 use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-use common::util::hash_password;
+use common::util::validator::validate_email_address;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
-    ErrResp, RespResult, ValidCred,
+    ErrResp, RespResult,
 };
-use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE};
-use entity::new_password;
-use entity::prelude::NewPassword;
+use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE};
+use entity::prelude::PwdChangeReq;
+use entity::pwd_change_req;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set,
 };
 use once_cell::sync::Lazy;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::{adapter::Simple, Uuid};
 
 use crate::err::unexpected_err_resp;
-use crate::err::Code::ReachNewPasswordsLimit;
+use crate::err::Code::ReachPasswordChangeReqLimit;
 use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 
 // TODO: 運用しながら上限を調整する
-const MAX_NUM_OF_NEW_PASSWORDS: usize = 8;
+const MAX_NUM_OF_PWD_CHANGE_REQ: usize = 8;
 
 static SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] パスワード変更用URLのお知らせ", WEB_SITE_NAME));
 
-/// 新しいパスワードを作成する<br>
+/// パスワード変更の要求を受け付ける<br>
 /// # NOTE
 /// （アカウントの存在確認に悪用されないように）アカウントが存在しないこと（すること）は確認しない<br>
-/// アカウントが存在しない場合、パスワード変更時にエラーとする<br>
+/// アカウントが存在しない場合、実際のパスワード変更時にエラーとする<br>
 /// <br>
 /// # Errors
-/// MAX_NUM_OF_NEW_PASSWORDS以上新規パスワードがある場合、ステータスコード400、エラーコード[REACH_NEW_PASSWORDS_LIMIT]を返す
-pub(crate) async fn post_new_password(
-    ValidCred(cred): ValidCred,
+/// メールアドレスが不正な形式の場合、ステータスコード400、エラーコード[common::err::Code::InvalidEmailAddressFormat]を返す
+/// MAX_NUM_OF_PWD_CHANGE_REQ以上新規パスワードがある場合、ステータスコード400、エラーコード[ReachPasswordChangeReqLimit]を返す
+pub(crate) async fn post_password_change_req(
+    Json(account): Json<Account>,
     Extension(pool): Extension<DatabaseConnection>,
-) -> RespResult<NewPasswordResult> {
+) -> RespResult<PasswordChangeReqResult> {
+    let _ = validate_email_address(&account.email_address).map_err(|e| {
+        tracing::error!("failed to validate {}: {}", &account.email_address, e,);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: common::err::Code::InvalidEmailAddressFormat as u32,
+            }),
+        )
+    })?;
     let uuid = Uuid::new_v4().to_simple();
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    let op = NewPasswordOperationImpl::new(pool);
+    let op = PasswordChangeReqOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    handle_new_password_req(
-        &cred.email_address,
-        &cred.password,
+    handle_password_change_req(
+        &account.email_address,
         &URL_FOR_FRONT_END.to_string(),
         &uuid,
         &current_date_time,
@@ -58,60 +67,58 @@ pub(crate) async fn post_new_password(
     .await
 }
 
+#[derive(Deserialize)]
+pub(crate) struct Account {
+    email_address: String,
+}
+
 #[derive(Serialize, Debug)]
-pub(crate) struct NewPasswordResult {}
+pub(crate) struct PasswordChangeReqResult {}
 
 // これをテスト対象と考える。
-async fn handle_new_password_req(
+async fn handle_password_change_req(
     email_addr: &str,
-    password: &str,
     url: &str,
     simple_uuid: &Simple,
-    register_time: &DateTime<FixedOffset>,
-    op: impl NewPasswordOperation,
+    requested_time: &DateTime<FixedOffset>,
+    op: impl PasswordChangeReqOperation,
     send_mail: impl SendMail,
-) -> RespResult<NewPasswordResult> {
-    let hashed_pwd = hash_password(password).map_err(|e| {
-        tracing::error!("failed to handle password: {}", e);
-        unexpected_err_resp()
-    })?;
+) -> RespResult<PasswordChangeReqResult> {
     let uuid = simple_uuid.to_string();
     let uuid_for_url = uuid.clone();
-    let cnt = op.num_of_new_passwords(email_addr).await?;
-    // DBの分離レベルがSerializeでないため、MAX_NUM_OF_NEW_PASSWORDSを超える可能性を考慮し、">="とする
-    if cnt >= MAX_NUM_OF_NEW_PASSWORDS {
+    let cnt = op.num_of_pwd_change_req(email_addr).await?;
+    // DBの分離レベルがSerializeでないため、MAX_NUM_OF_PWD_CHANGE_REQを超える可能性を考慮し、">="とする
+    if cnt >= MAX_NUM_OF_PWD_CHANGE_REQ {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: ReachNewPasswordsLimit as u32,
+                code: ReachPasswordChangeReqLimit as u32,
             }),
         ));
     }
-    let new_password = NewPasswordReq {
-        new_password_id: uuid,
+    let new_pwd_change_req = PasswordChangeReq {
+        pwd_change_id: uuid,
         email_address: email_addr.to_string(),
-        hashed_password: hashed_pwd,
-        created_at: *register_time,
+        requested_at: *requested_time,
     };
-    let _ = op.create_new_password(new_password).await?;
+    let _ = op.create_new_pwd_change_req(new_pwd_change_req).await?;
     tracing::info!(
-        "{} created new password with id: {} at {}",
+        "{} created new password change request with id: {} at {}",
         email_addr,
         simple_uuid,
-        register_time
+        requested_time
     );
     let text = create_text(url, &uuid_for_url);
     let _ =
         async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
-    Ok((StatusCode::OK, Json(NewPasswordResult {})))
+    Ok((StatusCode::OK, Json(PasswordChangeReqResult {})))
 }
 
 #[derive(Clone, Debug)]
-struct NewPasswordReq {
-    new_password_id: String,
+struct PasswordChangeReq {
+    pwd_change_id: String,
     email_address: String,
-    hashed_password: Vec<u8>,
-    created_at: DateTime<FixedOffset>,
+    requested_at: DateTime<FixedOffset>,
 }
 
 fn create_text(url: &str, uuid_str: &str) -> String {
@@ -120,7 +127,7 @@ fn create_text(url: &str, uuid_str: &str) -> String {
         r"!!注意!! まだパスワード変更は完了していません。
 
 下記URLに、PCまたはスマートフォンでアクセスしてパスワード変更手続きの完了をお願いいたします。
-{}/password-change-confirmation?new-password-id={}
+{}/password-update?pwd-change-req-id={}
 
 ※このURLの有効期間は手続き受付時より{}分間です。URLが無効となった場合は、最初からやり直してください。
 ※本メールにお心あたりが無い場合、他の方が誤ってあなたのメールアドレスを入力した可能性があります。お心あたりがない場合、本メールは破棄していただくようお願いいたします。
@@ -131,33 +138,36 @@ fn create_text(url: &str, uuid_str: &str) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        url, uuid_str, VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE, INQUIRY_EMAIL_ADDRESS
+        url, uuid_str, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE, INQUIRY_EMAIL_ADDRESS
     )
 }
 
 #[async_trait]
-trait NewPasswordOperation {
+trait PasswordChangeReqOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    async fn num_of_new_passwords(&self, email_addr: &str) -> Result<usize, ErrResp>;
-    async fn create_new_password(&self, new_password_req: NewPasswordReq) -> Result<(), ErrResp>;
+    async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<usize, ErrResp>;
+    async fn create_new_pwd_change_req(
+        &self,
+        new_password_change_req: PasswordChangeReq,
+    ) -> Result<(), ErrResp>;
 }
 
-struct NewPasswordOperationImpl {
+struct PasswordChangeReqOperationImpl {
     pool: DatabaseConnection,
 }
 
-impl NewPasswordOperationImpl {
+impl PasswordChangeReqOperationImpl {
     fn new(pool: DatabaseConnection) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl NewPasswordOperation for NewPasswordOperationImpl {
-    async fn num_of_new_passwords(&self, email_addr: &str) -> Result<usize, ErrResp> {
-        let num = NewPassword::find()
-            .filter(new_password::Column::EmailAddress.eq(email_addr))
+impl PasswordChangeReqOperation for PasswordChangeReqOperationImpl {
+    async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<usize, ErrResp> {
+        let num = PwdChangeReq::find()
+            .filter(pwd_change_req::Column::EmailAddress.eq(email_addr))
             .count(&self.pool)
             .await
             .map_err(|e| {
@@ -171,18 +181,21 @@ impl NewPasswordOperation for NewPasswordOperationImpl {
         Ok(num)
     }
 
-    async fn create_new_password(&self, new_password_req: NewPasswordReq) -> Result<(), ErrResp> {
-        let model = new_password::ActiveModel {
-            new_password_id: Set(new_password_req.new_password_id.clone()),
-            email_address: Set(new_password_req.email_address.clone()),
-            hashed_password: Set(new_password_req.hashed_password),
-            created_at: Set(new_password_req.created_at),
+    async fn create_new_pwd_change_req(
+        &self,
+        new_password_change_req: PasswordChangeReq,
+    ) -> Result<(), ErrResp> {
+        let model = pwd_change_req::ActiveModel {
+            pwd_change_req_id: Set(new_password_change_req.pwd_change_id.clone()),
+            email_address: Set(new_password_change_req.email_address.clone()),
+            requested_at: Set(new_password_change_req.requested_at),
         };
         let _ = model.insert(&self.pool).await.map_err(|e| {
             tracing::error!(
-                "failed to insert new password (id: {}, email address: {}): {}",
-                new_password_req.new_password_id,
-                new_password_req.email_address,
+                "failed to insert new password (id: {}, email address: {}, requested at {}): {}",
+                new_password_change_req.pwd_change_id,
+                new_password_change_req.email_address,
+                new_password_change_req.requested_at,
                 e
             );
             unexpected_err_resp()
@@ -195,88 +208,74 @@ impl NewPasswordOperation for NewPasswordOperationImpl {
 mod tests {
     use axum::async_trait;
     use chrono::{DateTime, FixedOffset};
-    use common::{
-        smtp::SYSTEM_EMAIL_ADDRESS,
-        util::{
-            is_password_match,
-            validator::{validate_email_address, validate_password},
-        },
-        ErrResp,
-    };
+    use common::{smtp::SYSTEM_EMAIL_ADDRESS, util::validator::validate_email_address, ErrResp};
     use uuid::Uuid;
 
     use crate::{
-        err::Code::ReachNewPasswordsLimit,
-        new_password::{create_text, handle_new_password_req, MAX_NUM_OF_NEW_PASSWORDS, SUBJECT},
+        err::Code::ReachPasswordChangeReqLimit,
+        password_change_req::{
+            create_text, handle_password_change_req, MAX_NUM_OF_PWD_CHANGE_REQ, SUBJECT,
+        },
         util::{tests::SendMailMock, JAPANESE_TIME_ZONE},
     };
 
     use axum::http::StatusCode;
 
-    use super::{NewPasswordOperation, NewPasswordReq};
+    use super::{PasswordChangeReq, PasswordChangeReqOperation};
 
-    struct NewPasswordOperationMock<'a> {
+    struct PasswordChangeReqOperationMock<'a> {
         cnt: usize,
         uuid: &'a str,
         email_address: &'a str,
-        password: &'a str,
-        register_time: &'a DateTime<FixedOffset>,
+        requested_time: &'a DateTime<FixedOffset>,
     }
 
-    impl<'a> NewPasswordOperationMock<'a> {
+    impl<'a> PasswordChangeReqOperationMock<'a> {
         fn new(
             cnt: usize,
             uuid: &'a str,
             email_address: &'a str,
-            password: &'a str,
-            register_time: &'a DateTime<FixedOffset>,
+            requested_time: &'a DateTime<FixedOffset>,
         ) -> Self {
             Self {
                 cnt,
                 uuid,
                 email_address,
-                password,
-                register_time,
+                requested_time,
             }
         }
     }
 
     #[async_trait]
-    impl<'a> NewPasswordOperation for NewPasswordOperationMock<'a> {
-        async fn num_of_new_passwords(&self, email_addr: &str) -> Result<usize, ErrResp> {
+    impl<'a> PasswordChangeReqOperation for PasswordChangeReqOperationMock<'a> {
+        async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<usize, ErrResp> {
             assert_eq!(self.email_address, email_addr);
             Ok(self.cnt)
         }
 
-        async fn create_new_password(
+        async fn create_new_pwd_change_req(
             &self,
-            new_password_req: NewPasswordReq,
+            new_password_change_req: PasswordChangeReq,
         ) -> Result<(), ErrResp> {
-            assert_eq!(self.uuid, new_password_req.new_password_id);
-            assert_eq!(self.email_address, new_password_req.email_address);
-            let result = is_password_match(self.password, &new_password_req.hashed_password)
-                .expect("failed to get Ok");
-            assert!(result, "password not match");
-            assert_eq!(self.register_time, &new_password_req.created_at);
+            assert_eq!(self.uuid, new_password_change_req.pwd_change_id);
+            assert_eq!(self.email_address, new_password_change_req.email_address);
+            assert_eq!(self.requested_time, &new_password_change_req.requested_at);
             Ok(())
         }
     }
 
     #[tokio::test]
-    async fn handle_new_password_req_success() {
+    async fn handle_password_change_req_success() {
         let email_address = "test@example.com";
-        let new_password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
-        let _ = validate_password(new_password).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-        let op_mock = NewPasswordOperationMock::new(
-            MAX_NUM_OF_NEW_PASSWORDS - 1,
+        let op_mock = PasswordChangeReqOperationMock::new(
+            MAX_NUM_OF_PWD_CHANGE_REQ - 1,
             &uuid_str,
             email_address,
-            new_password,
             &current_date_time,
         );
         let send_mail_mock = SendMailMock::new(
@@ -286,9 +285,8 @@ mod tests {
             create_text(url, &uuid_str),
         );
 
-        let result = handle_new_password_req(
+        let result = handle_password_change_req(
             email_address,
-            new_password,
             url,
             &uuid,
             &current_date_time,
@@ -302,20 +300,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_new_password_req_fail_reach_max_num_of_new_passwords_limit() {
+    async fn handle_password_change_req_fail_reach_max_num_of_pwd_change_req_limit() {
         let email_address = "test@example.com";
-        let new_password: &str = "aaaaaaaaaB";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
-        let _ = validate_password(new_password).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().to_simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-        let op_mock = NewPasswordOperationMock::new(
-            MAX_NUM_OF_NEW_PASSWORDS,
+        let op_mock = PasswordChangeReqOperationMock::new(
+            MAX_NUM_OF_PWD_CHANGE_REQ,
             &uuid_str,
             email_address,
-            new_password,
             &current_date_time,
         );
         let send_mail_mock = SendMailMock::new(
@@ -325,9 +320,8 @@ mod tests {
             create_text(url, &uuid_str),
         );
 
-        let result = handle_new_password_req(
+        let result = handle_password_change_req(
             email_address,
-            new_password,
             url,
             &uuid,
             &current_date_time,
@@ -338,6 +332,6 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1.code, ReachNewPasswordsLimit as u32);
+        assert_eq!(resp.1.code, ReachPasswordChangeReqLimit as u32);
     }
 }

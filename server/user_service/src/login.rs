@@ -29,7 +29,7 @@ use crate::util::{session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcoookieをセットして応答する<br>
 /// <br>
 /// # Errors
-/// email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EMAIL_OR_PWD_INCORRECT]を返す<br>
+/// email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
 pub(crate) async fn post_login(
     ValidCred(cred): ValidCred,
     Extension(pool): Extension<DatabaseConnection>,

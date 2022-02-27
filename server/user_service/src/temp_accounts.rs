@@ -36,7 +36,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLの�
 /// 既にアカウントがある場合は、アカウント作成時にエラーとする<br>
 /// <br>
 /// # Errors
-/// MAX_NUM_OF_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[REACH_TEMP_ACCOUNTS_LIMIT]を返す
+/// MAX_NUM_OF_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[ReachTempAccountsLimit]を返す
 pub(crate) async fn post_temp_accounts(
     ValidCred(cred): ValidCred,
     Extension(pool): Extension<DatabaseConnection>,
