@@ -35,7 +35,9 @@
 		"mutantdino.resourcemonitor",
 		"matklad.rust-analyzer",
 		"tamasfe.even-better-toml",
-		"serayuzgur.crates"
+		"serayuzgur.crates",
+		"octref.vetur",
+		"bradlc.vscode-tailwindcss"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
