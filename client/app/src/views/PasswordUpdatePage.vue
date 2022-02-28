@@ -58,7 +58,7 @@ export default defineComponent({
     const errorMessage = ref('')
     const updatePasswordHandler = async () => {
       const query = router.currentRoute.value.query
-      const pwdChangeReqId = query['pwd-change-req-id'] as string
+      const pwdChangeReqId = query['pwd-change-req-id'] as string | null | undefined
       if (!pwdChangeReqId) {
         isHidden.value = false
         errorMessage.value = Message.INVALID_QUERY_PARAM
