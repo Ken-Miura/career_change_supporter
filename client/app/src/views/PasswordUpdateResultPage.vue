@@ -19,10 +19,10 @@ import { defineComponent, ref } from 'vue'
 import { useStore } from 'vuex'
 
 export default defineComponent({
-  name: 'ApplyNewPasswordResultPage',
+  name: 'PasswordUpdateResultPage',
   setup () {
     const store = useStore()
-    const message = ref(store.state.applyNewPasswordResultMessage)
+    const message = ref(store.state.passwordUpdateResultMessage)
     return { message }
   }
 })

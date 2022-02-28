@@ -1,5 +1,5 @@
 import PasswordChangeConfirmationPage from '@/views/PasswordChangeConfirmationPage.vue'
-import { applyNewPassword } from '@/util/password/ApplyNewPassword'
+import { applyNewPassword } from '@/util/password/UpdatePassword'
 import { mount, RouterLinkStub } from '@vue/test-utils'
 import { ApplyNewPasswordResp } from '@/util/password/ApplyNewPasswordResp'
 import { Message } from '@/util/Message'
