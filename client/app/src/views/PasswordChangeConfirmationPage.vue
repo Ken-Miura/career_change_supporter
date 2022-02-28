@@ -42,7 +42,7 @@ export default defineComponent({
       try {
         const result = await applyNewPassword(data)
         if (result instanceof ApplyNewPasswordResp) {
-          message = Message.NEW_PASSWORD_APPLIED_MESSAGE
+          message = Message.PASSWORD_CHANGED_MESSAGE
         } else if (result instanceof ApiErrorResp) {
           message = createErrorMessage(result.getApiError().getCode())
         } else {

@@ -49,16 +49,16 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/AccountCreationPage.vue')
   },
   {
-    path: '/password-change',
-    name: 'PasswordChangePage',
+    path: '/password-change-req',
+    name: 'PasswordChangeReqPage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/PasswordChangePage.vue')
+    component: () => import('../views/PasswordChangeReqPage.vue')
   },
   {
-    path: '/new-password-creation-result',
-    name: 'NewPasswordCreationResultPage',
+    path: '/password-change-req-result',
+    name: 'PasswordChangeReqResultPage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/NewPasswordCreationResultPage.vue')
+    component: () => import('../views/PasswordChangeReqResultPage.vue')
   },
   {
     path: '/password-change-confirmation',

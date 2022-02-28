@@ -9,7 +9,7 @@
       <div class="flex flex-col justify-center">
         <p data-test="title" class="font-bold text-xl">まだパスワード変更は完了していません</p>
         <p data-test="message" class="mt-4 font-bold text-lg">
-          指定されたメールアドレスにメールを送信しました。メールに記載されたURLをクリックし、パスワード変更を完了させて下さい。
+          指定されたメールアドレスにパスワード変更用のURLを記載したメールを送信しました。メールに記載されたURLにアクセスし、パスワード変更を完了させて下さい。
         </p>
         <div class="mt-4" role="note">
           <div data-test="note-title" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">メールが届かない場合</div>
@@ -34,6 +34,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'NewPasswordCreationResultPage'
+  name: 'PasswordChangeReqResultPage'
 })
 </script>

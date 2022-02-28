@@ -1,10 +1,10 @@
 import { ApiErrorResp, ApiError } from '../ApiError'
-import { CreateNewPasswordResp } from './CreateNewPasswordResp'
+import { CreatePwdChangeReqResp } from './CreatePwdChangeReqResp'
 
-export async function createNewPassword (emailAddress: string, password: string): Promise<CreateNewPasswordResp | ApiErrorResp> {
+export async function createPwdChangeReq (emailAddress: string): Promise<CreatePwdChangeReqResp | ApiErrorResp> {
   // eslint-disable-next-line
-  const data = { email_address: emailAddress, password: password }
-  const response = await fetch('/api/new-password', {
+  const data = { email_address: emailAddress }
+  const response = await fetch('/api/password-change-req', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(data)
@@ -13,5 +13,5 @@ export async function createNewPassword (emailAddress: string, password: string)
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  return CreateNewPasswordResp.create()
+  return CreatePwdChangeReqResp.create()
 }

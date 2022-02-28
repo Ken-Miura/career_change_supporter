@@ -7,14 +7,12 @@
     </header>
     <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
-        <h3 class="font-bold text-2xl">パスワード変更</h3>
+        <h3 class="font-bold text-2xl">パスワード変更依頼</h3>
       </section>
       <section class="mt-10">
-        <form class="flex flex-col" @submit.prevent="createNewPasswordHandler">
+        <form class="flex flex-col" @submit.prevent="createPwdChangeReqHandler">
           <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
-          <PasswordInput class="mb-6" @on-password-updated="setPassword" label="新しいパスワード"/>
-          <PasswordInput class="mb-6" @on-password-updated="setPasswordConfirmation" label="新しいパスワード（確認）"/>
-          <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更</button>
+          <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">パスワード変更依頼</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
       </section>
@@ -28,49 +26,35 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
-import PasswordInput from '@/components/PasswordInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
 import { useRouter } from 'vue-router'
 import { useCredentil } from '@/components/useCredential'
 import { createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
-import { createNewPassword } from '@/util/password/CreateNewPassword'
-import { CreateNewPasswordResp } from '@/util/password/CreateNewPasswordResp'
+import { createPwdChangeReq } from '@/util/password/CreatePwdChangeReq'
+import { CreatePwdChangeReqResp } from '@/util/password/CreatePwdChangeReqResp'
 
 export default defineComponent({
-  name: 'PasswordChangePage',
+  name: 'PasswordChangeReqPage',
   components: {
     EmailAddressInput,
-    PasswordInput,
     AlertMessage
   },
   setup () {
     const router = useRouter()
     const {
       form,
-      setEmailAddress,
-      setPassword,
-      setPasswordConfirmation,
-      passwordsAreSame
+      setEmailAddress
     } =
     useCredentil()
     const isHidden = ref(true)
     const errorMessage = ref('')
-    const createNewPasswordHandler = async () => {
-      if (!passwordsAreSame.value) {
-        isHidden.value = false
-        errorMessage.value = Message.PASSWORD_CONFIRMATION_FAILED
-        return
-      }
+    const createPwdChangeReqHandler = async () => {
       try {
-        // パスワード変更の流れは下記の通り
-        // 1. システムは、新規パスワードを作成し、ユーザーにメールを送信する
-        // 2. ユーザーは、メールに記載してあるURLにアクセスすることで新規パスワードを適用し、パスワード変更を完了する
-        // 下記の関数では1の機能を提供する
-        const result = await createNewPassword(form.emailAddress, form.password)
-        if (result instanceof CreateNewPasswordResp) {
-          await router.push('new-password-creation-result')
+        const result = await createPwdChangeReq(form.emailAddress)
+        if (result instanceof CreatePwdChangeReqResp) {
+          await router.push('password-change-req-result')
           return
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
@@ -80,17 +64,15 @@ export default defineComponent({
         }
       } catch (e) {
         isHidden.value = false
-        errorMessage.value = `${Message.NEW_PASSWORD_CREATION_FAILED}: ${e}`
+        errorMessage.value = `${Message.PASSWORD_CHANGE_REQUEST_FAILED}: ${e}`
       }
     }
     return {
       form,
       setEmailAddress,
-      setPassword,
-      setPasswordConfirmation,
       isHidden,
       errorMessage,
-      createNewPasswordHandler
+      createPwdChangeReqHandler
     }
   }
 })
