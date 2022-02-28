@@ -39,20 +39,6 @@ pub(crate) async fn post_accounts(
     Json(temp_account): Json<TempAccountId>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<AccountsResult> {
-    let _ = validate_uuid(&temp_account.temp_account_id).map_err(|e| {
-        tracing::error!(
-            "failed to validate {}: {}",
-            &temp_account.temp_account_id,
-            e
-        );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: common::err::Code::InvalidUuidFormat as u32,
-            }),
-        )
-    })?;
-
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = AccountsOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
@@ -74,6 +60,15 @@ async fn handle_accounts_req(
     op: impl AccountsOperation,
     send_mail: impl SendMail,
 ) -> RespResult<AccountsResult> {
+    let _ = validate_uuid(temp_account_id).map_err(|e| {
+        tracing::error!("failed to validate {}: {}", temp_account_id, e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: common::err::Code::InvalidUuidFormat as u32,
+            }),
+        )
+    })?;
     let temp_account_option = op.find_temp_account_by_id(temp_account_id).await?;
     let temp_account = temp_account_option.ok_or_else(|| {
         tracing::error!("no temp account (id: {}) found", temp_account_id);
@@ -457,5 +452,40 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(AccountAlreadyExists as u32, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_accounts_req_fail_invalid_uuid() {
+        let uuid = "1234abcdあいうえお<script>alert('test');</script>".to_string();
+        let email_addr = "test@test.com";
+        let pwd = "aaaaaaaaaA";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let _ = validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash password");
+        let register_date_time = chrono::Utc
+            .ymd(2021, 9, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let temp_account = TempAccount {
+            user_temp_account_id: uuid.clone(),
+            email_address: email_addr.to_string(),
+            hashed_password: hashed_pwd,
+            created_at: register_date_time,
+        };
+        let current_date_time =
+            register_date_time + Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
+        let op_mock = AccountsOperationMock::new(&temp_account, false, false, &current_date_time);
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_accounts_req(&uuid, &current_date_time, op_mock, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(common::err::Code::InvalidUuidFormat as u32, resp.1.code);
     }
 }
