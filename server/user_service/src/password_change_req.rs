@@ -43,15 +43,6 @@ pub(crate) async fn post_password_change_req(
     Json(account): Json<Account>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<PasswordChangeReqResult> {
-    let _ = validate_email_address(&account.email_address).map_err(|e| {
-        tracing::error!("failed to validate {}: {}", &account.email_address, e,);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: common::err::Code::InvalidEmailAddressFormat as u32,
-            }),
-        )
-    })?;
     let uuid = Uuid::new_v4().to_simple();
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = PasswordChangeReqOperationImpl::new(pool);
@@ -84,6 +75,15 @@ async fn handle_password_change_req(
     op: impl PasswordChangeReqOperation,
     send_mail: impl SendMail,
 ) -> RespResult<PasswordChangeReqResult> {
+    let _ = validate_email_address(email_addr).map_err(|e| {
+        tracing::error!("failed to validate {}: {}", email_addr, e,);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: common::err::Code::InvalidEmailAddressFormat as u32,
+            }),
+        )
+    })?;
     let uuid = simple_uuid.to_string();
     let uuid_for_url = uuid.clone();
     let cnt = op.num_of_pwd_change_req(email_addr).await?;
@@ -333,5 +333,43 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
         assert_eq!(resp.1.code, ReachPasswordChangeReqLimit as u32);
+    }
+
+    #[tokio::test]
+    async fn handle_password_change_req_fail_invalid_email_address() {
+        let email_address = "<script>alert('test')</script>";
+        let url: &str = "https://localhost:8080";
+        let uuid = Uuid::new_v4().to_simple();
+        let uuid_str = uuid.to_string();
+        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = PasswordChangeReqOperationMock::new(
+            MAX_NUM_OF_PWD_CHANGE_REQ - 1,
+            &uuid_str,
+            email_address,
+            &current_date_time,
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(url, &uuid_str),
+        );
+
+        let result = handle_password_change_req(
+            email_address,
+            url,
+            &uuid,
+            &current_date_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            resp.1.code,
+            common::err::Code::InvalidEmailAddressFormat as u32
+        );
     }
 }
