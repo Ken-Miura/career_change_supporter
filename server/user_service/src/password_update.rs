@@ -51,29 +51,6 @@ pub(crate) async fn post_password_update(
     Json(pwd_update_req): Json<PasswordUpdateReq>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<PasswordUpdateResult> {
-    let _ = validate_uuid(&pwd_update_req.pwd_change_req_id).map_err(|e| {
-        tracing::error!(
-            "failed to validate {}: {}",
-            &pwd_update_req.pwd_change_req_id,
-            e
-        );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: common::err::Code::InvalidPasswordFormat as u32,
-            }),
-        )
-    })?;
-    let _ = validate_password(&pwd_update_req.password).map_err(|e| {
-        tracing::error!("failed to validate {}: {}", &pwd_update_req.password, e,);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: common::err::Code::InvalidPasswordFormat as u32,
-            }),
-        )
-    })?;
-
     let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
     if let Some(session_id) = option_cookie {
         let _ = destroy_session_if_exists(session_id.value(), &store).await?;
@@ -109,6 +86,24 @@ async fn handle_password_update_req(
     op: impl PasswordUpdateOperation,
     send_mail: impl SendMail,
 ) -> RespResult<PasswordUpdateResult> {
+    let _ = validate_uuid(pwd_change_req_id).map_err(|e| {
+        tracing::error!("failed to validate {}: {}", pwd_change_req_id, e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: common::err::Code::InvalidUuidFormat as u32,
+            }),
+        )
+    })?;
+    let _ = validate_password(password).map_err(|e| {
+        tracing::error!("failed to validate {}: {}", password, e,);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: common::err::Code::InvalidPasswordFormat as u32,
+            }),
+        )
+    })?;
     let pwd_change_req_option = op.find_pwd_change_req_by_id(pwd_change_req_id).await?;
     let pwd_change_req = pwd_change_req_option.ok_or_else(|| {
         tracing::error!("no pwd change req id ({}) found", pwd_change_req_id);
@@ -607,6 +602,107 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(PwdChnageReqExpired as u32, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_password_update_req_fail_invalid_password() {
+        let email_addr = "test@test.com";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let pwd_change_requested_at = chrono::Utc
+            .ymd(2021, 11, 14)
+            .and_hms(21, 22, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let password_change_req = PasswordChangeReq {
+            email_address: email_addr.to_string(),
+            requested_at: pwd_change_requested_at,
+        };
+
+        let uuid = Uuid::new_v4().to_simple().to_string();
+        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        let invalid_pwd = "あいうえお";
+        let password_update_req = PasswordUpdateReq {
+            pwd_change_req_id: uuid.clone(),
+            password: invalid_pwd.to_string(),
+        };
+
+        let op_mock = PasswordUpdateOperationMock::new(
+            52354,
+            password_change_req,
+            password_update_req,
+            TestCaseParams {
+                no_password_change_req_found: false,
+                no_account_found: false,
+            },
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+        let current_date_time = pwd_change_requested_at
+            + Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE);
+
+        let result = handle_password_update_req(
+            &uuid,
+            invalid_pwd,
+            &current_date_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(common::err::Code::InvalidPasswordFormat as u32, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_password_update_req_fail_invalid_uuid() {
+        let email_addr = "test@test.com";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let pwd_change_requested_at = chrono::Utc
+            .ymd(2021, 11, 14)
+            .and_hms(21, 22, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let password_change_req = PasswordChangeReq {
+            email_address: email_addr.to_string(),
+            requested_at: pwd_change_requested_at,
+        };
+
+        let uuid = "1' or '1' = '1';--".to_string();
+        let new_pwd = "aaaaaaaaaA";
+        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        let password_update_req = PasswordUpdateReq {
+            pwd_change_req_id: uuid.clone(),
+            password: new_pwd.to_string(),
+        };
+
+        let op_mock = PasswordUpdateOperationMock::new(
+            52354,
+            password_change_req,
+            password_update_req,
+            TestCaseParams {
+                no_password_change_req_found: false,
+                no_account_found: false,
+            },
+        );
+        let send_mail_mock = SendMailMock::new(
+            email_addr.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+        let current_date_time = pwd_change_requested_at
+            + Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE);
+
+        let result =
+            handle_password_update_req(&uuid, new_pwd, &current_date_time, op_mock, send_mail_mock)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(common::err::Code::InvalidUuidFormat as u32, resp.1.code);
     }
 
     #[tokio::test]
