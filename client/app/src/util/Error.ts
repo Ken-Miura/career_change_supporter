@@ -33,7 +33,7 @@ export function createErrorMessage (code: number): string {
   } else if (code === Code.INVALID_PASSWORD_FORMAT) {
     return `${Message.INVALID_PASSWORD_FORMAT_MESSAGE} (${code})`
   } else if (code === Code.INVALID_UUID_FORMAT) {
-    return `${Message.INVALID_UUID_MESSAGE} (${code})`
+    return `${Message.INVALID_UUID_FORMAT_MESSAGE} (${code})`
   } else if (code === Code.ACCOUNT_ALREADY_EXISTS) {
     return `${Message.ACCOUNT_ALREADY_EXISTS_MESSAGE} (${code})`
   } else if (code === Code.REACH_TEMP_ACCOUNTS_LIMIT) {

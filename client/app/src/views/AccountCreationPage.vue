@@ -30,13 +30,13 @@ export default defineComponent({
     const router = useRouter()
     onMounted(async () => {
       const query = router.currentRoute.value.query
-      const data = JSON.stringify(query)
-      if (!data.match('"temp-account-id"')) {
+      const tempAccountId = query['temp-account-id'] as string | null | undefined
+      if (!tempAccountId) {
         message.value = Message.INVALID_QUERY_PARAM
         return
       }
       try {
-        const result = await createAccount(data)
+        const result = await createAccount(tempAccountId)
         if (result instanceof CreateAccountResp) {
           message.value = Message.ACCOUNT_CREATED
         } else if (result instanceof ApiErrorResp) {

@@ -57,8 +57,8 @@ describe('AccountCreationPage.vue', () => {
     expect(h3Tag.text()).toMatch(`${Message.INVALID_QUERY_PARAM}`)
   })
 
-  it(`displays ${Message.INVALID_UUID_MESSAGE} when invalid uuid format is passed`, async () => {
-    const apiErr = ApiError.create(Code.INVALID_UUID)
+  it(`displays ${Message.INVALID_UUID_FORMAT_MESSAGE} when invalid uuid format is passed`, async () => {
+    const apiErr = ApiError.create(Code.INVALID_UUID_FORMAT)
     createAccountMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'temp-account-id': /* 31桁 */ 'bc999c52f1cc4801bfd9216cdebc076' }
     const wrapper = mount(AccountCreationPage, {
@@ -71,7 +71,7 @@ describe('AccountCreationPage.vue', () => {
     await flushPromises()
     const mainTag = wrapper.find('main')
     const h3Tag = mainTag.find('h3')
-    expect(h3Tag.text()).toMatch(`${Message.INVALID_UUID_MESSAGE}`)
+    expect(h3Tag.text()).toMatch(`${Message.INVALID_UUID_FORMAT_MESSAGE}`)
   })
 
   it(`displays ${Message.ACCOUNT_ALREADY_EXISTS_MESSAGE} when account has already existed`, async () => {
