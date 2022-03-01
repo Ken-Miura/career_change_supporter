@@ -142,8 +142,13 @@
 				"type": "pwa-chrome",
 				"request": "launch",
 				"name": "Launch Chrome against localhost",
-				"url": "http://localhost:8080",
-				"webRoot": "${workspaceFolder}/client/app"
+				"url": "https://localhost:8080",
+				"webRoot": "${workspaceFolder}/client/app",
+				"sourceMapPathOverrides": {
+					"meteor://💻app/*": "${workspaceFolder}/*",
+					"webpack:///./~/*": "${workspaceFolder}/node_modules/*",
+					"webpack://?:*/*": "${workspaceFolder}/*"
+				}
 			}
 		]
 	}
