@@ -1,23 +1,23 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import ApplyNewPasswordResultPage from '@/views/ApplyNewPasswordResultPage.vue'
+import PasswordUpdateResultPage from '@/views/PasswordUpdateResultPage.vue'
 
 let message = null as string | null
 jest.mock('vuex', () => ({
   useStore: () => ({
     state: {
-      applyNewPasswordResultMessage: message
+      passwordUpdateResultMessage: message
     }
   })
 }))
 
-describe('ApplyNewPasswordResultPage.vue', () => {
+describe('PasswordUpdateResultPage.vue', () => {
   beforeEach(() => {
     message = null
   })
 
   it('just renders message when passed', () => {
     message = 'メッセージ'
-    const wrapper = mount(ApplyNewPasswordResultPage, {
+    const wrapper = mount(PasswordUpdateResultPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -30,7 +30,7 @@ describe('ApplyNewPasswordResultPage.vue', () => {
   })
 
   it('does not render message when no props passed', () => {
-    const wrapper = mount(ApplyNewPasswordResultPage, {
+    const wrapper = mount(PasswordUpdateResultPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub

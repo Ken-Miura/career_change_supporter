@@ -1,9 +1,9 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import NewPasswordCreationResultPage from '@/views/NewPasswordCreationResultPage.vue'
+import PasswordChangeReqResultPage from '@/views/PasswordChangeReqResultPage.vue'
 
-describe('NewPasswordCreationResultPage.vue', () => {
+describe('PasswordChangeReqResultPage.vue', () => {
   it('renders expected message', () => {
-    const wrapper = mount(NewPasswordCreationResultPage, {
+    const wrapper = mount(PasswordChangeReqResultPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -16,8 +16,8 @@ describe('NewPasswordCreationResultPage.vue', () => {
     const noteMessage = wrapper.find('[data-test="note-message"]')
 
     expect(title.text()).toMatch('まだパスワード変更は完了していません')
-    expect(message.text()).toContain('指定されたメールアドレスにメールを送信しました。')
-    expect(message.text()).toContain('メールに記載されたURLをクリックし、パスワード変更を完了させて下さい。')
+    expect(message.text()).toContain('指定されたメールアドレスにパスワード変更用のURLを記載したメールを送信しました。')
+    expect(message.text()).toContain('メールに記載されたURLにアクセスし、パスワード変更を完了させて下さい。')
     expect(noteTitle.text()).toMatch('メールが届かない場合')
     expect(noteMessage.text()).toContain('下記の項目についてご確認下さい。')
     expect(noteMessage.text()).toContain('本サイトのドメインのメールの受信が許可されているかどうか')
