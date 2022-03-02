@@ -31,8 +31,9 @@ use crate::util::{
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME, ROOT_PATH,
 };
 use async_redis_session::RedisSessionStore;
+use axum::extract::Extension;
 use axum::routing::{get, post};
-use axum::{AddExtensionLayer, Router};
+use axum::Router;
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::util::check_env_vars;
@@ -127,8 +128,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/rewards", get(get_reward))
                 .route("/identity", post(post_identity)),
         )
-        .layer(AddExtensionLayer::new(pool))
-        .layer(AddExtensionLayer::new(store))
+        .layer(Extension(pool))
+        .layer(Extension(store))
         .layer(CookieManagerLayer::new())
         .layer(TraceLayer::new_for_http());
 
