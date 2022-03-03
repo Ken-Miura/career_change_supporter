@@ -9,7 +9,7 @@
 
 Vueのデバッグ（ブレークポイントを貼って、そこで止めること）ができなくなった問題の解決
 
-Veturの(問題)[https://github.com/vuejs/vetur/issues/3323]解決後、typescriptのdependencyを~4.5.5に戻す (372657113b7dbcc4661b2ebe28490dcb2cc8a674をrevert)
+Veturの[問題](https://github.com/vuejs/vetur/issues/3323)解決後、typescriptのdependencyを~4.5.5に戻す (372657113b7dbcc4661b2ebe28490dcb2cc8a674をrevert)
 
 # NOTE
 ## 開発環境
