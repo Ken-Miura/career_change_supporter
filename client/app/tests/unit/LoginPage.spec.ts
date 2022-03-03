@@ -194,6 +194,6 @@ describe('LoginPage.vue', () => {
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.EMAIL_OR_PWD_INCORRECT_MESSAGE)
-    expect(resultMessage).toContain(Code.EMAIL_OR_PWD_INCORRECT)
+    expect(resultMessage).toContain(Code.EMAIL_OR_PWD_INCORRECT.toString())
   })
 })

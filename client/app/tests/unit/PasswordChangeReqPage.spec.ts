@@ -104,7 +104,7 @@ describe('PasswordChangeReqPage.vue', () => {
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.REACH_PASSWORD_CHANGE_REQ_LIMIT_MESSAGE)
-    expect(resultMessage).toContain(Code.REACH_PASSWORD_CHANGE_REQ_LIMIT)
+    expect(resultMessage).toContain(Code.REACH_PASSWORD_CHANGE_REQ_LIMIT.toString())
   })
 
   it(`displays alert message ${Message.PASSWORD_CHANGE_REQUEST_FAILED} when connection error happened`, async () => {
