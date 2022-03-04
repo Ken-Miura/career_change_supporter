@@ -427,7 +427,6 @@ impl RewardOperation for RewardOperationImpl {
 }
 
 // TODO: 事前準備に用意するデータに関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
-// TODO: payjp_fee_includedがtrueのテナントで作成された入金データを実際のテスト環境から取得し、それを使ってコードを改善する
 #[cfg(test)]
 mod tests {
 
