@@ -6,7 +6,6 @@ use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, TimeZone, Utc};
 use common::{
-    model::user::Tenant,
     payment_platform::{
         charge::{Charge, ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
         tenant::{TenantOperation, TenantOperationImpl},
@@ -15,15 +14,10 @@ use common::{
             TenantTransferOperationImpl,
         },
     },
-    schema::ccs_schema::tenant::dsl::tenant as tenant_table,
     ApiError, ErrResp, RespResult,
 };
-use diesel::{
-    r2d2::{ConnectionManager, PooledConnection},
-    result::Error::NotFound,
-    PgConnection, QueryDsl, RunQueryDsl,
-};
-use entity::sea_orm::DatabaseConnection;
+use entity::prelude::Tenant;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use serde::Serialize;
 
@@ -63,9 +57,9 @@ async fn handle_reward_req(
     current_time: DateTime<FixedOffset>,
     tenant_transfer_op: impl TenantTransferOperation,
 ) -> RespResult<RewardResult> {
-    let tenant_option = reward_op.find_tenant_by_account_id(account_id).await?;
-    let payment_platform_results = if let Some(tenant) = tenant_option {
-        let tenant_obj = get_tenant_obj_by_tenant_id(tenant_op, &tenant.tenant_id).await?;
+    let tenant_id_option = reward_op.find_tenant_id_by_account_id(account_id).await?;
+    let payment_platform_results = if let Some(tenant_id) = tenant_id_option {
+        let tenant_obj = get_tenant_obj_by_tenant_id(tenant_op, &tenant_id).await?;
         let bank_account = BankAccount {
             bank_code: tenant_obj.bank_code,
             branch_code: tenant_obj.bank_branch_code,
@@ -74,18 +68,15 @@ async fn handle_reward_req(
             account_holder_name: tenant_obj.bank_account_holder_name,
         };
         if !tenant_obj.payjp_fee_included {
-            tracing::error!(
-                "payjp_fee_included is false in tenant (id: {})",
-                &tenant.tenant_id
-            );
+            tracing::error!("payjp_fee_included is false in tenant (id: {})", &tenant_id);
             return Err(unexpected_err_resp());
         }
         let rewards_of_the_month =
-            get_rewards_of_current_month(charge_op, &tenant.tenant_id, current_time).await?;
-        let transfers =
-            get_latest_two_tenant_transfers(tenant_transfer_op, &tenant.tenant_id).await?;
+            get_rewards_of_current_month(charge_op, &tenant_id, current_time).await?;
+        let transfers = get_latest_two_tenant_transfers(tenant_transfer_op, &tenant_id).await?;
         (Some(bank_account), Some(rewards_of_the_month), transfers)
     } else {
+        tracing::debug!("no tenant id found (account id: {})", account_id);
         (None, None, vec![])
     };
     Ok((
@@ -398,7 +389,10 @@ fn convert_tenant_transfer_to_transfer(
 
 #[async_trait]
 trait RewardOperation {
-    async fn find_tenant_by_account_id(&self, account_id: i32) -> Result<Option<Tenant>, ErrResp>;
+    async fn find_tenant_id_by_account_id(
+        &self,
+        account_id: i32,
+    ) -> Result<Option<String>, ErrResp>;
 }
 
 struct RewardOperationImpl {
@@ -413,19 +407,22 @@ impl RewardOperationImpl {
 
 #[async_trait]
 impl RewardOperation for RewardOperationImpl {
-    async fn find_tenant_by_account_id(&self, account_id: i32) -> Result<Option<Tenant>, ErrResp> {
-        // let result = tenant_table.find(id).first::<Tenant>(&self.conn);
-        // match result {
-        //     Ok(tenant) => Ok(Some(tenant)),
-        //     Err(e) => {
-        //         if e == NotFound {
-        //             Ok(None)
-        //         } else {
-        //             Err(unexpected_err_resp())
-        //         }
-        //     }
-        // }
-        todo!()
+    async fn find_tenant_id_by_account_id(
+        &self,
+        account_id: i32,
+    ) -> Result<Option<String>, ErrResp> {
+        let model = Tenant::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find tenant id (account id: {}): {}",
+                    account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| m.tenant_id))
     }
 }
 
@@ -438,7 +435,6 @@ mod tests {
     use axum::http::StatusCode;
     use chrono::{TimeZone, Utc};
     use common::{
-        model::user::Tenant,
         payment_platform::{
             charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
             customer::Card,
@@ -449,6 +445,7 @@ mod tests {
             },
             ErrorDetail, ErrorInfo, List,
         },
+        ErrResp,
     };
 
     use crate::{
@@ -460,16 +457,16 @@ mod tests {
     use super::{handle_reward_req, RewardOperation};
 
     struct RewardOperationMock {
-        tenant_option: Option<Tenant>,
+        tenant_id_option: Option<String>,
     }
 
     #[async_trait]
     impl RewardOperation for RewardOperationMock {
-        async fn find_tenant_by_account_id(
+        async fn find_tenant_id_by_account_id(
             &self,
             _account_id: i32,
-        ) -> Result<Option<Tenant>, common::ErrResp> {
-            Ok(self.tenant_option.clone())
+        ) -> Result<Option<String>, ErrResp> {
+            Ok(self.tenant_id_option.clone())
         }
     }
 
@@ -559,11 +556,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn return_empty_rewards() {
+    async fn handle_reward_req_returns_empty_rewards() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: None,
+            tenant_id_option: None,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -669,10 +666,7 @@ mod tests {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -728,10 +722,7 @@ mod tests {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -787,10 +778,7 @@ mod tests {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: "c8f0aa44901940849cbdb8b3e7d9f305".to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -842,14 +830,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_reward_req_return_reward_with_tenant_1charge_1tenant_transfer() {
+    async fn handle_reward_req_returns_reward_with_tenant_1charge_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: tenant_id.to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -1020,14 +1005,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_reward_req_check_non_captured_charge_is_filterd() {
+    async fn handle_reward_req_checks_non_captured_charge_is_filterd() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: tenant_id.to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -1153,14 +1135,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_reward_req_return_reward_with_tenant_32charge_1tenant_transfer() {
+    async fn handle_reward_req_returns_reward_with_tenant_32charge_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: tenant_id.to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -1288,14 +1267,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_reward_req_return_reward_with_tenant_33charge_1tenant_transfer() {
+    async fn handle_reward_req_returns_reward_with_tenant_33charge_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: tenant_id.to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -1380,14 +1356,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_reward_req_return_reward_with_tenant_2tenant_transfers() {
+    async fn handle_reward_req_returns_reward_with_tenant_2tenant_transfers() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
-            tenant_option: Some(Tenant {
-                user_account_id: account_id,
-                tenant_id: tenant_id.to_string(),
-            }),
+            tenant_id_option: Some(tenant_id.to_string()),
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
