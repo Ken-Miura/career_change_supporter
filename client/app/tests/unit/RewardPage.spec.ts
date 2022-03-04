@@ -293,7 +293,7 @@ describe('RewardPage.vue', () => {
     expect(rewardsOfTheMonthSetMessage).toContain(`${rewardsOfTheMonth}円`)
   })
 
-  it('displays latest two transfers if they are set', async () => {
+  it('displays latest two transfers (pending and paid) if they are set', async () => {
     const bankAccount = {
       /* eslint-disable camelcase */
       bank_code: '0001',
@@ -373,6 +373,218 @@ describe('RewardPage.vue', () => {
     expect(latestTwoTransfersSetMessage).toContain('入金情報2')
     expect(latestTwoTransfersSetMessage).toContain('入金前')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
+  })
+
+  it('displays latest two transfers (failed and recombination) if they are set', async () => {
+    const bankAccount = {
+      /* eslint-disable camelcase */
+      bank_code: '0001',
+      branch_code: '001',
+      account_type: '普通',
+      account_number: '00010000',
+      account_holder_name: 'ヤマダ タロウ'
+    /* eslint-enable camelcase */
+    }
+    const rewardsOfTheMonth = 2100
+
+    const transfer1 = {
+      /* eslint-disable camelcase */
+      status: 'recombination' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
+      amount: 4000,
+      scheduled_date_in_jst: {
+        year: 2021,
+        month: 12,
+        day: 31
+      },
+      transfer_amount: null,
+      transfer_date_in_jst: null,
+      carried_balance: null
+      /* eslint-enable camelcase */
+    }
+    const transfer2 = {
+      /* eslint-disable camelcase */
+      status: 'failed' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
+      amount: 3000,
+      scheduled_date_in_jst: {
+        year: 2022,
+        month: 1,
+        day: 31
+      },
+      transfer_amount: null,
+      transfer_date_in_jst: null,
+      carried_balance: null
+      /* eslint-enable camelcase */
+    }
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: bankAccount,
+      rewards_of_the_month: rewardsOfTheMonth,
+      latest_two_transfers: [transfer1, transfer2]
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const latestTwoTransfersSetDiv = wrapper.find('[data-test="latest-two-transfers-set"]')
+    expect(latestTwoTransfersSetDiv.exists)
+    const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
+    expect(latestTwoTransfersSetMessage).toContain('入金情報1')
+    expect(latestTwoTransfersSetMessage).toContain('処理状態')
+    expect(latestTwoTransfersSetMessage).toContain('入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が振込手数料として追加で引かれます）')
+    expect(latestTwoTransfersSetMessage).toContain('入金予定額')
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain('入金予定日')
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
+
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
+  })
+
+  // TODO: carried_overの仕様 を確認し、テストケースを追加
+  //  (carried_balanceに値が含まれる条件を確認する。以前、問い合わせでstatusがcarried_overのときにcarried_balanceに値が含まれると言っていたが含まれていなかった。
+  // 実際にcarried_balanceに値が含まれるのは入金予定日の後？
+  it('displays latest two transfers (stop and carried_over) if they are set', async () => {
+    const bankAccount = {
+      /* eslint-disable camelcase */
+      bank_code: '0001',
+      branch_code: '001',
+      account_type: '普通',
+      account_number: '00010000',
+      account_holder_name: 'ヤマダ タロウ'
+    /* eslint-enable camelcase */
+    }
+    const rewardsOfTheMonth = 2100
+
+    const transfer1 = {
+      /* eslint-disable camelcase */
+      status: 'stop' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
+      amount: 4000,
+      scheduled_date_in_jst: {
+        year: 2021,
+        month: 12,
+        day: 31
+      },
+      transfer_amount: null,
+      transfer_date_in_jst: null,
+      carried_balance: null
+      /* eslint-enable camelcase */
+    }
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: bankAccount,
+      rewards_of_the_month: rewardsOfTheMonth,
+      latest_two_transfers: [transfer1]
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const latestTwoTransfersSetDiv = wrapper.find('[data-test="latest-two-transfers-set"]')
+    expect(latestTwoTransfersSetDiv.exists)
+    const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
+    expect(latestTwoTransfersSetMessage).toContain('入金情報1')
+    expect(latestTwoTransfersSetMessage).toContain('処理状態')
+    expect(latestTwoTransfersSetMessage).toContain('入金差し止め（詳細な情報はお問い合わせ下さい）')
+    expect(latestTwoTransfersSetMessage).toContain('入金予定額')
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain('入金予定日')
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
+  })
+
+  it('displays latest two transfers (recombination and carried_over) if they are set', async () => {
+    const bankAccount = {
+      /* eslint-disable camelcase */
+      bank_code: '0001',
+      branch_code: '001',
+      account_type: '普通',
+      account_number: '00010000',
+      account_holder_name: 'ヤマダ タロウ'
+    /* eslint-enable camelcase */
+    }
+    const rewardsOfTheMonth = 2100
+
+    const transfer1 = {
+      /* eslint-disable camelcase */
+      status: 'failed' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
+      amount: 4000,
+      scheduled_date_in_jst: {
+        year: 2021,
+        month: 12,
+        day: 31
+      },
+      transfer_amount: null,
+      transfer_date_in_jst: null,
+      carried_balance: null
+      /* eslint-enable camelcase */
+    }
+    const transfer2 = {
+      /* eslint-disable camelcase */
+      status: 'stop' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
+      amount: 1980,
+      scheduled_date_in_jst: {
+        year: 2022,
+        month: 1,
+        day: 31
+      },
+      transfer_amount: null,
+      transfer_date_in_jst: null,
+      carried_balance: null
+      /* eslint-enable camelcase */
+    }
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: bankAccount,
+      rewards_of_the_month: rewardsOfTheMonth,
+      latest_two_transfers: [transfer1, transfer2]
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const latestTwoTransfersSetDiv = wrapper.find('[data-test="latest-two-transfers-set"]')
+    expect(latestTwoTransfersSetDiv.exists)
+    const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
+    expect(latestTwoTransfersSetMessage).toContain('入金情報1')
+    expect(latestTwoTransfersSetMessage).toContain('処理状態')
+    expect(latestTwoTransfersSetMessage).toContain('入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が振込手数料として追加で引かれます）')
+    expect(latestTwoTransfersSetMessage).toContain('入金予定額')
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain('入金予定日')
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
+
+    expect(latestTwoTransfersSetMessage).toContain('入金情報2')
+    expect(latestTwoTransfersSetMessage).toContain('入金差し止め（詳細な情報はお問い合わせ下さい）')
+    expect(latestTwoTransfersSetMessage).toContain('入金予定額')
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain('入金予定日')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
   })
 

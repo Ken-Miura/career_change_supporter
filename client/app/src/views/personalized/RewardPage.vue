@@ -77,6 +77,9 @@
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                       <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
                       <div class="mt-2 justify-self-start col-span-1">繰り越し予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
+                      <div class="mt-2 justify-self-start col-span-1">繰り越し確定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
+                      <div v-if="transfer.carried_balance !== null" class="mt-2 justify-self-start col-span-1">繰り越し額</div><div v-if="transfer.carried_balance !== null" class="justify-self-start col-span-2">{{ transfer.carried_balance }}円</div>
+                      <div v-if="transfer.carried_balance === null" class="mt-2 justify-self-start col-span-1">繰り越し額</div><div v-if="transfer.carried_balance === null" class="mt-2 justify-self-start col-span-2">繰り越し額が正しく表示出来ませんでした。お手数ですが、お問い合わせ先より問題のご報告をお願いいたします。</div>
                     </div>
                   </div>
                   <div v-else>
