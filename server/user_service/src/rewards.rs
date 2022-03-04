@@ -42,7 +42,7 @@ pub(crate) async fn get_reward(
     let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
     let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
     let current_datetime = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    get_reward_internal(
+    handle_reward_req(
         account_id,
         reward_op,
         tenant_op,
@@ -53,7 +53,7 @@ pub(crate) async fn get_reward(
     .await
 }
 
-async fn get_reward_internal(
+async fn handle_reward_req(
     account_id: i32,
     reward_op: impl RewardOperation,
     tenant_op: impl TenantOperation,
@@ -452,7 +452,7 @@ mod tests {
         util::{BankAccount, Ymd, JAPANESE_TIME_ZONE},
     };
 
-    use super::{get_reward_internal, RewardOperation};
+    use super::{handle_reward_req, RewardOperation};
 
     struct RewardOperationMock {
         tenant_option: Option<Tenant>,
@@ -590,7 +590,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -659,7 +659,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fail_tenant_too_many_requests() {
+    async fn handle_reward_req_fail_tenant_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -699,7 +699,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -718,7 +718,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fail_charges_too_many_requests() {
+    async fn handle_reward_req_fail_charges_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -758,7 +758,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -777,7 +777,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fail_tenant_transfers_too_many_requests() {
+    async fn handle_reward_req_fail_tenant_transfers_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -817,7 +817,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -836,7 +836,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn return_reward_with_tenant_1charge_1tenant_transfer() {
+    async fn handle_reward_req_return_reward_with_tenant_1charge_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -880,7 +880,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -1014,7 +1014,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn check_non_captured_charge_is_filterd() {
+    async fn handle_reward_req_check_non_captured_charge_is_filterd() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -1060,7 +1060,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -1147,7 +1147,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn return_reward_with_tenant_32charge_1tenant_transfer() {
+    async fn handle_reward_req_return_reward_with_tenant_32charge_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -1190,7 +1190,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -1282,7 +1282,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn return_reward_with_tenant_33charge_1tenant_transfer() {
+    async fn handle_reward_req_return_reward_with_tenant_33charge_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -1336,7 +1336,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
@@ -1374,7 +1374,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn return_reward_with_tenant_2tenant_transfers() {
+    async fn handle_reward_req_return_reward_with_tenant_2tenant_transfers() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
@@ -1418,7 +1418,7 @@ mod tests {
             .and_hms(14, 59, 59)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
-        let result = get_reward_internal(
+        let result = handle_reward_req(
             account_id,
             reward_op,
             tenant_op,
