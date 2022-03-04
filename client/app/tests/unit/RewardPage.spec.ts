@@ -362,7 +362,7 @@ describe('RewardPage.vue', () => {
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
     expect(latestTwoTransfersSetMessage).toContain('入金完了')
     expect(latestTwoTransfersSetMessage).toContain('入金予定額')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
     expect(latestTwoTransfersSetMessage).toContain('入金予定日')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
     expect(latestTwoTransfersSetMessage).toContain('入金額')
@@ -372,7 +372,7 @@ describe('RewardPage.vue', () => {
 
     expect(latestTwoTransfersSetMessage).toContain('入金情報2')
     expect(latestTwoTransfersSetMessage).toContain('入金前')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円 - 振込手数料`)
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
   })
 
