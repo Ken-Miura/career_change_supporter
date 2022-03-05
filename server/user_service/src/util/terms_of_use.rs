@@ -1,16 +1,13 @@
 // Copyright 2021 Ken Miura
 
+use axum::async_trait;
+use chrono::{DateTime, FixedOffset};
 use common::ErrResp;
-use common::{
-    model::user::TermsOfUse,
-    schema::ccs_schema::terms_of_use::dsl::terms_of_use as terms_of_use_table,
-};
 use core::panic;
-use diesel::{
-    r2d2::{ConnectionManager, PooledConnection},
-    PgConnection,
+use entity::{
+    prelude::TermsOfUse,
+    sea_orm::{DatabaseConnection, EntityTrait},
 };
-use diesel::{QueryDsl, RunQueryDsl};
 use once_cell::sync::Lazy;
 use std::env::var;
 
@@ -39,34 +36,57 @@ pub(crate) static TERMS_OF_USE_VERSION: Lazy<i32> = Lazy::new(|| {
     terms_of_use_version
 });
 
+#[async_trait]
 pub(crate) trait TermsOfUseLoadOperation {
-    fn load(&self, id: i32, terms_of_use_version: i32) -> Result<Vec<TermsOfUse>, ErrResp>;
+    async fn find(
+        &self,
+        account_id: i32,
+        terms_of_use_version: i32,
+    ) -> Result<Option<TermsOfUseData>, ErrResp>;
 }
 
 pub(crate) struct TermsOfUseLoadOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
 }
 
 impl TermsOfUseLoadOperationImpl {
-    pub(crate) fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
+    pub(crate) fn new(pool: DatabaseConnection) -> Self {
+        Self { pool }
     }
 }
 
+#[async_trait]
 impl TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl {
-    fn load(&self, id: i32, terms_of_use_version: i32) -> Result<Vec<TermsOfUse>, ErrResp> {
-        let results = terms_of_use_table
-            .find((id, terms_of_use_version))
-            .load::<TermsOfUse>(&self.conn)
+    async fn find(
+        &self,
+        account_id: i32,
+        terms_of_use_version: i32,
+    ) -> Result<Option<TermsOfUseData>, ErrResp> {
+        let model = TermsOfUse::find_by_id((account_id, terms_of_use_version))
+            .one(&self.pool)
+            .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to check if user agreed with terms of use (id: {}, version: {}): {}",
-                    id,
+                    "failed to find terms of use (account id: {}, version: {}): {}",
+                    account_id,
                     terms_of_use_version,
                     e
                 );
                 unexpected_err_resp()
             })?;
-        Ok(results)
+        Ok(model.map(|m| TermsOfUseData {
+            user_account_id: m.user_account_id,
+            ver: m.ver,
+            email_address: m.email_address,
+            agreed_at: m.agreed_at,
+        }))
     }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct TermsOfUseData {
+    pub user_account_id: i32,
+    pub ver: i32,
+    pub email_address: String,
+    pub agreed_at: DateTime<FixedOffset>,
 }

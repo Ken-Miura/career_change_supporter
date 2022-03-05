@@ -61,7 +61,7 @@
                     </div>
                     <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ career.career_start_date.year }}年{{ career.career_start_date.month }}月{{ career.career_start_date.day }}日</div>
                     <div v-if="career.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="career.career_end_date !== null" class="justify-self-start col-span-2">{{ career.career_end_date.year }}年{{ career.career_end_date.month }}月{{ career.career_end_date.day }}日</div>
-                    <button data-test="move-to-edit-career-page-button" v-on:click="moveToEditCareerPage(career.id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
+                    <button data-test="move-to-edit-career-page-button" v-on:click="moveToEditCareerPage(career.career_id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
                   </div>
                 </div>
               </li>
@@ -174,7 +174,7 @@ export default defineComponent({
       await router.push('careers')
     }
     const moveToEditCareerPage = async (careerId: number) => {
-      await router.push({ name: 'EditCareerPage', params: { id: careerId } })
+      await router.push({ name: 'EditCareerPage', params: { career_id: careerId } })
     }
     const moveToFeePerHourInYenPage = async () => {
       const identity = store.state.identity

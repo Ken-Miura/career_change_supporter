@@ -1,15 +1,8 @@
 // Copyright 2021 Ken Miura
 
-// TODO: #[macro_use]なしでdieselのマクロが使えるように変更が入った際に取り除く
-// https://github.com/diesel-rs/diesel/issues/1764
-#[macro_use]
-extern crate diesel;
-
-mod err;
-pub mod model;
+pub mod err;
 pub mod payment_platform;
 pub mod redis;
-pub mod schema;
 pub mod smtp;
 pub mod util;
 
@@ -17,14 +10,9 @@ use std::{env::var, fmt::Debug};
 
 use axum::{
     async_trait, extract,
-    extract::{Extension, FromRequest, RequestParts},
+    extract::{FromRequest, RequestParts},
     http::StatusCode,
     BoxError, Json,
-};
-
-use diesel::{
-    r2d2::{ConnectionManager, Pool, PooledConnection},
-    PgConnection,
 };
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -51,46 +39,6 @@ pub struct ApiError {
 /// <br>
 /// [Err]は、[ApiError]をJSONとしてBodyに含める[ErrResp]を包含する。
 pub type RespResult<T> = Result<Resp<T>, ErrResp>;
-
-pub type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
-
-/// データベースへのコネクション
-///
-/// ハンドラ関数内でデータベースへのアクセスを行いたい場合、原則としてこの型をパラメータとして受け付ける。
-/// ハンドラ内で複数のコネクションが必要な場合のみ、[axum::extract::Extension]<[ConnectionPool]>をパラメータとして受け付ける。
-pub struct DatabaseConnection(pub PooledConnection<ConnectionManager<PgConnection>>);
-
-#[async_trait]
-impl<B> FromRequest<B> for DatabaseConnection
-where
-    B: Send,
-{
-    type Rejection = ErrResp;
-
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
-            .await
-            .map_err(|e| {
-                tracing::error!("failed to extract connection pool from req: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        code: err::Code::UnexpectedErr as u32,
-                    }),
-                )
-            })?;
-        let conn = pool.get().map_err(|e| {
-            tracing::error!("failed to get connection from pool: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    code: err::Code::UnexpectedErr as u32,
-                }),
-            )
-        })?;
-        Ok(Self(conn))
-    }
-}
 
 /// ログインのために利用するCredential
 ///
@@ -150,24 +98,6 @@ where
     }
 }
 
-/// dieselのトランザクション内で発生したエラー<br>
-/// <br>
-/// アプリケーションに関連するエラーの場合、[TransactionErr::ApplicationErr]を、
-/// データベースアクセスに関連するエラー（diesel api呼び出しの結果のエラー）の場合、[TransactionErr::DatabaseErr]を利用する。<br>
-/// <br>
-/// NOTE: dieselのトランザクションは、エラーとしてFrom\<diesel::result::Error\>を実装した型を要求しているため、ErrRespを直接返却することができない。
-/// そのため、[TransactionErr]が必要となる。
-pub enum TransactionErr {
-    ApplicationErr(ErrResp),
-    DatabaseErr(diesel::result::Error),
-}
-
-impl From<diesel::result::Error> for TransactionErr {
-    fn from(e: diesel::result::Error) -> Self {
-        TransactionErr::DatabaseErr(e)
-    }
-}
-
 pub const KEY_TO_URL_FOR_FRONT_END: &str = "URL_FOR_FRONT_END";
 
 pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
@@ -183,9 +113,9 @@ pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
 /// [VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR] 丁度の期間は有効期限に含む
 pub const VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR: i64 = 24;
 
-/// 分単位での新規パスワードの有効期限<br>
-/// [VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE] 丁度の期間は有効期限に含む
-pub const VALID_PERIOD_OF_NEW_PASSWORD_IN_MINUTE: i64 = 10;
+/// 分単位でのパスワード変更要求の有効期限<br>
+/// [VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE] 丁度の期間は有効期限に含む
+pub const VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE: i64 = 10;
 
 /// 1アカウント当たりに登録可能な職務経歴情報の最大数
-pub const MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT: i64 = 8;
+pub const MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT: u64 = 8;

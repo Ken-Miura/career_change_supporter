@@ -41,20 +41,51 @@
               <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="transfer">
                 <div class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">入金情報{{ index + 1 }}</div>
-                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">
-                      <div v-if="transfer.status === 'pending'">入金前</div>
-                      <div v-else-if="transfer.status === 'paid'">入金完了</div>
-                      <div v-else-if="transfer.status === 'failed'">入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
-                      <div v-else-if="transfer.status === 'stop'">入金差し止め（詳細な情報はお問い合わせ下さい）</div>
-                      <div v-else-if="transfer.status === 'carried_over'">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
-                      <div v-else-if="transfer.status === 'recombination'">入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が引かれます）</div>
-                      <div v-else>想定されない処理状態（こちらの状態が表示された場合、お手数ですがお問い合わせより、その旨ご連絡下さい）</div>
+                  <div v-if="transfer.status === 'pending'">
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金前</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
                     </div>
-                    <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
-                    <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
-                    <div v-if="transfer.transfer_amount !== null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount !== null" class="justify-self-start col-span-2">{{ transfer.transfer_amount }}円</div>
-                    <div v-if="transfer.transfer_date_in_jst !== null" class="mt-2 justify-self-start col-span-1">入金日</div><div v-if="transfer.transfer_date_in_jst !== null" class="justify-self-start col-span-2">{{ transfer.transfer_date_in_jst.year }}年{{ transfer.transfer_date_in_jst.month }}月{{ transfer.transfer_date_in_jst.day }}日</div>
+                  </div>
+                  <div v-else-if="transfer.status === 'paid'">
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金完了</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
+                      <div v-if="transfer.transfer_amount !== null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount !== null" class="justify-self-start col-span-2">{{ transfer.transfer_amount }}円</div>
+                      <div v-if="transfer.transfer_amount === null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount === null" class="mt-2 justify-self-start col-span-2">入金額が正しく表示出来ませんでした。お手数ですが、お問い合わせ先より問題のご報告をお願いいたします。</div>
+                      <div v-if="transfer.transfer_date_in_jst !== null" class="mt-2 justify-self-start col-span-1">入金日</div><div v-if="transfer.transfer_date_in_jst !== null" class="justify-self-start col-span-2">{{ transfer.transfer_date_in_jst.year }}年{{ transfer.transfer_date_in_jst.month }}月{{ transfer.transfer_date_in_jst.day }}日</div>
+                      <div v-if="transfer.transfer_date_in_jst === null" class="mt-2 justify-self-start col-span-1">入金日</div><div v-if="transfer.transfer_date_in_jst === null" class="mt-2 justify-self-start col-span-2">入金日が正しく表示出来ませんでした。お手数ですが、お問い合わせ先より問題のご報告をお願いいたします。</div>
+                    </div>
+                  </div>
+                  <div v-else-if="transfer.status === 'recombination' || transfer.status === 'failed'">
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が振込手数料として追加で引かれます）</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
+                    </div>
+                  </div>
+                  <div v-else-if="transfer.status === 'stop'">
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金差し止め（詳細な情報はお問い合わせ下さい）</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
+                    </div>
+                  </div>
+                  <div v-else-if="transfer.status === 'carried_over'">
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
+                      <div class="mt-2 justify-self-start col-span-1">繰り越し予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
+                      <div class="mt-2 justify-self-start col-span-1">繰り越し確定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
+                      <div v-if="transfer.carried_balance !== null" class="mt-2 justify-self-start col-span-1">繰り越し額</div><div v-if="transfer.carried_balance !== null" class="justify-self-start col-span-2">{{ transfer.carried_balance }}円</div>
+                      <div v-if="transfer.carried_balance === null" class="mt-2 justify-self-start col-span-1">繰り越し額</div><div v-if="transfer.carried_balance === null" class="mt-2 justify-self-start col-span-2">繰り越し額が正しく表示出来ませんでした。お手数ですが、お問い合わせ先より問題のご報告をお願いいたします。</div>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">想定されない処理状態（こちらの状態が表示された場合、お手数ですがお問い合わせより、その旨ご連絡下さい）</div>
+                    </div>
                   </div>
                 </div>
               </li>

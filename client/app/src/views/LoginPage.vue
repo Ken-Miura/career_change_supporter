@@ -14,7 +14,7 @@
           <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
           <PasswordInput class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
           <div class="flex justify-end">
-            <router-link to="/password-change" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">パスワードを忘れた、または変更したい場合</router-link>
+            <router-link to="/password-change-req" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">パスワードを忘れた、または変更したい場合</router-link>
           </div>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ログイン</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>

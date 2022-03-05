@@ -30,5 +30,11 @@ npm run test:e2e
 npm run lint
 ```
 
+### Debug
+```
+npm run serve
+```
+を実行後、VSCodeの実行とデバッグからデバッグ用のChromeを起動
+
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).

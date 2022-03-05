@@ -19,7 +19,14 @@ module.exports = {
     }
   },
   devServer: {
-    https: true,
+    server: 'https',
+    client: {
+      webSocketURL: {
+        hostname: '0.0.0.0',
+        pathname: '/ws',
+        protocol: 'wss'
+      }
+    },
     proxy: {
       '^/api': {
         target: 'http://localhost:3000',

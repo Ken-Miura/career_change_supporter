@@ -8,21 +8,21 @@ use regex::Regex;
 
 use crate::util::{Identity, Ymd};
 
-const LAST_NAME_MIN_LENGTH: usize = 1;
-const LAST_NAME_MAX_LENGTH: usize = 64;
-const FIRST_NAME_MIN_LENGTH: usize = 1;
-const FIRST_NAME_MAX_LENGTH: usize = 64;
-const LAST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
-const LAST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
-const FIRST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
-const FIRST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
-const MIN_AGE_REQUIREMENT: i32 = 18;
-const CITY_MIN_LENGTH: usize = 1;
-const CITY_MAX_LENGTH: usize = 32;
-const ADDRESS_LINE1_MIN_LENGTH: usize = 1;
-const ADDRESS_LINE1_MAX_LENGTH: usize = 128;
-const ADDRESS_LINE2_MIN_LENGTH: usize = 1;
-const ADDRESS_LINE2_MAX_LENGTH: usize = 128;
+pub(crate) const LAST_NAME_MIN_LENGTH: usize = 1;
+pub(crate) const LAST_NAME_MAX_LENGTH: usize = 64;
+pub(crate) const FIRST_NAME_MIN_LENGTH: usize = 1;
+pub(crate) const FIRST_NAME_MAX_LENGTH: usize = 64;
+pub(crate) const LAST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
+pub(crate) const LAST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
+pub(crate) const FIRST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
+pub(crate) const FIRST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
+pub(crate) const MIN_AGE_REQUIREMENT: i32 = 18;
+pub(crate) const CITY_MIN_LENGTH: usize = 1;
+pub(crate) const CITY_MAX_LENGTH: usize = 32;
+pub(crate) const ADDRESS_LINE1_MIN_LENGTH: usize = 1;
+pub(crate) const ADDRESS_LINE1_MAX_LENGTH: usize = 128;
+pub(crate) const ADDRESS_LINE2_MIN_LENGTH: usize = 1;
+pub(crate) const ADDRESS_LINE2_MAX_LENGTH: usize = 128;
 
 static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     let mut set: HashSet<String> = HashSet::with_capacity(47);

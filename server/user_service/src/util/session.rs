@@ -1,14 +1,16 @@
 // Copyright 2021 Ken Miura
 
 use async_redis_session::RedisSessionStore;
-use async_session::{async_trait, Session, SessionStore};
+use async_session::{Session, SessionStore};
+use axum::async_trait;
 use axum::{
     extract::{Extension, FromRequest, RequestParts},
     http::StatusCode,
     Json,
 };
-use common::{ApiError, ConnectionPool, ErrResp};
+use common::{ApiError, ErrResp};
 use cookie::SameSite;
+use entity::sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::time::Duration;
 use tower_cookies::{Cookie, Cookies};
@@ -93,18 +95,15 @@ where
         let op = RefreshOperationImpl {};
         let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
 
-        let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
+        let Extension(pool) = Extension::<DatabaseConnection>::from_request(req)
             .await
             .map_err(|e| {
                 tracing::error!("failed to extract connection pool from req: {}", e);
                 unexpected_err_resp()
             })?;
-        let conn = pool.get().map_err(|e| {
-            tracing::error!("failed to get connection from pool: {}", e);
-            unexpected_err_resp()
-        })?;
-        let op = TermsOfUseLoadOperationImpl::new(conn);
-        let _ = check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION, op)?;
+        let op = TermsOfUseLoadOperationImpl::new(pool);
+        let _ =
+            check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION, op).await?;
 
         Ok(user)
     }
@@ -126,7 +125,7 @@ where
 /// 本関数は、Userの情報を使いたいが、利用規約の同意を確認したくないケース（ex. ユーザーから利用規約の同意を得るケース）のみに利用する<br>
 /// <br>
 /// # Errors
-/// 下記の場合、ステータスコード401、エラーコード[UNAUTHORIZED]を返す<br>
+/// 下記の場合、ステータスコード401、エラーコード[Unauthorized]を返す<br>
 /// <ul>
 ///   <li>Cookieがない場合</li>
 ///   <li>CookieにセッションIDが含まれていない場合</li>
@@ -209,33 +208,30 @@ impl RefreshOperation for RefreshOperationImpl {
     }
 }
 
-fn check_if_user_has_already_agreed(
-    id: i32,
+async fn check_if_user_has_already_agreed(
+    account_id: i32,
     terms_of_use_version: i32,
     op: impl TermsOfUseLoadOperation,
 ) -> Result<(), ErrResp> {
-    let results = op.load(id, terms_of_use_version)?;
-    let len = results.len();
-    if len == 0 {
+    let option = op.find(account_id, terms_of_use_version).await?;
+    let terms_of_use_data = option.ok_or_else(|| {
         tracing::info!(
-            "id ({}) has not agreed terms of use version {} yet",
-            id,
+            "account id ({}) has not agreed terms of use version {} yet",
+            account_id,
             terms_of_use_version
         );
-        return Err((
+        (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: NotTermsOfUseAgreedYet as u32,
             }),
-        ));
-    }
-    if len > 1 {
-        // NOTE: primary keyで検索しているため、ここを通るケースはdieselの障害
-        panic!(
-            "number of terms of use (id: {}, version: {}): {}",
-            id, terms_of_use_version, len
         )
-    }
+    })?;
+    tracing::debug!("accound (id: {}, email address: {}) has already agreed with terms of use (version: {}) at {}", 
+        terms_of_use_data.user_account_id,
+        terms_of_use_data.email_address,
+        terms_of_use_data.ver,
+        terms_of_use_data.agreed_at);
     Ok(())
 }
 
@@ -243,9 +239,10 @@ fn check_if_user_has_already_agreed(
 #[cfg(test)]
 pub(crate) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
+    use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::TimeZone;
-    use common::{model::user::TermsOfUse, ErrResp};
+    use common::ErrResp;
     use cookie::{Cookie, SameSite};
     use headers::HeaderValue;
     use tower_cookies::Cookies;
@@ -254,8 +251,8 @@ pub(crate) mod tests {
         err,
         util::{
             session::{get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
-            terms_of_use::TermsOfUseLoadOperation,
-            ROOT_PATH,
+            terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
+            JAPANESE_TIME_ZONE, ROOT_PATH,
         },
     };
 
@@ -430,39 +427,49 @@ pub(crate) mod tests {
         }
     }
 
+    #[async_trait]
     impl TermsOfUseLoadOperation for TermsOfUseLoadOperationMock {
-        fn load(&self, id: i32, terms_of_use_version: i32) -> Result<Vec<TermsOfUse>, ErrResp> {
+        async fn find(
+            &self,
+            account_id: i32,
+            terms_of_use_version: i32,
+        ) -> Result<Option<TermsOfUseData>, ErrResp> {
             if !self.has_already_agreed {
-                return Ok(vec![]);
+                return Ok(None);
             }
-            let terms_of_use = TermsOfUse {
-                user_account_id: id,
+            let terms_of_use_data = TermsOfUseData {
+                user_account_id: account_id,
                 ver: terms_of_use_version,
                 email_address: "test@example.com".to_string(),
-                agreed_at: chrono::Utc.ymd(2021, 11, 5).and_hms(20, 00, 40),
+                agreed_at: chrono::Utc
+                    .ymd(2021, 11, 5)
+                    .and_hms(20, 00, 40)
+                    .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
             };
-            Ok(vec![terms_of_use])
+            Ok(Some(terms_of_use_data))
         }
     }
 
-    #[test]
-    fn check_if_user_has_already_agreed_success_user_has_already_agreed() {
+    #[tokio::test]
+    async fn check_if_user_has_already_agreed_success_user_has_already_agreed() {
         let user_account_id = 10002;
         let terms_of_use_version = 1;
         let op = TermsOfUseLoadOperationMock::new(true);
 
-        let result = check_if_user_has_already_agreed(user_account_id, terms_of_use_version, op);
+        let result =
+            check_if_user_has_already_agreed(user_account_id, terms_of_use_version, op).await;
 
         result.expect("failed to get Ok");
     }
 
-    #[test]
-    fn check_if_user_has_already_agreed_fail_user_has_not_agreed_yet() {
+    #[tokio::test]
+    async fn check_if_user_has_already_agreed_fail_user_has_not_agreed_yet() {
         let user_account_id = 10002;
         let terms_of_use_version = 1;
         let op = TermsOfUseLoadOperationMock::new(false);
 
         let result = check_if_user_has_already_agreed(user_account_id, terms_of_use_version, op)
+            .await
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);

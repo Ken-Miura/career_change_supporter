@@ -47,8 +47,8 @@ export default defineComponent({
           // store.state.careersのlengthが0 -> profileへ移動
           // idに一致するcareerがない -> Not Foundを表示 (TODO: そのようなケースがあるのか確認)
           const careers = store.state.careers
-          const id = route.params.id as string
-          career.value = findCareerById(id, careers)
+          const careerId = route.params.career_id as string
+          career.value = findCareerById(careerId, careers)
         } else if (resp instanceof ApiErrorResp) {
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
@@ -64,7 +64,7 @@ export default defineComponent({
     })
     // router-linkで違うparamsを指定した際に備えてwatchを使う
     //  (TODO: そのようなケースがあるのか確認)
-    watch(() => route.params.id, newId => {
+    watch(() => route.params.career_id, newId => {
       const careers = store.state.careers
       career.value = findCareerById(newId as string, careers)
     })
@@ -72,10 +72,10 @@ export default defineComponent({
   }
 })
 
-function findCareerById (id: string, careers: Career[]): Career | null {
+function findCareerById (careerId: string, careers: Career[]): Career | null {
   for (const career of careers) {
-    const careerIdStr = career.id.toString()
-    if (careerIdStr === id) {
+    const careerIdStr = career.career_id.toString()
+    if (careerIdStr === careerId) {
       return career
     }
   }

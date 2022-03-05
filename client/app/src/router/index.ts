@@ -49,28 +49,28 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/AccountCreationPage.vue')
   },
   {
-    path: '/password-change',
-    name: 'PasswordChangePage',
+    path: '/password-change-req',
+    name: 'PasswordChangeReqPage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/PasswordChangePage.vue')
+    component: () => import('../views/PasswordChangeReqPage.vue')
   },
   {
-    path: '/new-password-creation-result',
-    name: 'NewPasswordCreationResultPage',
+    path: '/password-change-req-result',
+    name: 'PasswordChangeReqResultPage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/NewPasswordCreationResultPage.vue')
+    component: () => import('../views/PasswordChangeReqResultPage.vue')
   },
   {
-    path: '/password-change-confirmation',
-    name: 'PasswordChangeConfirmationPage',
+    path: '/password-update',
+    name: 'PasswordUpdatePage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/PasswordChangeConfirmationPage.vue')
+    component: () => import('../views/PasswordUpdatePage.vue')
   },
   {
-    path: '/apply-new-password-result',
-    name: 'ApplyNewPasswordResultPage',
+    path: '/password-update-result',
+    name: 'PasswordUpdateResultPage',
     // パスワード変更は頻繁に起こらないと思われるため、lazy loading
-    component: () => import('../views/ApplyNewPasswordResultPage.vue')
+    component: () => import('../views/PasswordUpdateResultPage.vue')
   },
   {
     path: '/terms-of-use',
@@ -100,7 +100,7 @@ const routes: Array<RouteRecordRaw> = [
     component: IdentityPage
   },
   {
-    path: '/careers/:id',
+    path: '/careers/:career_id',
     name: 'EditCareerPage',
     component: EditCareerPage
   },

@@ -2,7 +2,7 @@ import { Ymd } from '../../Ymd'
 
 export type Career = {
     /* eslint-disable camelcase */
-    id: number,
+    career_id: number,
     company_name: string,
     department_name: string | null,
     office: string | null,

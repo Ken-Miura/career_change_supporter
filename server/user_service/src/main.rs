@@ -6,8 +6,8 @@ mod err;
 mod identity;
 mod login;
 mod logout;
-mod new_password;
-mod password_change;
+mod password_change_req;
+mod password_update;
 mod profile;
 mod refresh;
 mod rewards;
@@ -19,8 +19,8 @@ use crate::agreement::post_agreement;
 use crate::identity::post_identity;
 use crate::login::post_login;
 use crate::logout::post_logout;
-use crate::new_password::post_new_password;
-use crate::password_change::post_password_change;
+use crate::password_change_req::post_password_change_req;
+use crate::password_update::post_password_update;
 use crate::profile::get_profile;
 use crate::refresh::get_refresh;
 use crate::rewards::get_reward;
@@ -31,14 +31,15 @@ use crate::util::{
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME, ROOT_PATH,
 };
 use async_redis_session::RedisSessionStore;
+use axum::extract::Extension;
 use axum::routing::{get, post};
-use axum::{AddExtensionLayer, Router};
+use axum::Router;
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::util::check_env_vars;
-use common::{ConnectionPool, KEY_TO_URL_FOR_FRONT_END};
-use diesel::{r2d2::ConnectionManager, r2d2::Pool, PgConnection};
+use common::KEY_TO_URL_FOR_FRONT_END;
 use dotenv::dotenv;
+use entity::sea_orm::{ConnectOptions, Database};
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
@@ -84,7 +85,7 @@ fn main() {
 async fn main_internal(num_of_cpus: u32) {
     set_var(
         "RUST_LOG",
-        "user_service=debug,common=debug,tower_http=debug",
+        "user_service=debug,common=debug,tower_http=debug,sea_orm=debug",
     );
     tracing_subscriber::fmt::init();
 
@@ -94,12 +95,14 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_DATABASE_URL
         )
     });
-    let manager = ConnectionManager::<PgConnection>::new(&database_url);
-    // NOTE: bb8-dieselのcrate (https://crates.io/crates/bb8-diesel) がtokio 1.0系統に対応した後、r2d2からの移行を検討する
-    let pool: ConnectionPool = Pool::builder()
-        .max_size(num_of_cpus)
-        .build(manager)
-        .expect("failed to build connection pool");
+
+    let mut opt = ConnectOptions::new(database_url.clone());
+    opt.max_connections(num_of_cpus)
+        .min_connections(num_of_cpus)
+        .sqlx_logging(true);
+    let pool = Database::connect(opt)
+        .await
+        .expect("failed to connect database");
 
     let redis_url = var(KEY_TO_URL_FOR_REDIS_SERVER).unwrap_or_else(|_| {
         panic!(
@@ -119,14 +122,14 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/logout", post(post_logout))
                 .route("/refresh", get(get_refresh))
                 .route("/agreement", post(post_agreement))
-                .route("/new-password", post(post_new_password))
-                .route("/password-change", post(post_password_change))
+                .route("/password-change-req", post(post_password_change_req))
+                .route("/password-update", post(post_password_update))
                 .route("/profile", get(get_profile))
                 .route("/rewards", get(get_reward))
                 .route("/identity", post(post_identity)),
         )
-        .layer(AddExtensionLayer::new(pool))
-        .layer(AddExtensionLayer::new(store))
+        .layer(Extension(pool))
+        .layer(Extension(store))
         .layer(CookieManagerLayer::new())
         .layer(TraceLayer::new_for_http());
 

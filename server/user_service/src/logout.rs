@@ -24,7 +24,7 @@ pub(crate) async fn post_logout(
     cookies: Cookies,
     Extension(store): Extension<RedisSessionStore>,
 ) -> LogoutResult {
-    post_logout_internal(cookies, &store).await
+    handle_logout_req(cookies, &store).await
 }
 
 /// ログアウトリクエストの結果を示す型
@@ -33,7 +33,7 @@ pub(crate) type LogoutResult = Result<LogoutResp, ErrResp>;
 /// ログアウトに成功した場合に返却される型
 pub(crate) type LogoutResp = (StatusCode, HeaderMap);
 
-async fn post_logout_internal(cookies: Cookies, store: &impl SessionStore) -> LogoutResult {
+async fn handle_logout_req(cookies: Cookies, store: &impl SessionStore) -> LogoutResult {
     let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
     let session_id_value = match option_cookie {
         Some(session_id) => session_id.value().to_string(),
@@ -92,14 +92,14 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn logout_success_session_alive() {
+    async fn handle_logout_req_success_session_alive() {
         let store = MemoryStore::new();
         let user_account_id = 203;
         let session_id_value = prepare_session(user_account_id, &store).await;
         let cookies = prepare_cookies(&session_id_value);
         assert_eq!(1, store.count().await);
 
-        let result = post_logout_internal(cookies, &store)
+        let result = handle_logout_req(cookies, &store)
             .await
             .expect("failed to get Ok");
 
@@ -114,11 +114,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn logout_success_no_cookie() {
+    async fn handle_logout_req_success_no_cookie() {
         let cookies = Cookies::default();
         let store = MemoryStore::new();
 
-        let result = post_logout_internal(cookies, &store)
+        let result = handle_logout_req(cookies, &store)
             .await
             .expect("failed to get Ok");
 
@@ -127,13 +127,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn logout_success_incorrect_cookie() {
+    async fn handle_logout_req_success_incorrect_cookie() {
         let cookies = Cookies::default();
         let cookie = Cookie::new("name", "taro");
         cookies.add(cookie);
         let store = MemoryStore::new();
 
-        let result = post_logout_internal(cookies, &store)
+        let result = handle_logout_req(cookies, &store)
             .await
             .expect("failed to get Ok");
 
@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn logout_success_session_already_expired() {
+    async fn handle_logout_req_success_session_already_expired() {
         let store = MemoryStore::new();
         let user_account_id = 203;
         let session_id_value = prepare_session(user_account_id, &store).await;
@@ -151,7 +151,7 @@ mod tests {
         let _ = remove_session_from_store(&session_id_value, &store).await;
         assert_eq!(0, store.count().await);
 
-        let result = post_logout_internal(option_cookie, &store)
+        let result = handle_logout_req(option_cookie, &store)
             .await
             .expect("failed to get Ok");
 

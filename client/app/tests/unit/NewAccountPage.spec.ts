@@ -121,7 +121,7 @@ describe('NewAccountPage.vue', () => {
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.REACH_TEMP_ACCOUNTS_LIMIT_MESSAGE)
-    expect(resultMessage).toContain(Code.REACH_TEMP_ACCOUNTS_LIMIT)
+    expect(resultMessage).toContain(Code.REACH_TEMP_ACCOUNTS_LIMIT.toString())
   })
 
   it('does not move TempAccountCreationResultPage when password and password confirm are different', async () => {

@@ -5,28 +5,24 @@ use std::io::Cursor;
 
 use async_session::serde_json;
 use axum::async_trait;
+use axum::extract::Extension;
 use axum::{
     extract::{ContentLengthLimit, Multipart},
     http::StatusCode,
     Json,
 };
 use bytes::Bytes;
-use chrono::{DateTime, NaiveDate, Utc};
-use common::model::user::{IdentityInfo, NewCreateIdentityInfoReq};
-use common::schema::ccs_schema::create_identity_info_req::table as create_identity_info_req_table;
-use common::schema::ccs_schema::identity_info::dsl::identity_info;
+use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
-    ApiError, DatabaseConnection, ErrResp, RespResult,
+    ApiError, ErrResp, RespResult,
 };
-use diesel::result::Error::NotFound;
-use diesel::{insert_into, RunQueryDsl};
-use diesel::{
-    r2d2::{ConnectionManager, PooledConnection},
-    PgConnection,
+use entity::create_identity_info_req;
+use entity::prelude::IdentityInfo;
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, Set, TransactionTrait,
 };
-use diesel::{Connection, QueryDsl};
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
 use uuid::Uuid;
@@ -55,18 +51,15 @@ pub(crate) async fn post_identity(
             9 * 1024 * 1024 /* 9mb */
         },
     >,
-    DatabaseConnection(conn): DatabaseConnection,
+    Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<IdentityResult> {
     let multipart_wrapper = MultipartWrapperImpl { multipart };
-    let current_date_time = Utc::now();
-    let current_date = current_date_time
-        .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
-        .naive_local()
-        .date();
+    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date = current_date_time.naive_local().date();
     let (identity, identity_image1, identity_image2_option) =
         handle_multipart(multipart_wrapper, current_date).await?;
 
-    let op = SubmitIdentityOperationImpl::new(conn);
+    let op = SubmitIdentityOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let image1_file_name_without_etx = Uuid::new_v4().to_simple().to_string();
     let image2_file_name_without_etx = Uuid::new_v4().to_simple().to_string();
@@ -77,7 +70,7 @@ pub(crate) async fn post_identity(
         identity_image2: identity_image2_option.map(|image| (image2_file_name_without_etx, image)),
     };
     let result =
-        post_identity_internal(submitted_identity, current_date_time, op, smtp_client).await?;
+        handle_identity_req(submitted_identity, current_date_time, op, smtp_client).await?;
     Ok(result)
 }
 
@@ -393,41 +386,40 @@ fn trim_space_from_identity(identity: Identity) -> Identity {
     }
 }
 
-async fn post_identity_internal(
+async fn handle_identity_req(
     submitted_identity: SubmittedIdentity,
-    current_date_time: DateTime<Utc>,
+    current_date_time: DateTime<FixedOffset>,
     op: impl SubmitIdentityOperation,
     send_mail: impl SendMail,
 ) -> RespResult<IdentityResult> {
     let account_id = submitted_identity.account_id;
-    let identity_exists = async move {
-        let exists = op
-            .check_if_identity_already_exists(account_id)
+    let identity_exists = op
+        .check_if_identity_already_exists(account_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "failed to check user's identity existence (id: {})",
+                account_id
+            );
+            e
+        })?;
+    if identity_exists {
+        let _ = op
+            .request_update_identity(submitted_identity, current_date_time)
+            .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to check user's identity existence (id: {})",
-                    account_id
-                );
+                tracing::error!("failed to handle update reqest (id: {})", account_id);
                 e
             })?;
-        if exists {
-            let _ = op
-                .request_update_identity(submitted_identity, current_date_time)
-                .map_err(|e| {
-                    tracing::error!("failed to handle update reqest (id: {})", account_id);
-                    e
-                })?;
-        } else {
-            let _ = op
-                .request_create_identity(submitted_identity, current_date_time)
-                .map_err(|e| {
-                    tracing::error!("failed to handle post request (id: {})", account_id);
-                    e
-                })?;
-        };
-        Ok(exists)
-    }
-    .await?;
+    } else {
+        let _ = op
+            .request_create_identity(submitted_identity, current_date_time)
+            .await
+            .map_err(|e| {
+                tracing::error!("failed to handle post request (id: {})", account_id);
+                e
+            })?;
+    };
     let subject = create_subject(account_id, identity_exists);
     let text = create_text(account_id, identity_exists);
     let _ =
@@ -461,99 +453,108 @@ fn create_text(id: i32, update: bool) -> String {
     )
 }
 
+#[async_trait]
 trait SubmitIdentityOperation {
-    fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
-    fn request_create_identity(
+    async fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
+    async fn request_create_identity(
         &self,
         identity: SubmittedIdentity,
-        current_date_time: DateTime<Utc>,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
-    fn request_update_identity(
+    async fn request_update_identity(
         &self,
         identity: SubmittedIdentity,
-        current_date_time: DateTime<Utc>,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
 struct SubmitIdentityOperationImpl {
-    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    pool: DatabaseConnection,
 }
 
 impl SubmitIdentityOperationImpl {
-    fn new(conn: PooledConnection<ConnectionManager<PgConnection>>) -> Self {
-        Self { conn }
+    fn new(pool: DatabaseConnection) -> Self {
+        Self { pool }
     }
 }
 
+#[async_trait]
 impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
-    fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
-        let result = identity_info
-            .find(account_id)
-            .first::<IdentityInfo>(&self.conn);
-        match result {
-            Ok(_) => Ok(true),
-            Err(e) => {
-                if e == NotFound {
-                    Ok(false)
-                } else {
-                    Err(unexpected_err_resp())
-                }
-            }
-        }
+    async fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
+        let model = IdentityInfo::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find identity info (account id: {}): {}",
+                    account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.is_some())
     }
 
-    fn request_create_identity(
+    async fn request_create_identity(
         &self,
         submitted_identity: SubmittedIdentity,
-        current_date_time: DateTime<Utc>,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         let account_id = submitted_identity.account_id;
+        let identity = submitted_identity.identity;
         let identity_image1 = submitted_identity.identity_image1;
         let image1_file_name_without_ext = identity_image1.0.clone();
         let (identity_image2, image2_file_name_without_ext) =
             SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
-        let identity = submitted_identity.identity;
-        let date_of_birth = &NaiveDate::from_ymd(
-            identity.date_of_birth.year,
-            identity.date_of_birth.month,
-            identity.date_of_birth.day,
-        );
-        let new_create_identity_info_req = NewCreateIdentityInfoReq {
-            user_account_id: &submitted_identity.account_id,
-            last_name: &identity.last_name,
-            first_name: &identity.first_name,
-            last_name_furigana: &identity.last_name_furigana,
-            first_name_furigana: &identity.first_name_furigana,
-            date_of_birth,
-            prefecture: &identity.prefecture,
-            city: &identity.city,
-            address_line1: &identity.address_line1,
-            address_line2: identity.address_line2.as_deref(),
-            telephone_number: &identity.telephone_number,
-            image1_file_name_without_ext: &image1_file_name_without_ext,
-            image2_file_name_without_ext: image2_file_name_without_ext.as_deref(),
-            requested_at: &current_date_time,
-        };
-        let _result = self.conn.transaction::<(), diesel::result::Error, _>(|| {
-            let _ = insert_into(create_identity_info_req_table)
-                .values(new_create_identity_info_req)
-                .execute(&self.conn)
-                .map_err(|e| {
-                    tracing::error!("failed to insert record (account id: {}) into create_identity_info_req: {}", account_id, e);
+        let _ = self
+            .pool
+            .transaction::<_, (), DbErr>(|txn| {
+                Box::pin(async move {
+                    // TODO: 既にcreate_identity_info_reqにデータがあるか確認する
+                    let date_of_birth = NaiveDate::from_ymd(
+                        identity.date_of_birth.year,
+                        identity.date_of_birth.month,
+                        identity.date_of_birth.day,
+                    );
+                    let active_model = create_identity_info_req::ActiveModel {
+                        user_account_id: Set(account_id),
+                        last_name: Set(identity.last_name),
+                        first_name: Set(identity.first_name),
+                        last_name_furigana: Set(identity.last_name_furigana),
+                        first_name_furigana: Set(identity.first_name_furigana),
+                        date_of_birth: Set(date_of_birth),
+                        prefecture: Set(identity.prefecture),
+                        city: Set(identity.city),
+                        address_line1: Set(identity.address_line1),
+                        address_line2: Set(identity.address_line2),
+                        telephone_number: Set(identity.telephone_number),
+                        image1_file_name_without_ext: Set(image1_file_name_without_ext),
+                        image2_file_name_without_ext: Set(image2_file_name_without_ext),
+                        requested_at: Set(current_date_time),
+                    };
+                    let _ = active_model.insert(txn).await?;
+                    println!("{:?}", account_id);
+                    println!("{:?}", identity_image1);
+                    println!("{:?}", identity_image2);
+                    todo!("画像をS3に送信")
+                })
+            })
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to set up create_identity_info_req (account id: {}): {}",
+                    account_id,
                     e
-                })?;
-            println!("{:?}", account_id);
-            println!("{:?}", identity_image1);
-            println!("{:?}", identity_image2);
-            todo!("画像をS3に送信")
-        });
-        todo!()
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(())
     }
 
-    fn request_update_identity(
+    async fn request_update_identity(
         &self,
         _identity: SubmittedIdentity,
-        _current_date_time: DateTime<Utc>,
+        _current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         todo!()
     }
