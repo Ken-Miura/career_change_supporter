@@ -1,15 +1,8 @@
 // Copyright 2021 Ken Miura
 
-// TODO: #[macro_use]なしでdieselのマクロが使えるように変更が入った際に取り除く
-// https://github.com/diesel-rs/diesel/issues/1764
-#[macro_use]
-extern crate diesel;
-
 pub mod err;
-pub mod model;
 pub mod payment_platform;
 pub mod redis;
-pub mod schema;
 pub mod smtp;
 pub mod util;
 
@@ -17,14 +10,9 @@ use std::{env::var, fmt::Debug};
 
 use axum::{
     async_trait, extract,
-    extract::{Extension, FromRequest, RequestParts},
+    extract::{FromRequest, RequestParts},
     http::StatusCode,
     BoxError, Json,
-};
-
-use diesel::{
-    r2d2::{ConnectionManager, Pool, PooledConnection},
-    PgConnection,
 };
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -51,46 +39,6 @@ pub struct ApiError {
 /// <br>
 /// [Err]は、[ApiError]をJSONとしてBodyに含める[ErrResp]を包含する。
 pub type RespResult<T> = Result<Resp<T>, ErrResp>;
-
-pub type ConnectionPool = Pool<ConnectionManager<PgConnection>>;
-
-/// データベースへのコネクション
-///
-/// ハンドラ関数内でデータベースへのアクセスを行いたい場合、原則としてこの型をパラメータとして受け付ける。
-/// ハンドラ内で複数のコネクションが必要な場合のみ、[axum::extract::Extension]<[ConnectionPool]>をパラメータとして受け付ける。
-pub struct DatabaseConnection(pub PooledConnection<ConnectionManager<PgConnection>>);
-
-#[async_trait]
-impl<B> FromRequest<B> for DatabaseConnection
-where
-    B: Send,
-{
-    type Rejection = ErrResp;
-
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let Extension(pool) = Extension::<ConnectionPool>::from_request(req)
-            .await
-            .map_err(|e| {
-                tracing::error!("failed to extract connection pool from req: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        code: err::Code::UnexpectedErr as u32,
-                    }),
-                )
-            })?;
-        let conn = pool.get().map_err(|e| {
-            tracing::error!("failed to get connection from pool: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    code: err::Code::UnexpectedErr as u32,
-                }),
-            )
-        })?;
-        Ok(Self(conn))
-    }
-}
 
 /// ログインのために利用するCredential
 ///
