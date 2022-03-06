@@ -6,7 +6,11 @@ pub mod redis;
 pub mod smtp;
 pub mod util;
 
-use std::{env::var, fmt::Debug};
+use std::{
+    env::var,
+    error::Error,
+    fmt::{Debug, Display},
+};
 
 use axum::{
     async_trait, extract,
@@ -31,6 +35,26 @@ pub type ErrResp = Resp<ApiError>;
 pub struct ApiError {
     pub code: u32,
 }
+
+/// [ErrResp]を包含し、[Error]を実装した構造体
+///
+/// [ErrResp]の実体がtupleで[Error]を実装できない。そのため、[Error]としての型が必要な箇所で[ErrResp]を扱う際に利用する。
+#[derive(Debug)]
+pub struct ErrRespStruct {
+    pub err_resp: ErrResp,
+}
+
+impl Display for ErrRespStruct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "status code: {}, error code: {}",
+            self.err_resp.0, self.err_resp.1.code
+        )
+    }
+}
+
+impl Error for ErrRespStruct {}
 
 /// API呼び出しに対して、クライアントに返却するレスポンスを含む[Result]
 ///

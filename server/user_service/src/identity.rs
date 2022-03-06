@@ -3,6 +3,7 @@
 use std::error::Error;
 use std::io::Cursor;
 
+use crate::err::Code::CreateIdentityInfoReqAlreadyExists;
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -14,14 +15,15 @@ use axum::{
 use bytes::Bytes;
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
+use common::ErrRespStruct;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
 };
 use entity::create_identity_info_req;
-use entity::prelude::IdentityInfo;
+use entity::prelude::{CreateIdentityInfoReq, IdentityInfo};
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, Set, TransactionTrait,
+    ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
@@ -508,9 +510,35 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
         let _ = self
             .pool
-            .transaction::<_, (), DbErr>(|txn| {
+            .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // TODO: 既にcreate_identity_info_reqにデータがあるか確認する
+                    let model = CreateIdentityInfoReq::find_by_id(account_id)
+                        .one(txn)
+                        .await
+                        .map_err(|e| {
+                            tracing::error!(
+                                "failed to find create identity info req (account id: {}): {}",
+                                account_id,
+                                e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                    if model.is_some() {
+                        tracing::error!(
+                            "create identity info req (account id: {}) exists",
+                            account_id
+                        );
+                        return Err(ErrRespStruct {
+                            err_resp: (
+                                StatusCode::BAD_REQUEST,
+                                Json(ApiError {
+                                    code: CreateIdentityInfoReqAlreadyExists as u32,
+                                }),
+                            ),
+                        });
+                    };
                     let date_of_birth = NaiveDate::from_ymd(
                         identity.date_of_birth.year,
                         identity.date_of_birth.month,
@@ -532,7 +560,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                         image2_file_name_without_ext: Set(image2_file_name_without_ext),
                         requested_at: Set(current_date_time),
                     };
-                    let _ = active_model.insert(txn).await?;
+                    let _ = active_model.insert(txn).await;
                     println!("{:?}", account_id);
                     println!("{:?}", identity_image1);
                     println!("{:?}", identity_image2);
@@ -540,13 +568,18 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                 })
             })
             .await
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to set up create_identity_info_req (account id: {}): {}",
-                    account_id,
-                    e
-                );
-                unexpected_err_resp()
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    tracing::error!("failed to insert create identity info req: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    tracing::error!(
+                        "failed to insert create identity info req: {}",
+                        err_resp_struct
+                    );
+                    err_resp_struct.err_resp
+                }
             })?;
         Ok(())
     }
