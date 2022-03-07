@@ -31,6 +31,8 @@ use crate::util::{
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME, ROOT_PATH,
 };
 use async_redis_session::RedisSessionStore;
+use aws_sdk_s3::types::ByteStream;
+use aws_sdk_s3::{Client, Endpoint};
 use axum::extract::Extension;
 use axum::routing::{get, post};
 use axum::Router;
@@ -40,9 +42,11 @@ use common::util::check_env_vars;
 use common::KEY_TO_URL_FOR_FRONT_END;
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
+use http::Uri;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
+use std::io::Cursor;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 
@@ -88,6 +92,49 @@ async fn main_internal(num_of_cpus: u32) {
         "user_service=debug,common=debug,tower_http=debug,sea_orm=debug",
     );
     tracing_subscriber::fmt::init();
+
+    let conf = aws_config::load_from_env().await;
+    let ep = Endpoint::immutable(Uri::from_static("http://storage:9000"));
+    // let ep = Endpoint::immutable(Uri::from_static("https://s3.ap-northeast-1.amazonaws.com"));
+    let s3_conf = aws_sdk_s3::config::Builder::from(&conf)
+        .endpoint_resolver(ep)
+        .build();
+    //let s3_conf = aws_sdk_s3::config::Builder::from(&conf).build();
+    let s3 = Client::from_conf(s3_conf);
+
+    // list
+    // let buckets = s3.list_buckets().send().await;
+    // println!("got buckets: {:#?}", buckets);
+
+    // put
+    // let bytes = vec![0x66, 0x6f, 0x6f, 0x0d, 0x0a, 0x62, 0x61, 0x72, 0x0d, 0x0a];
+    // let buff = Cursor::new(bytes);
+    // let stream = ByteStream::from(buff.into_inner());
+    // let result = s3
+    //     .put_object()
+    //     .bucket("ccs-career-images")
+    //     .key("1/bc999c52f1cc4801bfd9216cdebc0766.txt")
+    //     .body(stream)
+    //     .send()
+    //     .await;
+    // println!("result: {:?}", result);
+
+    // get
+    let resp = s3
+        .get_object()
+        .bucket("ccs-career-images")
+        .key("1/bc999c52f1cc4801bfd9216cdebc0766.txt")
+        .send()
+        .await
+        .expect("failed get_object");
+    let data = resp.body.collect().await.unwrap().into_bytes();
+    let data_vec = data.to_vec();
+    println!(
+        "Data from downloaded object: {:?}",
+        data_vec
+    );
+
+    return;
 
     let database_url = var(KEY_TO_DATABASE_URL).unwrap_or_else(|_| {
         panic!(
