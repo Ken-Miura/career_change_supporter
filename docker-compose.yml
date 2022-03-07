@@ -51,10 +51,10 @@ services:
     image: minio/minio:RELEASE.2022-02-01T18-00-14Z
     container_name: "storage"
     entrypoint: sh -c "
-        mkdir -p /data/identity-images;
-        mkdir -p /data/.minio.sys/buckets/identity-images;
-        mkdir -p /data/career-images;
-        mkdir -p /data/.minio.sys/buckets/career-images;
+        mkdir -p /data/ccs-identity-images;
+        mkdir -p /data/.minio.sys/buckets/ccs-identity-images;
+        mkdir -p /data/ccs-career-images;
+        mkdir -p /data/.minio.sys/buckets/ccs-career-images;
         minio server /data --console-address ':37135'"
     ports:
       - 37135:37135 # 管理画面のポート
@@ -68,8 +68,8 @@ services:
     networks:
       development_network:
         aliases:
-          - identity-images.storage
-          - career-images.storage
+          - ccs-identity-images.storage
+          - ccs-career-images.storage
 
   elasticsearch:
     build:
