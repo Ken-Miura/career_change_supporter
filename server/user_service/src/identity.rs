@@ -64,13 +64,13 @@ pub(crate) async fn post_identity(
 
     let op = SubmitIdentityOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    let image1_file_name_without_etx = Uuid::new_v4().to_simple().to_string();
-    let image2_file_name_without_etx = Uuid::new_v4().to_simple().to_string();
+    let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+    let image2_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
     let submitted_identity = SubmittedIdentity {
         account_id,
         identity,
-        identity_image1: (image1_file_name_without_etx, identity_image1),
-        identity_image2: identity_image2_option.map(|image| (image2_file_name_without_etx, image)),
+        identity_image1: (image1_file_name_without_ext, identity_image1),
+        identity_image2: identity_image2_option.map(|image| (image2_file_name_without_ext, image)),
     };
     let result =
         handle_identity_req(submitted_identity, current_date_time, op, smtp_client).await?;
@@ -800,4 +800,8 @@ impl SubmitIdentityOperationImpl {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
 }
