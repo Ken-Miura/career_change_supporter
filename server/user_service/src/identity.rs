@@ -3,7 +3,7 @@
 use std::error::Error;
 use std::io::Cursor;
 
-use crate::err::Code::CreateIdentityInfoReqAlreadyExists;
+use crate::err::Code::IdentityInfoReqAlreadyExists;
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -21,11 +21,11 @@ use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
 };
-use entity::create_identity_info_req;
-use entity::prelude::{CreateIdentityInfoReq, IdentityInfo};
+use entity::prelude::{CreateIdentityInfoReq, IdentityInfo, UpdateIdentityInfoReq};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
+use entity::{create_identity_info_req, update_identity_info_req};
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
 use uuid::Uuid;
@@ -407,6 +407,21 @@ async fn handle_identity_req(
             e
         })?;
     if identity_exists {
+        let update_req_exists = op
+            .check_if_update_identity_req_already_exists(account_id)
+            .await?;
+        if update_req_exists {
+            tracing::error!(
+                "update identity info req (account id: {}) exists",
+                account_id
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: IdentityInfoReqAlreadyExists as u32,
+                }),
+            ));
+        }
         let _ = op
             .request_update_identity(submitted_identity, current_date_time)
             .await
@@ -415,6 +430,21 @@ async fn handle_identity_req(
                 e
             })?;
     } else {
+        let create_req_exists = op
+            .check_if_create_identity_req_already_exists(account_id)
+            .await?;
+        if create_req_exists {
+            tracing::error!(
+                "create identity info req (account id: {}) exists",
+                account_id
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: IdentityInfoReqAlreadyExists as u32,
+                }),
+            ));
+        }
         let _ = op
             .request_create_identity(submitted_identity, current_date_time)
             .await
@@ -459,11 +489,19 @@ fn create_text(id: i32, update: bool) -> String {
 #[async_trait]
 trait SubmitIdentityOperation {
     async fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
+    async fn check_if_create_identity_req_already_exists(
+        &self,
+        account_id: i32,
+    ) -> Result<bool, ErrResp>;
     async fn request_create_identity(
         &self,
         identity: SubmittedIdentity,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
+    async fn check_if_update_identity_req_already_exists(
+        &self,
+        account_id: i32,
+    ) -> Result<bool, ErrResp>;
     async fn request_update_identity(
         &self,
         identity: SubmittedIdentity,
@@ -498,6 +536,24 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         Ok(model.is_some())
     }
 
+    async fn check_if_create_identity_req_already_exists(
+        &self,
+        account_id: i32,
+    ) -> Result<bool, ErrResp> {
+        let model = CreateIdentityInfoReq::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find create identity info req (account id: {}): {}",
+                    account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.is_some())
+    }
+
     async fn request_create_identity(
         &self,
         submitted_identity: SubmittedIdentity,
@@ -513,85 +569,30 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let model = CreateIdentityInfoReq::find_by_id(account_id)
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            tracing::error!(
-                                "failed to find create identity info req (account id: {}): {}",
-                                account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    if model.is_some() {
-                        tracing::error!(
-                            "create identity info req (account id: {}) exists",
-                            account_id
+                    let active_model =
+                        SubmitIdentityOperationImpl::generate_create_identity_info_req_active_model(
+                            account_id,
+                            identity,
+                            image1_file_name_without_ext,
+                            image2_file_name_without_ext,
+                            current_date_time,
                         );
-                        return Err(ErrRespStruct {
-                            err_resp: (
-                                StatusCode::BAD_REQUEST,
-                                Json(ApiError {
-                                    code: CreateIdentityInfoReqAlreadyExists as u32,
-                                }),
-                            ),
-                        });
-                    };
-                    let date_of_birth = NaiveDate::from_ymd(
-                        identity.date_of_birth.year,
-                        identity.date_of_birth.month,
-                        identity.date_of_birth.day,
-                    );
-                    let active_model = create_identity_info_req::ActiveModel {
-                        user_account_id: Set(account_id),
-                        last_name: Set(identity.last_name),
-                        first_name: Set(identity.first_name),
-                        last_name_furigana: Set(identity.last_name_furigana),
-                        first_name_furigana: Set(identity.first_name_furigana),
-                        date_of_birth: Set(date_of_birth),
-                        prefecture: Set(identity.prefecture),
-                        city: Set(identity.city),
-                        address_line1: Set(identity.address_line1),
-                        address_line2: Set(identity.address_line2),
-                        telephone_number: Set(identity.telephone_number),
-                        image1_file_name_without_ext: Set(image1_file_name_without_ext),
-                        image2_file_name_without_ext: Set(image2_file_name_without_ext),
-                        requested_at: Set(current_date_time),
-                    };
-                    let _ = active_model.insert(txn).await;
-                    let image1_key = format!("{}/{}.png", account_id, identity_image1.0);
-                    let image1_obj = identity_image1.1.into_inner();
-                    let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
-                        .await
-                        .map_err(|e| {
-                            tracing::error!(
-                                "failed to upload object (image1 key: {}): {}",
-                                image1_key,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    if let Some(identity_image2) = identity_image2_option {
-                        let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
-                        let image2_obj = identity_image2.1.into_inner();
-                        let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
-                            .await
-                            .map_err(|e| {
-                                tracing::error!(
-                                    "failed to upload object (image1 key: {}): {}",
-                                    image1_key,
-                                    e
-                                );
-                                ErrRespStruct {
-                                    err_resp: unexpected_err_resp(),
-                                }
-                            })?;
-                    }
+                    let _ = active_model.insert(txn).await.map_err(|e| {
+                        tracing::error!(
+                            "failed to insert create identity info req (account id: {}): {}",
+                            account_id,
+                            e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+                    let _ = SubmitIdentityOperationImpl::upload_png_images_to_identity_storage(
+                        account_id,
+                        identity_image1,
+                        identity_image2_option,
+                    )
+                    .await?;
                     Ok(())
                 })
             })
@@ -612,12 +613,81 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         Ok(())
     }
 
+    async fn check_if_update_identity_req_already_exists(
+        &self,
+        account_id: i32,
+    ) -> Result<bool, ErrResp> {
+        let model = UpdateIdentityInfoReq::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to find update identity info req (account id: {}): {}",
+                    account_id,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.is_some())
+    }
+
     async fn request_update_identity(
         &self,
-        _identity: SubmittedIdentity,
-        _current_date_time: DateTime<FixedOffset>,
+        submitted_identity: SubmittedIdentity,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        todo!()
+        let account_id = submitted_identity.account_id;
+        let identity = submitted_identity.identity;
+        let identity_image1 = submitted_identity.identity_image1;
+        let image1_file_name_without_ext = identity_image1.0.clone();
+        let (identity_image2_option, image2_file_name_without_ext) =
+            SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
+        let _ = self
+            .pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let active_model =
+                        SubmitIdentityOperationImpl::generate_update_identity_info_req_active_model(
+                            account_id,
+                            identity,
+                            image1_file_name_without_ext,
+                            image2_file_name_without_ext,
+                            current_date_time,
+                        );
+                    let _ = active_model.insert(txn).await.map_err(|e| {
+                        tracing::error!(
+                            "failed to insert update identity info req (account id: {}): {}",
+                            account_id,
+                            e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+                    let _ = SubmitIdentityOperationImpl::upload_png_images_to_identity_storage(
+                        account_id,
+                        identity_image1,
+                        identity_image2_option,
+                    )
+                    .await?;
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    tracing::error!("failed to insert update identity info req: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    tracing::error!(
+                        "failed to insert update identity info req: {}",
+                        err_resp_struct
+                    );
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
 }
 
@@ -631,5 +701,103 @@ impl SubmitIdentityOperationImpl {
             return (identity_image2, image2_file_name_without_ext);
         };
         (None, None)
+    }
+
+    fn generate_create_identity_info_req_active_model(
+        account_id: i32,
+        identity: Identity,
+        image1_file_name_without_ext: String,
+        image2_file_name_without_ext: Option<String>,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> create_identity_info_req::ActiveModel {
+        let date_of_birth = NaiveDate::from_ymd(
+            identity.date_of_birth.year,
+            identity.date_of_birth.month,
+            identity.date_of_birth.day,
+        );
+        create_identity_info_req::ActiveModel {
+            user_account_id: Set(account_id),
+            last_name: Set(identity.last_name),
+            first_name: Set(identity.first_name),
+            last_name_furigana: Set(identity.last_name_furigana),
+            first_name_furigana: Set(identity.first_name_furigana),
+            date_of_birth: Set(date_of_birth),
+            prefecture: Set(identity.prefecture),
+            city: Set(identity.city),
+            address_line1: Set(identity.address_line1),
+            address_line2: Set(identity.address_line2),
+            telephone_number: Set(identity.telephone_number),
+            image1_file_name_without_ext: Set(image1_file_name_without_ext),
+            image2_file_name_without_ext: Set(image2_file_name_without_ext),
+            requested_at: Set(current_date_time),
+        }
+    }
+
+    fn generate_update_identity_info_req_active_model(
+        account_id: i32,
+        identity: Identity,
+        image1_file_name_without_ext: String,
+        image2_file_name_without_ext: Option<String>,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> update_identity_info_req::ActiveModel {
+        let date_of_birth = NaiveDate::from_ymd(
+            identity.date_of_birth.year,
+            identity.date_of_birth.month,
+            identity.date_of_birth.day,
+        );
+        update_identity_info_req::ActiveModel {
+            user_account_id: Set(account_id),
+            last_name: Set(identity.last_name),
+            first_name: Set(identity.first_name),
+            last_name_furigana: Set(identity.last_name_furigana),
+            first_name_furigana: Set(identity.first_name_furigana),
+            date_of_birth: Set(date_of_birth),
+            prefecture: Set(identity.prefecture),
+            city: Set(identity.city),
+            address_line1: Set(identity.address_line1),
+            address_line2: Set(identity.address_line2),
+            telephone_number: Set(identity.telephone_number),
+            image1_file_name_without_ext: Set(image1_file_name_without_ext),
+            image2_file_name_without_ext: Set(image2_file_name_without_ext),
+            requested_at: Set(current_date_time),
+        }
+    }
+
+    async fn upload_png_images_to_identity_storage(
+        account_id: i32,
+        identity_image1: FileNameAndBinary,
+        identity_image2_option: Option<FileNameAndBinary>,
+    ) -> Result<(), ErrRespStruct> {
+        let image1_key = format!("{}/{}.png", account_id, identity_image1.0);
+        let image1_obj = identity_image1.1.into_inner();
+        let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to upload object (image1 key: {}): {}",
+                    image1_key,
+                    e
+                );
+                ErrRespStruct {
+                    err_resp: unexpected_err_resp(),
+                }
+            })?;
+        if let Some(identity_image2) = identity_image2_option {
+            let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
+            let image2_obj = identity_image2.1.into_inner();
+            let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "failed to upload object (image2 key: {}): {}",
+                        image2_key,
+                        e
+                    );
+                    ErrRespStruct {
+                        err_resp: unexpected_err_resp(),
+                    }
+                })?;
+        }
+        Ok(())
     }
 }

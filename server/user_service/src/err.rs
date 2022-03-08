@@ -51,7 +51,7 @@ pub(crate) enum Code {
     InvalidJpegImage = 20040,
     NoIdentityFound = 20041,
     NoIdentityImage1Found = 20042,
-    CreateIdentityInfoReqAlreadyExists = 20043,
+    IdentityInfoReqAlreadyExists = 20043,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
