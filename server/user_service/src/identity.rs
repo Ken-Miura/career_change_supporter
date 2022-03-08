@@ -15,6 +15,7 @@ use axum::{
 use bytes::Bytes;
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
+use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
 use common::ErrRespStruct;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
@@ -506,7 +507,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         let identity = submitted_identity.identity;
         let identity_image1 = submitted_identity.identity_image1;
         let image1_file_name_without_ext = identity_image1.0.clone();
-        let (identity_image2, image2_file_name_without_ext) =
+        let (identity_image2_option, image2_file_name_without_ext) =
             SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
         let _ = self
             .pool
@@ -561,10 +562,37 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                         requested_at: Set(current_date_time),
                     };
                     let _ = active_model.insert(txn).await;
-                    println!("{:?}", account_id);
-                    println!("{:?}", identity_image1);
-                    println!("{:?}", identity_image2);
-                    todo!("画像をS3に送信")
+                    let image1_key = format!("{}/{}.png", account_id, identity_image1.0);
+                    let image1_obj = identity_image1.1.into_inner();
+                    let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
+                        .await
+                        .map_err(|e| {
+                            tracing::error!(
+                                "failed to upload object (image1 key: {}): {}",
+                                image1_key,
+                                e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                    if let Some(identity_image2) = identity_image2_option {
+                        let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
+                        let image2_obj = identity_image2.1.into_inner();
+                        let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
+                            .await
+                            .map_err(|e| {
+                                tracing::error!(
+                                    "failed to upload object (image1 key: {}): {}",
+                                    image1_key,
+                                    e
+                                );
+                                ErrRespStruct {
+                                    err_resp: unexpected_err_resp(),
+                                }
+                            })?;
+                    }
+                    Ok(())
                 })
             })
             .await

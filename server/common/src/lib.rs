@@ -4,6 +4,7 @@ pub mod err;
 pub mod payment_platform;
 pub mod redis;
 pub mod smtp;
+pub mod storage;
 pub mod util;
 
 use std::{
@@ -123,7 +124,6 @@ where
 }
 
 pub const KEY_TO_URL_FOR_FRONT_END: &str = "URL_FOR_FRONT_END";
-
 pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
     var(KEY_TO_URL_FOR_FRONT_END).unwrap_or_else(|_| {
         panic!(

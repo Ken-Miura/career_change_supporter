@@ -36,6 +36,9 @@ use axum::routing::{get, post};
 use axum::Router;
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
+use common::storage::{
+    KEY_TO_AWS_ACCESS_KEY_ID, KEY_TO_AWS_REGION, KEY_TO_AWS_SECRET_ACCESS_KEY, KEY_TO_ENDPOINT_URI,
+};
 use common::util::check_env_vars;
 use common::KEY_TO_URL_FOR_FRONT_END;
 use dotenv::dotenv;
@@ -62,6 +65,10 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
+        KEY_TO_ENDPOINT_URI.to_string(),
+        KEY_TO_AWS_ACCESS_KEY_ID.to_string(),
+        KEY_TO_AWS_SECRET_ACCESS_KEY.to_string(),
+        KEY_TO_AWS_REGION.to_string(),
     ]
 });
 
