@@ -20,6 +20,9 @@ pub const KEY_TO_AWS_ACCESS_KEY_ID: &str = "AWS_ACCESS_KEY_ID";
 pub const KEY_TO_AWS_SECRET_ACCESS_KEY: &str = "AWS_SECRET_ACCESS_KEY";
 pub const KEY_TO_AWS_REGION: &str = "AWS_REGION";
 
+// PutObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
+// そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
+// https://docs.rs/aws-sdk-s3/0.8.0/aws_sdk_s3/types/enum.SdkError.html
 pub async fn upload_object(
     bucket_name: &str,
     key: &str,
@@ -42,6 +45,9 @@ pub async fn upload_object(
 pub const IDENTITY_IMAGES_BUCKET_NAME: &str = "ccs-identity-images";
 pub const CAREER_IMAGES_BUCKET_NAME: &str = "ccs-career-images";
 
+// GetObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
+// そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
+// https://docs.rs/aws-sdk-s3/0.8.0/aws_sdk_s3/types/enum.SdkError.html
 pub async fn download_object(bucket_name: &str, key: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let endpoint = ENDPOINT_URI.to_string();
     let client = create_client(&endpoint).await?;
