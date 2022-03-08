@@ -14,6 +14,8 @@ Veturの[問題](https://github.com/vuejs/vetur/issues/3323)解決後、typescri
 APIサーバのRate Limitについて検討、実装する（ELB界面で実施するのか、それともAPIサーバ界面で実装するのか検討）
 (APIサーバで実装する際の参考: https://github.com/tokio-rs/axum/issues/278)
 
+SDKが実装時点でVirtual Hosted-Styleを[サポートしていない](https://github.com/awslabs/aws-sdk-rust/discussions/485)。そのため、それまでPath-Styleで実装し、Virtual Hosted-Styleがサポートされた後、修正する
+
 # NOTE
 ## 開発環境
 開発環境にはVS Code (IDE) とRemote Container (VS Code用拡張プラグイン) が必須となる。それらを用意し開発を行う。
