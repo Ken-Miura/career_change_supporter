@@ -805,8 +805,9 @@ impl SubmitIdentityOperationImpl {
 #[cfg(test)]
 mod tests {
 
-    use std::io::Cursor;
+    use std::{error::Error, fmt::Display, io::Cursor};
 
+    use crate::identity::Code::DataParseFailure;
     use crate::identity::Code::NoNameFound;
     use async_session::serde_json;
     use axum::async_trait;
@@ -849,6 +850,31 @@ mod tests {
             });
             self.count += 1;
             Ok(field)
+        }
+    }
+
+    struct MultipartWrapperErrMock {}
+
+    #[async_trait]
+    impl MultipartWrapper for MultipartWrapperErrMock {
+        async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp> {
+            let field = IdentityField {
+                name: Some(String::from("identity-image1")),
+                file_name: Some(String::from("test1.jpeg")),
+                data: Err(Box::new(DummyError {})),
+            };
+            Ok(Some(field))
+        }
+    }
+
+    #[derive(Debug)]
+    struct DummyError {}
+
+    impl Error for DummyError {}
+
+    impl Display for DummyError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "dummy error")
         }
     }
 
@@ -986,5 +1012,22 @@ mod tests {
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
         assert_eq!(NoNameFound as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_data_parse() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let mock = MultipartWrapperErrMock {};
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(DataParseFailure as u32, err_resp.1.code);
     }
 }
