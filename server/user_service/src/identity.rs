@@ -1520,4 +1520,127 @@ mod tests {
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
         assert_eq!(InvalidLastNameLength as u32, err_resp.1.code);
     }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_illegal_char_in_last_name() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = Identity {
+            last_name: /* 改行 (LF) */ '\u{000A}'.to_string(),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("ヤマダ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: Ymd {
+                year: current_date.year() - MIN_AGE_REQUIREMENT,
+                month: current_date.month(),
+                day: current_date.day(),
+            },
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("09012345678"),
+        };
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(IllegalCharInLastName as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_invalid_first_name_length() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = Identity {
+            last_name: String::from("山田"),
+            first_name: String::from(""),
+            last_name_furigana: String::from("ヤマダ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: Ymd {
+                year: current_date.year() - MIN_AGE_REQUIREMENT,
+                month: current_date.month(),
+                day: current_date.day(),
+            },
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("09012345678"),
+        };
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(InvalidFirstNameLength as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_illegal_char_in_first_name() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = Identity {
+            last_name: String::from("山田"),
+            first_name: /* 改行 (CR) */ '\u{000D}'.to_string(),
+            last_name_furigana: String::from("ヤマダ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: Ymd {
+                year: current_date.year() - MIN_AGE_REQUIREMENT,
+                month: current_date.month(),
+                day: current_date.day(),
+            },
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("09012345678"),
+        };
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(IllegalCharInFirstName as u32, err_resp.1.code);
+    }
 }
