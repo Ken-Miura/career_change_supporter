@@ -813,17 +813,35 @@ mod tests {
     use std::cmp::max;
     use std::{error::Error, fmt::Display, io::Cursor};
 
-    use crate::identity::Code::DataParseFailure;
-    use crate::identity::Code::ExceedMaxIdentityImageSizeLimit;
-    use crate::identity::Code::InvalidIdentityJson;
-    use crate::identity::Code::InvalidJpegImage;
-    use crate::identity::Code::InvalidNameInField;
-    use crate::identity::Code::InvalidUtf8Sequence;
-    use crate::identity::Code::NoFileNameFound;
-    use crate::identity::Code::NoIdentityFound;
-    use crate::identity::Code::NoIdentityImage1Found;
-    use crate::identity::Code::NoNameFound;
-    use crate::identity::Code::NotJpegExtension;
+    use crate::err::Code::DataParseFailure;
+    use crate::err::Code::ExceedMaxIdentityImageSizeLimit;
+    use crate::err::Code::IllegalAge;
+    use crate::err::Code::IllegalCharInAddressLine1;
+    use crate::err::Code::IllegalCharInAddressLine2;
+    use crate::err::Code::IllegalCharInCity;
+    use crate::err::Code::IllegalCharInFirstName;
+    use crate::err::Code::IllegalCharInFirstNameFurigana;
+    use crate::err::Code::IllegalCharInLastName;
+    use crate::err::Code::IllegalCharInLastNameFurigana;
+    use crate::err::Code::IllegalDate;
+    use crate::err::Code::InvalidAddressLine1Length;
+    use crate::err::Code::InvalidAddressLine2Length;
+    use crate::err::Code::InvalidCityLength;
+    use crate::err::Code::InvalidFirstNameFuriganaLength;
+    use crate::err::Code::InvalidFirstNameLength;
+    use crate::err::Code::InvalidIdentityJson;
+    use crate::err::Code::InvalidJpegImage;
+    use crate::err::Code::InvalidLastNameFuriganaLength;
+    use crate::err::Code::InvalidLastNameLength;
+    use crate::err::Code::InvalidNameInField;
+    use crate::err::Code::InvalidPrefecture;
+    use crate::err::Code::InvalidTelNumFormat;
+    use crate::err::Code::InvalidUtf8Sequence;
+    use crate::err::Code::NoFileNameFound;
+    use crate::err::Code::NoIdentityFound;
+    use crate::err::Code::NoIdentityImage1Found;
+    use crate::err::Code::NoNameFound;
+    use crate::err::Code::NotJpegExtension;
     use crate::identity::MAX_IDENTITY_IMAGE_SIZE_IN_BYTES;
     use async_session::serde_json;
     use axum::async_trait;
@@ -1460,5 +1478,46 @@ mod tests {
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
         assert_eq!(ExceedMaxIdentityImageSizeLimit as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_invalid_last_name_length() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = Identity {
+            last_name: String::from(""),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("ヤマダ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: Ymd {
+                year: current_date.year() - MIN_AGE_REQUIREMENT,
+                month: current_date.month(),
+                day: current_date.day(),
+            },
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("09012345678"),
+        };
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(InvalidLastNameLength as u32, err_resp.1.code);
     }
 }
