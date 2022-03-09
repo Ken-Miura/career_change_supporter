@@ -814,8 +814,11 @@ mod tests {
     use common::ErrResp;
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
-    use crate::util::{
-        validator::identity_validator::MIN_AGE_REQUIREMENT, Identity, Ymd, JAPANESE_TIME_ZONE,
+    use crate::{
+        identity::convert_jpeg_to_png,
+        util::{
+            validator::identity_validator::MIN_AGE_REQUIREMENT, Identity, Ymd, JAPANESE_TIME_ZONE,
+        },
     };
 
     use super::{handle_multipart, IdentityField, MultipartWrapper};
@@ -874,7 +877,17 @@ mod tests {
 
         let result = handle_multipart(mock, current_date).await;
 
-        let _input = result.expect("failed to get Ok");
+        let input = result.expect("failed to get Ok");
+        assert_eq!(identity, input.0);
+        let identity_image1_png = convert_jpeg_to_png(Bytes::from(identity_image1.into_inner()))
+            .expect("failed to get Ok");
+        assert_eq!(identity_image1_png.into_inner(), input.1.into_inner());
+        let identity_image2_png = convert_jpeg_to_png(Bytes::from(identity_image2.into_inner()))
+            .expect("failed to get Ok");
+        assert_eq!(
+            identity_image2_png.into_inner(),
+            input.2.expect("failed to get Ok").into_inner()
+        );
     }
 
     fn create_dummy_identity(current_date: &NaiveDate) -> Identity {
