@@ -59,8 +59,12 @@ pub(crate) async fn post_identity(
     let multipart_wrapper = MultipartWrapperImpl { multipart };
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let current_date = current_date_time.naive_local().date();
-    let (identity, identity_image1, identity_image2_option) =
-        handle_multipart(multipart_wrapper, current_date).await?;
+    let (identity, identity_image1, identity_image2_option) = handle_multipart(
+        multipart_wrapper,
+        MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
+        current_date,
+    )
+    .await?;
 
     let op = SubmitIdentityOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
@@ -120,6 +124,7 @@ struct IdentityField {
 
 async fn handle_multipart(
     mut multipart: impl MultipartWrapper,
+    max_image_size_in_bytes: usize,
     current_date: NaiveDate,
 ) -> Result<(Identity, Cursor<Vec<u8>>, Option<Cursor<Vec<u8>>>), ErrResp> {
     let mut identity_option = None;
@@ -154,12 +159,12 @@ async fn handle_multipart(
             identity_option = Some(trim_space_from_identity(identity));
         } else if name == "identity-image1" {
             let _ = validate_identity_image_file_name(file_name_option)?;
-            let _ = validate_identity_image_size(data.len())?;
+            let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             identity_image1_option = Some(png_binary);
         } else if name == "identity-image2" {
             let _ = validate_identity_image_file_name(file_name_option)?;
-            let _ = validate_identity_image_size(data.len())?;
+            let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             identity_image2_option = Some(png_binary);
         } else {
@@ -224,8 +229,8 @@ fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result
     Ok(())
 }
 
-fn validate_identity_image_size(size: usize) -> Result<(), ErrResp> {
-    if size > MAX_IDENTITY_IMAGE_SIZE_IN_BYTES {
+fn validate_identity_image_size(size: usize, max_size_in_bytes: usize) -> Result<(), ErrResp> {
+    if size > max_size_in_bytes {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -805,9 +810,11 @@ impl SubmitIdentityOperationImpl {
 #[cfg(test)]
 mod tests {
 
+    use std::cmp::max;
     use std::{error::Error, fmt::Display, io::Cursor};
 
     use crate::identity::Code::DataParseFailure;
+    use crate::identity::Code::ExceedMaxIdentityImageSizeLimit;
     use crate::identity::Code::InvalidIdentityJson;
     use crate::identity::Code::InvalidJpegImage;
     use crate::identity::Code::InvalidNameInField;
@@ -817,6 +824,7 @@ mod tests {
     use crate::identity::Code::NoIdentityImage1Found;
     use crate::identity::Code::NoNameFound;
     use crate::identity::Code::NotJpegExtension;
+    use crate::identity::MAX_IDENTITY_IMAGE_SIZE_IN_BYTES;
     use async_session::serde_json;
     use axum::async_trait;
     use axum::http::StatusCode;
@@ -913,7 +921,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let input = result.expect("failed to get Ok");
         assert_eq!(identity, input.0);
@@ -1010,7 +1018,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let input = result.expect("failed to get Ok");
         assert_eq!(identity, input.0);
@@ -1018,6 +1026,49 @@ mod tests {
             .expect("failed to get Ok");
         assert_eq!(identity_image1_png.into_inner(), input.1.into_inner());
         assert_eq!(None, input.2);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_success_image_size_is_equal_to_max_size() {
+        let image1_size_in_bytes = Bytes::from(create_dummy_identity_image1().into_inner()).len();
+        let image2_size_in_bytes = Bytes::from(create_dummy_identity_image2().into_inner()).len();
+        let max_image_size_in_bytes = max(image1_size_in_bytes, image2_size_in_bytes);
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, max_image_size_in_bytes, current_date).await;
+
+        let input = result.expect("failed to get Ok");
+        assert_eq!(identity, input.0);
+        let identity_image1_png = convert_jpeg_to_png(Bytes::from(identity_image1.into_inner()))
+            .expect("failed to get Ok");
+        assert_eq!(identity_image1_png.into_inner(), input.1.into_inner());
+        let identity_image2_png = convert_jpeg_to_png(Bytes::from(identity_image2.into_inner()))
+            .expect("failed to get Ok");
+        assert_eq!(
+            identity_image2_png.into_inner(),
+            input.2.expect("failed to get Ok").into_inner()
+        );
     }
 
     #[tokio::test]
@@ -1046,7 +1097,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1063,7 +1114,7 @@ mod tests {
             .date();
         let mock = MultipartWrapperErrMock {};
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1095,7 +1146,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1125,7 +1176,7 @@ mod tests {
         let fields = vec![identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1151,7 +1202,7 @@ mod tests {
         let fields = vec![identity_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1183,7 +1234,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1215,7 +1266,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1248,7 +1299,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1305,7 +1356,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1350,7 +1401,7 @@ mod tests {
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
         let mock = MultipartWrapperMock { count: 0, fields };
 
-        let result = handle_multipart(mock, current_date).await;
+        let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
@@ -1373,5 +1424,41 @@ mod tests {
             .write_to(&mut bytes, ImageOutputFormat::Bmp)
             .expect("failed to get Ok");
         bytes
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_exceed_max_identity_image_size_limit() {
+        let image1_size_in_bytes = Bytes::from(create_dummy_identity_image1().into_inner()).len();
+        let image2_size_in_bytes = Bytes::from(create_dummy_identity_image2().into_inner()).len();
+        // 最大値は、実際のバイト数 - 1 を指定
+        let max_image_size_in_bytes = max(image1_size_in_bytes, image2_size_in_bytes) - 1;
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, max_image_size_in_bytes, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(ExceedMaxIdentityImageSizeLimit as u32, err_resp.1.code);
     }
 }
