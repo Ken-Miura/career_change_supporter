@@ -807,8 +807,10 @@ mod tests {
 
     use std::io::Cursor;
 
+    use crate::identity::Code::NoNameFound;
     use async_session::serde_json;
     use axum::async_trait;
+    use axum::http::StatusCode;
     use bytes::Bytes;
     use chrono::{Datelike, NaiveDate, TimeZone, Utc};
     use common::ErrResp;
@@ -951,5 +953,38 @@ mod tests {
             file_name,
             data,
         }
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_no_name_found() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field =
+            create_dummy_identity_field(/* no name specified */ None, &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(NoNameFound as u32, err_resp.1.code);
     }
 }
