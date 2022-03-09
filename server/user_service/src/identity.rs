@@ -808,7 +808,9 @@ mod tests {
     use std::{error::Error, fmt::Display, io::Cursor};
 
     use crate::identity::Code::DataParseFailure;
+    use crate::identity::Code::InvalidIdentityJson;
     use crate::identity::Code::InvalidNameInField;
+    use crate::identity::Code::InvalidUtf8Sequence;
     use crate::identity::Code::NoFileNameFound;
     use crate::identity::Code::NoIdentityFound;
     use crate::identity::Code::NoIdentityImage1Found;
@@ -821,6 +823,8 @@ mod tests {
     use chrono::{Datelike, NaiveDate, TimeZone, Utc};
     use common::ErrResp;
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
+    use serde::Deserialize;
+    use serde::Serialize;
 
     use crate::{
         identity::convert_jpeg_to_png,
@@ -1215,5 +1219,106 @@ mod tests {
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
         assert_eq!(NotJpegExtension as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_invalid_identity_json() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let err_identity = create_dummy_err_identity();
+        let identity_field =
+            create_err_identity_field(Some(String::from("identity")), &err_identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(InvalidIdentityJson as u32, err_resp.1.code);
+    }
+
+    fn create_dummy_err_identity() -> ErrIdentity {
+        ErrIdentity {
+            last_name: String::from("山田"),
+            invalid_key: String::from("<script>alert('test')</script>"),
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    struct ErrIdentity {
+        last_name: String,
+        invalid_key: String,
+    }
+
+    fn create_err_identity_field(
+        name: Option<String>,
+        err_identity: &ErrIdentity,
+    ) -> DummyIdentityField {
+        let identity_str = serde_json::to_string(err_identity).expect("failed to get Ok");
+        let data = Bytes::from(identity_str);
+        DummyIdentityField {
+            name,
+            file_name: None,
+            data,
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_invalid_utf8_sequence() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity_field = create_invalid_utf8_identity_field(Some(String::from("identity")));
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(InvalidUtf8Sequence as u32, err_resp.1.code);
+    }
+
+    fn create_invalid_utf8_identity_field(name: Option<String>) -> DummyIdentityField {
+        // invalid utf-8 bytes
+        // https://stackoverflow.com/questions/1301402/example-invalid-utf8-string
+        let data = Bytes::from(vec![0xf0, 0x28, 0x8c, 0xbc]);
+        DummyIdentityField {
+            name,
+            file_name: None,
+            data,
+        }
     }
 }
