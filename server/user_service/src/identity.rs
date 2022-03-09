@@ -809,6 +809,8 @@ mod tests {
 
     use crate::identity::Code::DataParseFailure;
     use crate::identity::Code::InvalidNameInField;
+    use crate::identity::Code::NoIdentityFound;
+    use crate::identity::Code::NoIdentityImage1Found;
     use crate::identity::Code::NoNameFound;
     use async_session::serde_json;
     use axum::async_trait;
@@ -983,6 +985,35 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn handle_multipart_success_without_identity_image2() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let input = result.expect("failed to get Ok");
+        assert_eq!(identity, input.0);
+        let identity_image1_png = convert_jpeg_to_png(Bytes::from(identity_image1.into_inner()))
+            .expect("failed to get Ok");
+        assert_eq!(identity_image1_png.into_inner(), input.1.into_inner());
+        assert_eq!(None, input.2);
+    }
+
+    #[tokio::test]
     async fn handle_multipart_fail_no_name_found() {
         let current_date = Utc
             .ymd(2022, 3, 7)
@@ -1062,5 +1093,61 @@ mod tests {
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
         assert_eq!(InvalidNameInField as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_no_identity_found() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(NoIdentityFound as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_no_identity_image1_found() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(NoIdentityImage1Found as u32, err_resp.1.code);
     }
 }
