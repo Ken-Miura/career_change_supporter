@@ -804,4 +804,139 @@ impl SubmitIdentityOperationImpl {
 
 #[cfg(test)]
 mod tests {
+
+    use std::io::Cursor;
+
+    use async_session::serde_json;
+    use axum::async_trait;
+    use bytes::Bytes;
+    use chrono::{Datelike, NaiveDate, TimeZone, Utc};
+    use common::ErrResp;
+    use image::{ImageBuffer, ImageOutputFormat, RgbImage};
+
+    use crate::util::{
+        validator::identity_validator::MIN_AGE_REQUIREMENT, Identity, Ymd, JAPANESE_TIME_ZONE,
+    };
+
+    use super::{handle_multipart, IdentityField, MultipartWrapper};
+
+    // IdentityFieldのdataのResult<Bytes, Box<dyn Error>>がSendを実装しておらず、asyncメソッド内のselfに含められない
+    // そのため、テスト用にdataの型を一部修正したダミークラスを用意
+    struct DummyIdentityField {
+        name: Option<String>,
+        file_name: Option<String>,
+        data: Bytes,
+    }
+
+    struct MultipartWrapperMock {
+        count: usize,
+        fields: Vec<DummyIdentityField>,
+    }
+
+    #[async_trait]
+    impl MultipartWrapper for MultipartWrapperMock {
+        async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp> {
+            let dummy_field = self.fields.get(self.count);
+            let field = dummy_field.map(|f| IdentityField {
+                name: f.name.clone(),
+                file_name: f.file_name.clone(),
+                data: Ok(f.data.clone()),
+            });
+            self.count += 1;
+            Ok(field)
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_success() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let _input = result.expect("failed to get Ok");
+    }
+
+    fn create_dummy_identity(current_date: &NaiveDate) -> Identity {
+        Identity {
+            last_name: String::from("山田"),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("ヤマダ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: Ymd {
+                year: current_date.year() - MIN_AGE_REQUIREMENT,
+                month: current_date.month(),
+                day: current_date.day(),
+            },
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("09012345678"),
+        }
+    }
+
+    fn create_dummy_identity_field(
+        name: Option<String>,
+        identity: &Identity,
+    ) -> DummyIdentityField {
+        let identity_str = serde_json::to_string(identity).expect("failed to get Ok");
+        let data = Bytes::from(identity_str);
+        DummyIdentityField {
+            name,
+            file_name: None,
+            data,
+        }
+    }
+
+    fn create_dummy_identity_image1() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(128, 128);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+            .expect("failed to get Ok");
+        bytes
+    }
+
+    fn create_dummy_identity_image2() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(64, 64);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Jpeg(90))
+            .expect("failed to get Ok");
+        bytes
+    }
+
+    fn create_dummy_identity_image_field(
+        name: Option<String>,
+        file_name: Option<String>,
+        jpeg_img: Cursor<Vec<u8>>,
+    ) -> DummyIdentityField {
+        let data = Bytes::from(jpeg_img.into_inner());
+        DummyIdentityField {
+            name,
+            file_name,
+            data,
+        }
+    }
 }
