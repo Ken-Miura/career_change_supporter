@@ -809,9 +809,11 @@ mod tests {
 
     use crate::identity::Code::DataParseFailure;
     use crate::identity::Code::InvalidNameInField;
+    use crate::identity::Code::NoFileNameFound;
     use crate::identity::Code::NoIdentityFound;
     use crate::identity::Code::NoIdentityImage1Found;
     use crate::identity::Code::NoNameFound;
+    use crate::identity::Code::NotJpegExtension;
     use async_session::serde_json;
     use axum::async_trait;
     use axum::http::StatusCode;
@@ -1149,5 +1151,69 @@ mod tests {
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
         assert_eq!(NoIdentityImage1Found as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_no_file_name_found() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            /* no file name set */ None,
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(NoFileNameFound as u32, err_resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_not_jpeg_extension() {
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            /* not jpeg extension */ Some(String::from("test2.zip")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock { count: 0, fields };
+
+        let result = handle_multipart(mock, current_date).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(NotJpegExtension as u32, err_resp.1.code);
     }
 }
