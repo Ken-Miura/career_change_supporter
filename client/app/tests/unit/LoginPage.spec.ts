@@ -196,4 +196,38 @@ describe('LoginPage.vue', () => {
     expect(resultMessage).toContain(Message.EMAIL_OR_PWD_INCORRECT_MESSAGE)
     expect(resultMessage).toContain(Code.EMAIL_OR_PWD_INCORRECT.toString())
   })
+
+  it(`displays alert message ${Message.ACCOUNT_DISABLED_MESSAGE} when account is disabled`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshMock.mockResolvedValue(apiErrResp)
+    loginMock.mockResolvedValue(ApiErrorResp.create(400, ApiError.create(Code.ACCOUNT_DISABLED)))
+
+    const wrapper = mount(LoginPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddressInput)
+    const emailAddrInput = emailAddr.find('input')
+    emailAddrInput.setValue(EMAIL_ADDRESS)
+
+    const pwd = wrapper.findComponent(PasswordInput)
+    const pwdInput = pwd.find('input')
+    pwdInput.setValue(PWD)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ACCOUNT_DISABLED_MESSAGE)
+    expect(resultMessage).toContain(Code.ACCOUNT_DISABLED.toString())
+  })
 })

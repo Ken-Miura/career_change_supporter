@@ -16,13 +16,14 @@ export namespace Code {
   export const NO_TEMP_ACCOUNT_FOUND = 20004
   export const EMAIL_OR_PWD_INCORRECT = 20005
   export const UNAUTHORIZED = 20006
-  export const NOT_TERMS_OF_USE_AGREED_YET = 20007
-  export const ALREADY_AGREED_TERMS_OF_USE = 20008
-  export const REACH_PASSWORD_CHANGE_REQ_LIMIT = 20009
-  export const NO_ACCOUNT_FOUND = 20010
-  export const NO_PWD_CHANGE_REQ_FOUND = 20011
-  export const PWD_CHANGE_REQ_EXPIRED = 20012
-  export const REACH_PAYMENT_PLATFORM_RATE_LIMIT = 20013
+  export const ACCOUNT_DISABLED = 20007
+  export const NOT_TERMS_OF_USE_AGREED_YET = 20008
+  export const ALREADY_AGREED_TERMS_OF_USE = 20009
+  export const REACH_PASSWORD_CHANGE_REQ_LIMIT = 20010
+  export const NO_ACCOUNT_FOUND = 20011
+  export const NO_PWD_CHANGE_REQ_FOUND = 20012
+  export const PWD_CHANGE_REQ_EXPIRED = 20013
+  export const REACH_PAYMENT_PLATFORM_RATE_LIMIT = 20014
 }
 
 export function createErrorMessage (code: number): string {
@@ -46,6 +47,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} (${code})`
   } else if (code === Code.UNAUTHORIZED) {
     return `${Message.UNAUTHORIZED_MESSAGE} (${code})`
+  } else if (code === Code.ACCOUNT_DISABLED) {
+    return `${Message.ACCOUNT_DISABLED_MESSAGE} (${code})`
   } else if (code === Code.REACH_PASSWORD_CHANGE_REQ_LIMIT) {
     return `${Message.REACH_PASSWORD_CHANGE_REQ_LIMIT_MESSAGE} (${code})`
   } else if (code === Code.PWD_CHANGE_REQ_EXPIRED) {

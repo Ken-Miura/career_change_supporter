@@ -17,6 +17,7 @@ export namespace Message {
     export const INVALID_QUERY_PARAM = '指定されたURLの形式が正しくありません。URLが提供されたものと一致するかご確認下さい'
     export const EMAIL_OR_PWD_INCORRECT_MESSAGE = 'メールアドレス、もしくはパスワードが間違っています'
     export const UNAUTHORIZED_MESSAGE = '認証が必要です'
+    export const ACCOUNT_DISABLED_MESSAGE = 'アカウントが無効化されています'
     export const ACCOUNT_CREATED = '新規登録が完了しました。'
     export const ACCOUNT_CREATION_FAILED = `新規登録に失敗しました。${RETRY_REQUEST}`
     export const LOGIN_FAILED = `ログインに失敗しました。${RETRY_REQUEST}`
