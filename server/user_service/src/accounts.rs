@@ -111,6 +111,7 @@ async fn handle_accounts_req(
         hashed_password: temp_account.hashed_password,
         last_login_time: None,
         created_at: *current_date_time,
+        disabled_at: None,
     };
     let _ = op.create_account(&account).await?;
     tracing::info!(
@@ -137,6 +138,7 @@ struct NewAccount {
     hashed_password: Vec<u8>,
     last_login_time: Option<DateTime<FixedOffset>>,
     created_at: DateTime<FixedOffset>,
+    disabled_at: Option<DateTime<FixedOffset>>,
 }
 
 #[derive(Deserialize)]
@@ -236,6 +238,7 @@ impl AccountsOperation for AccountsOperationImpl {
             hashed_password: Set(account.hashed_password.clone()),
             last_login_time: Set(account.last_login_time),
             created_at: Set(account.created_at),
+            disabled_at: Set(account.disabled_at),
             ..Default::default()
         };
         let _ = user_account_model.insert(&self.pool).await.map_err(|e| {

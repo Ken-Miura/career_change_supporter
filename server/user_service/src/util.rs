@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+pub(crate) mod disabled_check;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
 pub(crate) mod validator;

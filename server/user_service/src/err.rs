@@ -52,6 +52,7 @@ pub(crate) enum Code {
     NoIdentityFound = 20041,
     NoIdentityImage1Found = 20042,
     IdentityInfoReqAlreadyExists = 20043,
+    AccountDisabled = 20044,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

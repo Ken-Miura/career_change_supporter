@@ -20,7 +20,7 @@ use entity::user_account;
 use hyper::header::SET_COOKIE;
 
 use crate::err::unexpected_err_resp;
-use crate::err::Code::EmailOrPwdIncorrect;
+use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
 use crate::util::session::LOGIN_SESSION_EXPIRY;
 use crate::util::JAPANESE_TIME_ZONE;
 use crate::util::{session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID};
@@ -83,8 +83,21 @@ async fn handle_login_req(
             }),
         ));
     }
+    if account.disabled {
+        tracing::error!(
+            "disabled account (account id: {}, email address: {})",
+            account.user_account_id,
+            email_addr
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: AccountDisabled as u32,
+            }),
+        ));
+    };
+
     let user_account_id = account.user_account_id;
-    // disabledチェック
     let mut session = Session::new();
     let _ = session
         .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
@@ -153,6 +166,7 @@ trait LoginOperation {
 struct Account {
     user_account_id: i32,
     hashed_password: Vec<u8>,
+    disabled: bool,
 }
 
 struct LoginOperationImpl {
@@ -189,6 +203,7 @@ impl LoginOperation for LoginOperationImpl {
             .map(|model| Account {
                 user_account_id: model.user_account_id,
                 hashed_password: model.hashed_password.clone(),
+                disabled: model.disabled_at.is_some(),
             })
             .collect::<Vec<Account>>())
     }
@@ -297,6 +312,7 @@ mod tests {
         let account = Account {
             user_account_id: id,
             hashed_password: hashed_pwd,
+            disabled: false,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
@@ -337,6 +353,7 @@ mod tests {
         let account = Account {
             user_account_id: id,
             hashed_password: hashed_pwd,
+            disabled: false,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
@@ -369,6 +386,7 @@ mod tests {
         let account = Account {
             user_account_id: id,
             hashed_password: hashed_pwd,
+            disabled: false,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
@@ -380,6 +398,36 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
         assert_eq!(EmailOrPwdIncorrect as u32, resp.1.code);
+        assert_eq!(0, store.count().await);
+    }
+
+    #[tokio::test]
+    async fn handle_login_req_fail_account_disabled() {
+        let id = 1102;
+        let email_addr = "test1@example.com";
+        let pwd = "1234567890abcdABCD";
+        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        let _ = validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = Utc
+            .ymd(2021, 9, 11)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            hashed_password: hashed_pwd,
+            disabled: true,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
+
+        let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(AccountDisabled as u32, resp.1.code);
         assert_eq!(0, store.count().await);
     }
 }

@@ -18,11 +18,12 @@ use tower_cookies::{Cookie, Cookies};
 use crate::{
     err::{
         unexpected_err_resp,
-        Code::{NotTermsOfUseAgreedYet, Unauthorized},
+        Code::{NoAccountFound, NotTermsOfUseAgreedYet, Unauthorized},
     },
     util::ROOT_PATH,
 };
 
+use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
@@ -95,17 +96,23 @@ where
         let op = RefreshOperationImpl {};
         let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
 
-        // disabledチェック
-
         let Extension(pool) = Extension::<DatabaseConnection>::from_request(req)
             .await
             .map_err(|e| {
                 tracing::error!("failed to extract connection pool from req: {}", e);
                 unexpected_err_resp()
             })?;
-        let op = TermsOfUseLoadOperationImpl::new(pool);
-        let _ =
-            check_if_user_has_already_agreed(user.account_id, *TERMS_OF_USE_VERSION, op).await?;
+
+        let disabled_check_op = DisabledCheckOperationImpl::new(pool.clone());
+        let _ = ensure_account_is_not_disabled(user.account_id, disabled_check_op).await?;
+
+        let terms_of_use_op = TermsOfUseLoadOperationImpl::new(pool);
+        let _ = check_if_user_has_already_agreed(
+            user.account_id,
+            *TERMS_OF_USE_VERSION,
+            terms_of_use_op,
+        )
+        .await?;
 
         Ok(user)
     }
@@ -118,10 +125,10 @@ where
 /// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
 /// リニューアルタイムアウトが必要になった場合は、セッションを保存しているキャッシュシステムの定期再起動により実装する。<br>
 /// 参考:
-///   セッションタイムアウトの種類: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#automatic-session-expiration
+///   セッションタイムアウトの種類: <https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#automatic-session-expiration>
 ///   著名なフレームワークにおいてもアイドルタイムアウトが一般的で、アブソリュートタイムアウトは実装されていない
-///     1. https://stackoverflow.com/questions/62964012/how-to-set-absolute-session-timeout-for-a-spring-session
-///     2. https://www.webdevqa.jp.net/ja/authentication/%E3%82%BB%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E7%B5%B6%E5%AF%BE%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E3%81%AF%E3%81%A9%E3%82%8C%E3%81%8F%E3%82%89%E3%81%84%E3%81%AE%E9%95%B7%E3%81%95%E3%81%A7%E3%81%99%E3%81%8B%EF%BC%9F/l968265546/
+///     1. <https://stackoverflow.com/questions/62964012/how-to-set-absolute-session-timeout-for-a-spring-session>
+///     2. <https://www.webdevqa.jp.net/ja/authentication/%E3%82%BB%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E7%B5%B6%E5%AF%BE%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E3%81%AF%E3%81%A9%E3%82%8C%E3%81%8F%E3%82%89%E3%81%84%E3%81%AE%E9%95%B7%E3%81%95%E3%81%A7%E3%81%99%E3%81%8B%EF%BC%9F/l968265546/>
 /// # NOTE
 /// Userを利用するときは、原則としてハンドラのパラメータにUserを指定する方法を選択する（前記方法だと利用規約の同意しているかの確認も同時に行うため）
 /// 本関数は、Userの情報を使いたいが、利用規約の同意を確認したくないケース（ex. ユーザーから利用規約の同意を得るケース）のみに利用する<br>
@@ -237,6 +244,43 @@ async fn check_if_user_has_already_agreed(
     Ok(())
 }
 
+async fn ensure_account_is_not_disabled(
+    account_id: i32,
+    op: impl DisabledCheckOperation,
+) -> Result<(), ErrResp> {
+    let result = op
+        .check_if_account_is_disabled(account_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "failed to ensure account is not disabled (status code: {}, code: {})",
+                e.0,
+                e.1 .0.code
+            );
+            unexpected_err_resp()
+        })?;
+    if let Some(disabled) = result {
+        if disabled {
+            // セッションチェックの際に無効化を検出した際は、Unauthorizedを返すことでログイン画面へ遷移させる
+            // ログイン画面でログインしようとした際に無効化を知らせるメッセージを表示
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Unauthorized as u32,
+                }),
+            ));
+        };
+        Ok(())
+    } else {
+        Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: NoAccountFound as u32,
+            }),
+        ))
+    }
+}
+
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 pub(crate) mod tests {
@@ -252,13 +296,17 @@ pub(crate) mod tests {
     use crate::{
         err,
         util::{
+            disabled_check::DisabledCheckOperation,
             session::{get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
             terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
             JAPANESE_TIME_ZONE, ROOT_PATH,
         },
     };
 
-    use super::{check_if_user_has_already_agreed, RefreshOperation, SESSION_ID_COOKIE_NAME};
+    use super::{
+        check_if_user_has_already_agreed, ensure_account_is_not_disabled, RefreshOperation,
+        SESSION_ID_COOKIE_NAME,
+    };
 
     pub(crate) fn extract_session_id_value(header_value: &HeaderValue) -> String {
         let set_cookie = header_value.to_str().expect("failed to get value");
@@ -476,5 +524,71 @@ pub(crate) mod tests {
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
         assert_eq!(err::Code::NotTermsOfUseAgreedYet as u32, result.1 .0.code);
+    }
+
+    struct DisabledCheckOperationMock {
+        account_id: i32,
+        no_account_found: bool,
+        account_disabled: bool,
+    }
+
+    #[async_trait]
+    impl DisabledCheckOperation for DisabledCheckOperationMock {
+        async fn check_if_account_is_disabled(
+            &self,
+            account_id: i32,
+        ) -> Result<Option<bool>, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            if self.no_account_found {
+                return Ok(None);
+            }
+            Ok(Some(self.account_disabled))
+        }
+    }
+
+    #[tokio::test]
+    async fn ensure_account_is_not_disabled_success() {
+        let account_id = 2345;
+        let op_mock = DisabledCheckOperationMock {
+            account_id,
+            no_account_found: false,
+            account_disabled: false,
+        };
+
+        let result = ensure_account_is_not_disabled(account_id, op_mock).await;
+
+        let _ = result.expect("failed to get Ok");
+    }
+
+    #[tokio::test]
+    async fn ensure_account_is_not_disabled_fail_no_account_found() {
+        let account_id = 2345;
+        let op_mock = DisabledCheckOperationMock {
+            account_id,
+            no_account_found: true,
+            account_disabled: false,
+        };
+
+        let result = ensure_account_is_not_disabled(account_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(err::Code::NoAccountFound as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn ensure_account_is_not_disabled_fail_unauthorized() {
+        let account_id = 2345;
+        let op_mock = DisabledCheckOperationMock {
+            account_id,
+            no_account_found: false,
+            account_disabled: true,
+        };
+
+        let result = ensure_account_is_not_disabled(account_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
+        assert_eq!(err::Code::Unauthorized as u32, resp.1 .0.code);
     }
 }
