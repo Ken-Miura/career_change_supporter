@@ -83,7 +83,7 @@
               電話番号
             </div>
             <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
-              <input v-bind:value="form.telephoneNumber" v-on:input="setTelephoneNumber" type="text" inputmode="tel" pattern="\d*" title="半角数字以外が入力されています。半角数字を用いてご入力下さい。" required minlength="10" maxlength="13" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input v-bind:value="form.telephoneNumber" v-on:input="setTelephoneNumber" type="text" inputmode="tel" pattern="[0-9]{10,13}" title="半角数字のみで10桁以上13桁以下でご入力下さい。" required minlength="10" maxlength="13" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               身分証明書

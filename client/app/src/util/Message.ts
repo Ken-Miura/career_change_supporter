@@ -35,9 +35,9 @@ export namespace Message {
     export const INVALID_FIRST_NAME_LENGTH_MESSAGE = '氏名の名の文字数が規定範囲外です。'
     export const ILLEGAL_CHAR_IN_FIRST_NAME_MESSAGE = '氏名の名に不正な文字が含まれています。'
     export const INVALID_LAST_NAME_FURIGANA_LENGTH_MESSAGE = 'フリガナのセイの文字数が規定範囲外です。'
-    export const ILLEGAL_CHAR_IN_LAST_NAME_FURIGANA_MESSAGE = 'フリガナのセイに不正な文字が含まれています。'
+    export const ILLEGAL_CHAR_IN_LAST_NAME_FURIGANA_MESSAGE = 'フリガナには全角カナのみをご利用下さい。'
     export const INVALID_FIRST_NAME_FURIGANA_LENGTH_MESSAGE = 'フリガナのメイの文字数が規定範囲外です。'
-    export const ILLEGAL_CHAR_IN_FIRST_NAME_FURIGANA_MESSAGE = 'フリガナのメイに不正な文字が含まれています。'
+    export const ILLEGAL_CHAR_IN_FIRST_NAME_FURIGANA_MESSAGE = ILLEGAL_CHAR_IN_LAST_NAME_FURIGANA_MESSAGE
     export const ILLEGAL_DATE_MESSAGE = '不正な生年月日です。'
     export const ILLEGAL_AGE_MESSAGE = 'サービスをご利用可能な年齢に達していません。'
     export const INVALID_PREFECTURE_MESSAGE = '不正な都道府県です。'
