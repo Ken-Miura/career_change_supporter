@@ -816,6 +816,7 @@ mod tests {
 
     use crate::err::Code::DataParseFailure;
     use crate::err::Code::ExceedMaxIdentityImageSizeLimit;
+    use crate::err::Code::IdentityInfoReqAlreadyExists;
     use crate::err::Code::IllegalAge;
     use crate::err::Code::IllegalCharInAddressLine1;
     use crate::err::Code::IllegalCharInAddressLine2;
@@ -2355,5 +2356,83 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(IdentityResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_identity_req_fail_create_identity_info_req_already_exists() {
+        let account_id = 1234;
+        let identity_exists = false;
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, identity_exists),
+            create_text(account_id, identity_exists),
+        );
+        let current_date_time = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date = current_date_time.naive_local().date();
+        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let submitted_identity = SubmittedIdentity {
+            account_id,
+            identity: create_dummy_identity(&current_date),
+            identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
+            identity_image2: None,
+        };
+        let op = SubmitIdentityOperationMock {
+            identity_exists,
+            create_identity_req_exists: true,
+            update_identity_req_exists: false,
+            account_id,
+            submitted_identity: submitted_identity.clone(),
+            current_date_time,
+        };
+
+        let result =
+            handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(IdentityInfoReqAlreadyExists as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn handle_identity_req_fail_update_identity_info_req_already_exists() {
+        let account_id = 1234;
+        let identity_exists = true;
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, identity_exists),
+            create_text(account_id, identity_exists),
+        );
+        let current_date_time = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date = current_date_time.naive_local().date();
+        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let submitted_identity = SubmittedIdentity {
+            account_id,
+            identity: create_dummy_identity(&current_date),
+            identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
+            identity_image2: None,
+        };
+        let op = SubmitIdentityOperationMock {
+            identity_exists,
+            create_identity_req_exists: false,
+            update_identity_req_exists: true,
+            account_id,
+            submitted_identity: submitted_identity.clone(),
+            current_date_time,
+        };
+
+        let result =
+            handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(IdentityInfoReqAlreadyExists as u32, resp.1 .0.code);
     }
 }
