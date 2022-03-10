@@ -1,7 +1,10 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main>
+    <div v-if="!postIdentityDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">ユーザー情報</h3>
         <p class="mt-2 text-lg">本人確認のために利用される情報です（本人確認の完了後、相談申し込みが可能となります）本人確認の依頼後、入力した値がユーザー情報に反映された時点で、本人確認が完了となります。ユーザー情報が他のユーザーに公開されることはありません。</p>
@@ -120,22 +123,28 @@ import { useImages } from '@/views/personalized/useImages'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRouter } from 'vue-router'
 import AlertMessage from '@/components/AlertMessage.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
-import { Code } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { createPrefectureList } from '@/util/personalized/profile/PrefectureList'
 import { createDayList } from '@/util/DayList'
 import { createMonthList } from '@/util/MonthList'
 import { createYearOfBirthList, MIN_AGE, START_YEAR } from '@/util/personalized/profile/YearOfBirthList'
 import { Identity } from '@/util/personalized/profile/Identity'
+import { usePostIdentity } from '@/util/personalized/identity/usePostIdentity'
+import { isJpegExtension, exceedJpegMaxImageSize } from '@/util/CheckJpegImage'
+import { PostIdentityResp } from '@/util/personalized/identity/PostIdentityResp'
+import { SET_POST_IDENTITY_RESULT_MESSAGE } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'IdentityPage',
   components: {
     TheHeader,
-    AlertMessage
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const router = useRouter()
@@ -163,6 +172,8 @@ export default defineComponent({
       onImage1StateChange,
       onImage2StateChange
     } = useImages()
+    const { postIdentityDone, postIdentityFunc } = usePostIdentity()
+
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -171,7 +182,6 @@ export default defineComponent({
           // 表示する際の初期値として使いたいだけなので、identityはrefとして宣言しない（リアクティブとしない）
           const identity = store.state.identity
           if (identity !== null) {
-            /* eslint-disable camelcase */
             form.lastName = identity.last_name
             form.firstName = identity.first_name
             form.lastNameFurigana = identity.last_name_furigana
@@ -186,7 +196,6 @@ export default defineComponent({
               form.addressLine2 = identity.address_line2
             }
             form.telephoneNumber = identity.telephone_number
-            /* eslint-enable camelcase */
           }
         } else if (resp instanceof ApiErrorResp) {
           const code = resp.getApiError().getCode()
@@ -206,26 +215,35 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
     const submitIdentity = async () => {
-      console.log(form.lastName)
-      console.log(form.firstName)
-      console.log(form.lastNameFurigana)
-      console.log(form.firstNameFurigana)
-      console.log(form.yearOfBirth)
-      console.log(form.monthOfBirth)
-      console.log(form.dayOfBirth)
-      console.log(form.prefecture)
-      console.log(form.city)
-      console.log(form.addressLine1)
-      console.log(form.addressLine2)
-      console.log(form.telephoneNumber)
-      console.log('images.image1')
-      console.log(images.image1?.name)
-      console.log(images.image1?.size)
-      console.log('images.image2')
-      console.log(images.image2?.name)
-      console.log(images.image2?.size)
-      const formData = new FormData()
+      if (images.image1 === null) {
+        isHidden.value = false
+        errorMessage.value = Message.NO_IDENTITY_IMAGE1_SELECTED
+        return
+      }
+      if (!isJpegExtension(images.image1.name)) {
+        isHidden.value = false
+        errorMessage.value = Message.NO_JPEG_EXTENSION_MESSAGE
+        return
+      }
+      if (exceedJpegMaxImageSize(images.image1.size)) {
+        isHidden.value = false
+        errorMessage.value = Message.EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE
+        return
+      }
+      if (images.image2 !== null) {
+        if (!isJpegExtension(images.image2.name)) {
+          isHidden.value = false
+          errorMessage.value = Message.NO_JPEG_EXTENSION_MESSAGE
+          return
+        }
+        if (exceedJpegMaxImageSize(images.image2.size)) {
+          isHidden.value = false
+          errorMessage.value = Message.EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE
+          return
+        }
+      }
       const identity = {
         last_name: form.lastName,
         first_name: form.firstName,
@@ -242,19 +260,33 @@ export default defineComponent({
         address_line2: form.addressLine2 !== '' ? form.addressLine2 : null,
         telephone_number: form.telephoneNumber
       } as Identity
-      formData.append('identity', JSON.stringify(identity))
-      if (images.image1 !== null) {
-        formData.append('identity-image1', images.image1)
+
+      try {
+        const response = await postIdentityFunc(identity, images.image1, images.image2)
+        if (response instanceof PostIdentityResp) {
+          store.commit(SET_POST_IDENTITY_RESULT_MESSAGE, Message.POST_IDENTITY_RESULT_MESSAGE)
+          await router.push('post-identity-result')
+          return
+        } else if (response instanceof ApiErrorResp) {
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('terms-of-use')
+            return
+          }
+          isHidden.value = false
+          errorMessage.value = createErrorMessage(response.getApiError().getCode())
+        } else {
+          throw new Error(`unexpected result: ${response}`)
+        }
+      } catch (e) {
+        isHidden.value = false
+        errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      if (images.image2 !== null) {
-        formData.append('identity-image2', images.image2)
-      }
-      const response = await fetch('/api/identity', {
-        method: 'POST',
-        body: formData
-      })
-      console.log(response)
     }
+
     return {
       isHidden,
       errorMessage,
@@ -273,6 +305,7 @@ export default defineComponent({
       prefectureList,
       onImage1StateChange,
       onImage2StateChange,
+      postIdentityDone,
       submitIdentity
     }
   }

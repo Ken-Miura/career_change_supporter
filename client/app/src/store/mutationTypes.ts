@@ -1,4 +1,4 @@
-
+export const SET_POST_IDENTITY_RESULT_MESSAGE = 'setPostIdentityResultMessage'
 export const SET_PASSWORD_UPDATE_RESULT_MESSAGE = 'setPasswordUpdateResultMessage'
 export const SET_IDENTITY = 'setIdentity'
 export const SET_CAREERS = 'setCareers'
