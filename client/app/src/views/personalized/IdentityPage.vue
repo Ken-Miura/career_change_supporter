@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!postIdentityDone" class="m-6">
+    <div v-if="waitingPostIdentityDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -172,7 +172,7 @@ export default defineComponent({
       onImage1StateChange,
       onImage2StateChange
     } = useImages()
-    const { postIdentityDone, postIdentityFunc } = usePostIdentity()
+    const { waitingPostIdentityDone, postIdentityFunc } = usePostIdentity()
 
     onMounted(async () => {
       try {
@@ -305,7 +305,7 @@ export default defineComponent({
       prefectureList,
       onImage1StateChange,
       onImage2StateChange,
-      postIdentityDone,
+      waitingPostIdentityDone,
       submitIdentity
     }
   }
