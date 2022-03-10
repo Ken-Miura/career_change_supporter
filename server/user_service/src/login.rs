@@ -84,6 +84,7 @@ async fn handle_login_req(
         ));
     }
     let user_account_id = account.user_account_id;
+    // disabledチェック
     let mut session = Session::new();
     let _ = session
         .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)

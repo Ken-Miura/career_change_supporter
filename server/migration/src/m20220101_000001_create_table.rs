@@ -62,14 +62,27 @@ impl MigrationTrait for Migration {
             email_address ccs_schema.email_address NOT NULL UNIQUE,
             hashed_password BYTEA NOT NULL,
             last_login_time TIMESTAMP WITH TIME ZONE,
-            created_at TIMESTAMP WITH TIME ZONE NOT NULL
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            disabled_at TIMESTAMP WITH TIME ZONE
           );"))
         .await
         .map(|_| ())?;
         let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT, DELETE ON ccs_schema.user_account To user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
             .execute(sql.stmt(
-                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.user_account To user_app;",
+                r"GRANT UPDATE (hashed_password, last_login_time) ON ccs_schema.user_account To user_app;",
             ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT UPDATE (disabled_at) ON ccs_schema.user_account To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn

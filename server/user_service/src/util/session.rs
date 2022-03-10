@@ -95,6 +95,8 @@ where
         let op = RefreshOperationImpl {};
         let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
 
+        // disabledチェック
+
         let Extension(pool) = Extension::<DatabaseConnection>::from_request(req)
             .await
             .map_err(|e| {
