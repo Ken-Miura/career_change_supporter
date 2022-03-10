@@ -81,7 +81,7 @@ pub(crate) async fn post_identity(
     Ok(result)
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct IdentityResult {}
 
 #[async_trait]
@@ -466,6 +466,7 @@ async fn handle_identity_req(
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
 
+#[derive(Clone, Debug, PartialEq)]
 struct SubmittedIdentity {
     account_id: i32,
     identity: Identity,
@@ -500,7 +501,7 @@ trait SubmitIdentityOperation {
     ) -> Result<bool, ErrResp>;
     async fn request_create_identity(
         &self,
-        identity: SubmittedIdentity,
+        submitted_identity: SubmittedIdentity,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
     async fn check_if_update_identity_req_already_exists(
@@ -509,7 +510,7 @@ trait SubmitIdentityOperation {
     ) -> Result<bool, ErrResp>;
     async fn request_update_identity(
         &self,
-        identity: SubmittedIdentity,
+        submitted_identity: SubmittedIdentity,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
@@ -842,16 +843,19 @@ mod tests {
     use crate::err::Code::NoIdentityImage1Found;
     use crate::err::Code::NoNameFound;
     use crate::err::Code::NotJpegExtension;
-    use crate::identity::MAX_IDENTITY_IMAGE_SIZE_IN_BYTES;
+    use crate::identity::{IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
+    use crate::util::tests::SendMailMock;
     use async_session::serde_json;
     use axum::async_trait;
     use axum::http::StatusCode;
     use bytes::Bytes;
-    use chrono::{Datelike, NaiveDate, TimeZone, Utc};
+    use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
+    use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
     use common::ErrResp;
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
     use serde::Deserialize;
     use serde::Serialize;
+    use uuid::Uuid;
 
     use crate::{
         identity::convert_jpeg_to_png,
@@ -860,7 +864,10 @@ mod tests {
         },
     };
 
-    use super::{handle_multipart, IdentityField, MultipartWrapper};
+    use super::{
+        create_subject, create_text, handle_identity_req, handle_multipart, IdentityField,
+        MultipartWrapper, SubmitIdentityOperation, SubmittedIdentity,
+    };
 
     // IdentityFieldのdataのResult<Bytes, Box<dyn Error>>がSendを実装しておらず、asyncメソッド内のselfに含められない
     // そのため、テスト用にdataの型を一部修正したダミークラスを用意
@@ -2217,5 +2224,97 @@ mod tests {
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
         assert_eq!(InvalidTelNumFormat as u32, err_resp.1.code);
+    }
+
+    struct SubmitIdentityOperationMock {
+        identity_exists: bool,
+        create_identity_req_exists: bool,
+        update_identity_req_exists: bool,
+        account_id: i32,
+        submitted_identity: SubmittedIdentity,
+        current_date_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl SubmitIdentityOperation for SubmitIdentityOperationMock {
+        async fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.identity_exists)
+        }
+
+        async fn check_if_create_identity_req_already_exists(
+            &self,
+            account_id: i32,
+        ) -> Result<bool, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.create_identity_req_exists)
+        }
+
+        async fn request_create_identity(
+            &self,
+            submitted_identity: SubmittedIdentity,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.submitted_identity, submitted_identity);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
+        }
+
+        async fn check_if_update_identity_req_already_exists(
+            &self,
+            account_id: i32,
+        ) -> Result<bool, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.update_identity_req_exists)
+        }
+
+        async fn request_update_identity(
+            &self,
+            submitted_identity: SubmittedIdentity,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.submitted_identity, submitted_identity);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_identity_req_success_create_identity_req() {
+        let account_id = 1234;
+        let identity_exists = false;
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, identity_exists),
+            create_text(account_id, identity_exists),
+        );
+        let current_date_time = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date = current_date_time.naive_local().date();
+        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let submitted_identity = SubmittedIdentity {
+            account_id,
+            identity: create_dummy_identity(&current_date),
+            identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
+            identity_image2: None,
+        };
+        let op = SubmitIdentityOperationMock {
+            identity_exists,
+            create_identity_req_exists: false,
+            update_identity_req_exists: false,
+            account_id,
+            submitted_identity: submitted_identity.clone(),
+            current_date_time,
+        };
+
+        let result =
+            handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(IdentityResult {}, resp.1 .0);
     }
 }
