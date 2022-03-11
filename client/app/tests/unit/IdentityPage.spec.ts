@@ -1,6 +1,6 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import IdentityPage from '@/views/personalized/IdentityPage.vue'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
@@ -20,6 +20,20 @@ jest.mock('@/util/personalized/identity/usePostIdentity', () => ({
   usePostIdentity: () => ({
     waitingPostIdentityDone: waitingPostIdentityDoneMock,
     postIdentityFunc: postIdentityFuncMock
+  })
+}))
+
+let imagesMock = reactive({
+  image1: null as File | null,
+  image2: null as File | null
+})
+const onImage1StateChangeFuncMock = jest.fn()
+const onImage2StateChangeFuncMock = jest.fn()
+jest.mock('@/views/personalized/useImages', () => ({
+  useImages: () => ({
+    images: imagesMock,
+    onImage1StateChange: onImage1StateChangeFuncMock,
+    onImage2StateChange: onImage2StateChangeFuncMock
   })
 }))
 
@@ -57,9 +71,15 @@ describe('IdentityPage.vue', () => {
     refreshMock.mockReset()
     getMaxImageJpegImageSizeInBytesMock.mockReset()
     getMaxImageJpegImageSizeInBytesMock.mockReturnValue(MAX_JPEG_IMAGE_SIZE_IN_BYTES)
+    onImage1StateChangeFuncMock.mockReset()
+    onImage2StateChangeFuncMock.mockReset()
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
     identityMock = null
+    imagesMock = reactive({
+      image1: null as File | null,
+      image2: null as File | null
+    })
   })
 
   it('has one TheHeader, one submit button and one AlertMessage', () => {
@@ -241,10 +261,14 @@ describe('IdentityPage.vue', () => {
     }
     identityMock = identity
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
-    const image1 = new File(['test'], 'image1.jpeg', { type: 'text/html' })
+    const image1 = new File(['test'], 'image1.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: null as File | null
+    })
     getMaxImageJpegImageSizeInBytesMock.mockReset()
     getMaxImageJpegImageSizeInBytesMock.mockReturnValue(image1.size)
-    mount(IdentityPage, {
+    const wrapper = mount(IdentityPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -252,6 +276,8 @@ describe('IdentityPage.vue', () => {
       }
     })
     await flushPromises()
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
