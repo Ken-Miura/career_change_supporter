@@ -9,6 +9,10 @@ import TheHeader from '@/components/TheHeader.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { Message } from '@/util/Message'
 import { Identity } from '@/util/personalized/profile/Identity'
+import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { PostIdentityResp } from '@/util/personalized/identity/PostIdentityResp'
+import { SET_POST_IDENTITY_RESULT_MESSAGE } from '@/store/mutationTypes'
+import { getMaxImageJpegImageSizeInBytes, MAX_JPEG_IMAGE_SIZE_IN_BYTES } from '@/util/MaxImageSize'
 
 const waitingPostIdentityDoneMock = ref(false)
 const postIdentityFuncMock = jest.fn()
@@ -21,6 +25,9 @@ jest.mock('@/util/personalized/identity/usePostIdentity', () => ({
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
+
+jest.mock('@/util/MaxImageSize')
+const getMaxImageJpegImageSizeInBytesMock = getMaxImageJpegImageSizeInBytes as jest.MockedFunction<typeof getMaxImageJpegImageSizeInBytes>
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -40,11 +47,16 @@ jest.mock('vuex', () => ({
   })
 }))
 
+// 画像ファイルのモックは下記を参考に行う
+// https://stackoverflow.com/questions/24488985/how-to-mock-file-in-javascript
+
 describe('IdentityPage.vue', () => {
   beforeEach(() => {
     waitingPostIdentityDoneMock.value = false
     postIdentityFuncMock.mockReset()
     refreshMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(MAX_JPEG_IMAGE_SIZE_IN_BYTES)
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
     identityMock = null
@@ -204,5 +216,46 @@ describe('IdentityPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it(`moves to post-identity-result setting ${Message.POST_IDENTITY_RESULT_MESSAGE} on store when postIdentity is success`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    postIdentityFuncMock.mockResolvedValue(PostIdentityResp.create())
+    const identity = {
+      /* eslint-disable camelcase */
+      last_name: '山田',
+      first_name: '太郎',
+      last_name_furigana: 'ヤマダ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1990,
+        month: 6,
+        day: 14
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '２−２−２２',
+      address_line2: 'ライオンズマンション４０５',
+      telephone_number: '08012345678'
+      /* eslint-enable camelcase */
+    }
+    identityMock = identity
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test'], 'image1.jpeg', { type: 'text/html' })
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(image1.size)
+    mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
   })
 })
