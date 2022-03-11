@@ -6,6 +6,7 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import TheHeader from '@/components/TheHeader.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
 const waitingPostIdentityDoneMock = ref(false)
 const postIdentityFuncMock = jest.fn()
@@ -42,7 +43,7 @@ describe('IdentityPage.vue', () => {
     storeCommitMock.mockClear()
   })
 
-  it('has one AlertMessage and one submit button', () => {
+  it('has one TheHeader, one AlertMessage and one submit button', () => {
     const wrapper = mount(IdentityPage, {
       global: {
         stubs: {
@@ -69,6 +70,25 @@ describe('IdentityPage.vue', () => {
     const alertMessage = wrapper.findComponent(AlertMessage)
     const classes = alertMessage.classes()
     expect(classes).toContain('hidden')
+  })
+
+  it('has TheHeader and WaitingCircle during api call', async () => {
+    waitingPostIdentityDoneMock.value = true
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
   })
 
   it(`moves to login if ${Code.UNAUTHORIZED} is returned on opening IdentityPage`, async () => {
