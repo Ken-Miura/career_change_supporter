@@ -8,6 +8,7 @@ import { refresh } from '@/util/personalized/refresh/Refresh'
 import TheHeader from '@/components/TheHeader.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { Message } from '@/util/Message'
+import { Identity } from '@/util/personalized/profile/Identity'
 
 const waitingPostIdentityDoneMock = ref(false)
 const postIdentityFuncMock = jest.fn()
@@ -28,10 +29,14 @@ jest.mock('vue-router', () => ({
   })
 }))
 
+let identityMock = null as Identity | null
 const storeCommitMock = jest.fn()
 jest.mock('vuex', () => ({
   useStore: () => ({
-    commit: storeCommitMock
+    commit: storeCommitMock,
+    state: {
+      identity: identityMock
+    }
   })
 }))
 
@@ -42,6 +47,7 @@ describe('IdentityPage.vue', () => {
     refreshMock.mockReset()
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
+    identityMock = null
   })
 
   it('has one TheHeader, one submit button and one AlertMessage', () => {
@@ -58,6 +64,59 @@ describe('IdentityPage.vue', () => {
     expect(submitButton.exists)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(1)
+  })
+
+  it('has labels for identity information input', () => {
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const lastName = wrapper.find('[data-test="last-name-div"]')
+    expect(lastName.exists)
+    expect(lastName.text()).toContain('姓')
+    const firstName = wrapper.find('[data-test="first-name-div"]')
+    expect(firstName.exists)
+    expect(firstName.text()).toContain('名')
+    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
+    expect(lastNameFurigana.exists)
+    expect(lastNameFurigana.text()).toContain('セイ')
+    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
+    expect(firstNameFurigana.exists)
+    expect(firstNameFurigana.text()).toContain('メイ')
+    const year = wrapper.find('[data-test="year-div"]')
+    expect(year.exists)
+    expect(year.text()).toContain('年')
+    const month = wrapper.find('[data-test="month-div"]')
+    expect(month.exists)
+    expect(month.text()).toContain('月')
+    const day = wrapper.find('[data-test="day-div"]')
+    expect(day.exists)
+    expect(day.text()).toContain('日')
+    // 都道府県は、セレクトボックスのみでラベルはないのでチェックしない
+    const city = wrapper.find('[data-test="city-div"]')
+    expect(city.exists)
+    expect(city.text()).toContain('市区町村')
+    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
+    expect(addressLine1.exists)
+    expect(addressLine1.text()).toContain('番地')
+    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
+    expect(addressLine2.exists)
+    expect(addressLine2.text()).toContain('建物名・部屋番号')
+    const tel = wrapper.find('[data-test="tel-div"]')
+    expect(tel.exists)
+    expect(tel.text()).toContain('電話番号')
+    const identityImage = wrapper.find('[data-test="identity-image-div"]')
+    expect(identityImage.exists)
+    expect(identityImage.text()).toContain('身分証明書')
+    const identityImage1 = wrapper.find('[data-test="identity-image1-div"]')
+    expect(identityImage1.exists)
+    expect(identityImage1.text()).toContain('表面')
+    const identityImage2 = wrapper.find('[data-test="identity-image2-div"]')
+    expect(identityImage2.exists)
+    expect(identityImage2.text()).toContain('裏面')
   })
 
   it('has AlertMessage with a hidden attribute when created', () => {

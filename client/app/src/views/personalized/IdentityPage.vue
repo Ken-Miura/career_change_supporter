@@ -13,22 +13,22 @@
             <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
               氏名
             </div>
-            <div class="mt-2 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
+            <div data-test="last-name-div" class="mt-2 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">姓</label>
               <input v-bind:value="form.lastName" v-on:input="setLastName" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 ml-1 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
+            <div data-test="first-name-div" class="mt-2 ml-1 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">名</label>
               <input v-bind:value="form.firstName" v-on:input="setFirstName" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
               フリガナ
             </div>
-            <div class="mt-2 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
+            <div data-test="last-name-furigana-div" class="mt-2 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">セイ</label>
               <input v-bind:value="form.lastNameFurigana" v-on:input="setLastNameFurigana" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 ml-1 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
+            <div data-test="first-name-furigana-div" class="mt-2 ml-1 justify-self-start col-span-3 pt-3 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">メイ</label>
               <input v-bind:value="form.firstNameFurigana" v-on:input="setFirstNameFurigana" type="text" required minlength="1" maxlength="64" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
@@ -40,7 +40,7 @@
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="year-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -48,7 +48,7 @@
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="month-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -56,7 +56,7 @@
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="day-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               日
             </div>
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
@@ -67,37 +67,37 @@
                 <option v-for="prefecture in prefectureList" v-bind:key="prefecture" v-bind:value="prefecture">{{ prefecture }}</option>
               </select>
             </div>
-            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div data-test="city-div" class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">市区町村</label>
               <input v-bind:value="form.city" v-on:input="setCity" type="text" required minlength="1" maxlength="32" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div data-test="address-line1-div" class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">番地</label>
               <input v-bind:value="form.addressLine1" v-on:input="setAddressLine1" type="text" required minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div data-test="address-line2-div" class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">建物名・部屋番号</label>
               <input v-bind:value="form.addressLine2" v-on:input="setAddressLine2" type="text" minlength="0" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="tel-div" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               電話番号
             </div>
             <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <input v-bind:value="form.telephoneNumber" v-on:input="setTelephoneNumber" type="text" inputmode="tel" pattern="[0-9]{10,13}" title="半角数字のみで10桁以上13桁以下でご入力下さい。" required minlength="10" maxlength="13" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="identity-image-div" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               身分証明書
             </div>
             <div class="mt-2 text-xl justify-self-start col-span-6 pt-3 pl-3">
               身分証明書の画像は<span class=" text-red-500">jpegで、サイズが4MB以下</span>である必要が有ります。<span class=" text-red-500">運転免許証、マイナンバーカードまたはパスポート</span>を身分証明書としてご利用可能です。運転免許証は表面と裏面、<span class=" text-red-500">マイナンバーカードは表面（顔写真記載面）のみ</span>、パスポートは顔写真記載面と現住所記載面をアップロードしてください（いずれも<span class=" text-red-500">有効期限内</span>のものをアップロードください）
             </div>
-            <div class="mt-6 pl-3 w-full justify-self-start col-span-1">
+            <div data-test="identity-image1-div" class="mt-6 pl-3 w-full justify-self-start col-span-1">
               表面
             </div>
             <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
               <input type="file" name="image1" v-on:change="onImage1StateChange" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-6 pl-3 w-full justify-self-start col-span-1">
+            <div data-test="identity-image2-div" class="mt-6 pl-3 w-full justify-self-start col-span-1">
               裏面
             </div>
             <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
