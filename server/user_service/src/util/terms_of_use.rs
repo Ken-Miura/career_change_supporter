@@ -37,7 +37,7 @@ pub(crate) static TERMS_OF_USE_VERSION: Lazy<i32> = Lazy::new(|| {
 });
 
 #[async_trait]
-pub(crate) trait TermsOfUseLoadOperation {
+pub(super) trait TermsOfUseLoadOperation {
     async fn find(
         &self,
         account_id: i32,
@@ -45,12 +45,12 @@ pub(crate) trait TermsOfUseLoadOperation {
     ) -> Result<Option<TermsOfUseData>, ErrResp>;
 }
 
-pub(crate) struct TermsOfUseLoadOperationImpl {
+pub(super) struct TermsOfUseLoadOperationImpl {
     pool: DatabaseConnection,
 }
 
 impl TermsOfUseLoadOperationImpl {
-    pub(crate) fn new(pool: DatabaseConnection) -> Self {
+    pub(super) fn new(pool: DatabaseConnection) -> Self {
         Self { pool }
     }
 }
@@ -84,7 +84,7 @@ impl TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct TermsOfUseData {
+pub(super) struct TermsOfUseData {
     pub user_account_id: i32,
     pub ver: i32,
     pub email_address: String,

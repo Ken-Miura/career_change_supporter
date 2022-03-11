@@ -10,7 +10,7 @@ use entity::{
 use crate::err::unexpected_err_resp;
 
 #[async_trait]
-pub(crate) trait DisabledCheckOperation {
+pub(super) trait DisabledCheckOperation {
     /// アカウントが無効化されているかどうか
     ///
     /// - アカウントが存在しない場合、Noneを返す
@@ -20,12 +20,12 @@ pub(crate) trait DisabledCheckOperation {
     async fn check_if_account_is_disabled(&self, account_id: i32) -> Result<Option<bool>, ErrResp>;
 }
 
-pub(crate) struct DisabledCheckOperationImpl {
+pub(super) struct DisabledCheckOperationImpl {
     pool: DatabaseConnection,
 }
 
 impl DisabledCheckOperationImpl {
-    pub(crate) fn new(pool: DatabaseConnection) -> Self {
+    pub(super) fn new(pool: DatabaseConnection) -> Self {
         Self { pool }
     }
 }
