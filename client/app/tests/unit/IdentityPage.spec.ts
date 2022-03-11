@@ -7,6 +7,7 @@ import { Code } from '@/util/Error'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import TheHeader from '@/components/TheHeader.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
+import { Message } from '@/util/Message'
 
 const waitingPostIdentityDoneMock = ref(false)
 const postIdentityFuncMock = jest.fn()
@@ -43,7 +44,7 @@ describe('IdentityPage.vue', () => {
     storeCommitMock.mockClear()
   })
 
-  it('has one TheHeader, one AlertMessage and one submit button', () => {
+  it('has one TheHeader, one submit button and one AlertMessage', () => {
     const wrapper = mount(IdentityPage, {
       global: {
         stubs: {
@@ -53,10 +54,10 @@ describe('IdentityPage.vue', () => {
     })
     const headers = wrapper.findAllComponents(TheHeader)
     expect(headers.length).toBe(1)
-    const alertMessages = wrapper.findAllComponents(AlertMessage)
-    expect(alertMessages.length).toBe(1)
     const submitButton = wrapper.find('[data-test="submit-button"]')
     expect(submitButton.exists)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
   })
 
   it('has AlertMessage with a hidden attribute when created', () => {
@@ -121,5 +122,28 @@ describe('IdentityPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+  })
+
+  it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happened on opening IdentityPage`, async () => {
+    const errDetail = 'connection error'
+    refreshMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
