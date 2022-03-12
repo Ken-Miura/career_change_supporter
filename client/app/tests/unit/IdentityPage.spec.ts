@@ -278,6 +278,7 @@ describe('IdentityPage.vue', () => {
     await flushPromises()
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
@@ -345,6 +346,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
@@ -410,6 +412,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     const alertMessage = wrapper.findComponent(AlertMessage)
@@ -477,6 +480,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     const alertMessage = wrapper.findComponent(AlertMessage)
@@ -544,6 +548,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     const alertMessage = wrapper.findComponent(AlertMessage)
@@ -613,6 +618,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     const alertMessage = wrapper.findComponent(AlertMessage)
@@ -685,6 +691,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     const alertMessage = wrapper.findComponent(AlertMessage)
@@ -755,6 +762,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('login')
@@ -821,6 +829,7 @@ describe('IdentityPage.vue', () => {
     await telInput.setValue('09012345678')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
