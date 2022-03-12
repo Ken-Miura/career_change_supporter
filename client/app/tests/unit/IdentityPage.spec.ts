@@ -982,4 +982,226 @@ describe('IdentityPage.vue', () => {
     expect(resultMessage).toContain(Message.INVALID_LAST_NAME_LENGTH_MESSAGE)
     expect(resultMessage).toContain(Code.INVALID_LAST_NAME_LENGTH.toString())
   })
+
+  it(`displays alert message ${Message.ILLEGAL_CHAR_IN_LAST_NAME_MESSAGE} when last name has illegal char`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CHAR_IN_LAST_NAME))
+    postIdentityFuncMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const lastName = wrapper.find('[data-test="last-name-div"]')
+    const lastNameInput = lastName.find('input')
+    await lastNameInput.setValue('\u000A')
+    const firstName = wrapper.find('[data-test="first-name-div"]')
+    const firstNameInput = firstName.find('input')
+    await firstNameInput.setValue('太郎')
+    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
+    const lastNameFuriganaInput = lastNameFurigana.find('input')
+    await lastNameFuriganaInput.setValue('ヤマダ')
+    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
+    const firstNameFuriganaInput = firstNameFurigana.find('input')
+    await firstNameFuriganaInput.setValue('太郎')
+    const year = wrapper.find('[data-test="year-select-div"]')
+    const yearSelect = year.find('select')
+    await yearSelect.setValue('1990')
+    const month = wrapper.find('[data-test="month-select-div"]')
+    const monthSelect = month.find('select')
+    await monthSelect.setValue('5')
+    const day = wrapper.find('[data-test="day-select-div"]')
+    const daySelect = day.find('select')
+    await daySelect.setValue('12')
+    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
+    const prefectureSelect = prefecture.find('select')
+    await prefectureSelect.setValue('東京都')
+    const city = wrapper.find('[data-test="city-div"]')
+    const cityInput = city.find('input')
+    await cityInput.setValue('町田市')
+    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
+    const addressLine1Input = addressLine1.find('input')
+    await addressLine1Input.setValue('森の里２−２２−２')
+    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
+    const addressLine2Input = addressLine2.find('input')
+    await addressLine2Input.setValue('レオパレス２０３')
+    const tel = wrapper.find('[data-test="tel-input-div"]')
+    const telInput = tel.find('input')
+    await telInput.setValue('09012345678')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_LAST_NAME_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_LAST_NAME.toString())
+  })
+
+  it(`displays alert message ${Message.INVALID_FIRST_NAME_LENGTH_MESSAGE} when first name length is invalid`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_FIRST_NAME_LENGTH))
+    postIdentityFuncMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const lastName = wrapper.find('[data-test="last-name-div"]')
+    const lastNameInput = lastName.find('input')
+    await lastNameInput.setValue('山田')
+    const firstName = wrapper.find('[data-test="first-name-div"]')
+    const firstNameInput = firstName.find('input')
+    await firstNameInput.setValue('')
+    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
+    const lastNameFuriganaInput = lastNameFurigana.find('input')
+    await lastNameFuriganaInput.setValue('ヤマダ')
+    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
+    const firstNameFuriganaInput = firstNameFurigana.find('input')
+    await firstNameFuriganaInput.setValue('太郎')
+    const year = wrapper.find('[data-test="year-select-div"]')
+    const yearSelect = year.find('select')
+    await yearSelect.setValue('1990')
+    const month = wrapper.find('[data-test="month-select-div"]')
+    const monthSelect = month.find('select')
+    await monthSelect.setValue('5')
+    const day = wrapper.find('[data-test="day-select-div"]')
+    const daySelect = day.find('select')
+    await daySelect.setValue('12')
+    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
+    const prefectureSelect = prefecture.find('select')
+    await prefectureSelect.setValue('東京都')
+    const city = wrapper.find('[data-test="city-div"]')
+    const cityInput = city.find('input')
+    await cityInput.setValue('町田市')
+    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
+    const addressLine1Input = addressLine1.find('input')
+    await addressLine1Input.setValue('森の里２−２２−２')
+    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
+    const addressLine2Input = addressLine2.find('input')
+    await addressLine2Input.setValue('レオパレス２０３')
+    const tel = wrapper.find('[data-test="tel-input-div"]')
+    const telInput = tel.find('input')
+    await telInput.setValue('09012345678')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_FIRST_NAME_LENGTH_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_FIRST_NAME_LENGTH.toString())
+  })
+
+  it(`displays alert message ${Message.ILLEGAL_CHAR_IN_FIRST_NAME_MESSAGE} when first name has illegal char`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CHAR_IN_FIRST_NAME))
+    postIdentityFuncMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const lastName = wrapper.find('[data-test="last-name-div"]')
+    const lastNameInput = lastName.find('input')
+    await lastNameInput.setValue('山田')
+    const firstName = wrapper.find('[data-test="first-name-div"]')
+    const firstNameInput = firstName.find('input')
+    await firstNameInput.setValue('\u000D')
+    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
+    const lastNameFuriganaInput = lastNameFurigana.find('input')
+    await lastNameFuriganaInput.setValue('ヤマダ')
+    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
+    const firstNameFuriganaInput = firstNameFurigana.find('input')
+    await firstNameFuriganaInput.setValue('太郎')
+    const year = wrapper.find('[data-test="year-select-div"]')
+    const yearSelect = year.find('select')
+    await yearSelect.setValue('1990')
+    const month = wrapper.find('[data-test="month-select-div"]')
+    const monthSelect = month.find('select')
+    await monthSelect.setValue('5')
+    const day = wrapper.find('[data-test="day-select-div"]')
+    const daySelect = day.find('select')
+    await daySelect.setValue('12')
+    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
+    const prefectureSelect = prefecture.find('select')
+    await prefectureSelect.setValue('東京都')
+    const city = wrapper.find('[data-test="city-div"]')
+    const cityInput = city.find('input')
+    await cityInput.setValue('町田市')
+    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
+    const addressLine1Input = addressLine1.find('input')
+    await addressLine1Input.setValue('森の里２−２２−２')
+    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
+    const addressLine2Input = addressLine2.find('input')
+    await addressLine2Input.setValue('レオパレス２０３')
+    const tel = wrapper.find('[data-test="tel-input-div"]')
+    const telInput = tel.find('input')
+    await telInput.setValue('09012345678')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_FIRST_NAME_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_FIRST_NAME.toString())
+  })
 })
