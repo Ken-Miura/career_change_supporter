@@ -621,4 +621,76 @@ describe('IdentityPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.NO_JPEG_EXTENSION_MESSAGE)
   })
+
+  it(`displays alert message ${Message.EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE} when image2 exceeds max size`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    postIdentityFuncMock.mockResolvedValue(PostIdentityResp.create())
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test'], 'image.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test_longer_binary_than_image1'], 'image.jpeg', { type: 'image/jpeg' })
+    if (image2.size < image1.size) {
+      throw new Error('image2.size < image1.size')
+    }
+    const maxImageSize = Math.max(image1.size, image2.size)
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize - 1)
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const lastName = wrapper.find('[data-test="last-name-div"]')
+    const lastNameInput = lastName.find('input')
+    await lastNameInput.setValue('山田')
+    const firstName = wrapper.find('[data-test="first-name-div"]')
+    const firstNameInput = firstName.find('input')
+    await firstNameInput.setValue('太郎')
+    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
+    const lastNameFuriganaInput = lastNameFurigana.find('input')
+    await lastNameFuriganaInput.setValue('ヤマダ')
+    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
+    const firstNameFuriganaInput = firstNameFurigana.find('input')
+    await firstNameFuriganaInput.setValue('太郎')
+    const year = wrapper.find('[data-test="year-select-div"]')
+    const yearSelect = year.find('select')
+    await yearSelect.setValue('1990')
+    const month = wrapper.find('[data-test="month-select-div"]')
+    const monthSelect = month.find('select')
+    await monthSelect.setValue('5')
+    const day = wrapper.find('[data-test="day-select-div"]')
+    const daySelect = day.find('select')
+    await daySelect.setValue('12')
+    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
+    const prefectureSelect = prefecture.find('select')
+    await prefectureSelect.setValue('東京都')
+    const city = wrapper.find('[data-test="city-div"]')
+    const cityInput = city.find('input')
+    await cityInput.setValue('町田市')
+    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
+    const addressLine1Input = addressLine1.find('input')
+    await addressLine1Input.setValue('森の里２−２２−２')
+    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
+    const addressLine2Input = addressLine2.find('input')
+    await addressLine2Input.setValue('レオパレス２０３')
+    const tel = wrapper.find('[data-test="tel-input-div"]')
+    const telInput = tel.find('input')
+    await telInput.setValue('09012345678')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE)
+  })
 })
