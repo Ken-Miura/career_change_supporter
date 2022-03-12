@@ -62,7 +62,7 @@
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               住所
             </div>
-            <div class="mt-2 w-full text-2xl justify-self-start col-span-6">
+            <div data-test="prefecture-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-6">
               <select v-model="form.prefecture" class="block w-full px-3 py-6 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="prefecture in prefectureList" v-bind:key="prefecture" v-bind:value="prefecture">{{ prefecture }}</option>
               </select>
@@ -82,7 +82,7 @@
             <div data-test="tel-div" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               電話番号
             </div>
-            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <div data-test="tel-input-div" class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
               <input v-bind:value="form.telephoneNumber" v-on:input="setTelephoneNumber" type="text" inputmode="tel" pattern="[0-9]{10,13}" title="半角数字のみで10桁以上13桁以下でご入力下さい。" required minlength="10" maxlength="13" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="identity-image-div" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">

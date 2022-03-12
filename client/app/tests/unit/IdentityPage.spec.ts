@@ -285,75 +285,69 @@ describe('IdentityPage.vue', () => {
     expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
   })
 
-  // it(`moves to post-identity-result setting ${Message.POST_IDENTITY_RESULT_MESSAGE} on store when postIdentity is success from user input`, async () => {
-  //   refreshMock.mockResolvedValue(RefreshResp.create())
-  //   postIdentityFuncMock.mockResolvedValue(PostIdentityResp.create())
-  //   // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
-  //   const image1 = new File(['test'], 'image1.jpeg', { type: 'image/jpeg' })
-  //   imagesMock = reactive({
-  //     image1: image1 as File | null,
-  //     image2: null as File | null
-  //   })
-  //   getMaxImageJpegImageSizeInBytesMock.mockReset()
-  //   getMaxImageJpegImageSizeInBytesMock.mockReturnValue(image1.size)
-  //   const wrapper = mount(IdentityPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   const lastName = wrapper.find('[data-test="last-name-div"]')
-  //   const lastNameInput = lastName.find('input')
-  //   lastNameInput.setValue('山田')
-  //   const firstName = wrapper.find('[data-test="first-name-div"]')
-  //   const firstNameInput = firstName.find('input')
-  //   firstNameInput.setValue('太郎')
-  //   const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
-  //   const lastNameFuriganaInput = lastNameFurigana.find('input')
-  //   lastNameFuriganaInput.setValue('ヤマダ')
-  //   const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
-  //   const firstNameFuriganaInput = firstNameFurigana.find('input')
-  //   firstNameFuriganaInput.setValue('太郎')
-  //   const year = wrapper.find('[data-test="year-select-div"]')
-  //   const yearOptions = wrapper.find('select').findAll('option')
-  //   await yearOptions
-  //   const month = wrapper.find('[data-test="month-div"]')
-  //   expect(month.exists)
-  //   expect(month.text()).toContain('月')
-  //   const day = wrapper.find('[data-test="day-div"]')
-  //   expect(day.exists)
-  //   expect(day.text()).toContain('日')
-  //   // 都道府県は、セレクトボックスのみでラベルはないのでチェックしない
-  //   const city = wrapper.find('[data-test="city-div"]')
-  //   expect(city.exists)
-  //   expect(city.text()).toContain('市区町村')
-  //   const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
-  //   expect(addressLine1.exists)
-  //   expect(addressLine1.text()).toContain('番地')
-  //   const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
-  //   expect(addressLine2.exists)
-  //   expect(addressLine2.text()).toContain('建物名・部屋番号')
-  //   const tel = wrapper.find('[data-test="tel-div"]')
-  //   expect(tel.exists)
-  //   expect(tel.text()).toContain('電話番号')
-  //   const identityImage = wrapper.find('[data-test="identity-image-div"]')
-  //   expect(identityImage.exists)
-  //   expect(identityImage.text()).toContain('身分証明書')
-  //   const identityImage1 = wrapper.find('[data-test="identity-image1-div"]')
-  //   expect(identityImage1.exists)
-  //   expect(identityImage1.text()).toContain('表面')
-  //   const identityImage2 = wrapper.find('[data-test="identity-image2-div"]')
-  //   expect(identityImage2.exists)
-  //   expect(identityImage2.text()).toContain('裏面')
+  it(`moves to post-identity-result setting ${Message.POST_IDENTITY_RESULT_MESSAGE} on store when postIdentity is success from user input`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    postIdentityFuncMock.mockResolvedValue(PostIdentityResp.create())
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(image1.size)
+    const wrapper = mount(IdentityPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   await flushPromises()
-  //   const submitButton = wrapper.find('[data-test="submit-button"]')
-  //   await submitButton.trigger('submit')
+    const lastName = wrapper.find('[data-test="last-name-div"]')
+    const lastNameInput = lastName.find('input')
+    await lastNameInput.setValue('山田')
+    const firstName = wrapper.find('[data-test="first-name-div"]')
+    const firstNameInput = firstName.find('input')
+    await firstNameInput.setValue('太郎')
+    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
+    const lastNameFuriganaInput = lastNameFurigana.find('input')
+    await lastNameFuriganaInput.setValue('ヤマダ')
+    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
+    const firstNameFuriganaInput = firstNameFurigana.find('input')
+    await firstNameFuriganaInput.setValue('太郎')
+    const year = wrapper.find('[data-test="year-select-div"]')
+    const yearSelect = year.find('select')
+    await yearSelect.setValue('1990')
+    const month = wrapper.find('[data-test="month-select-div"]')
+    const monthSelect = month.find('select')
+    await monthSelect.setValue('5')
+    const day = wrapper.find('[data-test="day-select-div"]')
+    const daySelect = day.find('select')
+    await daySelect.setValue('12')
+    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
+    const prefectureSelect = prefecture.find('select')
+    await prefectureSelect.setValue('東京都')
+    const city = wrapper.find('[data-test="city-div"]')
+    const cityInput = city.find('input')
+    await cityInput.setValue('町田市')
+    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
+    const addressLine1Input = addressLine1.find('input')
+    await addressLine1Input.setValue('森の里２−２２−２')
+    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
+    const addressLine2Input = addressLine2.find('input')
+    await addressLine2Input.setValue('レオパレス２０３')
+    const tel = wrapper.find('[data-test="tel-input-div"]')
+    const telInput = tel.find('input')
+    await telInput.setValue('09012345678')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
 
-  //   expect(routerPushMock).toHaveBeenCalledTimes(1)
-  //   expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
-  //   expect(storeCommitMock).toHaveBeenCalledTimes(1)
-  //   expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
-  // })
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
+  })
 })
