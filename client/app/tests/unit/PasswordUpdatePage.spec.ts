@@ -8,6 +8,7 @@ import { Code } from '@/util/Error'
 import { SET_PASSWORD_UPDATE_RESULT_MESSAGE } from '@/store/mutationTypes'
 import PasswordInput from '@/components/PasswordInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
+import { nextTick } from 'vue'
 
 jest.mock('@/util/password/UpdatePassword')
 const updatePasswordMock = updatePassword as jest.MockedFunction<typeof updatePassword>
@@ -112,6 +113,7 @@ describe('PasswordUpdatePage.vue', () => {
 
     const button = wrapper.find('button')
     await button.trigger('submit')
+    await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     expect(storeCommitMock).toHaveBeenCalledTimes(0)
@@ -140,6 +142,7 @@ describe('PasswordUpdatePage.vue', () => {
 
     const button = wrapper.find('button')
     await button.trigger('submit')
+    await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     expect(storeCommitMock).toHaveBeenCalledTimes(0)
