@@ -150,11 +150,11 @@ describe('LoginPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwd = wrapper.findComponent(PasswordInput)
     const pwdInput = pwd.find('input')
-    pwdInput.setValue(PWD)
+    await pwdInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -178,11 +178,11 @@ describe('LoginPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwd = wrapper.findComponent(PasswordInput)
     const pwdInput = pwd.find('input')
-    pwdInput.setValue(PWD)
+    await pwdInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -212,11 +212,11 @@ describe('LoginPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwd = wrapper.findComponent(PasswordInput)
     const pwdInput = pwd.find('input')
-    pwdInput.setValue(PWD)
+    await pwdInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')

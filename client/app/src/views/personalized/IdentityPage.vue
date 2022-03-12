@@ -35,7 +35,7 @@
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               生年月日
             </div>
-            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="year-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.yearOfBirth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
@@ -43,7 +43,7 @@
             <div data-test="year-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               年
             </div>
-            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="month-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.monthOfBirth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
@@ -51,7 +51,7 @@
             <div data-test="month-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               月
             </div>
-            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="day-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.dayOfBirth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>

@@ -18,11 +18,11 @@ describe('PasswordInput.vue', () => {
     expect(wrapper.text()).toMatch(label)
   })
 
-  it('emits on-password-updated event with input value', () => {
+  it('emits on-password-updated event with input value', async () => {
     const wrapper = shallowMount(PasswordInput)
     const input = wrapper.find('input')
     const pwd = 'abcdABCD1234'
-    input.setValue(pwd)
+    await input.setValue(pwd)
     const result = wrapper.emitted('on-password-updated')
     if (result === undefined || result[0] === undefined) {
       throw new Error('result === undefined || result[0] === undefined')

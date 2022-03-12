@@ -68,7 +68,7 @@ describe('PasswordChangeReqPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -92,7 +92,7 @@ describe('PasswordChangeReqPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -121,7 +121,7 @@ describe('PasswordChangeReqPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const button = wrapper.find('button')
     await button.trigger('submit')

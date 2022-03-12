@@ -73,13 +73,13 @@ describe('NewAccountPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
-    pwdInput.setValue(PWD)
+    await pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
-    pwdConfirmationInput.setValue(PWD)
+    await pwdConfirmationInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -103,13 +103,13 @@ describe('NewAccountPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
-    pwdInput.setValue(PWD)
+    await pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
-    pwdConfirmationInput.setValue(PWD)
+    await pwdConfirmationInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -139,13 +139,13 @@ describe('NewAccountPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
-    pwdInput.setValue(PWD)
+    await pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
-    pwdConfirmationInput.setValue(DIFFERENT_PWD)
+    await pwdConfirmationInput.setValue(DIFFERENT_PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')
@@ -168,13 +168,13 @@ describe('NewAccountPage.vue', () => {
 
     const emailAddr = wrapper.findComponent(EmailAddressInput)
     const emailAddrInput = emailAddr.find('input')
-    emailAddrInput.setValue(EMAIL_ADDRESS)
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
 
     const pwds = wrapper.findAllComponents(PasswordInput)
     const pwdInput = pwds[0].find('input')
-    pwdInput.setValue(PWD)
+    await pwdInput.setValue(PWD)
     const pwdConfirmationInput = pwds[1].find('input')
-    pwdConfirmationInput.setValue(PWD)
+    await pwdConfirmationInput.setValue(PWD)
 
     const button = wrapper.find('button')
     await button.trigger('submit')

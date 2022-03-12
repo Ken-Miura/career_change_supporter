@@ -10,11 +10,11 @@ describe('EmailAddressInput.vue', () => {
     expect(inputs.length).toBe(1)
   })
 
-  it('emits on-email-address-updated event with input value', () => {
+  it('emits on-email-address-updated event with input value', async () => {
     const wrapper = shallowMount(EmailAddressInput)
     const input = wrapper.find('input')
     const pwd = 'test@example.com'
-    input.setValue(pwd)
+    await input.setValue(pwd)
     const result = wrapper.emitted('on-email-address-updated')
     if (result === undefined || result[0] === undefined) {
       throw new Error('result === undefined || result[0] === undefined')
