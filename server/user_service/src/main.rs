@@ -102,7 +102,6 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_DATABASE_URL
         )
     });
-
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(num_of_cpus)
         .min_connections(num_of_cpus)
@@ -142,7 +141,7 @@ async fn main_internal(num_of_cpus: u32) {
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
             panic!(
-                "Not environment variable found: environment variable \"{}\" (example value: \"127.0.0.1:3000\") must be set",
+                "Not environment variable found: environment variable \"{}\" (example value: \"0.0.0.0:3000\") must be set",
                 KEY_TO_SOCKET
             )
         });
