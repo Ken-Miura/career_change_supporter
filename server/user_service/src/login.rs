@@ -6,7 +6,7 @@ use async_redis_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::async_trait;
 use axum::extract::Extension;
-use axum::http::{HeaderMap, HeaderValue, StatusCode};
+use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, FixedOffset, Utc};
 use common::util::is_password_match;
@@ -17,12 +17,12 @@ use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
 };
 use entity::user_account;
-use hyper::header::SET_COOKIE;
+use tower_cookies::{Cookie, Cookies};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
 use crate::util::session::LOGIN_SESSION_EXPIRY;
-use crate::util::{session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID};
+use crate::util::{session::create_cookie, session::KEY_TO_USER_ACCOUNT_ID};
 
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcoookieをセットして応答する<br>
@@ -31,29 +31,33 @@ use crate::util::{session::create_cookie_format, session::KEY_TO_USER_ACCOUNT_ID
 /// email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
 pub(crate) async fn post_login(
     ValidCred(cred): ValidCred,
+    cookies: Cookies,
     Extension(pool): Extension<DatabaseConnection>,
     Extension(store): Extension<RedisSessionStore>,
-) -> LoginResult {
+) -> Result<StatusCode, ErrResp> {
     let email_addr = cred.email_address;
     let password = cred.password;
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = LoginOperationImpl::new(pool, LOGIN_SESSION_EXPIRY);
-    handle_login_req(&email_addr, &password, &current_date_time, op, store).await
+    let result = handle_login_req(&email_addr, &password, &current_date_time, op, store).await?;
+    cookies.add(result.cookie);
+    Ok(result.status_code)
 }
 
-/// ログインリクエストの結果を示す型
-pub(crate) type LoginResult = Result<LoginResp, ErrResp>;
-
 /// ログインに成功した場合に返却される型
-pub(crate) type LoginResp = (StatusCode, HeaderMap);
+#[derive(Debug)]
+pub(crate) struct LoginResult<'a> {
+    status_code: StatusCode,
+    cookie: Cookie<'a>,
+}
 
-async fn handle_login_req(
+async fn handle_login_req<'a>(
     email_addr: &str,
     password: &str,
     login_time: &DateTime<FixedOffset>,
     op: impl LoginOperation,
     store: impl SessionStore,
-) -> LoginResult {
+) -> Result<LoginResult<'a>, ErrResp> {
     let accounts = op.filter_account_by_email_addr(email_addr).await?;
     let num = accounts.len();
     if num > 1 {
@@ -127,18 +131,7 @@ async fn handle_login_req(
             return Err(unexpected_err_resp());
         }
     };
-    let mut headers = HeaderMap::new();
-    let cookie = create_cookie_format(&session_id_value)
-        .parse::<HeaderValue>()
-        .map_err(|e| {
-            tracing::error!(
-                "failed to parse cookie (session_id: {}): {}",
-                session_id_value,
-                e
-            );
-            unexpected_err_resp()
-        })?;
-    headers.insert(SET_COOKIE, cookie);
+    let cookie = create_cookie(session_id_value);
     let _ = op.update_last_login(user_account_id, login_time).await?;
     tracing::info!(
         "{} (id: {}) logged-in at {}",
@@ -146,7 +139,10 @@ async fn handle_login_req(
         user_account_id,
         login_time
     );
-    Ok((StatusCode::OK, headers))
+    Ok(LoginResult {
+        status_code: StatusCode::OK,
+        cookie,
+    })
 }
 
 #[async_trait]
@@ -239,7 +235,6 @@ mod tests {
     use async_session::Session;
     use async_session::SessionStore;
     use axum::async_trait;
-    use axum::http::header::SET_COOKIE;
     use axum::http::StatusCode;
     use chrono::DateTime;
     use chrono::FixedOffset;
@@ -252,7 +247,6 @@ mod tests {
     use common::JAPANESE_TIME_ZONE;
 
     use crate::login::handle_login_req;
-    use crate::util::session::tests::extract_session_id_value;
     use crate::util::session::KEY_TO_USER_ACCOUNT_ID;
 
     use super::Account;
@@ -332,11 +326,10 @@ mod tests {
         let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
 
         let resp = result.expect("failed to get Ok");
-        assert_eq!(StatusCode::OK, resp.0);
-        let header_value = resp.1.get(SET_COOKIE).expect("failed to get value");
-        let session_id = extract_session_id_value(header_value);
+        assert_eq!(StatusCode::OK, resp.status_code);
+        let session_id_value = resp.cookie.value().to_string();
         let session = store
-            .load_session(session_id)
+            .load_session(session_id_value)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");

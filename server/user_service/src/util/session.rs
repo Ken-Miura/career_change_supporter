@@ -37,15 +37,14 @@ const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
-/// [SESSION_ID_COOKIE_NAME]を含むSet-Cookie用の文字列を返す。
-pub(crate) fn create_cookie_format(session_id_value: &str) -> String {
-    Cookie::build(SESSION_ID_COOKIE_NAME, session_id_value)
+/// [SESSION_ID_COOKIE_NAME]をname、値にsession_id_value含むCookieを返す。
+pub(crate) fn create_cookie<'a>(session_id_value: String) -> Cookie<'a> {
+    Cookie::build(SESSION_ID_COOKIE_NAME.to_string(), session_id_value)
         .same_site(SameSite::Strict)
         .path(ROOT_PATH)
         .secure(true)
         .http_only(true)
         .finish()
-        .to_string()
 }
 
 /// [SESSION_ID_COOKIE_NAME]を含む、有効期限切れのSet-Cookie用の文字列を返す<br>
