@@ -30,8 +30,8 @@ use std::env::var;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 
-const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
-const KEY_TO_SOCKET: &str = "SOCKET_FOR_USER_APP";
+const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_APP";
+const KEY_TO_SOCKET: &str = "SOCKET_FOR_ADMIN_APP";
 
 /// アプリケーションの動作に必須の環境変数をすべて列挙し、
 /// 起動直後に存在をチェックする
