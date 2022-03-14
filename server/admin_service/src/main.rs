@@ -7,14 +7,15 @@ mod util;
 
 use crate::login::post_login;
 use crate::logout::post_logout;
-use crate::util::{
-    KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-    KEY_TO_PAYMENT_PLATFORM_API_USERNAME, ROOT_PATH,
-};
+use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::extract::Extension;
 use axum::routing::post;
 use axum::Router;
+use common::payment_platform::{
+    KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+    KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+};
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::storage::{
