@@ -9,7 +9,7 @@ use common::payment_platform::AccessInfo;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-pub(crate) const ROOT_PATH: &str = "/api";
+pub(crate) const ROOT_PATH: &str = "admin/api";
 
 pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_URL: &str = "PAYMENT_PLATFORM_API_URL";
 pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_USERNAME: &str = "PAYMENT_PLATFORM_API_USERNAME";

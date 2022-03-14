@@ -7,8 +7,10 @@ pub(crate) mod validator;
 
 use std::env::var;
 
-use chrono::FixedOffset;
-use common::payment_platform::AccessInfo;
+use common::payment_platform::{
+    AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+    KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -16,9 +18,6 @@ pub(crate) const WEB_SITE_NAME: &str = "就職先・転職先を見極めるた�
 
 pub(crate) const ROOT_PATH: &str = "/api";
 
-pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_URL: &str = "PAYMENT_PLATFORM_API_URL";
-pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_USERNAME: &str = "PAYMENT_PLATFORM_API_USERNAME";
-pub(crate) const KEY_TO_PAYMENT_PLATFORM_API_PASSWORD: &str = "PAYMENT_PLATFORM_API_PASSWORD";
 /// PAY.JPにアクセスするための情報を保持する変数
 pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let url_without_path = var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
@@ -42,10 +41,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
 });
-
-/// UTCにおける日本のタイムゾーン（正確には、UTCで日本時間を表すためのオフセットだが、タイムゾーンと同等の意味で利用）
-/// [chrono::DateTime] で日本時間を扱う際に利用する。
-pub(crate) static JAPANESE_TIME_ZONE: Lazy<FixedOffset> = Lazy::new(|| FixedOffset::east(9 * 3600));
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct Identity {

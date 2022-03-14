@@ -288,7 +288,7 @@ pub(crate) mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::TimeZone;
-    use common::ErrResp;
+    use common::{ErrResp, JAPANESE_TIME_ZONE};
     use cookie::{Cookie, SameSite};
     use headers::HeaderValue;
     use tower_cookies::Cookies;
@@ -299,7 +299,7 @@ pub(crate) mod tests {
             disabled_check::DisabledCheckOperation,
             session::{get_user_by_cookie, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
             terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
-            JAPANESE_TIME_ZONE, ROOT_PATH,
+            ROOT_PATH,
         },
     };
 

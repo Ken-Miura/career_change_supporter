@@ -21,7 +21,6 @@ use common::storage::{
     KEY_TO_AWS_ACCESS_KEY_ID, KEY_TO_AWS_REGION, KEY_TO_AWS_SECRET_ACCESS_KEY, KEY_TO_ENDPOINT_URI,
 };
 use common::util::check_env_vars;
-use common::KEY_TO_URL_FOR_FRONT_END;
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use once_cell::sync::Lazy;
@@ -40,7 +39,6 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_DATABASE_URL.to_string(),
         KEY_TO_SOCKET.to_string(),
         KEY_TO_SOCKET_FOR_SMTP_SERVER.to_string(),
-        KEY_TO_URL_FOR_FRONT_END.to_string(),
         KEY_TO_URL_FOR_REDIS_SERVER.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
@@ -72,7 +70,7 @@ fn main() {
 async fn main_internal(num_of_cpus: u32) {
     set_var(
         "RUST_LOG",
-        "user_service=debug,common=debug,tower_http=debug,sea_orm=debug",
+        "admin_service=debug,common=debug,tower_http=debug,sea_orm=debug",
     );
     tracing_subscriber::fmt::init();
 
@@ -82,7 +80,6 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_DATABASE_URL
         )
     });
-
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(num_of_cpus)
         .min_connections(num_of_cpus)
@@ -113,7 +110,7 @@ async fn main_internal(num_of_cpus: u32) {
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
             panic!(
-                "Not environment variable found: environment variable \"{}\" (example value: \"127.0.0.1:3000\") must be set",
+                "Not environment variable found: environment variable \"{}\" (example value: \"0.0.0.0:3001\") must be set",
                 KEY_TO_SOCKET
             )
         });

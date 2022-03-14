@@ -19,6 +19,7 @@ use axum::{
     http::StatusCode,
     BoxError, Json,
 };
+use chrono::FixedOffset;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
@@ -132,6 +133,10 @@ pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
         );
     })
 });
+
+/// UTCにおける日本のタイムゾーン（正確には、UTCで日本時間を表すためのオフセットだが、タイムゾーンと同等の意味で利用）
+/// [chrono::DateTime] で日本時間を扱う際に利用する。
+pub static JAPANESE_TIME_ZONE: Lazy<FixedOffset> = Lazy::new(|| FixedOffset::east(9 * 3600));
 
 /// 時間単位での一時アカウントの有効期限<br>
 /// [VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR] 丁度の期間は有効期限に含む

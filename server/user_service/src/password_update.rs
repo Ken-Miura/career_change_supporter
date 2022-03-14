@@ -13,8 +13,8 @@ use common::smtp::{
 };
 use common::util::hash_password;
 use common::util::validator::{validate_password, validate_uuid};
-use common::VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE;
 use common::{ApiError, ErrResp, RespResult};
+use common::{JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE};
 use entity::prelude::{PwdChangeReq, UserAccount};
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
@@ -28,7 +28,7 @@ use tower_cookies::Cookies;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired};
 use crate::util::session::SESSION_ID_COOKIE_NAME;
-use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use crate::util::WEB_SITE_NAME;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
@@ -325,7 +325,7 @@ mod tests {
             is_password_match,
             validator::{validate_email_address, validate_password, validate_uuid},
         },
-        ErrResp, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
+        ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
     };
     use uuid::Uuid;
 
@@ -335,7 +335,7 @@ mod tests {
             create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
             PasswordUpdateResult, SUBJECT,
         },
-        util::{session::tests::prepare_session, tests::SendMailMock, JAPANESE_TIME_ZONE},
+        util::{session::tests::prepare_session, tests::SendMailMock},
     };
 
     use super::{destroy_session_if_exists, PasswordUpdateOperation};

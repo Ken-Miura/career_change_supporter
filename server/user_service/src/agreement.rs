@@ -8,6 +8,7 @@ use axum::Json;
 use chrono::{DateTime, FixedOffset, Utc};
 use common::ApiError;
 use common::ErrResp;
+use common::JAPANESE_TIME_ZONE;
 use entity::prelude::TermsOfUse;
 use entity::prelude::UserAccount;
 use entity::sea_orm::ActiveModelTrait;
@@ -20,7 +21,6 @@ use tower_cookies::Cookies;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::AlreadyAgreedTermsOfUse;
 use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
-use crate::util::JAPANESE_TIME_ZONE;
 use crate::util::{session::get_user_by_cookie, terms_of_use::TERMS_OF_USE_VERSION};
 
 /// ユーザーが利用規約に同意したことを記録する
@@ -178,9 +178,10 @@ mod tests {
     use axum::async_trait;
     use chrono::TimeZone;
     use common::ErrResp;
+    use common::JAPANESE_TIME_ZONE;
     use hyper::StatusCode;
 
-    use crate::{err::Code::AlreadyAgreedTermsOfUse, util::JAPANESE_TIME_ZONE};
+    use crate::err::Code::AlreadyAgreedTermsOfUse;
 
     use super::Account;
     use super::AgreedDateTime;

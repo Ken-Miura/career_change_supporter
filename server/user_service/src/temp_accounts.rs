@@ -10,7 +10,9 @@ use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ErrResp, RespResult, ValidCred,
 };
-use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR};
+use common::{
+    ApiError, JAPANESE_TIME_ZONE, URL_FOR_FRONT_END, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR,
+};
 use entity::prelude::UserTempAccount;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -23,7 +25,7 @@ use uuid::{adapter::Simple, Uuid};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachTempAccountsLimit;
-use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use crate::util::WEB_SITE_NAME;
 
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_TEMP_ACCOUNTS: usize = 5;

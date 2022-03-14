@@ -16,11 +16,11 @@ use bytes::Bytes;
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
-use common::ErrRespStruct;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
 };
+use common::{ErrRespStruct, JAPANESE_TIME_ZONE};
 use entity::prelude::{CreateIdentityInfoReq, IdentityInfo, UpdateIdentityInfoReq};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
@@ -39,7 +39,7 @@ use crate::{
             file_name_validator::validate_extension_is_jpeg,
             identity_validator::{validate_identity, IdentityValidationError},
         },
-        Identity, JAPANESE_TIME_ZONE,
+        Identity,
     },
 };
 
@@ -852,7 +852,7 @@ mod tests {
     use bytes::Bytes;
     use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
     use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-    use common::ErrResp;
+    use common::{ErrResp, JAPANESE_TIME_ZONE};
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
     use serde::Deserialize;
     use serde::Serialize;
@@ -860,9 +860,7 @@ mod tests {
 
     use crate::{
         identity::convert_jpeg_to_png,
-        util::{
-            validator::identity_validator::MIN_AGE_REQUIREMENT, Identity, Ymd, JAPANESE_TIME_ZONE,
-        },
+        util::{validator::identity_validator::MIN_AGE_REQUIREMENT, Identity, Ymd},
     };
 
     use super::{

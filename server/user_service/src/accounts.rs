@@ -10,8 +10,8 @@ use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::validator::validate_uuid;
-use common::VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR;
 use common::{ApiError, ErrResp, RespResult};
+use common::{JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR};
 use entity::prelude::{UserAccount, UserTempAccount};
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
@@ -24,7 +24,7 @@ use serde::Serialize;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
 use crate::temp_accounts::TempAccount;
-use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use crate::util::WEB_SITE_NAME;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 
@@ -255,16 +255,27 @@ impl AccountsOperation for AccountsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{Duration, TimeZone};
-    use common::util::{
-        hash_password,
-        validator::{validate_email_address, validate_password},
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
+    use common::{
+        smtp::SYSTEM_EMAIL_ADDRESS,
+        util::{
+            hash_password,
+            validator::{validate_email_address, validate_password, validate_uuid},
+        },
+        ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR,
     };
     use uuid::Uuid;
 
-    use crate::util::tests::SendMailMock;
+    use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
+    use crate::{
+        accounts::{create_text, handle_accounts_req, AccountsResult, SUBJECT},
+        temp_accounts::TempAccount,
+        util::tests::SendMailMock,
+    };
 
-    use super::*;
+    use super::{AccountsOperation, NewAccount};
 
     struct AccountsOperationMock<'a> {
         temp_account: &'a TempAccount,
