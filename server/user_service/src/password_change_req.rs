@@ -10,7 +10,9 @@ use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ErrResp, RespResult,
 };
-use common::{ApiError, URL_FOR_FRONT_END, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE};
+use common::{
+    ApiError, JAPANESE_TIME_ZONE, URL_FOR_FRONT_END, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
+};
 use entity::prelude::PwdChangeReq;
 use entity::pwd_change_req;
 use entity::sea_orm::{
@@ -23,7 +25,7 @@ use uuid::{adapter::Simple, Uuid};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachPasswordChangeReqLimit;
-use crate::util::{JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use crate::util::WEB_SITE_NAME;
 
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_PWD_CHANGE_REQ: usize = 8;
@@ -208,7 +210,10 @@ impl PasswordChangeReqOperation for PasswordChangeReqOperationImpl {
 mod tests {
     use axum::async_trait;
     use chrono::{DateTime, FixedOffset};
-    use common::{smtp::SYSTEM_EMAIL_ADDRESS, util::validator::validate_email_address, ErrResp};
+    use common::{
+        smtp::SYSTEM_EMAIL_ADDRESS, util::validator::validate_email_address, ErrResp,
+        JAPANESE_TIME_ZONE,
+    };
     use uuid::Uuid;
 
     use crate::{
@@ -216,7 +221,7 @@ mod tests {
         password_change_req::{
             create_text, handle_password_change_req, MAX_NUM_OF_PWD_CHANGE_REQ, SUBJECT,
         },
-        util::{tests::SendMailMock, JAPANESE_TIME_ZONE},
+        util::tests::SendMailMock,
     };
 
     use axum::http::StatusCode;

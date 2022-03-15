@@ -26,18 +26,20 @@ use crate::refresh::get_refresh;
 use crate::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
-use crate::util::{
-    KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-    KEY_TO_PAYMENT_PLATFORM_API_USERNAME, ROOT_PATH,
-};
+use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::extract::Extension;
 use axum::routing::{get, post};
 use axum::Router;
+use common::payment_platform::{
+    KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+    KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+};
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::KEY_TO_SOCKET_FOR_SMTP_SERVER;
 use common::storage::{
-    KEY_TO_AWS_ACCESS_KEY_ID, KEY_TO_AWS_REGION, KEY_TO_AWS_SECRET_ACCESS_KEY, KEY_TO_ENDPOINT_URI,
+    KEY_TO_AWS_ACCESS_KEY_ID, KEY_TO_AWS_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
+    KEY_TO_AWS_SECRET_ACCESS_KEY,
 };
 use common::util::check_env_vars;
 use common::KEY_TO_URL_FOR_FRONT_END;
@@ -65,7 +67,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
-        KEY_TO_ENDPOINT_URI.to_string(),
+        KEY_TO_AWS_S3_ENDPOINT_URI.to_string(),
         KEY_TO_AWS_ACCESS_KEY_ID.to_string(),
         KEY_TO_AWS_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_REGION.to_string(),
@@ -102,7 +104,6 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_DATABASE_URL
         )
     });
-
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(num_of_cpus)
         .min_connections(num_of_cpus)
@@ -142,7 +143,7 @@ async fn main_internal(num_of_cpus: u32) {
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
             panic!(
-                "Not environment variable found: environment variable \"{}\" (example value: \"127.0.0.1:3000\") must be set",
+                "Not environment variable found: environment variable \"{}\" (example value: \"0.0.0.0:3000\") must be set",
                 KEY_TO_SOCKET
             )
         });

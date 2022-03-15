@@ -14,6 +14,13 @@ use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::fmt::Display;
 
+/// PAY.JP APIのURLを保持する環境変数名
+pub const KEY_TO_PAYMENT_PLATFORM_API_URL: &str = "PAYMENT_PLATFORM_API_URL";
+/// PAY.JP APIのユーザー名を保持する環境変数名
+pub const KEY_TO_PAYMENT_PLATFORM_API_USERNAME: &str = "PAYMENT_PLATFORM_API_USERNAME";
+/// PAY.JP APIのパスワードを保持する環境変数名
+pub const KEY_TO_PAYMENT_PLATFORM_API_PASSWORD: &str = "PAYMENT_PLATFORM_API_PASSWORD";
+
 /// PAY.JP APIにアクセスするための情報を保持する構造体
 #[derive(Debug, Clone)]
 

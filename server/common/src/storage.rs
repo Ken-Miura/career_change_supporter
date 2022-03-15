@@ -6,12 +6,12 @@ use aws_sdk_s3::{types::ByteStream, Client, Endpoint};
 use http::Uri;
 use once_cell::sync::Lazy;
 
-pub const KEY_TO_ENDPOINT_URI: &str = "ENDPOINT_URI";
-pub static ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_ENDPOINT_URI).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
+pub static AWS_S3_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_ENDPOINT_URI).unwrap_or_else(|_| {
         panic!(
             "Not environment variable found: environment variable \"{}\" (example value: \"http://storage:9000\") must be set",
-            KEY_TO_ENDPOINT_URI
+            KEY_TO_AWS_S3_ENDPOINT_URI
         );
     })
 });
@@ -28,7 +28,7 @@ pub async fn upload_object(
     key: &str,
     object: Vec<u8>,
 ) -> Result<(), Box<dyn Error>> {
-    let endpoint = ENDPOINT_URI.to_string();
+    let endpoint = AWS_S3_ENDPOINT_URI.to_string();
     let client = create_client(&endpoint).await?;
     let stream = ByteStream::from(object);
     let _ = client
@@ -49,7 +49,7 @@ pub const CAREER_IMAGES_BUCKET_NAME: &str = "ccs-career-images";
 // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
 // https://docs.rs/aws-sdk-s3/0.8.0/aws_sdk_s3/types/enum.SdkError.html
 pub async fn download_object(bucket_name: &str, key: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-    let endpoint = ENDPOINT_URI.to_string();
+    let endpoint = AWS_S3_ENDPOINT_URI.to_string();
     let client = create_client(&endpoint).await?;
 
     let resp = client
