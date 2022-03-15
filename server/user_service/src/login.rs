@@ -9,7 +9,7 @@ use axum::extract::Extension;
 use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, FixedOffset, Utc};
-use common::util::is_password_match;
+use common::util::{create_session_cookie, is_password_match};
 use common::{ApiError, ErrResp};
 use common::{ValidCred, JAPANESE_TIME_ZONE};
 use entity::prelude::UserAccount;
@@ -17,18 +17,20 @@ use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
 };
 use entity::user_account;
-use tower_cookies::{Cookie, Cookies};
+use tower_cookies::Cookies;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
 use crate::util::session::LOGIN_SESSION_EXPIRY;
-use crate::util::{session::create_cookie, session::KEY_TO_USER_ACCOUNT_ID};
+use crate::util::session::{KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME};
+use crate::util::ROOT_PATH;
 
 /// ログインを行う<br>
-/// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcoookieをセットして応答する<br>
+/// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookieをセットして応答する<br>
 /// <br>
 /// # Errors
-/// email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
+/// - email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
+/// - email addressとpasswordが正しく、かつアカウントが無効化されている場合、ステータスコード400、エラーコード[AccountDisabled]を返す<br>
 pub(crate) async fn post_login(
     ValidCred(cred): ValidCred,
     cookies: Cookies,
@@ -39,25 +41,24 @@ pub(crate) async fn post_login(
     let password = cred.password;
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = LoginOperationImpl::new(pool, LOGIN_SESSION_EXPIRY);
-    let result = handle_login_req(&email_addr, &password, &current_date_time, op, store).await?;
-    cookies.add(result.cookie);
-    Ok(result.status_code)
+    let session_id =
+        handle_login_req(&email_addr, &password, &current_date_time, op, store).await?;
+    let cookie = create_session_cookie(
+        SESSION_ID_COOKIE_NAME.to_string(),
+        session_id,
+        ROOT_PATH.to_string(),
+    );
+    cookies.add(cookie);
+    Ok(StatusCode::OK)
 }
 
-/// ログインに成功した場合に返却される型
-#[derive(Debug)]
-pub(crate) struct LoginResult<'a> {
-    status_code: StatusCode,
-    cookie: Cookie<'a>,
-}
-
-async fn handle_login_req<'a>(
+async fn handle_login_req(
     email_addr: &str,
     password: &str,
     login_time: &DateTime<FixedOffset>,
     op: impl LoginOperation,
     store: impl SessionStore,
-) -> Result<LoginResult<'a>, ErrResp> {
+) -> Result<String, ErrResp> {
     let accounts = op.filter_account_by_email_addr(email_addr).await?;
     let num = accounts.len();
     if num > 1 {
@@ -121,7 +122,7 @@ async fn handle_login_req<'a>(
         );
         unexpected_err_resp()
     })?;
-    let session_id_value = match option {
+    let session_id = match option {
         Some(s) => s,
         None => {
             tracing::error!(
@@ -131,7 +132,6 @@ async fn handle_login_req<'a>(
             return Err(unexpected_err_resp());
         }
     };
-    let cookie = create_cookie(session_id_value);
     let _ = op.update_last_login(user_account_id, login_time).await?;
     tracing::info!(
         "{} (id: {}) logged-in at {}",
@@ -139,10 +139,7 @@ async fn handle_login_req<'a>(
         user_account_id,
         login_time
     );
-    Ok(LoginResult {
-        status_code: StatusCode::OK,
-        cookie,
-    })
+    Ok(session_id)
 }
 
 #[async_trait]
@@ -325,11 +322,9 @@ mod tests {
 
         let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
 
-        let resp = result.expect("failed to get Ok");
-        assert_eq!(StatusCode::OK, resp.status_code);
-        let session_id_value = resp.cookie.value().to_string();
+        let session_id = result.expect("failed to get Ok");
         let session = store
-            .load_session(session_id_value)
+            .load_session(session_id)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");

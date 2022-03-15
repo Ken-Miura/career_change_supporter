@@ -952,6 +952,7 @@ dependencies = [
  "axum",
  "bcrypt",
  "chrono",
+ "cookie",
  "http",
  "http-body",
  "hyper",
@@ -963,6 +964,7 @@ dependencies = [
  "serde",
  "tokio",
  "tower",
+ "tower-cookies",
  "tracing",
 ]
 

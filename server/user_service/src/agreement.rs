@@ -19,9 +19,10 @@ use entity::terms_of_use;
 use tower_cookies::Cookies;
 
 use crate::err::unexpected_err_resp;
-use crate::err::Code::AlreadyAgreedTermsOfUse;
+use crate::err::Code::{AlreadyAgreedTermsOfUse, Unauthorized};
+use crate::util::session::SESSION_ID_COOKIE_NAME;
 use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
-use crate::util::{session::get_user_by_cookie, terms_of_use::TERMS_OF_USE_VERSION};
+use crate::util::{session::get_user_by_session_id, terms_of_use::TERMS_OF_USE_VERSION};
 
 /// ユーザーが利用規約に同意したことを記録する
 pub(crate) async fn post_agreement(
@@ -29,8 +30,20 @@ pub(crate) async fn post_agreement(
     Extension(store): Extension<RedisSessionStore>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> Result<StatusCode, ErrResp> {
+    let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
+    let session_id = if let Some(s) = option_cookie {
+        s.value().to_string()
+    } else {
+        tracing::debug!("no sessoin cookie found");
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ApiError {
+                code: Unauthorized as u32,
+            }),
+        ));
+    };
     let op = RefreshOperationImpl {};
-    let user = get_user_by_cookie(cookies, &store, op, LOGIN_SESSION_EXPIRY).await?;
+    let user = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
     let op = AgreementOperationImpl::new(pool);
     let agreed_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let result =
@@ -46,8 +59,8 @@ async fn handle_agreement_req(
 ) -> Result<StatusCode, ErrResp> {
     // 利用規約同意のデータに連絡先としてメールアドレスを保管しておきたいため
     // ユーザー情報を取得する
-    let option = op.find_account_by_id(account_id).await?;
-    let account = option.ok_or_else(|| {
+    let account_option = op.find_account_by_id(account_id).await?;
+    let account = account_option.ok_or_else(|| {
         // 利用規約に同意するリクエストを送った後、アカウント情報が取得される前にアカウントが削除されるような事態は
         // 通常の操作では発生し得ない。そのため、unexpected_err_respとして処理する。
         unexpected_err_resp()
