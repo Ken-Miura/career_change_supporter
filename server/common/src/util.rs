@@ -131,7 +131,7 @@ mod tests {
     fn cookie_generated_by_create_session_cookie_has_same_site_strict_secure_and_http_only() {
         let name = String::from("cookie-name");
         let value = String::from("cookie-value");
-        let path = String::from("path");
+        let path = String::from("/path");
 
         let cookie = create_session_cookie(name.clone(), value.clone(), path.clone());
 
