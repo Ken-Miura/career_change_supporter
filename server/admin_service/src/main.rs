@@ -3,15 +3,17 @@
 mod err;
 mod login;
 mod logout;
+mod refresh;
 mod util;
 
 use crate::login::post_login;
 use crate::logout::post_logout;
+use crate::refresh::get_refresh;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::extract::Extension;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::Router;
 use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
@@ -105,7 +107,8 @@ async fn main_internal(num_of_cpus: u32) {
             ROOT_PATH,
             Router::new()
                 .route("/login", post(post_login))
-                .route("/logout", post(post_logout)),
+                .route("/logout", post(post_logout))
+                .route("/refresh", get(get_refresh)),
         )
         .layer(Extension(pool))
         .layer(Extension(store))
