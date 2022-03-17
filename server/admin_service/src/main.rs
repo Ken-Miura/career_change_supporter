@@ -7,6 +7,7 @@ mod util;
 
 use crate::login::post_login;
 use crate::logout::post_logout;
+use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::extract::Extension;
@@ -49,6 +50,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_AWS_ACCESS_KEY_ID.to_string(),
         KEY_TO_AWS_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_REGION.to_string(),
+        KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP.to_string(),
     ]
 });
 
