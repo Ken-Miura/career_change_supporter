@@ -11,6 +11,6 @@ module.exports = {
     // **optional** default: `[{ root: './' }]`
     // support monorepos
     projects: [
-      './client/app', // Shorthand for specifying only the project root location
+      './client/user_app', // Shorthand for specifying only the project root location
     ]
   }

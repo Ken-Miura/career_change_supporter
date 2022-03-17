@@ -1,4 +1,4 @@
-# app
+# user_app
 
 ## Project setup
 ```
