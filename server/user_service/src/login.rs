@@ -21,7 +21,7 @@ use tower_cookies::Cookies;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
-use crate::util::session::LOGIN_SESSION_EXPIRY;
+use crate::util::session::{KEY_OF_SIGNED_COOKIE_FOR_USER_APP, LOGIN_SESSION_EXPIRY};
 use crate::util::session::{KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME};
 use crate::util::ROOT_PATH;
 
@@ -37,6 +37,7 @@ pub(crate) async fn post_login(
     Extension(pool): Extension<DatabaseConnection>,
     Extension(store): Extension<RedisSessionStore>,
 ) -> Result<StatusCode, ErrResp> {
+    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
     let email_addr = cred.email_address;
     let password = cred.password;
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
@@ -48,7 +49,7 @@ pub(crate) async fn post_login(
         session_id,
         ROOT_PATH.to_string(),
     );
-    cookies.add(cookie);
+    signed_cookies.add(cookie);
     Ok(StatusCode::OK)
 }
 

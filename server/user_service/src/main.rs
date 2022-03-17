@@ -25,6 +25,7 @@ use crate::profile::get_profile;
 use crate::refresh::get_refresh;
 use crate::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
+use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
@@ -71,6 +72,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_AWS_ACCESS_KEY_ID.to_string(),
         KEY_TO_AWS_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_REGION.to_string(),
+        KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP.to_string(),
     ]
 });
 

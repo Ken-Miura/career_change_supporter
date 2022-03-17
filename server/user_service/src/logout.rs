@@ -8,7 +8,9 @@ use tower_cookies::{Cookie, Cookies};
 
 use crate::{
     err::unexpected_err_resp,
-    util::session::{KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
+    util::session::{
+        KEY_OF_SIGNED_COOKIE_FOR_USER_APP, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME,
+    },
 };
 
 /// ログアウトを行う
@@ -21,7 +23,8 @@ pub(crate) async fn post_logout(
     cookies: Cookies,
     Extension(store): Extension<RedisSessionStore>,
 ) -> Result<StatusCode, ErrResp> {
-    let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
+    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
     let session_id = match option_cookie {
         Some(s) => s.value().to_string(),
         None => {
@@ -31,7 +34,7 @@ pub(crate) async fn post_logout(
     };
     let _ = handle_logout_req(session_id, &store).await?;
     // removeというメソッド名がわかりづらいが、Set-Cookieにmax-ageが0のCookieをセットしている。
-    let _ = cookies.remove(Cookie::new(SESSION_ID_COOKIE_NAME, ""));
+    let _ = signed_cookies.remove(Cookie::new(SESSION_ID_COOKIE_NAME, ""));
     Ok(StatusCode::OK)
 }
 

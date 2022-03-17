@@ -10,9 +10,11 @@ use axum::{
 };
 use common::{ApiError, ErrResp};
 use entity::sea_orm::DatabaseConnection;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
+use std::env::var;
 use std::time::Duration;
-use tower_cookies::Cookies;
+use tower_cookies::{Cookies, Key};
 
 use crate::err::{
     unexpected_err_resp,
@@ -23,6 +25,25 @@ use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
+
+pub(crate) const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP: &str =
+    "KEY_OF_SIGNED_COOKIE_FOR_USER_APP";
+pub(crate) static KEY_OF_SIGNED_COOKIE_FOR_USER_APP: Lazy<Key> = Lazy::new(|| {
+    let key_str = var(KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP
+        )
+    });
+    let size = key_str.len();
+    if size < 64 {
+        panic!(
+            "Size of \"{}\" value regarded as utf-8 encoding must be at least 64 bytes",
+            KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP
+        )
+    }
+    Key::from(key_str.as_bytes())
+});
 
 pub(crate) const SESSION_ID_COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
@@ -60,7 +81,8 @@ where
             tracing::error!("failed to get cookies: {}", e);
             unexpected_err_resp()
         })?;
-        let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
+        let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
+        let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
         let session_id = match option_cookie {
             Some(s) => s.value().to_string(),
             None => {
