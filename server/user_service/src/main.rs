@@ -49,6 +49,7 @@ use entity::sea_orm::{ConnectOptions, Database};
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
+use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 
@@ -138,10 +139,13 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/rewards", get(get_reward))
                 .route("/identity", post(post_identity)),
         )
-        .layer(Extension(pool))
-        .layer(Extension(store))
-        .layer(CookieManagerLayer::new())
-        .layer(TraceLayer::new_for_http());
+        .layer(
+            ServiceBuilder::new()
+                .layer(TraceLayer::new_for_http())
+                .layer(CookieManagerLayer::new())
+                .layer(Extension(store))
+                .layer(Extension(pool)),
+        );
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
             panic!(
