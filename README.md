@@ -11,9 +11,9 @@ Vueのデバッグ（ブレークポイントを貼って、そこで止める�
 
 Veturの[問題](https://github.com/vuejs/vetur/issues/3323)解決後、typescriptのdependencyを~4.5.5に戻す (372657113b7dbcc4661b2ebe28490dcb2cc8a674をrevert)
 
-APIサーバのRate Limitについて検討、実装する（ELB界面で実施するのか、それともAPIサーバ界面で実装するのか検討）
-APIサーバで実装する際の参考: https://github.com/tokio-rs/axum/issues/278
-上記のURLを参考にするだけではコンパイルエラーとなる。axumはmiddlewareに対してInfallibleなエラーを許していないので下記のようにエラーハンドリングも追加する必要がある。
+APIサーバのRate Limitについて検討、実装する（ELB界面で実施するのか、それともAPIサーバ界面で実装するのか検討）<br>
+APIサーバで実装する際の参考: https://github.com/tokio-rs/axum/issues/278<br>
+上記のURLを参考にするだけではコンパイルエラーとなる。axumはmiddlewareに対してInfallibleなエラーを許していないので下記のようにエラーハンドリングも追加する必要がある。<br>
 https://docs.rs/axum/latest/axum/error_handling/index.html#applying-fallible-middleware
 
 実装時点でSDKがVirtual Hosted-Styleを[サポートしていなかった](https://github.com/awslabs/aws-sdk-rust/discussions/485)。そのため、それまでPath-Styleで実装し、Virtual Hosted-Styleがサポートされた後、修正する
