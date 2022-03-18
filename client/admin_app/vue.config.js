@@ -19,6 +19,7 @@ module.exports = {
     }
   },
   devServer: {
+    port: 8082,
     server: 'https',
     client: {
       webSocketURL: {
@@ -28,8 +29,8 @@ module.exports = {
       }
     },
     proxy: {
-      '^/api': {
-        target: 'http://localhost:3000',
+      '^/admin/api': {
+        target: 'http://localhost:3001',
         logLevel: 'debug'
       }
     }
