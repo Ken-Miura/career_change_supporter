@@ -6,7 +6,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/rust:0-${VARIANT}
 
 # [Optional] Add packages to this section to install additional packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-     && apt-get -y install --no-install-recommends dnsutils tcpdump
+     && apt-get -y install --no-install-recommends vim dnsutils tcpdump
 
 # cargoを用いて開発に有用なツールをインストールする。
 # cargoを実行した際、registry以下にcrateがダウンロードされ、ディレクトリとファイルが生成される。
