@@ -29,9 +29,10 @@ use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
+use axum::error_handling::HandleErrorLayer;
 use axum::extract::Extension;
 use axum::routing::{get, post};
-use axum::Router;
+use axum::{BoxError, Router};
 use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
@@ -46,9 +47,11 @@ use common::util::check_env_vars;
 use common::KEY_TO_URL_FOR_FRONT_END;
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
+use hyper::StatusCode;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
+use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
@@ -123,6 +126,15 @@ async fn main_internal(num_of_cpus: u32) {
     });
     let store = RedisSessionStore::new(redis_url).expect("failed to connect redis");
 
+    // 同じパスに対してrateを超えたリクエストのレスポンスを待機させる
+    // TODO: 送信元IPごとにもチェックしている？それとも関係なくパスにアクセスしてくる全リクエストに対して処理？
+    // TODO: towerのload-shedで待機でなくエラー処理にできる？
+    let rate_limit = ServiceBuilder::new()
+        .layer(HandleErrorLayer::new(too_many_reqests))
+        .buffer(4096)
+        .rate_limit(1, Duration::from_secs(60))
+        .into_inner();
+
     let app = Router::new()
         .nest(
             ROOT_PATH,
@@ -142,6 +154,7 @@ async fn main_internal(num_of_cpus: u32) {
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
+                .layer(rate_limit)
                 .layer(CookieManagerLayer::new())
                 .layer(Extension(store))
                 .layer(Extension(pool)),
@@ -161,4 +174,12 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
+}
+
+async fn too_many_reqests(err: BoxError) -> (StatusCode, String) {
+    tracing::error!("!!!!!!!!!!!!!!!!bad request!!!!!!!!!!!!!!!!: {}", err);
+    (
+        StatusCode::BAD_REQUEST,
+        "bad request".to_string(),
+    )
 }
