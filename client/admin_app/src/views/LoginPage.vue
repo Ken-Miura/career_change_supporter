@@ -13,9 +13,6 @@
         <form class="flex flex-col" @submit.prevent="loginHandler">
           <EmailAddressInput class="mb-6" @on-email-address-updated="setEmailAddress"/>
           <PasswordInput class="mb-6" @on-password-updated="setPassword" label="パスワード"/>
-          <div class="flex justify-end">
-            <router-link to="/password-change-req" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">パスワードを忘れた、または変更したい場合</router-link>
-          </div>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ログイン</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
@@ -57,15 +54,12 @@ export default defineComponent({
       try {
         const resp = await refresh()
         if (resp instanceof RefreshResp) {
-          await router.push('profile')
+          await router.push('admin-menu')
           return
         } else if (resp instanceof ApiErrorResp) {
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             // ログインセッションが存在しないため、そのままログインページを表示する
-          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
-            return
           } else {
             throw new Error(`unexpected result: ${resp}`)
           }
@@ -85,7 +79,7 @@ export default defineComponent({
       try {
         const result = await login(form.emailAddress, form.password)
         if (result instanceof LoginResp) {
-          await router.push('profile')
+          await router.push('admin-menu')
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())

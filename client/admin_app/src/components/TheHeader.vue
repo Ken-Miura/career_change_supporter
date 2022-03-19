@@ -15,19 +15,7 @@
       <div data-test="div" v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-gray-500', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']">
         <ul class="list-reset lg:flex justify-end flex-1 items-center">
           <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/profile">プロフィール</router-link>
-          </li>
-          <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/reward">報酬</router-link>
-          </li>
-          <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/request-consultation">相談申し込み</router-link>
-          </li>
-          <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/accept-consultation">相談受け付け</router-link>
-          </li>
-          <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/schedule">スケジュール</router-link>
+            <router-link class="inline-block text-white no-underline py-2 px-4" to="/admin-menu">管理メニュー</router-link>
           </li>
           <li class="mr-3">
             <p data-test="p" class="inline-block text-white no-underline py-2 px-4 cursor-pointer" v-on:click="logoutHandler">ログアウト</p>

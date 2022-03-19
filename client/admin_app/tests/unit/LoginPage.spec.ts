@@ -64,7 +64,7 @@ describe('LoginPage.vue', () => {
     expect(classes).toContain('hidden')
   })
 
-  it('moves to profile when session has already existed and user has already agreed terms of use', async () => {
+  it('moves to admin-menu when session has already existed and user has already agreed terms of use', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
 
     mount(LoginPage, {
@@ -77,24 +77,7 @@ describe('LoginPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('profile')
-  })
-
-  it('moves to terms-of-use when session has already existed and user has not agreed terms of use yet', async () => {
-    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
-    refreshMock.mockResolvedValue(apiErrResp)
-
-    mount(LoginPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+    expect(routerPushMock).toHaveBeenCalledWith('admin-menu')
   })
 
   it('does not move when session has not existed yet', async () => {
@@ -135,7 +118,7 @@ describe('LoginPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  it('moves to profile when login is successful', async () => {
+  it('moves to admin-menu when login is successful', async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
     loginMock.mockResolvedValue(LoginResp.create())
@@ -160,7 +143,7 @@ describe('LoginPage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('profile')
+    expect(routerPushMock).toHaveBeenCalledWith('admin-menu')
   })
 
   it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {
@@ -195,39 +178,5 @@ describe('LoginPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.EMAIL_OR_PWD_INCORRECT_MESSAGE)
     expect(resultMessage).toContain(Code.EMAIL_OR_PWD_INCORRECT.toString())
-  })
-
-  it(`displays alert message ${Message.ACCOUNT_DISABLED_MESSAGE} when account is disabled`, async () => {
-    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
-    refreshMock.mockResolvedValue(apiErrResp)
-    loginMock.mockResolvedValue(ApiErrorResp.create(400, ApiError.create(Code.ACCOUNT_DISABLED)))
-
-    const wrapper = mount(LoginPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-
-    const emailAddr = wrapper.findComponent(EmailAddressInput)
-    const emailAddrInput = emailAddr.find('input')
-    await emailAddrInput.setValue(EMAIL_ADDRESS)
-
-    const pwd = wrapper.findComponent(PasswordInput)
-    const pwdInput = pwd.find('input')
-    await pwdInput.setValue(PWD)
-
-    const button = wrapper.find('button')
-    await button.trigger('submit')
-    await nextTick()
-
-    expect(routerPushMock).toHaveBeenCalledTimes(0)
-    const alertMessage = wrapper.findComponent(AlertMessage)
-    const classes = alertMessage.classes()
-    expect(classes).not.toContain('hidden')
-    const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(Message.ACCOUNT_DISABLED_MESSAGE)
-    expect(resultMessage).toContain(Code.ACCOUNT_DISABLED.toString())
   })
 })

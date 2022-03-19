@@ -2,7 +2,7 @@ import { ApiErrorResp, ApiError } from '../../ApiError'
 import { LogoutResp } from './LogoutResp'
 
 export async function logout (): Promise<LogoutResp | ApiErrorResp> {
-  const response = await fetch('/api/logout', {
+  const response = await fetch('/admin/api/logout', {
     method: 'POST'
   })
   if (!response.ok) {

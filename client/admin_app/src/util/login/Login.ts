@@ -4,7 +4,7 @@ import { LoginResp } from './LoginResp'
 export async function login (emailAddress: string, password: string): Promise<LoginResp | ApiErrorResp> {
   // eslint-disable-next-line
   const data = { email_address: emailAddress, password: password }
-  const response = await fetch('/api/login', {
+  const response = await fetch('/admin/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(data)

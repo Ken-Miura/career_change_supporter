@@ -19,15 +19,6 @@
         <div v-bind:class="['w-full', 'flex-grow', 'lg:flex', 'lg:items-center', 'lg:w-auto', { 'hidden': isHidden }, 'mt-2', 'lg:mt-0', 'bg-gray-500', 'lg:bg-transparent', 'text-black', 'p-4', 'lg:p-0 z-20']" id="nav-content">
           <ul class="list-reset lg:flex justify-end flex-1 items-center">
             <li class="mr-3">
-              <router-link class="inline-block text-white no-underline py-2 px-4" to="/information">お知らせ</router-link>
-            </li>
-            <li class="mr-3">
-              <router-link class="inline-block text-white no-underline py-2 px-4" to="/published-terms-of-use">利用規約</router-link>
-            </li>
-            <li class="mr-3">
-              <router-link class="inline-block text-white no-underline py-2 px-4" to="/new-account">新規登録</router-link>
-            </li>
-            <li class="mr-3">
               <router-link class="inline-block text-white no-underline py-2 px-4" to="/login">ログイン</router-link>
             </li>
           </ul>
@@ -82,8 +73,7 @@
         <p class="text-gray-500 text-xl font-bold md:mb-6">お問い合わせ</p>
         <ul class="list-reset mb-6">
           <li class="mt-2 inline-block mr-2 md:block md:mr-0">
-            <p class="text-gray-800">お問い合わせの際は、下記のメールアドレスよりご連絡をお願い致します。</p>
-            <p class="text-gray-800">test@test.com (TODO: メールアドレス入れ替え) </p>
+            <p class="text-gray-800">お問い合わせの際は、管理者に直接ご連絡下さい。</p>
           </li>
         </ul>
       </div>
