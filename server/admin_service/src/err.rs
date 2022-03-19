@@ -11,6 +11,7 @@ pub(crate) enum Code {
     UnexpectedErr = 30000,
     EmailOrPwdIncorrect = 30001,
     Unauthorized = 30002,
+    IllegalPageSize = 30003,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
