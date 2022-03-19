@@ -2,7 +2,7 @@
 
 pub(crate) mod session;
 
-pub(crate) const ROOT_PATH: &str = "admin/api";
+pub(crate) const ROOT_PATH: &str = "/admin/api";
 
 /// PAY.JPにアクセスするための情報を保持する変数
 // pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {

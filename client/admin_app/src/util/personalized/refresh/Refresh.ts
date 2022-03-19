@@ -6,7 +6,7 @@ import { RefreshResp } from './RefreshResp'
  * - ログインセッションが存在するかどうか確認する（ログインセッションが存在しない場合、Code.UNAUTHORIZEDを返す）
  * - ログインセッションが存在する場合、ログインセッションを延長する
  *
- * POST admin/api/agreementとPOST admin/api/logoutを除くpersonalized以下にあるAPI呼び出しは、そのAPI自体の処理の前にこのAPI呼び出しと同等の処理を行う。<br>
+ * POST admin/api/logoutを除くpersonalized以下にあるAPI呼び出しは、そのAPI自体の処理の前にこのAPI呼び出しと同等の処理を行う。<br>
  * そのため、何かpersonalizedでのAPI呼び出しをする際は、このAPIを明示的に呼び出す必要はない。<br>
  * ログイン後のページで、サーバからデータを取得する必要がないものを表示する際での利用を想定<br>
  * @returns Promise<RefreshResp | ApiErrorResp>
