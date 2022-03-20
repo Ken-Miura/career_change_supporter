@@ -4,10 +4,13 @@
     <main>
       <div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">dummy</button>
-        </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">dummy</button>
+          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（新規）</button>
+          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（更新）</button>
+          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（新規）</button>
+          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（更新）</button>
+          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント無効化</button>
+          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント有効化</button>
+          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金処理</button>
         </div>
       </div>
     </main>
@@ -18,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from 'vue'
+import { defineComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 
@@ -29,9 +32,6 @@ export default defineComponent({
   },
   setup () {
     const router = useRouter()
-    onMounted(async () => {
-      console.log('onMounted')
-    })
     const test = async () => {
       console.log('test')
       const params = { page: '0', per_page: '50' }
