@@ -468,7 +468,7 @@ async fn handle_identity_req(
 
 #[derive(Clone, Debug, PartialEq)]
 struct SubmittedIdentity {
-    account_id: i32,
+    account_id: i64,
     identity: Identity,
     identity_image1: FileNameAndBinary,
     identity_image2: Option<FileNameAndBinary>,
@@ -476,7 +476,7 @@ struct SubmittedIdentity {
 
 type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
-fn create_subject(id: i32, update: bool) -> String {
+fn create_subject(id: i64, update: bool) -> String {
     let request_type = if update { "更新" } else { "新規" };
     format!(
         "[{}] ユーザー (id: {}) からの本人確認依頼 ({})",
@@ -484,7 +484,7 @@ fn create_subject(id: i32, update: bool) -> String {
     )
 }
 
-fn create_text(id: i32, update: bool) -> String {
+fn create_text(id: i64, update: bool) -> String {
     let request_type = if update { "更新" } else { "新規" };
     format!(
         "ユーザー (id: {}) からの本人確認依頼 ({}) が届きました。管理者サイトから対応をお願いいたします。",
@@ -494,10 +494,10 @@ fn create_text(id: i32, update: bool) -> String {
 
 #[async_trait]
 trait SubmitIdentityOperation {
-    async fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp>;
+    async fn check_if_identity_already_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn check_if_create_identity_req_already_exists(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<bool, ErrResp>;
     async fn request_create_identity(
         &self,
@@ -506,7 +506,7 @@ trait SubmitIdentityOperation {
     ) -> Result<(), ErrResp>;
     async fn check_if_update_identity_req_already_exists(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<bool, ErrResp>;
     async fn request_update_identity(
         &self,
@@ -527,7 +527,7 @@ impl SubmitIdentityOperationImpl {
 
 #[async_trait]
 impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
-    async fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
+    async fn check_if_identity_already_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
         let model = IdentityInfo::find_by_id(account_id)
             .one(&self.pool)
             .await
@@ -544,7 +544,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
 
     async fn check_if_create_identity_req_already_exists(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<bool, ErrResp> {
         let model = CreateIdentityInfoReq::find_by_id(account_id)
             .one(&self.pool)
@@ -621,7 +621,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
 
     async fn check_if_update_identity_req_already_exists(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<bool, ErrResp> {
         let model = UpdateIdentityInfoReq::find_by_id(account_id)
             .one(&self.pool)
@@ -710,7 +710,7 @@ impl SubmitIdentityOperationImpl {
     }
 
     fn generate_create_identity_info_req_active_model(
-        account_id: i32,
+        account_id: i64,
         identity: Identity,
         image1_file_name_without_ext: String,
         image2_file_name_without_ext: Option<String>,
@@ -740,7 +740,7 @@ impl SubmitIdentityOperationImpl {
     }
 
     fn generate_update_identity_info_req_active_model(
-        account_id: i32,
+        account_id: i64,
         identity: Identity,
         image1_file_name_without_ext: String,
         image2_file_name_without_ext: Option<String>,
@@ -770,7 +770,7 @@ impl SubmitIdentityOperationImpl {
     }
 
     async fn upload_png_images_to_identity_storage(
-        account_id: i32,
+        account_id: i64,
         identity_image1: FileNameAndBinary,
         identity_image2_option: Option<FileNameAndBinary>,
     ) -> Result<(), ErrRespStruct> {
@@ -2229,21 +2229,21 @@ mod tests {
         identity_exists: bool,
         create_identity_req_exists: bool,
         update_identity_req_exists: bool,
-        account_id: i32,
+        account_id: i64,
         submitted_identity: SubmittedIdentity,
         current_date_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
     impl SubmitIdentityOperation for SubmitIdentityOperationMock {
-        async fn check_if_identity_already_exists(&self, account_id: i32) -> Result<bool, ErrResp> {
+        async fn check_if_identity_already_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
             assert_eq!(self.account_id, account_id);
             Ok(self.identity_exists)
         }
 
         async fn check_if_create_identity_req_already_exists(
             &self,
-            account_id: i32,
+            account_id: i64,
         ) -> Result<bool, ErrResp> {
             assert_eq!(self.account_id, account_id);
             Ok(self.create_identity_req_exists)
@@ -2261,7 +2261,7 @@ mod tests {
 
         async fn check_if_update_identity_req_already_exists(
             &self,
-            account_id: i32,
+            account_id: i64,
         ) -> Result<bool, ErrResp> {
             assert_eq!(self.account_id, account_id);
             Ok(self.update_identity_req_exists)

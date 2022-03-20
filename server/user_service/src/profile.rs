@@ -23,7 +23,7 @@ pub(crate) async fn get_profile(
 }
 
 async fn handle_profile_req(
-    account_id: i32,
+    account_id: i64,
     profile_op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
     let email_address_option = profile_op
@@ -122,16 +122,16 @@ impl ProfileResultBuilder {
 trait ProfileOperation {
     async fn find_email_address_by_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
     async fn find_identity_by_user_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
-    async fn filter_career_by_account_id(&self, account_id: i32) -> Result<Vec<Career>, ErrResp>;
+    async fn filter_career_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp>;
     async fn find_fee_per_hour_in_yen_by_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<i32>, ErrResp>;
 }
 
@@ -149,7 +149,7 @@ impl ProfileOperationImpl {
 impl ProfileOperation for ProfileOperationImpl {
     async fn find_email_address_by_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<String>, ErrResp> {
         let model = UserAccount::find_by_id(account_id)
             .one(&self.pool)
@@ -163,7 +163,7 @@ impl ProfileOperation for ProfileOperationImpl {
 
     async fn find_identity_by_user_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<Identity>, ErrResp> {
         let model = IdentityInfo::find_by_id(account_id)
             .one(&self.pool)
@@ -179,7 +179,7 @@ impl ProfileOperation for ProfileOperationImpl {
         Ok(model.map(ProfileOperationImpl::convert_identity_info_to_identity))
     }
 
-    async fn filter_career_by_account_id(&self, account_id: i32) -> Result<Vec<Career>, ErrResp> {
+    async fn filter_career_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp> {
         let models = CareerInfo::find()
             .filter(career_info::Column::UserAccountId.eq(account_id))
             .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
@@ -201,7 +201,7 @@ impl ProfileOperation for ProfileOperationImpl {
 
     async fn find_fee_per_hour_in_yen_by_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<i32>, ErrResp> {
         let model = ConsultingFee::find_by_id(account_id)
             .one(&self.pool)
@@ -295,28 +295,28 @@ mod tests {
     impl ProfileOperation for ProfileOperationMock {
         async fn find_email_address_by_account_id(
             &self,
-            _account_id: i32,
+            _account_id: i64,
         ) -> Result<Option<String>, ErrResp> {
             Ok(self.email_address_option.clone())
         }
 
         async fn find_identity_by_user_account_id(
             &self,
-            _account_id: i32,
+            _account_id: i64,
         ) -> Result<Option<Identity>, ErrResp> {
             Ok(self.identity_option.clone())
         }
 
         async fn filter_career_by_account_id(
             &self,
-            _account_id: i32,
+            _account_id: i64,
         ) -> Result<Vec<Career>, ErrResp> {
             Ok(self.careers.clone())
         }
 
         async fn find_fee_per_hour_in_yen_by_account_id(
             &self,
-            _account_id: i32,
+            _account_id: i64,
         ) -> Result<Option<i32>, ErrResp> {
             Ok(self.fee_per_hour_in_yen_option)
         }
@@ -376,7 +376,7 @@ mod tests {
                 day: date.day(),
             });
             let career = Career {
-                career_id: (i + 1) as i32,
+                career_id: (i + 1) as i64,
                 company_name: format!("テスト{}株式会社", i + 1),
                 department_name: Some(format!("部署{}", i + 1)),
                 office: Some(format!("事業所{}", i + 1)),

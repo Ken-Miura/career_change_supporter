@@ -6,8 +6,8 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "career_info", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub career_info_id: i32,
-    pub user_account_id: i32,
+    pub career_info_id: i64,
+    pub user_account_id: i64,
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,

@@ -51,7 +51,7 @@ pub(crate) async fn get_reward(
 }
 
 async fn handle_reward_req(
-    account_id: i32,
+    account_id: i64,
     reward_op: impl RewardOperation,
     tenant_op: impl TenantOperation,
     charge_op: impl ChargeOperation,
@@ -392,7 +392,7 @@ fn convert_tenant_transfer_to_transfer(
 trait RewardOperation {
     async fn find_tenant_id_by_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 }
 
@@ -410,7 +410,7 @@ impl RewardOperationImpl {
 impl RewardOperation for RewardOperationImpl {
     async fn find_tenant_id_by_account_id(
         &self,
-        account_id: i32,
+        account_id: i64,
     ) -> Result<Option<String>, ErrResp> {
         let model = Tenant::find_by_id(account_id)
             .one(&self.pool)
@@ -464,7 +464,7 @@ mod tests {
     impl RewardOperation for RewardOperationMock {
         async fn find_tenant_id_by_account_id(
             &self,
-            _account_id: i32,
+            _account_id: i64,
         ) -> Result<Option<String>, ErrResp> {
             Ok(self.tenant_id_option.clone())
         }

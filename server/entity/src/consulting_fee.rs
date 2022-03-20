@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "consulting_fee", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub user_account_id: i32,
+    pub user_account_id: i64,
     pub fee_per_hour_in_yen: i32,
 }
 

@@ -53,7 +53,7 @@ pub(crate) const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * ADMIN
 /// </ul>
 #[derive(Deserialize, Clone, Debug)]
 pub(crate) struct Admin {
-    pub(crate) account_id: i32,
+    pub(crate) account_id: i64,
 }
 
 #[async_trait]
@@ -130,7 +130,7 @@ pub(crate) async fn get_admin_by_session_id(
             ));
         }
     };
-    let id = match session.get::<i32>(KEY_TO_ADMIN_ACCOUNT_ID) {
+    let id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
         Some(id) => id,
         None => {
             tracing::error!("failed to get id from session (session_id={})", session_id);
@@ -173,7 +173,7 @@ pub(crate) mod tests {
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
     pub(crate) async fn prepare_session(
-        admin_account_id: i32,
+        admin_account_id: i64,
         store: &impl SessionStore,
     ) -> String {
         let mut session = Session::new();

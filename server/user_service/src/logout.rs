@@ -56,7 +56,7 @@ async fn handle_logout_req<'a>(
             return Ok(());
         }
     };
-    match session.get::<i32>(KEY_TO_USER_ACCOUNT_ID) {
+    match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
         Some(id) => tracing::info!("User (account id: {}) logged out", id),
         None => tracing::info!("Someone logged out"),
     };

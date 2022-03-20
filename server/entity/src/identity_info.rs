@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "identity_info", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub user_account_id: i32,
+    pub user_account_id: i64,
     pub last_name: String,
     pub first_name: String,
     pub last_name_furigana: String,

@@ -66,7 +66,7 @@ pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
 /// </ul>
 #[derive(Deserialize, Clone, Debug)]
 pub(crate) struct User {
-    pub(crate) account_id: i32,
+    pub(crate) account_id: i64,
 }
 
 #[async_trait]
@@ -168,7 +168,7 @@ pub(crate) async fn get_user_by_session_id(
             ));
         }
     };
-    let id = match session.get::<i32>(KEY_TO_USER_ACCOUNT_ID) {
+    let id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
         Some(id) => id,
         None => {
             tracing::error!("failed to get id from session (session_id={})", session_id);
@@ -197,7 +197,7 @@ impl RefreshOperation for RefreshOperationImpl {
 }
 
 async fn check_if_user_has_already_agreed(
-    account_id: i32,
+    account_id: i64,
     terms_of_use_version: i32,
     op: impl TermsOfUseLoadOperation,
 ) -> Result<(), ErrResp> {
@@ -224,7 +224,7 @@ async fn check_if_user_has_already_agreed(
 }
 
 async fn ensure_account_is_not_disabled(
-    account_id: i32,
+    account_id: i64,
     op: impl DisabledCheckOperation,
 ) -> Result<(), ErrResp> {
     let result = op
@@ -283,7 +283,7 @@ pub(crate) mod tests {
     };
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
-    pub(crate) async fn prepare_session(user_account_id: i32, store: &impl SessionStore) -> String {
+    pub(crate) async fn prepare_session(user_account_id: i64, store: &impl SessionStore) -> String {
         let mut session = Session::new();
         // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
         let _ = session
@@ -380,7 +380,7 @@ pub(crate) mod tests {
     impl TermsOfUseLoadOperation for TermsOfUseLoadOperationMock {
         async fn find(
             &self,
-            account_id: i32,
+            account_id: i64,
             terms_of_use_version: i32,
         ) -> Result<Option<TermsOfUseData>, ErrResp> {
             if !self.has_already_agreed {
@@ -426,7 +426,7 @@ pub(crate) mod tests {
     }
 
     struct DisabledCheckOperationMock {
-        account_id: i32,
+        account_id: i64,
         no_account_found: bool,
         account_disabled: bool,
     }
@@ -435,7 +435,7 @@ pub(crate) mod tests {
     impl DisabledCheckOperation for DisabledCheckOperationMock {
         async fn check_if_account_is_disabled(
             &self,
-            account_id: i32,
+            account_id: i64,
         ) -> Result<Option<bool>, ErrResp> {
             assert_eq!(self.account_id, account_id);
             if self.no_account_found {

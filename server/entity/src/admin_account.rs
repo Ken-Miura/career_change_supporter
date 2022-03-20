@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "admin_account", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub admin_account_id: i32,
+    pub admin_account_id: i64,
     #[sea_orm(unique)]
     pub email_address: String,
     pub hashed_password: Vec<u8>,

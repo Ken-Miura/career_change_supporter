@@ -52,7 +52,7 @@ pub(crate) async fn post_agreement(
 }
 
 async fn handle_agreement_req(
-    account_id: i32,
+    account_id: i64,
     version: i32,
     agreed_at: &DateTime<FixedOffset>,
     op: impl AgreementOperation,
@@ -97,15 +97,15 @@ async fn handle_agreement_req(
 
 #[async_trait]
 trait AgreementOperation {
-    async fn find_account_by_id(&self, account_id: i32) -> Result<Option<Account>, ErrResp>;
+    async fn find_account_by_id(&self, account_id: i64) -> Result<Option<Account>, ErrResp>;
     async fn check_if_already_agreed(
         &self,
-        account_id: i32,
+        account_id: i64,
         version: i32,
     ) -> Result<Option<AgreedDateTime>, ErrResp>;
     async fn agree_terms_of_use(
         &self,
-        account_id: i32,
+        account_id: i64,
         version: i32,
         email_address: &str,
         agreed_at: &DateTime<FixedOffset>,
@@ -126,7 +126,7 @@ impl AgreementOperationImpl {
 
 #[async_trait]
 impl AgreementOperation for AgreementOperationImpl {
-    async fn find_account_by_id(&self, account_id: i32) -> Result<Option<Account>, ErrResp> {
+    async fn find_account_by_id(&self, account_id: i64) -> Result<Option<Account>, ErrResp> {
         let model = UserAccount::find_by_id(account_id)
             .one(&self.pool)
             .await
@@ -141,7 +141,7 @@ impl AgreementOperation for AgreementOperationImpl {
 
     async fn check_if_already_agreed(
         &self,
-        account_id: i32,
+        account_id: i64,
         version: i32,
     ) -> Result<Option<AgreedDateTime>, ErrResp> {
         let model = TermsOfUse::find_by_id((account_id, version))
@@ -161,7 +161,7 @@ impl AgreementOperation for AgreementOperationImpl {
 
     async fn agree_terms_of_use(
         &self,
-        account_id: i32,
+        account_id: i64,
         version: i32,
         email_address: &str,
         agreed_at: &DateTime<FixedOffset>,
@@ -203,7 +203,7 @@ mod tests {
     struct AgreementOperationMock<'a> {
         already_agreed_terms_of_use: bool,
         agreed_at_before: &'a chrono::DateTime<chrono::FixedOffset>,
-        account_id: i32,
+        account_id: i64,
         version: i32,
         email_address: &'a str,
         agreed_at: &'a chrono::DateTime<chrono::FixedOffset>,
@@ -213,7 +213,7 @@ mod tests {
         fn new(
             already_agreed_terms_of_use: bool,
             agreed_at_before: &'a chrono::DateTime<chrono::FixedOffset>,
-            account_id: i32,
+            account_id: i64,
             version: i32,
             email_address: &'a str,
             agreed_at: &'a chrono::DateTime<chrono::FixedOffset>,
@@ -231,7 +231,7 @@ mod tests {
 
     #[async_trait]
     impl AgreementOperation for AgreementOperationMock<'_> {
-        async fn find_account_by_id(&self, account_id: i32) -> Result<Option<Account>, ErrResp> {
+        async fn find_account_by_id(&self, account_id: i64) -> Result<Option<Account>, ErrResp> {
             assert_eq!(self.account_id, account_id);
             let account = Account {
                 email_address: self.email_address.to_string(),
@@ -241,7 +241,7 @@ mod tests {
 
         async fn check_if_already_agreed(
             &self,
-            account_id: i32,
+            account_id: i64,
             version: i32,
         ) -> Result<Option<AgreedDateTime>, ErrResp> {
             assert_eq!(self.account_id, account_id);
@@ -254,7 +254,7 @@ mod tests {
 
         async fn agree_terms_of_use(
             &self,
-            account_id: i32,
+            account_id: i64,
             version: i32,
             email_address: &str,
             agreed_at: &chrono::DateTime<chrono::FixedOffset>,

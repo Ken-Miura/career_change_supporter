@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "user_account", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub user_account_id: i32,
+    pub user_account_id: i64,
     #[sea_orm(unique)]
     pub email_address: String,
     pub hashed_password: Vec<u8>,
@@ -17,19 +17,19 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::tenant::Entity")]
-    Tenant,
+    #[sea_orm(has_many = "super::identity_info::Entity")]
+    IdentityInfo,
     #[sea_orm(has_many = "super::career_info::Entity")]
     CareerInfo,
     #[sea_orm(has_many = "super::consulting_fee::Entity")]
     ConsultingFee,
-    #[sea_orm(has_many = "super::identity_info::Entity")]
-    IdentityInfo,
+    #[sea_orm(has_many = "super::tenant::Entity")]
+    Tenant,
 }
 
-impl Related<super::tenant::Entity> for Entity {
+impl Related<super::identity_info::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Tenant.def()
+        Relation::IdentityInfo.def()
     }
 }
 
@@ -45,9 +45,9 @@ impl Related<super::consulting_fee::Entity> for Entity {
     }
 }
 
-impl Related<super::identity_info::Entity> for Entity {
+impl Related<super::tenant::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::IdentityInfo.def()
+        Relation::Tenant.def()
     }
 }
 

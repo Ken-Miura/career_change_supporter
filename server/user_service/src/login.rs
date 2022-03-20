@@ -150,14 +150,14 @@ trait LoginOperation {
     fn set_login_session_expiry(&self, session: &mut Session);
     async fn update_last_login(
         &self,
-        account_id: i32,
+        account_id: i64,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
 #[derive(Clone, Debug)]
 struct Account {
-    user_account_id: i32,
+    user_account_id: i64,
     hashed_password: Vec<u8>,
     disabled: bool,
 }
@@ -207,7 +207,7 @@ impl LoginOperation for LoginOperationImpl {
 
     async fn update_last_login(
         &self,
-        account_id: i32,
+        account_id: i64,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         let account_model = user_account::ActiveModel {
@@ -290,7 +290,7 @@ mod tests {
 
         async fn update_last_login(
             &self,
-            account_id: i32,
+            account_id: i64,
             login_time: &DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
             assert_eq!(self.account.user_account_id, account_id);
@@ -330,7 +330,7 @@ mod tests {
             .expect("failed to get Ok")
             .expect("failed to get value");
         let actual_id = session
-            .get::<i32>(KEY_TO_USER_ACCOUNT_ID)
+            .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
             .expect("failed to get value");
         assert_eq!(id, actual_id);
     }

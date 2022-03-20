@@ -17,7 +17,7 @@ pub(super) trait DisabledCheckOperation {
     /// - アカウントが存在する場合で
     ///   - アカウントが無効化されている場合、Some(true)を返す
     ///   - アカウントが無効化されていない場合、Some(false)を返す
-    async fn check_if_account_is_disabled(&self, account_id: i32) -> Result<Option<bool>, ErrResp>;
+    async fn check_if_account_is_disabled(&self, account_id: i64) -> Result<Option<bool>, ErrResp>;
 }
 
 pub(super) struct DisabledCheckOperationImpl {
@@ -32,7 +32,7 @@ impl DisabledCheckOperationImpl {
 
 #[async_trait]
 impl DisabledCheckOperation for DisabledCheckOperationImpl {
-    async fn check_if_account_is_disabled(&self, account_id: i32) -> Result<Option<bool>, ErrResp> {
+    async fn check_if_account_is_disabled(&self, account_id: i64) -> Result<Option<bool>, ErrResp> {
         let model = UserAccount::find_by_id(account_id)
             .one(&self.pool)
             .await

@@ -65,7 +65,7 @@ pub(crate) struct Ymd {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct Career {
-    pub career_id: i32,
+    pub career_id: i64,
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,

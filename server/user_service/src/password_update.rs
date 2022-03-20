@@ -230,8 +230,8 @@ trait PasswordUpdateOperation {
     async fn filter_account_id_by_email_address(
         &self,
         email_addr: &str,
-    ) -> Result<Vec<i32>, ErrResp>;
-    async fn update_password(&self, account_id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp>;
+    ) -> Result<Vec<i64>, ErrResp>;
+    async fn update_password(&self, account_id: i64, hashed_pwd: &[u8]) -> Result<(), ErrResp>;
 }
 
 #[derive(Clone, Debug)]
@@ -276,7 +276,7 @@ impl PasswordUpdateOperation for PasswordUpdateOperationImpl {
     async fn filter_account_id_by_email_address(
         &self,
         email_addr: &str,
-    ) -> Result<Vec<i32>, ErrResp> {
+    ) -> Result<Vec<i64>, ErrResp> {
         let models = UserAccount::find()
             .filter(user_account::Column::EmailAddress.eq(email_addr))
             .all(&self.pool)
@@ -292,10 +292,10 @@ impl PasswordUpdateOperation for PasswordUpdateOperationImpl {
         Ok(models
             .into_iter()
             .map(|m| m.user_account_id)
-            .collect::<Vec<i32>>())
+            .collect::<Vec<i64>>())
     }
 
-    async fn update_password(&self, account_id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
+    async fn update_password(&self, account_id: i64, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
         let model = user_account::ActiveModel {
             user_account_id: Set(account_id),
             hashed_password: Set(hashed_pwd.to_vec()),
@@ -341,7 +341,7 @@ mod tests {
     use super::{destroy_session_if_exists, PasswordUpdateOperation};
 
     struct PasswordUpdateOperationMock {
-        account_id: i32,
+        account_id: i64,
         password_change_req: PasswordChangeReq,
         password_update_req: PasswordUpdateReq,
         test_case_params: TestCaseParams,
@@ -354,7 +354,7 @@ mod tests {
 
     impl PasswordUpdateOperationMock {
         fn new(
-            account_id: i32,
+            account_id: i64,
             password_change_req: PasswordChangeReq,
             password_update_req: PasswordUpdateReq,
             test_case_params: TestCaseParams,
@@ -387,7 +387,7 @@ mod tests {
         async fn filter_account_id_by_email_address(
             &self,
             email_addr: &str,
-        ) -> Result<Vec<i32>, ErrResp> {
+        ) -> Result<Vec<i64>, ErrResp> {
             if self.test_case_params.no_account_found {
                 return Ok(vec![]);
             }
@@ -398,7 +398,7 @@ mod tests {
             Ok(vec![self.account_id])
         }
 
-        async fn update_password(&self, account_id: i32, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
+        async fn update_password(&self, account_id: i64, hashed_pwd: &[u8]) -> Result<(), ErrResp> {
             assert_eq!(self.account_id, account_id);
             let result = is_password_match(&self.password_update_req.password, hashed_pwd)
                 .expect("failed to get Ok");

@@ -40,7 +40,7 @@ pub(crate) static TERMS_OF_USE_VERSION: Lazy<i32> = Lazy::new(|| {
 pub(super) trait TermsOfUseLoadOperation {
     async fn find(
         &self,
-        account_id: i32,
+        account_id: i64,
         terms_of_use_version: i32,
     ) -> Result<Option<TermsOfUseData>, ErrResp>;
 }
@@ -59,7 +59,7 @@ impl TermsOfUseLoadOperationImpl {
 impl TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl {
     async fn find(
         &self,
-        account_id: i32,
+        account_id: i64,
         terms_of_use_version: i32,
     ) -> Result<Option<TermsOfUseData>, ErrResp> {
         let model = TermsOfUse::find_by_id((account_id, terms_of_use_version))
@@ -85,7 +85,7 @@ impl TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl {
 
 #[derive(Clone, Debug)]
 pub(super) struct TermsOfUseData {
-    pub user_account_id: i32,
+    pub user_account_id: i64,
     pub ver: i32,
     pub email_address: String,
     pub agreed_at: DateTime<FixedOffset>,
