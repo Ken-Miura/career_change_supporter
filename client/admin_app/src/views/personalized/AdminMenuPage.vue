@@ -34,6 +34,13 @@ export default defineComponent({
     })
     const test = async () => {
       console.log('test')
+      const params = { page: '0', per_page: '50' }
+      const query = new URLSearchParams(params)
+      const response = await fetch(`/admin/api/create-identity-requests?${query}`, {
+        method: 'GET'
+      })
+      const data = await response.json()
+      console.log(data)
     }
     return {
       test
