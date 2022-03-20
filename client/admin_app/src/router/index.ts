@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import AdminMenuPage from '../views/personalized/AdminMenuPage.vue'
+import CreateIdentityRequestListPage from '../views/personalized/CreateIdentityRequestListPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -23,6 +24,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/admin-menu',
     name: 'AdminMenuPage',
     component: AdminMenuPage
+  },
+  {
+    path: '/create-identity-request-list',
+    name: 'CreateIdentityRequestListPage',
+    component: CreateIdentityRequestListPage
   }
 ]
 

@@ -4,13 +4,13 @@
     <main>
       <div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（新規）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（更新）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（新規）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（更新）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント無効化</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント有効化</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金処理</button>
+          <button data-test="move-to-create-identity-request-list-page-button" v-on:click="moveToCreateIdentityRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（新規）</button>
+          <button data-test="move-to-update-identity-request-list-page-button" v-on:click="moveToUpdateIdentityRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（更新）</button>
+          <button data-test="move-to-create-career-request-list-page-button" v-on:click="moveToCreateCareerRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（新規）</button>
+          <button data-test="move-to-update-career-request-list-page-button" v-on:click="moveToUpdateCareerRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（更新）</button>
+          <button data-test="move-to-disable-account-page-button" v-on:click="moveToDisableAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント無効化</button>
+          <button data-test="move-to-enable-account-page-button" v-on:click="moveToEnableAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント有効化</button>
+          <button data-test="move-to-refund-page-button" v-on:click="moveToRefundPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金処理</button>
         </div>
       </div>
     </main>
@@ -32,18 +32,35 @@ export default defineComponent({
   },
   setup () {
     const router = useRouter()
-    const test = async () => {
-      console.log('test')
-      const params = { page: '0', per_page: '50' }
-      const query = new URLSearchParams(params)
-      const response = await fetch(`/admin/api/create-identity-requests?${query}`, {
-        method: 'GET'
-      })
-      const data = await response.json()
-      console.log(data)
+    const moveToCreateIdentityRequestListPage = async () => {
+      await router.push('create-identity-request-list')
+    }
+    const moveToUpdateIdentityRequestListPage = async () => {
+      await router.push('update-identity-request-list')
+    }
+    const moveToCreateCareerRequestListPage = async () => {
+      await router.push('create-career-request-list')
+    }
+    const moveToUpdateCareerRequestListPage = async () => {
+      await router.push('update-career-request-list')
+    }
+    const moveToDisableAccountPage = async () => {
+      await router.push('disable-account')
+    }
+    const moveToEnableAccountPage = async () => {
+      await router.push('enable-account')
+    }
+    const moveToRefundPage = async () => {
+      await router.push('refund')
     }
     return {
-      test
+      moveToCreateIdentityRequestListPage,
+      moveToUpdateIdentityRequestListPage,
+      moveToCreateCareerRequestListPage,
+      moveToUpdateCareerRequestListPage,
+      moveToDisableAccountPage,
+      moveToEnableAccountPage,
+      moveToRefundPage
     }
   }
 })

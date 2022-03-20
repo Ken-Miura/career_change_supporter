@@ -1,13 +1,13 @@
 // Copyright 2021 Ken Miura
 
-mod create_identity_req_list;
+mod create_identity_requests;
 mod err;
 mod login;
 mod logout;
 mod refresh;
 mod util;
 
-use crate::create_identity_req_list::get_create_identity_requests;
+use crate::create_identity_requests::get_create_identity_requests;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
