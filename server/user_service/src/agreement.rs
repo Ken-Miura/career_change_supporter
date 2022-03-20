@@ -20,6 +20,7 @@ use tower_cookies::Cookies;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AlreadyAgreedTermsOfUse, Unauthorized};
+use crate::util::session::KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
 use crate::util::session::SESSION_ID_COOKIE_NAME;
 use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use crate::util::{session::get_user_by_session_id, terms_of_use::TERMS_OF_USE_VERSION};
@@ -30,7 +31,8 @@ pub(crate) async fn post_agreement(
     Extension(store): Extension<RedisSessionStore>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> Result<StatusCode, ErrResp> {
-    let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
+    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
     let session_id = if let Some(s) = option_cookie {
         s.value().to_string()
     } else {
