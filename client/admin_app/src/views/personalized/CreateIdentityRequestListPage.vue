@@ -28,6 +28,10 @@
               </div>
             </li>
           </ul>
+          <div class="mt-4 bg-white px-4 py-3 text-black text-xl grid grid-cols-2">
+            <button v-on:click="prev" v-bind:disabled="prevDisabled" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＜</button>
+            <button v-on:click="next" v-bind:disabled="nextDisabled" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＞</button>
+          </div>
         </div>
       </div>
     </main>
@@ -38,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue'
+import { computed, defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -62,13 +66,16 @@ export default defineComponent({
     const items = ref([] as CreateIdentityRequestItem[])
     const errorExists = ref(false)
     const errorMessage = ref('')
+    const page = ref(0)
+    const prevDisabled = computed(() => page.value <= 0)
+    const nextDisabled = computed(() => items.value.length < getNumOfItems())
     const router = useRouter()
     const {
       waitingRequestDone,
       getCreateIdentityRequestsFunc
     } = useGetCreateIdentityRequests()
-    onMounted(async () => {
-      const response = await getCreateIdentityRequestsFunc(0, getNumOfItems())
+    const getItems = async (page: number) => {
+      const response = await getCreateIdentityRequestsFunc(page, getNumOfItems())
       try {
         if (response instanceof GetCreateIdentityRequests) {
           items.value = response.getItems()
@@ -87,13 +94,36 @@ export default defineComponent({
         errorExists.value = true
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
+    }
+    onMounted(async () => {
+      await getItems(0)
     })
     const moveToCreateIdentityRequestDetailPage = async (accountId: number) => {
       await router.push({ name: 'CreateIdentityRequestDetailPage', params: { account_id: accountId } })
     }
+    const prev = async () => {
+      const newPage = page.value - 1
+      await getItems(newPage)
+      if (errorExists.value) {
+        return
+      }
+      page.value = newPage
+    }
+    const next = async () => {
+      const newPage = page.value + 1
+      await getItems(newPage)
+      if (errorExists.value) {
+        return
+      }
+      page.value = newPage
+    }
     return {
       errorExists,
       errorMessage,
+      prev,
+      prevDisabled,
+      next,
+      nextDisabled,
       waitingRequestDone,
       items,
       moveToCreateIdentityRequestDetailPage
