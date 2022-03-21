@@ -1,8 +1,16 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main>
-      <div>
+    <div v-if="waitingRequestDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else>
+      <div v-if="errorExists">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <AlertMessage class="mt-2" v-bind:message="errorMessage"/>
+        </div>
+      </div>
+      <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <div class="mt-4 bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
             <div class="mt-2 justify-self-start col-span-2">依頼時刻</div>
@@ -33,8 +41,11 @@
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 import { CreateIdentityRequestItem } from '@/util/personalized/create-identity-request-list/CreateIdentityRequestItem'
-import { getCreateIdentityRequests } from '@/util/personalized/create-identity-request-list/GetCreateIdentityRequests'
+import { useGetCreateIdentityRequests } from '@/util/personalized/create-identity-request-list/useGetCreateIdentityRequests'
+import { getNumOfItems } from '@/util/NumOfItems'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
@@ -43,15 +54,21 @@ import { GetCreateIdentityRequests } from '@/util/personalized/create-identity-r
 export default defineComponent({
   name: 'CreateIdentityRequestListPage',
   components: {
-    TheHeader
+    TheHeader,
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const items = ref([] as CreateIdentityRequestItem[])
     const errorExists = ref(false)
     const errorMessage = ref('')
     const router = useRouter()
+    const {
+      waitingRequestDone,
+      getCreateIdentityRequestsFunc
+    } = useGetCreateIdentityRequests()
     onMounted(async () => {
-      const response = await getCreateIdentityRequests(0, 50)
+      const response = await getCreateIdentityRequestsFunc(0, getNumOfItems())
       try {
         if (response instanceof GetCreateIdentityRequests) {
           items.value = response.getItems()
@@ -75,6 +92,9 @@ export default defineComponent({
       console.log(accountId)
     }
     return {
+      errorExists,
+      errorMessage,
+      waitingRequestDone,
       items,
       test
     }
