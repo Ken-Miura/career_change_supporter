@@ -31,7 +31,7 @@ pub(crate) async fn get_create_identity_requests(
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateIdentityReqItem {
     account_id: i64,
-    reqested_at: DateTime<FixedOffset>,
+    requested_at: DateTime<FixedOffset>,
     name: String,
 }
 
@@ -74,7 +74,7 @@ impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperation
             .iter()
             .map(|model| CreateIdentityReqItem {
                 account_id: model.user_account_id,
-                reqested_at: model.requested_at,
+                requested_at: model.requested_at,
                 name: model.last_name.clone() + " " + model.first_name.as_str(),
             })
             .collect::<Vec<CreateIdentityReqItem>>())
@@ -199,27 +199,27 @@ mod tests {
 
     fn create_dummy_items() -> Vec<CreateIdentityReqItem> {
         let mut items = Vec::with_capacity(3);
-        let reqested_at_1 = Utc
+        let requested_at_1 = Utc
             .ymd(2021, 9, 11)
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let item1 = CreateIdentityReqItem {
             account_id: 1,
-            reqested_at: reqested_at_1,
+            requested_at: requested_at_1,
             name: String::from("山田 太郎"),
         };
         items.push(item1);
-        let requested_at_2 = reqested_at_1 + Duration::days(1);
+        let requested_at_2 = requested_at_1 + Duration::days(1);
         let item2 = CreateIdentityReqItem {
             account_id: 2,
-            reqested_at: requested_at_2,
+            requested_at: requested_at_2,
             name: String::from("佐藤 次郎"),
         };
         items.push(item2);
         let requested_at_3 = requested_at_2 + Duration::days(1);
         let item3 = CreateIdentityReqItem {
             account_id: 3,
-            reqested_at: requested_at_3,
+            requested_at: requested_at_3,
             name: String::from("田中 三郎"),
         };
         items.push(item3);

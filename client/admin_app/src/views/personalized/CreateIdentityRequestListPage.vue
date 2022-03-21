@@ -4,13 +4,17 @@
     <main>
       <div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（新規）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（更新）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（新規）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼（更新）</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント無効化</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント有効化</button>
-          <button data-test="move-to-identity-page-button" v-on:click="test" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金処理</button>
+          <ul>
+            <li v-for="(item, index) in items" v-bind:key="item">
+              <div class="mt-4">
+                <div class="border border-gray-600 rounded bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
+                  <div class="mt-2 justify-self-start col-span-2">{{ item.requested_at.getFullYear() }}年{{ (item.requested_at.getMonth() + 1).toString().padStart(2, '0') }}月{{ item.requested_at.getDate().toString().padStart(2, '0') }}日{{ item.requested_at.getHours().toString().padStart(2, '0') }}時{{ item.requested_at.getMinutes().toString().padStart(2, '0') }}分{{ item.requested_at.getSeconds().toString().padStart(2, '0') }}秒</div>
+                  <div class="mt-2 justify-self-start col-span-1">{{ item.name }}</div>
+                  <div class="mt-2 justify-self-start col-span-1">{{ item.account_id }}, {{ index }}</div>
+                </div>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
     </main>
@@ -21,9 +25,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
+import { CreateIdentityRequestItem } from '@/util/personalized/create-identity-request-list/CreateIdentityRequestItem'
 
 export default defineComponent({
   name: 'CreateIdentityRequestListPage',
@@ -31,19 +36,24 @@ export default defineComponent({
     TheHeader
   },
   setup () {
+    const items = ref([] as CreateIdentityRequestItem[])
     const router = useRouter()
-    const test = async () => {
-      console.log('test')
+    onMounted(async () => {
       const params = { page: '0', per_page: '50' }
       const query = new URLSearchParams(params)
       const response = await fetch(`/admin/api/create-identity-requests?${query}`, {
         method: 'GET'
       })
-      const data = await response.json()
-      console.log(data)
-    }
+      const reqItems = await response.json() as CreateIdentityRequestItem[]
+      reqItems.forEach(e => {
+        const utcTime = e.requested_at
+        e.requested_at = new Date(utcTime.toLocaleString())
+      })
+      console.log(reqItems)
+      items.value = reqItems
+    })
     return {
-      test
+      items
     }
   }
 })
