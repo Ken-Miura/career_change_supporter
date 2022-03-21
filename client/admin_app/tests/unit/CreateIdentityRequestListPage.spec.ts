@@ -29,7 +29,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
     getCreateIdentityRequestsFuncMock.mockReset()
   })
 
-  it('has WaitingCircle and TheHeader while api call finishes', async () => {
+  it('has WaitingCircle and TheHeader while waiting response', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
       account_id: 1,
