@@ -34,6 +34,11 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import { CreateIdentityRequestItem } from '@/util/personalized/create-identity-request-list/CreateIdentityRequestItem'
+import { getCreateIdentityRequests } from '@/util/personalized/create-identity-request-list/GetCreateIdentityRequests'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Code, createErrorMessage } from '@/util/Error'
+import { Message } from '@/util/Message'
+import { GetCreateIdentityRequests } from '@/util/personalized/create-identity-request-list/GetCreateIdentityRequestsResp'
 
 export default defineComponent({
   name: 'CreateIdentityRequestListPage',
@@ -42,20 +47,29 @@ export default defineComponent({
   },
   setup () {
     const items = ref([] as CreateIdentityRequestItem[])
+    const errorExists = ref(false)
+    const errorMessage = ref('')
     const router = useRouter()
     onMounted(async () => {
-      const params = { page: '0', per_page: '50' }
-      const query = new URLSearchParams(params)
-      const response = await fetch(`/admin/api/create-identity-requests?${query}`, {
-        method: 'GET'
-      })
-      const reqItems = await response.json() as CreateIdentityRequestItem[]
-      reqItems.forEach(e => {
-        const utcTime = e.requested_at
-        e.requested_at = new Date(utcTime.toLocaleString())
-      })
-      console.log(reqItems)
-      items.value = reqItems
+      const response = await getCreateIdentityRequests(0, 50)
+      try {
+        if (response instanceof GetCreateIdentityRequests) {
+          items.value = response.getItems()
+        } else if (response instanceof ApiErrorResp) {
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+            return
+          }
+          errorExists.value = true
+          errorMessage.value = createErrorMessage(response.getApiError().getCode())
+        } else {
+          throw new Error(`unexpected result: ${response}`)
+        }
+      } catch (e) {
+        errorExists.value = true
+        errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     })
     const test = async (accountId: number) => {
       console.log(accountId)
