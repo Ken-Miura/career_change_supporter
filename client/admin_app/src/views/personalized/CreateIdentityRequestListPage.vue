@@ -53,7 +53,7 @@ import { getNumOfItems } from '@/util/NumOfItems'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
-import { GetCreateIdentityRequests } from '@/util/personalized/create-identity-request-list/GetCreateIdentityRequestsResp'
+import { GetCreateIdentityRequestsResp } from '@/util/personalized/create-identity-request-list/GetCreateIdentityRequestsResp'
 
 export default defineComponent({
   name: 'CreateIdentityRequestListPage',
@@ -77,7 +77,7 @@ export default defineComponent({
     const getItems = async (page: number) => {
       const response = await getCreateIdentityRequestsFunc(page, getNumOfItems())
       try {
-        if (response instanceof GetCreateIdentityRequests) {
+        if (response instanceof GetCreateIdentityRequestsResp) {
           items.value = response.getItems()
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()

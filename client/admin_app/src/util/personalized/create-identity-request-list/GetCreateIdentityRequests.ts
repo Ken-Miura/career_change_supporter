@@ -1,8 +1,8 @@
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { CreateIdentityRequestItem } from './CreateIdentityRequestItem'
-import { GetCreateIdentityRequests } from './GetCreateIdentityRequestsResp'
+import { GetCreateIdentityRequestsResp } from './GetCreateIdentityRequestsResp'
 
-export async function getCreateIdentityRequests (page: number, perPage: number): Promise<GetCreateIdentityRequests | ApiErrorResp> {
+export async function getCreateIdentityRequests (page: number, perPage: number): Promise<GetCreateIdentityRequestsResp | ApiErrorResp> {
   const params = { page: page.toString(), per_page: perPage.toString() }
   const query = new URLSearchParams(params)
   const response = await fetch(`/admin/api/create-identity-requests?${query}`, {
@@ -17,5 +17,5 @@ export async function getCreateIdentityRequests (page: number, perPage: number):
     const utcTime = e.requested_at
     e.requested_at = new Date(utcTime.toLocaleString())
   })
-  return GetCreateIdentityRequests.create(items)
+  return GetCreateIdentityRequestsResp.create(items)
 }
