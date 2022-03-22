@@ -358,6 +358,8 @@ describe('CreateIdentityRequestListPage.vue', () => {
     expect(list2.text()).toContain(item3.name)
     // 詳細へのボタン
     expect(list2.text()).toContain('詳細を確認する')
+    // 最終ページに移動したとき、Disabledになっていることを確認
+    expect(nextButton.attributes()).toHaveProperty('disabled')
 
     getCreateIdentityRequestsFuncMock.mockReset()
     getCreateIdentityRequestsFuncMock.mockResolvedValue(resp1)
@@ -378,5 +380,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
     expect(list3.text()).toContain(item2.name)
     // 詳細へのボタン
     expect(list3.text()).toContain('詳細を確認する')
+    // 1ページ目に移動したとき、Disabledになっていることを確認
+    expect(prevButton.attributes()).toHaveProperty('disabled')
   })
 })
