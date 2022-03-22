@@ -7,6 +7,8 @@ import { GetCreateIdentityRequestsResp } from '@/util/personalized/create-identi
 import { CreateIdentityRequestItem } from '@/util/personalized/create-identity-request-list/CreateIdentityRequestItem'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -80,5 +82,21 @@ describe('CreateIdentityRequestListPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it(`moves to login if ${Code.UNAUTHORIZED} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    getCreateIdentityRequestsFuncMock.mockResolvedValue(apiErrResp)
+    mount(CreateIdentityRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('login')
   })
 })
