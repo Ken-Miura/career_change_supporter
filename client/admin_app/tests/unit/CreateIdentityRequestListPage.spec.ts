@@ -99,4 +99,27 @@ describe('CreateIdentityRequestListPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('login')
   })
+
+  it('disabled previous button just after opening page', async () => {
+    const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
+    const item = {
+      account_id: 1,
+      name: '佐藤 次郎',
+      requested_at: date
+    } as CreateIdentityRequestItem
+    const items = [item]
+    const resp = GetCreateIdentityRequestsResp.create(items)
+    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(CreateIdentityRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="prev-button"]')
+    expect(button.attributes()).toHaveProperty('disabled')
+  })
 })
