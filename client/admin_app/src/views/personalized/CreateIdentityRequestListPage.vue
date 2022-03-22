@@ -11,13 +11,13 @@
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div data-test="list" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <div class="mt-4 bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
             <div class="mt-2 justify-self-start col-span-2">依頼時刻</div>
             <div class="mt-2 justify-self-start col-span-1">名前</div>
             <div class="mt-2 justify-self-start col-span-1"></div>
           </div>
-          <ul>
+          <ul data-test="items">
             <li v-for="item in items" v-bind:key="item">
               <div class="mt-4">
                 <div class="border border-gray-600 rounded bg-white px-4 py-3 text-black text-xl grid grid-cols-4">

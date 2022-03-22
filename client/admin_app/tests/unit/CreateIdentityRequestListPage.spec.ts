@@ -129,6 +129,64 @@ describe('CreateIdentityRequestListPage.vue', () => {
     expect(button.attributes()).toHaveProperty('disabled')
   })
 
+  it('disables items just after opening page', async () => {
+    const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
+    const item = {
+      account_id: 1,
+      name: '佐藤 次郎',
+      requested_at: date
+    } as CreateIdentityRequestItem
+    const items = [item]
+    const resp = GetCreateIdentityRequestsResp.create(items)
+    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(CreateIdentityRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const list = wrapper.find('[data-test="list"]')
+    // ラベル
+    expect(list.text()).toContain('依頼時刻')
+    expect(list.text()).toContain('名前')
+    // Item
+    expect(list.text()).toContain(`${item.requested_at.getFullYear()}年${(item.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item.requested_at.getDate().toString().padStart(2, '0')}日${item.requested_at.getHours().toString().padStart(2, '0')}時${item.requested_at.getMinutes().toString().padStart(2, '0')}分${item.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
+    expect(list.text()).toContain(item.name)
+    // 詳細へのボタン
+    expect(list.text()).toContain('詳細を確認する')
+  })
+
+  it('moves to CreateIdentityRequestDetailPage with account_id if 詳細を確認する is pushed', async () => {
+    const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
+    const item = {
+      account_id: 1,
+      name: '佐藤 次郎',
+      requested_at: date
+    } as CreateIdentityRequestItem
+    const items = [item]
+    const resp = GetCreateIdentityRequestsResp.create(items)
+    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(CreateIdentityRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const itemsDiv = wrapper.find('[data-test="items"]')
+    const button = itemsDiv.find('button')
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"name": "CreateIdentityRequestDetailPage", "params": {"account_id": ${item.account_id}}}`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
+
   it('disables next button if items returned are less than displayable items per page', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
