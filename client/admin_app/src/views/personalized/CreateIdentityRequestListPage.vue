@@ -75,8 +75,8 @@ export default defineComponent({
       getCreateIdentityRequestsFunc
     } = useGetCreateIdentityRequests()
     const getItems = async (page: number) => {
-      const response = await getCreateIdentityRequestsFunc(page, getNumOfItems())
       try {
+        const response = await getCreateIdentityRequestsFunc(page, getNumOfItems())
         if (response instanceof GetCreateIdentityRequestsResp) {
           items.value = response.getItems()
         } else if (response instanceof ApiErrorResp) {

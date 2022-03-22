@@ -5,6 +5,8 @@ import TheHeader from '@/components/TheHeader.vue'
 import CreateIdentityRequestListPage from '@/views/personalized/CreateIdentityRequestListPage.vue'
 import { GetCreateIdentityRequestsResp } from '@/util/personalized/create-identity-request-list/GetCreateIdentityRequestsResp'
 import { CreateIdentityRequestItem } from '@/util/personalized/create-identity-request-list/CreateIdentityRequestItem'
+import AlertMessage from '@/components/AlertMessage.vue'
+import { Message } from '@/util/Message'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -55,5 +57,28 @@ describe('CreateIdentityRequestListPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('displays AlertMessage when error has happened', async () => {
+    const errDetail = 'connection error'
+    getCreateIdentityRequestsFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(CreateIdentityRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
