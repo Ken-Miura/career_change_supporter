@@ -1,5 +1,5 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import CreateIdentityRequestListPage from '@/views/personalized/CreateIdentityRequestListPage.vue'
@@ -287,5 +287,96 @@ describe('CreateIdentityRequestListPage.vue', () => {
 
     const button = wrapper.find('[data-test="next-button"]')
     expect(button.attributes()).not.toHaveProperty('disabled')
+  })
+
+  it('moves to second page if next is pushed, then moves to first page if previous is pushed', async () => {
+    getNumOfItemsMock.mockReset()
+    getNumOfItemsMock.mockReturnValue(2)
+    const date1Utc = Date.UTC(2022, 0, 1, 23, 59, 59)
+    const date1 = new Date(date1Utc)
+    const item1 = {
+      account_id: 1,
+      name: '佐藤 次郎',
+      requested_at: date1
+    } as CreateIdentityRequestItem
+    // 気にするのは順序のみで、date1Utcよりあとであればなんでもよいので適当の数字を足す。
+    const date2Utc = date1Utc + 60
+    const date2 = new Date(date2Utc)
+    const item2 = {
+      account_id: 1,
+      name: '田中 太郎',
+      requested_at: date2
+    } as CreateIdentityRequestItem
+    const firstPageItems = [item1, item2]
+    const resp1 = GetCreateIdentityRequestsResp.create(firstPageItems)
+    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp1)
+    const wrapper = mount(CreateIdentityRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    // ページ表示直後の確認
+    const list1 = wrapper.find('[data-test="list"]')
+    // ラベル
+    expect(list1.text()).toContain('依頼時刻')
+    expect(list1.text()).toContain('名前')
+    // Item
+    expect(list1.text()).toContain(`${item1.requested_at.getFullYear()}年${(item1.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item1.requested_at.getDate().toString().padStart(2, '0')}日${item1.requested_at.getHours().toString().padStart(2, '0')}時${item1.requested_at.getMinutes().toString().padStart(2, '0')}分${item1.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
+    expect(list1.text()).toContain(item1.name)
+    expect(list1.text()).toContain(`${item2.requested_at.getFullYear()}年${(item2.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item2.requested_at.getDate().toString().padStart(2, '0')}日${item2.requested_at.getHours().toString().padStart(2, '0')}時${item2.requested_at.getMinutes().toString().padStart(2, '0')}分${item2.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
+    expect(list1.text()).toContain(item2.name)
+    // 詳細へのボタン
+    expect(list1.text()).toContain('詳細を確認する')
+
+    const date3Utc = date2Utc + 60
+    const date3 = new Date(date3Utc)
+    const item3 = {
+      account_id: 3,
+      name: '鈴木 圭一',
+      requested_at: date3
+    } as CreateIdentityRequestItem
+    const secondPageItems = [item3]
+    getCreateIdentityRequestsFuncMock.mockReset()
+    const resp2 = GetCreateIdentityRequestsResp.create(secondPageItems)
+    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp2)
+    const nextButton = wrapper.find('[data-test="next-button"]')
+    await nextButton.trigger('click')
+    await flushPromises()
+    await nextTick()
+
+    // next押下直後の確認
+    const list2 = wrapper.find('[data-test="list"]')
+    // ラベル
+    expect(list2.text()).toContain('依頼時刻')
+    expect(list2.text()).toContain('名前')
+    // Item
+    expect(list2.text()).toContain(`${item3.requested_at.getFullYear()}年${(item3.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item3.requested_at.getDate().toString().padStart(2, '0')}日${item3.requested_at.getHours().toString().padStart(2, '0')}時${item3.requested_at.getMinutes().toString().padStart(2, '0')}分${item3.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
+    expect(list2.text()).toContain(item3.name)
+    // 詳細へのボタン
+    expect(list2.text()).toContain('詳細を確認する')
+
+    getCreateIdentityRequestsFuncMock.mockReset()
+    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp1)
+    const prevButton = wrapper.find('[data-test="prev-button"]')
+    await prevButton.trigger('click')
+    await flushPromises()
+    await nextTick()
+
+    // previous押下直後の確認
+    const list3 = wrapper.find('[data-test="list"]')
+    // ラベル
+    expect(list3.text()).toContain('依頼時刻')
+    expect(list3.text()).toContain('名前')
+    // Item
+    expect(list3.text()).toContain(`${item1.requested_at.getFullYear()}年${(item1.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item1.requested_at.getDate().toString().padStart(2, '0')}日${item1.requested_at.getHours().toString().padStart(2, '0')}時${item1.requested_at.getMinutes().toString().padStart(2, '0')}分${item1.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
+    expect(list3.text()).toContain(item1.name)
+    expect(list3.text()).toContain(`${item2.requested_at.getFullYear()}年${(item2.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item2.requested_at.getDate().toString().padStart(2, '0')}日${item2.requested_at.getHours().toString().padStart(2, '0')}時${item2.requested_at.getMinutes().toString().padStart(2, '0')}分${item2.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
+    expect(list3.text()).toContain(item2.name)
+    // 詳細へのボタン
+    expect(list3.text()).toContain('詳細を確認する')
   })
 })
