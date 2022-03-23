@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+mod create_identity_request_detail;
 mod create_identity_requests;
 mod err;
 mod login;
@@ -7,6 +8,7 @@ mod logout;
 mod refresh;
 mod util;
 
+use crate::create_identity_request_detail::get_create_identity_request_detail;
 use crate::create_identity_requests::get_create_identity_requests;
 use crate::login::post_login;
 use crate::logout::post_logout;
@@ -115,6 +117,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/create-identity-requests",
                     get(get_create_identity_requests),
+                )
+                .route(
+                    "/create-identity-request-detail",
+                    get(get_create_identity_request_detail),
                 ),
         )
         .layer(

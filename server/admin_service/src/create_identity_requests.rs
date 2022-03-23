@@ -30,9 +30,9 @@ pub(crate) async fn get_create_identity_requests(
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateIdentityReqItem {
-    account_id: i64,
-    requested_at: DateTime<FixedOffset>,
-    name: String,
+    pub(crate) account_id: i64,
+    pub(crate) requested_at: DateTime<FixedOffset>,
+    pub(crate) name: String,
 }
 
 async fn get_create_identity_request_items(
