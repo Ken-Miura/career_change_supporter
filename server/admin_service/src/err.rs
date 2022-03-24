@@ -12,6 +12,7 @@ pub(crate) enum Code {
     EmailOrPwdIncorrect = 30001,
     Unauthorized = 30002,
     IllegalPageSize = 30003,
+    NoCreateIdentityReqDetailFound = 30004,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
