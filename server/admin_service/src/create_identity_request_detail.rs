@@ -16,11 +16,6 @@ use crate::err::unexpected_err_resp;
 use crate::err::Code::NoCreateIdentityReqDetailFound;
 use crate::util::session::Admin;
 
-// リクエスト
-// クエリでuser account idを受け取る
-// レスポンス
-// 本人確認依頼（新規）の詳細
-// （生年月日が同じユーザーのリストは別途リクエストを発行する）
 pub(crate) async fn get_create_identity_request_detail(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<CreateIdentityReqDetailQuery>,
