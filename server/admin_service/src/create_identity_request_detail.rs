@@ -121,4 +121,104 @@ impl CreateIdentityReqDetailOperation for CreateIdentityReqDetailOperationImpl {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::err::Code::NoCreateIdentityReqDetailFound;
+    use async_session::async_trait;
+    use axum::http::StatusCode;
+    use chrono::{TimeZone, Utc};
+    use common::{ErrResp, JAPANESE_TIME_ZONE};
+
+    use super::{
+        get_create_identity_req_detail, CreateIdentityReqDetail, CreateIdentityReqDetailOperation,
+    };
+
+    struct CreateIdentityReqDetailOperationMock {
+        user_account_id: i64,
+        create_identity_req_detail: CreateIdentityReqDetail,
+    }
+
+    #[async_trait]
+    impl CreateIdentityReqDetailOperation for CreateIdentityReqDetailOperationMock {
+        async fn get_create_identity_req_detail(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Option<CreateIdentityReqDetail>, ErrResp> {
+            if self.user_account_id != user_account_id {
+                return Ok(None);
+            }
+            Ok(Some(self.create_identity_req_detail.clone()))
+        }
+    }
+
+    #[tokio::test]
+
+    async fn get_create_identity_req_detail_success() {
+        let user_account_id = 5135;
+        let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
+        let requested_at = Utc
+            .ymd(2022, 3, 11)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let create_identity_req_detail = CreateIdentityReqDetail {
+            last_name: String::from("山田"),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("ヤマダ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth,
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("08012345678"),
+            image1_file_name_without_ext: String::from("bcc72c586be3b2a70d6652ff74c6a484"),
+            image2_file_name_without_ext: None,
+            requested_at,
+        };
+        let op_mock = CreateIdentityReqDetailOperationMock {
+            user_account_id,
+            create_identity_req_detail: create_identity_req_detail.clone(),
+        };
+
+        let result = get_create_identity_req_detail(user_account_id, op_mock).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(create_identity_req_detail, resp.1 .0);
+    }
+
+    #[tokio::test]
+
+    async fn get_create_identity_req_detail_fail_no_req_detail_found() {
+        let user_account_id = 5135;
+        let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
+        let requested_at = Utc
+            .ymd(2022, 3, 11)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let create_identity_req_detail = CreateIdentityReqDetail {
+            last_name: String::from("山田"),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("ヤマダ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth,
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("08012345678"),
+            image1_file_name_without_ext: String::from("bcc72c586be3b2a70d6652ff74c6a484"),
+            image2_file_name_without_ext: None,
+            requested_at,
+        };
+        let op_mock = CreateIdentityReqDetailOperationMock {
+            user_account_id: user_account_id + 6230,
+            create_identity_req_detail: create_identity_req_detail.clone(),
+        };
+
+        let result = get_create_identity_req_detail(user_account_id, op_mock).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(NoCreateIdentityReqDetailFound as u32, err_resp.1 .0.code);
+    }
+}
