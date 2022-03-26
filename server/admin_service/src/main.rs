@@ -3,6 +3,7 @@
 mod create_identity_request_detail;
 mod create_identity_requests;
 mod err;
+mod identity_images;
 mod login;
 mod logout;
 mod refresh;
@@ -11,6 +12,7 @@ mod util;
 
 use crate::create_identity_request_detail::get_create_identity_request_detail;
 use crate::create_identity_requests::get_create_identity_requests;
+use crate::identity_images::get_identity_images;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
@@ -124,7 +126,11 @@ async fn main_internal(num_of_cpus: u32) {
                     "/create-identity-request-detail",
                     get(get_create_identity_request_detail),
                 )
-                .route("/users-by-birthday", get(get_users_by_birthday)),
+                .route("/users-by-birthday", get(get_users_by_birthday))
+                .route(
+                    "/identity-images/:user_account_id/:image_name",
+                    get(get_identity_images),
+                ),
         )
         .layer(
             ServiceBuilder::new()
