@@ -8,7 +8,9 @@ use axum::{
 };
 use chrono::NaiveDate;
 use common::{ApiError, ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use entity::identity_info;
+use entity::prelude::IdentityInfo;
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
 use crate::err::unexpected_err_resp;
@@ -33,7 +35,19 @@ pub(crate) struct Birthday {
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub(crate) struct User {}
+pub(crate) struct User {
+    pub user_account_id: i64,
+    pub last_name: String,
+    pub first_name: String,
+    pub last_name_furigana: String,
+    pub first_name_furigana: String,
+    pub date_of_birth: NaiveDate,
+    pub prefecture: String,
+    pub city: String,
+    pub address_line1: String,
+    pub address_line2: Option<String>,
+    pub telephone_number: String,
+}
 
 async fn get_users_by_birthday_internal(
     year: i32,
@@ -50,13 +64,13 @@ async fn get_users_by_birthday_internal(
             }),
         )
     })?;
-    let users = op.get_users_by_birthday(&birthday).await?;
+    let users = op.get_users_by_birthday(birthday).await?;
     Ok((StatusCode::OK, Json(users)))
 }
 
 #[async_trait]
 trait UsersByBirthdayOperation {
-    async fn get_users_by_birthday(&self, birthday: &NaiveDate) -> Result<Vec<User>, ErrResp>;
+    async fn get_users_by_birthday(&self, birthday: NaiveDate) -> Result<Vec<User>, ErrResp>;
 }
 
 struct UsersByBirthdayOperationImpl {
@@ -65,8 +79,35 @@ struct UsersByBirthdayOperationImpl {
 
 #[async_trait]
 impl UsersByBirthdayOperation for UsersByBirthdayOperationImpl {
-    async fn get_users_by_birthday(&self, birthday: &NaiveDate) -> Result<Vec<User>, ErrResp> {
-        todo!()
+    async fn get_users_by_birthday(&self, birthday: NaiveDate) -> Result<Vec<User>, ErrResp> {
+        let models = IdentityInfo::find()
+            .filter(identity_info::Column::DateOfBirth.eq(birthday))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to filter identity info (birthday: {}): {}",
+                    birthday,
+                    e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(models
+            .into_iter()
+            .map(|m| User {
+                user_account_id: m.user_account_id,
+                last_name: m.last_name,
+                first_name: m.first_name,
+                last_name_furigana: m.last_name_furigana,
+                first_name_furigana: m.first_name_furigana,
+                date_of_birth: m.date_of_birth,
+                prefecture: m.prefecture,
+                city: m.city,
+                address_line1: m.address_line1,
+                address_line2: m.address_line2,
+                telephone_number: m.telephone_number,
+            })
+            .collect::<Vec<User>>())
     }
 }
 
