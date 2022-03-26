@@ -36,17 +36,17 @@ pub(crate) struct Birthday {
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct User {
-    pub user_account_id: i64,
-    pub last_name: String,
-    pub first_name: String,
-    pub last_name_furigana: String,
-    pub first_name_furigana: String,
-    pub date_of_birth: NaiveDate,
-    pub prefecture: String,
-    pub city: String,
-    pub address_line1: String,
-    pub address_line2: Option<String>,
-    pub telephone_number: String,
+    pub(crate) user_account_id: i64,
+    pub(crate) last_name: String,
+    pub(crate) first_name: String,
+    pub(crate) last_name_furigana: String,
+    pub(crate) first_name_furigana: String,
+    pub(crate) date_of_birth: NaiveDate,
+    pub(crate) prefecture: String,
+    pub(crate) city: String,
+    pub(crate) address_line1: String,
+    pub(crate) address_line2: Option<String>,
+    pub(crate) telephone_number: String,
 }
 
 async fn get_users_by_birthday_internal(
