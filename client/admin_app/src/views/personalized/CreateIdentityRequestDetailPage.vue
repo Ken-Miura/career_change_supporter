@@ -38,18 +38,11 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">生年月日が同じユーザー</h3>
           <p class="mt-2 text-lg">既に登録されているユーザーが新規に本人確認依頼をしてきていないか確認して下さい。</p>
-          <div v-if="detail !== null">
-            <div class="m-4 text-2xl grid grid-cols-3">
-              <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{ detail.last_name }} {{ detail.first_name }}</div>
-              <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ detail.last_name_furigana }} {{ detail.first_name_furigana }}</div>
-              <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="justify-self-start col-span-2">{{ detail.date_of_birth.year }}年{{ detail.date_of_birth.month }}月{{ detail.date_of_birth.day }}日</div>
-              <div class="mt-2 justify-self-start col-span-3">住所</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="justify-self-start col-span-2">{{ detail.prefecture }}</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="justify-self-start col-span-2">{{ detail.city }}</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="justify-self-start col-span-2">{{ detail.address_line1 }}</div>
-              <div v-if="detail.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="detail.address_line2 !== null" class="justify-self-start col-span-2">{{ detail.address_line2 }}</div>
-              <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ detail.telephone_number }}</div>
-            </div>
+          <div v-if="users.length === 0">
+            zero
+          </div>
+          <div v-else>
+            not zero
           </div>
         </div>
       </div>
@@ -66,6 +59,7 @@ import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
+import { User } from '@/util/personalized/create-identity-request-detail/User'
 import { CreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/CreateIdentityRequestDetail'
 import { useGetCreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/useGetCreateIdentityRequestDetail'
 import { GetCreateIdentityRequestDetailResp } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetailResp'
@@ -86,6 +80,7 @@ export default defineComponent({
       message: ''
     })
     const detail = ref(null as CreateIdentityRequestDetail | null)
+    const users = ref([] as User[])
     const route = useRoute()
     const router = useRouter()
     const userAccountId = route.params.account_id as string
@@ -143,7 +138,7 @@ export default defineComponent({
       // const data = await response.json()
       // console.log(data)
     })
-    return { error, detail, image1Url, image2Url, waitingGetCreateIdentityRequestDetailDone }
+    return { error, detail, image1Url, image2Url, users, waitingGetCreateIdentityRequestDetailDone }
   }
 })
 </script>

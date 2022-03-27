@@ -1,4 +1,4 @@
-import { Ymd } from "@/util/Ymd";
+import { Ymd } from '@/util/Ymd'
 
 export type User = {
     /* eslint-disable camelcase */
