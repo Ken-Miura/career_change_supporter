@@ -196,7 +196,7 @@ describe('IdentityPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
   it(`moves to terms of use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on opening IdentityPage`, async () => {
@@ -212,7 +212,7 @@ describe('IdentityPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
   it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happened on opening IdentityPage`, async () => {
@@ -281,7 +281,7 @@ describe('IdentityPage.vue', () => {
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/post-identity-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
     expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
   })
@@ -349,7 +349,7 @@ describe('IdentityPage.vue', () => {
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('post-identity-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/post-identity-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
     expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
   })
@@ -765,7 +765,7 @@ describe('IdentityPage.vue', () => {
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
   it(`moves to terms of use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned`, async () => {
@@ -832,7 +832,7 @@ describe('IdentityPage.vue', () => {
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
   it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happened`, async () => {

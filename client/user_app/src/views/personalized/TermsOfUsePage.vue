@@ -49,19 +49,19 @@ export default defineComponent({
       try {
         const result = await agreeTermsOfUse()
         if (result instanceof AgreeTermsOfUseResp) {
-          await router.push('profile')
+          await router.push('/profile')
           return
         } else if (result instanceof ApiErrorResp) {
           const code = result.getApiError().getCode()
           // 利用規約に同意するためにはセッションが有効である必要がある
           // そのため、セッションの期限が切れている場合、Code.UNAUTHORIZEDが返却される
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
+            await router.push('/login')
             return
           } else if (code === Code.ALREADY_AGREED_TERMS_OF_USE) {
             // 複数回連続で利用規約に同意するを押した場合、Code.ALREADY_AGREED_TERMS_OF_USEが返却される可能性が考えられる
             // 既に利用規約に同意している場合は、無視してprofile画面へ遷移する
-            await router.push('profile')
+            await router.push('/profile')
             return
           } else {
             throw new Error(`unexpected result: ${result}`)

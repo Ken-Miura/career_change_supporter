@@ -42,10 +42,10 @@ export default defineComponent({
         } else if (resp instanceof ApiErrorResp) {
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
+            await router.push('/login')
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
+            await router.push('/terms-of-use')
             return
           }
           // TODO: エラー処理

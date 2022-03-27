@@ -66,7 +66,7 @@ describe('TermsOfUsePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('profile')
+    expect(routerPushMock).toHaveBeenCalledWith('/profile')
   })
 
   it('moves to profile when user has already agreed terms of use', async () => {
@@ -84,7 +84,7 @@ describe('TermsOfUsePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('profile')
+    expect(routerPushMock).toHaveBeenCalledWith('/profile')
   })
 
   it('moves to login when session has already exipired', async () => {
@@ -102,7 +102,7 @@ describe('TermsOfUsePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
   it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happens`, async () => {

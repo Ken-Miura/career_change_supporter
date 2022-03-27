@@ -57,14 +57,14 @@ export default defineComponent({
       try {
         const resp = await refresh()
         if (resp instanceof RefreshResp) {
-          await router.push('profile')
+          await router.push('/profile')
           return
         } else if (resp instanceof ApiErrorResp) {
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             // ログインセッションが存在しないため、そのままログインページを表示する
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
+            await router.push('/terms-of-use')
             return
           } else {
             throw new Error(`unexpected result: ${resp}`)
@@ -85,7 +85,7 @@ export default defineComponent({
       try {
         const result = await login(form.emailAddress, form.password)
         if (result instanceof LoginResp) {
-          await router.push('profile')
+          await router.push('/profile')
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())

@@ -77,7 +77,7 @@ describe('LoginPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('profile')
+    expect(routerPushMock).toHaveBeenCalledWith('/profile')
   })
 
   it('moves to terms-of-use when session has already existed and user has not agreed terms of use yet', async () => {
@@ -94,7 +94,7 @@ describe('LoginPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
   it('does not move when session has not existed yet', async () => {
@@ -160,7 +160,7 @@ describe('LoginPage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('profile')
+    expect(routerPushMock).toHaveBeenCalledWith('/profile')
   })
 
   it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {

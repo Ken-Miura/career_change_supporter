@@ -74,7 +74,7 @@ describe('PasswordChangeReqPage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('password-change-req-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/password-change-req-result')
   })
 
   it(`displays alert message ${Message.REACH_PASSWORD_CHANGE_REQ_LIMIT_MESSAGE} when reach password change request limit`, async () => {

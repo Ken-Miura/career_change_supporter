@@ -60,7 +60,7 @@ export default defineComponent({
         // ログアウトが失敗したことがユーザーの関心事になるとは思えないため、無視してログイン画面へ遷移する
         // コネクションエラーの場合、ログイン画面でログイン失敗時にエラーメッセージが表示されるので、ここで表示する必要性もない
       }
-      await router.push('login')
+      await router.push('/login')
     }
     return {
       isHidden,

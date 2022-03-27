@@ -54,7 +54,7 @@ export default defineComponent({
       try {
         const result = await createPwdChangeReq(form.emailAddress)
         if (result instanceof CreatePwdChangeReqResp) {
-          await router.push('password-change-req-result')
+          await router.push('/password-change-req-result')
           return
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false

@@ -145,10 +145,10 @@ export default defineComponent({
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
+            await router.push('/login')
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
+            await router.push('/terms-of-use')
             return
           }
           errorExists.value = true
@@ -162,7 +162,7 @@ export default defineComponent({
       }
     })
     const moveToIdentityPage = async () => {
-      await router.push('identity')
+      await router.push('/identity')
     }
     const moveToAddCareerPage = async () => {
       const identity = store.state.identity
@@ -171,7 +171,7 @@ export default defineComponent({
         canAddCareerErrMessage.value = Message.NO_IDENTITY_FOUND
         return
       }
-      await router.push('careers')
+      await router.push('/careers')
     }
     const moveToEditCareerPage = async (careerId: number) => {
       await router.push({ name: 'EditCareerPage', params: { career_id: careerId } })
@@ -183,10 +183,10 @@ export default defineComponent({
         canEditFeePerHourInYenErrMessage.value = Message.NO_IDENTITY_FOUND
         return
       }
-      await router.push('fee-per-hour-in-yen')
+      await router.push('/fee-per-hour-in-yen')
     }
     const moveToDeleteAccountConfirmationPage = async () => {
-      await router.push('delete-account-confirmation')
+      await router.push('/delete-account-confirmation')
     }
     return {
       getProfileDone,

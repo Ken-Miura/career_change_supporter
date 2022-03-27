@@ -83,7 +83,7 @@ export default defineComponent({
         message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
       store.commit(SET_PASSWORD_UPDATE_RESULT_MESSAGE, message)
-      await router.push('password-update-result')
+      await router.push('/password-update-result')
     }
     return { form, setPassword, setPasswordConfirmation, isHidden, errorMessage, updatePasswordHandler }
   }

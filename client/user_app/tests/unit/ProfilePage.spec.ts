@@ -137,7 +137,7 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
   it(`moves to terms of use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned`, async () => {
@@ -154,7 +154,7 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
   it('has TheHeader after api call finishes', async () => {
@@ -507,7 +507,7 @@ describe('ProfilePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('identity')
+    expect(routerPushMock).toHaveBeenCalledWith('/identity')
   })
 
   it('moves to AddCareerPage when "職務経歴を追加する" is pushed', async () => {
@@ -553,7 +553,7 @@ describe('ProfilePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('careers')
+    expect(routerPushMock).toHaveBeenCalledWith('/careers')
   })
 
   it('moves to EditCareerPage when "詳細を確認・編集する" is pushed', async () => {
@@ -671,7 +671,7 @@ describe('ProfilePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('fee-per-hour-in-yen')
+    expect(routerPushMock).toHaveBeenCalledWith('/fee-per-hour-in-yen')
   })
 
   it('moves to DeleteAccountConfirmationPage when "アカウントを削除する" is pushed', async () => {
@@ -698,7 +698,7 @@ describe('ProfilePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('delete-account-confirmation')
+    expect(routerPushMock).toHaveBeenCalledWith('/delete-account-confirmation')
   })
 
   it(`display ${Message.NO_IDENTITY_FOUND} on career area when identity is null and "職務経歴を追加する" is pushed`, async () => {

@@ -200,10 +200,10 @@ export default defineComponent({
         } else if (resp instanceof ApiErrorResp) {
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
+            await router.push('/login')
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
+            await router.push('/terms-of-use')
             return
           }
           throw new Error(`unexpected result: ${resp}`)
@@ -265,15 +265,15 @@ export default defineComponent({
         const response = await postIdentityFunc(identity, images.image1, images.image2)
         if (response instanceof PostIdentityResp) {
           store.commit(SET_POST_IDENTITY_RESULT_MESSAGE, Message.POST_IDENTITY_RESULT_MESSAGE)
-          await router.push('post-identity-result')
+          await router.push('/post-identity-result')
           return
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
+            await router.push('/login')
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
+            await router.push('/terms-of-use')
             return
           }
           isHidden.value = false

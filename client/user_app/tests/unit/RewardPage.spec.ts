@@ -133,7 +133,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
   it(`moves to terms of use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned`, async () => {
@@ -150,7 +150,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('terms-of-use')
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
   it('has TheHeader after api call finishes', async () => {
@@ -611,6 +611,6 @@ describe('RewardPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('bank-account')
+    expect(routerPushMock).toHaveBeenCalledWith('/bank-account')
   })
 })

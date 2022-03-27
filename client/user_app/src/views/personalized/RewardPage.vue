@@ -146,10 +146,10 @@ export default defineComponent({
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
+            await router.push('/login')
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('terms-of-use')
+            await router.push('/terms-of-use')
             return
           }
           errorExists.value = true
@@ -165,7 +165,7 @@ export default defineComponent({
     const moveToBankAccountPage = async () => {
       // F5更新で最初にRewardPageに来た場合、ユーザー情報が設定されていてもidentityがnullとなるので
       // vuexにidentityがあるかどうかはチェックしない
-      await router.push('bank-account')
+      await router.push('/bank-account')
     }
     return {
       getRewardsDone,

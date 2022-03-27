@@ -85,7 +85,7 @@ describe('NewAccountPage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('temp-account-creation-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/temp-account-creation-result')
   })
 
   it(`displays alert message ${Message.REACH_TEMP_ACCOUNTS_LIMIT_MESSAGE} when reach new account limit`, async () => {

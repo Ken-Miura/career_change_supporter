@@ -90,7 +90,7 @@ describe('PasswordUpdatePage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('password-update-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/password-update-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
     expect(storeCommitMock).toHaveBeenCalledWith(SET_PASSWORD_UPDATE_RESULT_MESSAGE, `${Message.PASSWORD_CHANGED_MESSAGE}`)
   })
@@ -174,7 +174,7 @@ describe('PasswordUpdatePage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('password-update-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/password-update-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
     expect(storeCommitMock).toHaveBeenCalledWith(SET_PASSWORD_UPDATE_RESULT_MESSAGE, `${Message.INVALID_UUID_FORMAT_MESSAGE} (${Code.INVALID_UUID_FORMAT})`)
   })
@@ -200,7 +200,7 @@ describe('PasswordUpdatePage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('password-update-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/password-update-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
     expect(storeCommitMock).toHaveBeenCalledWith(SET_PASSWORD_UPDATE_RESULT_MESSAGE, `${Message.NO_ACCOUNT_FOUND_MESSAGE} (${Code.NO_ACCOUNT_FOUND})`)
   })
@@ -226,7 +226,7 @@ describe('PasswordUpdatePage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('password-update-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/password-update-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
     expect(storeCommitMock).toHaveBeenCalledWith(SET_PASSWORD_UPDATE_RESULT_MESSAGE, `${Message.NO_PWD_CHANGE_REQ_FOUND_MESSAGE} (${Code.NO_PWD_CHANGE_REQ_FOUND})`)
   })
@@ -252,7 +252,7 @@ describe('PasswordUpdatePage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('password-update-result')
+    expect(routerPushMock).toHaveBeenCalledWith('/password-update-result')
     expect(storeCommitMock).toHaveBeenCalledTimes(1)
     expect(storeCommitMock).toHaveBeenCalledWith(SET_PASSWORD_UPDATE_RESULT_MESSAGE, `${Message.PWD_CHANGE_REQ_EXPIRED_MESSAGE} (${Code.PWD_CHANGE_REQ_EXPIRED})`)
   })
