@@ -1,5 +1,5 @@
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
-import { CreateIdentityReqDetail } from './CreateIdentityReqDetail'
+import { CreateIdentityRequestDetail } from './CreateIdentityRequestDetail'
 import { GetCreateIdentityRequestDetailResp } from './GetCreateIdentityRequestDetailResp'
 
 export async function getCreateIdentityRequestDetail (userAccountId: string): Promise<GetCreateIdentityRequestDetailResp | ApiErrorResp> {
@@ -12,6 +12,6 @@ export async function getCreateIdentityRequestDetail (userAccountId: string): Pr
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  const detail = await response.json() as CreateIdentityReqDetail
+  const detail = await response.json() as CreateIdentityRequestDetail
   return GetCreateIdentityRequestDetailResp.create(detail)
 }

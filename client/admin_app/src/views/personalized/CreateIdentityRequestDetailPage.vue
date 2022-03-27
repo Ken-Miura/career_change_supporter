@@ -37,7 +37,7 @@
 import { computed, defineComponent, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
-import { CreateIdentityReqDetail } from '@/util/personalized/create-identity-request-detail/CreateIdentityReqDetail'
+import { CreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/CreateIdentityRequestDetail'
 import { getCreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetail'
 import { GetCreateIdentityRequestDetailResp } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetailResp'
 import { Code, createErrorMessage } from '@/util/Error'
@@ -54,7 +54,7 @@ export default defineComponent({
       exists: false,
       message: ''
     })
-    const reqDetail = ref(null as CreateIdentityReqDetail | null)
+    const reqDetail = ref(null as CreateIdentityRequestDetail | null)
     const route = useRoute()
     const router = useRouter()
     const userAccountId = route.params.account_id as string

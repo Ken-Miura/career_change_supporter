@@ -1,6 +1,6 @@
 import { Ymd } from '@/util/Ymd'
 
-export type CreateIdentityReqDetail = {
+export type CreateIdentityRequestDetail = {
     /* eslint-disable camelcase */
     last_name: string,
     first_name: string,

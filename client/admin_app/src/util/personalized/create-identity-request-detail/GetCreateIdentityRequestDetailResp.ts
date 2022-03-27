@@ -1,14 +1,14 @@
-import { CreateIdentityReqDetail } from './CreateIdentityReqDetail'
+import { CreateIdentityRequestDetail } from './CreateIdentityRequestDetail'
 
 export class GetCreateIdentityRequestDetailResp {
   // createからアクセスしているため、意味のないコンストラクタではない
   // eslint-disable-next-line
-  private constructor (private readonly detail: CreateIdentityReqDetail) {}
-  public static create (detail: CreateIdentityReqDetail): GetCreateIdentityRequestDetailResp {
+  private constructor (private readonly detail: CreateIdentityRequestDetail) {}
+  public static create (detail: CreateIdentityRequestDetail): GetCreateIdentityRequestDetailResp {
     return new GetCreateIdentityRequestDetailResp(detail)
   }
 
-  public getDetail (): CreateIdentityReqDetail {
+  public getDetail (): CreateIdentityRequestDetail {
     return this.detail
   }
 }
