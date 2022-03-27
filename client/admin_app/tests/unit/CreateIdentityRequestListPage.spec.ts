@@ -103,7 +103,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
   it('disables previous button just after opening page', async () => {

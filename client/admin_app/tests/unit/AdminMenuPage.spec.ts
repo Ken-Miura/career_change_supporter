@@ -25,7 +25,7 @@ describe('AdminMenuPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('create-identity-request-list')
+    expect(routerPushMock).toHaveBeenCalledWith('/create-identity-request-list')
   })
 
   it('moves to update-identity-request-list when the button is pushed', async () => {
@@ -40,7 +40,7 @@ describe('AdminMenuPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('update-identity-request-list')
+    expect(routerPushMock).toHaveBeenCalledWith('/update-identity-request-list')
   })
 
   it('moves to create-career-request-list when the button is pushed', async () => {
@@ -55,7 +55,7 @@ describe('AdminMenuPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('create-career-request-list')
+    expect(routerPushMock).toHaveBeenCalledWith('/create-career-request-list')
   })
 
   it('moves to update-career-request-list when the button is pushed', async () => {
@@ -70,7 +70,7 @@ describe('AdminMenuPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('update-career-request-list')
+    expect(routerPushMock).toHaveBeenCalledWith('/update-career-request-list')
   })
 
   it('moves to move-to-disable-account when the button is pushed', async () => {
@@ -85,7 +85,7 @@ describe('AdminMenuPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('disable-account')
+    expect(routerPushMock).toHaveBeenCalledWith('/disable-account')
   })
 
   it('moves to move-to-enable-account when the button is pushed', async () => {
@@ -100,7 +100,7 @@ describe('AdminMenuPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('enable-account')
+    expect(routerPushMock).toHaveBeenCalledWith('/enable-account')
   })
 
   it('moves to move-to-enable-account when the button is pushed', async () => {
@@ -115,6 +115,6 @@ describe('AdminMenuPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('refund')
+    expect(routerPushMock).toHaveBeenCalledWith('/refund')
   })
 })

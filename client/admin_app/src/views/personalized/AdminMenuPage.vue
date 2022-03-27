@@ -33,25 +33,25 @@ export default defineComponent({
   setup () {
     const router = useRouter()
     const moveToCreateIdentityRequestListPage = async () => {
-      await router.push('create-identity-request-list')
+      await router.push('/create-identity-request-list')
     }
     const moveToUpdateIdentityRequestListPage = async () => {
-      await router.push('update-identity-request-list')
+      await router.push('/update-identity-request-list')
     }
     const moveToCreateCareerRequestListPage = async () => {
-      await router.push('create-career-request-list')
+      await router.push('/create-career-request-list')
     }
     const moveToUpdateCareerRequestListPage = async () => {
-      await router.push('update-career-request-list')
+      await router.push('/update-career-request-list')
     }
     const moveToDisableAccountPage = async () => {
-      await router.push('disable-account')
+      await router.push('/disable-account')
     }
     const moveToEnableAccountPage = async () => {
-      await router.push('enable-account')
+      await router.push('/enable-account')
     }
     const moveToRefundPage = async () => {
-      await router.push('refund')
+      await router.push('/refund')
     }
     return {
       moveToCreateIdentityRequestListPage,

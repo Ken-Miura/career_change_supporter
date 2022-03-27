@@ -85,7 +85,7 @@ describe('TheHeader.vue', () => {
     await logoutHandle.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
   it('moves LoginPage when connection error occurred', async () => {
@@ -102,6 +102,6 @@ describe('TheHeader.vue', () => {
     await logoutHandle.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('login')
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 })

@@ -54,7 +54,7 @@ export default defineComponent({
       try {
         const resp = await refresh()
         if (resp instanceof RefreshResp) {
-          await router.push('admin-menu')
+          await router.push('/admin-menu')
           return
         } else if (resp instanceof ApiErrorResp) {
           const code = resp.getApiError().getCode()
@@ -79,7 +79,7 @@ export default defineComponent({
       try {
         const result = await login(form.emailAddress, form.password)
         if (result instanceof LoginResp) {
-          await router.push('admin-menu')
+          await router.push('/admin-menu')
         } else if (result instanceof ApiErrorResp) {
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())

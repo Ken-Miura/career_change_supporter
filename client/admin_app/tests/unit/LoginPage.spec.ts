@@ -77,7 +77,7 @@ describe('LoginPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('admin-menu')
+    expect(routerPushMock).toHaveBeenCalledWith('/admin-menu')
   })
 
   it('does not move when session has not existed yet', async () => {
@@ -143,7 +143,7 @@ describe('LoginPage.vue', () => {
     await button.trigger('submit')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('admin-menu')
+    expect(routerPushMock).toHaveBeenCalledWith('/admin-menu')
   })
 
   it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {

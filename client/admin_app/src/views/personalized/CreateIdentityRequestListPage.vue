@@ -82,7 +82,7 @@ export default defineComponent({
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('login')
+            await router.push('/login')
             return
           }
           errorExists.value = true
