@@ -6,7 +6,8 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
+use common::util::Ymd;
 use common::{ApiError, ErrResp, RespResult};
 use entity::identity_info;
 use entity::prelude::IdentityInfo;
@@ -41,7 +42,7 @@ pub(crate) struct User {
     pub(crate) first_name: String,
     pub(crate) last_name_furigana: String,
     pub(crate) first_name_furigana: String,
-    pub(crate) date_of_birth: NaiveDate,
+    pub(crate) date_of_birth: Ymd,
     pub(crate) prefecture: String,
     pub(crate) city: String,
     pub(crate) address_line1: String,
@@ -100,7 +101,11 @@ impl UsersByBirthdayOperation for UsersByBirthdayOperationImpl {
                 first_name: m.first_name,
                 last_name_furigana: m.last_name_furigana,
                 first_name_furigana: m.first_name_furigana,
-                date_of_birth: m.date_of_birth,
+                date_of_birth: Ymd {
+                    year: m.date_of_birth.year(),
+                    month: m.date_of_birth.month(),
+                    day: m.date_of_birth.day(),
+                },
                 prefecture: m.prefecture,
                 city: m.city,
                 address_line1: m.address_line1,
@@ -119,7 +124,7 @@ mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::{Datelike, NaiveDate, TimeZone, Utc};
-    use common::ErrResp;
+    use common::{util::Ymd, ErrResp};
 
     use super::{get_users_by_birthday_internal, User, UsersByBirthdayOperation};
 
@@ -132,7 +137,12 @@ mod tests {
         async fn get_users_by_birthday(&self, birthday: NaiveDate) -> Result<Vec<User>, ErrResp> {
             let mut users = Vec::with_capacity(self.users.len());
             for user in &self.users {
-                if user.date_of_birth == birthday {
+                let ymd = Ymd {
+                    year: birthday.year(),
+                    month: birthday.month(),
+                    day: birthday.day(),
+                };
+                if user.date_of_birth == ymd {
                     users.push(user.clone());
                 }
             }
@@ -248,13 +258,18 @@ mod tests {
     }
 
     fn create_dummy_user1(date_of_birth: NaiveDate) -> User {
+        let ymd = Ymd {
+            year: date_of_birth.year(),
+            month: date_of_birth.month(),
+            day: date_of_birth.day(),
+        };
         User {
             user_account_id: 341,
             last_name: String::from("田中"),
             first_name: String::from("太郎"),
             last_name_furigana: String::from("タナカ"),
             first_name_furigana: String::from("タロウ"),
-            date_of_birth,
+            date_of_birth: ymd,
             prefecture: String::from("東京都"),
             city: String::from("町田市"),
             address_line1: String::from("森の里２−２２−２"),
@@ -264,13 +279,18 @@ mod tests {
     }
 
     fn create_dummy_user2(date_of_birth: NaiveDate) -> User {
+        let ymd = Ymd {
+            year: date_of_birth.year(),
+            month: date_of_birth.month(),
+            day: date_of_birth.day(),
+        };
         User {
             user_account_id: 567,
             last_name: String::from("佐藤"),
             first_name: String::from("次郎"),
             last_name_furigana: String::from("サトウ"),
             first_name_furigana: String::from("次郎"),
-            date_of_birth,
+            date_of_birth: ymd,
             prefecture: String::from("沖縄県"),
             city: String::from("那覇市"),
             address_line1: String::from("泉崎１ー１ー１"),
@@ -280,13 +300,18 @@ mod tests {
     }
 
     fn create_dummy_user3(date_of_birth: NaiveDate) -> User {
+        let ymd = Ymd {
+            year: date_of_birth.year(),
+            month: date_of_birth.month(),
+            day: date_of_birth.day(),
+        };
         User {
             user_account_id: 5767,
             last_name: String::from("田中"),
             first_name: String::from("三郎"),
             last_name_furigana: String::from("タナカ"),
             first_name_furigana: String::from("サブロウ"),
-            date_of_birth,
+            date_of_birth: ymd,
             prefecture: String::from("北海道"),
             city: String::from("札幌市"),
             address_line1: String::from("中央区北1条西2丁目"),
