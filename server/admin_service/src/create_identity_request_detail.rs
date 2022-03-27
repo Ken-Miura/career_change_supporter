@@ -6,7 +6,8 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use chrono::{DateTime, Datelike, FixedOffset};
+use common::util::Ymd;
 use common::{ApiError, ErrResp, RespResult};
 use entity::create_identity_info_req;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
@@ -37,7 +38,7 @@ pub(crate) struct CreateIdentityReqDetail {
     pub(crate) first_name: String,
     pub(crate) last_name_furigana: String,
     pub(crate) first_name_furigana: String,
-    pub(crate) date_of_birth: NaiveDate,
+    pub(crate) date_of_birth: Ymd,
     pub(crate) prefecture: String,
     pub(crate) city: String,
     pub(crate) address_line1: String,
@@ -102,7 +103,11 @@ impl CreateIdentityReqDetailOperation for CreateIdentityReqDetailOperationImpl {
             first_name: m.first_name,
             last_name_furigana: m.last_name_furigana,
             first_name_furigana: m.first_name_furigana,
-            date_of_birth: m.date_of_birth,
+            date_of_birth: Ymd {
+                year: m.date_of_birth.year(),
+                month: m.date_of_birth.month(),
+                day: m.date_of_birth.day(),
+            },
             prefecture: m.prefecture,
             city: m.city,
             address_line1: m.address_line1,
@@ -121,7 +126,7 @@ mod tests {
     use async_session::async_trait;
     use axum::http::StatusCode;
     use chrono::{TimeZone, Utc};
-    use common::{ErrResp, JAPANESE_TIME_ZONE};
+    use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
 
     use super::{
         get_create_identity_req_detail, CreateIdentityReqDetail, CreateIdentityReqDetailOperation,
@@ -149,7 +154,11 @@ mod tests {
 
     async fn get_create_identity_req_detail_success() {
         let user_account_id = 5135;
-        let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
+        let date_of_birth = Ymd {
+            year: 1991,
+            month: 4,
+            day: 1,
+        };
         let requested_at = Utc
             .ymd(2022, 3, 11)
             .and_hms(15, 30, 45)
@@ -185,7 +194,11 @@ mod tests {
 
     async fn get_create_identity_req_detail_fail_no_req_detail_found() {
         let user_account_id = 5135;
-        let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
+        let date_of_birth = Ymd {
+            year: 1991,
+            month: 4,
+            day: 1,
+        };
         let requested_at = Utc
             .ymd(2022, 3, 11)
             .and_hms(15, 30, 45)

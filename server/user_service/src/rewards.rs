@@ -5,6 +5,7 @@ use std::str::FromStr;
 use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, TimeZone, Utc};
+use common::util::Ymd;
 use common::JAPANESE_TIME_ZONE;
 use common::{
     payment_platform::{
@@ -24,7 +25,7 @@ use serde::Serialize;
 
 use crate::{
     err::{self, unexpected_err_resp},
-    util::{session::User, BankAccount, Ymd, ACCESS_INFO},
+    util::{session::User, BankAccount, ACCESS_INFO},
 };
 
 const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 32;
@@ -445,14 +446,11 @@ mod tests {
             },
             ErrorDetail, ErrorInfo, List,
         },
+        util::Ymd,
         ErrResp, JAPANESE_TIME_ZONE,
     };
 
-    use crate::{
-        err,
-        rewards::Transfer,
-        util::{BankAccount, Ymd},
-    };
+    use crate::{err, rewards::Transfer, util::BankAccount};
 
     use super::{handle_reward_req, RewardOperation};
 

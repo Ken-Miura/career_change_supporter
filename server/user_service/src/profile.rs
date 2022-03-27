@@ -3,6 +3,7 @@
 use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
+use common::util::Ymd;
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT};
 use entity::prelude::{CareerInfo, ConsultingFee, IdentityInfo, UserAccount};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
@@ -11,7 +12,7 @@ use serde::Serialize;
 
 use crate::{
     err::{unexpected_err_resp, Code::NoAccountFound},
-    util::{session::User, Career, Identity, Ymd},
+    util::{session::User, Career, Identity},
 };
 
 pub(crate) async fn get_profile(
@@ -275,11 +276,12 @@ mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::{Datelike, NaiveDate};
+    use common::util::Ymd;
     use common::ErrResp;
     use common::MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT;
 
     use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
-    use crate::util::{Identity, Ymd};
+    use crate::util::Identity;
     use crate::{err::Code::NoAccountFound, util::Career};
 
     use super::{handle_profile_req, ProfileOperation};

@@ -7,9 +7,12 @@ pub(crate) mod validator;
 
 use std::env::var;
 
-use common::payment_platform::{
-    AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-    KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+use common::{
+    payment_platform::{
+        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+    },
+    util::Ymd,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -54,13 +57,6 @@ pub(crate) struct Identity {
     pub address_line1: String,
     pub address_line2: Option<String>,
     pub telephone_number: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub(crate) struct Ymd {
-    pub year: i32,
-    pub month: u32,
-    pub day: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

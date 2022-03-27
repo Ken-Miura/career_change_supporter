@@ -852,6 +852,7 @@ mod tests {
     use bytes::Bytes;
     use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
     use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
+    use common::util::Ymd;
     use common::{ErrResp, JAPANESE_TIME_ZONE};
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
     use serde::Deserialize;
@@ -860,7 +861,7 @@ mod tests {
 
     use crate::{
         identity::convert_jpeg_to_png,
-        util::{validator::identity_validator::MIN_AGE_REQUIREMENT, Identity, Ymd},
+        util::{validator::identity_validator::MIN_AGE_REQUIREMENT, Identity},
     };
 
     use super::{

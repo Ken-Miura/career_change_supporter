@@ -10,6 +10,7 @@ use std::string::FromUtf8Error;
 
 use bcrypt::BcryptError;
 use cookie::SameSite;
+use serde::{Deserialize, Serialize};
 use tower_cookies::Cookie;
 
 // TODO: リリース前に値を調整する (パスワードのストレッチングが2^BCRYPT_COST回実行される)
@@ -88,6 +89,18 @@ pub fn create_session_cookie<'a>(name: String, value: String, path: String) -> C
         .secure(true)
         .http_only(true)
         .finish()
+}
+
+/// タイムゾーンを含まない日付（西暦、月（1-12）、日付（1-31））
+///
+/// [chrono::naive::NaiveDate]をそのままSerializeしてJavascriptに渡すと
+/// YYYY-MM-DDというJavascriptのDateオブジェクトとしてそのまま扱えない形になるため、
+/// 必要に応じてこちらを利用する。
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Ymd {
+    pub year: i32,
+    pub month: u32,
+    pub day: u32,
 }
 
 #[cfg(test)]
