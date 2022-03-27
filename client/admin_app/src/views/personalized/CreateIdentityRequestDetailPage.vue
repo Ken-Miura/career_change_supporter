@@ -35,9 +35,14 @@
 
 <script lang="ts">
 import { computed, defineComponent, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import { CreateIdentityReqDetail } from '@/util/personalized/create-identity-request-detail/CreateIdentityReqDetail'
+import { getCreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetail'
+import { GetCreateIdentityRequestDetailResp } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetailResp'
+import { Code, createErrorMessage } from '@/util/Error'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
   name: 'CreateIdentityRequestDetailPage',
@@ -51,6 +56,7 @@ export default defineComponent({
     })
     const reqDetail = ref(null as CreateIdentityReqDetail | null)
     const route = useRoute()
+    const router = useRouter()
     const userAccountId = route.params.account_id as string
     const image1Url = computed(() => {
       if (reqDetail.value === null) {
@@ -69,17 +75,25 @@ export default defineComponent({
       return `/admin/api/identity-images/${userAccountId}/${image2Name}`
     })
     onMounted(async () => {
-      const params1 = { user_account_id: userAccountId }
-      const query1 = new URLSearchParams(params1)
-      const response1 = await fetch(`/admin/api/create-identity-request-detail?${query1}`, {
-        method: 'GET'
-      })
-      if (!response1.ok) {
-        const apiErr = await response1.json() as { code: number }
-        console.log(apiErr)
-        return
+      try {
+        const response = await getCreateIdentityRequestDetail(userAccountId)
+        if (response instanceof GetCreateIdentityRequestDetailResp) {
+          reqDetail.value = response.getDetail()
+        } else if (response instanceof ApiErrorResp) {
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+        } else {
+          throw new Error(`unexpected result: ${response}`)
+        }
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      reqDetail.value = await response1.json() as CreateIdentityReqDetail
 
       // const params = { year: '1990', month: '3', day: '1' }
       // const query = new URLSearchParams(params)
