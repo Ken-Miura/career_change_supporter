@@ -6,7 +6,6 @@
         <h3 class="font-bold text-2xl">本人確認依頼（新規）詳細</h3>
         <div v-if="reqDetail !== null">
           <div class="m-4 text-2xl grid grid-cols-3">
-            <!-- <div class="mt-2 justify-self-start col-span-1">依頼時刻</div><div class="mt-2 justify-self-start col-span-2">{{ reqDetail.requested_at.getFullYear() }}年{{ (reqDetail.requested_at.getMonth() + 1).toString().padStart(2, '0') }}月{{ reqDetail.requested_at.getDate().toString().padStart(2, '0') }}日{{ reqDetail.requested_at.getHours().toString().padStart(2, '0') }}時{{ reqDetail.requested_at.getMinutes().toString().padStart(2, '0') }}分{{ reqDetail.requested_at.getSeconds().toString().padStart(2, '0') }}秒</div> -->
             <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{ reqDetail.last_name }} {{ reqDetail.first_name }}</div>
             <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ reqDetail.last_name_furigana }} {{ reqDetail.first_name_furigana }}</div>
             <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="justify-self-start col-span-2">{{ reqDetail.date_of_birth.year }}年{{ reqDetail.date_of_birth.month }}月{{ reqDetail.date_of_birth.day }}日</div>

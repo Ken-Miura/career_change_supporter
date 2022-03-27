@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use chrono::{DateTime, Datelike, FixedOffset};
+use chrono::Datelike;
 use common::util::Ymd;
 use common::{ApiError, ErrResp, RespResult};
 use entity::create_identity_info_req;
@@ -46,7 +46,6 @@ pub(crate) struct CreateIdentityReqDetail {
     pub(crate) telephone_number: String,
     pub(crate) image1_file_name_without_ext: String,
     pub(crate) image2_file_name_without_ext: Option<String>,
-    pub(crate) requested_at: DateTime<FixedOffset>,
 }
 
 async fn get_create_identity_req_detail(
@@ -115,7 +114,6 @@ impl CreateIdentityReqDetailOperation for CreateIdentityReqDetailOperationImpl {
             telephone_number: m.telephone_number,
             image1_file_name_without_ext: m.image1_file_name_without_ext,
             image2_file_name_without_ext: m.image2_file_name_without_ext,
-            requested_at: m.requested_at,
         }))
     }
 }
@@ -125,8 +123,7 @@ mod tests {
     use crate::err::Code::NoCreateIdentityReqDetailFound;
     use async_session::async_trait;
     use axum::http::StatusCode;
-    use chrono::{TimeZone, Utc};
-    use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
+    use common::{util::Ymd, ErrResp};
 
     use super::{
         get_create_identity_req_detail, CreateIdentityReqDetail, CreateIdentityReqDetailOperation,
@@ -159,10 +156,6 @@ mod tests {
             month: 4,
             day: 1,
         };
-        let requested_at = Utc
-            .ymd(2022, 3, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let create_identity_req_detail = CreateIdentityReqDetail {
             last_name: String::from("山田"),
             first_name: String::from("太郎"),
@@ -176,7 +169,6 @@ mod tests {
             telephone_number: String::from("08012345678"),
             image1_file_name_without_ext: String::from("bcc72c586be3b2a70d6652ff74c6a484"),
             image2_file_name_without_ext: None,
-            requested_at,
         };
         let op_mock = CreateIdentityReqDetailOperationMock {
             user_account_id,
@@ -199,10 +191,6 @@ mod tests {
             month: 4,
             day: 1,
         };
-        let requested_at = Utc
-            .ymd(2022, 3, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let create_identity_req_detail = CreateIdentityReqDetail {
             last_name: String::from("山田"),
             first_name: String::from("太郎"),
@@ -216,7 +204,6 @@ mod tests {
             telephone_number: String::from("08012345678"),
             image1_file_name_without_ext: String::from("bcc72c586be3b2a70d6652ff74c6a484"),
             image2_file_name_without_ext: None,
-            requested_at,
         };
         let op_mock = CreateIdentityReqDetailOperationMock {
             user_account_id: user_account_id + 6230,
