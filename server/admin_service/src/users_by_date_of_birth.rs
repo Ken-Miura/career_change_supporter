@@ -18,14 +18,14 @@ use crate::err::unexpected_err_resp;
 use crate::err::Code::IllegalDate;
 use crate::util::session::Admin;
 
-pub(crate) async fn get_users_by_birthday(
+pub(crate) async fn get_users_by_date_of_birth(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<Birthday>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<Vec<User>> {
     let query = query.0;
     let op = UsersByBirthdayOperationImpl { pool };
-    get_users_by_birthday_internal(query.year, query.month, query.day, op).await
+    get_users_by_date_of_birth_internal(query.year, query.month, query.day, op).await
 }
 
 #[derive(Deserialize)]
@@ -50,14 +50,14 @@ pub(crate) struct User {
     pub(crate) telephone_number: String,
 }
 
-async fn get_users_by_birthday_internal(
+async fn get_users_by_date_of_birth_internal(
     year: i32,
     month: u32,
     day: u32,
     op: impl UsersByBirthdayOperation,
 ) -> RespResult<Vec<User>> {
-    let birthday_option = NaiveDate::from_ymd_opt(year, month, day);
-    let birthday = birthday_option.ok_or_else(|| {
+    let date_of_birth_option = NaiveDate::from_ymd_opt(year, month, day);
+    let date_of_birth = date_of_birth_option.ok_or_else(|| {
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -65,13 +65,16 @@ async fn get_users_by_birthday_internal(
             }),
         )
     })?;
-    let users = op.get_users_by_birthday(birthday).await?;
+    let users = op.get_users_by_date_of_birth(date_of_birth).await?;
     Ok((StatusCode::OK, Json(users)))
 }
 
 #[async_trait]
 trait UsersByBirthdayOperation {
-    async fn get_users_by_birthday(&self, birthday: NaiveDate) -> Result<Vec<User>, ErrResp>;
+    async fn get_users_by_date_of_birth(
+        &self,
+        date_of_birth: NaiveDate,
+    ) -> Result<Vec<User>, ErrResp>;
 }
 
 struct UsersByBirthdayOperationImpl {
@@ -80,15 +83,18 @@ struct UsersByBirthdayOperationImpl {
 
 #[async_trait]
 impl UsersByBirthdayOperation for UsersByBirthdayOperationImpl {
-    async fn get_users_by_birthday(&self, birthday: NaiveDate) -> Result<Vec<User>, ErrResp> {
+    async fn get_users_by_date_of_birth(
+        &self,
+        date_of_birth: NaiveDate,
+    ) -> Result<Vec<User>, ErrResp> {
         let models = IdentityInfo::find()
-            .filter(identity_info::Column::DateOfBirth.eq(birthday))
+            .filter(identity_info::Column::DateOfBirth.eq(date_of_birth))
             .all(&self.pool)
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to filter identity info (birthday: {}): {}",
-                    birthday,
+                    "failed to filter identity info (date_of_birth: {}): {}",
+                    date_of_birth,
                     e
                 );
                 unexpected_err_resp()
@@ -126,7 +132,7 @@ mod tests {
     use chrono::{Datelike, NaiveDate, TimeZone, Utc};
     use common::{util::Ymd, ErrResp};
 
-    use super::{get_users_by_birthday_internal, User, UsersByBirthdayOperation};
+    use super::{get_users_by_date_of_birth_internal, User, UsersByBirthdayOperation};
 
     struct UsersByBirthdayOperationMock {
         users: Vec<User>,
@@ -134,13 +140,16 @@ mod tests {
 
     #[async_trait]
     impl UsersByBirthdayOperation for UsersByBirthdayOperationMock {
-        async fn get_users_by_birthday(&self, birthday: NaiveDate) -> Result<Vec<User>, ErrResp> {
+        async fn get_users_by_date_of_birth(
+            &self,
+            date_of_birth: NaiveDate,
+        ) -> Result<Vec<User>, ErrResp> {
             let mut users = Vec::with_capacity(self.users.len());
             for user in &self.users {
                 let ymd = Ymd {
-                    year: birthday.year(),
-                    month: birthday.month(),
-                    day: birthday.day(),
+                    year: date_of_birth.year(),
+                    month: date_of_birth.month(),
+                    day: date_of_birth.day(),
                 };
                 if user.date_of_birth == ymd {
                     users.push(user.clone());
@@ -151,14 +160,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_users_by_birthday_internal_success_one_user_found() {
+    async fn get_users_by_date_of_birth_internal_success_one_user_found() {
         let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
         let user = create_dummy_user1(date_of_birth);
         let op_mock = UsersByBirthdayOperationMock {
             users: vec![user.clone()],
         };
 
-        let result = get_users_by_birthday_internal(
+        let result = get_users_by_date_of_birth_internal(
             date_of_birth.year(),
             date_of_birth.month(),
             date_of_birth.day(),
@@ -172,14 +181,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_users_by_birthday_internal_success_no_user_found() {
+    async fn get_users_by_date_of_birth_internal_success_no_user_found() {
         let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
         let user = create_dummy_user1(date_of_birth);
         let op_mock = UsersByBirthdayOperationMock {
             users: vec![user.clone()],
         };
 
-        let result = get_users_by_birthday_internal(
+        let result = get_users_by_date_of_birth_internal(
             date_of_birth.year() + 1,
             date_of_birth.month(),
             date_of_birth.day(),
@@ -193,7 +202,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_users_by_birthday_internal_success_one_user_found_one_user_not_found() {
+    async fn get_users_by_date_of_birth_internal_success_one_user_found_one_user_not_found() {
         let date_of_birth1 = Utc.ymd(1991, 4, 1).naive_local();
         let user1 = create_dummy_user1(date_of_birth1);
         let date_of_birth2 = Utc.ymd(1991, date_of_birth1.month() + 1, 1).naive_local();
@@ -202,7 +211,7 @@ mod tests {
             users: vec![user1.clone(), user2],
         };
 
-        let result = get_users_by_birthday_internal(
+        let result = get_users_by_date_of_birth_internal(
             date_of_birth1.year(),
             date_of_birth1.month(),
             date_of_birth1.day(),
@@ -216,7 +225,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_users_by_birthday_internal_success_multiple_users_found() {
+    async fn get_users_by_date_of_birth_internal_success_multiple_users_found() {
         let date_of_birth1 = Utc.ymd(1991, 4, 1).naive_local();
         let user1 = create_dummy_user1(date_of_birth1);
         let date_of_birth2 = Utc.ymd(1991, date_of_birth1.month() + 1, 1).naive_local();
@@ -233,7 +242,7 @@ mod tests {
             users: vec![user1.clone(), user2, user3.clone()],
         };
 
-        let result = get_users_by_birthday_internal(
+        let result = get_users_by_date_of_birth_internal(
             date_of_birth1.year(),
             date_of_birth1.month(),
             date_of_birth1.day(),
@@ -247,10 +256,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_users_by_birthday_internal_fail_illegal_date() {
+    async fn get_users_by_date_of_birth_internal_fail_illegal_date() {
         let op_mock = UsersByBirthdayOperationMock { users: vec![] };
 
-        let result = get_users_by_birthday_internal(1990, 1, 0, op_mock).await;
+        let result = get_users_by_date_of_birth_internal(1990, 1, 0, op_mock).await;
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);

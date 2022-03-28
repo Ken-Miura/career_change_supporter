@@ -7,7 +7,7 @@ mod identity_images;
 mod login;
 mod logout;
 mod refresh;
-mod users_by_birthday;
+mod users_by_date_of_birth;
 mod util;
 
 use crate::create_identity_request_detail::get_create_identity_request_detail;
@@ -16,7 +16,7 @@ use crate::identity_images::get_identity_images;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
-use crate::users_by_birthday::get_users_by_birthday;
+use crate::users_by_date_of_birth::get_users_by_date_of_birth;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
@@ -126,7 +126,7 @@ async fn main_internal(num_of_cpus: u32) {
                     "/create-identity-request-detail",
                     get(get_create_identity_request_detail),
                 )
-                .route("/users-by-birthday", get(get_users_by_birthday))
+                .route("/users-by-date-of-birth", get(get_users_by_date_of_birth))
                 .route(
                     "/identity-images/:user_account_id/:image_name",
                     get(get_identity_images),
