@@ -39,10 +39,29 @@
           <h3 class="font-bold text-2xl">生年月日が同じユーザー</h3>
           <p class="mt-2 text-lg">既に登録されているユーザーが新規に本人確認依頼をしてきていないか確認して下さい。</p>
           <div v-if="users.length === 0">
-            zero
+            <div class="m-4 text-xl">
+              <div class="mt-2">生年月日が同じユーザーはいません。</div>
+            </div>
           </div>
           <div v-else>
-            not zero
+            <ul>
+              <li v-for="user in users" v-bind:key="user">
+                <div class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーアカウントID: {{ user.user_account_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{ user.last_name }} {{ user.first_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ user.last_name_furigana }} {{ user.first_name_furigana }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="justify-self-start col-span-2">{{ user.date_of_birth.year }}年{{ user.date_of_birth.month }}月{{ user.date_of_birth.day }}日</div>
+                    <div class="mt-2 justify-self-start col-span-3">住所</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="justify-self-start col-span-2">{{ user.prefecture }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="justify-self-start col-span-2">{{ user.city }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="justify-self-start col-span-2">{{ user.address_line1 }}</div>
+                    <div v-if="user.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="user.address_line2 !== null" class="justify-self-start col-span-2">{{ user.address_line2 }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ user.telephone_number }}</div>
+                  </div>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -125,18 +144,19 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
 
-      // const params = { year: '1990', month: '3', day: '1' }
-      // const query = new URLSearchParams(params)
-      // const response = await fetch(`/admin/api/users-by-birthday?${query}`, {
-      //   method: 'GET'
-      // })
-      // if (!response.ok) {
-      //   const apiErr = await response.json() as { code: number }
-      //   console.log(apiErr)
-      //   return
-      // }
-      // const data = await response.json()
-      // console.log(data)
+      if (detail.value !== null) {
+        const params = { year: detail.value.date_of_birth.year.toString(), month: detail.value.date_of_birth.month.toString(), day: detail.value.date_of_birth.day.toString() }
+        const query = new URLSearchParams(params)
+        const response = await fetch(`/admin/api/users-by-date-of-birth?${query}`, {
+          method: 'GET'
+        })
+        if (!response.ok) {
+          const apiErr = await response.json() as { code: number }
+          console.log(apiErr)
+          return
+        }
+        users.value = await response.json() as User[]
+      }
     })
     return { error, detail, image1Url, image2Url, users, waitingGetCreateIdentityRequestDetailDone }
   }
