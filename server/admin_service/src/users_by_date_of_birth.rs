@@ -20,16 +20,16 @@ use crate::util::session::Admin;
 
 pub(crate) async fn get_users_by_date_of_birth(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
-    query: Query<Birthday>,
+    query: Query<DateOfBirth>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<Vec<User>> {
     let query = query.0;
-    let op = UsersByBirthdayOperationImpl { pool };
+    let op = UsersByDateOfBirthOperationImpl { pool };
     get_users_by_date_of_birth_internal(query.year, query.month, query.day, op).await
 }
 
 #[derive(Deserialize)]
-pub(crate) struct Birthday {
+pub(crate) struct DateOfBirth {
     pub(crate) year: i32,
     pub(crate) month: u32,
     pub(crate) day: u32,
@@ -54,7 +54,7 @@ async fn get_users_by_date_of_birth_internal(
     year: i32,
     month: u32,
     day: u32,
-    op: impl UsersByBirthdayOperation,
+    op: impl UsersByDateOfBirthOperation,
 ) -> RespResult<Vec<User>> {
     let date_of_birth_option = NaiveDate::from_ymd_opt(year, month, day);
     let date_of_birth = date_of_birth_option.ok_or_else(|| {
@@ -70,19 +70,19 @@ async fn get_users_by_date_of_birth_internal(
 }
 
 #[async_trait]
-trait UsersByBirthdayOperation {
+trait UsersByDateOfBirthOperation {
     async fn get_users_by_date_of_birth(
         &self,
         date_of_birth: NaiveDate,
     ) -> Result<Vec<User>, ErrResp>;
 }
 
-struct UsersByBirthdayOperationImpl {
+struct UsersByDateOfBirthOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl UsersByBirthdayOperation for UsersByBirthdayOperationImpl {
+impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
     async fn get_users_by_date_of_birth(
         &self,
         date_of_birth: NaiveDate,
@@ -132,14 +132,14 @@ mod tests {
     use chrono::{Datelike, NaiveDate, TimeZone, Utc};
     use common::{util::Ymd, ErrResp};
 
-    use super::{get_users_by_date_of_birth_internal, User, UsersByBirthdayOperation};
+    use super::{get_users_by_date_of_birth_internal, User, UsersByDateOfBirthOperation};
 
-    struct UsersByBirthdayOperationMock {
+    struct UsersByDateOfBirthOperationMock {
         users: Vec<User>,
     }
 
     #[async_trait]
-    impl UsersByBirthdayOperation for UsersByBirthdayOperationMock {
+    impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationMock {
         async fn get_users_by_date_of_birth(
             &self,
             date_of_birth: NaiveDate,
@@ -163,7 +163,7 @@ mod tests {
     async fn get_users_by_date_of_birth_internal_success_one_user_found() {
         let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
         let user = create_dummy_user1(date_of_birth);
-        let op_mock = UsersByBirthdayOperationMock {
+        let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user.clone()],
         };
 
@@ -184,7 +184,7 @@ mod tests {
     async fn get_users_by_date_of_birth_internal_success_no_user_found() {
         let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
         let user = create_dummy_user1(date_of_birth);
-        let op_mock = UsersByBirthdayOperationMock {
+        let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user.clone()],
         };
 
@@ -207,7 +207,7 @@ mod tests {
         let user1 = create_dummy_user1(date_of_birth1);
         let date_of_birth2 = Utc.ymd(1991, date_of_birth1.month() + 1, 1).naive_local();
         let user2 = create_dummy_user2(date_of_birth2);
-        let op_mock = UsersByBirthdayOperationMock {
+        let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user1.clone(), user2],
         };
 
@@ -238,7 +238,7 @@ mod tests {
             )
             .naive_local();
         let user3 = create_dummy_user3(date_of_birth3);
-        let op_mock = UsersByBirthdayOperationMock {
+        let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user1.clone(), user2, user3.clone()],
         };
 
@@ -257,7 +257,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_fail_illegal_date() {
-        let op_mock = UsersByBirthdayOperationMock { users: vec![] };
+        let op_mock = UsersByDateOfBirthOperationMock { users: vec![] };
 
         let result = get_users_by_date_of_birth_internal(1990, 1, 0, op_mock).await;
 
