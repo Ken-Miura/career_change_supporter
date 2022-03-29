@@ -132,32 +132,30 @@ export default defineComponent({
     const waitingRequestDone = computed(() => {
       return waitingGetCreateIdentityRequestDetailDone.value || waitingGetUsersByDateOfBirthDone.value
     })
+    const getUsers = async (year: number, month: number, day: number) => {
+      const response = await getUsersByDateOfBirthFunc(year, month, day)
+      if (!(response instanceof GetUsersByDateOfBirthResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting users: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        error.exists = true
+        error.message = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      users.value = response.getUsers()
+    }
     onMounted(async () => {
       try {
         const response = await getCreateIdentityRequestDetailFunc(userAccountId)
-        if (response instanceof GetCreateIdentityRequestDetailResp) {
-          detail.value = response.getDetail()
-          try {
-            const dateOfBirth = detail.value.date_of_birth
-            const response = await getUsersByDateOfBirthFunc(dateOfBirth.year, dateOfBirth.month, dateOfBirth.day)
-            if (response instanceof GetUsersByDateOfBirthResp) {
-              users.value = response.getUsers()
-            } else if (response instanceof ApiErrorResp) {
-              const code = response.getApiError().getCode()
-              if (code === Code.UNAUTHORIZED) {
-                await router.push('/login')
-                return
-              }
-              error.exists = true
-              error.message = createErrorMessage(response.getApiError().getCode())
-            } else {
-              throw new Error(`unexpected result: ${response}`)
-            }
-          } catch (e) {
-            error.exists = true
-            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        if (!(response instanceof GetCreateIdentityRequestDetailResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
           }
-        } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('/login')
@@ -165,9 +163,11 @@ export default defineComponent({
           }
           error.exists = true
           error.message = createErrorMessage(response.getApiError().getCode())
-        } else {
-          throw new Error(`unexpected result: ${response}`)
+          return
         }
+        detail.value = response.getDetail()
+        const dateOfBirth = detail.value.date_of_birth
+        await getUsers(dateOfBirth.year, dateOfBirth.month, dateOfBirth.day)
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
