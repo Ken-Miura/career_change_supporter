@@ -64,6 +64,10 @@
             </ul>
           </div>
         </div>
+        <div class="flex flex-row justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <button class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">承認する</button>
+          <button class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">拒絶する</button>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
