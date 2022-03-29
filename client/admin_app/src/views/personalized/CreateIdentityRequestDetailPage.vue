@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="waitingGetCreateIdentityRequestDetailDone" class="m-6">
+    <div v-if="waitingRequestDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -82,9 +82,11 @@ import { User } from '@/util/personalized/create-identity-request-detail/User'
 import { CreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/CreateIdentityRequestDetail'
 import { useGetCreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/useGetCreateIdentityRequestDetail'
 import { GetCreateIdentityRequestDetailResp } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetailResp'
+import { useGetUsersByDateOfBirth } from '@/util/personalized/create-identity-request-detail/useGetUsersByDateOfBirth'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
+import { GetUsersByDateOfBirthResp } from '@/util/personalized/create-identity-request-detail/GetUsersByDateOfBirthResp'
 
 export default defineComponent({
   name: 'CreateIdentityRequestDetailPage',
@@ -123,11 +125,38 @@ export default defineComponent({
       waitingGetCreateIdentityRequestDetailDone,
       getCreateIdentityRequestDetailFunc
     } = useGetCreateIdentityRequestDetail()
+    const {
+      waitingGetUsersByDateOfBirthDone,
+      getUsersByDateOfBirthFunc
+    } = useGetUsersByDateOfBirth()
+    const waitingRequestDone = computed(() => {
+      return waitingGetCreateIdentityRequestDetailDone.value || waitingGetUsersByDateOfBirthDone.value
+    })
     onMounted(async () => {
       try {
         const response = await getCreateIdentityRequestDetailFunc(userAccountId)
         if (response instanceof GetCreateIdentityRequestDetailResp) {
           detail.value = response.getDetail()
+          try {
+            const dateOfBirth = detail.value.date_of_birth
+            const response = await getUsersByDateOfBirthFunc(dateOfBirth.year, dateOfBirth.month, dateOfBirth.day)
+            if (response instanceof GetUsersByDateOfBirthResp) {
+              users.value = response.getUsers()
+            } else if (response instanceof ApiErrorResp) {
+              const code = response.getApiError().getCode()
+              if (code === Code.UNAUTHORIZED) {
+                await router.push('/login')
+                return
+              }
+              error.exists = true
+              error.message = createErrorMessage(response.getApiError().getCode())
+            } else {
+              throw new Error(`unexpected result: ${response}`)
+            }
+          } catch (e) {
+            error.exists = true
+            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+          }
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
@@ -143,22 +172,8 @@ export default defineComponent({
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-
-      if (detail.value !== null) {
-        const params = { year: detail.value.date_of_birth.year.toString(), month: detail.value.date_of_birth.month.toString(), day: detail.value.date_of_birth.day.toString() }
-        const query = new URLSearchParams(params)
-        const response = await fetch(`/admin/api/users-by-date-of-birth?${query}`, {
-          method: 'GET'
-        })
-        if (!response.ok) {
-          const apiErr = await response.json() as { code: number }
-          console.log(apiErr)
-          return
-        }
-        users.value = await response.json() as User[]
-      }
     })
-    return { error, detail, image1Url, image2Url, users, waitingGetCreateIdentityRequestDetailDone }
+    return { error, detail, image1Url, image2Url, users, waitingRequestDone }
   }
 })
 </script>
