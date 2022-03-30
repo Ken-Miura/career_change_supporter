@@ -177,7 +177,7 @@ impl ProfileOperation for ProfileOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(model.map(ProfileOperationImpl::convert_identity_info_to_identity))
+        Ok(model.map(ProfileOperationImpl::convert_identity_model_to_identity))
     }
 
     async fn filter_career_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp> {
@@ -188,7 +188,7 @@ impl ProfileOperation for ProfileOperationImpl {
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to filter career info (account id: {}): {}",
+                    "failed to filter career (account id: {}): {}",
                     account_id,
                     e
                 );
@@ -196,7 +196,7 @@ impl ProfileOperation for ProfileOperationImpl {
             })?;
         Ok(models
             .into_iter()
-            .map(ProfileOperationImpl::convert_career_info_to_career)
+            .map(ProfileOperationImpl::convert_career_model_to_career)
             .collect::<Vec<Career>>())
     }
 
@@ -220,52 +220,52 @@ impl ProfileOperation for ProfileOperationImpl {
 }
 
 impl ProfileOperationImpl {
-    fn convert_identity_info_to_identity(identity_info: identity::Model) -> Identity {
-        let date = identity_info.date_of_birth;
+    fn convert_identity_model_to_identity(identity_model: identity::Model) -> Identity {
+        let date = identity_model.date_of_birth;
         let ymd = Ymd {
             year: date.year(),
             month: date.month(),
             day: date.day(),
         };
         Identity {
-            last_name: identity_info.last_name,
-            first_name: identity_info.first_name,
-            last_name_furigana: identity_info.last_name_furigana,
-            first_name_furigana: identity_info.first_name_furigana,
+            last_name: identity_model.last_name,
+            first_name: identity_model.first_name,
+            last_name_furigana: identity_model.last_name_furigana,
+            first_name_furigana: identity_model.first_name_furigana,
             date_of_birth: ymd,
-            prefecture: identity_info.prefecture,
-            city: identity_info.city,
-            address_line1: identity_info.address_line1,
-            address_line2: identity_info.address_line2,
-            telephone_number: identity_info.telephone_number,
+            prefecture: identity_model.prefecture,
+            city: identity_model.city,
+            address_line1: identity_model.address_line1,
+            address_line2: identity_model.address_line2,
+            telephone_number: identity_model.telephone_number,
         }
     }
 
-    fn convert_career_info_to_career(career_info: career::Model) -> Career {
+    fn convert_career_model_to_career(career_model: career::Model) -> Career {
         let career_start_date = Ymd {
-            year: career_info.career_start_date.year(),
-            month: career_info.career_start_date.month(),
-            day: career_info.career_start_date.day(),
+            year: career_model.career_start_date.year(),
+            month: career_model.career_start_date.month(),
+            day: career_model.career_start_date.day(),
         };
-        let career_end_date = career_info.career_end_date.map(|end_date| Ymd {
+        let career_end_date = career_model.career_end_date.map(|end_date| Ymd {
             year: end_date.year(),
             month: end_date.month(),
             day: end_date.day(),
         });
         Career {
-            career_id: career_info.career_id,
-            company_name: career_info.company_name,
-            department_name: career_info.department_name,
-            office: career_info.office,
+            career_id: career_model.career_id,
+            company_name: career_model.company_name,
+            department_name: career_model.department_name,
+            office: career_model.office,
             career_start_date,
             career_end_date,
-            contract_type: career_info.contract_type,
-            profession: career_info.profession,
-            annual_income_in_man_yen: career_info.annual_income_in_man_yen,
-            is_manager: career_info.is_manager,
-            position_name: career_info.position_name,
-            is_new_graduate: career_info.is_new_graduate,
-            note: career_info.note,
+            contract_type: career_model.contract_type,
+            profession: career_model.profession,
+            annual_income_in_man_yen: career_model.annual_income_in_man_yen,
+            is_manager: career_model.is_manager,
+            position_name: career_model.position_name,
+            is_new_graduate: career_model.is_new_graduate,
+            note: career_model.note,
         }
     }
 }

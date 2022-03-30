@@ -66,8 +66,15 @@ impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperation
         let items = create_identity_req::Entity::find()
             .order_by_asc(create_identity_req::Column::RequestedAt)
             .paginate(&self.pool, page_size)
-            .fetch_page(page).await.map_err(|e| {
-                tracing::error!("failed to fetch page (page: {}, page_size: {}) in create_identity_info_req: {}", page, page_size, e);
+            .fetch_page(page)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "failed to fetch page (page: {}, page_size: {}) in create_identity_req: {}",
+                    page,
+                    page_size,
+                    e
+                );
                 unexpected_err_resp()
             })?;
         Ok(items

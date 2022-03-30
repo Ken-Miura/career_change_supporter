@@ -416,10 +416,7 @@ async fn handle_identity_req(
             .check_if_update_identity_req_already_exists(account_id)
             .await?;
         if update_req_exists {
-            tracing::error!(
-                "update identity info req (account id: {}) exists",
-                account_id
-            );
+            tracing::error!("update identity req (account id: {}) exists", account_id);
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -439,10 +436,7 @@ async fn handle_identity_req(
             .check_if_create_identity_req_already_exists(account_id)
             .await?;
         if create_req_exists {
-            tracing::error!(
-                "create identity info req (account id: {}) exists",
-                account_id
-            );
+            tracing::error!("create identity req (account id: {}) exists", account_id);
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -533,7 +527,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to find identity info (account id: {}): {}",
+                    "failed to find identity (account id: {}): {}",
                     account_id,
                     e
                 );
@@ -551,7 +545,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to find create identity info req (account id: {}): {}",
+                    "failed to find create identity req (account id: {}): {}",
                     account_id,
                     e
                 );
@@ -576,7 +570,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let active_model =
-                        SubmitIdentityOperationImpl::generate_create_identity_info_req_active_model(
+                        SubmitIdentityOperationImpl::generate_create_identity_req_active_model(
                             account_id,
                             identity,
                             image1_file_name_without_ext,
@@ -585,7 +579,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                         );
                     let _ = active_model.insert(txn).await.map_err(|e| {
                         tracing::error!(
-                            "failed to insert create identity info req (account id: {}): {}",
+                            "failed to insert create identity req (account id: {}): {}",
                             account_id,
                             e
                         );
@@ -605,14 +599,11 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
-                    tracing::error!("failed to insert create identity info req: {}", db_err);
+                    tracing::error!("failed to insert create identity req: {}", db_err);
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    tracing::error!(
-                        "failed to insert create identity info req: {}",
-                        err_resp_struct
-                    );
+                    tracing::error!("failed to insert create identity req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -628,7 +619,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to find update identity info req (account id: {}): {}",
+                    "failed to find update identity req (account id: {}): {}",
                     account_id,
                     e
                 );
@@ -653,7 +644,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let active_model =
-                        SubmitIdentityOperationImpl::generate_update_identity_info_req_active_model(
+                        SubmitIdentityOperationImpl::generate_update_identity_req_active_model(
                             account_id,
                             identity,
                             image1_file_name_without_ext,
@@ -662,7 +653,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                         );
                     let _ = active_model.insert(txn).await.map_err(|e| {
                         tracing::error!(
-                            "failed to insert update identity info req (account id: {}): {}",
+                            "failed to insert update identity req (account id: {}): {}",
                             account_id,
                             e
                         );
@@ -682,14 +673,11 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
-                    tracing::error!("failed to insert update identity info req: {}", db_err);
+                    tracing::error!("failed to insert update identity req: {}", db_err);
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    tracing::error!(
-                        "failed to insert update identity info req: {}",
-                        err_resp_struct
-                    );
+                    tracing::error!("failed to insert update identity req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -709,7 +697,7 @@ impl SubmitIdentityOperationImpl {
         (None, None)
     }
 
-    fn generate_create_identity_info_req_active_model(
+    fn generate_create_identity_req_active_model(
         account_id: i64,
         identity: Identity,
         image1_file_name_without_ext: String,
@@ -739,7 +727,7 @@ impl SubmitIdentityOperationImpl {
         }
     }
 
-    fn generate_update_identity_info_req_active_model(
+    fn generate_update_identity_req_active_model(
         account_id: i64,
         identity: Identity,
         image1_file_name_without_ext: String,
@@ -2358,7 +2346,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_identity_req_fail_create_identity_info_req_already_exists() {
+    async fn handle_identity_req_fail_create_identity_req_already_exists() {
         let account_id = 1234;
         let identity_exists = false;
         let send_mail_mock = SendMailMock::new(
@@ -2397,7 +2385,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_identity_req_fail_update_identity_info_req_already_exists() {
+    async fn handle_identity_req_fail_update_identity_req_already_exists() {
         let account_id = 1234;
         let identity_exists = true;
         let send_mail_mock = SendMailMock::new(

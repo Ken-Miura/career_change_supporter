@@ -93,7 +93,7 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to filter identity info (date_of_birth: {}): {}",
+                    "failed to filter identity (date_of_birth: {}): {}",
                     date_of_birth,
                     e
                 );
