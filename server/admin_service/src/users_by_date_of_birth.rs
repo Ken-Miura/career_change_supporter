@@ -9,8 +9,8 @@ use axum::{
 use chrono::{Datelike, NaiveDate};
 use common::util::Ymd;
 use common::{ApiError, ErrResp, RespResult};
-use entity::identity_info;
-use entity::prelude::IdentityInfo;
+use entity::identity;
+use entity::prelude::Identity;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
@@ -87,8 +87,8 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
         &self,
         date_of_birth: NaiveDate,
     ) -> Result<Vec<User>, ErrResp> {
-        let models = IdentityInfo::find()
-            .filter(identity_info::Column::DateOfBirth.eq(date_of_birth))
+        let models = Identity::find()
+            .filter(identity::Column::DateOfBirth.eq(date_of_birth))
             .all(&self.pool)
             .await
             .map_err(|e| {

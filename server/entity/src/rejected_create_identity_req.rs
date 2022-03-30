@@ -3,9 +3,13 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "create_identity_info_req", schema_name = "ccs_schema")]
+#[sea_orm(
+    table_name = "rejected_create_identity_req",
+    schema_name = "ccs_schema"
+)]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
+    #[sea_orm(primary_key)]
+    pub rjd_cre_identity_id: i64,
     pub user_account_id: i64,
     pub last_name: String,
     pub first_name: String,
@@ -17,9 +21,7 @@ pub struct Model {
     pub address_line1: String,
     pub address_line2: Option<String>,
     pub telephone_number: String,
-    pub image1_file_name_without_ext: String,
-    pub image2_file_name_without_ext: Option<String>,
-    pub requested_at: DateTimeWithTimeZone,
+    pub rejected_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

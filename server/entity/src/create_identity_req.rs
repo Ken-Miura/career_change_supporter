@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "update_identity_info_req", schema_name = "ccs_schema")]
+#[sea_orm(table_name = "create_identity_req", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub user_account_id: i64,

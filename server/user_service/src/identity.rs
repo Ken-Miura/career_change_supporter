@@ -21,11 +21,11 @@ use common::{
     ApiError, ErrResp, RespResult,
 };
 use common::{ErrRespStruct, JAPANESE_TIME_ZONE};
-use entity::prelude::{CreateIdentityInfoReq, IdentityInfo, UpdateIdentityInfoReq};
+use entity::prelude::{CreateIdentityReq, UpdateIdentityReq};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
-use entity::{create_identity_info_req, update_identity_info_req};
+use entity::{create_identity_req, update_identity_req};
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
 use uuid::Uuid;
@@ -528,7 +528,7 @@ impl SubmitIdentityOperationImpl {
 #[async_trait]
 impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
     async fn check_if_identity_already_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let model = IdentityInfo::find_by_id(account_id)
+        let model = entity::prelude::Identity::find_by_id(account_id)
             .one(&self.pool)
             .await
             .map_err(|e| {
@@ -546,7 +546,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         &self,
         account_id: i64,
     ) -> Result<bool, ErrResp> {
-        let model = CreateIdentityInfoReq::find_by_id(account_id)
+        let model = CreateIdentityReq::find_by_id(account_id)
             .one(&self.pool)
             .await
             .map_err(|e| {
@@ -623,7 +623,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         &self,
         account_id: i64,
     ) -> Result<bool, ErrResp> {
-        let model = UpdateIdentityInfoReq::find_by_id(account_id)
+        let model = UpdateIdentityReq::find_by_id(account_id)
             .one(&self.pool)
             .await
             .map_err(|e| {
@@ -715,13 +715,13 @@ impl SubmitIdentityOperationImpl {
         image1_file_name_without_ext: String,
         image2_file_name_without_ext: Option<String>,
         current_date_time: DateTime<FixedOffset>,
-    ) -> create_identity_info_req::ActiveModel {
+    ) -> create_identity_req::ActiveModel {
         let date_of_birth = NaiveDate::from_ymd(
             identity.date_of_birth.year,
             identity.date_of_birth.month,
             identity.date_of_birth.day,
         );
-        create_identity_info_req::ActiveModel {
+        create_identity_req::ActiveModel {
             user_account_id: Set(account_id),
             last_name: Set(identity.last_name),
             first_name: Set(identity.first_name),
@@ -745,13 +745,13 @@ impl SubmitIdentityOperationImpl {
         image1_file_name_without_ext: String,
         image2_file_name_without_ext: Option<String>,
         current_date_time: DateTime<FixedOffset>,
-    ) -> update_identity_info_req::ActiveModel {
+    ) -> update_identity_req::ActiveModel {
         let date_of_birth = NaiveDate::from_ymd(
             identity.date_of_birth.year,
             identity.date_of_birth.month,
             identity.date_of_birth.day,
         );
-        update_identity_info_req::ActiveModel {
+        update_identity_req::ActiveModel {
             user_account_id: Set(account_id),
             last_name: Set(identity.last_name),
             first_name: Set(identity.first_name),

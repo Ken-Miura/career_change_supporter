@@ -9,7 +9,7 @@ use axum::{
 use chrono::Datelike;
 use common::util::Ymd;
 use common::{ApiError, ErrResp, RespResult};
-use entity::create_identity_info_req;
+use entity::create_identity_req;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 
@@ -86,7 +86,7 @@ impl CreateIdentityReqDetailOperation for CreateIdentityReqDetailOperationImpl {
         &self,
         user_account_id: i64,
     ) -> Result<Option<CreateIdentityReqDetail>, ErrResp> {
-        let result = create_identity_info_req::Entity::find_by_id(user_account_id)
+        let result = create_identity_req::Entity::find_by_id(user_account_id)
             .one(&self.pool)
             .await
             .map_err(|e| {

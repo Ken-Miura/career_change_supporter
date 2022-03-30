@@ -6,7 +6,7 @@ use common::{ErrResp, RespResult};
 
 use axum::extract::{Extension, Query};
 use entity::{
-    create_identity_info_req,
+    create_identity_req,
     sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder},
 };
 use hyper::StatusCode;
@@ -63,8 +63,8 @@ impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperation
         page: usize,
         page_size: usize,
     ) -> Result<Vec<CreateIdentityReqItem>, ErrResp> {
-        let items = create_identity_info_req::Entity::find()
-            .order_by_asc(create_identity_info_req::Column::RequestedAt)
+        let items = create_identity_req::Entity::find()
+            .order_by_asc(create_identity_req::Column::RequestedAt)
             .paginate(&self.pool, page_size)
             .fetch_page(page).await.map_err(|e| {
                 tracing::error!("failed to fetch page (page: {}, page_size: {}) in create_identity_info_req: {}", page, page_size, e);

@@ -5,9 +5,9 @@ use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
 use common::util::Ymd;
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT};
-use entity::prelude::{CareerInfo, ConsultingFee, IdentityInfo, UserAccount};
+use entity::prelude::{ConsultingFee, UserAccount};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
-use entity::{career_info, identity_info};
+use entity::{career, identity};
 use serde::Serialize;
 
 use crate::{
@@ -166,7 +166,7 @@ impl ProfileOperation for ProfileOperationImpl {
         &self,
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp> {
-        let model = IdentityInfo::find_by_id(account_id)
+        let model = entity::prelude::Identity::find_by_id(account_id)
             .one(&self.pool)
             .await
             .map_err(|e| {
@@ -181,8 +181,8 @@ impl ProfileOperation for ProfileOperationImpl {
     }
 
     async fn filter_career_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp> {
-        let models = CareerInfo::find()
-            .filter(career_info::Column::UserAccountId.eq(account_id))
+        let models = entity::prelude::Career::find()
+            .filter(career::Column::UserAccountId.eq(account_id))
             .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
             .all(&self.pool)
             .await
@@ -220,7 +220,7 @@ impl ProfileOperation for ProfileOperationImpl {
 }
 
 impl ProfileOperationImpl {
-    fn convert_identity_info_to_identity(identity_info: identity_info::Model) -> Identity {
+    fn convert_identity_info_to_identity(identity_info: identity::Model) -> Identity {
         let date = identity_info.date_of_birth;
         let ymd = Ymd {
             year: date.year(),
@@ -241,7 +241,7 @@ impl ProfileOperationImpl {
         }
     }
 
-    fn convert_career_info_to_career(career_info: career_info::Model) -> Career {
+    fn convert_career_info_to_career(career_info: career::Model) -> Career {
         let career_start_date = Ymd {
             year: career_info.career_start_date.year(),
             month: career_info.career_start_date.month(),
@@ -253,7 +253,7 @@ impl ProfileOperationImpl {
             day: end_date.day(),
         });
         Career {
-            career_id: career_info.career_info_id,
+            career_id: career_info.career_id,
             company_name: career_info.company_name,
             department_name: career_info.department_name,
             office: career_info.office,

@@ -3,10 +3,10 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "career_info", schema_name = "ccs_schema")]
+#[sea_orm(table_name = "career", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub career_info_id: i64,
+    pub career_id: i64,
     pub user_account_id: i64,
     pub company_name: String,
     pub department_name: Option<String>,

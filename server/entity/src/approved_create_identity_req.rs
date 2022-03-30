@@ -3,7 +3,10 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "identity_info", schema_name = "ccs_schema")]
+#[sea_orm(
+    table_name = "approved_create_identity_req",
+    schema_name = "ccs_schema"
+)]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub user_account_id: i64,
@@ -17,23 +20,17 @@ pub struct Model {
     pub address_line1: String,
     pub address_line2: Option<String>,
     pub telephone_number: String,
+    pub image1_file_name_without_ext: String,
+    pub image2_file_name_without_ext: Option<String>,
+    pub approved_at: DateTimeWithTimeZone,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::user_account::Entity",
-        from = "Column::UserAccountId",
-        to = "super::user_account::Column::UserAccountId",
-        on_update = "Restrict",
-        on_delete = "Cascade"
-    )]
-    UserAccount,
-}
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {}
 
-impl Related<super::user_account::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::UserAccount.def()
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        panic!("No RelationDef")
     }
 }
 
