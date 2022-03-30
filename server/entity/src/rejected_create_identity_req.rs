@@ -21,6 +21,7 @@ pub struct Model {
     pub address_line1: String,
     pub address_line2: Option<String>,
     pub telephone_number: String,
+    pub reason: String,
     pub rejected_at: DateTimeWithTimeZone,
 }
 

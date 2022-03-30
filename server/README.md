@@ -12,7 +12,11 @@ sample.envファイルを.envへリネームし、環境にあった変数を設
 # DBのテーブルの変更と反映
 
 ## DBのテーブルを変更
-migration/src以下のソースコードを変更する
+migration/src以下のソースコードを変更する。その後、下記のコマンドを実行する
+```
+export DATABASE_URL=postgres://postgres:example@db/ccs_db
+sea-orm-cli migrate refresh
+```
 
 ## 変更されたテーブルをentity以下のソースコードに反映
 ```

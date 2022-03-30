@@ -386,6 +386,7 @@ impl MigrationTrait for Migration {
                   address_line1 VARCHAR (128) NOT NULL,
                   address_line2 VARCHAR (128),
                   telephone_number VARCHAR (13) NOT NULL,
+                  reason VARCHAR (512) NOT NULL,
                   rejected_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
@@ -393,7 +394,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"GRANT SELECT, INSERT ON ccs_schema.approved_create_identity_req To admin_app;",
+                r"GRANT SELECT, INSERT ON ccs_schema.rejected_create_identity_req To admin_app;",
             ))
             .await
             .map(|_| ())?;
