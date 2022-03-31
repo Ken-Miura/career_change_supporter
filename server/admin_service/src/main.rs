@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+mod create_identity_request_approval;
 mod create_identity_request_detail;
 mod create_identity_requests;
 mod err;
@@ -10,6 +11,7 @@ mod refresh;
 mod users_by_date_of_birth;
 mod util;
 
+use crate::create_identity_request_approval::post_create_identity_request_approval;
 use crate::create_identity_request_detail::get_create_identity_request_detail;
 use crate::create_identity_requests::get_create_identity_requests;
 use crate::identity_images::get_identity_images;
@@ -130,6 +132,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/identity-images/:user_account_id/:image_name",
                     get(get_identity_images),
+                )
+                .route(
+                    "/create-identity-request-approval",
+                    post(post_create_identity_request_approval),
                 ),
         )
         .layer(

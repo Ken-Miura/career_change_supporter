@@ -23,6 +23,7 @@ pub struct Model {
     pub telephone_number: String,
     pub reason: String,
     pub rejected_at: DateTimeWithTimeZone,
+    pub rejected_by: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

@@ -23,6 +23,7 @@ pub struct Model {
     pub image1_file_name_without_ext: String,
     pub image2_file_name_without_ext: Option<String>,
     pub approved_at: DateTimeWithTimeZone,
+    pub approved_by: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

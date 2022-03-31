@@ -346,7 +346,8 @@ impl MigrationTrait for Migration {
                   telephone_number VARCHAR (13) NOT NULL,
                   image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
                   image2_file_name_without_ext ccs_schema.uuid_simple_form,
-                  approved_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  approved_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  approved_by ccs_schema.email_address NOT NULL
                 );",
             ))
             .await
@@ -387,7 +388,8 @@ impl MigrationTrait for Migration {
                   address_line2 VARCHAR (128),
                   telephone_number VARCHAR (13) NOT NULL,
                   reason VARCHAR (512) NOT NULL,
-                  rejected_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  rejected_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  rejected_by ccs_schema.email_address NOT NULL
                 );",
             ))
             .await

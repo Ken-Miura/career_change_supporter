@@ -5,11 +5,11 @@ use chrono::{DateTime, FixedOffset};
 use common::{ErrResp, RespResult};
 
 use axum::extract::{Extension, Query};
+use axum::http::StatusCode;
 use entity::{
     create_identity_req,
     sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder},
 };
-use hyper::StatusCode;
 use serde::Serialize;
 
 use crate::{
