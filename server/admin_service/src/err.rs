@@ -14,6 +14,8 @@ pub(crate) enum Code {
     IllegalPageSize = 30003,
     NoCreateIdentityReqDetailFound = 30004,
     IllegalDate = 30005,
+    NoAdminAccountFound = 30006,
+    NoUserAccountFound = 30007,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
