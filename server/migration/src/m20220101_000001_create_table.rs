@@ -80,6 +80,10 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.user_account To admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
             .execute(
                 sql.stmt(r"GRANT UPDATE (disabled_at) ON ccs_schema.user_account To admin_app;"),
             )
