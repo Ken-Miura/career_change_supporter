@@ -10,7 +10,7 @@ use common::{
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_create_identity_req, create_identity_req,
+    admin_account, approved_create_identity_req, create_identity_req, identity,
     sea_orm::{
         ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect, Set, TransactionError,
         TransactionTrait,
@@ -175,6 +175,18 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         }
                     })?;
 
+                    let identity_model = CreateIdentityReqApprovalOperationImpl::generate_identity_active_model(req.clone());
+                    let _ = identity_model.insert(txn).await.map_err(|e| {
+                        tracing::error!(
+                            "failed to insert identity (user account id: {}): {}",
+                            user_account_id,
+                            e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
                     let approved_req = CreateIdentityReqApprovalOperationImpl::generate_approved_create_identity_req_active_model(req, approved_time, approver_email_address);
                     let _ = approved_req.insert(txn).await.map_err(|e| {
                         tracing::error!(
@@ -256,6 +268,22 @@ impl CreateIdentityReqApprovalOperationImpl {
             image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
             approved_at: Set(approved_time),
             approved_by: Set(approver_email_address),
+        }
+    }
+
+    fn generate_identity_active_model(model: create_identity_req::Model) -> identity::ActiveModel {
+        identity::ActiveModel {
+            user_account_id: Set(model.user_account_id),
+            last_name: Set(model.last_name),
+            first_name: Set(model.first_name),
+            last_name_furigana: Set(model.last_name_furigana),
+            first_name_furigana: Set(model.first_name_furigana),
+            date_of_birth: Set(model.date_of_birth),
+            prefecture: Set(model.prefecture),
+            city: Set(model.city),
+            address_line1: Set(model.address_line1),
+            address_line2: Set(model.address_line2),
+            telephone_number: Set(model.telephone_number),
         }
     }
 }

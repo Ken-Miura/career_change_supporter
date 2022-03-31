@@ -65,7 +65,7 @@
           </div>
         </div>
         <div class="flex flex-row justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">承認する</button>
+          <button v-on:click="test" class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">承認する</button>
           <button class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">拒否する</button>
         </div>
       </div>
@@ -177,7 +177,22 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
-    return { error, detail, image1Url, image2Url, users, waitingRequestDone }
+
+    const test = async () => {
+      // eslint-disable-next-line
+      const data = { user_account_id: parseInt(userAccountId) }
+      const response = await fetch('/admin/api/create-identity-request-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(data)
+      })
+      if (!response.ok) {
+        const apiErr = await response.json() as { code: number }
+        console.log(apiErr)
+      }
+    }
+
+    return { error, detail, image1Url, image2Url, users, waitingRequestDone, test }
   }
 })
 </script>
