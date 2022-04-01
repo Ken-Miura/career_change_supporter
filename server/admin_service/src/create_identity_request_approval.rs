@@ -320,6 +320,108 @@ Email: {}",
 
 #[cfg(test)]
 mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
+
+    use crate::{
+        create_identity_request_approval::CreateIdentityReqApprovalResult,
+        util::tests::SendMailMock,
+    };
+
+    use super::{
+        create_text, handle_create_identity_request_approval, CreateIdentityReqApprovalOperation,
+        SUBJECT,
+    };
+
+    struct Admin {
+        admin_account_id: i64,
+        email_address: String,
+    }
+
+    struct User {
+        user_account_id: i64,
+        email_address: String,
+    }
+
+    struct CreateIdentityReqApprovalOperationMock {
+        admin: Admin,
+        user: User,
+        approved_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationMock {
+        async fn get_admin_email_address_by_admin_account_id(
+            &self,
+            admin_account_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.admin.admin_account_id, admin_account_id);
+            Ok(Some(self.admin.email_address.clone()))
+        }
+
+        async fn approve_create_identity_req(
+            &self,
+            user_account_id: i64,
+            approver_email_address: String,
+            approved_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.user.user_account_id, user_account_id);
+            assert_eq!(self.admin.email_address, approver_email_address);
+            assert_eq!(self.approved_time, approved_time);
+            Ok(())
+        }
+
+        async fn get_user_email_address_by_user_account_id(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.user.user_account_id, user_account_id);
+            Ok(Some(self.user.email_address.clone()))
+        }
+    }
+
     #[tokio::test]
-    async fn handle_create_identity_request_approval_success() {}
+    async fn handle_create_identity_request_approval_success() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 53215;
+        let user_email_address = String::from("test@test.com");
+        let user = User {
+            user_account_id,
+            email_address: user_email_address.clone(),
+        };
+        let approval_time = chrono::Utc
+            .ymd(2022, 4, 1)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = CreateIdentityReqApprovalOperationMock {
+            admin,
+            user,
+            approved_time: approval_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address,
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_create_identity_request_approval(
+            admin_account_id,
+            user_account_id,
+            approval_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(CreateIdentityReqApprovalResult {}, resp.1 .0);
+    }
 }
