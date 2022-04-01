@@ -76,39 +76,39 @@ pub(crate) mod tests {
         assert_eq!(Code::IllegalPageSize as u32, err_resp.1.code);
     }
 
-    // use common::{smtp::SendMail, ErrResp};
+    use common::{smtp::SendMail, ErrResp};
 
-    // pub(crate) struct SendMailMock {
-    //     to: String,
-    //     from: String,
-    //     subject: String,
-    //     text: String,
-    // }
+    pub(crate) struct SendMailMock {
+        to: String,
+        from: String,
+        subject: String,
+        text: String,
+    }
 
-    // impl SendMailMock {
-    //     pub(crate) fn new(to: String, from: String, subject: String, text: String) -> Self {
-    //         Self {
-    //             to,
-    //             from,
-    //             subject,
-    //             text,
-    //         }
-    //     }
-    // }
+    impl SendMailMock {
+        pub(crate) fn new(to: String, from: String, subject: String, text: String) -> Self {
+            Self {
+                to,
+                from,
+                subject,
+                text,
+            }
+        }
+    }
 
-    // impl SendMail for SendMailMock {
-    //     fn send_mail(
-    //         &self,
-    //         to: &str,
-    //         from: &str,
-    //         subject: &str,
-    //         text: &str,
-    //     ) -> Result<(), ErrResp> {
-    //         assert_eq!(self.to, to);
-    //         assert_eq!(self.from, from);
-    //         assert_eq!(self.subject, subject);
-    //         assert_eq!(self.text, text);
-    //         Ok(())
-    //     }
-    // }
+    impl SendMail for SendMailMock {
+        fn send_mail(
+            &self,
+            to: &str,
+            from: &str,
+            subject: &str,
+            text: &str,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.to, to);
+            assert_eq!(self.from, from);
+            assert_eq!(self.subject, subject);
+            assert_eq!(self.text, text);
+            Ok(())
+        }
+    }
 }

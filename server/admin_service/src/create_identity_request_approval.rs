@@ -22,7 +22,7 @@ use entity::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::err::Code::{NoAdminAccountFound, NoUserAccountFound};
+use crate::err::Code::NoUserAccountFound;
 use crate::{err::unexpected_err_resp, util::session::Admin};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
@@ -68,12 +68,8 @@ async fn handle_create_identity_request_approval(
             "no admin account (admin account id: {}) found",
             admin_account_id
         );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: NoAdminAccountFound as u32,
-            }),
-        )
+        // admin accountでログインしているので、admin accountがないことはunexpected errorとして処理する
+        unexpected_err_resp()
     })?;
 
     let _ = op
@@ -325,5 +321,5 @@ Email: {}",
 #[cfg(test)]
 mod tests {
     #[tokio::test]
-    async fn test() {}
+    async fn handle_create_identity_request_approval_success() {}
 }
