@@ -10,7 +10,7 @@ use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::validator::validate_uuid;
-use common::{ApiError, ErrResp, RespResult};
+use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use common::{JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR};
 use entity::prelude::{UserAccount, UserTempAccount};
 use entity::sea_orm::{
@@ -24,7 +24,6 @@ use serde::Serialize;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
 use crate::temp_accounts::TempAccount;
-use crate::util::WEB_SITE_NAME;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 

@@ -24,6 +24,9 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 
+/// ユーザーに公開するサイト名
+pub const WEB_SITE_NAME: &str = "就職先・転職先を見極めるためのサイト";
+
 /// 任意のステータスコードを指定可能で、BodyにJSONを含むレスポンス
 pub type Resp<T> = (StatusCode, Json<T>);
 

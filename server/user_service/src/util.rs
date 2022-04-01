@@ -17,8 +17,6 @@ use common::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-pub(crate) const WEB_SITE_NAME: &str = "就職先・転職先を見極めるためのサイト";
-
 pub(crate) const ROOT_PATH: &str = "/api";
 
 /// PAY.JPにアクセスするための情報を保持する変数

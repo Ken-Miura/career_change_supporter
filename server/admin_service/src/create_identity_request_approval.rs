@@ -3,8 +3,10 @@
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{
-    smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
-    ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE,
+    smtp::{
+        SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
+    },
+    ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
 use axum::extract::Extension;
@@ -17,10 +19,13 @@ use entity::{
     },
     user_account,
 };
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use crate::err::Code::{NoAdminAccountFound, NoUserAccountFound};
 use crate::{err::unexpected_err_resp, util::session::Admin};
+
+static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_create_identity_request_approval(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -91,8 +96,15 @@ async fn handle_create_identity_request_approval(
         )
     })?;
 
-    let _ =
-        async move { send_mail.send_mail(&user_email_address, "from", "subject", "text") }.await?;
+    let _ = async move {
+        send_mail.send_mail(
+            &user_email_address,
+            SYSTEM_EMAIL_ADDRESS,
+            &SUBJECT,
+            create_text().as_str(),
+        )
+    }
+    .await?;
 
     Ok((StatusCode::OK, Json(CreateIdentityReqApprovalResult {})))
 }
@@ -286,6 +298,28 @@ impl CreateIdentityReqApprovalOperationImpl {
             telephone_number: Set(model.telephone_number),
         }
     }
+}
+
+fn create_text() -> String {
+    // TODO: 文面の調整
+    format!(
+        r"本人確認が完了し、ユーザー情報を登録致しました。
+
+本人確認が完了したため、他のユーザーに相談を申し込むことが可能になりました。相談の申し込みは、ログイン後、画面上部にある相談申し込みの項目から行うことが出来ます。
+
+他のユーザーから相談を受けるには、ご本人確認に加え、下記の三点の登録が必要となります。他のユーザーからの相談を受けたい場合、追加で下記の三点をプロフィールよりご登録いただくようお願いします。
+・職歴
+・相談料
+・銀行口座
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+        INQUIRY_EMAIL_ADDRESS
+    )
 }
 
 #[cfg(test)]

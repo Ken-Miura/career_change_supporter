@@ -12,6 +12,7 @@ use common::{
 };
 use common::{
     ApiError, JAPANESE_TIME_ZONE, URL_FOR_FRONT_END, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
+    WEB_SITE_NAME,
 };
 use entity::prelude::PwdChangeReq;
 use entity::pwd_change_req;
@@ -25,7 +26,6 @@ use uuid::{adapter::Simple, Uuid};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachPasswordChangeReqLimit;
-use crate::util::WEB_SITE_NAME;
 
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_PWD_CHANGE_REQ: usize = 8;

@@ -20,7 +20,7 @@ use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
 };
-use common::{ErrRespStruct, JAPANESE_TIME_ZONE};
+use common::{ErrRespStruct, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 use entity::prelude::{CreateIdentityReq, UpdateIdentityReq};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
@@ -30,7 +30,6 @@ use image::{ImageError, ImageFormat};
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::util::WEB_SITE_NAME;
 use crate::{
     err::{self, unexpected_err_resp, Code},
     util::{

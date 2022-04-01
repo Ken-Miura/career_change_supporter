@@ -13,7 +13,7 @@ use common::smtp::{
 };
 use common::util::hash_password;
 use common::util::validator::{validate_password, validate_uuid};
-use common::{ApiError, ErrResp, RespResult};
+use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use common::{JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE};
 use entity::prelude::{PwdChangeReq, UserAccount};
 use entity::sea_orm::{
@@ -28,7 +28,6 @@ use tower_cookies::Cookies;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired};
 use crate::util::session::SESSION_ID_COOKIE_NAME;
-use crate::util::WEB_SITE_NAME;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
