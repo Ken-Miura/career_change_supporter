@@ -6,7 +6,7 @@ use common::{
     smtp::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
     },
-    ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
+    ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
 use axum::extract::Extension;
@@ -22,7 +22,6 @@ use entity::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::err::Code::NoUserAccountFound;
 use crate::{err::unexpected_err_resp, util::session::Admin};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
@@ -84,12 +83,9 @@ async fn handle_create_identity_request_approval(
             "no user account (user account id: {}) found",
             user_account_id
         );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: NoUserAccountFound as u32,
-            }),
-        )
+        // 本人確認の承認処理後（approve_create_identity_req後）に、ユーザーがアカウントを削除した場合に発生
+        // かなりのレアケースのため、unexpected errorとして処理
+        unexpected_err_resp()
     })?;
 
     let _ = async move {
