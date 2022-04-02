@@ -1,8 +1,46 @@
 // Copyright 2021 Ken Miura
 
+use once_cell::sync::Lazy;
+use regex::Regex;
+
 pub mod email_address_validator;
 pub mod password_validator;
 pub mod uuid_validator;
+
+const ZENKAKU_KATAKANA_REGEXP: &str = r"^[ァ-ヴー]+$";
+/// 全角カタカナのみのケース<br>
+/// 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d<br>
+/// \p{katakana}は、半角カタカナも含むので使わない
+pub static ZENKAKU_KATAKANA_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(ZENKAKU_KATAKANA_REGEXP).expect("failed to compile zenkaku katakana regexp")
+});
+
+const TEL_NUM_REGEXP: &str = "^[0-9]{10,13}$";
+/// 国内の電話番号を示す正規表現 (10桁から13桁の数字のみにケース)
+pub static TEL_NUM_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(TEL_NUM_REGEXP).expect("failed to compile telephone number regexp"));
+
+const SYMBOL_CHAR_REGEXP: &str = r"[!-/:-@\[-`\{-~]+";
+/// 記号 (ASCIIの0x21(!)から0x2f(/)、0x3a(:)から0x40(@)、0x5b([)から0x60(`)、0x7b({)から0x7e(~)) を一つ以上含むケース
+pub static SYMBOL_CHAR_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(SYMBOL_CHAR_REGEXP).expect("failed to compile symbol char regexp"));
+
+const NUM_CHAR_REGEXP: &str = r"[0-9]+";
+/// 数字を一つ以上含むケース
+pub static NUM_CHAR_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(NUM_CHAR_REGEXP).expect("failed to compile num char regexp"));
+
+const SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP: &str = r"[!-,\./:-@\[-`\{-~]+";
+/// 0x2d(-)以外の記号を一つ以上含むケース
+pub static SYMBOL_CHAR_WITHOUT_HYPHEN_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP)
+        .expect("failed to compile symbol char without hyphen regexp")
+});
+
+const SPACE_REGEXP: &str = r"[ 　]+";
+/// 半角スペース、または全角スペースを一つ以上含むケース
+pub static SPACE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(SPACE_REGEXP).expect("failed to compile space regexp"));
 
 /// 文字列が制御文字（C0制御文字、U+007F（削除文字）、C1制御文字を含むかどうか）を判定する。
 /// - 制御文字を含む場合、trueを返す。そうでない場合、falseを返す。

@@ -2,17 +2,10 @@
 
 use std::{error::Error, fmt::Display};
 
-use common::util::validator::has_control_char;
-use once_cell::sync::Lazy;
-use regex::Regex;
+use common::util::validator::{has_control_char, SPACE_RE, SYMBOL_CHAR_RE};
 
 pub(crate) const REASON_MIN_LENGTH: usize = 1;
-pub(crate) const REASON_MAX_LENGTH: usize = 512;
-
-/// 記号 (ASCIIの0x21(!)から0x2f(/)、0x3a(:)から0x40(@)、0x5b([)から0x60(`)、0x7b({)から0x7e(~)) を一つ以上含むケース
-const SYMBOL_CHAR_REGEXP: &str = r"[!-/:-@\[-`\{-~]+";
-static SYMBOL_CHAR_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(SYMBOL_CHAR_REGEXP).expect("failed to compile symbol char regexp"));
+pub(crate) const REASON_MAX_LENGTH: usize = 256;
 
 pub(crate) fn validate_reason(reason: &str) -> Result<(), ReasonValidationError> {
     let reason_length = reason.chars().count();
@@ -28,7 +21,7 @@ pub(crate) fn validate_reason(reason: &str) -> Result<(), ReasonValidationError>
             reason.to_string(),
         ));
     }
-    if SYMBOL_CHAR_RE.is_match(reason) {
+    if SYMBOL_CHAR_RE.is_match(reason) || SPACE_RE.is_match(reason) {
         return Err(ReasonValidationError::IllegalCharInReason(
             reason.to_string(),
         ));

@@ -3,9 +3,11 @@
 use std::{collections::HashSet, error::Error, fmt::Display};
 
 use chrono::{Datelike, NaiveDate};
-use common::util::validator::has_control_char;
+use common::util::validator::{
+    has_control_char, NUM_CHAR_RE, SPACE_RE, SYMBOL_CHAR_RE, SYMBOL_CHAR_WITHOUT_HYPHEN_RE,
+    TEL_NUM_RE, ZENKAKU_KATAKANA_RE,
+};
 use once_cell::sync::Lazy;
-use regex::Regex;
 
 use crate::util::{Identity, Ymd};
 
@@ -76,41 +78,6 @@ static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     set.insert("沖縄県".to_string());
     set
 });
-
-/// 全角カタカナのみのケース
-// 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d
-// \p{katakana}は、半角カタカナも含むので使わない
-const ZENKAKU_KATAKANA_REGEXP: &str = r"^[ァ-ヴー]+$";
-static ZENKAKU_KATAKANA_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(ZENKAKU_KATAKANA_REGEXP).expect("failed to compile zenkaku katakana regexp")
-});
-
-/// 国内の電話番号を示す正規表現 (10桁から13桁の数字のみにケース)
-const TEL_NUM_REGEXP: &str = "^[0-9]{10,13}$";
-static TEL_NUM_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(TEL_NUM_REGEXP).expect("failed to compile telephone number regexp"));
-
-/// 記号 (ASCIIの0x21(!)から0x2f(/)、0x3a(:)から0x40(@)、0x5b([)から0x60(`)、0x7b({)から0x7e(~)) を一つ以上含むケース
-const SYMBOL_CHAR_REGEXP: &str = r"[!-/:-@\[-`\{-~]+";
-static SYMBOL_CHAR_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(SYMBOL_CHAR_REGEXP).expect("failed to compile symbol char regexp"));
-
-/// 数字を一つ以上含むケース
-const NUM_CHAR_REGEXP: &str = r"[0-9]+";
-static NUM_CHAR_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(NUM_CHAR_REGEXP).expect("failed to compile num char regexp"));
-
-/// 0x2d(-)以外の記号を一つ以上含むケース
-const SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP: &str = r"[!-,\./:-@\[-`\{-~]+";
-static SYMBOL_CHAR_WITHOUT_HYPHEN_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP)
-        .expect("failed to compile symbol char without hyphen regexp")
-});
-
-/// 半角スペース、または全角スペースを一つ以上含むケース
-const SPACE_REGEXP: &str = r"[ 　]+";
-static SPACE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(SPACE_REGEXP).expect("failed to compile space regexp"));
 
 pub(crate) fn validate_identity(
     identity: &Identity,

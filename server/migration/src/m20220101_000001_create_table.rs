@@ -391,7 +391,7 @@ impl MigrationTrait for Migration {
                   address_line1 VARCHAR (128) NOT NULL,
                   address_line2 VARCHAR (128),
                   telephone_number VARCHAR (13) NOT NULL,
-                  reason VARCHAR (512) NOT NULL,
+                  reason VARCHAR (256) NOT NULL,
                   rejected_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   rejected_by ccs_schema.email_address NOT NULL
                 );",
