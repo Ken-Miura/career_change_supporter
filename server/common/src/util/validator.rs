@@ -1,659 +1,117 @@
 // Copyright 2021 Ken Miura
 
-use once_cell::sync::Lazy;
-use regex::Regex;
-use std::error::Error;
-use std::fmt::Display;
+pub mod email_address_validator;
+pub mod password_validator;
+pub mod uuid_validator;
 
-const EMAIL_ADDRESS_MIN_LENGTH: usize = 1;
-const EMAIL_ADDRESS_MAX_LENGTH: usize = 254;
-const EMAIL_ADDRESS_REGEXP: &str = r"^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
-const PASSWORD_MIN_LENGTH: usize = 10;
-const PASSWORD_MAX_LENGTH: usize = 32;
-// ASCIIコード表の!(0x21)から~(0x7e)までに存在する文字、かつ10以上32以下
-const PASSWORD_REGEXP: &str = r"^[!-~]{10,32}$";
-const UPPERCASE_REGEXP: &str = r".*[A-Z].*";
-const LOWERCASE_REGEXP: &str = r".*[a-z].*";
-const NUMBER_REGEXP: &str = r".*[0-9].*";
-const SYMBOL_REGEXP: &str = r".*[!-/:-@\[-`{-~].*";
-const CONSTRAINTS_OF_NUM_OF_COMBINATION: u32 = 2;
-const UUID_REGEXP: &str = "^[a-zA-Z0-9]{32}$";
-
-static EMAIL_ADDR_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(EMAIL_ADDRESS_REGEXP).expect("failed to compile email address regexp"));
-static PWD_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(PASSWORD_REGEXP)
-        .expect("failed to compile password (characters allowed in password) regexp")
-});
-static UPPERCASE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(UPPERCASE_REGEXP).expect("failed to compile uppercase regexp"));
-static LOWERCASE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(LOWERCASE_REGEXP).expect("failed to compile lowercase regexp"));
-static NUMBER_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(NUMBER_REGEXP).expect("failed to compile number regexp"));
-static SYMBOL_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(SYMBOL_REGEXP).expect("failed to compile symbol regexp"));
-static UUID_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(UUID_REGEXP).expect("failed to compile UUID regexp"));
-
-/// Validate email address.
-pub fn validate_email_address(email_address: &str) -> Result<(), EmailAddressValidationError> {
-    let mail_addr_length = email_address.len();
-    if !(EMAIL_ADDRESS_MIN_LENGTH..=EMAIL_ADDRESS_MAX_LENGTH).contains(&mail_addr_length) {
-        return Err(EmailAddressValidationError::InvalidLength {
-            length: mail_addr_length,
-            min_length: EMAIL_ADDRESS_MIN_LENGTH,
-            max_length: EMAIL_ADDRESS_MAX_LENGTH,
-        });
-    }
-    if !EMAIL_ADDR_RE.is_match(email_address) {
-        return Err(EmailAddressValidationError::InvalidFormat {
-            email_address: email_address.to_string(),
-        });
-    }
-    Ok(())
-}
-
-/// Error related to [validate_email_address()]
-#[derive(Debug)]
-pub enum EmailAddressValidationError {
-    InvalidLength {
-        length: usize,
-        min_length: usize,
-        max_length: usize,
-    },
-    InvalidFormat {
-        email_address: String,
-    },
-}
-
-impl Display for EmailAddressValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            EmailAddressValidationError::InvalidLength {
-                length,
-                min_length,
-                max_length,
-            } => write!(
-                f,
-                "invalid email address length: {} (length must be {} or more, and {} or less)",
-                length, min_length, max_length
-            ),
-            EmailAddressValidationError::InvalidFormat { email_address } => {
-                write!(f, "invalid email address format: {}", email_address)
-            }
+/// 文字列が制御文字（C0制御文字、U+007F（削除文字）、C1制御文字を含むかどうか）を判定する。
+/// - 制御文字を含む場合、trueを返す。そうでない場合、falseを返す。
+pub fn has_control_char(s: &str) -> bool {
+    let characters = s.chars().collect::<Vec<char>>();
+    for c in characters {
+        if c.is_control() {
+            return true;
         }
     }
+    false
 }
-
-impl Error for EmailAddressValidationError {}
-
-/// Validates password.<br>
-/// password requirements<br>
-/// - 長さが10文字以上32文字以下
-/// - 使える文字は半角英数字と記号 (ASCIIコードの0x21-0x7e)
-/// - 大文字、小文字、数字、記号のいずれか二種類以上を組み合わせる必要がある
-pub fn validate_password(password: &str) -> Result<(), PasswordValidationError> {
-    let pwd_length = password.len();
-    if !(PASSWORD_MIN_LENGTH..=PASSWORD_MAX_LENGTH).contains(&pwd_length) {
-        return Err(PasswordValidationError::InvalidLength {
-            min_length: PASSWORD_MIN_LENGTH,
-            max_length: PASSWORD_MAX_LENGTH,
-        });
-    }
-    if !PWD_RE.is_match(password) {
-        return Err(PasswordValidationError::InvalidCharacter);
-    }
-    let _ = validate_password_constraints(password)?;
-    Ok(())
-}
-
-fn validate_password_constraints(pwd: &str) -> Result<(), PasswordValidationError> {
-    let mut count = 0;
-    if UPPERCASE_RE.is_match(pwd) {
-        count += 1;
-    }
-    if LOWERCASE_RE.is_match(pwd) {
-        count += 1;
-    }
-    if NUMBER_RE.is_match(pwd) {
-        count += 1;
-    }
-    if SYMBOL_RE.is_match(pwd) {
-        count += 1;
-    }
-    if count < CONSTRAINTS_OF_NUM_OF_COMBINATION {
-        return Err(PasswordValidationError::ConstraintViolation);
-    }
-    Ok(())
-}
-
-/// Error related to [validate_password()]
-#[derive(Debug)]
-pub enum PasswordValidationError {
-    InvalidLength {
-        min_length: usize,
-        max_length: usize,
-    },
-    InvalidCharacter,
-    ConstraintViolation,
-}
-
-impl Display for PasswordValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PasswordValidationError::InvalidLength {
-                min_length,
-                max_length,
-            } => write!(
-                f,
-                "password length must be {} or more, and {} or less",
-                min_length, max_length
-            ),
-            PasswordValidationError::InvalidCharacter => write!(f, "invalid character included"),
-            PasswordValidationError::ConstraintViolation => write!(f, "constraint violation (password must contain at least two types of lowercase, uppercase, digit, and symbol)"),
-        }
-    }
-}
-
-impl Error for PasswordValidationError {}
-
-/// Validates UUID format.
-pub fn validate_uuid(uuid: &str) -> Result<(), UuidValidationError> {
-    if !UUID_RE.is_match(uuid) {
-        return Err(UuidValidationError::InvalidFormat {
-            invalid_uuid: uuid.to_string(),
-        });
-    }
-    Ok(())
-}
-
-/// Error related to [validate_uuid()]
-#[derive(Debug)]
-pub enum UuidValidationError {
-    InvalidFormat { invalid_uuid: String },
-}
-
-impl Display for UuidValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            UuidValidationError::InvalidFormat { invalid_uuid } => {
-                write!(f, "invalid UUID: {}", invalid_uuid)
-            }
-        }
-    }
-}
-
-impl Error for UuidValidationError {}
 
 #[cfg(test)]
 mod tests {
-    use core::panic;
+    use std::collections::HashSet;
+
+    use once_cell::sync::Lazy;
 
     use super::*;
 
+    static CONTROL_CHAR_SET: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut set: HashSet<String> = HashSet::with_capacity(32 + 1 + 32);
+        // C0制御コード
+        set.insert('\u{0000}'.to_string());
+        set.insert('\u{0001}'.to_string());
+        set.insert('\u{0002}'.to_string());
+        set.insert('\u{0003}'.to_string());
+        set.insert('\u{0004}'.to_string());
+        set.insert('\u{0005}'.to_string());
+        set.insert('\u{0006}'.to_string());
+        set.insert('\u{0007}'.to_string());
+        set.insert('\u{0008}'.to_string());
+        set.insert('\u{0009}'.to_string());
+        set.insert('\u{000A}'.to_string());
+        set.insert('\u{000B}'.to_string());
+        set.insert('\u{000C}'.to_string());
+        set.insert('\u{000D}'.to_string());
+        set.insert('\u{000E}'.to_string());
+        set.insert('\u{000F}'.to_string());
+        set.insert('\u{0010}'.to_string());
+        set.insert('\u{0011}'.to_string());
+        set.insert('\u{0012}'.to_string());
+        set.insert('\u{0013}'.to_string());
+        set.insert('\u{0014}'.to_string());
+        set.insert('\u{0015}'.to_string());
+        set.insert('\u{0016}'.to_string());
+        set.insert('\u{0017}'.to_string());
+        set.insert('\u{0018}'.to_string());
+        set.insert('\u{0019}'.to_string());
+        set.insert('\u{001A}'.to_string());
+        set.insert('\u{001B}'.to_string());
+        set.insert('\u{001C}'.to_string());
+        set.insert('\u{001D}'.to_string());
+        set.insert('\u{001E}'.to_string());
+        set.insert('\u{001F}'.to_string());
+        // 削除文字
+        set.insert('\u{007F}'.to_string());
+        // C1制御コード
+        set.insert('\u{0080}'.to_string());
+        set.insert('\u{0081}'.to_string());
+        set.insert('\u{0082}'.to_string());
+        set.insert('\u{0083}'.to_string());
+        set.insert('\u{0084}'.to_string());
+        set.insert('\u{0085}'.to_string());
+        set.insert('\u{0086}'.to_string());
+        set.insert('\u{0087}'.to_string());
+        set.insert('\u{0088}'.to_string());
+        set.insert('\u{0089}'.to_string());
+        set.insert('\u{008A}'.to_string());
+        set.insert('\u{008B}'.to_string());
+        set.insert('\u{008C}'.to_string());
+        set.insert('\u{008D}'.to_string());
+        set.insert('\u{008E}'.to_string());
+        set.insert('\u{008F}'.to_string());
+        set.insert('\u{0090}'.to_string());
+        set.insert('\u{0091}'.to_string());
+        set.insert('\u{0092}'.to_string());
+        set.insert('\u{0093}'.to_string());
+        set.insert('\u{0094}'.to_string());
+        set.insert('\u{0095}'.to_string());
+        set.insert('\u{0096}'.to_string());
+        set.insert('\u{0097}'.to_string());
+        set.insert('\u{0098}'.to_string());
+        set.insert('\u{0099}'.to_string());
+        set.insert('\u{009A}'.to_string());
+        set.insert('\u{009B}'.to_string());
+        set.insert('\u{009C}'.to_string());
+        set.insert('\u{009D}'.to_string());
+        set.insert('\u{009E}'.to_string());
+        set.insert('\u{009F}'.to_string());
+        set
+    });
+
     #[test]
-    fn validate_email_address_returns_ok_if_given_valid_email_address_with_various_letters() {
-        let valid_email_address =
-            "The.quick.brown.fox.jumps.over.the.lazy.dog_0123456789@example.com";
-
-        let result = validate_email_address(valid_email_address);
-
-        assert!(
-            result.is_ok(),
-            "valid_email_address: {}",
-            valid_email_address
-        );
-    }
-
-    #[test]
-    fn validate_email_address_returns_ok_if_given_valid_email_address_of_254_characters() {
-        let valid_email_address =
-            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com";
-
-        let result = validate_email_address(valid_email_address);
-
-        assert!(
-            result.is_ok(),
-            "valid_email_address: {}",
-            valid_email_address
-        );
-    }
-
-    #[test]
-    fn validate_email_address_returns_invalid_length_if_given_empty_string() {
-        let empty_str = "";
-
-        let result = validate_email_address(empty_str);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            EmailAddressValidationError::InvalidLength {
-                length,
-                min_length: _,
-                max_length: _,
-            } => assert!(length == 0, "length: {}", length),
-            EmailAddressValidationError::InvalidFormat { email_address } => panic!(
-                "EmailAddressValidationError::InvalidFormat {{ email_address: \"{}\" }}",
-                email_address
-            ),
+    fn has_control_char_returns_true_if_control_char_is_passed() {
+        let mut result_set = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            result_set.push(has_control_char(s));
+        }
+        for result in result_set {
+            assert!(result);
         }
     }
 
     #[test]
-    fn validate_email_address_returns_invalid_length_if_given_255_characters() {
-        // valid format email address of 255 characters
-        let too_long_email_address = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com";
-
-        let result = validate_email_address(too_long_email_address);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            EmailAddressValidationError::InvalidLength {
-                length,
-                min_length: _,
-                max_length: _,
-            } => assert!(length == 255, "length: {}", length),
-            EmailAddressValidationError::InvalidFormat { email_address } => panic!(
-                "EmailAddressValidationError::InvalidFormat {{ email_address: \"{}\" }}",
-                email_address
-            ),
-        }
-    }
-
-    #[test]
-    fn validate_email_address_returns_invalid_format_if_given_one_letter() {
-        let one_letter = "a";
-
-        let result = validate_email_address(one_letter);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            EmailAddressValidationError::InvalidLength {
-                length,
-                min_length: _,
-                max_length: _,
-            } => panic!(
-                "EmailAddressValidationError::InvalidLength: length: {}",
-                length
-            ),
-            EmailAddressValidationError::InvalidFormat { email_address } => {
-                assert_eq!(
-                    one_letter, &email_address,
-                    "email_address: {}",
-                    email_address
-                )
-            }
-        }
-    }
-
-    #[test]
-    fn validate_email_address_returns_invalid_format_if_given_email_address_without_domain() {
-        let email_address_without_domain = "test@";
-
-        let result = validate_email_address(email_address_without_domain);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            EmailAddressValidationError::InvalidLength {
-                length,
-                min_length: _,
-                max_length: _,
-            } => panic!(
-                "EmailAddressValidationError::InvalidLength: length: {}",
-                length
-            ),
-            EmailAddressValidationError::InvalidFormat { email_address } => assert_eq!(
-                email_address_without_domain, &email_address,
-                "email_address: {}",
-                email_address
-            ),
-        }
-    }
-
-    #[test]
-    fn validate_email_address_returns_invalid_format_if_given_email_address_without_local_part() {
-        let email_address_without_local_part = "@example.com";
-
-        let result = validate_email_address(email_address_without_local_part);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            EmailAddressValidationError::InvalidLength {
-                length,
-                min_length: _,
-                max_length: _,
-            } => panic!(
-                "EmailAddressValidationError::InvalidLength: length: {}",
-                length
-            ),
-            EmailAddressValidationError::InvalidFormat { email_address } => assert_eq!(
-                email_address_without_local_part, &email_address,
-                "email_address: {}",
-                email_address
-            ),
-        }
-    }
-
-    #[test]
-    fn validate_password_returns_ok_if_given_valid_password_1() {
-        // 10 letters with lowercase and uppercase
-        let valid_password = "aaaaaaaaaaA";
-
-        let result = validate_password(valid_password);
-
-        assert!(
-            result.is_ok(),
-            "valid_password: {}, length: {}",
-            valid_password,
-            valid_password.len()
-        );
-    }
-
-    #[test]
-    fn validate_password_returns_ok_if_given_valid_password_2() {
-        // 32 letters with lowercase and digit
-        let valid_password = "a1234567890123456789012345678901";
-
-        let result = validate_password(valid_password);
-
-        assert!(
-            result.is_ok(),
-            "valid_password: {}, length: {}",
-            valid_password,
-            valid_password.len()
-        );
-    }
-
-    #[test]
-    fn validate_password_returns_ok_if_given_valid_password_3() {
-        // lowercase and symbol
-        let valid_password = "a!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
-
-        let result = validate_password(valid_password);
-
-        assert!(
-            result.is_ok(),
-            "valid_password: {}, length: {}",
-            valid_password,
-            valid_password.len()
-        );
-    }
-
-    #[test]
-    fn validate_password_returns_ok_if_given_valid_password_4() {
-        // uppercase and symbol
-        let valid_password = "Z!\"#$%&'()~-^\\=~|@[`{;:]+*},./?_";
-
-        let result = validate_password(valid_password);
-
-        assert!(
-            result.is_ok(),
-            "valid_password: {}, length: {}",
-            valid_password,
-            valid_password.len()
-        );
-    }
-
-    #[test]
-    fn validate_password_returns_ok_if_given_valid_password_5() {
-        // uppercase and digit
-        let valid_password = "Z0123456789";
-
-        let result = validate_password(valid_password);
-
-        assert!(
-            result.is_ok(),
-            "valid_password: {}, length: {}",
-            valid_password,
-            valid_password.len()
-        );
-    }
-
-    #[test]
-    fn validate_password_returns_ok_if_given_valid_password_6() {
-        // symbol and digit
-        let valid_password = "<>123456789";
-
-        let result = validate_password(valid_password);
-
-        assert!(
-            result.is_ok(),
-            "valid_password: {}, length: {}",
-            valid_password,
-            valid_password.len()
-        );
-    }
-
-    #[test]
-    fn validate_password_returns_ok_if_given_valid_password_7() {
-        // lowercase, uppercase, symbol and digit
-        let valid_password = "bC<>123456789";
-
-        let result = validate_password(valid_password);
-
-        assert!(
-            result.is_ok(),
-            "valid_password: {}, length: {}",
-            valid_password,
-            valid_password.len()
-        );
-    }
-
-    #[test]
-    fn validate_password_returns_invalid_length_if_given_9_letters_password() {
-        let invalid_password = "a12345678";
-
-        let result = validate_password(invalid_password);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            PasswordValidationError::InvalidLength {
-                min_length: _,
-                max_length: _,
-            } => { /* pass test */ }
-            PasswordValidationError::InvalidCharacter => {
-                panic!("PasswordValidationError::InvalidCharacter")
-            }
-            PasswordValidationError::ConstraintViolation => {
-                panic!("PasswordValidationError::ConstraintViolation")
-            }
-        }
-    }
-
-    #[test]
-    fn validate_password_returns_invalid_length_if_given_33_letters_password() {
-        let invalid_password = "01234567890123456789012345678901A";
-
-        let result = validate_password(invalid_password);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            PasswordValidationError::InvalidLength {
-                min_length: _,
-                max_length: _,
-            } => { /* pass test */ }
-            PasswordValidationError::InvalidCharacter => {
-                panic!("PasswordValidationError::InvalidCharacter")
-            }
-            PasswordValidationError::ConstraintViolation => {
-                panic!("PasswordValidationError::ConstraintViolation")
-            }
-        }
-    }
-
-    #[test]
-    fn validate_password_returns_invalid_length_if_given_password_with_invalid_character() {
-        // 全角アルファベット、全角数字、日本語
-        let invalid_password = "a1_ｂ１２不正な文字";
-
-        let result = validate_password(invalid_password);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            PasswordValidationError::InvalidLength {
-                min_length: _,
-                max_length: _,
-            } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => { /* pass test */ }
-            PasswordValidationError::ConstraintViolation => {
-                panic!("PasswordValidationError::ConstraintViolation")
-            }
-        }
-    }
-
-    #[test]
-    fn validate_password_returns_invalid_length_if_given_password_only_lowercase() {
-        let invalid_password = "eeeeeeeeee";
-
-        let result = validate_password(invalid_password);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            PasswordValidationError::InvalidLength {
-                min_length: _,
-                max_length: _,
-            } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => {
-                panic!("PasswordValidationError::InvalidCharacter")
-            }
-            PasswordValidationError::ConstraintViolation => { /* pass test */ }
-        }
-    }
-
-    #[test]
-    fn validate_password_returns_invalid_length_if_given_password_only_uppercase() {
-        let invalid_password = "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
-
-        let result = validate_password(invalid_password);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            PasswordValidationError::InvalidLength {
-                min_length: _,
-                max_length: _,
-            } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => {
-                panic!("PasswordValidationError::InvalidCharacter")
-            }
-            PasswordValidationError::ConstraintViolation => { /* pass test */ }
-        }
-    }
-
-    #[test]
-    fn validate_password_returns_invalid_length_if_given_password_only_symbol() {
-        let invalid_password = "!#$%&'()<>";
-
-        let result = validate_password(invalid_password);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            PasswordValidationError::InvalidLength {
-                min_length: _,
-                max_length: _,
-            } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => {
-                panic!("PasswordValidationError::InvalidCharacter")
-            }
-            PasswordValidationError::ConstraintViolation => { /* pass test */ }
-        }
-    }
-
-    #[test]
-    fn validate_password_returns_invalid_length_if_given_password_only_digit() {
-        let invalid_password = "01234567890123456789012345678901";
-
-        let result = validate_password(invalid_password);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            PasswordValidationError::InvalidLength {
-                min_length: _,
-                max_length: _,
-            } => panic!("PasswordValidationError::InvalidLength"),
-            PasswordValidationError::InvalidCharacter => {
-                panic!("PasswordValidationError::InvalidCharacter")
-            }
-            PasswordValidationError::ConstraintViolation => { /* pass test */ }
-        }
-    }
-
-    #[test]
-    fn validate_uuid_returns_ok_if_given_valid_uuid() {
-        // digit, lowercase or uppercase with 32 letters
-        let valid_uuid = "0123456789abcdefghijKLMNOPQRSTUV";
-
-        let result = validate_uuid(valid_uuid);
-
-        assert!(
-            result.is_ok(),
-            "valid_uuid: {}, length: {}",
-            valid_uuid,
-            valid_uuid.len()
-        )
-    }
-
-    #[test]
-    fn validate_uuid_returns_invalid_format_if_given_33_letters() {
-        let uuid = "0123456789abcdefghijKLMNOPQRSTUVW";
-
-        let result = validate_uuid(uuid);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
-                invalid_uuid, uuid,
-                "expect: {}, got: {}",
-                invalid_uuid, uuid
-            ),
-        }
-    }
-
-    #[test]
-    fn validate_uuid_returns_invalid_format_if_given_31_letters() {
-        let uuid = "0123456789abcdefghijKLMNOPQRSTU";
-
-        let result = validate_uuid(uuid);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
-                invalid_uuid, uuid,
-                "expect: {}, got: {}",
-                invalid_uuid, uuid
-            ),
-        }
-    }
-
-    #[test]
-    fn validate_uuid_returns_invalid_format_if_given_symbol_1() {
-        let uuid = "01234567-89abcdef-ghijKLMN-OPQRSTUV";
-
-        let result = validate_uuid(uuid);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
-                invalid_uuid, uuid,
-                "expect: {}, got: {}",
-                invalid_uuid, uuid
-            ),
-        }
-    }
-
-    #[test]
-    fn validate_uuid_returns_invalid_format_if_given_symbol_2() {
-        let uuid = "0123456789!#$%&'()=~0123456789<>";
-
-        let result = validate_uuid(uuid);
-
-        let err = result.expect_err("failed to get Err");
-        match err {
-            UuidValidationError::InvalidFormat { invalid_uuid } => assert_eq!(
-                invalid_uuid, uuid,
-                "expect: {}, got: {}",
-                invalid_uuid, uuid
-            ),
-        }
+    fn has_control_char_returns_false_if_no_control_char_is_passed() {
+        let s = "The quick brown fox jumps over the lazy dog. いろはにほへと　ちりぬるを　わかよたれそ　つねならむ　うゐのおくやま　けふこえて　あさきゆめみし　ゑひもせす。";
+        let result = has_control_char(s);
+        assert!(!result);
     }
 }

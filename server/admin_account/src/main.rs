@@ -1,7 +1,9 @@
 // Copyright 2021 Ken Miura
 
 use common::util::hash_password;
-use common::util::validator::{validate_email_address, validate_password};
+use common::util::validator::{
+    email_address_validator::validate_email_address, password_validator::validate_password,
+};
 use dotenv::dotenv;
 use entity::admin_account;
 use entity::prelude::AdminAccount;

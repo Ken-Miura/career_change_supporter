@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 pub(crate) mod session;
+pub(crate) mod validator;
 
 use axum::{http::StatusCode, Json};
 use common::{ApiError, ErrResp};

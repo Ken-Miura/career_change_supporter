@@ -5,7 +5,7 @@ use axum::extract::Extension;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
 use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-use common::util::validator::validate_email_address;
+use common::util::validator::email_address_validator::validate_email_address;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ErrResp, RespResult,
@@ -211,7 +211,8 @@ mod tests {
     use axum::async_trait;
     use chrono::{DateTime, FixedOffset};
     use common::{
-        smtp::SYSTEM_EMAIL_ADDRESS, util::validator::validate_email_address, ErrResp,
+        smtp::SYSTEM_EMAIL_ADDRESS,
+        util::validator::email_address_validator::validate_email_address, ErrResp,
         JAPANESE_TIME_ZONE,
     };
     use uuid::Uuid;

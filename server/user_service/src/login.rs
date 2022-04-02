@@ -239,8 +239,8 @@ mod tests {
     use chrono::TimeZone;
     use chrono::Utc;
     use common::util::hash_password;
-    use common::util::validator::validate_email_address;
-    use common::util::validator::validate_password;
+    use common::util::validator::email_address_validator::validate_email_address;
+    use common::util::validator::password_validator::validate_password;
     use common::ErrResp;
     use common::JAPANESE_TIME_ZONE;
 

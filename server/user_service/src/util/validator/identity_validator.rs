@@ -3,6 +3,7 @@
 use std::{collections::HashSet, error::Error, fmt::Display};
 
 use chrono::{Datelike, NaiveDate};
+use common::util::validator::has_control_char;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -216,16 +217,6 @@ fn validate_first_name_furigana(first_name_furigana: &str) -> Result<(), Identit
         ));
     }
     Ok(())
-}
-
-fn has_control_char(s: &str) -> bool {
-    let characters = s.chars().collect::<Vec<char>>();
-    for c in characters {
-        if c.is_control() {
-            return true;
-        }
-    }
-    false
 }
 
 fn validate_date_of_birth(

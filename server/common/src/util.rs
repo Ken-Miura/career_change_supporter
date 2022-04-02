@@ -105,8 +105,9 @@ pub struct Ymd {
 
 #[cfg(test)]
 mod tests {
+    use crate::util::validator::password_validator::validate_password;
+
     use super::*;
-    use validator::validate_password;
 
     #[test]
     fn handle_password_match_case() {

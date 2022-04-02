@@ -6,7 +6,7 @@ use axum::{extract::Path, Json};
 use common::{
     err::Code::InvalidUuidFormat,
     storage::{download_object, IDENTITY_IMAGES_BUCKET_NAME},
-    util::validator::validate_uuid,
+    util::validator::uuid_validator::validate_uuid,
     ApiError, ErrResp,
 };
 use headers::{HeaderMap, HeaderValue};

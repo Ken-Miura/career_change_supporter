@@ -199,7 +199,9 @@ mod tests {
 
     use common::util::{
         is_password_match,
-        validator::{validate_email_address, validate_password},
+        validator::{
+            email_address_validator::validate_email_address, password_validator::validate_password,
+        },
     };
 
     use crate::util::tests::SendMailMock;

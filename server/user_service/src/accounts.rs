@@ -9,7 +9,7 @@ use chrono::{Duration, FixedOffset};
 use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
-use common::util::validator::validate_uuid;
+use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use common::{JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR};
 use entity::prelude::{UserAccount, UserTempAccount};
@@ -261,7 +261,10 @@ mod tests {
         smtp::SYSTEM_EMAIL_ADDRESS,
         util::{
             hash_password,
-            validator::{validate_email_address, validate_password, validate_uuid},
+            validator::{
+                email_address_validator::validate_email_address,
+                password_validator::validate_password, uuid_validator::validate_uuid,
+            },
         },
         ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR,
     };

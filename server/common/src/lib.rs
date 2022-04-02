@@ -105,24 +105,28 @@ where
                 )
             })?;
         let cred = payload.0;
-        let _ = util::validator::validate_email_address(&cred.email_address).map_err(|e| {
-            tracing::error!("failed to validate credential: {}", e);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: err::Code::InvalidEmailAddressFormat as u32,
-                }),
-            )
-        })?;
-        let _ = util::validator::validate_password(&cred.password).map_err(|e| {
-            tracing::error!("failed to validate credential: {}", e);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: err::Code::InvalidPasswordFormat as u32,
-                }),
-            )
-        })?;
+        let _ =
+            util::validator::email_address_validator::validate_email_address(&cred.email_address)
+                .map_err(|e| {
+                tracing::error!("failed to validate credential: {}", e);
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: err::Code::InvalidEmailAddressFormat as u32,
+                    }),
+                )
+            })?;
+        let _ = util::validator::password_validator::validate_password(&cred.password).map_err(
+            |e| {
+                tracing::error!("failed to validate credential: {}", e);
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: err::Code::InvalidPasswordFormat as u32,
+                    }),
+                )
+            },
+        )?;
         Ok(Self(cred))
     }
 }

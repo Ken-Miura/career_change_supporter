@@ -12,7 +12,9 @@ use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::hash_password;
-use common::util::validator::{validate_password, validate_uuid};
+use common::util::validator::{
+    password_validator::validate_password, uuid_validator::validate_uuid,
+};
 use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use common::{JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE};
 use entity::prelude::{PwdChangeReq, UserAccount};
@@ -322,7 +324,10 @@ mod tests {
         smtp::SYSTEM_EMAIL_ADDRESS,
         util::{
             is_password_match,
-            validator::{validate_email_address, validate_password, validate_uuid},
+            validator::{
+                email_address_validator::validate_email_address,
+                password_validator::validate_password, uuid_validator::validate_uuid,
+            },
         },
         ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
     };
