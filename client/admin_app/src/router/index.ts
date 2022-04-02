@@ -4,6 +4,7 @@ import LoginPage from '../views/LoginPage.vue'
 import AdminMenuPage from '../views/personalized/AdminMenuPage.vue'
 import CreateIdentityRequestListPage from '../views/personalized/CreateIdentityRequestListPage.vue'
 import CreateIdentityRequestDetailPage from '../views/personalized/CreateIdentityRequestDetailPage.vue'
+import CreateIdentityRequestApprovalPage from '../views/personalized/CreateIdentityRequestApprovalPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -35,6 +36,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/create-identity-request-detail/:account_id',
     name: 'CreateIdentityRequestDetailPage',
     component: CreateIdentityRequestDetailPage
+  },
+  {
+    path: '/create-identity-request-approval',
+    name: 'CreateIdentityRequestApprovalPage',
+    component: CreateIdentityRequestApprovalPage
   }
 ]
 

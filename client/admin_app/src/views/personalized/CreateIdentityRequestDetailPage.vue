@@ -65,7 +65,7 @@
           </div>
         </div>
         <div class="flex flex-row justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button v-on:click="test" class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">承認する</button>
+          <button v-on:click="approveReq" class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">承認する</button>
           <button class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">拒否する</button>
         </div>
       </div>
@@ -87,10 +87,12 @@ import { CreateIdentityRequestDetail } from '@/util/personalized/create-identity
 import { useGetCreateIdentityRequestDetail } from '@/util/personalized/create-identity-request-detail/useGetCreateIdentityRequestDetail'
 import { GetCreateIdentityRequestDetailResp } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetailResp'
 import { useGetUsersByDateOfBirth } from '@/util/personalized/create-identity-request-detail/useGetUsersByDateOfBirth'
+import { usePostCreateIdentityRequestApproval } from '@/util/personalized/create-identity-request-detail/usePostCreateIdentityRequestApproval'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
 import { GetUsersByDateOfBirthResp } from '@/util/personalized/create-identity-request-detail/GetUsersByDateOfBirthResp'
+import { PostCreateIdentityRequestApprovalResp } from '@/util/personalized/create-identity-request-detail/PostCreateIdentityRequestApprovalResp'
 
 export default defineComponent({
   name: 'CreateIdentityRequestDetailPage',
@@ -133,8 +135,12 @@ export default defineComponent({
       waitingGetUsersByDateOfBirthDone,
       getUsersByDateOfBirthFunc
     } = useGetUsersByDateOfBirth()
+    const {
+      waitingpostCreateIdentityRequestApprovalDone,
+      postCreateIdentityRequestApprovalFunc
+    } = usePostCreateIdentityRequestApproval()
     const waitingRequestDone = computed(() => {
-      return waitingGetCreateIdentityRequestDetailDone.value || waitingGetUsersByDateOfBirthDone.value
+      return waitingGetCreateIdentityRequestDetailDone.value || waitingGetUsersByDateOfBirthDone.value || waitingpostCreateIdentityRequestApprovalDone.value
     })
     const getUsers = async (year: number, month: number, day: number) => {
       const response = await getUsersByDateOfBirthFunc(year, month, day)
@@ -178,21 +184,30 @@ export default defineComponent({
       }
     })
 
-    const test = async () => {
-      // eslint-disable-next-line
-      const data = { user_account_id: parseInt(userAccountId) }
-      const response = await fetch('/admin/api/create-identity-request-approval', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify(data)
-      })
-      if (!response.ok) {
-        const apiErr = await response.json() as { code: number }
-        console.log(apiErr)
+    const approveReq = async () => {
+      try {
+        const response = await postCreateIdentityRequestApprovalFunc(parseInt(userAccountId))
+        if (!(response instanceof PostCreateIdentityRequestApprovalResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await router.push('/create-identity-request-approval')
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
-    return { error, detail, image1Url, image2Url, users, waitingRequestDone, test }
+    return { error, detail, image1Url, image2Url, users, waitingRequestDone, approveReq }
   }
 })
 </script>

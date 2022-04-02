@@ -19,7 +19,7 @@ module.exports = {
     }
   },
   devServer: {
-    port: 8082,
+    port: 8081,
     server: 'https',
     client: {
       webSocketURL: {
