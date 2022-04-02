@@ -3,11 +3,9 @@
 use std::{collections::HashSet, error::Error, fmt::Display};
 
 use chrono::{Datelike, NaiveDate};
-use common::util::validator::{
-    has_control_char, NUM_CHAR_RE, SPACE_RE, SYMBOL_CHAR_RE, SYMBOL_CHAR_WITHOUT_HYPHEN_RE,
-    TEL_NUM_RE, ZENKAKU_KATAKANA_RE,
-};
+use common::util::validator::{has_control_char, SPACE_RE, SYMBOL_CHAR_RE};
 use once_cell::sync::Lazy;
+use regex::Regex;
 
 use crate::util::{Identity, Ymd};
 
@@ -26,6 +24,31 @@ pub(crate) const ADDRESS_LINE1_MIN_LENGTH: usize = 1;
 pub(crate) const ADDRESS_LINE1_MAX_LENGTH: usize = 128;
 pub(crate) const ADDRESS_LINE2_MIN_LENGTH: usize = 1;
 pub(crate) const ADDRESS_LINE2_MAX_LENGTH: usize = 128;
+
+const NUM_CHAR_REGEXP: &str = r"[0-9]+";
+/// 数字を一つ以上含むケース
+static NUM_CHAR_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(NUM_CHAR_REGEXP).expect("failed to compile num char regexp"));
+
+const SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP: &str = r"[!-,\./:-@\[-`\{-~]+";
+/// 0x2d(-)以外の記号を一つ以上含むケース
+static SYMBOL_CHAR_WITHOUT_HYPHEN_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(SYMBOL_CHAR_WITHOUT_HYPHEN_REGEXP)
+        .expect("failed to compile symbol char without hyphen regexp")
+});
+
+const ZENKAKU_KATAKANA_REGEXP: &str = r"^[ァ-ヴー]+$";
+/// 全角カタカナのみのケース<br>
+/// 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d<br>
+/// \p{katakana}は、半角カタカナも含むので使わない
+static ZENKAKU_KATAKANA_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(ZENKAKU_KATAKANA_REGEXP).expect("failed to compile zenkaku katakana regexp")
+});
+
+const TEL_NUM_REGEXP: &str = "^[0-9]{10,13}$";
+/// 国内の電話番号を示す正規表現 (10桁から13桁の数字のみにケース)
+static TEL_NUM_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(TEL_NUM_REGEXP).expect("failed to compile telephone number regexp"));
 
 static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     let mut set: HashSet<String> = HashSet::with_capacity(47);
