@@ -171,7 +171,7 @@ impl ProfileOperation for ProfileOperationImpl {
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to find IndentityInfo (account id: {}): {}",
+                    "failed to find Indentity (account id: {}): {}",
                     account_id,
                     e
                 );

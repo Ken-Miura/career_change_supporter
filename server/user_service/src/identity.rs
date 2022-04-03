@@ -3,7 +3,7 @@
 use std::error::Error;
 use std::io::Cursor;
 
-use crate::err::Code::IdentityInfoReqAlreadyExists;
+use crate::err::Code::IdentityReqAlreadyExists;
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -419,7 +419,7 @@ async fn handle_identity_req(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: IdentityInfoReqAlreadyExists as u32,
+                    code: IdentityReqAlreadyExists as u32,
                 }),
             ));
         }
@@ -439,7 +439,7 @@ async fn handle_identity_req(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: IdentityInfoReqAlreadyExists as u32,
+                    code: IdentityReqAlreadyExists as u32,
                 }),
             ));
         }
@@ -803,7 +803,7 @@ mod tests {
 
     use crate::err::Code::DataParseFailure;
     use crate::err::Code::ExceedMaxIdentityImageSizeLimit;
-    use crate::err::Code::IdentityInfoReqAlreadyExists;
+    use crate::err::Code::IdentityReqAlreadyExists;
     use crate::err::Code::IllegalAge;
     use crate::err::Code::IllegalCharInAddressLine1;
     use crate::err::Code::IllegalCharInAddressLine2;
@@ -2380,7 +2380,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(IdentityInfoReqAlreadyExists as u32, resp.1 .0.code);
+        assert_eq!(IdentityReqAlreadyExists as u32, resp.1 .0.code);
     }
 
     #[tokio::test]
@@ -2419,6 +2419,6 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(IdentityInfoReqAlreadyExists as u32, resp.1 .0.code);
+        assert_eq!(IdentityReqAlreadyExists as u32, resp.1 .0.code);
     }
 }
