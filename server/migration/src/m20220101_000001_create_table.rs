@@ -203,6 +203,9 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(
                 /* annual_income_in_man_yen => 万円単位での年収 */
+                /* user_account_id => アプリケーション側で最大値（MAX_NUM_OF_CAREER_PER_USER_ACCOUNT）を制御しているため、
+                 * ON DELETE CASCADEでパフォーマンス上の問題が発生する料の削除は発生しない
+                 */
                 sql.stmt(r"CREATE TABLE ccs_schema.career (
                     career_id BIGSERIAL PRIMARY KEY,
                     user_account_id BIGINT NOT NULL REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,

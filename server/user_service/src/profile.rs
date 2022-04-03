@@ -4,7 +4,7 @@ use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
 use common::util::Ymd;
-use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT};
+use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use entity::prelude::{ConsultingFee, UserAccount};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
 use entity::{career, identity};
@@ -183,7 +183,7 @@ impl ProfileOperation for ProfileOperationImpl {
     async fn filter_career_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp> {
         let models = entity::prelude::Career::find()
             .filter(career::Column::UserAccountId.eq(account_id))
-            .limit(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT)
+            .limit(MAX_NUM_OF_CAREER_PER_USER_ACCOUNT)
             .all(&self.pool)
             .await
             .map_err(|e| {
@@ -278,7 +278,7 @@ mod tests {
     use chrono::{Datelike, NaiveDate};
     use common::util::Ymd;
     use common::ErrResp;
-    use common::MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT;
+    use common::MAX_NUM_OF_CAREER_PER_USER_ACCOUNT;
 
     use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
     use crate::util::Identity;
@@ -363,10 +363,10 @@ mod tests {
     }
 
     fn create_max_num_of_dummy_careers() -> Vec<Career> {
-        let mut careers = Vec::with_capacity(MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT as usize);
+        let mut careers = Vec::with_capacity(MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize);
         let mut start_date = NaiveDate::from_ymd(2013, 4, 1);
         let mut end_date = Some(start_date + chrono::Duration::days(365));
-        for i in 0..MAX_NUM_OF_CAREER_INFO_PER_USER_ACCOUNT {
+        for i in 0..MAX_NUM_OF_CAREER_PER_USER_ACCOUNT {
             let career_start_date = Ymd {
                 year: start_date.year(),
                 month: start_date.month(),
