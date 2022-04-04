@@ -29,7 +29,7 @@ use tower_cookies::Cookies;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired};
-use crate::util::session::SESSION_ID_COOKIE_NAME;
+use crate::util::session::{KEY_OF_SIGNED_COOKIE_FOR_USER_APP, SESSION_ID_COOKIE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
@@ -52,7 +52,8 @@ pub(crate) async fn post_password_update(
     Json(pwd_update_req): Json<PasswordUpdateReq>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<PasswordUpdateResult> {
-    let option_cookie = cookies.get(SESSION_ID_COOKIE_NAME);
+    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
     if let Some(session_id) = option_cookie {
         let _ = destroy_session_if_exists(session_id.value(), &store).await?;
     }
@@ -177,11 +178,11 @@ async fn handle_password_update_req(
 }
 
 async fn destroy_session_if_exists(
-    session_id_value: &str,
+    session_id: &str,
     store: &impl SessionStore,
 ) -> Result<(), ErrResp> {
     let option_session = store
-        .load_session(session_id_value.to_string())
+        .load_session(session_id.to_string())
         .await
         .map_err(|e| {
             tracing::error!("failed to load session: {}", e);
@@ -197,7 +198,7 @@ async fn destroy_session_if_exists(
     let _ = store.destroy_session(session).await.map_err(|e| {
         tracing::error!(
             "failed to destroy session (session_id: {}): {}",
-            session_id_value,
+            session_id,
             e
         );
         unexpected_err_resp()
@@ -713,10 +714,10 @@ mod tests {
     async fn destroy_session_if_exists_destorys_session() {
         let store = MemoryStore::new();
         let user_account_id = 15001;
-        let session_id_value = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, &store).await;
         assert_eq!(1, store.count().await);
 
-        let _ = destroy_session_if_exists(&session_id_value, &store)
+        let _ = destroy_session_if_exists(&session_id, &store)
             .await
             .expect("failed to get Ok");
 
@@ -727,10 +728,10 @@ mod tests {
     async fn destroy_session_if_exists_returns_ok_if_no_session_exists() {
         let store = MemoryStore::new();
         // dummy session id
-        let session_id_value = "KBvGQJJVyQquK5yuEcwlbfJfjNHBMAXIKRnHbVO/0QzBMHLak1xmqhaTbDuscJSeEPL2qwZfTP5BalDDMmR8eA==";
+        let session_id = "KBvGQJJVyQquK5yuEcwlbfJfjNHBMAXIKRnHbVO/0QzBMHLak1xmqhaTbDuscJSeEPL2qwZfTP5BalDDMmR8eA==";
         assert_eq!(0, store.count().await);
 
-        let _ = destroy_session_if_exists(session_id_value, &store)
+        let _ = destroy_session_if_exists(session_id, &store)
             .await
             .expect("failed to get Ok");
 
