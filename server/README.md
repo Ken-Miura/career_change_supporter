@@ -27,7 +27,7 @@ sea-orm-cli generate entity -s ccs_schema -o entity/src
 # DBのテーブル設計方針
 
 ## トランザクション分離レベル
-PostgreSQLのデフォルト（READ COMMITTED）を想定して設計。SERIALIZABLEないので、トランザクション中でもアプリケーションで明示的なロック取得が必要なことを念頭に置く
+PostgreSQLのデフォルト（READ COMMITTED）を想定して設計。SERIALIZABLEではないので、トランザクション中でもアプリケーションで明示的なロック取得が必要なことを念頭に置く
 
 ## 外部キー採用時の検討事項
 外部キーを採用するときは、下記の事項を検討し、課題がないことを明確にした上で採用する
