@@ -74,6 +74,12 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
+            .execute(
+                sql.stmt(r"GRANT UPDATE (hashed_password, last_login_time) ON ccs_schema.user_account To user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
             .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.user_account To admin_app;"))
             .await
             .map(|_| ())?;
