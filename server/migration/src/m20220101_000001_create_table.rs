@@ -68,14 +68,8 @@ impl MigrationTrait for Migration {
         .await
         .map(|_| ())?;
         let _ = conn
-            .execute(
-                sql.stmt(r"GRANT SELECT, INSERT, DELETE ON ccs_schema.user_account To user_app;"),
-            )
-            .await
-            .map(|_| ())?;
-        let _ = conn
             .execute(sql.stmt(
-                r"GRANT UPDATE (hashed_password, last_login_time) ON ccs_schema.user_account To user_app;",
+                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.user_account To user_app;",
             ))
             .await
             .map(|_| ())?;
@@ -96,6 +90,32 @@ impl MigrationTrait for Migration {
              */
             .execute(sql.stmt(
                 r"GRANT USAGE ON SEQUENCE ccs_schema.user_account_user_account_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
+            .execute(sql.stmt(r"CREATE TABLE ccs_schema.deleted_user_account (
+                user_account_id BIGINT PRIMARY KEY,
+                email_address ccs_schema.email_address NOT NULL UNIQUE,
+                hashed_password BYTEA NOT NULL,
+                last_login_time TIMESTAMP WITH TIME ZONE,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                disabled_at TIMESTAMP WITH TIME ZONE,
+                deleted_at TIMESTAMP WITH TIME ZONE NOT NULL
+              );"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.deleted_user_account To user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.deleted_user_account To admin_app;",
             ))
             .await
             .map(|_| ())?;
@@ -163,7 +183,7 @@ impl MigrationTrait for Migration {
              * 参考: https://www.accumu.jp/vol22-23/%E3%82%84%E3%81%95%E3%81%97%E3%81%9D%E3%81%86%E3%81%AB%E8%A6%8B%E3%81%88%E3%82%8B%E9%9B%BB%E8%A9%B1%E7%95%AA%E5%8F%B7%E3%81%AE%E9%9B%A3%E3%81%97%E3%81%95%20%E7%B7%8F%E5%8B%99%E5%A4%A7%E8%87%A3%E8%B3%9E%E3%82%92%E5%8F%97%E8%B3%9E%E3%81%97%E3%81%A6.html#:~:text=%E6%97%A5%E6%9C%AC%E3%81%AE%E5%A0%B4%E5%90%88%EF%BC%8C%E5%9B%BD%E7%95%AA%E5%8F%B7,%E3%81%AF%E9%99%A4%E3%81%84%E3%81%A6%E6%95%B0%E3%81%88%E3%81%BE%E3%81%99%E3%80%82
              */
             .execute(sql.stmt(r"CREATE TABLE ccs_schema.identity (
-              user_account_id BIGINT PRIMARY KEY REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+              user_account_id BIGINT PRIMARY KEY,
               last_name VARCHAR (64) NOT NULL,
               first_name VARCHAR (64) NOT NULL,
               last_name_furigana VARCHAR (64) NOT NULL,
@@ -203,12 +223,10 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(
                 /* annual_income_in_man_yen => 万円単位での年収 */
-                /* user_account_id => アプリケーション側で最大値（MAX_NUM_OF_CAREER_PER_USER_ACCOUNT）を制御しているため、
-                 * ON DELETE CASCADEでパフォーマンス上の問題が発生する量の削除は発生しない
-                 */
-                sql.stmt(r"CREATE TABLE ccs_schema.career (
+                sql.stmt(
+                    r"CREATE TABLE ccs_schema.career (
                     career_id BIGSERIAL PRIMARY KEY,
-                    user_account_id BIGINT NOT NULL REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+                    user_account_id BIGINT NOT NULL,
                     company_name VARCHAR (256) NOT NULL,
                     department_name VARCHAR (256),
                     office VARCHAR (256),
@@ -221,7 +239,8 @@ impl MigrationTrait for Migration {
                     position_name VARCHAR (128),
                     is_new_graduate BOOLEAN NOT NULL,
                     note VARCHAR (2048)
-                  );"),
+                  );",
+                ),
             )
             .await
             .map(|_| ())?;
@@ -248,7 +267,7 @@ impl MigrationTrait for Migration {
             /* user_account一つに対して、consulting_feeは0もしくは1の関係とする。従って、user_account_idを外部キーかつ主キーとして扱う */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consulting_fee (
-                  user_account_id BIGINT PRIMARY KEY REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+                  user_account_id BIGINT PRIMARY KEY,
                   fee_per_hour_in_yen INTEGER NOT NULL
                 );",
             ))
@@ -265,7 +284,7 @@ impl MigrationTrait for Migration {
             /* user_account一つに対して、tenantは0もしくは1の関係とする。従って、user_account_idを外部キーかつ主キーとして扱う */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.tenant (
-                  user_account_id BIGINT PRIMARY KEY REFERENCES ccs_schema.user_account(user_account_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+                  user_account_id BIGINT PRIMARY KEY,
                   tenant_id ccs_schema.tenant_id UNIQUE NOT NULL
                 );",
             ))

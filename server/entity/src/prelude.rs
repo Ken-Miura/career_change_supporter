@@ -5,6 +5,7 @@ pub use super::approved_create_identity_req::Entity as ApprovedCreateIdentityReq
 pub use super::career::Entity as Career;
 pub use super::consulting_fee::Entity as ConsultingFee;
 pub use super::create_identity_req::Entity as CreateIdentityReq;
+pub use super::deleted_user_account::Entity as DeletedUserAccount;
 pub use super::identity::Entity as Identity;
 pub use super::pwd_change_req::Entity as PwdChangeReq;
 pub use super::rejected_create_identity_req::Entity as RejectedCreateIdentityReq;

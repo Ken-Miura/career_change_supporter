@@ -9,6 +9,7 @@ pub mod approved_create_identity_req;
 pub mod career;
 pub mod consulting_fee;
 pub mod create_identity_req;
+pub mod deleted_user_account;
 pub mod identity;
 pub mod pwd_change_req;
 pub mod rejected_create_identity_req;

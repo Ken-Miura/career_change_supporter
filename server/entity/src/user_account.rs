@@ -15,39 +15,12 @@ pub struct Model {
     pub disabled_at: Option<DateTimeWithTimeZone>,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(has_many = "super::identity::Entity")]
-    Identity,
-    #[sea_orm(has_many = "super::career::Entity")]
-    Career,
-    #[sea_orm(has_many = "super::consulting_fee::Entity")]
-    ConsultingFee,
-    #[sea_orm(has_many = "super::tenant::Entity")]
-    Tenant,
-}
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {}
 
-impl Related<super::identity::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Identity.def()
-    }
-}
-
-impl Related<super::career::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Career.def()
-    }
-}
-
-impl Related<super::consulting_fee::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ConsultingFee.def()
-    }
-}
-
-impl Related<super::tenant::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Tenant.def()
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        panic!("No RelationDef")
     }
 }
 

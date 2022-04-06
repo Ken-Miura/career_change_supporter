@@ -3,12 +3,17 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "tenant", schema_name = "ccs_schema")]
+#[sea_orm(table_name = "deleted_user_account", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub user_account_id: i64,
     #[sea_orm(unique)]
-    pub tenant_id: String,
+    pub email_address: String,
+    pub hashed_password: Vec<u8>,
+    pub last_login_time: Option<DateTimeWithTimeZone>,
+    pub created_at: DateTimeWithTimeZone,
+    pub disabled_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
