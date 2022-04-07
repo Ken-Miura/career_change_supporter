@@ -335,7 +335,160 @@ Email: {}",
 
 #[cfg(test)]
 mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
+
+    use crate::{
+        create_identity_request_rejection::{
+            create_text, CreateIdentityReqRejectionResult, SUBJECT,
+        },
+        err::Code,
+        util::tests::SendMailMock,
+    };
+
+    use super::{handle_create_identity_request_rejection, CreateIdentityReqRejectionOperation};
+
+    struct Admin {
+        admin_account_id: i64,
+        email_address: String,
+    }
+
+    struct User {
+        user_account_id: i64,
+        email_address: String,
+    }
+
+    struct CreateIdentityReqRejectionOperationMock {
+        admin: Admin,
+        user: User,
+        rejection_reason: String,
+        rejected_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperationMock {
+        async fn get_admin_email_address_by_admin_account_id(
+            &self,
+            admin_account_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.admin.admin_account_id, admin_account_id);
+            Ok(Some(self.admin.email_address.clone()))
+        }
+
+        async fn reject_create_identity_req(
+            &self,
+            user_account_id: i64,
+            refuser_email_address: String,
+            rejection_reason: String,
+            rejected_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.user.user_account_id, user_account_id);
+            assert_eq!(self.admin.email_address, refuser_email_address);
+            assert_eq!(self.rejection_reason, rejection_reason);
+            assert_eq!(self.rejected_time, rejected_time);
+            Ok(())
+        }
+
+        async fn get_user_email_address_by_user_account_id(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.user.user_account_id, user_account_id);
+            Ok(Some(self.user.email_address.clone()))
+        }
+    }
 
     #[tokio::test]
-    async fn handle_create_identity_request_approval_success() {}
+    async fn handle_create_identity_request_rejection_success() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 53215;
+        let user_email_address = String::from("test@test.com");
+        let user = User {
+            user_account_id,
+            email_address: user_email_address.clone(),
+        };
+        let rejection_reason = "画像が不鮮明なため";
+        let rejected_time = chrono::Utc
+            .ymd(2022, 4, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = CreateIdentityReqRejectionOperationMock {
+            admin,
+            user,
+            rejection_reason: rejection_reason.to_string(),
+            rejected_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(rejection_reason.to_string()),
+        );
+
+        let result = handle_create_identity_request_rejection(
+            admin_account_id,
+            user_account_id,
+            rejection_reason.to_string(),
+            rejected_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(CreateIdentityReqRejectionResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_create_identity_request_rejection_fail_invalid_format_reason() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 53215;
+        let user_email_address = String::from("test@test.com");
+        let user = User {
+            user_account_id,
+            email_address: user_email_address.clone(),
+        };
+        let rejection_reason = "<script>alert('test');<script>";
+        let rejected_time = chrono::Utc
+            .ymd(2022, 4, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = CreateIdentityReqRejectionOperationMock {
+            admin,
+            user,
+            rejection_reason: rejection_reason.to_string(),
+            rejected_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(rejection_reason.to_string()),
+        );
+
+        let result = handle_create_identity_request_rejection(
+            admin_account_id,
+            user_account_id,
+            rejection_reason.to_string(),
+            rejected_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::InvalidFormatReason as u32, resp.1 .0.code);
+    }
 }
