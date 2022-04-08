@@ -2,6 +2,7 @@
 定期処理で対応する予定の処理を実装する
 - 期限切れのtemp_accountレコードの削除
 - 期限切れのpwd_change_reqレコードの削除
+- deleted_user_accountに紐づくidentity、career、tenant、consulting_feeの削除
 
 開発環境用のDockerfileについて以下の考慮を行い、整理する
 - ステージの考え方（ビルド用イメージ、デプロイ用イメージ）を使ったDockerfileとする
