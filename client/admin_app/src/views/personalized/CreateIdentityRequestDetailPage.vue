@@ -136,11 +136,11 @@ export default defineComponent({
       getUsersByDateOfBirthFunc
     } = useGetUsersByDateOfBirth()
     const {
-      waitingpostCreateIdentityRequestApprovalDone,
+      waitingPostCreateIdentityRequestApprovalDone,
       postCreateIdentityRequestApprovalFunc
     } = usePostCreateIdentityRequestApproval()
     const waitingRequestDone = computed(() => {
-      return waitingGetCreateIdentityRequestDetailDone.value || waitingGetUsersByDateOfBirthDone.value || waitingpostCreateIdentityRequestApprovalDone.value
+      return waitingGetCreateIdentityRequestDetailDone.value || waitingGetUsersByDateOfBirthDone.value || waitingPostCreateIdentityRequestApprovalDone.value
     })
     const getUsers = async (year: number, month: number, day: number) => {
       const response = await getUsersByDateOfBirthFunc(year, month, day)
