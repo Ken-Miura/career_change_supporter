@@ -5,6 +5,8 @@ import AdminMenuPage from '../views/personalized/AdminMenuPage.vue'
 import CreateIdentityRequestListPage from '../views/personalized/CreateIdentityRequestListPage.vue'
 import CreateIdentityRequestDetailPage from '../views/personalized/CreateIdentityRequestDetailPage.vue'
 import CreateIdentityRequestApprovalPage from '../views/personalized/CreateIdentityRequestApprovalPage.vue'
+import CreateIdentityRequestRejectionDetailPage from '../views/personalized/CreateIdentityRequestRejectionDetailPage.vue'
+import CreateIdentityRequestRejectionPage from '../views/personalized/CreateIdentityRequestRejectionPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -41,6 +43,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/create-identity-request-approval',
     name: 'CreateIdentityRequestApprovalPage',
     component: CreateIdentityRequestApprovalPage
+  },
+  {
+    path: '/create-identity-request-rejection-detail/:account_id',
+    name: 'CreateIdentityRequestRejectionDetailPage',
+    component: CreateIdentityRequestRejectionDetailPage
+  },
+  {
+    path: '/create-identity-request-rejection',
+    name: 'CreateIdentityRequestRejectionPage',
+    component: CreateIdentityRequestRejectionPage
   }
 ]
 

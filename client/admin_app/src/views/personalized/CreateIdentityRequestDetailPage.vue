@@ -66,7 +66,7 @@
         </div>
         <div class="flex flex-row justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <button v-on:click="approveReq" class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">承認する</button>
-          <button class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">拒否理由を選ぶ</button>
+          <button v-on:click="chooseRejectionReason" class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold mx-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">拒否理由を選ぶ</button>
         </div>
       </div>
     </main>
@@ -207,7 +207,11 @@ export default defineComponent({
       }
     }
 
-    return { error, detail, image1Url, image2Url, users, waitingRequestDone, approveReq }
+    const chooseRejectionReason = async () => {
+      await router.push({ name: 'CreateIdentityRequestRejectionDetailPage', params: { account_id: userAccountId } })
+    }
+
+    return { error, detail, image1Url, image2Url, users, waitingRequestDone, approveReq, chooseRejectionReason }
   }
 })
 </script>

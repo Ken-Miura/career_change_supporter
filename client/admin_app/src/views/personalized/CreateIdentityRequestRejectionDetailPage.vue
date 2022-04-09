@@ -44,7 +44,7 @@ import { Message } from '@/util/Message'
 import { PostCreateIdentityRequestRejectionResp } from '@/util/personalized/create-identity-request-rejection-detail/PostCreateIdentityRequestRejectionResp'
 
 export default defineComponent({
-  name: 'IdentityPage',
+  name: 'CreateIdentityRequestRejectionDetailPage',
   components: {
     TheHeader,
     AlertMessage,
