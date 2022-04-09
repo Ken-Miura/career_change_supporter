@@ -1,5 +1,5 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import CreateIdentityRequestRejectionDetailPage from '@/views/personalized/CreateIdentityRequestRejectionDetailPage.vue'
@@ -8,6 +8,7 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import { createReasonList } from '@/util/personalized/create-identity-request-rejection-detail/ReasonList'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Message } from '@/util/Message'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -133,5 +134,35 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledWith(parseInt(routeParam), list[0])
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it('displays AlertMessage when error has happened', async () => {
+    routeParam = '1'
+    const errDetail = 'connection error'
+    postCreateIdentityRequestRejectionFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(CreateIdentityRequestRejectionDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const button = wrapper.find('[data-test="submit-button"]')
+    await button.trigger('submit')
+    await nextTick()
+
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledTimes(1)
+    const list = createReasonList()
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledWith(parseInt(routeParam), list[0])
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
