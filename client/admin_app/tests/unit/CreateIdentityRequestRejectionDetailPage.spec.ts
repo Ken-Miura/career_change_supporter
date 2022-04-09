@@ -4,6 +4,7 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import CreateIdentityRequestRejectionDetailPage from '@/views/personalized/CreateIdentityRequestRejectionDetailPage.vue'
 import { PostCreateIdentityRequestRejectionResp } from '@/util/personalized/create-identity-request-rejection-detail/PostCreateIdentityRequestRejectionResp'
+import AlertMessage from '@/components/AlertMessage.vue'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -55,5 +56,18 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('has AlertMessage with a hidden attribute when created', () => {
+    const wrapper = mount(CreateIdentityRequestRejectionDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).toContain('hidden')
   })
 })

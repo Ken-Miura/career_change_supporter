@@ -67,6 +67,18 @@ describe('CreateIdentityRequestListPage.vue', () => {
     // mainが出ていないことまで確認しない。
   })
 
+  it('does not have AlertMessage when created', () => {
+    const wrapper = mount(CreateIdentityRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+  })
+
   it('displays AlertMessage when error has happened', async () => {
     const errDetail = 'connection error'
     getCreateIdentityRequestsFuncMock.mockRejectedValue(new Error(errDetail))
