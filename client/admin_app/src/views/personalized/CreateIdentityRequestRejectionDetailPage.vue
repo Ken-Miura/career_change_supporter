@@ -6,11 +6,11 @@
     </div>
     <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">本人確認依頼（新規）拒否理由</h3>
-        <p class="mt-2 text-lg">拒否理由を選択して依頼を拒否して下さい。適切な拒否理由がない場合、管理者にご連絡下さい。</p>
+        <h3 data-test="title" class="font-bold text-2xl">本人確認依頼（新規）拒否理由</h3>
+        <p data-test="description" class="mt-2 text-lg">拒否理由を選択して依頼を拒否して下さい。適切な拒否理由がない場合、管理者にご連絡下さい。</p>
         <form @submit.prevent="submitRejectionReason">
           <div class="m-4 text-2xl grid grid-cols-6">
-            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               拒否理由
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-6">

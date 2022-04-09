@@ -70,4 +70,21 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     const classes = alertMessage.classes()
     expect(classes).toContain('hidden')
   })
+
+  it('has title, description and label for selection', () => {
+    const wrapper = mount(CreateIdentityRequestRejectionDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const title = wrapper.find('[data-test="title"]')
+    expect(title.text()).toContain('本人確認依頼（新規）拒否理由')
+    const description = wrapper.find('[data-test="description"]')
+    expect(description.text()).toContain('拒否理由を選択して依頼を拒否して下さい。適切な拒否理由がない場合、管理者にご連絡下さい。')
+    const label = wrapper.find('[data-test="label"]')
+    expect(label.text()).toContain('拒否理由')
+  })
 })
