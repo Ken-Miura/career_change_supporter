@@ -5,6 +5,7 @@ import TheHeader from '@/components/TheHeader.vue'
 import CreateIdentityRequestRejectionDetailPage from '@/views/personalized/CreateIdentityRequestRejectionDetailPage.vue'
 import { PostCreateIdentityRequestRejectionResp } from '@/util/personalized/create-identity-request-rejection-detail/PostCreateIdentityRequestRejectionResp'
 import AlertMessage from '@/components/AlertMessage.vue'
+import { createReasonList } from '@/util/personalized/create-identity-request-rejection-detail/ReasonList'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -103,6 +104,9 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
 
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledTimes(1)
+    const list = createReasonList()
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledWith(parseInt(routeParam), list[0])
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/create-identity-request-rejection')
   })
