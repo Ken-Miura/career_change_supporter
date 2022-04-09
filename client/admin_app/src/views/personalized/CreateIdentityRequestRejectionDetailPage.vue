@@ -54,12 +54,13 @@ export default defineComponent({
     const route = useRoute()
     const userAccountId = route.params.account_id as string
     const router = useRouter()
-    const rejectionReason = ref('')
+    const list = createReasonList()
+    const rejectionReason = ref(list[0])
+    const reasonList = ref(list)
     const error = reactive({
       exists: false,
       message: ''
     })
-    const reasonList = ref(createReasonList())
     const {
       waitingRequestDone,
       postCreateIdentityRequestRejectionFunc
