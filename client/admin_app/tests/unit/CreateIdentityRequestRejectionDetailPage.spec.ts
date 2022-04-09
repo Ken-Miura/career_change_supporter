@@ -165,4 +165,33 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
   })
+
+  it(`displays ${Message.INVALID_FORMAT_REASON_MESSAGE} if ${Code.INVALID_FORMAT_REASON} is returned`, async () => {
+    routeParam = '1'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_FORMAT_REASON))
+    postCreateIdentityRequestRejectionFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(CreateIdentityRequestRejectionDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const button = wrapper.find('[data-test="submit-button"]')
+    await button.trigger('submit')
+    await nextTick()
+
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledTimes(1)
+    const list = createReasonList()
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledWith(parseInt(routeParam), list[0])
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.INVALID_FORMAT_REASON_MESSAGE} (${Code.INVALID_FORMAT_REASON})`)
+  })
 })
