@@ -6,6 +6,8 @@ import CreateIdentityRequestRejectionDetailPage from '@/views/personalized/Creat
 import { PostCreateIdentityRequestRejectionResp } from '@/util/personalized/create-identity-request-rejection-detail/PostCreateIdentityRequestRejectionResp'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { createReasonList } from '@/util/personalized/create-identity-request-rejection-detail/ReasonList'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -109,5 +111,27 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledWith(parseInt(routeParam), list[0])
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/create-identity-request-rejection')
+  })
+
+  it(`moves to login if ${Code.UNAUTHORIZED} is returned`, async () => {
+    routeParam = '1'
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postCreateIdentityRequestRejectionFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(CreateIdentityRequestRejectionDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const button = wrapper.find('[data-test="submit-button"]')
+    await button.trigger('submit')
+
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledTimes(1)
+    const list = createReasonList()
+    expect(postCreateIdentityRequestRejectionFuncMock).toHaveBeenCalledWith(parseInt(routeParam), list[0])
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 })
