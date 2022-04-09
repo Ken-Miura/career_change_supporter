@@ -87,4 +87,23 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     const label = wrapper.find('[data-test="label"]')
     expect(label.text()).toContain('拒否理由')
   })
+
+  it('moves to CreateIdentityRequestRejectionPage if request is successful', async () => {
+    routeParam = '1'
+    const resp = PostCreateIdentityRequestRejectionResp.create()
+    postCreateIdentityRequestRejectionFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(CreateIdentityRequestRejectionDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const button = wrapper.find('[data-test="submit-button"]')
+    await button.trigger('submit')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/create-identity-request-rejection')
+  })
 })
