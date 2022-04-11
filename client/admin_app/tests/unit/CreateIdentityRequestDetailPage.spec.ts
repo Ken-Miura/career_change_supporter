@@ -5,6 +5,8 @@ import TheHeader from '@/components/TheHeader.vue'
 import CreateIdentityRequestDetailPage from '@/views/personalized/CreateIdentityRequestDetailPage.vue'
 import { GetCreateIdentityRequestDetailResp } from '@/util/personalized/create-identity-request-detail/GetCreateIdentityRequestDetailResp'
 import { GetUsersByDateOfBirthResp } from '@/util/personalized/create-identity-request-detail/GetUsersByDateOfBirthResp'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -191,5 +193,24 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it(`moves to login if ${Code.UNAUTHORIZED} after getCreateIdentityRequestDetail`, async () => {
+    routeParam = '1'
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(apiErrResp)
+    const resp2 = GetUsersByDateOfBirthResp.create([])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 })
