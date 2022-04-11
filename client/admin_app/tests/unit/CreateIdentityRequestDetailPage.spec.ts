@@ -7,6 +7,8 @@ import { GetCreateIdentityRequestDetailResp } from '@/util/personalized/create-i
 import { GetUsersByDateOfBirthResp } from '@/util/personalized/create-identity-request-detail/GetUsersByDateOfBirthResp'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Message } from '@/util/Message'
+import AlertMessage from '@/components/AlertMessage.vue'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -250,5 +252,30 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`displays ${Message.NO_CREATE_IDENTITY_REQ_DETAIL_FOUND_MESSAGE} if ${Code.NO_CREATE_IDENTITY_REQ_DETAIL_FOUND} after getCreateIdentityRequestDetail`, async () => {
+    routeParam = '1'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_CREATE_IDENTITY_REQ_DETAIL_FOUND))
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(apiErrResp)
+    const resp2 = GetUsersByDateOfBirthResp.create([])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.NO_CREATE_IDENTITY_REQ_DETAIL_FOUND_MESSAGE} (${Code.NO_CREATE_IDENTITY_REQ_DETAIL_FOUND})`)
   })
 })
