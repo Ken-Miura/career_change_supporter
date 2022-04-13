@@ -11,7 +11,7 @@
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div data-test="req-detail" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">本人確認依頼（新規）詳細</h3>
           <div v-if="detail !== null">
             <div class="m-4 text-2xl grid grid-cols-3">
@@ -27,11 +27,11 @@
             </div>
             <div class="m-2 text-2xl">
               <div class="mt-2">身分証明書画像（表面）</div>
-              <img class="mt-2" v-bind:src="image1Url" />
+              <img data-test="req-detail-image1" class="mt-2" v-bind:src="image1Url" />
             </div>
             <div v-if="image2Url !== null" class="m-2 text-2xl">
               <div class="mt-2">身分証明書画像（裏面）</div>
-              <img class="mt-2" v-bind:src="image2Url" />
+              <img data-test="req-detail-image2" class="mt-2" v-bind:src="image2Url" />
             </div>
           </div>
         </div>
