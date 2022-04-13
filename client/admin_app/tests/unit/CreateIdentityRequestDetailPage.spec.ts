@@ -626,6 +626,8 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(reqDetail).toContain(`${detail.address_line1}`)
     expect(reqDetail).toContain('建物名・部屋番号')
     expect(reqDetail).toContain(`${detail.address_line2}`)
+    expect(reqDetail).toContain('電話番号')
+    expect(reqDetail).toContain(`${detail.telephone_number}`)
     expect(reqDetail).toContain('身分証明書画像（表面）')
     const image1Div = reqDetailDiv.find('[data-test="req-detail-image1"]')
     expect(image1Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image1_file_name_without_ext}`)
@@ -671,5 +673,74 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     const noUsersFoundDiv = wrapper.find('[data-test="no-same-date-of-birth-users-found"]')
     const noUsersFound = noUsersFoundDiv.text()
     expect(noUsersFound).toContain('生年月日が同じユーザーはいません。')
+  })
+
+  it('displays users who have same date of birth', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: 'サーパスマンション１０１号',
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetCreateIdentityRequestDetailResp.create(detail)
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const user = {
+      user_account_id: 5341,
+      last_name: '佐藤',
+      first_name: '次郎',
+      last_name_furigana: 'サトウ',
+      first_name_furigana: 'ジロウ',
+      date_of_birth: detail.date_of_birth,
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '森の里２−２２−２',
+      address_line2: 'アーバンライフ２０２号',
+      telephone_number: '07087654321'
+    }
+    const resp2 = GetUsersByDateOfBirthResp.create([user])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const usersDiv = wrapper.find('[data-test="same-date-of-birth-users"]')
+    const users = usersDiv.text()
+    expect(users).toContain(`ユーザーアカウントID: ${user.user_account_id}`)
+    expect(users).toContain('名前')
+    expect(users).toContain(`${user.last_name} ${user.first_name}`)
+    expect(users).toContain('フリガナ')
+    expect(users).toContain(`${user.last_name_furigana} ${user.first_name_furigana}`)
+    expect(users).toContain('生年月日')
+    expect(users).toContain(`${user.date_of_birth.year}年${user.date_of_birth.month}月${user.date_of_birth.day}日`)
+    expect(users).toContain('住所')
+    expect(users).toContain('都道府県')
+    expect(users).toContain(`${user.prefecture}`)
+    expect(users).toContain('市区町村')
+    expect(users).toContain(`${user.city}`)
+    expect(users).toContain('番地')
+    expect(users).toContain(`${user.address_line1}`)
+    expect(users).toContain('建物名・部屋番号')
+    expect(users).toContain(`${user.address_line2}`)
+    expect(users).toContain('電話番号')
+    expect(users).toContain(`${user.telephone_number}`)
   })
 })

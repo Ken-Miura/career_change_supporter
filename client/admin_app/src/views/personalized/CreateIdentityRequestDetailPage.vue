@@ -44,7 +44,7 @@
             </div>
           </div>
           <div v-else>
-            <ul>
+            <ul data-test="same-date-of-birth-users">
               <li v-for="user in users" v-bind:key="user">
                 <div class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーアカウントID: {{ user.user_account_id }}</div>
