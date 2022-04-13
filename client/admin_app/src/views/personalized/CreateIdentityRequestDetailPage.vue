@@ -39,7 +39,7 @@
           <h3 class="font-bold text-2xl">生年月日が同じユーザー</h3>
           <p class="mt-2 text-lg">既に登録されているユーザーが新規に本人確認依頼をしてきていないか確認して下さい。</p>
           <div v-if="users.length === 0">
-            <div class="m-4 text-xl">
+            <div data-test="no-same-date-of-birth-users-found" class="m-4 text-xl">
               <div class="mt-2">生年月日が同じユーザーはいません。</div>
             </div>
           </div>

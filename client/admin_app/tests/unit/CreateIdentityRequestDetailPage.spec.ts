@@ -633,4 +633,43 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     const image2Div = reqDetailDiv.find('[data-test="req-detail-image2"]')
     expect(image2Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image2_file_name_without_ext}`)
   })
+
+  it('does not display any other users if same date of birth users is empty', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: 'サーパスマンション１０１号',
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetCreateIdentityRequestDetailResp.create(detail)
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const resp2 = GetUsersByDateOfBirthResp.create([])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const noUsersFoundDiv = wrapper.find('[data-test="no-same-date-of-birth-users-found"]')
+    const noUsersFound = noUsersFoundDiv.text()
+    expect(noUsersFound).toContain('生年月日が同じユーザーはいません。')
+  })
 })
