@@ -1,5 +1,5 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import CreateIdentityRequestDetailPage from '@/views/personalized/CreateIdentityRequestDetailPage.vue'
@@ -521,5 +521,56 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it('displays AlertMessage when error has happened after pushing 承認する', async () => {
+    routeParam = '1523'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: null,
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: null,
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetCreateIdentityRequestDetailResp.create(detail)
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const resp2 = GetUsersByDateOfBirthResp.create([])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const errDetail = 'connection error'
+    postCreateIdentityRequestApprovalFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="approve-req-button"]')
+    await button.trigger('click')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
