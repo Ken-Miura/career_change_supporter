@@ -675,7 +675,7 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(noUsersFound).toContain('生年月日が同じユーザーはいません。')
   })
 
-  it('displays users who have same date of birth', async () => {
+  it('displays user who has same date of birth', async () => {
     routeParam = '1626'
     const detail = {
       last_name: '田中',
@@ -742,5 +742,95 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(users).toContain(`${user.address_line2}`)
     expect(users).toContain('電話番号')
     expect(users).toContain(`${user.telephone_number}`)
+  })
+
+  it('displays users who have same date of birth', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: 'サーパスマンション１０１号',
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetCreateIdentityRequestDetailResp.create(detail)
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const user1 = {
+      user_account_id: 5341,
+      last_name: '佐藤',
+      first_name: '次郎',
+      last_name_furigana: 'サトウ',
+      first_name_furigana: 'ジロウ',
+      date_of_birth: detail.date_of_birth,
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '森の里２−２２−２',
+      address_line2: 'アーバンライフ２０２号',
+      telephone_number: '07087654321'
+    }
+    const user2 = {
+      user_account_id: 8785,
+      last_name: '鈴木',
+      first_name: '三郎',
+      last_name_furigana: 'スズキ',
+      first_name_furigana: 'サブロウ',
+      date_of_birth: detail.date_of_birth,
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: 'アーバンライフ２０２号',
+      telephone_number: '09087654321'
+    }
+    const resp2 = GetUsersByDateOfBirthResp.create([user1, user2])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const usersDiv = wrapper.find('[data-test="same-date-of-birth-users"]')
+    const users = usersDiv.text()
+    expect(users).toContain(`ユーザーアカウントID: ${user1.user_account_id}`)
+    expect(users).toContain('名前')
+    expect(users).toContain(`${user1.last_name} ${user1.first_name}`)
+    expect(users).toContain('フリガナ')
+    expect(users).toContain(`${user1.last_name_furigana} ${user1.first_name_furigana}`)
+    expect(users).toContain('生年月日')
+    expect(users).toContain(`${user1.date_of_birth.year}年${user1.date_of_birth.month}月${user1.date_of_birth.day}日`)
+    expect(users).toContain('住所')
+    expect(users).toContain('都道府県')
+    expect(users).toContain(`${user1.prefecture}`)
+    expect(users).toContain('市区町村')
+    expect(users).toContain(`${user1.city}`)
+    expect(users).toContain('番地')
+    expect(users).toContain(`${user1.address_line1}`)
+    expect(users).toContain('建物名・部屋番号')
+    expect(users).toContain(`${user1.address_line2}`)
+    expect(users).toContain('電話番号')
+    expect(users).toContain(`${user1.telephone_number}`)
+
+    expect(users).toContain(`${user2.last_name} ${user2.first_name}`)
+    expect(users).toContain(`${user2.last_name_furigana} ${user2.first_name_furigana}`)
+    expect(users).toContain(`${user2.date_of_birth.year}年${user2.date_of_birth.month}月${user2.date_of_birth.day}日`)
+    expect(users).toContain(`${user2.prefecture}`)
+    expect(users).toContain(`${user2.city}`)
+    expect(users).toContain(`${user2.address_line1}`)
+    expect(users).toContain(`${user2.telephone_number}`)
   })
 })
