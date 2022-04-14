@@ -13,9 +13,10 @@ use axum::{
     Json,
 };
 use bytes::Bytes;
-use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
+use common::util::Ymd;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
@@ -400,8 +401,8 @@ async fn handle_identity_req(
     send_mail: impl SendMail,
 ) -> RespResult<IdentityResult> {
     let account_id = submitted_identity.account_id;
-    let identity_exists = op
-        .check_if_identity_already_exists(account_id)
+    let identity_option = op
+        .find_identity_by_account_id(account_id)
         .await
         .map_err(|e| {
             tracing::error!(
@@ -410,7 +411,8 @@ async fn handle_identity_req(
             );
             e
         })?;
-    if identity_exists {
+    let identity_exists = identity_option.is_some();
+    if let Some(identity) = identity_option {
         let update_req_exists = op
             .check_if_update_identity_req_already_exists(account_id)
             .await?;
@@ -487,7 +489,10 @@ fn create_text(id: i64, update: bool) -> String {
 
 #[async_trait]
 trait SubmitIdentityOperation {
-    async fn check_if_identity_already_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+    async fn find_identity_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Option<Identity>, ErrResp>;
     async fn check_if_create_identity_req_already_exists(
         &self,
         account_id: i64,
@@ -520,7 +525,10 @@ impl SubmitIdentityOperationImpl {
 
 #[async_trait]
 impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
-    async fn check_if_identity_already_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+    async fn find_identity_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Option<Identity>, ErrResp> {
         let model = entity::prelude::Identity::find_by_id(account_id)
             .one(&self.pool)
             .await
@@ -532,7 +540,22 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(model.is_some())
+        Ok(model.map(|m| Identity {
+            last_name: m.last_name,
+            first_name: m.first_name,
+            last_name_furigana: m.last_name_furigana,
+            first_name_furigana: m.first_name_furigana,
+            date_of_birth: Ymd {
+                year: m.date_of_birth.year(),
+                month: m.date_of_birth.month(),
+                day: m.date_of_birth.day(),
+            },
+            prefecture: m.prefecture,
+            city: m.city,
+            address_line1: m.address_line1,
+            address_line2: m.address_line2,
+            telephone_number: m.telephone_number,
+        }))
     }
 
     async fn check_if_create_identity_req_already_exists(
@@ -2214,19 +2237,22 @@ mod tests {
     }
 
     struct SubmitIdentityOperationMock {
-        identity_exists: bool,
         create_identity_req_exists: bool,
         update_identity_req_exists: bool,
         account_id: i64,
+        identity_option: Option<Identity>,
         submitted_identity: SubmittedIdentity,
         current_date_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
     impl SubmitIdentityOperation for SubmitIdentityOperationMock {
-        async fn check_if_identity_already_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+        async fn find_identity_by_account_id(
+            &self,
+            account_id: i64,
+        ) -> Result<Option<Identity>, ErrResp> {
             assert_eq!(self.account_id, account_id);
-            Ok(self.identity_exists)
+            Ok(self.identity_option.clone())
         }
 
         async fn check_if_create_identity_req_already_exists(
@@ -2269,13 +2295,6 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_success_create_identity_req() {
         let account_id = 1234;
-        let identity_exists = false;
-        let send_mail_mock = SendMailMock::new(
-            ADMIN_EMAIL_ADDRESS.to_string(),
-            SYSTEM_EMAIL_ADDRESS.to_string(),
-            create_subject(account_id, identity_exists),
-            create_text(account_id, identity_exists),
-        );
         let current_date_time = Utc
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
@@ -2289,13 +2308,19 @@ mod tests {
             identity_image2: None,
         };
         let op = SubmitIdentityOperationMock {
-            identity_exists,
+            identity_option: Some(submitted_identity.identity.clone()),
             create_identity_req_exists: false,
             update_identity_req_exists: false,
             account_id,
             submitted_identity: submitted_identity.clone(),
             current_date_time,
         };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, op.identity_option.is_some()),
+            create_text(account_id, op.identity_option.is_some()),
+        );
 
         let result =
             handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
@@ -2308,13 +2333,6 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_success_update_identity_req() {
         let account_id = 1234;
-        let identity_exists = true;
-        let send_mail_mock = SendMailMock::new(
-            ADMIN_EMAIL_ADDRESS.to_string(),
-            SYSTEM_EMAIL_ADDRESS.to_string(),
-            create_subject(account_id, identity_exists),
-            create_text(account_id, identity_exists),
-        );
         let current_date_time = Utc
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
@@ -2328,13 +2346,19 @@ mod tests {
             identity_image2: None,
         };
         let op = SubmitIdentityOperationMock {
-            identity_exists,
+            identity_option: Some(submitted_identity.identity.clone()),
             create_identity_req_exists: false,
             update_identity_req_exists: false,
             account_id,
             submitted_identity: submitted_identity.clone(),
             current_date_time,
         };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, op.identity_option.is_some()),
+            create_text(account_id, op.identity_option.is_some()),
+        );
 
         let result =
             handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
@@ -2347,13 +2371,6 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_fail_create_identity_req_already_exists() {
         let account_id = 1234;
-        let identity_exists = false;
-        let send_mail_mock = SendMailMock::new(
-            ADMIN_EMAIL_ADDRESS.to_string(),
-            SYSTEM_EMAIL_ADDRESS.to_string(),
-            create_subject(account_id, identity_exists),
-            create_text(account_id, identity_exists),
-        );
         let current_date_time = Utc
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
@@ -2367,13 +2384,19 @@ mod tests {
             identity_image2: None,
         };
         let op = SubmitIdentityOperationMock {
-            identity_exists,
+            identity_option: None,
             create_identity_req_exists: true,
             update_identity_req_exists: false,
             account_id,
             submitted_identity: submitted_identity.clone(),
             current_date_time,
         };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, op.identity_option.is_some()),
+            create_text(account_id, op.identity_option.is_some()),
+        );
 
         let result =
             handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
@@ -2386,13 +2409,6 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_fail_update_identity_req_already_exists() {
         let account_id = 1234;
-        let identity_exists = true;
-        let send_mail_mock = SendMailMock::new(
-            ADMIN_EMAIL_ADDRESS.to_string(),
-            SYSTEM_EMAIL_ADDRESS.to_string(),
-            create_subject(account_id, identity_exists),
-            create_text(account_id, identity_exists),
-        );
         let current_date_time = Utc
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
@@ -2406,13 +2422,19 @@ mod tests {
             identity_image2: None,
         };
         let op = SubmitIdentityOperationMock {
-            identity_exists,
+            identity_option: Some(submitted_identity.identity.clone()),
             create_identity_req_exists: false,
             update_identity_req_exists: true,
             account_id,
             submitted_identity: submitted_identity.clone(),
             current_date_time,
         };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, op.identity_option.is_some()),
+            create_text(account_id, op.identity_option.is_some()),
+        );
 
         let result =
             handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
