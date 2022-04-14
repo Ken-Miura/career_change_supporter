@@ -413,45 +413,13 @@ async fn handle_identity_req(
         })?;
     let identity_exists = identity_option.is_some();
     if let Some(identity) = identity_option {
-        let update_req_exists = op
-            .check_if_update_identity_req_already_exists(account_id)
-            .await?;
-        if update_req_exists {
-            tracing::error!("update identity req (account id: {}) exists", account_id);
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: IdentityReqAlreadyExists as u32,
-                }),
-            ));
-        }
-        let _ = op
-            .request_update_identity(submitted_identity, current_date_time)
-            .await
-            .map_err(|e| {
-                tracing::error!("failed to handle update reqest (id: {})", account_id);
-                e
-            })?;
+        let _ =
+            handle_update_identity_request(account_id, submitted_identity, current_date_time, op)
+                .await?;
     } else {
-        let create_req_exists = op
-            .check_if_create_identity_req_already_exists(account_id)
-            .await?;
-        if create_req_exists {
-            tracing::error!("create identity req (account id: {}) exists", account_id);
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: IdentityReqAlreadyExists as u32,
-                }),
-            ));
-        }
-        let _ = op
-            .request_create_identity(submitted_identity, current_date_time)
-            .await
-            .map_err(|e| {
-                tracing::error!("failed to handle post request (id: {})", account_id);
-                e
-            })?;
+        let _ =
+            handle_create_identity_request(account_id, submitted_identity, current_date_time, op)
+                .await?;
     };
     let subject = create_subject(account_id, identity_exists);
     let text = create_text(account_id, identity_exists);
@@ -459,6 +427,62 @@ async fn handle_identity_req(
         async { send_mail.send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text) }
             .await?;
     Ok((StatusCode::OK, Json(IdentityResult {})))
+}
+
+async fn handle_update_identity_request(
+    account_id: i64,
+    submitted_identity: SubmittedIdentity,
+    current_date_time: DateTime<FixedOffset>,
+    op: impl SubmitIdentityOperation,
+) -> Result<(), ErrResp> {
+    let update_req_exists = op
+        .check_if_update_identity_req_already_exists(account_id)
+        .await?;
+    if update_req_exists {
+        tracing::error!("update identity req (account id: {}) exists", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: IdentityReqAlreadyExists as u32,
+            }),
+        ));
+    }
+    let _ = op
+        .request_update_identity(submitted_identity, current_date_time)
+        .await
+        .map_err(|e| {
+            tracing::error!("failed to handle update reqest (id: {})", account_id);
+            e
+        })?;
+    Ok(())
+}
+
+async fn handle_create_identity_request(
+    account_id: i64,
+    submitted_identity: SubmittedIdentity,
+    current_date_time: DateTime<FixedOffset>,
+    op: impl SubmitIdentityOperation,
+) -> Result<(), ErrResp> {
+    let create_req_exists = op
+        .check_if_create_identity_req_already_exists(account_id)
+        .await?;
+    if create_req_exists {
+        tracing::error!("create identity req (account id: {}) exists", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: IdentityReqAlreadyExists as u32,
+            }),
+        ));
+    }
+    let _ = op
+        .request_create_identity(submitted_identity, current_date_time)
+        .await
+        .map_err(|e| {
+            tracing::error!("failed to handle create request (id: {})", account_id);
+            e
+        })?;
+    Ok(())
 }
 
 #[derive(Clone, Debug, PartialEq)]
