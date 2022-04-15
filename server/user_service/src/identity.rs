@@ -865,6 +865,7 @@ mod tests {
     use std::{error::Error, fmt::Display, io::Cursor};
 
     use crate::err::Code::DataParseFailure;
+    use crate::err::Code::DateOfBirthIsNotMatch;
     use crate::err::Code::ExceedMaxIdentityImageSizeLimit;
     use crate::err::Code::IdentityReqAlreadyExists;
     use crate::err::Code::IllegalAge;
@@ -892,6 +893,7 @@ mod tests {
     use crate::err::Code::NoFileNameFound;
     use crate::err::Code::NoIdentityFound;
     use crate::err::Code::NoIdentityImage1Found;
+    use crate::err::Code::NoIdentityUpdated;
     use crate::err::Code::NoNameFound;
     use crate::err::Code::NotJpegExtension;
     use crate::identity::{IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
@@ -2494,5 +2496,97 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(IdentityReqAlreadyExists as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn handle_identity_req_fail_date_of_birth_is_not_match() {
+        let account_id = 1234;
+        let current_date_time = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date = current_date_time.naive_local().date();
+        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let submitted_identity = SubmittedIdentity {
+            account_id,
+            identity: create_dummy_identity(&current_date),
+            identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
+            identity_image2: None,
+        };
+        let mut identity = submitted_identity.identity.clone();
+        identity.date_of_birth = Ymd {
+            year: 1978,
+            month: 5,
+            day: 12,
+        };
+        assert_ne!(
+            identity.date_of_birth,
+            submitted_identity.identity.date_of_birth
+        );
+        identity.telephone_number = String::from("08012345678");
+        assert_ne!(
+            identity.telephone_number,
+            submitted_identity.identity.telephone_number
+        );
+        let op = SubmitIdentityOperationMock {
+            identity_option: Some(identity),
+            create_identity_req_exists: false,
+            update_identity_req_exists: true,
+            account_id,
+            submitted_identity: submitted_identity.clone(),
+            current_date_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, op.identity_option.is_some()),
+            create_text(account_id, op.identity_option.is_some()),
+        );
+
+        let result =
+            handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(DateOfBirthIsNotMatch as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn handle_identity_req_fail_no_identity_updated() {
+        let account_id = 1234;
+        let current_date_time = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date = current_date_time.naive_local().date();
+        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let submitted_identity = SubmittedIdentity {
+            account_id,
+            identity: create_dummy_identity(&current_date),
+            identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
+            identity_image2: None,
+        };
+        let identity = submitted_identity.identity.clone();
+        let op = SubmitIdentityOperationMock {
+            identity_option: Some(identity),
+            create_identity_req_exists: false,
+            update_identity_req_exists: true,
+            account_id,
+            submitted_identity: submitted_identity.clone(),
+            current_date_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, op.identity_option.is_some()),
+            create_text(account_id, op.identity_option.is_some()),
+        );
+
+        let result =
+            handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(NoIdentityUpdated as u32, resp.1 .0.code);
     }
 }
