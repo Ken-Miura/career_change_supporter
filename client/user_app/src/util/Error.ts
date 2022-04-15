@@ -54,6 +54,8 @@ export namespace Code {
   export const NO_IDENTITY_FOUND = 20042
   export const NO_IDENTITY_IMAGE1_FOUND = 20043
   export const IDENTITY_INFO_REQ_ALREADY_EXISTS = 20044
+  export const DATE_OF_BIRTH_IS_NOT_MATCH = 20045
+  export const NO_IDENTITY_UPDATED = 20046
 }
 
 export function createErrorMessage (code: number): string {
@@ -149,6 +151,10 @@ export function createErrorMessage (code: number): string {
     return `${Message.NO_IDENTITY_IMAGE1_FOUND_MESSAGE} (${code})`
   } else if (code === Code.IDENTITY_INFO_REQ_ALREADY_EXISTS) {
     return `${Message.IDENTITY_INFO_REQ_ALREADY_EXISTS_MESSAGE} (${code})`
+  } else if (code === Code.DATE_OF_BIRTH_IS_NOT_MATCH) {
+    return `${Message.DATE_OF_BIRTH_IS_NOT_MATCH_MESSAGE} (${code})`
+  } else if (code === Code.NO_IDENTITY_UPDATED) {
+    return `${Message.NO_IDENTITY_UPDATED_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
