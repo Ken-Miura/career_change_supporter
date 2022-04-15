@@ -413,6 +413,22 @@ async fn handle_identity_req(
         })?;
     let identity_exists = identity_option.is_some();
     if let Some(identity) = identity_option {
+        if identity.date_of_birth != submitted_identity.identity.date_of_birth {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::DateOfBirthIsNotMatch as u32,
+                }),
+            ));
+        }
+        if identity == submitted_identity.identity {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NoIdentityUpdated as u32,
+                }),
+            ));
+        }
         let _ =
             handle_update_identity_request(account_id, submitted_identity, current_date_time, op)
                 .await?;
@@ -2332,7 +2348,7 @@ mod tests {
             identity_image2: None,
         };
         let op = SubmitIdentityOperationMock {
-            identity_option: Some(submitted_identity.identity.clone()),
+            identity_option: None,
             create_identity_req_exists: false,
             update_identity_req_exists: false,
             account_id,
@@ -2369,8 +2385,14 @@ mod tests {
             identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
             identity_image2: None,
         };
+        let mut identity = submitted_identity.identity.clone();
+        identity.telephone_number = String::from("08012345678");
+        assert_ne!(
+            identity.telephone_number,
+            submitted_identity.identity.telephone_number
+        );
         let op = SubmitIdentityOperationMock {
-            identity_option: Some(submitted_identity.identity.clone()),
+            identity_option: Some(identity),
             create_identity_req_exists: false,
             update_identity_req_exists: false,
             account_id,
@@ -2445,8 +2467,14 @@ mod tests {
             identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
             identity_image2: None,
         };
+        let mut identity = submitted_identity.identity.clone();
+        identity.telephone_number = String::from("08012345678");
+        assert_ne!(
+            identity.telephone_number,
+            submitted_identity.identity.telephone_number
+        );
         let op = SubmitIdentityOperationMock {
-            identity_option: Some(submitted_identity.identity.clone()),
+            identity_option: Some(identity),
             create_identity_req_exists: false,
             update_identity_req_exists: true,
             account_id,

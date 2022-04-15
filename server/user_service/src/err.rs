@@ -53,6 +53,8 @@ pub(crate) enum Code {
     NoIdentityFound = 20042,
     NoIdentityImage1Found = 20043,
     IdentityReqAlreadyExists = 20044,
+    DateOfBirthIsNotMatch = 20045,
+    NoIdentityUpdated = 20046,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

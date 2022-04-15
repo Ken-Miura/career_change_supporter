@@ -96,7 +96,7 @@ pub fn create_session_cookie<'a>(name: String, value: String, path: String) -> C
 /// [chrono::naive::NaiveDate]をそのままSerializeしてJavascriptに渡すと
 /// YYYY-MM-DDというJavascriptのDateオブジェクトとしてそのまま扱えない形になるため、
 /// 必要に応じてこちらを利用する。
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Ymd {
     pub year: i32,
     pub month: u32,
