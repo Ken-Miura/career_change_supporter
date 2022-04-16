@@ -7,6 +7,7 @@ import CreateIdentityRequestDetailPage from '../views/personalized/CreateIdentit
 import CreateIdentityRequestApprovalPage from '../views/personalized/CreateIdentityRequestApprovalPage.vue'
 import CreateIdentityRequestRejectionDetailPage from '../views/personalized/CreateIdentityRequestRejectionDetailPage.vue'
 import CreateIdentityRequestRejectionPage from '../views/personalized/CreateIdentityRequestRejectionPage.vue'
+import UpdateIdentityRequestListPage from '../views/personalized/UpdateIdentityRequestListPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -53,6 +54,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/create-identity-request-rejection',
     name: 'CreateIdentityRequestRejectionPage',
     component: CreateIdentityRequestRejectionPage
+  },
+  {
+    path: '/update-identity-request-list',
+    name: 'UpdateIdentityRequestListPage',
+    component: UpdateIdentityRequestListPage
   }
 ]
 
