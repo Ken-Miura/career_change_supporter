@@ -6,10 +6,8 @@ use common::{ErrResp, RespResult};
 
 use axum::extract::{Extension, Query};
 use axum::http::StatusCode;
-use entity::{
-    create_identity_req,
-    sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder},
-};
+use entity::sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
+use entity::update_identity_req;
 use serde::Serialize;
 
 use crate::{
@@ -63,14 +61,14 @@ impl UpdateIdentityRequestItemsOperation for UpdateIdentityRequestItemsOperation
         page: usize,
         page_size: usize,
     ) -> Result<Vec<UpdateIdentityReqItem>, ErrResp> {
-        let items = create_identity_req::Entity::find()
-            .order_by_asc(create_identity_req::Column::RequestedAt)
+        let items = update_identity_req::Entity::find()
+            .order_by_asc(update_identity_req::Column::RequestedAt)
             .paginate(&self.pool, page_size)
             .fetch_page(page)
             .await
             .map_err(|e| {
                 tracing::error!(
-                    "failed to fetch page (page: {}, page_size: {}) in create_identity_req: {}",
+                    "failed to fetch page (page: {}, page_size: {}) in update_identity_req: {}",
                     page,
                     page_size,
                     e
@@ -132,8 +130,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success1() {
-        let items = create_dummy_items();
+    async fn get_update_identity_request_items_success1() {
+        let items = create_3_dummy_items();
         let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -150,8 +148,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success2() {
-        let items = create_dummy_items();
+    async fn get_update_identity_request_items_success2() {
+        let items = create_3_dummy_items();
         let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -168,8 +166,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success3() {
-        let items = create_dummy_items();
+    async fn get_update_identity_request_items_success3() {
+        let items = create_3_dummy_items();
         let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -187,8 +185,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success4() {
-        let items = create_dummy_items();
+    async fn get_update_identity_request_items_success4() {
+        let items = create_3_dummy_items();
         let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -204,7 +202,7 @@ mod tests {
         assert_eq!(Vec::<UpdateIdentityReqItem>::with_capacity(0), resp.1 .0);
     }
 
-    fn create_dummy_items() -> Vec<UpdateIdentityReqItem> {
+    fn create_3_dummy_items() -> Vec<UpdateIdentityReqItem> {
         let mut items = Vec::with_capacity(3);
         let requested_at_1 = Utc
             .ymd(2021, 9, 11)

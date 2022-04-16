@@ -133,7 +133,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_create_identity_request_items_success1() {
-        let items = create_dummy_items();
+        let items = create_3_dummy_items();
         let op_mock = CreateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -151,7 +151,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_create_identity_request_items_success2() {
-        let items = create_dummy_items();
+        let items = create_3_dummy_items();
         let op_mock = CreateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -169,7 +169,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_create_identity_request_items_success3() {
-        let items = create_dummy_items();
+        let items = create_3_dummy_items();
         let op_mock = CreateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -188,7 +188,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_create_identity_request_items_success4() {
-        let items = create_dummy_items();
+        let items = create_3_dummy_items();
         let op_mock = CreateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
@@ -204,7 +204,7 @@ mod tests {
         assert_eq!(Vec::<CreateIdentityReqItem>::with_capacity(0), resp.1 .0);
     }
 
-    fn create_dummy_items() -> Vec<CreateIdentityReqItem> {
+    fn create_3_dummy_items() -> Vec<CreateIdentityReqItem> {
         let mut items = Vec::with_capacity(3);
         let requested_at_1 = Utc
             .ymd(2021, 9, 11)
