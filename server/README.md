@@ -49,3 +49,9 @@ ON DELETE CASCADE、ON DELETE SET NULL、ON UPDATE CASCADE、ON UPDATE SET NULL�
 
 ## トランザクション内におけるロックの取得順序
 デッドロックとなる設計を避けるため、トランザクション内で複数ロックを取得する場合、取得するロックについてこのセクションに明記する
+
+### admin_service
+#### create_identity_request_approval.rs
+user_accountで排他ロックを取得 -> create_identity_reqで排他ロックを取得
+#### create_identity_request_rejection.rs
+user_accountで排他ロックを取得 -> create_identity_reqで排他ロックを取得

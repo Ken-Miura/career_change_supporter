@@ -88,7 +88,7 @@ async fn handle_create_identity_request_rejection(
         unexpected_err_resp()
     })?;
 
-    let _ = op
+    let user_email_address_option = op
         .reject_create_identity_req(
             user_account_id,
             admin_email_address,
@@ -97,17 +97,17 @@ async fn handle_create_identity_request_rejection(
         )
         .await?;
 
-    let user_email_address_option = op
-        .get_user_email_address_by_user_account_id(user_account_id)
-        .await?;
     let user_email_address = user_email_address_option.ok_or_else(|| {
         tracing::error!(
             "no user account (user account id: {}) found",
             user_account_id
         );
-        // 本人確認の拒否処理後（reject_create_identity_req後）に、ユーザーがアカウントを削除した場合に発生
-        // かなりのレアケースのため、unexpected errorとして処理
-        unexpected_err_resp()
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoUserAccountFound as u32,
+            }),
+        )
     })?;
 
     let _ = async move {
@@ -136,11 +136,6 @@ trait CreateIdentityReqRejectionOperation {
         refuser_email_address: String,
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp>;
-
-    async fn get_user_email_address_by_user_account_id(
-        &self,
-        user_account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 }
 
@@ -174,11 +169,30 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
         refuser_email_address: String,
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp> {
-        let _ = self
+    ) -> Result<Option<String>, ErrResp> {
+        let notification_email_address_option = self
             .pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
+            .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
+                    let model_option = user_account::Entity::find_by_id(user_account_id)
+                        .lock_exclusive()
+                        .one(txn)
+                        .await
+                        .map_err(|e| {
+                            tracing::error!(
+                                "failed to find user account (user account id: {}): {}",
+                                user_account_id,
+                                e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                    let model = match model_option {
+                        Some(m) => m,
+                        None => { return Ok(None)},
+                    };
+
                     let req_option = create_identity_req::Entity::find_by_id(user_account_id)
                         .lock_exclusive()
                         .one(txn)
@@ -252,7 +266,7 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
                         })?;
                     }
 
-                    Ok(())
+                    Ok(Some(model.email_address))
                 })
             })
             .await
@@ -266,25 +280,7 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
                     err_resp_struct.err_resp
                 }
             })?;
-        Ok(())
-    }
-
-    async fn get_user_email_address_by_user_account_id(
-        &self,
-        user_account_id: i64,
-    ) -> Result<Option<String>, ErrResp> {
-        let model = user_account::Entity::find_by_id(user_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to find user account (user account id: {}): {}",
-                    user_account_id,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| m.email_address))
+        Ok(notification_email_address_option)
     }
 }
 
@@ -355,6 +351,7 @@ mod tests {
         email_address: String,
     }
 
+    #[derive(Clone)]
     struct User {
         user_account_id: i64,
         email_address: String,
@@ -362,7 +359,7 @@ mod tests {
 
     struct CreateIdentityReqRejectionOperationMock {
         admin: Admin,
-        user: User,
+        user_option: Option<User>,
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
     }
@@ -383,20 +380,16 @@ mod tests {
             refuser_email_address: String,
             rejection_reason: String,
             rejected_time: DateTime<FixedOffset>,
-        ) -> Result<(), ErrResp> {
-            assert_eq!(self.user.user_account_id, user_account_id);
-            assert_eq!(self.admin.email_address, refuser_email_address);
-            assert_eq!(self.rejection_reason, rejection_reason);
-            assert_eq!(self.rejected_time, rejected_time);
-            Ok(())
-        }
-
-        async fn get_user_email_address_by_user_account_id(
-            &self,
-            user_account_id: i64,
         ) -> Result<Option<String>, ErrResp> {
-            assert_eq!(self.user.user_account_id, user_account_id);
-            Ok(Some(self.user.email_address.clone()))
+            if let Some(user) = self.user_option.clone() {
+                assert_eq!(user.user_account_id, user_account_id);
+                assert_eq!(self.admin.email_address, refuser_email_address);
+                assert_eq!(self.rejection_reason, rejection_reason);
+                assert_eq!(self.rejected_time, rejected_time);
+                Ok(Some(user.email_address))
+            } else {
+                Ok(None)
+            }
         }
     }
 
@@ -409,10 +402,10 @@ mod tests {
         };
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
-        let user = User {
+        let user_option = Some(User {
             user_account_id,
             email_address: user_email_address.clone(),
-        };
+        });
         let rejection_reason = "画像が不鮮明なため";
         let rejected_time = chrono::Utc
             .ymd(2022, 4, 5)
@@ -420,7 +413,7 @@ mod tests {
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = CreateIdentityReqRejectionOperationMock {
             admin,
-            user,
+            user_option,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
         };
@@ -455,10 +448,10 @@ mod tests {
         };
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
-        let user = User {
+        let user_option = Some(User {
             user_account_id,
             email_address: user_email_address.clone(),
-        };
+        });
         let rejection_reason = "<script>alert('test');<script>";
         let rejected_time = chrono::Utc
             .ymd(2022, 4, 5)
@@ -466,7 +459,7 @@ mod tests {
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = CreateIdentityReqRejectionOperationMock {
             admin,
-            user,
+            user_option,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
         };

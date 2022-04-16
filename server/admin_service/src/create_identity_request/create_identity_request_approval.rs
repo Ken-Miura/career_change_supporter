@@ -6,7 +6,7 @@ use common::{
     smtp::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
     },
-    ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
+    ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
 use axum::extract::Extension;
@@ -22,7 +22,10 @@ use entity::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{err::unexpected_err_resp, util::session::Admin};
+use crate::{
+    err::{unexpected_err_resp, Code},
+    util::session::Admin,
+};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
 
@@ -71,21 +74,21 @@ async fn handle_create_identity_request_approval(
         unexpected_err_resp()
     })?;
 
-    let _ = op
+    let user_email_address_option = op
         .approve_create_identity_req(user_account_id, admin_email_address, approved_time)
         .await?;
 
-    let user_email_address_option = op
-        .get_user_email_address_by_user_account_id(user_account_id)
-        .await?;
     let user_email_address = user_email_address_option.ok_or_else(|| {
         tracing::error!(
             "no user account (user account id: {}) found",
             user_account_id
         );
-        // 本人確認の承認処理後（approve_create_identity_req後）に、ユーザーがアカウントを削除した場合に発生
-        // かなりのレアケースのため、unexpected errorとして処理
-        unexpected_err_resp()
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoUserAccountFound as u32,
+            }),
+        )
     })?;
 
     let _ = async move {
@@ -113,11 +116,6 @@ trait CreateIdentityReqApprovalOperation {
         user_account_id: i64,
         approver_email_address: String,
         approved_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp>;
-
-    async fn get_user_email_address_by_user_account_id(
-        &self,
-        user_account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 }
 
@@ -150,11 +148,31 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
         user_account_id: i64,
         approver_email_address: String,
         approved_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp> {
-        let _ = self
+    ) -> Result<Option<String>, ErrResp> {
+        let notification_email_address_option = self
             .pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
+            .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
+                    // 承認を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
+                    let model_option = user_account::Entity::find_by_id(user_account_id)
+                        .lock_exclusive()
+                        .one(txn)
+                        .await
+                        .map_err(|e| {
+                            tracing::error!(
+                                "failed to find user account (user account id: {}): {}",
+                                user_account_id,
+                                e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                    let model = match model_option {
+                        Some(m) => m,
+                        None => { return Ok(None) },
+                    };
+
                     let req_option = create_identity_req::Entity::find_by_id(user_account_id)
                         .lock_exclusive()
                         .one(txn)
@@ -214,7 +232,7 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    Ok(())
+                    Ok(Some(model.email_address))
                 })
             })
             .await
@@ -228,25 +246,7 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                     err_resp_struct.err_resp
                 }
             })?;
-        Ok(())
-    }
-
-    async fn get_user_email_address_by_user_account_id(
-        &self,
-        user_account_id: i64,
-    ) -> Result<Option<String>, ErrResp> {
-        let model = user_account::Entity::find_by_id(user_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                tracing::error!(
-                    "failed to find user account (user account id: {}): {}",
-                    user_account_id,
-                    e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| m.email_address))
+        Ok(notification_email_address_option)
     }
 }
 
@@ -336,6 +336,7 @@ mod tests {
         email_address: String,
     }
 
+    #[derive(Clone)]
     struct User {
         user_account_id: i64,
         email_address: String,
@@ -343,7 +344,7 @@ mod tests {
 
     struct CreateIdentityReqApprovalOperationMock {
         admin: Admin,
-        user: User,
+        user_option: Option<User>,
         approved_time: DateTime<FixedOffset>,
     }
 
@@ -362,19 +363,15 @@ mod tests {
             user_account_id: i64,
             approver_email_address: String,
             approved_time: DateTime<FixedOffset>,
-        ) -> Result<(), ErrResp> {
-            assert_eq!(self.user.user_account_id, user_account_id);
-            assert_eq!(self.admin.email_address, approver_email_address);
-            assert_eq!(self.approved_time, approved_time);
-            Ok(())
-        }
-
-        async fn get_user_email_address_by_user_account_id(
-            &self,
-            user_account_id: i64,
         ) -> Result<Option<String>, ErrResp> {
-            assert_eq!(self.user.user_account_id, user_account_id);
-            Ok(Some(self.user.email_address.clone()))
+            if let Some(user) = self.user_option.clone() {
+                assert_eq!(user.user_account_id, user_account_id);
+                assert_eq!(self.admin.email_address, approver_email_address);
+                assert_eq!(self.approved_time, approved_time);
+                Ok(Some(user.email_address))
+            } else {
+                Ok(None)
+            }
         }
     }
 
@@ -387,17 +384,17 @@ mod tests {
         };
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
-        let user = User {
+        let user_option = Some(User {
             user_account_id,
             email_address: user_email_address.clone(),
-        };
+        });
         let approval_time = chrono::Utc
             .ymd(2022, 4, 1)
             .and_hms(21, 00, 40)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = CreateIdentityReqApprovalOperationMock {
             admin,
-            user,
+            user_option,
             approved_time: approval_time,
         };
         let send_mail_mock = SendMailMock::new(
