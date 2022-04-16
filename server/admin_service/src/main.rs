@@ -18,6 +18,7 @@ use crate::identity_images::get_identity_images;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
+use crate::update_identity_request::update_identity_request_detail::get_update_identity_request_detail;
 use crate::update_identity_request::update_identity_requests::get_update_identity_requests;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
@@ -144,6 +145,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/update-identity-requests",
                     get(get_update_identity_requests),
+                )
+                .route(
+                    "/update-identity-request-detail",
+                    get(get_update_identity_request_detail),
                 ),
         )
         .layer(
