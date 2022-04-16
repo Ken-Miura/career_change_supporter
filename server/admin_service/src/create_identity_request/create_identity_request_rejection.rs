@@ -88,7 +88,7 @@ async fn handle_create_identity_request_rejection(
         unexpected_err_resp()
     })?;
 
-    let user_email_address_option = op
+    let rejected_user = op
         .reject_create_identity_req(
             user_account_id,
             admin_email_address,
@@ -97,8 +97,8 @@ async fn handle_create_identity_request_rejection(
         )
         .await?;
 
-    let user_email_address = user_email_address_option.ok_or_else(|| {
-        // 承認をしようとした際、既にユーザーがアカウントを削除しているケース
+    let user_email_address = rejected_user.ok_or_else(|| {
+        // 拒否をしようとした際、既にユーザーがアカウントを削除しているケース
         tracing::error!(
             "no user account (user account id: {}) found",
             user_account_id

@@ -74,11 +74,11 @@ async fn handle_create_identity_request_approval(
         unexpected_err_resp()
     })?;
 
-    let user_email_address_option = op
+    let approved_user = op
         .approve_create_identity_req(user_account_id, admin_email_address, approved_time)
         .await?;
 
-    let user_email_address = user_email_address_option.ok_or_else(|| {
+    let user_email_address = approved_user.ok_or_else(|| {
         // 承認をしようとした際、既にユーザーがアカウントを削除しているケース
         tracing::error!(
             "no user account (user account id: {}) found",
