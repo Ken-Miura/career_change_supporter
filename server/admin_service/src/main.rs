@@ -1,26 +1,24 @@
 // Copyright 2021 Ken Miura
 
-mod create_identity_request_approval;
-mod create_identity_request_detail;
-mod create_identity_request_rejection;
-mod create_identity_requests;
+mod create_identity_request;
 mod err;
 mod identity_images;
 mod login;
 mod logout;
 mod refresh;
-mod users_by_date_of_birth;
+mod update_identity_request;
 mod util;
 
-use crate::create_identity_request_approval::post_create_identity_request_approval;
-use crate::create_identity_request_detail::get_create_identity_request_detail;
-use crate::create_identity_request_rejection::post_create_identity_request_rejection;
-use crate::create_identity_requests::get_create_identity_requests;
+use crate::create_identity_request::create_identity_request_approval::post_create_identity_request_approval;
+use crate::create_identity_request::create_identity_request_detail::get_create_identity_request_detail;
+use crate::create_identity_request::create_identity_request_rejection::post_create_identity_request_rejection;
+use crate::create_identity_request::create_identity_requests::get_create_identity_requests;
+use crate::create_identity_request::users_by_date_of_birth::get_users_by_date_of_birth;
 use crate::identity_images::get_identity_images;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
-use crate::users_by_date_of_birth::get_users_by_date_of_birth;
+use crate::update_identity_request::update_identity_requests::get_update_identity_requests;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
@@ -142,6 +140,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/create-identity-request-rejection",
                     post(post_create_identity_request_rejection),
+                )
+                .route(
+                    "/update-identity-requests",
+                    get(get_update_identity_requests),
                 ),
         )
         .layer(
