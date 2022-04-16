@@ -833,4 +833,54 @@ describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
     expect(users).toContain(`${user2.address_line1}`)
     expect(users).toContain(`${user2.telephone_number}`)
   })
+
+  it(`displays ${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} if ${Code.NO_USER_ACCOUNT_FOUND} after 承認する is pushed`, async () => {
+    routeParam = '1'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: null,
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: null,
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetCreateIdentityRequestDetailResp.create(detail)
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const resp2 = GetUsersByDateOfBirthResp.create([])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_USER_ACCOUNT_FOUND))
+    postCreateIdentityRequestApprovalFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="approve-req-button"]')
+    await button.trigger('click')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND})`)
+  })
 })

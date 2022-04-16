@@ -16,6 +16,8 @@ export namespace Code {
   export const NO_CREATE_IDENTITY_REQ_DETAIL_FOUND = 30004
   export const ILLEGAL_DATE = 30005
   export const INVALID_FORMAT_REASON = 30006
+  export const NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND = 30007
+  export const NO_USER_ACCOUNT_FOUND = 30008
 }
 
 export function createErrorMessage (code: number): string {
@@ -39,6 +41,10 @@ export function createErrorMessage (code: number): string {
     return `${Message.ILLEGAL_DATE_MESSAGE} (${code})`
   } else if (code === Code.INVALID_FORMAT_REASON) {
     return `${Message.INVALID_FORMAT_REASON_MESSAGE} (${code})`
+  } else if (code === Code.NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND) {
+    return `${Message.NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND_MESSAGE} (${code})`
+  } else if (code === Code.NO_USER_ACCOUNT_FOUND) {
+    return `${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

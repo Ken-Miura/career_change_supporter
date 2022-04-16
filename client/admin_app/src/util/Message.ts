@@ -16,4 +16,6 @@ export namespace Message {
     export const NO_CREATE_IDENTITY_REQ_DETAIL_FOUND_MESSAGE = `${ASK_ADMIN}`
     export const ILLEGAL_DATE_MESSAGE = `${ASK_ADMIN}`
     export const INVALID_FORMAT_REASON_MESSAGE = `${ASK_ADMIN}`
+    export const NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND_MESSAGE = `${ASK_ADMIN}`
+    export const NO_USER_ACCOUNT_FOUND_MESSAGE = 'ユーザーアカウントが存在しません。既にアカウントが削除されているものと思われます。次の確認依頼に進んで下さい'
 }
