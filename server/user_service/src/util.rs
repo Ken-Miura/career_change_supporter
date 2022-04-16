@@ -43,20 +43,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     access_info.expect("failed to get Ok")
 });
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Identity {
-    pub last_name: String,
-    pub first_name: String,
-    pub last_name_furigana: String,
-    pub first_name_furigana: String,
-    pub date_of_birth: Ymd,
-    pub prefecture: String,
-    pub city: String,
-    pub address_line1: String,
-    pub address_line2: Option<String>,
-    pub telephone_number: String,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct Career {
     pub career_id: i64,

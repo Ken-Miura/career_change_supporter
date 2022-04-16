@@ -103,6 +103,21 @@ pub struct Ymd {
     pub day: u32,
 }
 
+/// ユーザーの身元情報
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Identity {
+    pub last_name: String,
+    pub first_name: String,
+    pub last_name_furigana: String,
+    pub first_name_furigana: String,
+    pub date_of_birth: Ymd,
+    pub prefecture: String,
+    pub city: String,
+    pub address_line1: String,
+    pub address_line2: Option<String>,
+    pub telephone_number: String,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::util::validator::password_validator::validate_password;

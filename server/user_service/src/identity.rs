@@ -16,7 +16,7 @@ use bytes::Bytes;
 use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
-use common::util::Ymd;
+use common::util::{Identity, Ymd};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
@@ -39,7 +39,6 @@ use crate::{
             file_name_validator::validate_extension_is_jpeg,
             identity_validator::{validate_identity, IdentityValidationError},
         },
-        Identity,
     },
 };
 
@@ -904,7 +903,7 @@ mod tests {
     use bytes::Bytes;
     use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
     use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-    use common::util::Ymd;
+    use common::util::{Identity, Ymd};
     use common::{ErrResp, JAPANESE_TIME_ZONE};
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
     use serde::Deserialize;
@@ -912,8 +911,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        identity::convert_jpeg_to_png,
-        util::{validator::identity_validator::MIN_AGE_REQUIREMENT, Identity},
+        identity::convert_jpeg_to_png, util::validator::identity_validator::MIN_AGE_REQUIREMENT,
     };
 
     use super::{

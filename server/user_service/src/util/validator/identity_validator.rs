@@ -3,11 +3,12 @@
 use std::{collections::HashSet, error::Error, fmt::Display};
 
 use chrono::{Datelike, NaiveDate};
-use common::util::validator::{has_control_char, SPACE_RE, SYMBOL_CHAR_RE};
+use common::util::{
+    validator::{has_control_char, SPACE_RE, SYMBOL_CHAR_RE},
+    Identity, Ymd,
+};
 use once_cell::sync::Lazy;
 use regex::Regex;
-
-use crate::util::{Identity, Ymd};
 
 pub(crate) const LAST_NAME_MIN_LENGTH: usize = 1;
 pub(crate) const LAST_NAME_MAX_LENGTH: usize = 64;
@@ -585,6 +586,7 @@ mod tests {
     use std::collections::HashSet;
 
     use chrono::{Datelike, NaiveDate};
+    use common::util::Identity;
     use once_cell::sync::Lazy;
 
     use crate::util::{
@@ -596,7 +598,7 @@ mod tests {
             LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH, LAST_NAME_MAX_LENGTH,
             LAST_NAME_MIN_LENGTH,
         },
-        Identity, Ymd,
+        Ymd,
     };
 
     use super::PREFECTURE_SET;
