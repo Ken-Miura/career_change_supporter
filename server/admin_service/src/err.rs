@@ -17,6 +17,7 @@ pub(crate) enum Code {
     InvalidFormatReason = 30006,
     NoUpdateIdentityReqDetailFound = 30007,
     NoUserAccountFound = 30008,
+    NoIdentityFound = 30009,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
