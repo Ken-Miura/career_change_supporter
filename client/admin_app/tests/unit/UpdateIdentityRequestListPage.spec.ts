@@ -2,9 +2,9 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
-import CreateIdentityRequestListPage from '@/views/personalized/CreateIdentityRequestListPage.vue'
-import { GetCreateIdentityRequestsResp } from '@/util/personalized/create-identity-request-list/GetCreateIdentityRequestsResp'
-import { CreateIdentityRequestItem } from '@/util/personalized/create-identity-request-list/CreateIdentityRequestItem'
+import UpdateIdentityRequestListPage from '@/views/personalized/UpdateIdentityRequestListPage.vue'
+import { GetUpdateIdentityRequestsResp } from '@/util/personalized/update-identity-request-list/GetUpdateIdentityRequestsResp'
+import { UpdateIdentityRequestItem } from '@/util/personalized/update-identity-request-list/UpdateIdentityRequestItem'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
@@ -22,21 +22,21 @@ jest.mock('@/util/NumOfItems')
 const getNumOfItemsMock = getNumOfItems as jest.MockedFunction<typeof getNumOfItems>
 
 const waitingRequestDoneMock = ref(false)
-const getCreateIdentityRequestsFuncMock = jest.fn()
-jest.mock('@/util/personalized/create-identity-request-list/useGetCreateIdentityRequests', () => ({
-  useGetCreateIdentityRequests: () => ({
+const getUpdateIdentityRequestsFuncMock = jest.fn()
+jest.mock('@/util/personalized/update-identity-request-list/useGetUpdateIdentityRequests', () => ({
+  useGetUpdateIdentityRequests: () => ({
     waitingRequestDone: waitingRequestDoneMock,
-    getCreateIdentityRequestsFunc: getCreateIdentityRequestsFuncMock
+    getUpdateIdentityRequestsFunc: getUpdateIdentityRequestsFuncMock
   })
 }))
 
-describe('CreateIdentityRequestListPage.vue', () => {
+describe('UpdateIdentityRequestListPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
     getNumOfItemsMock.mockReset()
     getNumOfItemsMock.mockReturnValue(NUM_OF_ITEMS)
     waitingRequestDoneMock.value = false
-    getCreateIdentityRequestsFuncMock.mockReset()
+    getUpdateIdentityRequestsFuncMock.mockReset()
   })
 
   it('has WaitingCircle and TheHeader while waiting response', async () => {
@@ -45,12 +45,12 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const items = [item]
-    const resp = GetCreateIdentityRequestsResp.create(items)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const resp = GetUpdateIdentityRequestsResp.create(items)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp)
     waitingRequestDoneMock.value = true
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -68,7 +68,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
   })
 
   it('does not have AlertMessage when created', () => {
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -81,8 +81,8 @@ describe('CreateIdentityRequestListPage.vue', () => {
 
   it('displays AlertMessage when error has happened', async () => {
     const errDetail = 'connection error'
-    getCreateIdentityRequestsFuncMock.mockRejectedValue(new Error(errDetail))
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    getUpdateIdentityRequestsFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -104,8 +104,8 @@ describe('CreateIdentityRequestListPage.vue', () => {
 
   it(`moves to login if ${Code.UNAUTHORIZED} is returned`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(apiErrResp)
-    mount(CreateIdentityRequestListPage, {
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(apiErrResp)
+    mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -124,11 +124,11 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const items = [item]
-    const resp = GetCreateIdentityRequestsResp.create(items)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const resp = GetUpdateIdentityRequestsResp.create(items)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -147,11 +147,11 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const items = [item]
-    const resp = GetCreateIdentityRequestsResp.create(items)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const resp = GetUpdateIdentityRequestsResp.create(items)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -171,17 +171,17 @@ describe('CreateIdentityRequestListPage.vue', () => {
     expect(list.text()).toContain('詳細を確認する')
   })
 
-  it('moves to CreateIdentityRequestDetailPage with account_id if 詳細を確認する is pushed', async () => {
+  it('moves to UpdateIdentityRequestDetailPage with account_id if 詳細を確認する is pushed', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const items = [item]
-    const resp = GetCreateIdentityRequestsResp.create(items)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const resp = GetUpdateIdentityRequestsResp.create(items)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -195,7 +195,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "CreateIdentityRequestDetailPage", "params": {"account_id": ${item.account_id}}}`)
+    const data = JSON.parse(`{"name": "UpdateIdentityRequestDetailPage", "params": {"account_id": ${item.account_id}}}`)
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -205,13 +205,13 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const items = [item]
-    const resp = GetCreateIdentityRequestsResp.create(items)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const resp = GetUpdateIdentityRequestsResp.create(items)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp)
     getNumOfItemsMock.mockReset()
     getNumOfItemsMock.mockReturnValue(2)
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -231,7 +231,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date1
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     // 気にするのは順序のみで、date1Utcよりあとであればなんでもよいので適当の数字を足す。
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
@@ -239,13 +239,13 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '田中 太郎',
       requested_at: date2
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const items = [item1, item2]
-    const resp = GetCreateIdentityRequestsResp.create(items)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const resp = GetUpdateIdentityRequestsResp.create(items)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp)
     getNumOfItemsMock.mockReset()
     getNumOfItemsMock.mockReturnValue(2)
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -267,7 +267,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date1
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     // 気にするのは順序のみで、date1Utcよりあとであればなんでもよいので適当の数字を足す。
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
@@ -275,20 +275,20 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '田中 太郎',
       requested_at: date2
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const date3Utc = date2Utc + 60
     const date3 = new Date(date3Utc)
     const item3 = {
       account_id: 3,
       name: '鈴木 圭一',
       requested_at: date3
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const items = [item1, item2, item3]
-    const resp = GetCreateIdentityRequestsResp.create(items)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp)
+    const resp = GetUpdateIdentityRequestsResp.create(items)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp)
     getNumOfItemsMock.mockReset()
     getNumOfItemsMock.mockReturnValue(2)
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -310,7 +310,7 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '佐藤 次郎',
       requested_at: date1
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     // 気にするのは順序のみで、date1Utcよりあとであればなんでもよいので適当の数字を足す。
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
@@ -318,11 +318,11 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 1,
       name: '田中 太郎',
       requested_at: date2
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const firstPageItems = [item1, item2]
-    const resp1 = GetCreateIdentityRequestsResp.create(firstPageItems)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp1)
-    const wrapper = mount(CreateIdentityRequestListPage, {
+    const resp1 = GetUpdateIdentityRequestsResp.create(firstPageItems)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp1)
+    const wrapper = mount(UpdateIdentityRequestListPage, {
       global: {
         stubs: {
           RouterLink: RouterLinkStub
@@ -350,11 +350,11 @@ describe('CreateIdentityRequestListPage.vue', () => {
       account_id: 3,
       name: '鈴木 圭一',
       requested_at: date3
-    } as CreateIdentityRequestItem
+    } as UpdateIdentityRequestItem
     const secondPageItems = [item3]
-    getCreateIdentityRequestsFuncMock.mockReset()
-    const resp2 = GetCreateIdentityRequestsResp.create(secondPageItems)
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp2)
+    getUpdateIdentityRequestsFuncMock.mockReset()
+    const resp2 = GetUpdateIdentityRequestsResp.create(secondPageItems)
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp2)
     const nextButton = wrapper.find('[data-test="next-button"]')
     await nextButton.trigger('click')
     await flushPromises()
@@ -373,8 +373,8 @@ describe('CreateIdentityRequestListPage.vue', () => {
     // 最終ページに移動したとき、Disabledになっていることを確認
     expect(nextButton.attributes()).toHaveProperty('disabled')
 
-    getCreateIdentityRequestsFuncMock.mockReset()
-    getCreateIdentityRequestsFuncMock.mockResolvedValue(resp1)
+    getUpdateIdentityRequestsFuncMock.mockReset()
+    getUpdateIdentityRequestsFuncMock.mockResolvedValue(resp1)
     const prevButton = wrapper.find('[data-test="prev-button"]')
     await prevButton.trigger('click')
     await flushPromises()
