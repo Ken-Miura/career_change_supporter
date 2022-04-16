@@ -10,13 +10,12 @@ use crate::util::session::Admin;
 
 pub(crate) async fn get_identity_by_user_account_id(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
-    _query: Query<GetIdentityQuery>,
+    query: Query<GetIdentityQuery>,
     Extension(_pool): Extension<DatabaseConnection>,
 ) -> RespResult<Identity> {
+    let query = query.0;
+    println!("user account id: {}", query.user_account_id);
     todo!()
-    // let query = query.0;
-    // let op = UsersByDateOfBirthOperationImpl { pool };
-    // get_identity_by_user_account_id_internal(query.user_account_id, op).await
 }
 
 #[derive(Deserialize)]
