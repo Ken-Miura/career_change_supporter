@@ -139,7 +139,7 @@ mod tests {
         };
         let pagination = Pagination {
             page: 0,
-            per_page: items.len(),
+            per_page: 3,
         };
 
         let result = get_create_identity_request_items(pagination, op_mock).await;
@@ -157,7 +157,7 @@ mod tests {
         };
         let pagination = Pagination {
             page: 0,
-            per_page: items.len() - 1,
+            per_page: 2,
         };
 
         let result = get_create_identity_request_items(pagination, op_mock).await;
@@ -175,7 +175,7 @@ mod tests {
         };
         let pagination = Pagination {
             page: 1,
-            per_page: items.len() - 1,
+            per_page: 2,
         };
 
         let result = get_create_identity_request_items(pagination, op_mock).await;
@@ -194,7 +194,7 @@ mod tests {
         };
         let pagination = Pagination {
             page: 2,
-            per_page: items.len() - 1,
+            per_page: 2,
         };
 
         let result = get_create_identity_request_items(pagination, op_mock).await;
