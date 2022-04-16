@@ -58,21 +58,6 @@ describe('AdminMenuPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/create-career-request-list')
   })
 
-  it('moves to update-career-request-list when the button is pushed', async () => {
-    const wrapper = mount(AdminMenuPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    const button = wrapper.find('[data-test="move-to-update-career-request-list-page-button"]')
-    await button.trigger('click')
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/update-career-request-list')
-  })
-
   it('moves to move-to-disable-account when the button is pushed', async () => {
     const wrapper = mount(AdminMenuPage, {
       global: {
