@@ -55,3 +55,5 @@ ON DELETE CASCADE、ON DELETE SET NULL、ON UPDATE CASCADE、ON UPDATE SET NULL�
 user_accountで排他ロックを取得 -> create_identity_reqで排他ロックを取得
 #### create_identity_request_rejection.rs
 user_accountで排他ロックを取得 -> create_identity_reqで排他ロックを取得
+#### update_identity_request_approval.rs
+user_accountで排他ロックを取得 -> identityで排他ロックを取得 -> update_identity_reqで排他ロックを取得
