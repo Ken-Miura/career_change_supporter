@@ -63,12 +63,13 @@ import { UpdateIdentityRequestDetail } from '@/util/personalized/update-identity
 import { useGetUpdateIdentityRequestDetail } from '@/util/personalized/update-identity-request-detail/useGetUpdateIdentityRequestDetail'
 import { GetUpdateIdentityRequestDetailResp } from '@/util/personalized/update-identity-request-detail/GetUpdateIdentityRequestDetailResp'
 import { useGetIdentityByUserAccountId } from '@/util/personalized/update-identity-request-detail/useGetIdentityByUserAccountId'
-import { usePostCreateIdentityRequestApproval } from '@/util/personalized/create-identity-request-detail/usePostCreateIdentityRequestApproval'
+import { usePostUpdateIdentityRequestApproval } from '@/util/personalized/update-identity-request-detail/usePostUpdateIdentityRequestApproval'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
 import { Identity } from '@/util/personalized/update-identity-request-detail/Identity'
 import { GetIdentityByUserAccountIdResp } from '@/util/personalized/update-identity-request-detail/GetIdentityByUserAccountIdResp'
+import { PostUpdateIdentityRequestApprovalResp } from '@/util/personalized/update-identity-request-detail/PostUpdateIdentityRequestApprovalResp'
 
 export default defineComponent({
   name: 'UpdateIdentityRequestDetailPage',
@@ -112,11 +113,11 @@ export default defineComponent({
       getIdentityByUserAccountIdFunc
     } = useGetIdentityByUserAccountId()
     const {
-      waitingPostCreateIdentityRequestApprovalDone,
-      postCreateIdentityRequestApprovalFunc
-    } = usePostCreateIdentityRequestApproval()
+      waitingPostUpdateIdentityRequestApprovalDone,
+      postUpdateIdentityRequestApprovalFunc
+    } = usePostUpdateIdentityRequestApproval()
     const waitingRequestDone = computed(() => {
-      return waitingGetUpdateIdentityRequestDetailDone.value || waitingGetIdentityByUserAccountIdDone.value || waitingPostCreateIdentityRequestApprovalDone.value
+      return waitingGetUpdateIdentityRequestDetailDone.value || waitingGetIdentityByUserAccountIdDone.value || waitingPostUpdateIdentityRequestApprovalDone.value
     })
     const getIdentity = async (userAccoundId: string) => {
       const response = await getIdentityByUserAccountIdFunc(userAccoundId)
@@ -160,27 +161,26 @@ export default defineComponent({
     })
 
     const approveReq = async () => {
-      console.log('approveReq')
-      // try {
-      //   const response = await postCreateIdentityRequestApprovalFunc(parseInt(userAccountId))
-      //   if (!(response instanceof PostCreateIdentityRequestApprovalResp)) {
-      //     if (!(response instanceof ApiErrorResp)) {
-      //       throw new Error(`unexpected result on getting request detail: ${response}`)
-      //     }
-      //     const code = response.getApiError().getCode()
-      //     if (code === Code.UNAUTHORIZED) {
-      //       await router.push('/login')
-      //       return
-      //     }
-      //     error.exists = true
-      //     error.message = createErrorMessage(response.getApiError().getCode())
-      //     return
-      //   }
-      //   await router.push('/create-identity-request-approval')
-      // } catch (e) {
-      //   error.exists = true
-      //   error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-      // }
+      try {
+        const response = await postUpdateIdentityRequestApprovalFunc(parseInt(userAccountId))
+        if (!(response instanceof PostUpdateIdentityRequestApprovalResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await router.push('/update-identity-request-approval')
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     const chooseRejectionReason = async () => {
