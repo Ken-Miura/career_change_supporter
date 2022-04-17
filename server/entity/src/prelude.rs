@@ -2,6 +2,7 @@
 
 pub use super::admin_account::Entity as AdminAccount;
 pub use super::approved_create_identity_req::Entity as ApprovedCreateIdentityReq;
+pub use super::approved_update_identity_req::Entity as ApprovedUpdateIdentityReq;
 pub use super::career::Entity as Career;
 pub use super::consulting_fee::Entity as ConsultingFee;
 pub use super::create_identity_req::Entity as CreateIdentityReq;
@@ -9,6 +10,7 @@ pub use super::deleted_user_account::Entity as DeletedUserAccount;
 pub use super::identity::Entity as Identity;
 pub use super::pwd_change_req::Entity as PwdChangeReq;
 pub use super::rejected_create_identity_req::Entity as RejectedCreateIdentityReq;
+pub use super::rejected_update_identity_req::Entity as RejectedUpdateIdentityReq;
 pub use super::tenant::Entity as Tenant;
 pub use super::terms_of_use::Entity as TermsOfUse;
 pub use super::update_identity_req::Entity as UpdateIdentityReq;

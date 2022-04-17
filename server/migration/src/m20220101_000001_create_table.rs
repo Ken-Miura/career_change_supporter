@@ -490,6 +490,97 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /*
+             * 複数回更新の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
+             */
+            /*
+             * user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
+             * 管理者の把握しないうちに承認した記録が消去される可能性がある。そのため、user_account_idは外部キーとしない
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.approved_update_identity_req (
+                  appr_upd_identity_req_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  last_name VARCHAR (64) NOT NULL,
+                  first_name VARCHAR (64) NOT NULL,
+                  last_name_furigana VARCHAR (64) NOT NULL,
+                  first_name_furigana VARCHAR (64) NOT NULL,
+                  date_of_birth DATE NOT NULL,
+                  prefecture VARCHAR (4) NOT NULL,
+                  city VARCHAR (32) NOT NULL,
+                  address_line1 VARCHAR (128) NOT NULL,
+                  address_line2 VARCHAR (128),
+                  telephone_number VARCHAR (13) NOT NULL,
+                  image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
+                  image2_file_name_without_ext ccs_schema.uuid_simple_form,
+                  approved_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  approved_by ccs_schema.email_address NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, INSERT ON ccs_schema.approved_update_identity_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.approved_update_identity_req_appr_upd_identity_req_id_seq TO admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /*
+             * 複数回拒否の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
+             */
+            /*
+             * user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
+             * 管理者の把握しないうちに拒否した記録が消去される可能性がある。そのため、user_account_idは外部キーとしない
+             */
+            /*
+             * 拒否した場合、アップロードされた画像は削除するため、image1_file_name_without_ext, image2_file_name_without_extは保持しない。
+             */
+            /*
+             * PRIMARY KEYはSEQUENCE名にしたときに識別子の63文字制限に引っかからないように命名する（rjd_upd_identity_id）
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.rejected_update_identity_req (
+                  rjd_upd_identity_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  last_name VARCHAR (64) NOT NULL,
+                  first_name VARCHAR (64) NOT NULL,
+                  last_name_furigana VARCHAR (64) NOT NULL,
+                  first_name_furigana VARCHAR (64) NOT NULL,
+                  date_of_birth DATE NOT NULL,
+                  prefecture VARCHAR (4) NOT NULL,
+                  city VARCHAR (32) NOT NULL,
+                  address_line1 VARCHAR (128) NOT NULL,
+                  address_line2 VARCHAR (128),
+                  telephone_number VARCHAR (13) NOT NULL,
+                  reason VARCHAR (256) NOT NULL,
+                  rejected_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  rejected_by ccs_schema.email_address NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, INSERT ON ccs_schema.rejected_update_identity_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.rejected_update_identity_req_rjd_upd_identity_id_seq TO admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.admin_account (
                     admin_account_id BIGSERIAL PRIMARY KEY,
