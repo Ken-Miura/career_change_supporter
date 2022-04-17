@@ -12,10 +12,10 @@ use common::{
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_create_identity_req, identity,
+    admin_account, approved_update_identity_req, identity,
     sea_orm::{
-        ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect, Set, TransactionError,
-        TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, QuerySelect, Set,
+        TransactionError, TransactionTrait,
     },
     update_identity_req, user_account,
 };
@@ -280,8 +280,9 @@ impl UpdateIdentityReqApprovalOperationImpl {
         model: update_identity_req::Model,
         approved_time: DateTime<FixedOffset>,
         approver_email_address: String,
-    ) -> approved_create_identity_req::ActiveModel {
-        approved_create_identity_req::ActiveModel {
+    ) -> approved_update_identity_req::ActiveModel {
+        approved_update_identity_req::ActiveModel {
+            appr_upd_identity_req_id: NotSet,
             user_account_id: Set(model.user_account_id),
             last_name: Set(model.last_name),
             first_name: Set(model.first_name),
