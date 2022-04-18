@@ -51,7 +51,7 @@ jest.mock('@/util/personalized/create-identity-request-detail/usePostCreateIdent
   })
 }))
 
-describe('CreateIdentityRequestRejectionDetailPage.vue', () => {
+describe('CreateIdentityRequestDetailPage.vue', () => {
   beforeEach(() => {
     routeParam = ''
     routerPushMock.mockClear()
