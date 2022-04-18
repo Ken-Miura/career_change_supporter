@@ -734,8 +734,7 @@ describe('UpdateIdentityRequestDetailPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  // TODO
-  it('displays request detail and identity', async () => {
+  it('displays request detail and identity (detail has address line2)', async () => {
     routeParam = '1626'
     const detail = {
       last_name: '田中',
@@ -788,23 +787,293 @@ describe('UpdateIdentityRequestDetailPage.vue', () => {
     const reqDetailDiv = wrapper.find('[data-test="req-detail"]')
     const reqDetail = reqDetailDiv.text()
     expect(reqDetail).toContain('本人確認依頼（更新）詳細')
+    expect(reqDetail).toContain('更新前')
+    expect(reqDetail).toContain('更新後')
     expect(reqDetail).toContain('名前')
     expect(reqDetail).toContain(`${detail.last_name} ${detail.first_name}`)
+    expect(reqDetail).toContain(`${identity.last_name} ${identity.first_name}`)
     expect(reqDetail).toContain('フリガナ')
     expect(reqDetail).toContain(`${detail.last_name_furigana} ${detail.first_name_furigana}`)
+    expect(reqDetail).toContain(`${identity.last_name_furigana} ${identity.first_name_furigana}`)
     expect(reqDetail).toContain('生年月日')
     expect(reqDetail).toContain(`${detail.date_of_birth.year}年${detail.date_of_birth.month}月${detail.date_of_birth.day}日`)
+    expect(reqDetail).toContain(`${identity.date_of_birth.year}年${identity.date_of_birth.month}月${identity.date_of_birth.day}日`)
     expect(reqDetail).toContain('住所')
     expect(reqDetail).toContain('都道府県')
     expect(reqDetail).toContain(`${detail.prefecture}`)
+    expect(reqDetail).toContain(`${identity.prefecture}`)
     expect(reqDetail).toContain('市区町村')
     expect(reqDetail).toContain(`${detail.city}`)
+    expect(reqDetail).toContain(`${identity.city}`)
     expect(reqDetail).toContain('番地')
     expect(reqDetail).toContain(`${detail.address_line1}`)
+    expect(reqDetail).toContain(`${identity.address_line1}`)
     expect(reqDetail).toContain('建物名・部屋番号')
     expect(reqDetail).toContain(`${detail.address_line2}`)
     expect(reqDetail).toContain('電話番号')
     expect(reqDetail).toContain(`${detail.telephone_number}`)
+    expect(reqDetail).toContain(`${identity.telephone_number}`)
+    expect(reqDetail).toContain('身分証明書画像（表面）')
+    const image1Div = reqDetailDiv.find('[data-test="req-detail-image1"]')
+    expect(image1Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image1_file_name_without_ext}`)
+    expect(reqDetail).toContain('身分証明書画像（裏面）')
+    const image2Div = reqDetailDiv.find('[data-test="req-detail-image2"]')
+    expect(image2Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image2_file_name_without_ext}`)
+  })
+
+  it('displays request detail and identity (identity has address line2)', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: null,
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetUpdateIdentityRequestDetailResp.create(detail)
+    getUpdateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const identity = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '森の里２−２２−２',
+      address_line2: 'サーパスマンション１０１号',
+      telephone_number: '09012345678'
+    }
+    const resp2 = GetIdentityByUserAccountIdResp.create(identity)
+    getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(UpdateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const reqDetailDiv = wrapper.find('[data-test="req-detail"]')
+    const reqDetail = reqDetailDiv.text()
+    expect(reqDetail).toContain('本人確認依頼（更新）詳細')
+    expect(reqDetail).toContain('更新前')
+    expect(reqDetail).toContain('更新後')
+    expect(reqDetail).toContain('名前')
+    expect(reqDetail).toContain(`${detail.last_name} ${detail.first_name}`)
+    expect(reqDetail).toContain(`${identity.last_name} ${identity.first_name}`)
+    expect(reqDetail).toContain('フリガナ')
+    expect(reqDetail).toContain(`${detail.last_name_furigana} ${detail.first_name_furigana}`)
+    expect(reqDetail).toContain(`${identity.last_name_furigana} ${identity.first_name_furigana}`)
+    expect(reqDetail).toContain('生年月日')
+    expect(reqDetail).toContain(`${detail.date_of_birth.year}年${detail.date_of_birth.month}月${detail.date_of_birth.day}日`)
+    expect(reqDetail).toContain(`${identity.date_of_birth.year}年${identity.date_of_birth.month}月${identity.date_of_birth.day}日`)
+    expect(reqDetail).toContain('住所')
+    expect(reqDetail).toContain('都道府県')
+    expect(reqDetail).toContain(`${detail.prefecture}`)
+    expect(reqDetail).toContain(`${identity.prefecture}`)
+    expect(reqDetail).toContain('市区町村')
+    expect(reqDetail).toContain(`${detail.city}`)
+    expect(reqDetail).toContain(`${identity.city}`)
+    expect(reqDetail).toContain('番地')
+    expect(reqDetail).toContain(`${detail.address_line1}`)
+    expect(reqDetail).toContain(`${identity.address_line1}`)
+    expect(reqDetail).toContain('建物名・部屋番号')
+    expect(reqDetail).toContain(`${identity.address_line2}`)
+    expect(reqDetail).toContain('電話番号')
+    expect(reqDetail).toContain(`${detail.telephone_number}`)
+    expect(reqDetail).toContain(`${identity.telephone_number}`)
+    expect(reqDetail).toContain('身分証明書画像（表面）')
+    const image1Div = reqDetailDiv.find('[data-test="req-detail-image1"]')
+    expect(image1Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image1_file_name_without_ext}`)
+    expect(reqDetail).toContain('身分証明書画像（裏面）')
+    const image2Div = reqDetailDiv.find('[data-test="req-detail-image2"]')
+    expect(image2Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image2_file_name_without_ext}`)
+  })
+
+  it('displays request detail and identity (both detail and identity have address line2)', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: 'シャーメゾン１０２号',
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetUpdateIdentityRequestDetailResp.create(detail)
+    getUpdateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const identity = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '森の里２−２２−２',
+      address_line2: 'サーパスマンション１０１号',
+      telephone_number: '09012345678'
+    }
+    const resp2 = GetIdentityByUserAccountIdResp.create(identity)
+    getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(UpdateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const reqDetailDiv = wrapper.find('[data-test="req-detail"]')
+    const reqDetail = reqDetailDiv.text()
+    expect(reqDetail).toContain('本人確認依頼（更新）詳細')
+    expect(reqDetail).toContain('更新前')
+    expect(reqDetail).toContain('更新後')
+    expect(reqDetail).toContain('名前')
+    expect(reqDetail).toContain(`${detail.last_name} ${detail.first_name}`)
+    expect(reqDetail).toContain(`${identity.last_name} ${identity.first_name}`)
+    expect(reqDetail).toContain('フリガナ')
+    expect(reqDetail).toContain(`${detail.last_name_furigana} ${detail.first_name_furigana}`)
+    expect(reqDetail).toContain(`${identity.last_name_furigana} ${identity.first_name_furigana}`)
+    expect(reqDetail).toContain('生年月日')
+    expect(reqDetail).toContain(`${detail.date_of_birth.year}年${detail.date_of_birth.month}月${detail.date_of_birth.day}日`)
+    expect(reqDetail).toContain(`${identity.date_of_birth.year}年${identity.date_of_birth.month}月${identity.date_of_birth.day}日`)
+    expect(reqDetail).toContain('住所')
+    expect(reqDetail).toContain('都道府県')
+    expect(reqDetail).toContain(`${detail.prefecture}`)
+    expect(reqDetail).toContain(`${identity.prefecture}`)
+    expect(reqDetail).toContain('市区町村')
+    expect(reqDetail).toContain(`${detail.city}`)
+    expect(reqDetail).toContain(`${identity.city}`)
+    expect(reqDetail).toContain('番地')
+    expect(reqDetail).toContain(`${detail.address_line1}`)
+    expect(reqDetail).toContain(`${identity.address_line1}`)
+    expect(reqDetail).toContain('建物名・部屋番号')
+    expect(reqDetail).toContain(`${detail.address_line2}`)
+    expect(reqDetail).toContain(`${identity.address_line2}`)
+    expect(reqDetail).toContain('電話番号')
+    expect(reqDetail).toContain(`${detail.telephone_number}`)
+    expect(reqDetail).toContain(`${identity.telephone_number}`)
+    expect(reqDetail).toContain('身分証明書画像（表面）')
+    const image1Div = reqDetailDiv.find('[data-test="req-detail-image1"]')
+    expect(image1Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image1_file_name_without_ext}`)
+    expect(reqDetail).toContain('身分証明書画像（裏面）')
+    const image2Div = reqDetailDiv.find('[data-test="req-detail-image2"]')
+    expect(image2Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image2_file_name_without_ext}`)
+  })
+
+  it('displays request detail and identity without address line2', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: null,
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetUpdateIdentityRequestDetailResp.create(detail)
+    getUpdateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const identity = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '森の里２−２２−２',
+      address_line2: null,
+      telephone_number: '09012345678'
+    }
+    const resp2 = GetIdentityByUserAccountIdResp.create(identity)
+    getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(UpdateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const reqDetailDiv = wrapper.find('[data-test="req-detail"]')
+    const reqDetail = reqDetailDiv.text()
+    expect(reqDetail).toContain('本人確認依頼（更新）詳細')
+    expect(reqDetail).toContain('更新前')
+    expect(reqDetail).toContain('更新後')
+    expect(reqDetail).toContain('名前')
+    expect(reqDetail).toContain(`${detail.last_name} ${detail.first_name}`)
+    expect(reqDetail).toContain(`${identity.last_name} ${identity.first_name}`)
+    expect(reqDetail).toContain('フリガナ')
+    expect(reqDetail).toContain(`${detail.last_name_furigana} ${detail.first_name_furigana}`)
+    expect(reqDetail).toContain(`${identity.last_name_furigana} ${identity.first_name_furigana}`)
+    expect(reqDetail).toContain('生年月日')
+    expect(reqDetail).toContain(`${detail.date_of_birth.year}年${detail.date_of_birth.month}月${detail.date_of_birth.day}日`)
+    expect(reqDetail).toContain(`${identity.date_of_birth.year}年${identity.date_of_birth.month}月${identity.date_of_birth.day}日`)
+    expect(reqDetail).toContain('住所')
+    expect(reqDetail).toContain('都道府県')
+    expect(reqDetail).toContain(`${detail.prefecture}`)
+    expect(reqDetail).toContain(`${identity.prefecture}`)
+    expect(reqDetail).toContain('市区町村')
+    expect(reqDetail).toContain(`${detail.city}`)
+    expect(reqDetail).toContain(`${identity.city}`)
+    expect(reqDetail).toContain('番地')
+    expect(reqDetail).toContain(`${detail.address_line1}`)
+    expect(reqDetail).toContain(`${identity.address_line1}`)
+    expect(reqDetail).not.toContain('建物名・部屋番号')
+    expect(reqDetail).toContain('電話番号')
+    expect(reqDetail).toContain(`${detail.telephone_number}`)
+    expect(reqDetail).toContain(`${identity.telephone_number}`)
     expect(reqDetail).toContain('身分証明書画像（表面）')
     const image1Div = reqDetailDiv.find('[data-test="req-detail-image1"]')
     expect(image1Div.attributes().src).toBe(`/admin/api/identity-images/${routeParam}/${detail.image1_file_name_without_ext}`)
