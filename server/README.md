@@ -57,3 +57,5 @@ user_accountで排他ロックを取得 -> create_identity_reqで排他ロック
 user_accountで排他ロックを取得 -> create_identity_reqで排他ロックを取得
 #### update_identity_request_approval.rs
 user_accountで排他ロックを取得 -> identityで排他ロックを取得 -> update_identity_reqで排他ロックを取得
+#### update_identity_request_rejection.rs
+user_accountで排他ロックを取得 -> update_identity_reqで排他ロックを取得

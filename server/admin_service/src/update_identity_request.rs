@@ -3,4 +3,5 @@
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod update_identity_request_approval;
 pub(crate) mod update_identity_request_detail;
+pub(crate) mod update_identity_request_rejection;
 pub(crate) mod update_identity_requests;
