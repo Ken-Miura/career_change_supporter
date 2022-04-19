@@ -412,22 +412,7 @@ async fn handle_identity_req(
         })?;
     let identity_exists = identity_option.is_some();
     if let Some(identity) = identity_option {
-        if identity.date_of_birth != submitted_identity.identity.date_of_birth {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: Code::DateOfBirthIsNotMatch as u32,
-                }),
-            ));
-        }
-        if identity == submitted_identity.identity {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: Code::NoIdentityUpdated as u32,
-                }),
-            ));
-        }
+        let _ = check_update_identity_requirement(&identity, &submitted_identity.identity)?;
         let _ =
             handle_update_identity_request(account_id, submitted_identity, current_date_time, op)
                 .await?;
@@ -442,6 +427,37 @@ async fn handle_identity_req(
         async { send_mail.send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text) }
             .await?;
     Ok((StatusCode::OK, Json(IdentityResult {})))
+}
+
+fn check_update_identity_requirement(
+    identity: &Identity,
+    identity_to_update: &Identity,
+) -> Result<(), ErrResp> {
+    if identity.date_of_birth != identity_to_update.date_of_birth {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::DateOfBirthIsNotMatch as u32,
+            }),
+        ));
+    }
+    if identity.first_name != identity_to_update.first_name {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::FirstNameIsNotMatch as u32,
+            }),
+        ));
+    }
+    if identity == identity_to_update {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityUpdated as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 async fn handle_update_identity_request(
@@ -866,6 +882,7 @@ mod tests {
     use crate::err::Code::DataParseFailure;
     use crate::err::Code::DateOfBirthIsNotMatch;
     use crate::err::Code::ExceedMaxIdentityImageSizeLimit;
+    use crate::err::Code::FirstNameIsNotMatch;
     use crate::err::Code::IdentityReqAlreadyExists;
     use crate::err::Code::IllegalAge;
     use crate::err::Code::IllegalCharInAddressLine1;
@@ -2547,6 +2564,52 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(DateOfBirthIsNotMatch as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn handle_identity_req_fail_first_name_is_not_match() {
+        let account_id = 1234;
+        let current_date_time = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date = current_date_time.naive_local().date();
+        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let submitted_identity = SubmittedIdentity {
+            account_id,
+            identity: create_dummy_identity(&current_date),
+            identity_image1: (image1_file_name_without_ext, create_dummy_identity_image1()),
+            identity_image2: None,
+        };
+        let mut identity = submitted_identity.identity.clone();
+        identity.first_name = String::from("次郎");
+        identity.telephone_number = String::from("08012345678");
+        assert_ne!(identity.first_name, submitted_identity.identity.first_name);
+        assert_ne!(
+            identity.telephone_number,
+            submitted_identity.identity.telephone_number
+        );
+        let op = SubmitIdentityOperationMock {
+            identity_option: Some(identity),
+            create_identity_req_exists: false,
+            update_identity_req_exists: true,
+            account_id,
+            submitted_identity: submitted_identity.clone(),
+            current_date_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id, op.identity_option.is_some()),
+            create_text(account_id, op.identity_option.is_some()),
+        );
+
+        let result =
+            handle_identity_req(submitted_identity, current_date_time, op, send_mail_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(FirstNameIsNotMatch as u32, resp.1 .0.code);
     }
 
     #[tokio::test]
