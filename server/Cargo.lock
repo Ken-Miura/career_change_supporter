@@ -37,20 +37,14 @@ dependencies = [
  "async-redis-session",
  "async-session",
  "axum",
- "bytes",
  "chrono",
  "common",
- "cookie",
  "dotenv",
  "entity",
  "headers",
- "http-body",
- "hyper",
  "image",
  "num_cpus",
  "once_cell",
- "regex",
- "rust_decimal",
  "serde",
  "tokio",
  "tower",
@@ -58,7 +52,6 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "uuid 0.8.2",
 ]
 
 [[package]]
