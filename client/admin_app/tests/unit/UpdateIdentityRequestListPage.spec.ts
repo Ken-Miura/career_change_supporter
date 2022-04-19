@@ -163,7 +163,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const list = wrapper.find('[data-test="list"]')
     // ラベル
     expect(list.text()).toContain('依頼時刻')
-    expect(list.text()).toContain('名前')
+    expect(list.text()).toContain('氏名')
     // Item
     expect(list.text()).toContain(`${item.requested_at.getFullYear()}年${(item.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item.requested_at.getDate().toString().padStart(2, '0')}日${item.requested_at.getHours().toString().padStart(2, '0')}時${item.requested_at.getMinutes().toString().padStart(2, '0')}分${item.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
     expect(list.text()).toContain(item.name)
@@ -335,7 +335,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const list1 = wrapper.find('[data-test="list"]')
     // ラベル
     expect(list1.text()).toContain('依頼時刻')
-    expect(list1.text()).toContain('名前')
+    expect(list1.text()).toContain('氏名')
     // Item
     expect(list1.text()).toContain(`${item1.requested_at.getFullYear()}年${(item1.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item1.requested_at.getDate().toString().padStart(2, '0')}日${item1.requested_at.getHours().toString().padStart(2, '0')}時${item1.requested_at.getMinutes().toString().padStart(2, '0')}分${item1.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
     expect(list1.text()).toContain(item1.name)
@@ -364,7 +364,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const list2 = wrapper.find('[data-test="list"]')
     // ラベル
     expect(list2.text()).toContain('依頼時刻')
-    expect(list2.text()).toContain('名前')
+    expect(list2.text()).toContain('氏名')
     // Item
     expect(list2.text()).toContain(`${item3.requested_at.getFullYear()}年${(item3.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item3.requested_at.getDate().toString().padStart(2, '0')}日${item3.requested_at.getHours().toString().padStart(2, '0')}時${item3.requested_at.getMinutes().toString().padStart(2, '0')}分${item3.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
     expect(list2.text()).toContain(item3.name)
@@ -384,7 +384,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const list3 = wrapper.find('[data-test="list"]')
     // ラベル
     expect(list3.text()).toContain('依頼時刻')
-    expect(list3.text()).toContain('名前')
+    expect(list3.text()).toContain('氏名')
     // Item
     expect(list3.text()).toContain(`${item1.requested_at.getFullYear()}年${(item1.requested_at.getMonth() + 1).toString().padStart(2, '0')}月${item1.requested_at.getDate().toString().padStart(2, '0')}日${item1.requested_at.getHours().toString().padStart(2, '0')}時${item1.requested_at.getMinutes().toString().padStart(2, '0')}分${item1.requested_at.getSeconds().toString().padStart(2, '0')}秒`)
     expect(list3.text()).toContain(item1.name)

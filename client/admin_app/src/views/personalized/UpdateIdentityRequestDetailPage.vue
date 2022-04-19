@@ -17,7 +17,7 @@
           <div v-if="detail !== null && identity !== null">
             <div class="m-4 text-2xl grid grid-cols-8">
               <div class="mt-2 justify-self-start col-span-2"></div><div class="mt-2 justify-self-start font-bold col-span-3">更新前</div><div class="mt-2 justify-self-start font-bold col-span-3">更新後</div>
-              <div class="mt-2 justify-self-start col-span-2">名前</div><div class="mt-2 justify-self-start col-span-3">{{ identity.last_name }} {{ identity.first_name }}</div><div class="mt-2 justify-self-start col-span-3">{{ detail.last_name }} {{ detail.first_name }}</div>
+              <div class="mt-2 justify-self-start col-span-2">氏名</div><div class="mt-2 justify-self-start col-span-3">{{ identity.last_name }} {{ identity.first_name }}</div><div class="mt-2 justify-self-start col-span-3">{{ detail.last_name }} {{ detail.first_name }}</div>
               <div class="mt-2 justify-self-start col-span-2">フリガナ</div><div class="mt-2 justify-self-start col-span-3">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div><div class="mt-2 justify-self-start col-span-3">{{ detail.last_name_furigana }} {{ detail.first_name_furigana }}</div>
               <div class="mt-2 justify-self-start col-span-2">生年月日</div><div class="mt-2 justify-self-start col-span-3">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div><div class="mt-2 justify-self-start col-span-3">{{ detail.date_of_birth.year }}年{{ detail.date_of_birth.month }}月{{ detail.date_of_birth.day }}日</div>
               <div class="mt-2 justify-self-start col-span-8">住所</div>
