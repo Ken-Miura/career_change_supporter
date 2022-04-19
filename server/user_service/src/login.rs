@@ -67,6 +67,10 @@ async fn handle_login_req(
         return Err(unexpected_err_resp());
     }
     let account = accounts.get(0).cloned().ok_or_else(|| {
+        // 処理時間からアカウントが見つからなかったのか、パスワードが見つからなかったのかを露見させないようにするため
+        // アカウントが見つからなかった場合でもis_password_matchの処理を行い、パスワードが一致しなかった場合の計算量に近づける
+        // 計算量を同等にするためだけにis_password_matchを呼ぶので、戻り値は意図的に無視する
+        let _ = is_password_match(password, "dummy_password".as_bytes());
         tracing::error!("unauthorized: {}", email_addr);
         (
             StatusCode::UNAUTHORIZED,
