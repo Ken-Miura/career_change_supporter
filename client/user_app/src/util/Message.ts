@@ -63,4 +63,5 @@ export namespace Message {
     export const POST_IDENTITY_RESULT_MESSAGE = '本人確認を受け付けました。本人確認作業の完了後、入力した値がユーザー情報に反映されます。'
     export const DATE_OF_BIRTH_IS_NOT_MATCH_MESSAGE = '生年月日を変更することはできません'
     export const NO_IDENTITY_UPDATED_MESSAGE = 'ユーザー情報に変更がありません'
+    export const FIRST_NAME_IS_NOT_MATCH_MESSAGE = '氏名の内、名の変更はできません'
 }

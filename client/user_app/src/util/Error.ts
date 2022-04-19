@@ -56,6 +56,7 @@ export namespace Code {
   export const IDENTITY_INFO_REQ_ALREADY_EXISTS = 20044
   export const DATE_OF_BIRTH_IS_NOT_MATCH = 20045
   export const NO_IDENTITY_UPDATED = 20046
+  export const FIRST_NAME_IS_NOT_MATCH = 20047
 }
 
 export function createErrorMessage (code: number): string {
@@ -155,6 +156,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.DATE_OF_BIRTH_IS_NOT_MATCH_MESSAGE} (${code})`
   } else if (code === Code.NO_IDENTITY_UPDATED) {
     return `${Message.NO_IDENTITY_UPDATED_MESSAGE} (${code})`
+  } else if (code === Code.FIRST_NAME_IS_NOT_MATCH) {
+    return `${Message.FIRST_NAME_IS_NOT_MATCH_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
