@@ -16,7 +16,8 @@ RUN cargo install --locked ripgrep \
     && cargo install --locked ripgrep_all \
     && cargo install --locked fd-find \
     && cargo install --locked bat \
-    && cargo install --locked git-delta
+    && cargo install --locked git-delta \
+    && cargo install --locked cargo-sort
 
 # バックエンドの開発に必要なツールをインストール
 RUN cargo install --locked sea-orm-cli
