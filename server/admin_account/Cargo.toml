@@ -3,11 +3,10 @@ name = "admin_account"
 version = "0.1.0"
 authors = ["kmiura <ken.miura1102@gmail.com>"]
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.10.0", features = ["full"] }
 common = { path = "../common" }
-entity = { path = "../entity" }
 dotenv = "0.15.0"
+entity = { path = "../entity" }
+tokio = { version = "1.10.0", features = ["full"] }

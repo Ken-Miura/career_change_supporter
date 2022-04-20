@@ -1,10 +1,10 @@
 [workspace]
 
 members = [
-    "user_service",
-    "admin_service",
     "admin_account",
+    "admin_service",
     "common",
     "entity",
     "migration",
+    "user_service",
 ]

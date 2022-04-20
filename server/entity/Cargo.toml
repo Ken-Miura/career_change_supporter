@@ -3,7 +3,6 @@ name = "entity"
 version = "0.1.0"
 authors = ["kmiura <ken.miura1102@gmail.com>"]
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
