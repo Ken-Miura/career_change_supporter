@@ -22,7 +22,8 @@ use entity::sea_orm::{
 use entity::user_temp_account;
 use once_cell::sync::Lazy;
 use serde::Serialize;
-use uuid::{adapter::Simple, Uuid};
+use uuid::fmt::Simple;
+use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachTempAccountsLimit;
@@ -43,7 +44,7 @@ pub(crate) async fn post_temp_accounts(
     ValidCred(cred): ValidCred,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<TempAccountsResult> {
-    let uuid = Uuid::new_v4().to_simple();
+    let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = TempAccountsOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
@@ -259,7 +260,7 @@ mod tests {
         let _ = validate_email_address(email_address).expect("failed to get Ok");
         let _ = validate_password(password).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
-        let uuid = Uuid::new_v4().to_simple();
+        let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = TempAccountsOperationMock::new(
@@ -298,7 +299,7 @@ mod tests {
         let _ = validate_email_address(email_address).expect("failed to get Ok");
         let _ = validate_password(password).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
-        let uuid = Uuid::new_v4().to_simple();
+        let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = TempAccountsOperationMock::new(

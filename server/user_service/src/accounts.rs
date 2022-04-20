@@ -331,7 +331,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_accounts_req_success() {
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let email_addr = "test@test.com";
         let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
         let register_date_time = chrono::Utc
@@ -363,7 +363,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_accounts_req_fail_temp_account_expired() {
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let email_addr = "test@test.com";
         let pwd = "aaaaaaaaaA";
         let _ = validate_uuid(&uuid).expect("failed to get Ok");
@@ -400,7 +400,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_accounts_req_fail_no_temp_account_found() {
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let email_addr = "test@test.com";
         let pwd = "aaaaaaaaaA";
         let _ = validate_uuid(&uuid).expect("failed to get Ok");
@@ -436,7 +436,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_accounts_req_fail_account_exists() {
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let email_addr = "test@test.com";
         let pwd = "aaaaaaaaaA";
         let _ = validate_uuid(&uuid).expect("failed to get Ok");

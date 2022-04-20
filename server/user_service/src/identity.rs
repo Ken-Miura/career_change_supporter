@@ -67,8 +67,8 @@ pub(crate) async fn post_identity(
 
     let op = SubmitIdentityOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
-    let image2_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+    let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
+    let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let submitted_identity = SubmittedIdentity {
         account_id,
         identity,
@@ -2357,7 +2357,7 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let current_date = current_date_time.naive_local().date();
-        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
             account_id,
             identity: create_dummy_identity(&current_date),
@@ -2395,7 +2395,7 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let current_date = current_date_time.naive_local().date();
-        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
             account_id,
             identity: create_dummy_identity(&current_date),
@@ -2439,7 +2439,7 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let current_date = current_date_time.naive_local().date();
-        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
             account_id,
             identity: create_dummy_identity(&current_date),
@@ -2477,7 +2477,7 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let current_date = current_date_time.naive_local().date();
-        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
             account_id,
             identity: create_dummy_identity(&current_date),
@@ -2521,7 +2521,7 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let current_date = current_date_time.naive_local().date();
-        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
             account_id,
             identity: create_dummy_identity(&current_date),
@@ -2574,7 +2574,7 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let current_date = current_date_time.naive_local().date();
-        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
             account_id,
             identity: create_dummy_identity(&current_date),
@@ -2620,7 +2620,7 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let current_date = current_date_time.naive_local().date();
-        let image1_file_name_without_ext = Uuid::new_v4().to_simple().to_string();
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
             account_id,
             identity: create_dummy_identity(&current_date),

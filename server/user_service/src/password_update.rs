@@ -425,7 +425,7 @@ mod tests {
             requested_at: pwd_change_requested_at,
         };
 
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let _ = validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
         let _ = validate_password(new_pwd).expect("failed to get Ok");
@@ -474,7 +474,7 @@ mod tests {
             requested_at: pwd_change_requested_at,
         };
 
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let _ = validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
         let _ = validate_password(new_pwd).expect("failed to get Ok");
@@ -523,7 +523,7 @@ mod tests {
             requested_at: pwd_change_requested_at,
         };
 
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let _ = validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
         let _ = validate_password(new_pwd).expect("failed to get Ok");
@@ -572,7 +572,7 @@ mod tests {
             requested_at: pwd_change_requested_at,
         };
 
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let _ = validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
         let _ = validate_password(new_pwd).expect("failed to get Ok");
@@ -622,7 +622,7 @@ mod tests {
             requested_at: pwd_change_requested_at,
         };
 
-        let uuid = Uuid::new_v4().to_simple().to_string();
+        let uuid = Uuid::new_v4().simple().to_string();
         let _ = validate_uuid(&uuid).expect("failed to get Ok");
         let invalid_pwd = "あいうえお";
         let password_update_req = PasswordUpdateReq {

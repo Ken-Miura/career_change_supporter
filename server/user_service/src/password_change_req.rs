@@ -22,7 +22,8 @@ use entity::sea_orm::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use uuid::{adapter::Simple, Uuid};
+use uuid::fmt::Simple;
+use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachPasswordChangeReqLimit;
@@ -45,7 +46,7 @@ pub(crate) async fn post_password_change_req(
     Json(account): Json<Account>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<PasswordChangeReqResult> {
-    let uuid = Uuid::new_v4().to_simple();
+    let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = PasswordChangeReqOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
@@ -275,7 +276,7 @@ mod tests {
         let email_address = "test@example.com";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
-        let uuid = Uuid::new_v4().to_simple();
+        let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = PasswordChangeReqOperationMock::new(
@@ -310,7 +311,7 @@ mod tests {
         let email_address = "test@example.com";
         let _ = validate_email_address(email_address).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
-        let uuid = Uuid::new_v4().to_simple();
+        let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = PasswordChangeReqOperationMock::new(
@@ -345,7 +346,7 @@ mod tests {
     async fn handle_password_change_req_fail_invalid_email_address() {
         let email_address = "<script>alert('test')</script>";
         let url: &str = "https://localhost:8080";
-        let uuid = Uuid::new_v4().to_simple();
+        let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
         let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let op_mock = PasswordChangeReqOperationMock::new(
