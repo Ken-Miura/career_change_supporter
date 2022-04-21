@@ -46,12 +46,16 @@ use common::util::check_env_vars;
 use common::KEY_TO_URL_FOR_FRONT_END;
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
+use hyper::{Body, Request};
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
+use std::net::SocketAddr;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
+use tracing::Level;
+use uuid::Uuid;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_USER_APP";
@@ -141,7 +145,26 @@ async fn main_internal(num_of_cpus: u32) {
         )
         .layer(
             ServiceBuilder::new()
-                .layer(TraceLayer::new_for_http())
+                //.layer(TraceLayer::new_for_http())
+                .layer(
+                    TraceLayer::new_for_http().make_span_with(|request: &Request<Body>| {
+                        let x = request
+                            .headers()
+                            .get("X-Forwarded-For")
+                            .map(|hv| match hv.to_str() {
+                                Ok(s) => s.to_string(),
+                                Err(e) => format!("{}", e),
+                            })
+                            .unwrap_or_else(|| "None".to_string());
+                        let req_id = Uuid::new_v4().simple().to_string();
+                        tracing::span!(
+                            Level::INFO,
+                            "req",
+                            request_id = &tracing::field::display(req_id),
+                            x_fowarded_for = &tracing::field::display(x)
+                        )
+                    }),
+                )
                 .layer(CookieManagerLayer::new())
                 .layer(Extension(store))
                 .layer(Extension(pool)),
@@ -158,7 +181,7 @@ async fn main_internal(num_of_cpus: u32) {
         .unwrap_or_else(|_| panic!("failed to parse socket: {}", socket));
     tracing::info!("listening on {}", addr);
     let _ = axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .expect("failed to serve app");
 }
