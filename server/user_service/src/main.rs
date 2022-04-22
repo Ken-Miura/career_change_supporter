@@ -50,11 +50,11 @@ use hyper::{Body, Request};
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
-use std::net::SocketAddr;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
-use tower_http::trace::TraceLayer;
-use tracing::Level;
+use tower_http::trace::{DefaultOnResponse, TraceLayer};
+use tower_http::LatencyUnit;
+use tracing::{Level, Span};
 use uuid::Uuid;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
@@ -145,25 +145,34 @@ async fn main_internal(num_of_cpus: u32) {
         )
         .layer(
             ServiceBuilder::new()
-                //.layer(TraceLayer::new_for_http())
                 .layer(
-                    TraceLayer::new_for_http().make_span_with(|request: &Request<Body>| {
-                        let x = request
-                            .headers()
-                            .get("X-Forwarded-For")
-                            .map(|hv| match hv.to_str() {
-                                Ok(s) => s.to_string(),
-                                Err(e) => format!("{}", e),
-                            })
-                            .unwrap_or_else(|| "None".to_string());
-                        let req_id = Uuid::new_v4().simple().to_string();
-                        tracing::span!(
-                            Level::INFO,
-                            "req",
-                            request_id = &tracing::field::display(req_id),
-                            x_fowarded_for = &tracing::field::display(x)
-                        )
-                    }),
+                    TraceLayer::new_for_http()
+                        .make_span_with(|_request: &Request<Body>| {
+                            let req_id = Uuid::new_v4().simple().to_string();
+                            tracing::span!(
+                                Level::INFO,
+                                "req",
+                                id = &tracing::field::display(req_id),
+                            )
+                        })
+                        .on_request(|request: &Request<Body>, _span: &Span| {
+                            let req_log = RequestLog::new(request);
+                            tracing::info!(
+                                "started processing request (method={}, uri={}, version={:?}, headers={{x-forwarded-for: {}, x-real-ip: {}, forwarded: {}, user-agent: {}}})",
+                                req_log.method,
+                                req_log.uri,
+                                req_log.version,
+                                req_log.x_forwarded_for,
+                                req_log.x_real_ip,
+                                req_log.forwarded,
+                                req_log.user_agent
+                            );
+                        })
+                        .on_response(
+                            DefaultOnResponse::new()
+                                .level(Level::INFO)
+                                .latency_unit(LatencyUnit::Micros),
+                        ),
                 )
                 .layer(CookieManagerLayer::new())
                 .layer(Extension(store))
@@ -181,7 +190,64 @@ async fn main_internal(num_of_cpus: u32) {
         .unwrap_or_else(|_| panic!("failed to parse socket: {}", socket));
     tracing::info!("listening on {}", addr);
     let _ = axum::Server::bind(&addr)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+        .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
+}
+
+struct RequestLog {
+    method: String,
+    uri: String,
+    version: String,
+    x_forwarded_for: String,
+    x_real_ip: String,
+    forwarded: String,
+    user_agent: String,
+}
+
+impl RequestLog {
+    fn new(request: &Request<Body>) -> Self {
+        let method = request.method();
+        let uri = request.uri();
+        let version = request.version();
+        let headers = request.headers();
+        let x_forwarded_for = headers
+            .get("x-forwarded-for")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        let x_real_ip = headers
+            .get("x-real-ip")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        let forwarded = headers
+            .get("forwarded")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        let user_agent = request
+            .headers()
+            .get("user-agent")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        RequestLog {
+            method: format!("{}", method),
+            uri: format!("{}", uri),
+            version: format!("{:?}", version),
+            x_forwarded_for,
+            x_real_ip,
+            forwarded,
+            user_agent,
+        }
+    }
 }
