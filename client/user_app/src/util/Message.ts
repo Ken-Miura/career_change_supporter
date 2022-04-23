@@ -64,4 +64,5 @@ export namespace Message {
     export const DATE_OF_BIRTH_IS_NOT_MATCH_MESSAGE = '生年月日を変更することはできません'
     export const NO_IDENTITY_UPDATED_MESSAGE = 'ユーザー情報に変更がありません'
     export const FIRST_NAME_IS_NOT_MATCH_MESSAGE = '氏名の内、名の変更はできません'
+    export const INVALID_MULTIPART_FORM_DATA_MESSAGE = '不正なmultipart/form-dataです。他のブラウザで動作するかお試し下さい'
 }
