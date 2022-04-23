@@ -5,6 +5,7 @@ use async_session::SessionStore;
 use axum::{extract::Extension, http::StatusCode};
 use common::ErrResp;
 use tower_cookies::{Cookie, Cookies};
+use tracing::{error, info};
 
 use crate::{
     err::unexpected_err_resp,
@@ -28,7 +29,7 @@ pub(crate) async fn post_logout(
     let session_id = match option_cookie {
         Some(s) => s.value().to_string(),
         None => {
-            tracing::debug!("no sessoin cookie found");
+            info!("no sessoin cookie found");
             return Ok(StatusCode::OK);
         }
     };
@@ -46,25 +47,30 @@ async fn handle_logout_req<'a>(
         .load_session(session_id.to_string())
         .await
         .map_err(|e| {
-            tracing::error!("failed to load session: {}", e);
+            error!("failed to load session: {}", e);
             unexpected_err_resp()
         })?;
     let session = match option_session {
         Some(s) => s,
         None => {
-            tracing::debug!("no session found in session store on logout");
+            info!("no session found in session store on logout");
             return Ok(());
         }
     };
-    match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
-        Some(id) => tracing::info!("User (account id: {}) logged out", id),
-        None => tracing::info!("Someone logged out"),
+    let account_id_option = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
+        Some(id) => {
+            info!("user (account id: {}) logged out", id);
+            Some(id)
+        }
+        None => {
+            info!("someone logged out");
+            None
+        }
     };
     let _ = store.destroy_session(session).await.map_err(|e| {
-        tracing::error!(
-            "failed to destroy session (session_id: {}): {}",
-            session_id,
-            e
+        error!(
+            "failed to destroy session (account id: {:?}): {}",
+            account_id_option, e
         );
         unexpected_err_resp()
     })?;
