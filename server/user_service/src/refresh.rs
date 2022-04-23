@@ -3,6 +3,7 @@
 use common::ErrResp;
 
 use axum::http::StatusCode;
+use tracing::info;
 
 use crate::util::session::User;
 
@@ -20,6 +21,6 @@ pub(crate) async fn get_refresh(User { account_id }: User) -> Result<StatusCode,
     // NOTE:
     // User構造体を受け取る際のリクエストのプリプロセスで認証 (ログインセッションの延長) と利用規約の同意を実施済
     // そのため、ここまで到達した場合、OKを返すのみで良い
-    tracing::debug!("refresh (account id: {})", account_id);
+    info!("refresh (account id: {})", account_id);
     Ok(StatusCode::OK)
 }
