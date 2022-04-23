@@ -22,6 +22,7 @@ use entity::prelude::Tenant;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use serde::Serialize;
+use tracing::{error, info};
 
 use crate::{
     err::{self, unexpected_err_resp},
@@ -61,6 +62,7 @@ async fn handle_reward_req(
 ) -> RespResult<RewardResult> {
     let tenant_id_option = reward_op.find_tenant_id_by_account_id(account_id).await?;
     let payment_platform_results = if let Some(tenant_id) = tenant_id_option {
+        info!("tenant found (tenant id: {})", tenant_id);
         let tenant_obj = get_tenant_obj_by_tenant_id(tenant_op, &tenant_id).await?;
         let bank_account = BankAccount {
             bank_code: tenant_obj.bank_code,
@@ -70,7 +72,7 @@ async fn handle_reward_req(
             account_holder_name: tenant_obj.bank_account_holder_name,
         };
         if !tenant_obj.payjp_fee_included {
-            tracing::error!("payjp_fee_included is false in tenant (id: {})", &tenant_id);
+            error!("payjp_fee_included is false (tenant id: {})", &tenant_id);
             return Err(unexpected_err_resp());
         }
         let rewards_of_the_month =
@@ -78,7 +80,7 @@ async fn handle_reward_req(
         let transfers = get_latest_two_tenant_transfers(tenant_transfer_op, &tenant_id).await?;
         (Some(bank_account), Some(rewards_of_the_month), transfers)
     } else {
-        tracing::debug!("no tenant id found (account id: {})", account_id);
+        info!("no tenant found (account id: {})", account_id);
         (None, None, vec![])
     };
     Ok((
@@ -162,11 +164,11 @@ async fn get_tenant_obj_by_tenant_id(
         .await
         .map_err(|e| match e {
             common::payment_platform::Error::RequestProcessingError(err) => {
-                tracing::error!("failed to process request on getting tenant: {}", err);
+                error!("failed to process request on getting tenant: {}", err);
                 unexpected_err_resp()
             }
             common::payment_platform::Error::ApiError(err) => {
-                tracing::error!("failed to request tenant operation: {}", err);
+                error!("failed to request tenant operation: {}", err);
                 let status_code = err.error.status as u16;
                 if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
                     return (
@@ -198,7 +200,7 @@ async fn get_rewards_of_current_month(
         .tenant(tenant_id)
         .finish()
         .map_err(|e| {
-            tracing::error!("failed to build search charges query: {}", e);
+            error!("failed to build search charges query: {}", e);
             unexpected_err_resp()
         })?;
     let mut has_more_charges = true;
@@ -209,11 +211,11 @@ async fn get_rewards_of_current_month(
             .await
             .map_err(|err| match err {
                 common::payment_platform::Error::RequestProcessingError(err) => {
-                    tracing::error!("failed to process request on getting charges: {}", err);
+                    error!("failed to process request on getting charges: {}", err);
                     unexpected_err_resp()
                 }
                 common::payment_platform::Error::ApiError(err) => {
-                    tracing::error!("failed to request charge operation: {}", err);
+                    error!("failed to request charge operation: {}", err);
                     let status_code = err.error.status as u16;
                     if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
                         return (
@@ -268,12 +270,12 @@ fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
         let fee = calculate_fee(sales, &platform_fee_rate)?;
         let reward_of_the_charge = sales - fee;
         if reward_of_the_charge < 0 {
-            tracing::error!("negative reward_of_the_charge: {:?}", charge);
+            error!("negative reward_of_the_charge: {:?}", charge);
             return Err(unexpected_err_resp());
         }
         Ok(sum + reward_of_the_charge)
     } else {
-        tracing::error!("No platform_fee_rate found in the charge: {:?}", charge);
+        error!("no platform_fee_rate found in the charge: {:?}", charge);
         Err(unexpected_err_resp())
     }
 }
@@ -281,24 +283,24 @@ fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
 // percentageはパーセンテージを示す少数の文字列。feeは、sales * (percentage/100) の結果の少数部分を切り捨てた値。
 fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
     let percentage_decimal = Decimal::from_str(percentage).map_err(|e| {
-        tracing::error!("failed to parse percentage ({}): {}", percentage, e);
+        error!("failed to parse percentage ({}): {}", percentage, e);
         unexpected_err_resp()
     })?;
     let one_handred_decimal = Decimal::from_str("100").map_err(|e| {
-        tracing::error!("failed to parse str literal: {}", e);
+        error!("failed to parse str literal: {}", e);
         unexpected_err_resp()
     })?;
     let sales_decimal = match Decimal::from_i32(sales) {
         Some(s) => s,
         None => {
-            tracing::error!("failed to parse sales value ({})", sales);
+            error!("failed to parse sales value ({})", sales);
             return Err(unexpected_err_resp());
         }
     };
     let fee_decimal = (sales_decimal * (percentage_decimal / one_handred_decimal))
         .round_dp_with_strategy(0, RoundingStrategy::ToZero);
     let fee = fee_decimal.to_string().parse::<i32>().map_err(|e| {
-        tracing::error!("failed to parse fee_decimal ({}): {}", fee_decimal, e);
+        error!("failed to parse fee_decimal ({}): {}", fee_decimal, e);
         unexpected_err_resp()
     })?;
     Ok(fee)
@@ -313,7 +315,7 @@ async fn get_latest_two_tenant_transfers(
         .tenant(tenant_id)
         .finish()
         .map_err(|e| {
-            tracing::error!("failed to build search tenant transfers query: {}", e);
+            error!("failed to build search tenant transfers query: {}", e);
             unexpected_err_resp()
         })?;
 
@@ -322,11 +324,11 @@ async fn get_latest_two_tenant_transfers(
         .await
         .map_err(|err| match err {
             common::payment_platform::Error::RequestProcessingError(err) => {
-                tracing::error!("failed to process request on getting charges: {}", err);
+                error!("failed to process request on getting charges: {}", err);
                 unexpected_err_resp()
             }
             common::payment_platform::Error::ApiError(err) => {
-                tracing::error!("failed to request charge operation: {}", err);
+                error!("failed to request charge operation: {}", err);
                 let status_code = err.error.status as u16;
                 if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
                     return (
@@ -353,10 +355,9 @@ fn convert_tenant_transfer_to_transfer(
 ) -> Result<Transfer, ErrResp> {
     let scheduled_date = NaiveDate::parse_from_str(&tenant_transfer.scheduled_date, "%Y-%m-%d")
         .map_err(|e| {
-            tracing::error!(
+            error!(
                 "failed to parse scheduled_date {}: {}",
-                tenant_transfer.scheduled_date,
-                e
+                tenant_transfer.scheduled_date, e
             );
             unexpected_err_resp()
         })?;
@@ -367,7 +368,7 @@ fn convert_tenant_transfer_to_transfer(
     };
     let transfer_date_in_jst = if let Some(d) = tenant_transfer.transfer_date {
         let parsed_date = NaiveDate::parse_from_str(&d, "%Y-%m-%d").map_err(|e| {
-            tracing::error!("failed to parse transfer_date {}: {}", d, e);
+            error!("failed to parse transfer_date {}: {}", d, e);
             unexpected_err_resp()
         })?;
         let date = Ymd {
@@ -417,10 +418,9 @@ impl RewardOperation for RewardOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find tenant id (account id: {}): {}",
-                    account_id,
-                    e
+                error!(
+                    "failed to find tenant (user_account_id: {}): {}",
+                    account_id, e
                 );
                 unexpected_err_resp()
             })?;
