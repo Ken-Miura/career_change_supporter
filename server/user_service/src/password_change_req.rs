@@ -22,6 +22,7 @@ use entity::sea_orm::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use tracing::{error, info};
 use uuid::fmt::Simple;
 use uuid::Uuid;
 
@@ -69,7 +70,6 @@ pub(crate) struct Account {
 #[derive(Serialize, Debug)]
 pub(crate) struct PasswordChangeReqResult {}
 
-// これをテスト対象と考える。
 async fn handle_password_change_req(
     email_addr: &str,
     url: &str,
@@ -79,7 +79,7 @@ async fn handle_password_change_req(
     send_mail: impl SendMail,
 ) -> RespResult<PasswordChangeReqResult> {
     let _ = validate_email_address(email_addr).map_err(|e| {
-        tracing::error!("failed to validate {}: {}", email_addr, e,);
+        error!("failed to validate email address ({}): {}", email_addr, e,);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -92,6 +92,10 @@ async fn handle_password_change_req(
     let cnt = op.num_of_pwd_change_req(email_addr).await?;
     // DBの分離レベルがSerializeでないため、MAX_NUM_OF_PWD_CHANGE_REQを超える可能性を考慮し、">="とする
     if cnt >= MAX_NUM_OF_PWD_CHANGE_REQ {
+        error!(
+            "reach max password change trial (cnt: {}, max: {})",
+            cnt, MAX_NUM_OF_PWD_CHANGE_REQ
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -105,11 +109,9 @@ async fn handle_password_change_req(
         requested_at: *requested_time,
     };
     let _ = op.create_new_pwd_change_req(new_pwd_change_req).await?;
-    tracing::info!(
-        "{} created new password change request with id: {} at {}",
-        email_addr,
-        simple_uuid,
-        requested_time
+    info!(
+        "{} created new password change request with request id: {} at {}",
+        email_addr, simple_uuid, requested_time
     );
     let text = create_text(url, &uuid_for_url);
     let _ =
@@ -174,10 +176,9 @@ impl PasswordChangeReqOperation for PasswordChangeReqOperationImpl {
             .count(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to count new password (email address: {}): {}",
-                    email_addr,
-                    e
+                error!(
+                    "failed to count num of email_address ({}) in pwd_change_req: {}",
+                    email_addr, e
                 );
                 unexpected_err_resp()
             })?;
@@ -194,8 +195,8 @@ impl PasswordChangeReqOperation for PasswordChangeReqOperationImpl {
             requested_at: Set(new_password_change_req.requested_at),
         };
         let _ = model.insert(&self.pool).await.map_err(|e| {
-            tracing::error!(
-                "failed to insert new password (id: {}, email address: {}, requested at {}): {}",
+            error!(
+                "failed to insert pwd_change_req (pwd_change_id: {}, email_address: {}, requested_at {}): {}",
                 new_password_change_req.pwd_change_id,
                 new_password_change_req.email_address,
                 new_password_change_req.requested_at,
