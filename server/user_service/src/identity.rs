@@ -29,6 +29,7 @@ use entity::sea_orm::{
 use entity::{create_identity_req, update_identity_req};
 use image::{ImageError, ImageFormat};
 use serde::Serialize;
+use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
@@ -96,8 +97,13 @@ struct MultipartWrapperImpl {
 impl MultipartWrapper for MultipartWrapperImpl {
     async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp> {
         let field_option = self.multipart.next_field().await.map_err(|e| {
-            tracing::error!("failed to get next_field: {}", e);
-            unexpected_err_resp()
+            error!("failed next_field: {}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::InvalidMultiPartFormData as u32,
+                }),
+            )
         })?;
         match field_option {
             Some(f) => {
@@ -131,7 +137,7 @@ async fn handle_multipart(
     let mut identity_image2_option = None;
     while let Some(field) = multipart.next_field().await? {
         let name = field.name.ok_or_else(|| {
-            tracing::error!("failed to get name in field");
+            error!("failed to get \"name\" in field");
             (
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -141,7 +147,7 @@ async fn handle_multipart(
         })?;
         let file_name_option = field.file_name;
         let data = field.data.map_err(|e| {
-            tracing::error!("failed to get data in field: {}", e);
+            error!("failed to get data in field: {}", e);
             (
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -152,7 +158,7 @@ async fn handle_multipart(
         if name == "identity" {
             let identity = extract_identity(data)?;
             let _ = validate_identity(&identity, &current_date).map_err(|e| {
-                tracing::error!("invalid identity: {}", e);
+                error!("invalid identity: {}", e);
                 create_invalid_identity_err(&e)
             })?;
             identity_option = Some(trim_space_from_identity(identity));
@@ -167,7 +173,7 @@ async fn handle_multipart(
             let png_binary = convert_jpeg_to_png(data)?;
             identity_image2_option = Some(png_binary);
         } else {
-            tracing::error!("invalid name in field: {}", name);
+            error!("invalid name in field: {}", name);
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -183,7 +189,7 @@ async fn handle_multipart(
 
 fn extract_identity(data: Bytes) -> Result<Identity, ErrResp> {
     let identity_json_str = std::str::from_utf8(&data).map_err(|e| {
-        tracing::error!("invalid utf-8 sequence: {}", e);
+        error!("invalid utf-8 sequence: {}", e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -192,7 +198,7 @@ fn extract_identity(data: Bytes) -> Result<Identity, ErrResp> {
         )
     })?;
     let identity = serde_json::from_str::<Identity>(identity_json_str).map_err(|e| {
-        tracing::error!("invalid Identity JSON object: {}", e);
+        error!("invalid Identity JSON object: {}", e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -207,7 +213,7 @@ fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result
     let file_name = match file_name_option {
         Some(name) => name,
         None => {
-            tracing::error!("failed to get file name in field");
+            error!("failed to get file name in field");
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -217,7 +223,7 @@ fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result
         }
     };
     let _ = validate_extension_is_jpeg(&file_name).map_err(|e| {
-        tracing::error!("invalid file name ({}): {}", file_name, e);
+        error!("invalid file name ({}): {}", file_name, e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -230,6 +236,10 @@ fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result
 
 fn validate_identity_image_size(size: usize, max_size_in_bytes: usize) -> Result<(), ErrResp> {
     if size > max_size_in_bytes {
+        error!(
+            "invalid identity image size (received {} bytes, max size in bytes = {})",
+            size, max_size_in_bytes
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -246,7 +256,7 @@ fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
     let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
         .decode()
         .map_err(|e| {
-            tracing::error!("failed to decode jpeg image: {}", e);
+            error!("failed to decode jpeg image: {}", e);
             match e {
                 ImageError::Decoding(_) => (
                     StatusCode::BAD_REQUEST,
@@ -260,7 +270,7 @@ fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
     let mut bytes = Cursor::new(vec![]);
     img.write_to(&mut bytes, image::ImageOutputFormat::Png)
         .map_err(|e| {
-            tracing::error!("failed to write image on buffer: {}", e);
+            error!("failed to write image on buffer: {}", e);
             unexpected_err_resp()
         })?;
     Ok(bytes)
@@ -273,7 +283,7 @@ fn ensure_mandatory_params_exist(
     let identity = match identity_option {
         Some(id) => id,
         None => {
-            tracing::error!("no identity found");
+            error!("no identity found");
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -285,7 +295,7 @@ fn ensure_mandatory_params_exist(
     let identity_image1 = match identity_image1_option {
         Some(image1) => image1,
         None => {
-            tracing::error!("no identity-image1 found");
+            error!("no identity-image1 found");
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -404,19 +414,24 @@ async fn handle_identity_req(
         .find_identity_by_account_id(account_id)
         .await
         .map_err(|e| {
-            tracing::error!(
-                "failed to check user's identity existence (id: {})",
-                account_id
-            );
+            error!("failed to find identity (account id: {})", account_id);
             e
         })?;
     let identity_exists = identity_option.is_some();
     if let Some(identity) = identity_option {
+        info!(
+            "request to update identity from account id ({})",
+            account_id
+        );
         let _ = check_update_identity_requirement(&identity, &submitted_identity.identity)?;
         let _ =
             handle_update_identity_request(account_id, submitted_identity, current_date_time, op)
                 .await?;
     } else {
+        info!(
+            "request to create identity from account id ({})",
+            account_id
+        );
         let _ =
             handle_create_identity_request(account_id, submitted_identity, current_date_time, op)
                 .await?;
@@ -434,6 +449,10 @@ fn check_update_identity_requirement(
     identity_to_update: &Identity,
 ) -> Result<(), ErrResp> {
     if identity.date_of_birth != identity_to_update.date_of_birth {
+        error!(
+            "date of birth ({:?}) is not same as submitted one ({:?})",
+            identity.date_of_birth, identity_to_update.date_of_birth
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -442,6 +461,10 @@ fn check_update_identity_requirement(
         ));
     }
     if identity.first_name != identity_to_update.first_name {
+        error!(
+            "first name ({}) is not same as submitted one ({})",
+            identity.first_name, identity_to_update.first_name
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -450,6 +473,7 @@ fn check_update_identity_requirement(
         ));
     }
     if identity == identity_to_update {
+        error!("identity ({:?}) is exactly same as submitted one", identity);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -470,7 +494,10 @@ async fn handle_update_identity_request(
         .check_if_update_identity_req_already_exists(account_id)
         .await?;
     if update_req_exists {
-        tracing::error!("update identity req (account id: {}) exists", account_id);
+        error!(
+            "update identity request (account id: {}) already exists",
+            account_id
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -482,7 +509,10 @@ async fn handle_update_identity_request(
         .request_update_identity(submitted_identity, current_date_time)
         .await
         .map_err(|e| {
-            tracing::error!("failed to handle update reqest (id: {})", account_id);
+            error!(
+                "failed to handle update identity reqest (account id: {})",
+                account_id
+            );
             e
         })?;
     Ok(())
@@ -498,7 +528,10 @@ async fn handle_create_identity_request(
         .check_if_create_identity_req_already_exists(account_id)
         .await?;
     if create_req_exists {
-        tracing::error!("create identity req (account id: {}) exists", account_id);
+        error!(
+            "create identity request (account id: {}) already exists",
+            account_id
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -510,7 +543,10 @@ async fn handle_create_identity_request(
         .request_create_identity(submitted_identity, current_date_time)
         .await
         .map_err(|e| {
-            tracing::error!("failed to handle create request (id: {})", account_id);
+            error!(
+                "failed to handle create identity request (account id: {})",
+                account_id
+            );
             e
         })?;
     Ok(())
@@ -588,10 +624,9 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find identity (account id: {}): {}",
-                    account_id,
-                    e
+                error!(
+                    "failed to find identity (user_account_id: {}): {}",
+                    account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -621,10 +656,9 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find create identity req (account id: {}): {}",
-                    account_id,
-                    e
+                error!(
+                    "failed to find create_identity_req (user_account_id: {}): {}",
+                    account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -655,10 +689,9 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                             current_date_time,
                         );
                     let _ = active_model.insert(txn).await.map_err(|e| {
-                        tracing::error!(
-                            "failed to insert create identity req (account id: {}): {}",
-                            account_id,
-                            e
+                        error!(
+                            "failed to insert create_identity_req (user_account_id: {}): {}",
+                            account_id, e
                         );
                         ErrRespStruct {
                             err_resp: unexpected_err_resp(),
@@ -676,11 +709,11 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
-                    tracing::error!("failed to insert create identity req: {}", db_err);
+                    error!("failed to insert create_identity_req: {}", db_err);
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    tracing::error!("failed to insert create identity req: {}", err_resp_struct);
+                    error!("failed to insert create_identity_req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -695,10 +728,9 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find update identity req (account id: {}): {}",
-                    account_id,
-                    e
+                error!(
+                    "failed to find update_identity_req (user_account_id: {}): {}",
+                    account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -729,10 +761,9 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                             current_date_time,
                         );
                     let _ = active_model.insert(txn).await.map_err(|e| {
-                        tracing::error!(
-                            "failed to insert update identity req (account id: {}): {}",
-                            account_id,
-                            e
+                        error!(
+                            "failed to insert update_identity_req (user_account_id: {}): {}",
+                            account_id, e
                         );
                         ErrRespStruct {
                             err_resp: unexpected_err_resp(),
@@ -750,11 +781,11 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
-                    tracing::error!("failed to insert update identity req: {}", db_err);
+                    error!("failed to insert update_identity_req: {}", db_err);
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    tracing::error!("failed to insert update identity req: {}", err_resp_struct);
+                    error!("failed to insert update_identity_req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -844,10 +875,9 @@ impl SubmitIdentityOperationImpl {
         let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
             .await
             .map_err(|e| {
-                tracing::error!(
+                error!(
                     "failed to upload object (image1 key: {}): {}",
-                    image1_key,
-                    e
+                    image1_key, e
                 );
                 ErrRespStruct {
                     err_resp: unexpected_err_resp(),
@@ -859,10 +889,9 @@ impl SubmitIdentityOperationImpl {
             let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
                 .await
                 .map_err(|e| {
-                    tracing::error!(
+                    error!(
                         "failed to upload object (image2 key: {}): {}",
-                        image2_key,
-                        e
+                        image2_key, e
                     );
                     ErrRespStruct {
                         err_resp: unexpected_err_resp(),
@@ -879,7 +908,6 @@ mod tests {
     use std::cmp::max;
     use std::{error::Error, fmt::Display, io::Cursor};
 
-    use crate::err::Code::DataParseFailure;
     use crate::err::Code::DateOfBirthIsNotMatch;
     use crate::err::Code::ExceedMaxIdentityImageSizeLimit;
     use crate::err::Code::FirstNameIsNotMatch;
@@ -912,16 +940,17 @@ mod tests {
     use crate::err::Code::NoIdentityUpdated;
     use crate::err::Code::NoNameFound;
     use crate::err::Code::NotJpegExtension;
+    use crate::err::Code::{self, DataParseFailure};
     use crate::identity::{IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
     use crate::util::tests::SendMailMock;
     use async_session::serde_json;
-    use axum::async_trait;
     use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use bytes::Bytes;
     use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
     use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
     use common::util::{Identity, Ymd};
-    use common::{ErrResp, JAPANESE_TIME_ZONE};
+    use common::{ApiError, ErrResp, JAPANESE_TIME_ZONE};
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
     use serde::Deserialize;
     use serde::Serialize;
@@ -947,11 +976,20 @@ mod tests {
     struct MultipartWrapperMock {
         count: usize,
         fields: Vec<DummyIdentityField>,
+        invalid_multipart_form_data: bool,
     }
 
     #[async_trait]
     impl MultipartWrapper for MultipartWrapperMock {
         async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp> {
+            if self.invalid_multipart_form_data {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidMultiPartFormData as u32,
+                    }),
+                ));
+            }
             let dummy_field = self.fields.get(self.count);
             let field = dummy_field.map(|f| IdentityField {
                 name: f.name.clone(),
@@ -1011,7 +1049,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1108,7 +1150,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1146,7 +1192,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, max_image_size_in_bytes, current_date).await;
 
@@ -1161,6 +1211,45 @@ mod tests {
             identity_image2_png.into_inner(),
             input.2.expect("failed to get Ok").into_inner()
         );
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_invalid_multipart_form_data() {
+        let image1_size_in_bytes = Bytes::from(create_dummy_identity_image1().into_inner()).len();
+        let image2_size_in_bytes = Bytes::from(create_dummy_identity_image2().into_inner()).len();
+        let max_image_size_in_bytes = max(image1_size_in_bytes, image2_size_in_bytes);
+        let current_date = Utc
+            .ymd(2022, 3, 7)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            .naive_local()
+            .date();
+        let identity = create_dummy_identity(&current_date);
+        let identity_field = create_dummy_identity_field(Some(String::from("identity")), &identity);
+        let identity_image1 = create_dummy_identity_image1();
+        let identity_image1_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image1")),
+            Some(String::from("test1.jpeg")),
+            identity_image1.clone(),
+        );
+        let identity_image2 = create_dummy_identity_image2();
+        let identity_image2_field = create_dummy_identity_image_field(
+            Some(String::from("identity-image2")),
+            Some(String::from("test2.jpeg")),
+            identity_image2.clone(),
+        );
+        let fields = vec![identity_field, identity_image1_field, identity_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: true,
+        };
+
+        let result = handle_multipart(mock, max_image_size_in_bytes, current_date).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::InvalidMultiPartFormData as u32, resp.1.code);
     }
 
     #[tokio::test]
@@ -1187,7 +1276,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1236,7 +1329,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1266,7 +1363,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1292,7 +1393,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1324,7 +1429,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1356,7 +1465,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1389,7 +1502,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1446,7 +1563,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1491,7 +1612,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1545,7 +1670,11 @@ mod tests {
             identity_image2.clone(),
         );
         let fields = vec![identity_field, identity_image1_field, identity_image2_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, max_image_size_in_bytes, current_date).await;
 
@@ -1586,7 +1715,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1627,7 +1760,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1668,7 +1805,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1709,7 +1850,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1750,7 +1895,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1791,7 +1940,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1832,7 +1985,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1873,7 +2030,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1914,7 +2075,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1955,7 +2120,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -1996,7 +2165,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -2037,7 +2210,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -2078,7 +2255,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -2119,7 +2300,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -2160,7 +2345,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -2201,7 +2390,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -2242,7 +2435,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 
@@ -2284,7 +2481,11 @@ mod tests {
             identity_image1.clone(),
         );
         let fields = vec![identity_field, identity_image1_field];
-        let mock = MultipartWrapperMock { count: 0, fields };
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
 
         let result = handle_multipart(mock, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES, current_date).await;
 

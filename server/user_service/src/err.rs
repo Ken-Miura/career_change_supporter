@@ -57,6 +57,7 @@ pub(crate) enum Code {
     DateOfBirthIsNotMatch = 20045,
     NoIdentityUpdated = 20046,
     FirstNameIsNotMatch = 20047,
+    InvalidMultiPartFormData = 20048,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
