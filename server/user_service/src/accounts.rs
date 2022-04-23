@@ -20,6 +20,7 @@ use entity::user_account;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
@@ -60,7 +61,7 @@ async fn handle_accounts_req(
     send_mail: impl SendMail,
 ) -> RespResult<AccountsResult> {
     let _ = validate_uuid(temp_account_id).map_err(|e| {
-        tracing::error!("failed to validate {}: {}", temp_account_id, e);
+        error!("failed to validate {}: {}", temp_account_id, e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -70,7 +71,7 @@ async fn handle_accounts_req(
     })?;
     let temp_account_option = op.find_temp_account_by_id(temp_account_id).await?;
     let temp_account = temp_account_option.ok_or_else(|| {
-        tracing::error!("no temp account (id: {}) found", temp_account_id);
+        error!("no temp account (id: {}) found", temp_account_id);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -80,10 +81,9 @@ async fn handle_accounts_req(
     })?;
     let duration = *current_date_time - temp_account.created_at;
     if duration > Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR) {
-        tracing::error!(
+        error!(
             "temp account (created at {}) already expired at {}",
-            &temp_account.created_at,
-            current_date_time
+            &temp_account.created_at, current_date_time
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -94,7 +94,7 @@ async fn handle_accounts_req(
     }
     let exists = op.user_exists(&temp_account.email_address).await?;
     if exists {
-        tracing::error!(
+        error!(
             "failed to create account: user account ({}) already exists",
             &temp_account.email_address
         );
@@ -113,10 +113,9 @@ async fn handle_accounts_req(
         disabled_at: None,
     };
     let _ = op.create_account(&account).await?;
-    tracing::info!(
+    info!(
         "accout ({}) was created at {}",
-        temp_account.email_address,
-        current_date_time
+        temp_account.email_address, current_date_time
     );
     let text = create_text();
     let _ = async {
@@ -200,10 +199,9 @@ impl AccountsOperation for AccountsOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find temp account (id: {}): {}",
-                    temp_account_id,
-                    e
+                error!(
+                    "failed to find user_temp_account (temp_account_id: {}): {}",
+                    temp_account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -221,10 +219,9 @@ impl AccountsOperation for AccountsOperationImpl {
             .all(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find user account (email address: {}): {}",
-                    email_addr,
-                    e
+                error!(
+                    "failed to find user_account (email_address: {}): {}",
+                    email_addr, e
                 );
                 unexpected_err_resp()
             })?;
@@ -241,10 +238,9 @@ impl AccountsOperation for AccountsOperationImpl {
             ..Default::default()
         };
         let _ = user_account_model.insert(&self.pool).await.map_err(|e| {
-            tracing::error!(
-                "failed to insert user account ({}): {}",
-                account.email_address,
-                e
+            error!(
+                "failed to insert user_account (email_address: {}): {}",
+                account.email_address, e
             );
             unexpected_err_resp()
         })?;
