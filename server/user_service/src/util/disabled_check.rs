@@ -6,6 +6,7 @@ use entity::{
     prelude::UserAccount,
     sea_orm::{DatabaseConnection, EntityTrait},
 };
+use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
@@ -37,7 +38,10 @@ impl DisabledCheckOperation for DisabledCheckOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!("failed to find account (accound id: {}): {}", account_id, e);
+                error!(
+                    "failed to find user_account (user_accound_id: {}): {}",
+                    account_id, e
+                );
                 unexpected_err_resp()
             })?;
         Ok(model.map(|m| m.disabled_at.is_some()))
