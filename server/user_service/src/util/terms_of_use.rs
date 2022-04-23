@@ -1,7 +1,6 @@
 // Copyright 2021 Ken Miura
 
 use axum::async_trait;
-use chrono::{DateTime, FixedOffset};
 use common::ErrResp;
 use core::panic;
 use entity::{
@@ -10,6 +9,7 @@ use entity::{
 };
 use once_cell::sync::Lazy;
 use std::env::var;
+use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
@@ -66,27 +66,15 @@ impl TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find terms of use (account id: {}, version: {}): {}",
-                    account_id,
-                    terms_of_use_version,
-                    e
+                error!(
+                    "failed to find terms_of_use (user_account_id: {}, ver: {}): {}",
+                    account_id, terms_of_use_version, e
                 );
                 unexpected_err_resp()
             })?;
-        Ok(model.map(|m| TermsOfUseData {
-            user_account_id: m.user_account_id,
-            ver: m.ver,
-            email_address: m.email_address,
-            agreed_at: m.agreed_at,
-        }))
+        Ok(model.map(|_m| TermsOfUseData {}))
     }
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct TermsOfUseData {
-    pub user_account_id: i64,
-    pub ver: i32,
-    pub email_address: String,
-    pub agreed_at: DateTime<FixedOffset>,
-}
+pub(super) struct TermsOfUseData {}

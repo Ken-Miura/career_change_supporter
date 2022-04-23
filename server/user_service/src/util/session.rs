@@ -204,7 +204,7 @@ async fn check_if_user_has_already_agreed(
 ) -> Result<(), ErrResp> {
     let option = op.find(account_id, terms_of_use_version).await?;
     let _ = option.ok_or_else(|| {
-        info!(
+        error!(
             "account id ({}) has not agreed terms of use (version {}) yet",
             account_id, terms_of_use_version
         );
@@ -262,8 +262,7 @@ pub(crate) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
     use axum::async_trait;
     use axum::http::StatusCode;
-    use chrono::TimeZone;
-    use common::{ErrResp, JAPANESE_TIME_ZONE};
+    use common::ErrResp;
 
     use crate::{
         err,
@@ -376,21 +375,13 @@ pub(crate) mod tests {
     impl TermsOfUseLoadOperation for TermsOfUseLoadOperationMock {
         async fn find(
             &self,
-            account_id: i64,
-            terms_of_use_version: i32,
+            _account_id: i64,
+            _terms_of_use_version: i32,
         ) -> Result<Option<TermsOfUseData>, ErrResp> {
             if !self.has_already_agreed {
                 return Ok(None);
             }
-            let terms_of_use_data = TermsOfUseData {
-                user_account_id: account_id,
-                ver: terms_of_use_version,
-                email_address: "test@example.com".to_string(),
-                agreed_at: chrono::Utc
-                    .ymd(2021, 11, 5)
-                    .and_hms(20, 00, 40)
-                    .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
-            };
+            let terms_of_use_data = TermsOfUseData {};
             Ok(Some(terms_of_use_data))
         }
     }
