@@ -3,7 +3,7 @@
 use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
-use common::util::{Identity, Ymd};
+use common::util::{CareerData, Identity, Ymd};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use entity::prelude::{ConsultingFee, UserAccount};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
@@ -69,18 +69,7 @@ async fn handle_profile_req(
 #[derive(Serialize, Clone, Debug, PartialEq)]
 pub(crate) struct Career {
     pub career_id: i64,
-    pub company_name: String,
-    pub department_name: Option<String>,
-    pub office: Option<String>,
-    pub career_start_date: Ymd,
-    pub career_end_date: Option<Ymd>,
-    pub contract_type: String,
-    pub profession: Option<String>,
-    pub annual_income_in_man_yen: Option<i32>,
-    pub is_manager: bool,
-    pub position_name: Option<String>,
-    pub is_new_graduate: bool,
-    pub note: Option<String>,
+    pub data: CareerData,
 }
 
 #[derive(Serialize, Debug)]
@@ -270,18 +259,20 @@ impl ProfileOperationImpl {
         });
         Career {
             career_id: career_model.career_id,
-            company_name: career_model.company_name,
-            department_name: career_model.department_name,
-            office: career_model.office,
-            career_start_date,
-            career_end_date,
-            contract_type: career_model.contract_type,
-            profession: career_model.profession,
-            annual_income_in_man_yen: career_model.annual_income_in_man_yen,
-            is_manager: career_model.is_manager,
-            position_name: career_model.position_name,
-            is_new_graduate: career_model.is_new_graduate,
-            note: career_model.note,
+            data: CareerData {
+                company_name: career_model.company_name,
+                department_name: career_model.department_name,
+                office: career_model.office,
+                career_start_date,
+                career_end_date,
+                contract_type: career_model.contract_type,
+                profession: career_model.profession,
+                annual_income_in_man_yen: career_model.annual_income_in_man_yen,
+                is_manager: career_model.is_manager,
+                position_name: career_model.position_name,
+                is_new_graduate: career_model.is_new_graduate,
+                note: career_model.note,
+            },
         }
     }
 }
@@ -292,6 +283,7 @@ mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::{Datelike, NaiveDate};
+    use common::util::CareerData;
     use common::util::Identity;
     use common::util::Ymd;
     use common::ErrResp;
@@ -364,18 +356,20 @@ mod tests {
         };
         Career {
             career_id: 1,
-            company_name: "テスト株式会社".to_string(),
-            department_name: None,
-            office: None,
-            career_start_date,
-            career_end_date: None,
-            contract_type: "regular".to_string(),
-            profession: None,
-            annual_income_in_man_yen: None,
-            is_manager: false,
-            position_name: None,
-            is_new_graduate: true,
-            note: Some("備考テスト".to_string()),
+            data: CareerData {
+                company_name: "テスト株式会社".to_string(),
+                department_name: None,
+                office: None,
+                career_start_date,
+                career_end_date: None,
+                contract_type: "regular".to_string(),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: false,
+                position_name: None,
+                is_new_graduate: true,
+                note: Some("備考テスト".to_string()),
+            },
         }
     }
 
@@ -396,18 +390,20 @@ mod tests {
             });
             let career = Career {
                 career_id: (i + 1) as i64,
-                company_name: format!("テスト{}株式会社", i + 1),
-                department_name: Some(format!("部署{}", i + 1)),
-                office: Some(format!("事業所{}", i + 1)),
-                career_start_date,
-                career_end_date,
-                contract_type: "contract".to_string(),
-                profession: Some(format!("職種{}", i + 1)),
-                annual_income_in_man_yen: Some(((i + 1) * 100) as i32),
-                is_manager: true,
-                position_name: None,
-                is_new_graduate: false,
-                note: None,
+                data: CareerData {
+                    company_name: format!("テスト{}株式会社", i + 1),
+                    department_name: Some(format!("部署{}", i + 1)),
+                    office: Some(format!("事業所{}", i + 1)),
+                    career_start_date,
+                    career_end_date,
+                    contract_type: "contract".to_string(),
+                    profession: Some(format!("職種{}", i + 1)),
+                    annual_income_in_man_yen: Some(((i + 1) * 100) as i32),
+                    is_manager: true,
+                    position_name: None,
+                    is_new_graduate: false,
+                    note: None,
+                },
             };
             start_date = end_date.expect("failed to get Ok") + chrono::Duration::days(1);
             end_date = Some(start_date + chrono::Duration::days(30));

@@ -2,6 +2,7 @@
 
 mod accounts;
 mod agreement;
+mod career;
 mod err;
 mod identity;
 mod login;
@@ -16,6 +17,7 @@ mod util;
 
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
+use crate::career::post_career;
 use crate::identity::post_identity;
 use crate::login::post_login;
 use crate::logout::post_logout;
@@ -141,7 +143,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/password-update", post(post_password_update))
                 .route("/profile", get(get_profile))
                 .route("/rewards", get(get_reward))
-                .route("/identity", post(post_identity)),
+                .route("/identity", post(post_identity))
+                .route("/career", post(post_career)),
         )
         .layer(
             ServiceBuilder::new()

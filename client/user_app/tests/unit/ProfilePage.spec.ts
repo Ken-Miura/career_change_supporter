@@ -331,26 +331,28 @@ describe('ProfilePage.vue', () => {
     const career = {
       /* eslint-disable camelcase */
       career_id: 203,
-      company_name: 'テスト株式会社',
-      department_name: '営業部',
-      office: '町田オフィス',
-      career_start_date: {
-        year: 2010,
-        month: 4,
-        day: 1
-      },
-      career_end_date: {
-        year: 2016,
-        month: 8,
-        day: 1
-      },
-      contract_type: 'regular' as 'regular' | 'contract' | 'other',
-      profession: '営業',
-      annual_income_in_man_yen: 400,
-      is_manager: false,
-      position_name: null,
-      is_new_graduate: true,
-      note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      data: {
+        company_name: 'テスト株式会社',
+        department_name: '営業部',
+        office: '町田オフィス',
+        career_start_date: {
+          year: 2010,
+          month: 4,
+          day: 1
+        },
+        career_end_date: {
+          year: 2016,
+          month: 8,
+          day: 1
+        },
+        contract_type: 'regular' as 'regular' | 'contract' | 'other',
+        profession: '営業',
+        annual_income_in_man_yen: 400,
+        is_manager: false,
+        position_name: null,
+        is_new_graduate: true,
+        note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      }
       /* eslint-enable camelcase */
     }
     const profile = {
@@ -377,14 +379,14 @@ describe('ProfilePage.vue', () => {
     expect(oneCereerDiv.exists)
     const message = oneCereerDiv.text()
     expect(message).toContain('勤務先名称')
-    expect(message).toContain(`${career.company_name}`)
+    expect(message).toContain(`${career.data.company_name}`)
     expect(message).toContain('雇用形態')
     // career.contract_type === 'regular' -> 正社員
     expect(message).toContain('正社員')
     expect(message).toContain('入社日')
-    expect(message).toContain(`${career.career_start_date.year}年${career.career_start_date.month}月${career.career_start_date.day}日`)
+    expect(message).toContain(`${career.data.career_start_date.year}年${career.data.career_start_date.month}月${career.data.career_start_date.day}日`)
     expect(message).toContain('退社日')
-    expect(message).toContain(`${career.career_end_date.year}年${career.career_end_date.month}月${career.career_end_date.day}日`)
+    expect(message).toContain(`${career.data.career_end_date.year}年${career.data.career_end_date.month}月${career.data.career_end_date.day}日`)
   })
 
   it('displays max num of careers information after api call finishes', async () => {
@@ -433,7 +435,7 @@ describe('ProfilePage.vue', () => {
     // 一つの職務経歴を表示したときにその他の表示を確認しているので、
     // ここでは最大数分会社名が表示されていることのみ確認する
     for (const career of careers) {
-      expect(message).toContain(`${career.company_name}`)
+      expect(message).toContain(`${career.data.company_name}`)
     }
   })
 
@@ -578,26 +580,28 @@ describe('ProfilePage.vue', () => {
     const career = {
       /* eslint-disable camelcase */
       career_id: 203,
-      company_name: 'テスト株式会社',
-      department_name: '営業部',
-      office: '町田オフィス',
-      career_start_date: {
-        year: 2010,
-        month: 4,
-        day: 1
-      },
-      career_end_date: {
-        year: 2016,
-        month: 8,
-        day: 1
-      },
-      contract_type: 'regular' as 'regular' | 'contract' | 'other',
-      profession: '営業',
-      annual_income_in_man_yen: 400,
-      is_manager: false,
-      position_name: null,
-      is_new_graduate: true,
-      note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      data: {
+        company_name: 'テスト株式会社',
+        department_name: '営業部',
+        office: '町田オフィス',
+        career_start_date: {
+          year: 2010,
+          month: 4,
+          day: 1
+        },
+        career_end_date: {
+          year: 2016,
+          month: 8,
+          day: 1
+        },
+        contract_type: 'regular' as 'regular' | 'contract' | 'other',
+        profession: '営業',
+        annual_income_in_man_yen: 400,
+        is_manager: false,
+        position_name: null,
+        is_new_graduate: true,
+        note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      }
       /* eslint-enable camelcase */
     }
     const profile = {
@@ -781,22 +785,24 @@ function createMaxNumDummyCareers (): Career[] {
     const career = {
       /* eslint-disable camelcase */
       career_id: i + 1,
-      company_name: `テスト${i}株式会社`,
-      department_name: '営業部',
-      office: '町田オフィス',
-      career_start_date: {
-        year: 2010 + i,
-        month: 4,
-        day: 1
-      },
-      career_end_date: careerEndDate,
-      contract_type: 'regular' as 'regular' | 'contract' | 'other',
-      profession: '営業',
-      annual_income_in_man_yen: 400,
-      is_manager: false,
-      position_name: null,
-      is_new_graduate: (i === 0),
-      note: `テスト${i}株式会社の営業での仕事内容や職場の雰囲気を教えることができます。`
+      data: {
+        company_name: `テスト${i}株式会社`,
+        department_name: '営業部',
+        office: '町田オフィス',
+        career_start_date: {
+          year: 2010 + i,
+          month: 4,
+          day: 1
+        },
+        career_end_date: careerEndDate,
+        contract_type: 'regular' as 'regular' | 'contract' | 'other',
+        profession: '営業',
+        annual_income_in_man_yen: 400,
+        is_manager: false,
+        position_name: null,
+        is_new_graduate: (i === 0),
+        note: `テスト${i}株式会社の営業での仕事内容や職場の雰囲気を教えることができます。`
+      }
       /* eslint-enable camelcase */
     }
     careers.push(career)

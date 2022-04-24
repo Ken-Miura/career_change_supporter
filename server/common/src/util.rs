@@ -118,6 +118,23 @@ pub struct Identity {
     pub telephone_number: String,
 }
 
+/// 職務経歴情報
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct CareerData {
+    pub company_name: String,
+    pub department_name: Option<String>,
+    pub office: Option<String>,
+    pub career_start_date: Ymd,
+    pub career_end_date: Option<Ymd>,
+    pub contract_type: String,
+    pub profession: Option<String>,
+    pub annual_income_in_man_yen: Option<i32>,
+    pub is_manager: bool,
+    pub position_name: Option<String>,
+    pub is_new_graduate: bool,
+    pub note: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::util::validator::password_validator::validate_password;
