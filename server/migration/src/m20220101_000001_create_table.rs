@@ -695,6 +695,50 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            .execute(
+                /*
+                 * user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
+                 * 管理者の把握しないうちにレコードが消去される可能性がある。そのため、user_account_idは外部キーとしない
+                 */
+                sql.stmt(
+                    r"CREATE TABLE ccs_schema.approved_create_career_req (
+                    appr_cre_career_req_id BIGSERIAL PRIMARY KEY,
+                    user_account_id BIGINT NOT NULL,
+                    company_name VARCHAR (256) NOT NULL,
+                    department_name VARCHAR (256),
+                    office VARCHAR (256),
+                    career_start_date DATE NOT NULL,
+                    career_end_date DATE,
+                    contract_type ccs_schema.contract_type NOT NULL,
+                    profession VARCHAR (128),
+                    annual_income_in_man_yen INTEGER,
+                    is_manager BOOLEAN NOT NULL,
+                    position_name VARCHAR (128),
+                    is_new_graduate BOOLEAN NOT NULL,
+                    note VARCHAR (2048),
+                    image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
+                    image2_file_name_without_ext ccs_schema.uuid_simple_form,
+                    approved_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                    approved_by ccs_schema.email_address NOT NULL
+                  );",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, INSERT ON ccs_schema.approved_create_career_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.approved_create_career_req_appr_cre_career_req_id_seq TO admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.admin_account (
                     admin_account_id BIGSERIAL PRIMARY KEY,
