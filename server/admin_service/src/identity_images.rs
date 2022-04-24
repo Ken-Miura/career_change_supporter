@@ -10,6 +10,7 @@ use common::{
     ApiError, ErrResp,
 };
 use headers::{HeaderMap, HeaderValue};
+use tracing::error;
 
 use crate::{err::unexpected_err_resp, util::session::Admin};
 
@@ -27,7 +28,7 @@ async fn get_identity_images_internal(
     op: impl DownloadIdentityImageOperation,
 ) -> Result<(HeaderMap, Vec<u8>), ErrResp> {
     let _ = validate_uuid(&image_name).map_err(|e| {
-        tracing::error!("failed to validate image name ({}): {}", image_name, e);
+        error!("failed to validate image name ({}): {}", image_name, e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -39,7 +40,7 @@ async fn get_identity_images_internal(
     let image_binary = op.download_identity_image(&key).await?;
     let mut headers = HeaderMap::new();
     let val = HeaderValue::from_str("image/png").map_err(|e| {
-        tracing::error!("failed to create header value: {}", e);
+        error!("failed to create header value: {}", e);
         unexpected_err_resp()
     })?;
     headers.insert("content-type", val);
@@ -59,7 +60,7 @@ impl DownloadIdentityImageOperation for DownloadIdentityImageOperationImpl {
         let image_binary = download_object(IDENTITY_IMAGES_BUCKET_NAME, key)
             .await
             .map_err(|e| {
-                tracing::error!("failed to download object (image key: {}): {}", key, e);
+                error!("failed to download object (image key: {}): {}", key, e);
                 unexpected_err_resp()
             })?;
         Ok(image_binary)
