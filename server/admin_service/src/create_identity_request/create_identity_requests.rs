@@ -11,6 +11,7 @@ use entity::{
     sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder},
 };
 use serde::Serialize;
+use tracing::error;
 
 use crate::{
     err::unexpected_err_resp,
@@ -69,11 +70,9 @@ impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperation
             .fetch_page(page)
             .await
             .map_err(|e| {
-                tracing::error!(
+                error!(
                     "failed to fetch page (page: {}, page_size: {}) in create_identity_req: {}",
-                    page,
-                    page_size,
-                    e
+                    page, page_size, e
                 );
                 unexpected_err_resp()
             })?;
