@@ -7,12 +7,9 @@ pub(crate) mod validator;
 
 use std::env::var;
 
-use common::{
-    payment_platform::{
-        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
-    },
-    util::Ymd,
+use common::payment_platform::{
+    AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+    KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -42,23 +39,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
 });
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub(crate) struct Career {
-    pub career_id: i64,
-    pub company_name: String,
-    pub department_name: Option<String>,
-    pub office: Option<String>,
-    pub career_start_date: Ymd,
-    pub career_end_date: Option<Ymd>,
-    pub contract_type: String,
-    pub profession: Option<String>,
-    pub annual_income_in_man_yen: Option<i32>,
-    pub is_manager: bool,
-    pub position_name: Option<String>,
-    pub is_new_graduate: bool,
-    pub note: Option<String>,
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {

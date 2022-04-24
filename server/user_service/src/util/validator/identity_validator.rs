@@ -589,17 +589,15 @@ mod tests {
     use common::util::Identity;
     use once_cell::sync::Lazy;
 
-    use crate::util::{
-        validator::identity_validator::{
-            validate_identity, IdentityValidationError, ADDRESS_LINE1_MAX_LENGTH,
-            ADDRESS_LINE1_MIN_LENGTH, ADDRESS_LINE2_MAX_LENGTH, ADDRESS_LINE2_MIN_LENGTH,
-            CITY_MAX_LENGTH, CITY_MIN_LENGTH, FIRST_NAME_FURIGANA_MAX_LENGTH,
-            FIRST_NAME_FURIGANA_MIN_LENGTH, FIRST_NAME_MAX_LENGTH, FIRST_NAME_MIN_LENGTH,
-            LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH, LAST_NAME_MAX_LENGTH,
-            LAST_NAME_MIN_LENGTH,
-        },
-        Ymd,
+    use crate::util::validator::identity_validator::{
+        validate_identity, IdentityValidationError, ADDRESS_LINE1_MAX_LENGTH,
+        ADDRESS_LINE1_MIN_LENGTH, ADDRESS_LINE2_MAX_LENGTH, ADDRESS_LINE2_MIN_LENGTH,
+        CITY_MAX_LENGTH, CITY_MIN_LENGTH, FIRST_NAME_FURIGANA_MAX_LENGTH,
+        FIRST_NAME_FURIGANA_MIN_LENGTH, FIRST_NAME_MAX_LENGTH, FIRST_NAME_MIN_LENGTH,
+        LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH, LAST_NAME_MAX_LENGTH,
+        LAST_NAME_MIN_LENGTH,
     };
+    use common::util::Ymd;
 
     use super::PREFECTURE_SET;
 

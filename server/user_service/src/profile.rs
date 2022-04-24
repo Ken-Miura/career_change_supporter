@@ -13,7 +13,7 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code::NoAccountFound},
-    util::{session::User, Career},
+    util::session::User,
 };
 
 pub(crate) async fn get_profile(
@@ -64,6 +64,23 @@ async fn handle_profile_req(
                 .finish(),
         ),
     ))
+}
+
+#[derive(Serialize, Clone, Debug, PartialEq)]
+pub(crate) struct Career {
+    pub career_id: i64,
+    pub company_name: String,
+    pub department_name: Option<String>,
+    pub office: Option<String>,
+    pub career_start_date: Ymd,
+    pub career_end_date: Option<Ymd>,
+    pub contract_type: String,
+    pub profession: Option<String>,
+    pub annual_income_in_man_yen: Option<i32>,
+    pub is_manager: bool,
+    pub position_name: Option<String>,
+    pub is_new_graduate: bool,
+    pub note: Option<String>,
 }
 
 #[derive(Serialize, Debug)]
@@ -280,9 +297,10 @@ mod tests {
     use common::ErrResp;
     use common::MAX_NUM_OF_CAREER_PER_USER_ACCOUNT;
 
+    use crate::err::Code::NoAccountFound;
     use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
-    use crate::{err::Code::NoAccountFound, util::Career};
 
+    use super::Career;
     use super::{handle_profile_req, ProfileOperation};
 
     struct ProfileOperationMock {
