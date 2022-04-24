@@ -3,20 +3,23 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "create_identity_req", schema_name = "ccs_schema")]
+#[sea_orm(table_name = "create_career_req", schema_name = "ccs_schema")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
+    #[sea_orm(primary_key)]
+    pub create_career_req_id: i64,
     pub user_account_id: i64,
-    pub last_name: String,
-    pub first_name: String,
-    pub last_name_furigana: String,
-    pub first_name_furigana: String,
-    pub date_of_birth: Date,
-    pub prefecture: String,
-    pub city: String,
-    pub address_line1: String,
-    pub address_line2: Option<String>,
-    pub telephone_number: String,
+    pub company_name: String,
+    pub department_name: Option<String>,
+    pub office: Option<String>,
+    pub career_start_date: Date,
+    pub career_end_date: Option<Date>,
+    pub contract_type: String,
+    pub profession: Option<String>,
+    pub annual_income_in_man_yen: Option<i32>,
+    pub is_manager: bool,
+    pub position_name: Option<String>,
+    pub is_new_graduate: bool,
+    pub note: Option<String>,
     pub image1_file_name_without_ext: String,
     pub image2_file_name_without_ext: Option<String>,
     pub requested_at: DateTimeWithTimeZone,

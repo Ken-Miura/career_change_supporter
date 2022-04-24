@@ -3,10 +3,10 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "career", schema_name = "ccs_schema")]
+#[sea_orm(table_name = "approved_create_career_req", schema_name = "ccs_schema")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub career_id: i64,
+    pub appr_cre_career_req_id: i64,
     pub user_account_id: i64,
     pub company_name: String,
     pub department_name: Option<String>,
@@ -20,6 +20,10 @@ pub struct Model {
     pub position_name: Option<String>,
     pub is_new_graduate: bool,
     pub note: Option<String>,
+    pub image1_file_name_without_ext: String,
+    pub image2_file_name_without_ext: Option<String>,
+    pub approved_at: DateTimeWithTimeZone,
+    pub approved_by: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
