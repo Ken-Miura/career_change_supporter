@@ -9,6 +9,7 @@ use entity::prelude::{ConsultingFee, UserAccount};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
 use entity::{career, identity};
 use serde::Serialize;
+use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code::NoAccountFound},
@@ -31,7 +32,7 @@ async fn handle_profile_req(
         .find_email_address_by_account_id(account_id)
         .await?;
     let email_address = email_address_option.ok_or_else(|| {
-        tracing::error!("no email address (account id: {}) found", account_id);
+        error!("no email address (account id: {}) found", account_id);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -39,9 +40,7 @@ async fn handle_profile_req(
             }),
         )
     })?;
-    let identity_option = profile_op
-        .find_identity_by_user_account_id(account_id)
-        .await?;
+    let identity_option = profile_op.find_identity_by_account_id(account_id).await?;
     let identity = match identity_option {
         Some(i) => i,
         None => {
@@ -125,7 +124,7 @@ trait ProfileOperation {
         &self,
         account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
-    async fn find_identity_by_user_account_id(
+    async fn find_identity_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
@@ -156,13 +155,16 @@ impl ProfileOperation for ProfileOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!("failed to find account (account id: {}): {}", account_id, e);
+                error!(
+                    "failed to find user_account (user_account_id: {}): {}",
+                    account_id, e
+                );
                 unexpected_err_resp()
             })?;
         Ok(model.map(|m| m.email_address))
     }
 
-    async fn find_identity_by_user_account_id(
+    async fn find_identity_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp> {
@@ -170,10 +172,9 @@ impl ProfileOperation for ProfileOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find Indentity (account id: {}): {}",
-                    account_id,
-                    e
+                error!(
+                    "failed to find identity (user_account_id: {}): {}",
+                    account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -187,10 +188,9 @@ impl ProfileOperation for ProfileOperationImpl {
             .all(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to filter career (account id: {}): {}",
-                    account_id,
-                    e
+                error!(
+                    "failed to filter career (user_account_id: {}): {}",
+                    account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -208,10 +208,9 @@ impl ProfileOperation for ProfileOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find consulting fee (account id: {}): {}",
-                    account_id,
-                    e
+                error!(
+                    "failed to find consulting_fee (user_account_id: {}): {}",
+                    account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -302,7 +301,7 @@ mod tests {
             Ok(self.email_address_option.clone())
         }
 
-        async fn find_identity_by_user_account_id(
+        async fn find_identity_by_account_id(
             &self,
             _account_id: i64,
         ) -> Result<Option<Identity>, ErrResp> {

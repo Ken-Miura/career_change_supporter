@@ -22,6 +22,7 @@ use entity::sea_orm::{
 use entity::user_temp_account;
 use once_cell::sync::Lazy;
 use serde::Serialize;
+use tracing::{error, info};
 use uuid::fmt::Simple;
 use uuid::Uuid;
 
@@ -63,7 +64,6 @@ pub(crate) async fn post_temp_accounts(
 #[derive(Serialize, Debug)]
 pub(crate) struct TempAccountsResult {}
 
-// これをテスト対象と考える。
 async fn handle_temp_accounts_req(
     email_addr: &str,
     password: &str,
@@ -74,7 +74,7 @@ async fn handle_temp_accounts_req(
     send_mail: impl SendMail,
 ) -> RespResult<TempAccountsResult> {
     let hashed_pwd = hash_password(password).map_err(|e| {
-        tracing::error!("failed to handle password: {}", e);
+        error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
     let uuid = simple_uuid.to_string();
@@ -96,11 +96,9 @@ async fn handle_temp_accounts_req(
         created_at: *register_time,
     };
     let _ = op.create_temp_account(&temp_account).await?;
-    tracing::info!(
-        "{} created temporary account with id: {} at {}",
-        email_addr,
-        simple_uuid,
-        register_time
+    info!(
+        "{} created temporary account with temp account id: {} at {}",
+        email_addr, simple_uuid, register_time
     );
     let text = create_text(url, &uuid_for_url);
     let _ =
@@ -157,10 +155,9 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
             .count(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to count user temp account for {}: {}",
-                    email_addr,
-                    e
+                error!(
+                    "failed to count user_temp_account (email_address: {}): {}",
+                    email_addr, e
                 );
                 unexpected_err_resp()
             })?;
@@ -175,8 +172,8 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
             created_at: Set(temp_account.created_at),
         };
         let _ = temp_account_model.insert(&self.pool).await.map_err(|e| {
-            tracing::error!(
-                "failed to insert temp account (id: {}, email address: {}): {}",
+            error!(
+                "failed to insert user_temp_account (user_temp_account_id: {}, email_address: {}): {}",
                 temp_account.user_temp_account_id,
                 temp_account.email_address,
                 e

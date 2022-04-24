@@ -14,6 +14,7 @@ use serde::Deserialize;
 use std::env::var;
 use std::time::Duration;
 use tower_cookies::{Cookies, Key};
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code::Unauthorized};
 
@@ -65,7 +66,7 @@ where
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let Extension(cookies) = Extension::<Cookies>::from_request(req).await.map_err(|e| {
-            tracing::error!("failed to get cookies: {}", e);
+            error!("failed to get cookies: {}", e);
             unexpected_err_resp()
         })?;
         let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP);
@@ -73,7 +74,7 @@ where
         let session_id = match option_cookie {
             Some(s) => s.value().to_string(),
             None => {
-                tracing::debug!("no sessoin cookie found");
+                info!("no sessoin cookie found");
                 return Err((
                     StatusCode::UNAUTHORIZED,
                     Json(ApiError {
@@ -85,7 +86,7 @@ where
         let Extension(store) = Extension::<RedisSessionStore>::from_request(req)
             .await
             .map_err(|e| {
-                tracing::error!("failed to get session store: {}", e);
+                error!("failed to get session store: {}", e);
                 unexpected_err_resp()
             })?;
         let op = RefreshOperationImpl {};
@@ -115,13 +116,13 @@ pub(crate) async fn get_admin_by_session_id(
     expiry: Duration,
 ) -> Result<Admin, ErrResp> {
     let option_session = store.load_session(session_id.clone()).await.map_err(|e| {
-        tracing::error!("failed to load session (session_id={}): {}", session_id, e);
+        error!("failed to load session: {}", e);
         unexpected_err_resp()
     })?;
     let mut session = match option_session {
         Some(s) => s,
         None => {
-            tracing::debug!("no valid session on request");
+            info!("no session found");
             return Err((
                 StatusCode::UNAUTHORIZED,
                 Json(ApiError {
@@ -133,14 +134,14 @@ pub(crate) async fn get_admin_by_session_id(
     let id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
         Some(id) => id,
         None => {
-            tracing::error!("failed to get id from session (session_id={})", session_id);
+            error!("failed to get admin account id from session");
             return Err(unexpected_err_resp());
         }
     };
     op.set_login_session_expiry(&mut session, expiry);
     // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
     let _ = store.store_session(session).await.map_err(|e| {
-        tracing::error!("failed to store session (session_id={}): {}", session_id, e);
+        error!("failed to store session: {}", e);
         unexpected_err_resp()
     })?;
     Ok(Admin { account_id: id })

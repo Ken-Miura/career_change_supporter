@@ -57,6 +57,7 @@ export namespace Code {
   export const DATE_OF_BIRTH_IS_NOT_MATCH = 20045
   export const NO_IDENTITY_UPDATED = 20046
   export const FIRST_NAME_IS_NOT_MATCH = 20047
+  export const INVALID_MULTIPART_FORM_DATA = 20048
 }
 
 export function createErrorMessage (code: number): string {
@@ -158,6 +159,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.NO_IDENTITY_UPDATED_MESSAGE} (${code})`
   } else if (code === Code.FIRST_NAME_IS_NOT_MATCH) {
     return `${Message.FIRST_NAME_IS_NOT_MATCH_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_MULTIPART_FORM_DATA) {
+    return `${Message.INVALID_MULTIPART_FORM_DATA_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

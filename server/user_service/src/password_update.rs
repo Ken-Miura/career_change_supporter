@@ -26,6 +26,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 use tower_cookies::Cookies;
+use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired};
@@ -89,7 +90,10 @@ async fn handle_password_update_req(
     send_mail: impl SendMail,
 ) -> RespResult<PasswordUpdateResult> {
     let _ = validate_uuid(pwd_change_req_id).map_err(|e| {
-        tracing::error!("failed to validate {}: {}", pwd_change_req_id, e);
+        error!(
+            "failed to validate pwd-change-req-id ({}): {}",
+            pwd_change_req_id, e
+        );
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -98,7 +102,7 @@ async fn handle_password_update_req(
         )
     })?;
     let _ = validate_password(password).map_err(|e| {
-        tracing::error!("failed to validate {}: {}", password, e,);
+        error!("failed to validate password: {}", e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -108,7 +112,10 @@ async fn handle_password_update_req(
     })?;
     let pwd_change_req_option = op.find_pwd_change_req_by_id(pwd_change_req_id).await?;
     let pwd_change_req = pwd_change_req_option.ok_or_else(|| {
-        tracing::error!("no pwd change req id ({}) found", pwd_change_req_id);
+        error!(
+            "no password change request (request id: {}) found",
+            pwd_change_req_id
+        );
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -118,10 +125,9 @@ async fn handle_password_update_req(
     })?;
     let duration = *current_date_time - pwd_change_req.requested_at;
     if duration > Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE) {
-        tracing::error!(
+        error!(
             "password change request (requested at {}) already expired at {}",
-            &pwd_change_req.requested_at,
-            current_date_time
+            &pwd_change_req.requested_at, current_date_time
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -135,15 +141,15 @@ async fn handle_password_update_req(
         .await?;
     let cnt = account_ids.len();
     if cnt > 1 {
-        tracing::error!(
+        error!(
             "found multiple accounts (email address: {})",
             &pwd_change_req.email_address
         );
         return Err(unexpected_err_resp());
     }
     let account_id = account_ids.get(0).cloned().ok_or_else(|| {
-        tracing::error!(
-            "user account (email address: {}) does not exist",
+        error!(
+            "account (email address: {}) does not exist",
             &pwd_change_req.email_address
         );
         (
@@ -154,14 +160,13 @@ async fn handle_password_update_req(
         )
     })?;
     let hashed_pwd = hash_password(password).map_err(|e| {
-        tracing::error!("failed to handle password: {}", e);
+        error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
     let _ = op.update_password(account_id, &hashed_pwd).await?;
-    tracing::info!(
+    info!(
         "{} updated password at {}",
-        &pwd_change_req.email_address,
-        current_date_time
+        &pwd_change_req.email_address, current_date_time
     );
 
     let text = create_text();
@@ -185,22 +190,18 @@ async fn destroy_session_if_exists(
         .load_session(session_id.to_string())
         .await
         .map_err(|e| {
-            tracing::error!("failed to load session: {}", e);
+            error!("failed to load session: {}", e);
             unexpected_err_resp()
         })?;
     let session = match option_session {
         Some(s) => s,
         None => {
-            tracing::debug!("no session in session store on password change");
+            info!("no session in session store on password update");
             return Ok(());
         }
     };
     let _ = store.destroy_session(session).await.map_err(|e| {
-        tracing::error!(
-            "failed to destroy session (session_id: {}): {}",
-            session_id,
-            e
-        );
+        error!("failed to destroy session: {}", e);
         unexpected_err_resp()
     })?;
     Ok(())
@@ -262,10 +263,9 @@ impl PasswordUpdateOperation for PasswordUpdateOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find password change req (id: {}): {}",
-                    pwd_change_req_id,
-                    e
+                error!(
+                    "failed to find pwd_change_req (pwd_change_req_id: {}): {}",
+                    pwd_change_req_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -284,10 +284,9 @@ impl PasswordUpdateOperation for PasswordUpdateOperationImpl {
             .all(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to filter account id (email address: {}): {}",
-                    email_addr,
-                    e
+                error!(
+                    "failed to filter user_account (email_address: {}): {}",
+                    email_addr, e
                 );
                 unexpected_err_resp()
             })?;
@@ -304,10 +303,9 @@ impl PasswordUpdateOperation for PasswordUpdateOperationImpl {
             ..Default::default()
         };
         let _ = model.update(&self.pool).await.map_err(|e| {
-            tracing::error!(
-                "failed to update password (account id: {}): {}",
-                account_id,
-                e
+            error!(
+                "failed to update hashed_password in user_account (account id: {}): {}",
+                account_id, e
             );
             unexpected_err_resp()
         })?;

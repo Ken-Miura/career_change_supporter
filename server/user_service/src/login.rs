@@ -18,6 +18,7 @@ use entity::sea_orm::{
 };
 use entity::user_account;
 use tower_cookies::Cookies;
+use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
@@ -63,15 +64,16 @@ async fn handle_login_req(
     let accounts = op.filter_account_by_email_addr(email_addr).await?;
     let num = accounts.len();
     if num > 1 {
-        tracing::error!("multiple email addresses: {}", email_addr);
+        error!("multiple email addresses: {}", email_addr);
         return Err(unexpected_err_resp());
     }
     let account = accounts.get(0).cloned().ok_or_else(|| {
         // 処理時間からアカウントが見つからなかったのか、パスワードが見つからなかったのかを露見させないようにするため
         // アカウントが見つからなかった場合でもis_password_matchの処理を行い、パスワードが一致しなかった場合の計算量に近づける
         // 計算量を同等にするためだけにis_password_matchを呼ぶので、戻り値は意図的に無視する
-        let _ = is_password_match(password, "dummy_password".as_bytes());
-        tracing::error!("unauthorized: {}", email_addr);
+        let dummy = "$2b$07$crI33XZdfhjE4oZwjn9Sc.0WWpTRjdAhFV3vbmd2unM6F70Rdr8im".as_bytes();
+        let _ = is_password_match(password, dummy);
+        error!("unauthorized: no email address ({}) found", email_addr);
         (
             StatusCode::UNAUTHORIZED,
             Json(ApiError {
@@ -80,11 +82,14 @@ async fn handle_login_req(
         )
     })?;
     let matched = is_password_match(password, &account.hashed_password).map_err(|e| {
-        tracing::error!("failed to handle password: {}", e);
+        error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
     if !matched {
-        tracing::error!("unauthorized: {}", email_addr);
+        error!(
+            "unauthorized: password not match (email address: {})",
+            email_addr
+        );
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(ApiError {
@@ -93,10 +98,9 @@ async fn handle_login_req(
         ));
     }
     if account.disabled {
-        tracing::error!(
+        error!(
             "disabled account (account id: {}, email address: {})",
-            account.user_account_id,
-            email_addr
+            account.user_account_id, email_addr
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -111,26 +115,24 @@ async fn handle_login_req(
     let _ = session
         .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
         .map_err(|e| {
-            tracing::error!(
-                "failed to insert id ({}) into session: {}",
-                user_account_id,
-                e
+            error!(
+                "failed to insert account id ({}) into session: {}",
+                user_account_id, e
             );
             unexpected_err_resp()
         })?;
     op.set_login_session_expiry(&mut session);
     let option = store.store_session(session).await.map_err(|e| {
-        tracing::error!(
-            "failed to store session for id ({}): {}",
-            user_account_id,
-            e
+        error!(
+            "failed to store session for account id ({}): {}",
+            user_account_id, e
         );
         unexpected_err_resp()
     })?;
     let session_id = match option {
         Some(s) => s,
         None => {
-            tracing::error!(
+            error!(
                 "failed to get cookie name for user account id ({})",
                 user_account_id
             );
@@ -138,11 +140,9 @@ async fn handle_login_req(
         }
     };
     let _ = op.update_last_login(user_account_id, login_time).await?;
-    tracing::info!(
-        "{} (id: {}) logged-in at {}",
-        email_addr,
-        user_account_id,
-        login_time
+    info!(
+        "{} (account id: {}) logged-in at {}",
+        email_addr, user_account_id, login_time
     );
     Ok(session_id)
 }
@@ -188,10 +188,9 @@ impl LoginOperation for LoginOperationImpl {
             .all(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to filter user account (email address: {}): {}",
-                    email_addr,
-                    e
+                error!(
+                    "failed to filter user_account (email_address: {}): {}",
+                    email_addr, e
                 );
                 unexpected_err_resp()
             })?;
@@ -220,10 +219,9 @@ impl LoginOperation for LoginOperationImpl {
             ..Default::default()
         };
         let _ = account_model.update(&self.pool).await.map_err(|e| {
-            tracing::error!(
-                "failed to update user account (account id: {}): {}",
-                account_id,
-                e
+            error!(
+                "failed to update user_account (user_account_id: {}): {}",
+                account_id, e
             );
             unexpected_err_resp()
         })?;

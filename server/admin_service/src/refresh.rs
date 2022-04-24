@@ -3,6 +3,7 @@
 use common::ErrResp;
 
 use axum::http::StatusCode;
+use tracing::info;
 
 use crate::util::session::Admin;
 
@@ -18,6 +19,6 @@ pub(crate) async fn get_refresh(Admin { account_id }: Admin) -> Result<StatusCod
     // NOTE:
     // Admin構造体を受け取る際のリクエストのプリプロセスで認証 (ログインセッションの延長) を実施済
     // そのため、ここまで到達した場合、OKを返すのみで良い
-    tracing::debug!("refresh (account id: {})", account_id);
+    info!("refresh (admin account id: {})", account_id);
     Ok(StatusCode::OK)
 }

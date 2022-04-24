@@ -4,6 +4,7 @@
 
 use axum::{http::StatusCode, Json};
 use common::{ApiError, ErrResp};
+use tracing::error;
 
 /// API呼び出し時の処理の内、admin_service crateのコード発生したエラーに対して付与するエラーコードの列挙<br>
 /// admin_service crateでのエラーコードには、30000-39999までの値を利用する。
@@ -21,6 +22,7 @@ pub(crate) enum Code {
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
+    error!("unexpected error");
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(ApiError {

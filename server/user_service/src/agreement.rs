@@ -17,6 +17,8 @@ use entity::sea_orm::EntityTrait;
 use entity::sea_orm::Set;
 use entity::terms_of_use;
 use tower_cookies::Cookies;
+use tracing::error;
+use tracing::info;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AlreadyAgreedTermsOfUse, Unauthorized};
@@ -36,7 +38,7 @@ pub(crate) async fn post_agreement(
     let session_id = if let Some(s) = option_cookie {
         s.value().to_string()
     } else {
-        tracing::debug!("no sessoin cookie found");
+        info!("no sessoin cookie found");
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(ApiError {
@@ -69,8 +71,8 @@ async fn handle_agreement_req(
     })?;
     let agreement_date_option = op.check_if_already_agreed(account_id, version).await?;
     if let Some(agreement_date) = agreement_date_option {
-        tracing::error!(
-            "{} (account id: {}) has already agreed terms of use version {} at {}",
+        error!(
+            "{} (account id: {}) has already agreed terms of use (version {}) at {}",
             &account.email_address,
             account_id,
             version,
@@ -87,12 +89,9 @@ async fn handle_agreement_req(
     let _ = op
         .agree_terms_of_use(account_id, version, &account.email_address, agreed_at)
         .await?;
-    tracing::info!(
-        "{} (account id: {}) agreed terms of use version {} at {}",
-        &account.email_address,
-        account_id,
-        version,
-        agreed_at
+    info!(
+        "{} (account id: {}) agreed terms of use (version {}) at {}",
+        &account.email_address, account_id, version, agreed_at
     );
     Ok(StatusCode::OK)
 }
@@ -133,7 +132,10 @@ impl AgreementOperation for AgreementOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!("failed to find user (account id: {}): {}", account_id, e);
+                error!(
+                    "failed to find user_account (user_account_id: {}): {}",
+                    account_id, e
+                );
                 unexpected_err_resp()
             })?;
         Ok(model.map(|m| Account {
@@ -150,11 +152,9 @@ impl AgreementOperation for AgreementOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find terms of use (account id: {}, version: {}): {}",
-                    account_id,
-                    version,
-                    e
+                error!(
+                    "failed to find terms_of_use (user_account_id: {}, ver: {}): {}",
+                    account_id, version, e
                 );
                 unexpected_err_resp()
             })?;
@@ -175,7 +175,7 @@ impl AgreementOperation for AgreementOperationImpl {
             agreed_at: Set(*agreed_at),
         };
         let _ = terms_of_use_model.insert(&self.pool).await.map_err(|e| {
-            tracing::error!("failed to insert terms of use agreement (account id: {}, email address: {}, version: {}): {}", 
+            error!("failed to insert terms_of_use (user_account_id: {}, email_address: {}, ver: {}): {}", 
             account_id, email_address, version, e);
             unexpected_err_resp()
         })?;

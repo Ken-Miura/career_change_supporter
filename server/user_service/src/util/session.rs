@@ -15,6 +15,7 @@ use serde::Deserialize;
 use std::env::var;
 use std::time::Duration;
 use tower_cookies::{Cookies, Key};
+use tracing::{error, info};
 
 use crate::err::{
     unexpected_err_resp,
@@ -78,7 +79,7 @@ where
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let Extension(cookies) = Extension::<Cookies>::from_request(req).await.map_err(|e| {
-            tracing::error!("failed to get cookies: {}", e);
+            error!("failed to get cookies: {}", e);
             unexpected_err_resp()
         })?;
         let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
@@ -86,7 +87,7 @@ where
         let session_id = match option_cookie {
             Some(s) => s.value().to_string(),
             None => {
-                tracing::debug!("no sessoin cookie found");
+                info!("no sessoin cookie found");
                 return Err((
                     StatusCode::UNAUTHORIZED,
                     Json(ApiError {
@@ -98,7 +99,7 @@ where
         let Extension(store) = Extension::<RedisSessionStore>::from_request(req)
             .await
             .map_err(|e| {
-                tracing::error!("failed to get session store: {}", e);
+                error!("failed to get session store: {}", e);
                 unexpected_err_resp()
             })?;
         let op = RefreshOperationImpl {};
@@ -107,7 +108,7 @@ where
         let Extension(pool) = Extension::<DatabaseConnection>::from_request(req)
             .await
             .map_err(|e| {
-                tracing::error!("failed to extract connection pool from req: {}", e);
+                error!("failed to extract connection pool from req: {}", e);
                 unexpected_err_resp()
             })?;
 
@@ -153,13 +154,13 @@ pub(crate) async fn get_user_by_session_id(
     expiry: Duration,
 ) -> Result<User, ErrResp> {
     let option_session = store.load_session(session_id.clone()).await.map_err(|e| {
-        tracing::error!("failed to load session (session_id={}): {}", session_id, e);
+        error!("failed to load session: {}", e);
         unexpected_err_resp()
     })?;
     let mut session = match option_session {
         Some(s) => s,
         None => {
-            tracing::debug!("no valid session on request");
+            info!("no session found");
             return Err((
                 StatusCode::UNAUTHORIZED,
                 Json(ApiError {
@@ -168,20 +169,20 @@ pub(crate) async fn get_user_by_session_id(
             ));
         }
     };
-    let id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
+    let account_id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
         Some(id) => id,
         None => {
-            tracing::error!("failed to get id from session (session_id={})", session_id);
+            error!("failed to get account id from session");
             return Err(unexpected_err_resp());
         }
     };
     op.set_login_session_expiry(&mut session, expiry);
     // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
     let _ = store.store_session(session).await.map_err(|e| {
-        tracing::error!("failed to store session (session_id={}): {}", session_id, e);
+        error!("failed to store session: {}", e);
         unexpected_err_resp()
     })?;
-    Ok(User { account_id: id })
+    Ok(User { account_id })
 }
 
 pub(crate) trait RefreshOperation {
@@ -202,11 +203,10 @@ async fn check_if_user_has_already_agreed(
     op: impl TermsOfUseLoadOperation,
 ) -> Result<(), ErrResp> {
     let option = op.find(account_id, terms_of_use_version).await?;
-    let terms_of_use_data = option.ok_or_else(|| {
-        tracing::info!(
-            "account id ({}) has not agreed terms of use version {} yet",
-            account_id,
-            terms_of_use_version
+    let _ = option.ok_or_else(|| {
+        error!(
+            "account id ({}) has not agreed terms of use (version {}) yet",
+            account_id, terms_of_use_version
         );
         (
             StatusCode::BAD_REQUEST,
@@ -215,11 +215,6 @@ async fn check_if_user_has_already_agreed(
             }),
         )
     })?;
-    tracing::debug!("accound (id: {}, email address: {}) has already agreed with terms of use (version: {}) at {}", 
-        terms_of_use_data.user_account_id,
-        terms_of_use_data.email_address,
-        terms_of_use_data.ver,
-        terms_of_use_data.agreed_at);
     Ok(())
 }
 
@@ -231,15 +226,15 @@ async fn ensure_account_is_not_disabled(
         .check_if_account_is_disabled(account_id)
         .await
         .map_err(|e| {
-            tracing::error!(
-                "failed to ensure account is not disabled (status code: {}, code: {})",
-                e.0,
-                e.1 .0.code
+            error!(
+                "failed to check if account is disabled (status code: {}, code: {})",
+                e.0, e.1 .0.code
             );
             unexpected_err_resp()
         })?;
     if let Some(disabled) = result {
         if disabled {
+            error!("account (account id: {}) is disabled", account_id);
             // セッションチェックの際に無効化を検出した際は、Unauthorizedを返すことでログイン画面へ遷移させる
             // ログイン画面でログインしようとした際に無効化を知らせるメッセージを表示
             return Err((
@@ -251,6 +246,7 @@ async fn ensure_account_is_not_disabled(
         };
         Ok(())
     } else {
+        error!("no account (account id: {}) found", account_id);
         Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -266,8 +262,7 @@ pub(crate) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
     use axum::async_trait;
     use axum::http::StatusCode;
-    use chrono::TimeZone;
-    use common::{ErrResp, JAPANESE_TIME_ZONE};
+    use common::ErrResp;
 
     use crate::{
         err,
@@ -380,21 +375,13 @@ pub(crate) mod tests {
     impl TermsOfUseLoadOperation for TermsOfUseLoadOperationMock {
         async fn find(
             &self,
-            account_id: i64,
-            terms_of_use_version: i32,
+            _account_id: i64,
+            _terms_of_use_version: i32,
         ) -> Result<Option<TermsOfUseData>, ErrResp> {
             if !self.has_already_agreed {
                 return Ok(None);
             }
-            let terms_of_use_data = TermsOfUseData {
-                user_account_id: account_id,
-                ver: terms_of_use_version,
-                email_address: "test@example.com".to_string(),
-                agreed_at: chrono::Utc
-                    .ymd(2021, 11, 5)
-                    .and_hms(20, 00, 40)
-                    .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
-            };
+            let terms_of_use_data = TermsOfUseData {};
             Ok(Some(terms_of_use_data))
         }
     }

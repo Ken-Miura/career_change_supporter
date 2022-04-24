@@ -21,6 +21,7 @@ use entity::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
@@ -66,7 +67,7 @@ async fn handle_create_identity_request_approval(
         .get_admin_email_address_by_admin_account_id(admin_account_id)
         .await?;
     let admin_email_address = admin_email_address_option.ok_or_else(|| {
-        tracing::error!(
+        error!(
             "no admin account (admin account id: {}) found",
             admin_account_id
         );
@@ -80,7 +81,7 @@ async fn handle_create_identity_request_approval(
 
     let user_email_address = approved_user.ok_or_else(|| {
         // 承認をしようとした際、既にユーザーがアカウントを削除しているケース
-        tracing::error!(
+        error!(
             "no user account (user account id: {}) found",
             user_account_id
         );
@@ -134,10 +135,9 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find admin account (admin account id: {}): {}",
-                    admin_account_id,
-                    e
+                error!(
+                    "failed to find admin_account (admin_account_id: {}): {}",
+                    admin_account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -160,8 +160,8 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         .one(txn)
                         .await
                         .map_err(|e| {
-                            tracing::error!(
-                                "failed to find user account (user account id: {}): {}",
+                            error!(
+                                "failed to find user_account (user_account_id: {}): {}",
                                 user_account_id,
                                 e
                             );
@@ -179,8 +179,8 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         .one(txn)
                         .await
                         .map_err(|e| {
-                            tracing::error!(
-                                "failed to find create identity request (user account id: {}): {}",
+                            error!(
+                                "failed to find create_identity_req (user_account_id: {}): {}",
                                 user_account_id,
                                 e
                             );
@@ -189,8 +189,8 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                             }
                         })?;
                     let req = req_option.ok_or_else(|| {
-                        tracing::error!(
-                            "no create identity request (user account id: {}) found",
+                        error!(
+                            "no create_identity_req (user_account_id: {}) found",
                             user_account_id
                         );
                         ErrRespStruct {
@@ -200,8 +200,8 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
 
                     let identity_model = CreateIdentityReqApprovalOperationImpl::generate_identity_active_model(req.clone());
                     let _ = identity_model.insert(txn).await.map_err(|e| {
-                        tracing::error!(
-                            "failed to insert identity (user account id: {}): {}",
+                        error!(
+                            "failed to insert identity (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -212,8 +212,8 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
 
                     let approved_req = CreateIdentityReqApprovalOperationImpl::generate_approved_create_identity_req_active_model(req, approved_time, approver_email_address);
                     let _ = approved_req.insert(txn).await.map_err(|e| {
-                        tracing::error!(
-                            "failed to insert approved create identity req (user account id: {}): {}",
+                        error!(
+                            "failed to insert approved_create_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -223,8 +223,8 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                     })?;
 
                     let _ = create_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
-                        tracing::error!(
-                            "failed to delete create identity request (user account id: {}): {}",
+                        error!(
+                            "failed to delete create_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -239,11 +239,11 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
-                    tracing::error!("connection error: {}", db_err);
+                    error!("connection error: {}", db_err);
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    tracing::error!("failed to approve create identity req: {}", err_resp_struct);
+                    error!("failed to approve create_identity_req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
