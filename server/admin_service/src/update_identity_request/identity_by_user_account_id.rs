@@ -9,6 +9,7 @@ use common::{ApiError, ErrResp, RespResult};
 use entity::identity;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::Deserialize;
+use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::Admin;
@@ -34,7 +35,7 @@ async fn get_identity_by_user_account_id_internal(
 ) -> RespResult<Identity> {
     let identity_option = op.get_identity_by_user_account_id(user_account_id).await?;
     let identity = identity_option.ok_or_else(|| {
-        tracing::error!("no identity (user account id: {}) found", user_account_id);
+        error!("no identity (user account id: {}) found", user_account_id);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -67,10 +68,9 @@ impl IdentityOperation for IdentityOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find Indentity (account id: {}): {}",
-                    user_account_id,
-                    e
+                error!(
+                    "failed to find identity (user_account_id: {}): {}",
+                    user_account_id, e
                 );
                 unexpected_err_resp()
             })?;
