@@ -9,6 +9,7 @@ use axum::http::StatusCode;
 use entity::sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
 use entity::update_identity_req;
 use serde::Serialize;
+use tracing::error;
 
 use crate::{
     err::unexpected_err_resp,
@@ -67,11 +68,9 @@ impl UpdateIdentityRequestItemsOperation for UpdateIdentityRequestItemsOperation
             .fetch_page(page)
             .await
             .map_err(|e| {
-                tracing::error!(
+                error!(
                     "failed to fetch page (page: {}, page_size: {}) in update_identity_req: {}",
-                    page,
-                    page_size,
-                    e
+                    page, page_size, e
                 );
                 unexpected_err_resp()
             })?;
