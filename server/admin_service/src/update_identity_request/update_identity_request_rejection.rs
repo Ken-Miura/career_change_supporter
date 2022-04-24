@@ -22,6 +22,7 @@ use entity::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
@@ -68,7 +69,7 @@ async fn handle_update_identity_request_rejection(
     send_mail: impl SendMail,
 ) -> RespResult<UpdateIdentityReqRejectionResult> {
     let _ = validate_reason(rejection_reason.as_str()).map_err(|e| {
-        tracing::error!("invalid format reason ({}): {}", rejection_reason, e);
+        error!("invalid format reason ({}): {}", rejection_reason, e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -80,7 +81,7 @@ async fn handle_update_identity_request_rejection(
         .get_admin_email_address_by_admin_account_id(admin_account_id)
         .await?;
     let admin_email_address = admin_email_address_option.ok_or_else(|| {
-        tracing::error!(
+        error!(
             "no admin account (admin account id: {}) found",
             admin_account_id
         );
@@ -99,7 +100,7 @@ async fn handle_update_identity_request_rejection(
 
     let user_email_address = rejected_user.ok_or_else(|| {
         // 拒否をしようとした際、既にユーザーがアカウントを削除しているケース
-        tracing::error!(
+        error!(
             "no user account (user account id: {}) found",
             user_account_id
         );
@@ -154,10 +155,9 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find admin account (admin account id: {}): {}",
-                    admin_account_id,
-                    e
+                error!(
+                    "failed to find admin_account (admin_account_id: {}): {}",
+                    admin_account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -181,8 +181,8 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
                         .one(txn)
                         .await
                         .map_err(|e| {
-                            tracing::error!(
-                                "failed to find user account (user account id: {}): {}",
+                            error!(
+                                "failed to find user_account (user_account_id: {}): {}",
                                 user_account_id,
                                 e
                             );
@@ -200,8 +200,8 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
                         .one(txn)
                         .await
                         .map_err(|e| {
-                            tracing::error!(
-                                "failed to find update identity request (user account id: {}): {}",
+                            error!(
+                                "failed to find update_identity_req (user_account_id: {}): {}",
                                 user_account_id,
                                 e
                             );
@@ -210,8 +210,8 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
                             }
                         })?;
                     let req = req_option.ok_or_else(|| {
-                        tracing::error!(
-                            "no update identity request (user account id: {}) found",
+                        error!(
+                            "no update_identity_req (user_account_id: {}) found",
                             user_account_id
                         );
                         ErrRespStruct {
@@ -221,8 +221,8 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
 
                     let rejected_req_active_model = UpdateIdentityReqRejectionOperationImpl::generate_rejected_update_identity_req_active_model(req.clone(), rejected_time, rejection_reason, refuser_email_address);
                     let _ = rejected_req_active_model.insert(txn).await.map_err(|e| {
-                        tracing::error!(
-                            "failed to insert rejected update identity req (user account id: {}): {}",
+                        error!(
+                            "failed to insert rejected_update_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -232,8 +232,8 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
                     })?;
 
                     let _ = update_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
-                        tracing::error!(
-                            "failed to delete update identity request (user account id: {}): {}",
+                        error!(
+                            "failed to delete update_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -244,7 +244,7 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
 
                     let image1_key = format!("{}/{}.png", user_account_id, req.image1_file_name_without_ext);
                     let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image1_key.as_str()).await.map_err(|e| {
-                        tracing::error!(
+                        error!(
                             "failed to delete identity image1 (key: {}): {}",
                             image1_key,
                             e
@@ -257,7 +257,7 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
                     if let Some (image2_file_name_without_ext) = req.image2_file_name_without_ext {
                         let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
                         let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image2_key.as_str()).await.map_err(|e| {
-                            tracing::error!(
+                            error!(
                                 "failed to delete identity image2 (key: {}): {}",
                                 image2_key,
                                 e
@@ -274,11 +274,11 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
-                    tracing::error!("connection error: {}", db_err);
+                    error!("connection error: {}", db_err);
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    tracing::error!("failed to reject update identity req: {}", err_resp_struct);
+                    error!("failed to reject update_identity_req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
