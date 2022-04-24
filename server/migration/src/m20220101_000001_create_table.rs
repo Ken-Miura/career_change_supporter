@@ -604,6 +604,120 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
 
+        let _ = conn
+            .execute(
+                /*
+                 * 最大MAX_NUM_OF_CAREER_PER_USER_ACCOUNT回のリクエストを受け付け可能にするため、
+                 * user_accountのuser_account_idをUNIQUEとしては扱わない。
+                 */
+                /*
+                 * user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
+                 * 管理者の把握しないうちにレコードが消去される可能性がある。そのため、user_account_idは外部キーとしない
+                 */
+                sql.stmt(
+                    r"CREATE TABLE ccs_schema.create_career_req (
+                    create_career_req_id BIGSERIAL PRIMARY KEY,
+                    user_account_id BIGINT NOT NULL,
+                    company_name VARCHAR (256) NOT NULL,
+                    department_name VARCHAR (256),
+                    office VARCHAR (256),
+                    career_start_date DATE NOT NULL,
+                    career_end_date DATE,
+                    contract_type ccs_schema.contract_type NOT NULL,
+                    profession VARCHAR (128),
+                    annual_income_in_man_yen INTEGER,
+                    is_manager BOOLEAN NOT NULL,
+                    position_name VARCHAR (128),
+                    is_new_graduate BOOLEAN NOT NULL,
+                    note VARCHAR (2048),
+                    image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
+                    image2_file_name_without_ext ccs_schema.uuid_simple_form,
+                    requested_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  );",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.create_career_req To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.create_career_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.create_career_req_create_career_req_id_seq TO user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX create_career_req_requested_at_idx ON ccs_schema.create_career_req (requested_at);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            .execute(
+                /*
+                 * 最大MAX_NUM_OF_CAREER_PER_USER_ACCOUNT回のリクエストを受け付け可能にするため、
+                 * user_accountのuser_account_idをUNIQUEとしては扱わない。
+                 */
+                /*
+                 * user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
+                 * 管理者の把握しないうちにレコードが消去される可能性がある。そのため、user_account_idは外部キーとしない
+                 */
+                sql.stmt(
+                    r"CREATE TABLE ccs_schema.create_career_req (
+                    create_career_req_id BIGSERIAL PRIMARY KEY,
+                    user_account_id BIGINT NOT NULL,
+                    company_name VARCHAR (256) NOT NULL,
+                    department_name VARCHAR (256),
+                    office VARCHAR (256),
+                    career_start_date DATE NOT NULL,
+                    career_end_date DATE,
+                    contract_type ccs_schema.contract_type NOT NULL,
+                    profession VARCHAR (128),
+                    annual_income_in_man_yen INTEGER,
+                    is_manager BOOLEAN NOT NULL,
+                    position_name VARCHAR (128),
+                    is_new_graduate BOOLEAN NOT NULL,
+                    note VARCHAR (2048),
+                    image1_file_name_without_ext ccs_schema.uuid_simple_form NOT NULL,
+                    image2_file_name_without_ext ccs_schema.uuid_simple_form,
+                    requested_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  );",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.create_career_req To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.create_career_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.create_career_req_create_career_req_id_seq TO user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX create_career_req_requested_at_idx ON ccs_schema.create_career_req (requested_at);",
+            ))
+            .await
+            .map(|_| ())?;
+
         Ok(())
     }
 
