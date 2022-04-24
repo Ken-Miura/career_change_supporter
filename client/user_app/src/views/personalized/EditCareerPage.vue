@@ -5,7 +5,7 @@
       <h3 class="font-bold text-lg">{{ message }}</h3>
       <div v-if="career !== null" class="font-bold text-lg">
         <div>career</div>
-        <div>{{ career }}</div>
+        <div class="whitespace-pre-wrap">{{ career.note }}</div>
       </div>
       <p v-else class="font-bold text-lg">Not Found (career is null)</p>
     </main>

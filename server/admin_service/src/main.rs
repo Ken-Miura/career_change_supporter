@@ -31,6 +31,7 @@ use axum::extract::Extension;
 use axum::http::Request;
 use axum::routing::{get, post};
 use axum::Router;
+use chrono::NaiveDate;
 use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
@@ -43,7 +44,9 @@ use common::storage::{
 };
 use common::util::check_env_vars;
 use dotenv::dotenv;
-use entity::sea_orm::{ConnectOptions, Database};
+use entity::career;
+use entity::sea_orm::ActiveValue::NotSet;
+use entity::sea_orm::{ConnectOptions, Database, DatabaseConnection, Set, ActiveModelTrait};
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
@@ -51,7 +54,7 @@ use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tower_http::LatencyUnit;
-use tracing::{Level, Span};
+use tracing::{Level, Span, info};
 use uuid::Uuid;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_APP";
@@ -163,6 +166,10 @@ async fn main_internal(num_of_cpus: u32) {
                     get(get_identity_by_user_account_id),
                 )
                 .route(
+                    "/test",
+                    get(test),
+                )
+                .route(
                     "/update-identity-request-approval",
                     post(post_update_identity_request_approval),
                 )
@@ -221,6 +228,28 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
+}
+
+pub(crate) async fn test(Extension(pool): Extension<DatabaseConnection>) {
+    let date = NaiveDate::from_ymd(2012, 4, 1);
+    let req = career::ActiveModel {
+        user_account_id: Set(1),
+        career_id: NotSet,
+        company_name: Set("テスト株式会社".to_string()),
+        department_name: Set(None),
+        office: Set(None),
+        career_start_date: Set(date),
+        career_end_date: Set(None),
+        contract_type: Set("regular".to_string()),
+        profession: Set(None),
+        annual_income_in_man_yen: Set(None),
+        is_manager: Set(false),
+        position_name: Set(None),
+        is_new_graduate: Set(false),
+        note: Set(Some("北海道・知床半島沖できのう（23日）から消息を絶っている観光船について、海上保安庁はきょう（24日）、事実上「沈没した」との見方を示しました。\n\n第一管区海上保安本部は、きのう（23日）の午後から知床半島沖で消息を絶っている「知床遊覧船」所有の観光船「KAZUI」について、たとえ転覆したとしてもすでに海面の下にある可能性が高いとして、船は事実上「沈没した」との見方を示しました。\n\nまた、船内にまだ人が取り残されている可能性もあるとみて、きょうも夜を徹して巡視船7隻、航空機7機で捜索を続けるものの、海の中の捜索については、機材の関係や地形的な難しさなどがあり、見通しが立っていないということです。\n\n知床周辺は、水深が深いところで100メートル以上あるということです。\n\n第一管区海上保安本部は、生存者の捜索や救助活動を優先して行う一方、これまでに10人の死亡が確認されたこの事故について、業務上過失往来危険と業務上過失致死を視野に捜査を進める方針です。".to_string())),
+    };
+    let result = req.insert(&pool).await;
+    info!("{:?}", result);
 }
 
 struct RequestLog {
