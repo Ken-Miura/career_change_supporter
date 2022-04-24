@@ -12,6 +12,7 @@ use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use entity::update_identity_req;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::NoUpdateIdentityReqDetailFound;
@@ -54,7 +55,7 @@ async fn get_update_identity_req_detail(
 ) -> RespResult<UpdateIdentityReqDetail> {
     let req_detail_option = op.get_update_identity_req_detail(user_account_id).await?;
     let req_detail = req_detail_option.ok_or_else(|| {
-        tracing::error!(
+        error!(
             "no update identity request (user account id: {}) found",
             user_account_id
         );
@@ -90,10 +91,9 @@ impl UpdateIdentityReqDetailOperation for UpdateIdentityReqDetailOperationImpl {
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
-                    "failed to find update identity request (user account id: {}): {}",
-                    user_account_id,
-                    e
+                error!(
+                    "failed to find update_identity_req (user_account_id: {}): {}",
+                    user_account_id, e
                 );
                 unexpected_err_resp()
             })?;
