@@ -13,6 +13,7 @@ use entity::identity;
 use entity::prelude::Identity;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::IllegalDate;
@@ -92,10 +93,9 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
             .all(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
+                error!(
                     "failed to filter identity (date_of_birth: {}): {}",
-                    date_of_birth,
-                    e
+                    date_of_birth, e
                 );
                 unexpected_err_resp()
             })?;
