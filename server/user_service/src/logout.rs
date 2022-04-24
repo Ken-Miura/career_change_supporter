@@ -53,7 +53,7 @@ async fn handle_logout_req<'a>(
     let session = match option_session {
         Some(s) => s,
         None => {
-            info!("no session found in session store on logout");
+            info!("no session found on logout");
             return Ok(());
         }
     };
