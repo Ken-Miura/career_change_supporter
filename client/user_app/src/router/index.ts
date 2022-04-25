@@ -6,7 +6,7 @@ import ProfilePage from '../views/personalized/ProfilePage.vue'
 import IdentityPage from '../views/personalized/IdentityPage.vue'
 import PostIdentityResultPage from '../views/personalized/PostIdentityResultPage.vue'
 import AddCareerPage from '../views/personalized/AddCareerPage.vue'
-import EditCareerPage from '../views/personalized/EditCareerPage.vue'
+import CareerDetailPage from '../views/personalized/CareerDetailPage.vue'
 import FeePerHourInYenPage from '../views/personalized/FeePerHourInYenPage.vue'
 import DeleteAccountConfirmationPage from '../views/personalized/DeleteAccountConfirmationPage.vue'
 import RewardPage from '../views/personalized/RewardPage.vue'
@@ -107,8 +107,8 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/careers/:career_id',
-    name: 'EditCareerPage',
-    component: EditCareerPage
+    name: 'CareerDetailPage',
+    component: CareerDetailPage
   },
   {
     path: '/careers',

@@ -9,7 +9,7 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
 import TheHeader from '@/components/TheHeader.vue'
-import { Career } from '@/util/personalized/profile/Career'
+import { CareerDescription } from '@/util/personalized/profile/CareerDescription'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -52,7 +52,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -162,7 +162,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -187,7 +187,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -216,7 +216,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -237,10 +237,10 @@ describe('ProfilePage.vue', () => {
     const noIdentitySetMessage = noIdentitySetDiv.text()
     expect(noIdentitySetMessage).toContain('ユーザー情報が設定されていません。')
 
-    const noCareersSetDiv = wrapper.find('[data-test="no-careers-set"]')
-    expect(noCareersSetDiv.exists)
-    const noCareersSetMessage = noCareersSetDiv.text()
-    expect(noCareersSetMessage).toContain('職務経歴は登録されていません。')
+    const noCareerDescriptionsSetDiv = wrapper.find('[data-test="no-career-descriptions-set"]')
+    expect(noCareerDescriptionsSetDiv.exists)
+    const noCareerDescriptionsSetMessage = noCareerDescriptionsSetDiv.text()
+    expect(noCareerDescriptionsSetMessage).toContain('職務経歴は登録されていません。')
 
     const noFeePerHourInYerSetDiv = wrapper.find('[data-test="no-fee-per-hour-in-yen-set"]')
     expect(noFeePerHourInYerSetDiv.exists)
@@ -271,7 +271,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: identity,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -309,7 +309,7 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain(`${identity.telephone_number}`)
   })
 
-  it('displays 1 career information after api call finishes', async () => {
+  it('displays 1 career description information after api call finishes', async () => {
     const identity = {
     /* eslint-disable camelcase */
       last_name: '山田',
@@ -328,30 +328,20 @@ describe('ProfilePage.vue', () => {
       telephone_number: '08012345678'
     /* eslint-enable camelcase */
     }
-    const career = {
+    const careerDescription = {
       /* eslint-disable camelcase */
       career_id: 203,
-      data: {
-        company_name: 'テスト株式会社',
-        department_name: '営業部',
-        office: '町田オフィス',
-        career_start_date: {
-          year: 2010,
-          month: 4,
-          day: 1
-        },
-        career_end_date: {
-          year: 2016,
-          month: 8,
-          day: 1
-        },
-        contract_type: 'regular' as 'regular' | 'contract' | 'other',
-        profession: '営業',
-        annual_income_in_man_yen: 400,
-        is_manager: false,
-        position_name: null,
-        is_new_graduate: true,
-        note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      company_name: 'テスト株式会社',
+      contract_type: 'regular' as 'regular' | 'contract' | 'other',
+      career_start_date: {
+        year: 2010,
+        month: 4,
+        day: 1
+      },
+      career_end_date: {
+        year: 2016,
+        month: 8,
+        day: 1
       }
       /* eslint-enable camelcase */
     }
@@ -359,7 +349,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: identity,
-      careers: [career],
+      career_descriptions: [careerDescription],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -375,21 +365,21 @@ describe('ProfilePage.vue', () => {
     })
     await flushPromises()
 
-    const oneCereerDiv = wrapper.find('[data-test="careers-set"]')
+    const oneCereerDiv = wrapper.find('[data-test="career-descriptions-set"]')
     expect(oneCereerDiv.exists)
     const message = oneCereerDiv.text()
     expect(message).toContain('勤務先名称')
-    expect(message).toContain(`${career.data.company_name}`)
+    expect(message).toContain(`${careerDescription.company_name}`)
     expect(message).toContain('雇用形態')
-    // career.contract_type === 'regular' -> 正社員
+    // careerDescription.contract_type === 'regular' -> 正社員
     expect(message).toContain('正社員')
     expect(message).toContain('入社日')
-    expect(message).toContain(`${career.data.career_start_date.year}年${career.data.career_start_date.month}月${career.data.career_start_date.day}日`)
+    expect(message).toContain(`${careerDescription.career_start_date.year}年${careerDescription.career_start_date.month}月${careerDescription.career_start_date.day}日`)
     expect(message).toContain('退社日')
-    expect(message).toContain(`${career.data.career_end_date.year}年${career.data.career_end_date.month}月${career.data.career_end_date.day}日`)
+    expect(message).toContain(`${careerDescription.career_end_date.year}年${careerDescription.career_end_date.month}月${careerDescription.career_end_date.day}日`)
   })
 
-  it('displays max num of careers information after api call finishes', async () => {
+  it('displays max num of career descriptions information after api call finishes', async () => {
     const identity = {
     /* eslint-disable camelcase */
       last_name: '山田',
@@ -408,12 +398,12 @@ describe('ProfilePage.vue', () => {
       telephone_number: '08012345678'
     /* eslint-enable camelcase */
     }
-    const careers = createMaxNumDummyCareers()
+    const careerDescriptions = createMaxNumDummyCareerDescriptions()
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: identity,
-      careers,
+      career_descriptions: careerDescriptions,
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -429,13 +419,13 @@ describe('ProfilePage.vue', () => {
     })
     await flushPromises()
 
-    const oneCereerDiv = wrapper.find('[data-test="careers-set"]')
-    expect(oneCereerDiv.exists)
-    const message = oneCereerDiv.text()
+    const cereerDescriptionsSetDiv = wrapper.find('[data-test="career-descriptions-set"]')
+    expect(cereerDescriptionsSetDiv.exists)
+    const message = cereerDescriptionsSetDiv.text()
     // 一つの職務経歴を表示したときにその他の表示を確認しているので、
     // ここでは最大数分会社名が表示されていることのみ確認する
-    for (const career of careers) {
-      expect(message).toContain(`${career.data.company_name}`)
+    for (const careerDescription of careerDescriptions) {
+      expect(message).toContain(`${careerDescription.company_name}`)
     }
   })
 
@@ -463,7 +453,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: identity,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: feePerHourInYen
     /* eslint-enable camelcase */
     }
@@ -490,7 +480,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -535,7 +525,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: identity,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
       /* eslint-enable camelcase */
     }
@@ -558,7 +548,7 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/careers')
   })
 
-  it('moves to EditCareerPage when "詳細を確認・編集する" is pushed', async () => {
+  it('moves to CareerDetailPage when "詳細を確認する" is pushed', async () => {
     const identity = {
     /* eslint-disable camelcase */
       last_name: '山田',
@@ -577,30 +567,20 @@ describe('ProfilePage.vue', () => {
       telephone_number: '08012345678'
     /* eslint-enable camelcase */
     }
-    const career = {
+    const careerDescription = {
       /* eslint-disable camelcase */
       career_id: 203,
-      data: {
-        company_name: 'テスト株式会社',
-        department_name: '営業部',
-        office: '町田オフィス',
-        career_start_date: {
-          year: 2010,
-          month: 4,
-          day: 1
-        },
-        career_end_date: {
-          year: 2016,
-          month: 8,
-          day: 1
-        },
-        contract_type: 'regular' as 'regular' | 'contract' | 'other',
-        profession: '営業',
-        annual_income_in_man_yen: 400,
-        is_manager: false,
-        position_name: null,
-        is_new_graduate: true,
-        note: 'テスト株式会社の営業での仕事内容や職場の雰囲気を教えることができます。'
+      company_name: 'テスト株式会社',
+      contract_type: 'regular' as 'regular' | 'contract' | 'other',
+      career_start_date: {
+        year: 2010,
+        month: 4,
+        day: 1
+      },
+      career_end_date: {
+        year: 2016,
+        month: 8,
+        day: 1
       }
       /* eslint-enable camelcase */
     }
@@ -608,7 +588,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: identity,
-      careers: [career],
+      career_descriptions: [careerDescription],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
     }
@@ -623,12 +603,12 @@ describe('ProfilePage.vue', () => {
       }
     })
     await flushPromises() // 描画が終わっていること（onMountedが完了していること）を保証するために実施
-    const button = wrapper.find('[data-test="move-to-edit-career-page-button"]')
+    const button = wrapper.find('[data-test="move-to-career-detail-page-button"]')
     expect(button.exists)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "EditCareerPage", "params": {"career_id": ${career.career_id}}}`)
+    const data = JSON.parse(`{"name": "CareerDetailPage", "params": {"career_id": ${careerDescription.career_id}}}`)
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -655,7 +635,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: identity,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
       /* eslint-enable camelcase */
     }
@@ -683,7 +663,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
       /* eslint-enable camelcase */
     }
@@ -705,12 +685,12 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/delete-account-confirmation')
   })
 
-  it(`display ${Message.NO_IDENTITY_FOUND} on career area when identity is null and "職務経歴を追加する" is pushed`, async () => {
+  it(`display ${Message.NO_IDENTITY_FOUND} on career descriptions area when identity is null and "職務経歴を追加する" is pushed`, async () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
       /* eslint-enable camelcase */
     }
@@ -729,8 +709,8 @@ describe('ProfilePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
-    const career = wrapper.find('[data-test="career"]')
-    const alertMessage = career.findComponent(AlertMessage)
+    const careerDescriptions = wrapper.find('[data-test="career-descriptions"]')
+    const alertMessage = careerDescriptions.findComponent(AlertMessage)
     const classes = alertMessage.classes()
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
@@ -742,7 +722,7 @@ describe('ProfilePage.vue', () => {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
-      careers: [],
+      career_descriptions: [],
       fee_per_hour_in_yen: null
       /* eslint-enable camelcase */
     }
@@ -761,8 +741,8 @@ describe('ProfilePage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
-    const career = wrapper.find('[data-test="fee-per-hour-in-yen"]')
-    const alertMessage = career.findComponent(AlertMessage)
+    const feePerHourInYen = wrapper.find('[data-test="fee-per-hour-in-yen"]')
+    const alertMessage = feePerHourInYen.findComponent(AlertMessage)
     const classes = alertMessage.classes()
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
@@ -770,9 +750,9 @@ describe('ProfilePage.vue', () => {
   })
 })
 
-function createMaxNumDummyCareers (): Career[] {
+function createMaxNumDummyCareerDescriptions (): CareerDescription[] {
   const MAX_NUM_OF_CAREERS = 8
-  const careers = []
+  const careerDescriptions = []
   for (let i = 0; i < MAX_NUM_OF_CAREERS; i++) {
     let careerEndDate = null
     if (i !== (MAX_NUM_OF_CAREERS - 1)) {
@@ -782,30 +762,20 @@ function createMaxNumDummyCareers (): Career[] {
         day: 31
       }
     }
-    const career = {
+    const careerDescription = {
       /* eslint-disable camelcase */
       career_id: i + 1,
-      data: {
-        company_name: `テスト${i}株式会社`,
-        department_name: '営業部',
-        office: '町田オフィス',
-        career_start_date: {
-          year: 2010 + i,
-          month: 4,
-          day: 1
-        },
-        career_end_date: careerEndDate,
-        contract_type: 'regular' as 'regular' | 'contract' | 'other',
-        profession: '営業',
-        annual_income_in_man_yen: 400,
-        is_manager: false,
-        position_name: null,
-        is_new_graduate: (i === 0),
-        note: `テスト${i}株式会社の営業での仕事内容や職場の雰囲気を教えることができます。`
-      }
+      company_name: `テスト${i}株式会社`,
+      contract_type: 'regular' as 'regular' | 'contract' | 'other',
+      career_start_date: {
+        year: 2010 + i,
+        month: 4,
+        day: 1
+      },
+      career_end_date: careerEndDate
       /* eslint-enable camelcase */
     }
-    careers.push(career)
+    careerDescriptions.push(careerDescription)
   }
-  return careers
+  return careerDescriptions
 }

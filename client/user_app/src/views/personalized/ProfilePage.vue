@@ -33,35 +33,35 @@
           <p v-else data-test="no-identity-set" class="m-4 text-xl">ユーザー情報が設定されていません。</p>
           <button data-test="move-to-identity-page-button" v-on:click="moveToIdentityPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
         </div>
-        <div data-test="career" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div data-test="career-descriptions" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">職務経歴</h3>
           <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
-          <div v-if="careers.length === 0" data-test="no-careers-set" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
-          <div v-else data-test="careers-set">
+          <div v-if="careerDescriptions.length === 0" data-test="no-career-descriptions-set" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
+          <div v-else data-test="career-descriptions-set">
             <ul>
-              <li v-for="(career, index) in careers" v-bind:key="career">
+              <li v-for="(careerDescription, index) in careerDescriptions" v-bind:key="careerDescription">
                 <div class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ career.data.company_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ careerDescription.company_name }}</div>
                     <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
                     <div class="justify-self-start col-span-2">
-                      <div v-if="career.data.contract_type === 'regular'">
+                      <div v-if="careerDescription.contract_type === 'regular'">
                         正社員
                       </div>
-                      <div v-else-if="career.data.contract_type === 'contract'">
+                      <div v-else-if="careerDescription.contract_type === 'contract'">
                         契約社員
                       </div>
-                      <div v-else-if="career.data.contract_type === 'other'">
+                      <div v-else-if="careerDescription.contract_type === 'other'">
                         その他
                       </div>
                       <div v-else>
                         その他
                       </div>
                     </div>
-                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ career.data.career_start_date.year }}年{{ career.data.career_start_date.month }}月{{ career.data.career_start_date.day }}日</div>
-                    <div v-if="career.data.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="career.data.career_end_date !== null" class="justify-self-start col-span-2">{{ career.data.career_end_date.year }}年{{ career.data.career_end_date.month }}月{{ career.data.career_end_date.day }}日</div>
-                    <button data-test="move-to-edit-career-page-button" v-on:click="moveToEditCareerPage(career.career_id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認・編集する</button>
+                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ careerDescription.career_start_date.year }}年{{ careerDescription.career_start_date.month }}月{{ careerDescription.career_start_date.day }}日</div>
+                    <div v-if="careerDescription.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="careerDescription.career_end_date !== null" class="justify-self-start col-span-2">{{ careerDescription.career_end_date.year }}年{{ careerDescription.career_end_date.month }}月{{ careerDescription.career_end_date.day }}日</div>
+                    <button data-test="move-to-career-detail-page-button" v-on:click="moveToCareerDetailPage(careerDescription.career_id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
                   </div>
                 </div>
               </li>
@@ -101,11 +101,11 @@ import { GetProfileResp } from '@/util/personalized/profile/GetProfileResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Identity } from '@/util/personalized/profile/Identity'
 import { useGetProfile } from '@/util/personalized/profile/useGetProfile'
-import { Career } from '@/util/personalized/profile/Career'
+import { CareerDescription } from '@/util/personalized/profile/CareerDescription'
 import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
-import { SET_CAREERS, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from '@/store/mutationTypes'
+import { SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -118,7 +118,7 @@ export default defineComponent({
     const { getProfileDone, getProfileFunc } = useGetProfile()
     const emailAddress = ref('')
     const identity = ref(null as Identity | null)
-    const careers = ref([] as Career[])
+    const careerDescriptions = ref([] as CareerDescription[])
     const canAddCareer = ref(true)
     const canAddCareerErrMessage = ref('')
     const feePerHourInYen = ref(0 as number | null)
@@ -136,11 +136,10 @@ export default defineComponent({
           /* eslint-disable camelcase */
           emailAddress.value = profile.email_address
           identity.value = profile.identity
-          careers.value = profile.careers
+          careerDescriptions.value = profile.career_descriptions
           feePerHourInYen.value = profile.fee_per_hour_in_yen
           /* eslint-enable camelcase */
           store.commit(SET_IDENTITY, profile.identity)
-          store.commit(SET_CAREERS, profile.careers)
           store.commit(SET_FEE_PER_HOUR_IN_YEN, profile.fee_per_hour_in_yen)
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
@@ -173,8 +172,8 @@ export default defineComponent({
       }
       await router.push('/careers')
     }
-    const moveToEditCareerPage = async (careerId: number) => {
-      await router.push({ name: 'EditCareerPage', params: { career_id: careerId } })
+    const moveToCareerDetailPage = async (careerId: number) => {
+      await router.push({ name: 'CareerDetailPage', params: { career_id: careerId } })
     }
     const moveToFeePerHourInYenPage = async () => {
       const identity = store.state.identity
@@ -192,7 +191,7 @@ export default defineComponent({
       getProfileDone,
       emailAddress,
       identity,
-      careers,
+      careerDescriptions,
       canAddCareer,
       canAddCareerErrMessage,
       feePerHourInYen,
@@ -202,7 +201,7 @@ export default defineComponent({
       errorMessage,
       moveToIdentityPage,
       moveToAddCareerPage,
-      moveToEditCareerPage,
+      moveToCareerDetailPage,
       moveToFeePerHourInYenPage,
       moveToDeleteAccountConfirmationPage
     }

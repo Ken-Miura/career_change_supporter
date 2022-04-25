@@ -1,14 +1,12 @@
-import { Career } from '@/util/personalized/profile/Career'
 import { Identity } from '@/util/personalized/profile/Identity'
 import { BankAccount } from '@/util/personalized/reward/BankAccount'
 import { createStore } from 'vuex'
-import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_CAREERS, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY, SET_POST_IDENTITY_RESULT_MESSAGE } from './mutationTypes'
+import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY, SET_POST_IDENTITY_RESULT_MESSAGE } from './mutationTypes'
 
 export type State = {
   postIdentityResultMessage: string | null,
   passwordUpdateResultMessage: string | null,
   identity: Identity | null,
-  careers: Career[],
   feePerHourInYen: number | null,
   bankAccount: BankAccount | null
 };
@@ -23,7 +21,6 @@ export default createStore<State>({
     postIdentityResultMessage: null,
     passwordUpdateResultMessage: null,
     identity: null,
-    careers: [],
     feePerHourInYen: null,
     bankAccount: null
   },
@@ -36,9 +33,6 @@ export default createStore<State>({
     },
     [SET_IDENTITY] (state: State, identity: Identity | null) {
       state.identity = identity
-    },
-    [SET_CAREERS] (state: State, careers: Career[]) {
-      state.careers = careers
     },
     [SET_FEE_PER_HOUR_IN_YEN] (state: State, feePerHourInYen: number | null) {
       state.feePerHourInYen = feePerHourInYen
