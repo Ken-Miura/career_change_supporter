@@ -120,7 +120,7 @@ pub struct Identity {
 
 /// 職務経歴情報
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct CareerData {
+pub struct Career {
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,
