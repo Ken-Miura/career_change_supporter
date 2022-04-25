@@ -3,7 +3,7 @@
 use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::Datelike;
-use common::util::{CareerData, Identity, Ymd};
+use common::util::{Identity, Ymd};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use entity::prelude::{ConsultingFee, UserAccount};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
@@ -50,7 +50,9 @@ async fn handle_profile_req(
             ));
         }
     };
-    let careers = profile_op.filter_career_by_account_id(account_id).await?;
+    let career_descriptions = profile_op
+        .filter_career_descriptions_by_account_id(account_id)
+        .await?;
     let fee_per_hour_in_yen = profile_op
         .find_fee_per_hour_in_yen_by_account_id(account_id)
         .await?;
@@ -59,7 +61,7 @@ async fn handle_profile_req(
         Json(
             ProfileResult::email_address(email_address)
                 .identity(Some(identity))
-                .careers(careers)
+                .career_descriptions(career_descriptions)
                 .fee_per_hour_in_yen(fee_per_hour_in_yen)
                 .finish(),
         ),
@@ -67,16 +69,19 @@ async fn handle_profile_req(
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq)]
-pub(crate) struct Career {
+pub(crate) struct CareerDescription {
     pub career_id: i64,
-    pub data: CareerData,
+    pub company_name: String,
+    pub contract_type: String,
+    pub career_start_date: Ymd,
+    pub career_end_date: Option<Ymd>,
 }
 
 #[derive(Serialize, Debug)]
 pub(crate) struct ProfileResult {
     pub email_address: String,
     pub identity: Option<Identity>,
-    pub careers: Vec<Career>,
+    pub career_descriptions: Vec<CareerDescription>,
     pub fee_per_hour_in_yen: Option<i32>,
 }
 
@@ -85,7 +90,7 @@ impl ProfileResult {
         ProfileResultBuilder {
             email_address,
             identity: None,
-            careers: vec![],
+            career_descriptions: vec![],
             fee_per_hour_in_yen: None,
         }
     }
@@ -94,7 +99,7 @@ impl ProfileResult {
 struct ProfileResultBuilder {
     email_address: String,
     identity: Option<Identity>,
-    careers: Vec<Career>,
+    career_descriptions: Vec<CareerDescription>,
     fee_per_hour_in_yen: Option<i32>,
 }
 
@@ -104,8 +109,11 @@ impl ProfileResultBuilder {
         self
     }
 
-    fn careers(mut self, careers: Vec<Career>) -> ProfileResultBuilder {
-        self.careers = careers;
+    fn career_descriptions(
+        mut self,
+        career_descriptions: Vec<CareerDescription>,
+    ) -> ProfileResultBuilder {
+        self.career_descriptions = career_descriptions;
         self
     }
 
@@ -118,7 +126,7 @@ impl ProfileResultBuilder {
         ProfileResult {
             email_address: self.email_address,
             identity: self.identity,
-            careers: self.careers,
+            career_descriptions: self.career_descriptions,
             fee_per_hour_in_yen: self.fee_per_hour_in_yen,
         }
     }
@@ -134,7 +142,10 @@ trait ProfileOperation {
         &self,
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
-    async fn filter_career_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp>;
+    async fn filter_career_descriptions_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Vec<CareerDescription>, ErrResp>;
     async fn find_fee_per_hour_in_yen_by_account_id(
         &self,
         account_id: i64,
@@ -187,7 +198,10 @@ impl ProfileOperation for ProfileOperationImpl {
         Ok(model.map(ProfileOperationImpl::convert_identity_model_to_identity))
     }
 
-    async fn filter_career_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp> {
+    async fn filter_career_descriptions_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Vec<CareerDescription>, ErrResp> {
         let models = entity::prelude::Career::find()
             .filter(career::Column::UserAccountId.eq(account_id))
             .limit(MAX_NUM_OF_CAREER_PER_USER_ACCOUNT)
@@ -202,8 +216,8 @@ impl ProfileOperation for ProfileOperationImpl {
             })?;
         Ok(models
             .into_iter()
-            .map(ProfileOperationImpl::convert_career_model_to_career)
-            .collect::<Vec<Career>>())
+            .map(ProfileOperationImpl::convert_career_model_to_career_description)
+            .collect::<Vec<CareerDescription>>())
     }
 
     async fn find_fee_per_hour_in_yen_by_account_id(
@@ -246,7 +260,9 @@ impl ProfileOperationImpl {
         }
     }
 
-    fn convert_career_model_to_career(career_model: career::Model) -> Career {
+    fn convert_career_model_to_career_description(
+        career_model: career::Model,
+    ) -> CareerDescription {
         let career_start_date = Ymd {
             year: career_model.career_start_date.year(),
             month: career_model.career_start_date.month(),
@@ -257,22 +273,12 @@ impl ProfileOperationImpl {
             month: end_date.month(),
             day: end_date.day(),
         });
-        Career {
+        CareerDescription {
             career_id: career_model.career_id,
-            data: CareerData {
-                company_name: career_model.company_name,
-                department_name: career_model.department_name,
-                office: career_model.office,
-                career_start_date,
-                career_end_date,
-                contract_type: career_model.contract_type,
-                profession: career_model.profession,
-                annual_income_in_man_yen: career_model.annual_income_in_man_yen,
-                is_manager: career_model.is_manager,
-                position_name: career_model.position_name,
-                is_new_graduate: career_model.is_new_graduate,
-                note: career_model.note,
-            },
+            company_name: career_model.company_name,
+            contract_type: career_model.contract_type,
+            career_start_date,
+            career_end_date,
         }
     }
 }
@@ -283,7 +289,6 @@ mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::{Datelike, NaiveDate};
-    use common::util::CareerData;
     use common::util::Identity;
     use common::util::Ymd;
     use common::ErrResp;
@@ -292,13 +297,13 @@ mod tests {
     use crate::err::Code::NoAccountFound;
     use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
 
-    use super::Career;
+    use super::CareerDescription;
     use super::{handle_profile_req, ProfileOperation};
 
     struct ProfileOperationMock {
         email_address_option: Option<String>,
         identity_option: Option<Identity>,
-        careers: Vec<Career>,
+        career_descriptions: Vec<CareerDescription>,
         fee_per_hour_in_yen_option: Option<i32>,
     }
 
@@ -318,11 +323,11 @@ mod tests {
             Ok(self.identity_option.clone())
         }
 
-        async fn filter_career_by_account_id(
+        async fn filter_career_descriptions_by_account_id(
             &self,
             _account_id: i64,
-        ) -> Result<Vec<Career>, ErrResp> {
-            Ok(self.careers.clone())
+        ) -> Result<Vec<CareerDescription>, ErrResp> {
+            Ok(self.career_descriptions.clone())
         }
 
         async fn find_fee_per_hour_in_yen_by_account_id(
@@ -348,33 +353,24 @@ mod tests {
         }
     }
 
-    fn create_dummy_career() -> Career {
+    fn create_dummy_career_description() -> CareerDescription {
         let career_start_date = Ymd {
             year: 2013,
             month: 4,
             day: 1,
         };
-        Career {
+        CareerDescription {
             career_id: 1,
-            data: CareerData {
-                company_name: "テスト株式会社".to_string(),
-                department_name: None,
-                office: None,
-                career_start_date,
-                career_end_date: None,
-                contract_type: "regular".to_string(),
-                profession: None,
-                annual_income_in_man_yen: None,
-                is_manager: false,
-                position_name: None,
-                is_new_graduate: true,
-                note: Some("備考テスト".to_string()),
-            },
+            company_name: "テスト株式会社".to_string(),
+            contract_type: "regular".to_string(),
+            career_start_date,
+            career_end_date: None,
         }
     }
 
-    fn create_max_num_of_dummy_careers() -> Vec<Career> {
-        let mut careers = Vec::with_capacity(MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize);
+    fn create_max_num_of_dummy_career_descriptions() -> Vec<CareerDescription> {
+        let mut career_descriptions =
+            Vec::with_capacity(MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize);
         let mut start_date = NaiveDate::from_ymd(2013, 4, 1);
         let mut end_date = Some(start_date + chrono::Duration::days(365));
         for i in 0..MAX_NUM_OF_CAREER_PER_USER_ACCOUNT {
@@ -388,28 +384,18 @@ mod tests {
                 month: date.month(),
                 day: date.day(),
             });
-            let career = Career {
+            let career_description = CareerDescription {
                 career_id: (i + 1) as i64,
-                data: CareerData {
-                    company_name: format!("テスト{}株式会社", i + 1),
-                    department_name: Some(format!("部署{}", i + 1)),
-                    office: Some(format!("事業所{}", i + 1)),
-                    career_start_date,
-                    career_end_date,
-                    contract_type: "contract".to_string(),
-                    profession: Some(format!("職種{}", i + 1)),
-                    annual_income_in_man_yen: Some(((i + 1) * 100) as i32),
-                    is_manager: true,
-                    position_name: None,
-                    is_new_graduate: false,
-                    note: None,
-                },
+                company_name: format!("テスト{}株式会社", i + 1),
+                contract_type: "contract".to_string(),
+                career_start_date,
+                career_end_date,
             };
             start_date = end_date.expect("failed to get Ok") + chrono::Duration::days(1);
             end_date = Some(start_date + chrono::Duration::days(30));
-            careers.push(career);
+            career_descriptions.push(career_description);
         }
-        careers
+        career_descriptions
     }
 
     #[tokio::test]
@@ -420,7 +406,7 @@ mod tests {
         let profile_op = ProfileOperationMock {
             email_address_option,
             identity_option: None,
-            careers: vec![],
+            career_descriptions: vec![],
             fee_per_hour_in_yen_option: None,
         };
 
@@ -431,13 +417,13 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         assert_eq!(email_address, result.1 .0.email_address);
         assert_eq!(None, result.1 .0.identity);
-        let careers: Vec<Career> = vec![];
-        assert_eq!(careers, result.1 .0.careers);
+        let career_descriptions: Vec<CareerDescription> = vec![];
+        assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
     }
 
     #[tokio::test]
-    async fn handle_profile_req_success_return_profile_with_identity_1career_fee() {
+    async fn handle_profile_req_success_return_profile_with_identity_1career_description_fee() {
         let account_id = 51351;
         let email_address = "profile.test@test.com".to_string();
         let email_address_option = Some(email_address.clone());
@@ -451,15 +437,15 @@ mod tests {
         let identity = create_dummy_identity(date_of_birth);
         let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
 
-        let career = create_dummy_career();
-        let careers = vec![career];
+        let career_description = create_dummy_career_description();
+        let career_descriptions = vec![career_description];
 
         let fee_per_hour_in_yen_option = Some(3000);
 
         let profile_op = ProfileOperationMock {
             email_address_option,
             identity_option: Some(identity.clone()),
-            careers: careers.clone(),
+            career_descriptions: career_descriptions.clone(),
             fee_per_hour_in_yen_option,
         };
 
@@ -470,12 +456,13 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         assert_eq!(email_address, result.1 .0.email_address);
         assert_eq!(Some(identity), result.1 .0.identity);
-        assert_eq!(careers, result.1 .0.careers);
+        assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(fee_per_hour_in_yen_option, result.1 .0.fee_per_hour_in_yen);
     }
 
     #[tokio::test]
-    async fn handle_profile_req_success_return_profile_with_identity_max_num_of_careers_fee() {
+    async fn handle_profile_req_success_return_profile_with_identity_max_num_of_career_descriptions_fee(
+    ) {
         let account_id = 51351;
         let email_address = "profile.test@test.com".to_string();
         let email_address_option = Some(email_address.clone());
@@ -489,14 +476,14 @@ mod tests {
         let identity = create_dummy_identity(date_of_birth);
         let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
 
-        let careers = create_max_num_of_dummy_careers();
+        let career_descriptions = create_max_num_of_dummy_career_descriptions();
 
         let fee_per_hour_in_yen_option = Some(3000);
 
         let profile_op = ProfileOperationMock {
             email_address_option,
             identity_option: Some(identity.clone()),
-            careers: careers.clone(),
+            career_descriptions: career_descriptions.clone(),
             fee_per_hour_in_yen_option,
         };
 
@@ -507,12 +494,13 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         assert_eq!(email_address, result.1 .0.email_address);
         assert_eq!(Some(identity), result.1 .0.identity);
-        assert_eq!(careers, result.1 .0.careers);
+        assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(fee_per_hour_in_yen_option, result.1 .0.fee_per_hour_in_yen);
     }
 
     #[tokio::test]
-    async fn handle_profile_req_success_return_profile_with_identity_without_career_fee() {
+    async fn handle_profile_req_success_return_profile_with_identity_without_career_description_fee(
+    ) {
         let account_id = 51351;
         let email_address = "profile.test@test.com".to_string();
         let email_address_option = Some(email_address.clone());
@@ -529,7 +517,7 @@ mod tests {
         let profile_op = ProfileOperationMock {
             email_address_option,
             identity_option: Some(identity.clone()),
-            careers: vec![],
+            career_descriptions: vec![],
             fee_per_hour_in_yen_option: None,
         };
 
@@ -540,8 +528,8 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         assert_eq!(email_address, result.1 .0.email_address);
         assert_eq!(Some(identity), result.1 .0.identity);
-        let careers: Vec<Career> = vec![];
-        assert_eq!(careers, result.1 .0.careers);
+        let career_descriptions: Vec<CareerDescription> = vec![];
+        assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
     }
 
@@ -551,7 +539,7 @@ mod tests {
         let profile_op = ProfileOperationMock {
             email_address_option: None,
             identity_option: None,
-            careers: vec![],
+            career_descriptions: vec![],
             fee_per_hour_in_yen_option: None,
         };
 
