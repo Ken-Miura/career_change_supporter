@@ -1,5 +1,7 @@
 // Copyright 2021 Ken Miura
 
+// TODO: career向けに変更と調整
+
 use std::error::Error;
 use std::io::Cursor;
 
@@ -59,25 +61,24 @@ pub(crate) async fn post_career(
     let multipart_wrapper = MultipartWrapperImpl { multipart };
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let current_date = current_date_time.naive_local().date();
-    let (identity, identity_image1, identity_image2_option) = handle_multipart(
+    let (career_data, career_image1, career_image2_option) = handle_multipart(
         multipart_wrapper,
         MAX_CAREER_IMAGE_SIZE_IN_BYTES,
         current_date,
     )
     .await?;
 
-    let op = SubmitIdentityOperationImpl::new(pool);
+    let op = SubmitCareerOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
     let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
-    let submitted_identity = SubmittedIdentity {
+    let submitted_career = SubmittedCareer {
         account_id,
-        identity,
-        identity_image1: (image1_file_name_without_ext, identity_image1),
-        identity_image2: identity_image2_option.map(|image| (image2_file_name_without_ext, image)),
+        career_data,
+        career_image1: (image1_file_name_without_ext, career_image1),
+        career_image2: career_image2_option.map(|image| (image2_file_name_without_ext, image)),
     };
-    let result =
-        handle_identity_req(submitted_identity, current_date_time, op, smtp_client).await?;
+    let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await?;
     Ok(result)
 }
 
@@ -86,7 +87,7 @@ pub(crate) struct CareerResult {}
 
 #[async_trait]
 trait MultipartWrapper {
-    async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp>;
+    async fn next_field(&mut self) -> Result<Option<CareerField>, ErrResp>;
 }
 
 struct MultipartWrapperImpl {
@@ -95,7 +96,7 @@ struct MultipartWrapperImpl {
 
 #[async_trait]
 impl MultipartWrapper for MultipartWrapperImpl {
-    async fn next_field(&mut self) -> Result<Option<IdentityField>, ErrResp> {
+    async fn next_field(&mut self) -> Result<Option<CareerField>, ErrResp> {
         let field_option = self.multipart.next_field().await.map_err(|e| {
             error!("failed next_field: {}", e);
             (
@@ -110,7 +111,7 @@ impl MultipartWrapper for MultipartWrapperImpl {
                 let name = f.name().map(|s| s.to_string());
                 let file_name = f.file_name().map(|s| s.to_string());
                 let data = f.bytes().await.map_err(|e| e.into());
-                Ok(Some(IdentityField {
+                Ok(Some(CareerField {
                     name,
                     file_name,
                     data,
@@ -121,7 +122,7 @@ impl MultipartWrapper for MultipartWrapperImpl {
     }
 }
 
-struct IdentityField {
+struct CareerField {
     name: Option<String>,
     file_name: Option<String>,
     data: Result<Bytes, Box<dyn Error>>,
@@ -132,9 +133,9 @@ async fn handle_multipart(
     max_image_size_in_bytes: usize,
     current_date: NaiveDate,
 ) -> Result<(Identity, Cursor<Vec<u8>>, Option<Cursor<Vec<u8>>>), ErrResp> {
-    let mut identity_option = None;
-    let mut identity_image1_option = None;
-    let mut identity_image2_option = None;
+    let mut career_data_option = None;
+    let mut career_image1_option = None;
+    let mut career_image2_option = None;
     while let Some(field) = multipart.next_field().await? {
         let name = field.name.ok_or_else(|| {
             error!("failed to get \"name\" in field");
@@ -155,23 +156,26 @@ async fn handle_multipart(
                 }),
             )
         })?;
-        if name == "identity" {
-            let identity = extract_identity(data)?;
+        if name == "career-data" {
+            let identity = extract_career_data(data)?;
+            // TODO
             let _ = validate_identity(&identity, &current_date).map_err(|e| {
                 error!("invalid identity: {}", e);
                 create_invalid_identity_err(&e)
             })?;
-            identity_option = Some(trim_space_from_identity(identity));
-        } else if name == "identity-image1" {
+            career_data_option = Some(trim_space_from_identity(identity));
+        } else if name == "career-image1" {
+            // TODO
             let _ = validate_identity_image_file_name(file_name_option)?;
             let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
-            identity_image1_option = Some(png_binary);
-        } else if name == "identity-image2" {
+            career_image1_option = Some(png_binary);
+        } else if name == "career-image2" {
+            // TODO
             let _ = validate_identity_image_file_name(file_name_option)?;
             let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
-            identity_image2_option = Some(png_binary);
+            career_image2_option = Some(png_binary);
         } else {
             error!("invalid name in field: {}", name);
             return Err((
@@ -182,12 +186,12 @@ async fn handle_multipart(
             ));
         }
     }
-    let (identity, identity_image1) =
-        ensure_mandatory_params_exist(identity_option, identity_image1_option)?;
-    Ok((identity, identity_image1, identity_image2_option))
+    let (career_data, career_image1) =
+        ensure_mandatory_params_exist(career_data_option, career_image1_option)?;
+    Ok((career_data, career_image1, career_image2_option))
 }
 
-fn extract_identity(data: Bytes) -> Result<Identity, ErrResp> {
+fn extract_career_data(data: Bytes) -> Result<Identity, ErrResp> {
     let identity_json_str = std::str::from_utf8(&data).map_err(|e| {
         error!("invalid utf-8 sequence: {}", e);
         (
@@ -277,10 +281,10 @@ fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
 }
 
 fn ensure_mandatory_params_exist(
-    identity_option: Option<Identity>,
-    identity_image1_option: Option<Cursor<Vec<u8>>>,
+    career_data_option: Option<Identity>,
+    career_image1_option: Option<Cursor<Vec<u8>>>,
 ) -> Result<(Identity, Cursor<Vec<u8>>), ErrResp> {
-    let identity = match identity_option {
+    let identity = match career_data_option {
         Some(id) => id,
         None => {
             error!("no identity found");
@@ -292,7 +296,7 @@ fn ensure_mandatory_params_exist(
             ));
         }
     };
-    let identity_image1 = match identity_image1_option {
+    let career_image1 = match career_image1_option {
         Some(image1) => image1,
         None => {
             error!("no identity-image1 found");
@@ -304,7 +308,7 @@ fn ensure_mandatory_params_exist(
             ));
         }
     };
-    Ok((identity, identity_image1))
+    Ok((identity, career_image1))
 }
 
 fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
@@ -403,38 +407,36 @@ fn trim_space_from_identity(identity: Identity) -> Identity {
     }
 }
 
-async fn handle_identity_req(
-    submitted_identity: SubmittedIdentity,
+async fn handle_career_req(
+    submitted_career: SubmittedCareer,
     current_date_time: DateTime<FixedOffset>,
     op: impl SubmitIdentityOperation,
     send_mail: impl SendMail,
 ) -> RespResult<CareerResult> {
-    let account_id = submitted_identity.account_id;
-    let identity_option = op
+    let account_id = submitted_career.account_id;
+    let career_data_option = op
         .find_identity_by_account_id(account_id)
         .await
         .map_err(|e| {
             error!("failed to find identity (account id: {})", account_id);
             e
         })?;
-    let identity_exists = identity_option.is_some();
-    if let Some(identity) = identity_option {
+    let identity_exists = career_data_option.is_some();
+    if let Some(identity) = career_data_option {
         info!(
             "request to update identity from account id ({})",
             account_id
         );
-        let _ = check_update_identity_requirement(&identity, &submitted_identity.identity)?;
-        let _ =
-            handle_update_identity_request(account_id, submitted_identity, current_date_time, op)
-                .await?;
+        let _ = check_update_identity_requirement(&identity, &submitted_career.career_data)?;
+        let _ = handle_update_identity_request(account_id, submitted_career, current_date_time, op)
+            .await?;
     } else {
         info!(
             "request to create identity from account id ({})",
             account_id
         );
-        let _ =
-            handle_create_identity_request(account_id, submitted_identity, current_date_time, op)
-                .await?;
+        let _ = handle_create_identity_request(account_id, submitted_career, current_date_time, op)
+            .await?;
     };
     let subject = create_subject(account_id, identity_exists);
     let text = create_text(account_id, identity_exists);
@@ -486,7 +488,7 @@ fn check_update_identity_requirement(
 
 async fn handle_update_identity_request(
     account_id: i64,
-    submitted_identity: SubmittedIdentity,
+    submitted_career: SubmittedCareer,
     current_date_time: DateTime<FixedOffset>,
     op: impl SubmitIdentityOperation,
 ) -> Result<(), ErrResp> {
@@ -506,7 +508,7 @@ async fn handle_update_identity_request(
         ));
     }
     let _ = op
-        .request_update_identity(submitted_identity, current_date_time)
+        .request_update_identity(submitted_career, current_date_time)
         .await
         .map_err(|e| {
             error!(
@@ -520,7 +522,7 @@ async fn handle_update_identity_request(
 
 async fn handle_create_identity_request(
     account_id: i64,
-    submitted_identity: SubmittedIdentity,
+    submitted_career: SubmittedCareer,
     current_date_time: DateTime<FixedOffset>,
     op: impl SubmitIdentityOperation,
 ) -> Result<(), ErrResp> {
@@ -540,7 +542,7 @@ async fn handle_create_identity_request(
         ));
     }
     let _ = op
-        .request_create_identity(submitted_identity, current_date_time)
+        .request_create_identity(submitted_career, current_date_time)
         .await
         .map_err(|e| {
             error!(
@@ -553,11 +555,11 @@ async fn handle_create_identity_request(
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct SubmittedIdentity {
+struct SubmittedCareer {
     account_id: i64,
-    identity: Identity,
-    identity_image1: FileNameAndBinary,
-    identity_image2: Option<FileNameAndBinary>,
+    career_data: Identity,
+    career_image1: FileNameAndBinary,
+    career_image2: Option<FileNameAndBinary>,
 }
 
 type FileNameAndBinary = (String, Cursor<Vec<u8>>);
@@ -590,7 +592,7 @@ trait SubmitIdentityOperation {
     ) -> Result<bool, ErrResp>;
     async fn request_create_identity(
         &self,
-        submitted_identity: SubmittedIdentity,
+        submitted_career: SubmittedCareer,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
     async fn check_if_update_identity_req_already_exists(
@@ -599,23 +601,23 @@ trait SubmitIdentityOperation {
     ) -> Result<bool, ErrResp>;
     async fn request_update_identity(
         &self,
-        submitted_identity: SubmittedIdentity,
+        submitted_career: SubmittedCareer,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
-struct SubmitIdentityOperationImpl {
+struct SubmitCareerOperationImpl {
     pool: DatabaseConnection,
 }
 
-impl SubmitIdentityOperationImpl {
+impl SubmitCareerOperationImpl {
     fn new(pool: DatabaseConnection) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
+impl SubmitIdentityOperation for SubmitCareerOperationImpl {
     async fn find_identity_by_account_id(
         &self,
         account_id: i64,
@@ -667,21 +669,21 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
 
     async fn request_create_identity(
         &self,
-        submitted_identity: SubmittedIdentity,
+        submitted_career: SubmittedCareer,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        let account_id = submitted_identity.account_id;
-        let identity = submitted_identity.identity;
-        let identity_image1 = submitted_identity.identity_image1;
-        let image1_file_name_without_ext = identity_image1.0.clone();
-        let (identity_image2_option, image2_file_name_without_ext) =
-            SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
+        let account_id = submitted_career.account_id;
+        let identity = submitted_career.career_data;
+        let career_image1 = submitted_career.career_image1;
+        let image1_file_name_without_ext = career_image1.0.clone();
+        let (career_image2_option, image2_file_name_without_ext) =
+            SubmitCareerOperationImpl::extract_file_name(submitted_career.career_image2);
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let active_model =
-                        SubmitIdentityOperationImpl::generate_create_identity_req_active_model(
+                        SubmitCareerOperationImpl::generate_create_identity_req_active_model(
                             account_id,
                             identity,
                             image1_file_name_without_ext,
@@ -697,10 +699,10 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                             err_resp: unexpected_err_resp(),
                         }
                     })?;
-                    let _ = SubmitIdentityOperationImpl::upload_png_images_to_identity_storage(
+                    let _ = SubmitCareerOperationImpl::upload_png_images_to_identity_storage(
                         account_id,
-                        identity_image1,
-                        identity_image2_option,
+                        career_image1,
+                        career_image2_option,
                     )
                     .await?;
                     Ok(())
@@ -739,21 +741,21 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
 
     async fn request_update_identity(
         &self,
-        submitted_identity: SubmittedIdentity,
+        submitted_career: SubmittedCareer,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        let account_id = submitted_identity.account_id;
-        let identity = submitted_identity.identity;
-        let identity_image1 = submitted_identity.identity_image1;
-        let image1_file_name_without_ext = identity_image1.0.clone();
-        let (identity_image2_option, image2_file_name_without_ext) =
-            SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
+        let account_id = submitted_career.account_id;
+        let identity = submitted_career.career_data;
+        let career_image1 = submitted_career.career_image1;
+        let image1_file_name_without_ext = career_image1.0.clone();
+        let (career_image2_option, image2_file_name_without_ext) =
+            SubmitCareerOperationImpl::extract_file_name(submitted_career.career_image2);
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let active_model =
-                        SubmitIdentityOperationImpl::generate_update_identity_req_active_model(
+                        SubmitCareerOperationImpl::generate_update_identity_req_active_model(
                             account_id,
                             identity,
                             image1_file_name_without_ext,
@@ -769,10 +771,10 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                             err_resp: unexpected_err_resp(),
                         }
                     })?;
-                    let _ = SubmitIdentityOperationImpl::upload_png_images_to_identity_storage(
+                    let _ = SubmitCareerOperationImpl::upload_png_images_to_identity_storage(
                         account_id,
-                        identity_image1,
-                        identity_image2_option,
+                        career_image1,
+                        career_image2_option,
                     )
                     .await?;
                     Ok(())
@@ -793,7 +795,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
     }
 }
 
-impl SubmitIdentityOperationImpl {
+impl SubmitCareerOperationImpl {
     fn extract_file_name(
         file_name_and_binary_option: Option<FileNameAndBinary>,
     ) -> (Option<FileNameAndBinary>, Option<String>) {
@@ -867,11 +869,11 @@ impl SubmitIdentityOperationImpl {
 
     async fn upload_png_images_to_identity_storage(
         account_id: i64,
-        identity_image1: FileNameAndBinary,
-        identity_image2_option: Option<FileNameAndBinary>,
+        career_image1: FileNameAndBinary,
+        career_image2_option: Option<FileNameAndBinary>,
     ) -> Result<(), ErrRespStruct> {
-        let image1_key = format!("{}/{}.png", account_id, identity_image1.0);
-        let image1_obj = identity_image1.1.into_inner();
+        let image1_key = format!("{}/{}.png", account_id, career_image1.0);
+        let image1_obj = career_image1.1.into_inner();
         let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
             .await
             .map_err(|e| {
@@ -883,7 +885,7 @@ impl SubmitIdentityOperationImpl {
                     err_resp: unexpected_err_resp(),
                 }
             })?;
-        if let Some(identity_image2) = identity_image2_option {
+        if let Some(identity_image2) = career_image2_option {
             let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
             let image2_obj = identity_image2.1.into_inner();
             let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
