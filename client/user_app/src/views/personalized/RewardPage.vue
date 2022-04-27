@@ -34,7 +34,7 @@
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">入金情報</h3>
-          <p class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
+          <p class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料（{{ TRANSFER_FEE_IN_YEN }}円）が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
           <div v-if="latestTwoTransfers.length === 0" data-test="no-latest-two-transfers-set" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
           <div v-else data-test="latest-two-transfers-set">
             <ul>
@@ -44,14 +44,14 @@
                   <div v-if="transfer.status === 'pending'">
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                       <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金前</div>
-                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div v-if="transfer.carried_balance !== null" class="justify-self-start col-span-2">{{ transfer.amount + transfer.carried_balance - TRANSFER_FEE_IN_YEN }}円</div><div v-else class="justify-self-start col-span-2">{{ transfer.amount - TRANSFER_FEE_IN_YEN }}円</div>
                       <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
                     </div>
                   </div>
                   <div v-else-if="transfer.status === 'paid'">
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                       <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金完了</div>
-                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div v-if="transfer.carried_balance !== null" class="justify-self-start col-span-2">{{ transfer.amount + transfer.carried_balance - TRANSFER_FEE_IN_YEN }}円</div><div v-else class="justify-self-start col-span-2">{{ transfer.amount - TRANSFER_FEE_IN_YEN }}円</div>
                       <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
                       <div v-if="transfer.transfer_amount !== null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount !== null" class="justify-self-start col-span-2">{{ transfer.transfer_amount }}円</div>
                       <div v-if="transfer.transfer_amount === null" class="mt-2 justify-self-start col-span-1">入金額</div><div v-if="transfer.transfer_amount === null" class="mt-2 justify-self-start col-span-2">入金額が正しく表示出来ませんでした。お手数ですが、お問い合わせ先より問題のご報告をお願いいたします。</div>
@@ -61,15 +61,15 @@
                   </div>
                   <div v-else-if="transfer.status === 'recombination' || transfer.status === 'failed'">
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が振込手数料として追加で引かれます）</div>
-                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください）</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div v-if="transfer.carried_balance !== null" class="justify-self-start col-span-2">{{ transfer.amount + transfer.carried_balance - TRANSFER_FEE_IN_YEN }}円</div><div v-else class="justify-self-start col-span-2">{{ transfer.amount - TRANSFER_FEE_IN_YEN }}円</div>
                       <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
                     </div>
                   </div>
                   <div v-else-if="transfer.status === 'stop'">
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                       <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金差し止め（詳細な情報はお問い合わせ下さい）</div>
-                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円 - 振込手数料</div>
+                      <div class="mt-2 justify-self-start col-span-1">入金予定額</div><div v-if="transfer.carried_balance !== null" class="justify-self-start col-span-2">{{ transfer.amount + transfer.carried_balance - TRANSFER_FEE_IN_YEN }}円</div><div v-else class="justify-self-start col-span-2">{{ transfer.amount - TRANSFER_FEE_IN_YEN }}円</div>
                       <div class="mt-2 justify-self-start col-span-1">入金予定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
                     </div>
                   </div>
@@ -78,8 +78,6 @@
                       <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
                       <div class="mt-2 justify-self-start col-span-1">繰り越し予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
                       <div class="mt-2 justify-self-start col-span-1">繰り越し確定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
-                      <div v-if="transfer.carried_balance !== null" class="mt-2 justify-self-start col-span-1">繰り越し額</div><div v-if="transfer.carried_balance !== null" class="justify-self-start col-span-2">{{ transfer.carried_balance }}円</div>
-                      <div v-if="transfer.carried_balance === null" class="mt-2 justify-self-start col-span-1">繰り越し額</div><div v-if="transfer.carried_balance === null" class="mt-2 justify-self-start col-span-2">繰り越し額が正しく表示出来ませんでした。お手数ですが、お問い合わせ先より問題のご報告をお願いいたします。</div>
                     </div>
                   </div>
                   <div v-else>
@@ -115,6 +113,7 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { GetRewardsResp } from '@/util/personalized/reward/GetRewardsResp'
 import { useStore } from 'vuex'
 import { SET_BANK_ACCOUNT } from '@/store/mutationTypes'
+import { TRANSFER_FEE_IN_YEN } from '@/util/personalized/reward/TransferFee'
 
 export default defineComponent({
   name: 'RewardPage',
@@ -172,6 +171,7 @@ export default defineComponent({
       bankAccount,
       rewardsOfTheMonth,
       latestTwoTransfers,
+      TRANSFER_FEE_IN_YEN,
       errorExists,
       errorMessage,
       moveToBankAccountPage

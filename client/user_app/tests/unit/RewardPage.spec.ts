@@ -9,6 +9,7 @@ import { Message } from '@/util/Message'
 import TheHeader from '@/components/TheHeader.vue'
 import RewardPage from '@/views/personalized/RewardPage.vue'
 import { BankAccount } from '@/util/personalized/reward/BankAccount'
+import { TRANSFER_FEE_IN_YEN } from '@/util/personalized/reward/TransferFee'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -313,7 +314,7 @@ describe('RewardPage.vue', () => {
         month: 12,
         day: 31
       },
-      transfer_amount: 4000,
+      transfer_amount: 4000 - TRANSFER_FEE_IN_YEN,
       transfer_date_in_jst: {
         year: 2021,
         month: 12,
@@ -362,7 +363,7 @@ describe('RewardPage.vue', () => {
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
     expect(latestTwoTransfersSetMessage).toContain('入金完了')
     expect(latestTwoTransfersSetMessage).toContain('入金予定額')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain('入金予定日')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
     expect(latestTwoTransfersSetMessage).toContain('入金額')
@@ -372,7 +373,7 @@ describe('RewardPage.vue', () => {
 
     expect(latestTwoTransfersSetMessage).toContain('入金情報2')
     expect(latestTwoTransfersSetMessage).toContain('入金前')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
   })
 
@@ -440,13 +441,13 @@ describe('RewardPage.vue', () => {
     const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
     expect(latestTwoTransfersSetMessage).toContain('入金情報1')
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
-    expect(latestTwoTransfersSetMessage).toContain('入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が振込手数料として追加で引かれます）')
+    expect(latestTwoTransfersSetMessage).toContain('入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください）')
     expect(latestTwoTransfersSetMessage).toContain('入金予定額')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain('入金予定日')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
 
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
   })
 
@@ -505,7 +506,7 @@ describe('RewardPage.vue', () => {
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
     expect(latestTwoTransfersSetMessage).toContain('入金差し止め（詳細な情報はお問い合わせ下さい）')
     expect(latestTwoTransfersSetMessage).toContain('入金予定額')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain('入金予定日')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
   })
@@ -574,16 +575,16 @@ describe('RewardPage.vue', () => {
     const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
     expect(latestTwoTransfersSetMessage).toContain('入金情報1')
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
-    expect(latestTwoTransfersSetMessage).toContain('入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください。組み戻しが発生する場合、組戻し手数料が振込手数料として追加で引かれます）')
+    expect(latestTwoTransfersSetMessage).toContain('入金失敗（次回の入金時までに報酬の入金口座を正しい情報で登録し直してください）')
     expect(latestTwoTransfersSetMessage).toContain('入金予定額')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer1.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain('入金予定日')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
 
     expect(latestTwoTransfersSetMessage).toContain('入金情報2')
     expect(latestTwoTransfersSetMessage).toContain('入金差し止め（詳細な情報はお問い合わせ下さい）')
     expect(latestTwoTransfersSetMessage).toContain('入金予定額')
-    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount}円 - 振込手数料`)
+    expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain('入金予定日')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.scheduled_date_in_jst.year}年${transfer2.scheduled_date_in_jst.month}月${transfer2.scheduled_date_in_jst.day}日`)
   })
