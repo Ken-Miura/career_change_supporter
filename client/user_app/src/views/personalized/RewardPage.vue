@@ -34,7 +34,7 @@
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">入金情報</h3>
-          <p class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料（{{ TRANSFER_FEE_IN_YEN }}円）が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
+          <p data-test="latest-two-transfers-set-description" class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料（{{ TRANSFER_FEE_IN_YEN }}円）が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
           <div v-if="latestTwoTransfers.length === 0" data-test="no-latest-two-transfers-set" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
           <div v-else data-test="latest-two-transfers-set">
             <ul>
@@ -77,7 +77,6 @@
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                       <div class="mt-2 justify-self-start col-span-1">処理状態</div><div class="justify-self-start col-span-2">入金繰り越し（入金額が少額のため、次回の入金に繰り越されます）</div>
                       <div class="mt-2 justify-self-start col-span-1">繰り越し予定額</div><div class="justify-self-start col-span-2">{{ transfer.amount }}円</div>
-                      <div class="mt-2 justify-self-start col-span-1">繰り越し確定日</div><div class="justify-self-start col-span-2">{{ transfer.scheduled_date_in_jst.year }}年{{ transfer.scheduled_date_in_jst.month }}月{{ transfer.scheduled_date_in_jst.day }}日</div>
                     </div>
                   </div>
                   <div v-else>

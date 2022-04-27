@@ -214,6 +214,32 @@ describe('RewardPage.vue', () => {
     expect(noLatestTwoTransfersSetMessage).toContain('入金情報はありません。')
   })
 
+  it(`displays ${TRANSFER_FEE_IN_YEN} clearly`, async () => {
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: null,
+      rewards_of_the_month: null,
+      latest_two_transfers: []
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const latestTwoTransfersSetDescriptionDiv = wrapper.find('[data-test="latest-two-transfers-set-description"]')
+    expect(latestTwoTransfersSetDescriptionDiv.exists)
+    const description = latestTwoTransfersSetDescriptionDiv.text()
+    expect(description).toContain(`報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料（${TRANSFER_FEE_IN_YEN}円）が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。`)
+  })
+
   it('displays bank account if it is set', async () => {
     const bankAccount = {
       /* eslint-disable camelcase */
