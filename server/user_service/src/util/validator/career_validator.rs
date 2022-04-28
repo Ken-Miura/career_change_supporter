@@ -32,6 +32,9 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
     if let Some(department_name) = career.department_name.clone() {
         let _ = validate_department_name(department_name.as_str())?;
     }
+    if let Some(office) = career.office.clone() {
+        let _ = validate_office(office.as_str())?;
+    }
     Ok(())
 }
 
@@ -93,6 +96,28 @@ fn validate_department_name(department_name: &str) -> Result<(), CareerValidatio
     Ok(())
 }
 
+fn validate_office(office: &str) -> Result<(), CareerValidationError> {
+    let office_length = office.chars().count();
+    if !(OFFICE_MIN_LENGTH..=OFFICE_MAX_LENGTH).contains(&office_length) {
+        return Err(CareerValidationError::InvalidOfficeLength {
+            length: office_length,
+            min_length: OFFICE_MIN_LENGTH,
+            max_length: OFFICE_MAX_LENGTH,
+        });
+    }
+    if has_control_char(office) {
+        return Err(CareerValidationError::IllegalCharInOffice(
+            office.to_string(),
+        ));
+    }
+    if SYMBOL_CHAR_RE.is_match(office) {
+        return Err(CareerValidationError::IllegalCharInOffice(
+            office.to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -108,6 +133,12 @@ pub(crate) enum CareerValidationError {
         max_length: usize,
     },
     IllegalCharInDepartmentName(String),
+    InvalidOfficeLength {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInOffice(String),
 }
 
 impl Display for CareerValidationError {
@@ -139,12 +170,29 @@ impl Display for CareerValidationError {
                 "invalid department_name length: {} (length must be {} or more, and {} or less)",
                 length, min_length, max_length
             ),
-            CareerValidationError::IllegalCharInDepartmentName(company_name) => {
+            CareerValidationError::IllegalCharInDepartmentName(department_name) => {
                 write!(
                     f,
-                    "company_name: illegal charcter included: {} (binary: {:X?})",
-                    company_name,
-                    company_name.as_bytes().to_vec()
+                    "department_name: illegal charcter included: {} (binary: {:X?})",
+                    department_name,
+                    department_name.as_bytes().to_vec()
+                )
+            }
+            CareerValidationError::InvalidOfficeLength {
+                length,
+                min_length,
+                max_length,
+            } => write!(
+                f,
+                "invalid office length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
+            CareerValidationError::IllegalCharInOffice(office) => {
+                write!(
+                    f,
+                    "office: illegal charcter included: {} (binary: {:X?})",
+                    office,
+                    office.as_bytes().to_vec()
                 )
             }
         }

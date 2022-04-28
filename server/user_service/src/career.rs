@@ -6,6 +6,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::err::Code::IdentityReqAlreadyExists;
+use crate::util::validator::career_validator::validate_career;
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -18,7 +19,7 @@ use bytes::Bytes;
 use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
-use common::util::{Identity, Ymd};
+use common::util::{Career, Identity, Ymd};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
@@ -133,7 +134,7 @@ async fn handle_multipart(
     max_image_size_in_bytes: usize,
     current_date: NaiveDate,
 ) -> Result<(Identity, Cursor<Vec<u8>>, Option<Cursor<Vec<u8>>>), ErrResp> {
-    let mut career_data_option = None;
+    let mut career_option = None;
     let mut career_image1_option = None;
     let mut career_image2_option = None;
     while let Some(field) = multipart.next_field().await? {
@@ -156,14 +157,15 @@ async fn handle_multipart(
                 }),
             )
         })?;
-        if name == "career-data" {
-            let identity = extract_career_data(data)?;
+        if name == "career" {
             // TODO
-            let _ = validate_identity(&identity, &current_date).map_err(|e| {
-                error!("invalid identity: {}", e);
-                create_invalid_identity_err(&e)
-            })?;
-            career_data_option = Some(trim_space_from_identity(identity));
+            let career = extract_career(data)?;
+            let _ = validate_career(&career).expect("msg");
+            // .map_err(|e| {
+            //     error!("invalid identity: {}", e);
+            //     create_invalid_identity_err(&e)
+            // })?;
+            career_option = None; // Some(trim_space_from_identity(identity));
         } else if name == "career-image1" {
             // TODO
             let _ = validate_identity_image_file_name(file_name_option)?;
@@ -187,12 +189,12 @@ async fn handle_multipart(
         }
     }
     let (career_data, career_image1) =
-        ensure_mandatory_params_exist(career_data_option, career_image1_option)?;
+        ensure_mandatory_params_exist(career_option, career_image1_option)?;
     Ok((career_data, career_image1, career_image2_option))
 }
 
-fn extract_career_data(data: Bytes) -> Result<Identity, ErrResp> {
-    let identity_json_str = std::str::from_utf8(&data).map_err(|e| {
+fn extract_career(data: Bytes) -> Result<Career, ErrResp> {
+    let career_json_str = std::str::from_utf8(&data).map_err(|e| {
         error!("invalid utf-8 sequence: {}", e);
         (
             StatusCode::BAD_REQUEST,
@@ -201,16 +203,17 @@ fn extract_career_data(data: Bytes) -> Result<Identity, ErrResp> {
             }),
         )
     })?;
-    let identity = serde_json::from_str::<Identity>(identity_json_str).map_err(|e| {
-        error!("invalid Identity JSON object: {}", e);
+    let career = serde_json::from_str::<Career>(career_json_str).map_err(|e| {
+        error!("invalid Career JSON object: {}", e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
+                // TODO
                 code: Code::InvalidIdentityJson as u32,
             }),
         )
     })?;
-    Ok(identity)
+    Ok(career)
 }
 
 fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result<(), ErrResp> {
@@ -281,10 +284,10 @@ fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
 }
 
 fn ensure_mandatory_params_exist(
-    career_data_option: Option<Identity>,
+    career_option: Option<Identity>,
     career_image1_option: Option<Cursor<Vec<u8>>>,
 ) -> Result<(Identity, Cursor<Vec<u8>>), ErrResp> {
-    let identity = match career_data_option {
+    let identity = match career_option {
         Some(id) => id,
         None => {
             error!("no identity found");
@@ -414,15 +417,15 @@ async fn handle_career_req(
     send_mail: impl SendMail,
 ) -> RespResult<CareerResult> {
     let account_id = submitted_career.account_id;
-    let career_data_option = op
+    let career_option = op
         .find_identity_by_account_id(account_id)
         .await
         .map_err(|e| {
             error!("failed to find identity (account id: {})", account_id);
             e
         })?;
-    let identity_exists = career_data_option.is_some();
-    if let Some(identity) = career_data_option {
+    let identity_exists = career_option.is_some();
+    if let Some(identity) = career_option {
         info!(
             "request to update identity from account id ({})",
             account_id
