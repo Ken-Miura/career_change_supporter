@@ -1,4 +1,4 @@
-// Copyright 2021 Ken Miura
+// Copyright 2022 Ken Miura
 
 use std::{collections::HashSet, error::Error, fmt::Display};
 
@@ -29,6 +29,9 @@ static CONTRACT_TYPE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
 
 pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationError> {
     let _ = validate_company_name(&career.company_name)?;
+    if let Some(department_name) = career.department_name.clone() {
+        let _ = validate_department_name(department_name.as_str())?;
+    }
     Ok(())
 }
 
@@ -67,6 +70,29 @@ fn validate_company_name(company_name: &str) -> Result<(), CareerValidationError
     Ok(())
 }
 
+fn validate_department_name(department_name: &str) -> Result<(), CareerValidationError> {
+    let department_name_length = department_name.chars().count();
+    if !(DEPARTMENT_NAME_MIN_LENGTH..=DEPARTMENT_NAME_MAX_LENGTH).contains(&department_name_length)
+    {
+        return Err(CareerValidationError::InvalidDepartmentNameLength {
+            length: department_name_length,
+            min_length: DEPARTMENT_NAME_MIN_LENGTH,
+            max_length: DEPARTMENT_NAME_MAX_LENGTH,
+        });
+    }
+    if has_control_char(department_name) {
+        return Err(CareerValidationError::IllegalCharInDepartmentName(
+            department_name.to_string(),
+        ));
+    }
+    if SYMBOL_CHAR_RE.is_match(department_name) {
+        return Err(CareerValidationError::IllegalCharInDepartmentName(
+            department_name.to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -76,6 +102,12 @@ pub(crate) enum CareerValidationError {
         max_length: usize,
     },
     IllegalCharInCompanyName(String),
+    InvalidDepartmentNameLength {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInDepartmentName(String),
 }
 
 impl Display for CareerValidationError {
@@ -91,6 +123,23 @@ impl Display for CareerValidationError {
                 length, min_length, max_length
             ),
             CareerValidationError::IllegalCharInCompanyName(company_name) => {
+                write!(
+                    f,
+                    "company_name: illegal charcter included: {} (binary: {:X?})",
+                    company_name,
+                    company_name.as_bytes().to_vec()
+                )
+            }
+            CareerValidationError::InvalidDepartmentNameLength {
+                length,
+                min_length,
+                max_length,
+            } => write!(
+                f,
+                "invalid department_name length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
+            CareerValidationError::IllegalCharInDepartmentName(company_name) => {
                 write!(
                     f,
                     "company_name: illegal charcter included: {} (binary: {:X?})",
