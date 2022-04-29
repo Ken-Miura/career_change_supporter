@@ -2,8 +2,9 @@
 
 use std::{collections::HashSet, error::Error, fmt::Display};
 
-use common::util::validator::{has_control_char, SYMBOL_CHAR_RE};
-use common::util::Career;
+use chrono::NaiveDate;
+use common::util::validator::{has_control_char, SPACE_RE, SYMBOL_CHAR_RE};
+use common::util::{Career, Ymd};
 use once_cell::sync::Lazy;
 
 pub(crate) const COMPANY_NAME_MIN_LENGTH: usize = 1;
@@ -34,6 +35,10 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
     }
     if let Some(office) = career.office.clone() {
         let _ = validate_office(office.as_str())?;
+    }
+    let _ = validate_career_start_date(&career.career_start_date)?;
+    if let Some(career_end_date) = career.career_end_date.clone() {
+        let _ = validate_career_end_date(&career_end_date)?;
     }
     Ok(())
 }
@@ -110,12 +115,42 @@ fn validate_office(office: &str) -> Result<(), CareerValidationError> {
             office.to_string(),
         ));
     }
-    if SYMBOL_CHAR_RE.is_match(office) {
+    if SYMBOL_CHAR_RE.is_match(office) || SPACE_RE.is_match(office) {
         return Err(CareerValidationError::IllegalCharInOffice(
             office.to_string(),
         ));
     }
     Ok(())
+}
+
+fn validate_career_start_date(career_start_date: &Ymd) -> Result<(), CareerValidationError> {
+    match NaiveDate::from_ymd_opt(
+        career_start_date.year,
+        career_start_date.month,
+        career_start_date.day,
+    ) {
+        Some(_) => Ok(()),
+        None => Err(CareerValidationError::IllegalCareerStartDate {
+            year: career_start_date.year,
+            month: career_start_date.month,
+            day: career_start_date.day,
+        }),
+    }
+}
+
+fn validate_career_end_date(career_end_date: &Ymd) -> Result<(), CareerValidationError> {
+    match NaiveDate::from_ymd_opt(
+        career_end_date.year,
+        career_end_date.month,
+        career_end_date.day,
+    ) {
+        Some(_) => Ok(()),
+        None => Err(CareerValidationError::IllegalCareerEndDate {
+            year: career_end_date.year,
+            month: career_end_date.month,
+            day: career_end_date.day,
+        }),
+    }
 }
 
 /// Error related to [validate_career()]
@@ -139,6 +174,16 @@ pub(crate) enum CareerValidationError {
         max_length: usize,
     },
     IllegalCharInOffice(String),
+    IllegalCareerStartDate {
+        year: i32,
+        month: u32,
+        day: u32,
+    },
+    IllegalCareerEndDate {
+        year: i32,
+        month: u32,
+        day: u32,
+    },
 }
 
 impl Display for CareerValidationError {
@@ -195,6 +240,16 @@ impl Display for CareerValidationError {
                     office.as_bytes().to_vec()
                 )
             }
+            CareerValidationError::IllegalCareerStartDate { year, month, day } => write!(
+                f,
+                "illegal career_start_date (year: {}, month: {}, day: {})",
+                year, month, day
+            ),
+            CareerValidationError::IllegalCareerEndDate { year, month, day } => write!(
+                f,
+                "illegal career_end_date (year: {}, month: {}, day: {})",
+                year, month, day
+            ),
         }
     }
 }
