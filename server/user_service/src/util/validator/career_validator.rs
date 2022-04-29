@@ -39,6 +39,10 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
     let _ = validate_career_start_date(&career.career_start_date)?;
     if let Some(career_end_date) = career.career_end_date.clone() {
         let _ = validate_career_end_date(&career_end_date)?;
+        let _ = ensure_career_start_date_does_not_exceed_career_end_date(
+            &career.career_start_date,
+            &career_end_date,
+        )?;
     }
     Ok(())
 }
@@ -153,6 +157,30 @@ fn validate_career_end_date(career_end_date: &Ymd) -> Result<(), CareerValidatio
     }
 }
 
+// 入社日が退社日を超えていないことを確認する。入社日 == 退社日は許容する。
+fn ensure_career_start_date_does_not_exceed_career_end_date(
+    career_start_date: &Ymd,
+    career_end_date: &Ymd,
+) -> Result<(), CareerValidationError> {
+    let start_date = NaiveDate::from_ymd(
+        career_start_date.year,
+        career_start_date.month,
+        career_start_date.day,
+    );
+    let end_date = NaiveDate::from_ymd(
+        career_end_date.year,
+        career_end_date.month,
+        career_end_date.day,
+    );
+    if start_date > end_date {
+        return Err(CareerValidationError::CareerStartDateExceedsCareerEndDate {
+            career_start_date: career_start_date.clone(),
+            career_end_date: career_end_date.clone(),
+        });
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -183,6 +211,10 @@ pub(crate) enum CareerValidationError {
         year: i32,
         month: u32,
         day: u32,
+    },
+    CareerStartDateExceedsCareerEndDate {
+        career_start_date: Ymd,
+        career_end_date: Ymd,
     },
 }
 
@@ -249,6 +281,15 @@ impl Display for CareerValidationError {
                 f,
                 "illegal career_end_date (year: {}, month: {}, day: {})",
                 year, month, day
+            ),
+            CareerValidationError::CareerStartDateExceedsCareerEndDate {
+                career_start_date,
+                career_end_date,
+            } => write!(
+                f,
+                "career_start_date (year: {}, month: {}, day: {}) exceeds career_end_date (year: {}, month: {}, day: {})",
+                career_start_date.year, career_start_date.month, career_start_date.day,
+                career_end_date.year, career_end_date.month, career_end_date.day
             ),
         }
     }
