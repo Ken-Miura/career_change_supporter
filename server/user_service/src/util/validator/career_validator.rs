@@ -44,6 +44,7 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
             &career_end_date,
         )?;
     }
+    let _ = validate_contract_type(&career.contract_type)?;
     Ok(())
 }
 
@@ -181,6 +182,15 @@ fn ensure_career_start_date_does_not_exceed_career_end_date(
     Ok(())
 }
 
+fn validate_contract_type(contract_type: &str) -> Result<(), CareerValidationError> {
+    if !CONTRACT_TYPE_SET.contains(contract_type) {
+        return Err(CareerValidationError::IllegalContractType(
+            contract_type.to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -216,6 +226,7 @@ pub(crate) enum CareerValidationError {
         career_start_date: Ymd,
         career_end_date: Ymd,
     },
+    IllegalContractType(String),
 }
 
 impl Display for CareerValidationError {
@@ -290,6 +301,11 @@ impl Display for CareerValidationError {
                 "career_start_date (year: {}, month: {}, day: {}) exceeds career_end_date (year: {}, month: {}, day: {})",
                 career_start_date.year, career_start_date.month, career_start_date.day,
                 career_end_date.year, career_end_date.month, career_end_date.day
+            ),
+            CareerValidationError::IllegalContractType(contract_type) => write!(
+                f,
+                "illegal contract_type ({})",
+                contract_type
             ),
         }
     }
