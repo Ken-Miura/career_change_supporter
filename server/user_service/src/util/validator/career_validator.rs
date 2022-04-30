@@ -48,6 +48,9 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
     if let Some(profession) = career.profession.clone() {
         let _ = validate_profession(profession.as_str())?;
     }
+    if let Some(annual_income_in_man_yen) = career.annual_income_in_man_yen {
+        let _ = validate_annual_income_in_man_yen(annual_income_in_man_yen)?;
+    }
     Ok(())
 }
 
@@ -216,6 +219,17 @@ fn validate_profession(profession: &str) -> Result<(), CareerValidationError> {
     Ok(())
 }
 
+fn validate_annual_income_in_man_yen(
+    annual_income_in_man_yen: i32,
+) -> Result<(), CareerValidationError> {
+    if annual_income_in_man_yen.is_negative() {
+        return Err(CareerValidationError::IllegalAnnualIncomInManYen(
+            annual_income_in_man_yen,
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -258,6 +272,7 @@ pub(crate) enum CareerValidationError {
         max_length: usize,
     },
     IllegalCharInProfession(String),
+    IllegalAnnualIncomInManYen(i32),
 }
 
 impl Display for CareerValidationError {
@@ -353,6 +368,13 @@ impl Display for CareerValidationError {
                     "profession: illegal charcter included: {} (binary: {:X?})",
                     profession,
                     profession.as_bytes().to_vec()
+                )
+            }
+            CareerValidationError::IllegalAnnualIncomInManYen(annual_income_in_man_yen) => {
+                write!(
+                    f,
+                    "illegal annual_income_in_man_yen: {}",
+                    annual_income_in_man_yen
                 )
             }
         }
