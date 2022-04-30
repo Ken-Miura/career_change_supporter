@@ -51,6 +51,9 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
     if let Some(annual_income_in_man_yen) = career.annual_income_in_man_yen {
         let _ = validate_annual_income_in_man_yen(annual_income_in_man_yen)?;
     }
+    if let Some(position_name) = career.position_name.clone() {
+        let _ = validate_position_name(position_name.as_str())?;
+    }
     Ok(())
 }
 
@@ -230,6 +233,28 @@ fn validate_annual_income_in_man_yen(
     Ok(())
 }
 
+fn validate_position_name(position_name: &str) -> Result<(), CareerValidationError> {
+    let position_name_length = position_name.chars().count();
+    if !(POSITION_NAME_MIN_LENGTH..=POSITION_NAME_MAX_LENGTH).contains(&position_name_length) {
+        return Err(CareerValidationError::InvalidPositionNameLength {
+            length: position_name_length,
+            min_length: POSITION_NAME_MIN_LENGTH,
+            max_length: POSITION_NAME_MAX_LENGTH,
+        });
+    }
+    if has_control_char(position_name) {
+        return Err(CareerValidationError::IllegalCharInPositionName(
+            position_name.to_string(),
+        ));
+    }
+    if SYMBOL_CHAR_RE.is_match(position_name) || SPACE_RE.is_match(position_name) {
+        return Err(CareerValidationError::IllegalCharInPositionName(
+            position_name.to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -273,6 +298,12 @@ pub(crate) enum CareerValidationError {
     },
     IllegalCharInProfession(String),
     IllegalAnnualIncomInManYen(i32),
+    InvalidPositionNameLength {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInPositionName(String),
 }
 
 impl Display for CareerValidationError {
@@ -375,6 +406,23 @@ impl Display for CareerValidationError {
                     f,
                     "illegal annual_income_in_man_yen: {}",
                     annual_income_in_man_yen
+                )
+            }
+            CareerValidationError::InvalidPositionNameLength {
+                length,
+                min_length,
+                max_length,
+            } => write!(
+                f,
+                "invalid position_name length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
+            CareerValidationError::IllegalCharInPositionName(position_name) => {
+                write!(
+                    f,
+                    "position_name: illegal charcter included: {} (binary: {:X?})",
+                    position_name,
+                    position_name.as_bytes().to_vec()
                 )
             }
         }
