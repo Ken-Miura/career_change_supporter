@@ -28,6 +28,22 @@ static CONTRACT_TYPE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     set
 });
 
+/// 文字列が改行（LF(0x0a)、CR(0x0d)）以外の制御文字（C0制御文字、U+007F（削除文字）、C1制御文字）を含むかどうかを判定する。
+/// - 改行以外の制御文字を含む場合、trueを返す。そうでない場合、falseを返す。
+fn has_non_new_line_control_char(s: &str) -> bool {
+    let characters = s.chars().collect::<Vec<char>>();
+    for c in characters {
+        if c.is_control() && !is_new_line_char(c) {
+            return true;
+        }
+    }
+    false
+}
+
+fn is_new_line_char(c: char) -> bool {
+    c == '\u{000A}' || c == '\u{000D}'
+}
+
 pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationError> {
     let _ = validate_company_name(&career.company_name)?;
     if let Some(department_name) = career.department_name.clone() {

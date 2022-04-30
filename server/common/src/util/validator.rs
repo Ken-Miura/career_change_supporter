@@ -17,7 +17,7 @@ const SPACE_REGEXP: &str = r"[ 　]+";
 pub static SPACE_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(SPACE_REGEXP).expect("failed to compile space regexp"));
 
-/// 文字列が制御文字（C0制御文字、U+007F（削除文字）、C1制御文字を含むかどうか）を判定する。
+/// 文字列が制御文字（C0制御文字、U+007F（削除文字）、C1制御文字）を含むかどうかを判定する。
 /// - 制御文字を含む場合、trueを返す。そうでない場合、falseを返す。
 pub fn has_control_char(s: &str) -> bool {
     let characters = s.chars().collect::<Vec<char>>();
