@@ -45,6 +45,9 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
         )?;
     }
     let _ = validate_contract_type(&career.contract_type)?;
+    if let Some(profession) = career.profession.clone() {
+        let _ = validate_profession(profession.as_str())?;
+    }
     Ok(())
 }
 
@@ -191,6 +194,28 @@ fn validate_contract_type(contract_type: &str) -> Result<(), CareerValidationErr
     Ok(())
 }
 
+fn validate_profession(profession: &str) -> Result<(), CareerValidationError> {
+    let profession_length = profession.chars().count();
+    if !(PROFESSION_MIN_LENGTH..=PROFESSION_MAX_LENGTH).contains(&profession_length) {
+        return Err(CareerValidationError::InvalidProfessionLength {
+            length: profession_length,
+            min_length: PROFESSION_MIN_LENGTH,
+            max_length: PROFESSION_MAX_LENGTH,
+        });
+    }
+    if has_control_char(profession) {
+        return Err(CareerValidationError::IllegalCharInProfession(
+            profession.to_string(),
+        ));
+    }
+    if SYMBOL_CHAR_RE.is_match(profession) || SPACE_RE.is_match(profession) {
+        return Err(CareerValidationError::IllegalCharInProfession(
+            profession.to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -227,6 +252,12 @@ pub(crate) enum CareerValidationError {
         career_end_date: Ymd,
     },
     IllegalContractType(String),
+    InvalidProfessionLength {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInProfession(String),
 }
 
 impl Display for CareerValidationError {
@@ -307,6 +338,23 @@ impl Display for CareerValidationError {
                 "illegal contract_type ({})",
                 contract_type
             ),
+            CareerValidationError::InvalidProfessionLength {
+                length,
+                min_length,
+                max_length,
+            } => write!(
+                f,
+                "invalid profession length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
+            CareerValidationError::IllegalCharInProfession(profession) => {
+                write!(
+                    f,
+                    "profession: illegal charcter included: {} (binary: {:X?})",
+                    profession,
+                    profession.as_bytes().to_vec()
+                )
+            }
         }
     }
 }
