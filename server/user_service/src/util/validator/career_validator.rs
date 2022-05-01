@@ -483,6 +483,7 @@ mod tests {
     use crate::util::validator::{
         career_validator::{
             CareerValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
+            DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH,
         },
         tests::{CONTROL_CHAR_SET, SYMBOL_SET},
     };
@@ -918,6 +919,424 @@ mod tests {
             let err = validate_career(&career).expect_err("failed to get Err");
             assert_eq!(
                 CareerValidationError::IllegalCharInCompanyName(career.company_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_ok_if_1_char_department_name_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: Some(String::from("あ")),
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("other"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let _ = validate_career(&career).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_career_returns_ok_if_256_char_department_name_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: Some(String::from("ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ")),
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let _ = validate_career(&career).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_empty_char_department_name_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: Some(String::from("")),
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let result = validate_career(&career).expect_err("failed to get Err");
+
+        assert_eq!(
+            CareerValidationError::InvalidDepartmentNameLength {
+                length: career
+                    .department_name
+                    .expect("failed to get department_name")
+                    .chars()
+                    .count(),
+                min_length: DEPARTMENT_NAME_MIN_LENGTH,
+                max_length: DEPARTMENT_NAME_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_257_char_department_name_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: Some(String::from("あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ")),
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let result = validate_career(&career).expect_err("failed to get Err");
+
+        assert_eq!(
+            CareerValidationError::InvalidDepartmentNameLength {
+                length: career
+                    .department_name
+                    .expect("failed to get department_name")
+                    .chars()
+                    .count(),
+                min_length: DEPARTMENT_NAME_MIN_LENGTH,
+                max_length: DEPARTMENT_NAME_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_is_control_char() {
+        let mut career_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: Some(s.to_string()),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_starts_with_control_char() {
+        let mut career_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: Some(s.to_string() + "第二営業部"),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_ends_with_control_char() {
+        let mut career_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: Some("第二営業部".to_string() + s),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_includes_control_char() {
+        let mut career_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let career = Career {
+                company_name: "佐藤商事".to_string(),
+                department_name: Some("第二".to_string() + s + "営業部"),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_is_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: Some(s.to_string()),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_starts_with_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: Some(s.to_string() + "第二営業部"),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_ends_with_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: Some("第二営業部".to_string() + s),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_department_name_includes_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: "佐藤商事".to_string(),
+                department_name: Some("第二".to_string() + s + "営業部"),
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInDepartmentName(
+                    career
+                        .department_name
+                        .expect("failed to get deparment_name")
+                ),
                 err
             );
         }
