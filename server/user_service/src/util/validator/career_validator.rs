@@ -591,7 +591,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_career_returns_ok_if_empty_char_company_name_is_passed() {
+    fn validate_career_returns_err_if_empty_char_company_name_is_passed() {
         let career = Career {
             company_name: String::from(""),
             department_name: None,
@@ -624,7 +624,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_career_returns_ok_if_257_char_company_name_is_passed() {
+    fn validate_career_returns_err_if_257_char_company_name_is_passed() {
         let career = Career {
             company_name: String::from("あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"),
             department_name: None,
