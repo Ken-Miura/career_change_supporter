@@ -655,4 +655,7 @@ mod tests {
             result
         );
     }
+
+    #[test]
+    fn validate_career_returns_err_if_char_company_name_is_control_char() {}
 }
