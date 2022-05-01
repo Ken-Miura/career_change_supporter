@@ -537,4 +537,28 @@ mod tests {
 
         let _ = validate_career(&career).expect("failed to get Ok");
     }
+
+    #[test]
+    fn validate_career_returns_ok_if_1_char_company_name_is_passed() {
+        let career = Career {
+            company_name: String::from("あ"),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let _ = validate_career(&career).expect("failed to get Ok");
+    }
 }
