@@ -486,7 +486,7 @@ mod tests {
             DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, OFFICE_MAX_LENGTH,
             OFFICE_MIN_LENGTH,
         },
-        tests::{CONTROL_CHAR_SET, SYMBOL_SET},
+        tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
     };
 
     use super::validate_career;
@@ -1706,6 +1706,146 @@ mod tests {
     fn validate_career_returns_err_if_office_includes_symbol() {
         let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
         for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: "佐藤商事".to_string(),
+                department_name: None,
+                office: Some("松山".to_string() + s + "事業所"),
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInOffice(
+                    career.office.expect("failed to get office")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_office_is_space() {
+        let mut career_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: None,
+                office: Some(s.to_string()),
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInOffice(
+                    career.office.expect("failed to get office")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_office_starts_with_space() {
+        let mut career_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: None,
+                office: Some(s.to_string() + "松山事業所"),
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInOffice(
+                    career.office.expect("failed to get office")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_office_ends_with_space() {
+        let mut career_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: None,
+                office: Some("松山事業所".to_string() + s),
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInOffice(
+                    career.office.expect("failed to get deparment_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_office_includes_space() {
+        let mut career_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
             let career = Career {
                 company_name: "佐藤商事".to_string(),
                 department_name: None,
