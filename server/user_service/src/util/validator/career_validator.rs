@@ -477,4 +477,40 @@ impl Display for CareerValidationError {
 impl Error for CareerValidationError {}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use common::util::{Career, Ymd};
+
+    use super::validate_career;
+
+    #[test]
+    fn validate_career_returns_ok_if_valid_career_is_passed() {
+        let career = Career {
+            company_name: String::from("田中自動車"),
+            department_name: Some(String::from("開発部　第一開発部")),
+            office: Some(String::from("名古屋事業所")),
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: Some(Ymd {
+                year: 2016,
+                month: 7,
+                day: 1,
+            }),
+            contract_type: String::from("regular"),
+            profession: Some(String::from("ITエンジニア")),
+            annual_income_in_man_yen: Some(800),
+            is_manager: false,
+            position_name: Some(String::from("主任")),
+            is_new_graduate: true,
+            note: Some(String::from("田中自動車の名古屋事業所で１０年ほどエンジン制御のソフトウェア開発に携わってきました。そのため、下記の点についてご相談を受け付けられるかと思います。
+            ・田中自動車の給与、福利厚生
+            ・田中自動車　開発部の雰囲気
+            ・名古屋事業所での働きやすさ
+            ・田中自動車での組み込みエンジニアの仕事について")),
+        };
+
+        let _ = validate_career(&career).expect("failed to get Ok");
+    }
+}
