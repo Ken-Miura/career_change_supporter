@@ -480,6 +480,10 @@ impl Error for CareerValidationError {}
 mod tests {
     use common::util::{Career, Ymd};
 
+    use crate::util::validator::career_validator::{
+        CareerValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
+    };
+
     use super::validate_career;
 
     #[test]
@@ -584,5 +588,71 @@ mod tests {
         };
 
         let _ = validate_career(&career).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_career_returns_ok_if_empty_char_company_name_is_passed() {
+        let career = Career {
+            company_name: String::from(""),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let result = validate_career(&career).expect_err("failed to get Err");
+
+        assert_eq!(
+            CareerValidationError::InvalidCompanyNameLength {
+                length: career.company_name.chars().count(),
+                min_length: COMPANY_NAME_MIN_LENGTH,
+                max_length: COMPANY_NAME_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_career_returns_ok_if_257_char_company_name_is_passed() {
+        let career = Career {
+            company_name: String::from("あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let result = validate_career(&career).expect_err("failed to get Err");
+
+        assert_eq!(
+            CareerValidationError::InvalidCompanyNameLength {
+                length: career.company_name.chars().count(),
+                min_length: COMPANY_NAME_MIN_LENGTH,
+                max_length: COMPANY_NAME_MAX_LENGTH
+            },
+            result
+        );
     }
 }
