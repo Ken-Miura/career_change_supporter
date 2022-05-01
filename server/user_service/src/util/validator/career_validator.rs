@@ -3,7 +3,9 @@
 use std::{collections::HashSet, error::Error, fmt::Display};
 
 use chrono::NaiveDate;
-use common::util::validator::{has_control_char, SPACE_RE, SYMBOL_CHAR_RE};
+use common::util::validator::{
+    has_control_char, has_non_new_line_control_char, SPACE_RE, SYMBOL_CHAR_RE,
+};
 use common::util::{Career, Ymd};
 use once_cell::sync::Lazy;
 
@@ -53,6 +55,9 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
     }
     if let Some(position_name) = career.position_name.clone() {
         let _ = validate_position_name(position_name.as_str())?;
+    }
+    if let Some(note) = career.note.clone() {
+        let _ = validate_note(note.as_str())?;
     }
     Ok(())
 }
@@ -255,6 +260,24 @@ fn validate_position_name(position_name: &str) -> Result<(), CareerValidationErr
     Ok(())
 }
 
+fn validate_note(note: &str) -> Result<(), CareerValidationError> {
+    let note_length = note.chars().count();
+    if !(NOTE_MIN_LENGTH..=NOTE_MAX_LENGTH).contains(&note_length) {
+        return Err(CareerValidationError::InvalidNoteLength {
+            length: note_length,
+            min_length: NOTE_MIN_LENGTH,
+            max_length: NOTE_MAX_LENGTH,
+        });
+    }
+    if has_non_new_line_control_char(note) {
+        return Err(CareerValidationError::IllegalCharInNote(note.to_string()));
+    }
+    if SYMBOL_CHAR_RE.is_match(note) {
+        return Err(CareerValidationError::IllegalCharInNote(note.to_string()));
+    }
+    Ok(())
+}
+
 /// Error related to [validate_career()]
 #[derive(Debug, PartialEq)]
 pub(crate) enum CareerValidationError {
@@ -304,6 +327,12 @@ pub(crate) enum CareerValidationError {
         max_length: usize,
     },
     IllegalCharInPositionName(String),
+    InvalidNoteLength {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInNote(String),
 }
 
 impl Display for CareerValidationError {
@@ -423,6 +452,22 @@ impl Display for CareerValidationError {
                     "position_name: illegal charcter included: {} (binary: {:X?})",
                     position_name,
                     position_name.as_bytes().to_vec()
+                )
+            }
+            CareerValidationError::InvalidNoteLength {
+                length,
+                min_length,
+                max_length,
+            } => write!(
+                f,
+                "invalid note length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
+            CareerValidationError::IllegalCharInNote(note) => {
+                write!(
+                    f,
+                    "note: illegal charcter included: {} (binary: {:X?})",
+                    note, note.as_bytes().to_vec()
                 )
             }
         }
