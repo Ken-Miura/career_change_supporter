@@ -724,4 +724,37 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_career_returns_err_if_char_company_name_ends_with_control_char() {
+        let mut career_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let career = Career {
+                company_name: "山田工業".to_string() + s,
+                department_name: None,
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInCompanyName(career.company_name),
+                err
+            );
+        }
+    }
 }
