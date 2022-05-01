@@ -521,7 +521,7 @@ mod tests {
     #[test]
     fn validate_career_returns_ok_if_valid_career_with_only_mandatory_input_is_passed() {
         let career = Career {
-            company_name: String::from("田中自動車"),
+            company_name: String::from("Tanaka automotive co．"),
             department_name: None,
             office: None,
             career_start_date: Ymd {
