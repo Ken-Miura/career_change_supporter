@@ -2046,4 +2046,31 @@ mod tests {
             let _ = validate_career(&career).expect("failed to get Ok");
         }
     }
+
+    #[test]
+    fn validate_career_returns_err_if_illegal_contract_type_is_passed() {
+        let career = Career {
+            company_name: "佐藤商事".to_string(),
+            department_name: None,
+            office: Some("松山事業所".to_string()),
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: "1' or '1' = '1';--".to_string(),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+        let err = validate_career(&career).expect_err("failed to get Err");
+        assert_eq!(
+            CareerValidationError::IllegalContractType(career.contract_type),
+            err
+        );
+    }
 }
