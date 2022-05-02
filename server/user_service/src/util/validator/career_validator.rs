@@ -1876,4 +1876,77 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_career_returns_err_if_career_start_date_is_illegal() {
+        let career = Career {
+            company_name: "佐藤商事".to_string(),
+            department_name: None,
+            office: Some("松山事業所".to_string()),
+            career_start_date: Ymd {
+                year: 2006,
+                month: 2,
+                day: 30,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let err = validate_career(&career).expect_err("failed to get Err");
+
+        assert_eq!(
+            CareerValidationError::IllegalCareerStartDate {
+                year: career.career_start_date.year,
+                month: career.career_start_date.month,
+                day: career.career_start_date.day
+            },
+            err
+        );
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_career_end_date_is_illegal() {
+        let career = Career {
+            company_name: "佐藤商事".to_string(),
+            department_name: None,
+            office: Some("松山事業所".to_string()),
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: Some(Ymd {
+                year: 2008,
+                month: 12,
+                day: 32,
+            }),
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let err = validate_career(&career).expect_err("failed to get Err");
+
+        let career_end_date = career
+            .career_end_date
+            .expect("failed to get career_end_day");
+        assert_eq!(
+            CareerValidationError::IllegalCareerEndDate {
+                year: career_end_date.year,
+                month: career_end_date.month,
+                day: career_end_date.day
+            },
+            err
+        );
+    }
 }
