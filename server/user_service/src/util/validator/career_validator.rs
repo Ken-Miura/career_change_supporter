@@ -1949,4 +1949,32 @@ mod tests {
             err
         );
     }
+
+    #[test]
+    fn validate_career_returns_ok_if_career_start_date_is_career_end_date() {
+        let career = Career {
+            company_name: "佐藤商事".to_string(),
+            department_name: None,
+            office: Some("松山事業所".to_string()),
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: Some(Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            }),
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let _ = validate_career(&career).expect("failed to get Ok");
+    }
 }
