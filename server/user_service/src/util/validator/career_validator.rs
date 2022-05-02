@@ -489,7 +489,7 @@ mod tests {
         tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
     };
 
-    use super::validate_career;
+    use super::{validate_career, CONTRACT_TYPE_SET};
 
     #[test]
     fn validate_career_returns_ok_if_valid_career_is_passed() {
@@ -2016,5 +2016,34 @@ mod tests {
             },
             err
         );
+    }
+
+    #[test]
+    fn validate_career_returns_ok_if_valid_contract_type_is_passed() {
+        let mut career_list = Vec::with_capacity(CONTRACT_TYPE_SET.len());
+        for s in CONTRACT_TYPE_SET.iter() {
+            let career = Career {
+                company_name: "佐藤商事".to_string(),
+                department_name: None,
+                office: Some("松山事業所".to_string()),
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: s.to_string(),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let _ = validate_career(&career).expect("failed to get Ok");
+        }
     }
 }
