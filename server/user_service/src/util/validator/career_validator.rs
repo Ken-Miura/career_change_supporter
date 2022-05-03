@@ -487,7 +487,10 @@ mod tests {
             NOTE_MIN_LENGTH, OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH,
             POSITION_NAME_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
         },
-        tests::{CONTROL_CHAR_SET, NON_NEW_LINE_CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
+        tests::{
+            CONTROL_CHAR_SET, NEW_LINE_CONTROL_CHAR_SET, NON_NEW_LINE_CONTROL_CHAR_SET, SPACE_SET,
+            SYMBOL_SET,
+        },
     };
 
     use super::{validate_career, CONTRACT_TYPE_SET};
@@ -3515,6 +3518,35 @@ mod tests {
                 CareerValidationError::IllegalCharInNote(career.note.expect("failed to get note")),
                 err
             );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_ok_if_note_is_new_line_control_char() {
+        let mut career_list = Vec::with_capacity(NEW_LINE_CONTROL_CHAR_SET.len());
+        for s in NEW_LINE_CONTROL_CHAR_SET.iter() {
+            let career = Career {
+                company_name: "佐藤商事".to_string(),
+                department_name: None,
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: None,
+                is_new_graduate: false,
+                note: Some(s.to_string()),
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let _ = validate_career(&career).expect("failed to get Ok");
         }
     }
 }
