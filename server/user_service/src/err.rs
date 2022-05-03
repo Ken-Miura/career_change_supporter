@@ -78,6 +78,7 @@ pub(crate) enum Code {
     IllegalCharInNote = 20066,
     NoCareerFound = 20067,
     NoCareerImage1Found = 20068,
+    ExceedMaxCareerImageSizeLimit = 20069,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

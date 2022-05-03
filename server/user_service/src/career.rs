@@ -152,15 +152,13 @@ async fn handle_multipart(
             })?;
             career_option = Some(trim_space_from_career(career));
         } else if name == "career-image1" {
-            // TODO
-            let _ = validate_identity_image_file_name(file_name_option)?;
-            let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
+            let _ = validate_career_image_file_name(file_name_option)?;
+            let _ = validate_career_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             career_image1_option = Some(png_binary);
         } else if name == "career-image2" {
-            // TODO
-            let _ = validate_identity_image_file_name(file_name_option)?;
-            let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
+            let _ = validate_career_image_file_name(file_name_option)?;
+            let _ = validate_career_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             career_image2_option = Some(png_binary);
         } else {
@@ -200,7 +198,7 @@ fn extract_career(data: Bytes) -> Result<Career, ErrResp> {
     Ok(career)
 }
 
-fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result<(), ErrResp> {
+fn validate_career_image_file_name(file_name_option: Option<String>) -> Result<(), ErrResp> {
     let file_name = match file_name_option {
         Some(name) => name,
         None => {
@@ -225,16 +223,16 @@ fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result
     Ok(())
 }
 
-fn validate_identity_image_size(size: usize, max_size_in_bytes: usize) -> Result<(), ErrResp> {
+fn validate_career_image_size(size: usize, max_size_in_bytes: usize) -> Result<(), ErrResp> {
     if size > max_size_in_bytes {
         error!(
-            "invalid identity image size (received {} bytes, max size in bytes = {})",
+            "invalid career image size (received {} bytes, max size in bytes = {})",
             size, max_size_in_bytes
         );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::ExceedMaxIdentityImageSizeLimit as u32,
+                code: Code::ExceedMaxCareerImageSizeLimit as u32,
             }),
         ));
     };
