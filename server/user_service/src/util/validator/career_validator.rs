@@ -2639,7 +2639,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_career_returns_ok_if_annual_imcom_in_man_yen_i32_max_is_passed() {
+    fn validate_career_returns_ok_if_i32_max_annual_imcom_in_man_yen_is_passed() {
         let career = Career {
             company_name: String::from("佐藤商事"),
             department_name: None,
@@ -2659,5 +2659,71 @@ mod tests {
             note: None,
         };
         let _ = validate_career(&career).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_negative_annual_imcom_in_man_yen_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: Some(-1),
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let err = validate_career(&career).expect_err("failed to get Err");
+
+        assert_eq!(
+            CareerValidationError::IllegalAnnualIncomInManYen(
+                career
+                    .annual_income_in_man_yen
+                    .expect("failed to get annual_income_in_man_yen")
+            ),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_i32_min_annual_imcom_in_man_yen_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: Some(i32::MIN),
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+
+        let err = validate_career(&career).expect_err("failed to get Err");
+
+        assert_eq!(
+            CareerValidationError::IllegalAnnualIncomInManYen(
+                career
+                    .annual_income_in_man_yen
+                    .expect("failed to get annual_income_in_man_yen")
+            ),
+            err
+        );
     }
 }
