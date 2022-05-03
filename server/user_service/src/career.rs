@@ -1,12 +1,10 @@
-// Copyright 2021 Ken Miura
-
-// TODO: career向けに変更と調整
+// Copyright 2022 Ken Miura
 
 use std::error::Error;
 use std::io::Cursor;
 
 use crate::err::Code::IdentityReqAlreadyExists;
-use crate::util::validator::career_validator::validate_career;
+use crate::util::validator::career_validator::{validate_career, CareerValidationError};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -36,14 +34,8 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
-    err::{self, unexpected_err_resp, Code},
-    util::{
-        session::User,
-        validator::{
-            file_name_validator::validate_extension_is_jpeg,
-            identity_validator::{validate_identity, IdentityValidationError},
-        },
-    },
+    err::{unexpected_err_resp, Code},
+    util::{session::User, validator::file_name_validator::validate_extension_is_jpeg},
 };
 
 /// 身分証の画像ファイルのバイト単位での最大値（4MB）
@@ -60,27 +52,23 @@ pub(crate) async fn post_career(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<CareerResult> {
     let multipart_wrapper = MultipartWrapperImpl { multipart };
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    let current_date = current_date_time.naive_local().date();
-    let (career_data, career_image1, career_image2_option) = handle_multipart(
-        multipart_wrapper,
-        MAX_CAREER_IMAGE_SIZE_IN_BYTES,
-        current_date,
-    )
-    .await?;
+    let (career, career_image1, career_image2_option) =
+        handle_multipart(multipart_wrapper, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await?;
 
-    let op = SubmitCareerOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
-    let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
-    let submitted_career = SubmittedCareer {
-        account_id,
-        career_data,
-        career_image1: (image1_file_name_without_ext, career_image1),
-        career_image2: career_image2_option.map(|image| (image2_file_name_without_ext, image)),
-    };
-    let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await?;
-    Ok(result)
+    todo!()
+    // let op = SubmitCareerOperationImpl::new(pool);
+    // let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    // let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
+    // let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
+    // let submitted_career = SubmittedCareer {
+    //     account_id,
+    //     career,
+    //     career_image1: (image1_file_name_without_ext, career_image1),
+    //     career_image2: career_image2_option.map(|image| (image2_file_name_without_ext, image)),
+    // };
+    // let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    // let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await?;
+    // Ok(result)
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -132,8 +120,7 @@ struct CareerField {
 async fn handle_multipart(
     mut multipart: impl MultipartWrapper,
     max_image_size_in_bytes: usize,
-    current_date: NaiveDate,
-) -> Result<(Identity, Cursor<Vec<u8>>, Option<Cursor<Vec<u8>>>), ErrResp> {
+) -> Result<(Career, Cursor<Vec<u8>>, Option<Cursor<Vec<u8>>>), ErrResp> {
     let mut career_option = None;
     let mut career_image1_option = None;
     let mut career_image2_option = None;
@@ -158,14 +145,12 @@ async fn handle_multipart(
             )
         })?;
         if name == "career" {
-            // TODO
             let career = extract_career(data)?;
-            let _ = validate_career(&career).expect("msg");
-            // .map_err(|e| {
-            //     error!("invalid identity: {}", e);
-            //     create_invalid_identity_err(&e)
-            // })?;
-            career_option = None; // Some(trim_space_from_identity(identity));
+            let _ = validate_career(&career).map_err(|e| {
+                error!("invalid career: {}", e);
+                create_invalid_career_err(&e)
+            })?;
+            career_option = Some(trim_space_from_career(career));
         } else if name == "career-image1" {
             // TODO
             let _ = validate_identity_image_file_name(file_name_option)?;
@@ -188,9 +173,9 @@ async fn handle_multipart(
             ));
         }
     }
-    let (career_data, career_image1) =
+    let (career, career_image1) =
         ensure_mandatory_params_exist(career_option, career_image1_option)?;
-    Ok((career_data, career_image1, career_image2_option))
+    Ok((career, career_image1, career_image2_option))
 }
 
 fn extract_career(data: Bytes) -> Result<Career, ErrResp> {
@@ -208,8 +193,7 @@ fn extract_career(data: Bytes) -> Result<Career, ErrResp> {
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                // TODO
-                code: Code::InvalidIdentityJson as u32,
+                code: Code::InvalidCareerJson as u32,
             }),
         )
     })?;
@@ -284,17 +268,17 @@ fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
 }
 
 fn ensure_mandatory_params_exist(
-    career_option: Option<Identity>,
+    career_option: Option<Career>,
     career_image1_option: Option<Cursor<Vec<u8>>>,
-) -> Result<(Identity, Cursor<Vec<u8>>), ErrResp> {
-    let identity = match career_option {
-        Some(id) => id,
+) -> Result<(Career, Cursor<Vec<u8>>), ErrResp> {
+    let career = match career_option {
+        Some(c) => c,
         None => {
-            error!("no identity found");
+            error!("no career found");
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: Code::NoIdentityFound as u32,
+                    code: Code::NoCareerFound as u32,
                 }),
             ));
         }
@@ -302,90 +286,79 @@ fn ensure_mandatory_params_exist(
     let career_image1 = match career_image1_option {
         Some(image1) => image1,
         None => {
-            error!("no identity-image1 found");
+            error!("no career-image1 found");
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    code: Code::NoIdentityImage1Found as u32,
+                    code: Code::NoCareerImage1Found as u32,
                 }),
             ));
         }
     };
-    Ok((identity, career_image1))
+    Ok((career, career_image1))
 }
 
-fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
+fn create_invalid_career_err(e: &CareerValidationError) -> ErrResp {
     let code;
     match e {
-        IdentityValidationError::InvalidLastNameLength {
+        CareerValidationError::InvalidCompanyNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::Code::InvalidLastNameLength,
-        IdentityValidationError::IllegalCharInLastName(_) => {
-            code = err::Code::IllegalCharInLastName
-        }
-        IdentityValidationError::InvalidFirstNameLength {
+        } => code = Code::InvalidCompanyNameLength,
+        CareerValidationError::IllegalCharInCompanyName(_) => code = Code::IllegalCharInCompanyName,
+        CareerValidationError::InvalidDepartmentNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::Code::InvalidFirstNameLength,
-        IdentityValidationError::IllegalCharInFirstName(_) => {
-            code = err::Code::IllegalCharInFirstName
+        } => code = Code::InvalidDepartmentNameLength,
+        CareerValidationError::IllegalCharInDepartmentName(_) => {
+            code = Code::IllegalCharInDepartmentName
         }
-        IdentityValidationError::InvalidLastNameFuriganaLength {
+        CareerValidationError::InvalidOfficeLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::Code::InvalidLastNameFuriganaLength,
-        IdentityValidationError::IllegalCharInLastNameFurigana(_) => {
-            code = err::Code::IllegalCharInLastNameFurigana
-        }
-        IdentityValidationError::InvalidFirstNameFuriganaLength {
-            length: _,
-            min_length: _,
-            max_length: _,
-        } => code = err::Code::InvalidFirstNameFuriganaLength,
-        IdentityValidationError::IllegalCharInFirstNameFurigana(_) => {
-            code = err::Code::IllegalCharInFirstNameFurigana
-        }
-        IdentityValidationError::IllegalDate {
+        } => code = Code::InvalidOfficeLength,
+        CareerValidationError::IllegalCharInOffice(_) => code = Code::IllegalCharInOffice,
+        CareerValidationError::IllegalCareerStartDate {
             year: _,
             month: _,
             day: _,
-        } => code = err::Code::IllegalDate,
-        IdentityValidationError::IllegalAge {
-            birth_year: _,
-            birth_month: _,
-            birth_day: _,
-            current_year: _,
-            current_month: _,
-            current_day: _,
-        } => code = err::Code::IllegalAge,
-        IdentityValidationError::InvalidPrefecture(_) => code = err::Code::InvalidPrefecture,
-        IdentityValidationError::InvalidCityLength {
+        } => code = Code::IllegalCareerStartDate,
+        CareerValidationError::IllegalCareerEndDate {
+            year: _,
+            month: _,
+            day: _,
+        } => code = Code::IllegalCareerEndDate,
+        CareerValidationError::CareerStartDateExceedsCareerEndDate {
+            career_start_date: _,
+            career_end_date: _,
+        } => code = Code::CareerStartDateExceedsCareerEndDate,
+        CareerValidationError::IllegalContractType(_) => code = Code::IllegalContractType,
+        CareerValidationError::InvalidProfessionLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::Code::InvalidCityLength,
-        IdentityValidationError::IllegalCharInCity(_) => code = err::Code::IllegalCharInCity,
-        IdentityValidationError::InvalidAddressLine1Length {
-            length: _,
-            min_length: _,
-            max_length: _,
-        } => code = err::Code::InvalidAddressLine1Length,
-        IdentityValidationError::IllegalCharInAddressLine1(_) => {
-            code = err::Code::IllegalCharInAddressLine1
+        } => code = Code::InvalidProfessionLength,
+        CareerValidationError::IllegalCharInProfession(_) => code = Code::IllegalCharInProfession,
+        CareerValidationError::IllegalAnnualIncomInManYen(_) => {
+            code = Code::IllegalAnnualIncomInManYen
         }
-        IdentityValidationError::InvalidAddressLine2Length {
+        CareerValidationError::InvalidPositionNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = err::Code::InvalidAddressLine2Length,
-        IdentityValidationError::IllegalCharInAddressLine2(_) => {
-            code = err::Code::IllegalCharInAddressLine2
+        } => code = Code::InvalidPositionNameLength,
+        CareerValidationError::IllegalCharInPositionName(_) => {
+            code = Code::IllegalCharInPositionName
         }
-        IdentityValidationError::InvalidTelNumFormat(_) => code = err::Code::InvalidTelNumFormat,
+        CareerValidationError::InvalidNoteLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = Code::InvalidNoteLength,
+        CareerValidationError::IllegalCharInNote(_) => code = Code::IllegalCharInNote,
     }
     (
         StatusCode::BAD_REQUEST,
@@ -393,20 +366,26 @@ fn create_invalid_identity_err(e: &IdentityValidationError) -> ErrResp {
     )
 }
 
-fn trim_space_from_identity(identity: Identity) -> Identity {
-    Identity {
-        last_name: identity.last_name.trim().to_string(),
-        first_name: identity.first_name.trim().to_string(),
-        last_name_furigana: identity.last_name_furigana.trim().to_string(),
-        first_name_furigana: identity.first_name_furigana.trim().to_string(),
-        date_of_birth: identity.date_of_birth,
-        prefecture: identity.prefecture.trim().to_string(),
-        city: identity.city.trim().to_string(),
-        address_line1: identity.address_line1.trim().to_string(),
-        address_line2: identity
-            .address_line2
-            .map(|address_line2| address_line2.trim().to_string()),
-        telephone_number: identity.telephone_number.trim().to_string(),
+fn trim_space_from_career(career: Career) -> Career {
+    Career {
+        company_name: career.company_name.trim().to_string(),
+        department_name: career
+            .department_name
+            .map(|department_name| department_name.trim().to_string()),
+        office: career.office.map(|office| office.trim().to_string()),
+        career_start_date: career.career_start_date,
+        career_end_date: career.career_end_date,
+        contract_type: career.contract_type,
+        profession: career
+            .profession
+            .map(|profession| profession.trim().to_string()),
+        annual_income_in_man_yen: career.annual_income_in_man_yen,
+        is_manager: career.is_manager,
+        position_name: career
+            .position_name
+            .map(|position_name| position_name.trim().to_string()),
+        is_new_graduate: career.is_new_graduate,
+        note: career.note.map(|note| note.trim().to_string()),
     }
 }
 
@@ -430,7 +409,7 @@ async fn handle_career_req(
             "request to update identity from account id ({})",
             account_id
         );
-        let _ = check_update_identity_requirement(&identity, &submitted_career.career_data)?;
+        let _ = check_update_identity_requirement(&identity, &submitted_career.career)?;
         let _ = handle_update_identity_request(account_id, submitted_career, current_date_time, op)
             .await?;
     } else {
@@ -560,7 +539,7 @@ async fn handle_create_identity_request(
 #[derive(Clone, Debug, PartialEq)]
 struct SubmittedCareer {
     account_id: i64,
-    career_data: Identity,
+    career: Identity,
     career_image1: FileNameAndBinary,
     career_image2: Option<FileNameAndBinary>,
 }
@@ -676,7 +655,7 @@ impl SubmitIdentityOperation for SubmitCareerOperationImpl {
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         let account_id = submitted_career.account_id;
-        let identity = submitted_career.career_data;
+        let identity = submitted_career.career;
         let career_image1 = submitted_career.career_image1;
         let image1_file_name_without_ext = career_image1.0.clone();
         let (career_image2_option, image2_file_name_without_ext) =
@@ -748,7 +727,7 @@ impl SubmitIdentityOperation for SubmitCareerOperationImpl {
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         let account_id = submitted_career.account_id;
-        let identity = submitted_career.career_data;
+        let identity = submitted_career.career;
         let career_image1 = submitted_career.career_image1;
         let image1_file_name_without_ext = career_image1.0.clone();
         let (career_image2_option, image2_file_name_without_ext) =
