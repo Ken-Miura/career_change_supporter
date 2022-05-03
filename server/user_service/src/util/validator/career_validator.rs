@@ -2989,4 +2989,144 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_career_returns_err_if_position_name_is_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: None,
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: Some(s.to_string()),
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInPositionName(
+                    career.position_name.expect("failed to get position_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_position_name_starts_with_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: None,
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: Some(s.to_string() + "係長"),
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInPositionName(
+                    career.position_name.expect("failed to get position_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_position_name_ends_with_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: String::from("佐藤商事"),
+                department_name: None,
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: Some("係長".to_string() + s),
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInPositionName(
+                    career.position_name.expect("failed to get position_name")
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_career_returns_err_if_position_name_includes_symbol() {
+        let mut career_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let career = Career {
+                company_name: "佐藤商事".to_string(),
+                department_name: None,
+                office: None,
+                career_start_date: Ymd {
+                    year: 2006,
+                    month: 4,
+                    day: 1,
+                },
+                career_end_date: None,
+                contract_type: String::from("regular"),
+                profession: None,
+                annual_income_in_man_yen: None,
+                is_manager: true,
+                position_name: Some("係".to_string() + s + "長"),
+                is_new_graduate: false,
+                note: None,
+            };
+            career_list.push(career);
+        }
+        for career in career_list {
+            let err = validate_career(&career).expect_err("failed to get Err");
+            assert_eq!(
+                CareerValidationError::IllegalCharInPositionName(
+                    career.position_name.expect("failed to get position_name")
+                ),
+                err
+            );
+        }
+    }
 }
