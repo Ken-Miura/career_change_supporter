@@ -4,6 +4,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::err::Code::IdentityReqAlreadyExists;
+use crate::util::convert_jpeg_to_png;
 use crate::util::validator::career_validator::{validate_career, CareerValidationError};
 use async_session::serde_json;
 use axum::async_trait;
@@ -28,7 +29,6 @@ use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
 use entity::{create_identity_req, update_identity_req};
-use image::{ImageError, ImageFormat};
 use serde::Serialize;
 use tracing::{error, info};
 use uuid::Uuid;
@@ -239,32 +239,6 @@ fn validate_identity_image_size(size: usize, max_size_in_bytes: usize) -> Result
         ));
     };
     Ok(())
-}
-
-// 画像ファイルの中のメタデータに悪意ある内容が含まれている場合が考えられるので、画像情報以外のメタデータを取り除く必要がある。
-// メタデータを取り除くのに画像形式を変換するのが最も容易な実装のため、画像形式の変換を行っている。
-fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
-    let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
-        .decode()
-        .map_err(|e| {
-            error!("failed to decode jpeg image: {}", e);
-            match e {
-                ImageError::Decoding(_) => (
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidJpegImage as u32,
-                    }),
-                ),
-                _ => unexpected_err_resp(),
-            }
-        })?;
-    let mut bytes = Cursor::new(vec![]);
-    img.write_to(&mut bytes, image::ImageOutputFormat::Png)
-        .map_err(|e| {
-            error!("failed to write image on buffer: {}", e);
-            unexpected_err_resp()
-        })?;
-    Ok(bytes)
 }
 
 fn ensure_mandatory_params_exist(

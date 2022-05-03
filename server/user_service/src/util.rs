@@ -5,14 +5,23 @@ pub(crate) mod session;
 pub(crate) mod terms_of_use;
 pub(crate) mod validator;
 
-use std::env::var;
+use std::{env::var, io::Cursor};
 
-use common::payment_platform::{
-    AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-    KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+use axum::{http::StatusCode, Json};
+use bytes::Bytes;
+use common::{
+    payment_platform::{
+        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+    },
+    ApiError, ErrResp,
 };
+use image::{ImageError, ImageFormat};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use tracing::error;
+
+use crate::err::{unexpected_err_resp, Code};
 
 pub(crate) const ROOT_PATH: &str = "/api";
 
@@ -49,10 +58,47 @@ pub(crate) struct BankAccount {
     pub account_holder_name: String,
 }
 
-/// テストコードで共通で使うコードをまとめるモジュール
+/// jpeg画像をpng画像に変換する<br>
+/// <br>
+/// 画像ファイルの中のメタデータに悪意ある内容が含まれている場合が考えられるので、画像情報以外のメタデータを取り除く必要がある。
+/// メタデータを取り除くのに画像形式を変換するのが最も容易な実装のため、画像形式の変換を行っている。
+pub(crate) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
+    let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
+        .decode()
+        .map_err(|e| {
+            error!("failed to decode jpeg image: {}", e);
+            match e {
+                ImageError::Decoding(_) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidJpegImage as u32,
+                    }),
+                ),
+                _ => unexpected_err_resp(),
+            }
+        })?;
+    let mut bytes = Cursor::new(vec![]);
+    img.write_to(&mut bytes, image::ImageOutputFormat::Png)
+        .map_err(|e| {
+            error!("failed to write image on buffer: {}", e);
+            unexpected_err_resp()
+        })?;
+    Ok(bytes)
+}
+
+/// 通常のテストコードに加え、共通で使うモックをまとめる
 #[cfg(test)]
 pub(crate) mod tests {
+    use std::io::Cursor;
+
+    use axum::http::StatusCode;
+    use bytes::Bytes;
     use common::{smtp::SendMail, ErrResp};
+    use image::{ImageBuffer, ImageFormat, ImageOutputFormat, RgbImage};
+
+    use crate::err::Code;
+
+    use super::convert_jpeg_to_png;
 
     pub(crate) struct SendMailMock {
         to: String,
@@ -86,5 +132,56 @@ pub(crate) mod tests {
             assert_eq!(self.text, text);
             Ok(())
         }
+    }
+
+    #[test]
+    fn convert_jpeg_to_png_returns_ok_if_convert_is_success() {
+        let jpeg_image = create_dummy_jpeg_image();
+        let expected_image = create_converted_image(jpeg_image.clone().into_inner());
+
+        let result = convert_jpeg_to_png(Bytes::from(jpeg_image.into_inner()));
+
+        let result_image = result.expect("failed to get Ok");
+        assert_eq!(expected_image, result_image);
+    }
+
+    #[test]
+    fn convert_jpeg_to_png_returns_err_if_format_other_than_jpg_is_passed() {
+        let png_image = create_dummy_png_image();
+
+        let result = convert_jpeg_to_png(Bytes::from(png_image.into_inner()));
+
+        let result = result.expect_err("failed to get Err");
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(result.1.code, Code::InvalidJpegImage as u32);
+    }
+
+    fn create_dummy_jpeg_image() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(128, 128);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+            .expect("failed to get Ok");
+        bytes
+    }
+
+    fn create_dummy_png_image() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(128, 128);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Png)
+            .expect("failed to get Ok");
+        bytes
+    }
+
+    fn create_converted_image(jpg_img: Vec<u8>) -> Cursor<Vec<u8>> {
+        let img = image::io::Reader::with_format(Cursor::new(jpg_img), ImageFormat::Jpeg)
+            .decode()
+            .expect("failed to get Ok");
+        let mut png_img = Cursor::new(vec![]);
+        let _ = img
+            .write_to(&mut png_img, image::ImageOutputFormat::Png)
+            .expect("failed to get Ok");
+        png_img
     }
 }
