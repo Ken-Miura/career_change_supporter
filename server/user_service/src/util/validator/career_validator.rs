@@ -2614,4 +2614,50 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_career_returns_ok_if_annual_imcom_in_man_yen_0_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: Some(0),
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+        let _ = validate_career(&career).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_career_returns_ok_if_annual_imcom_in_man_yen_i32_max_is_passed() {
+        let career = Career {
+            company_name: String::from("佐藤商事"),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: String::from("regular"),
+            profession: None,
+            annual_income_in_man_yen: Some(i32::MAX),
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: None,
+        };
+        let _ = validate_career(&career).expect("failed to get Ok");
+    }
 }
