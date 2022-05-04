@@ -14,10 +14,10 @@ use axum::{
     Json,
 };
 use bytes::Bytes;
-use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
+use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::storage::{upload_object, CAREER_IMAGES_BUCKET_NAME};
-use common::util::{Career, Ymd};
+use common::util::Career;
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
@@ -25,13 +25,14 @@ use common::{
 use common::{
     ErrRespStruct, JAPANESE_TIME_ZONE, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT, WEB_SITE_NAME,
 };
-use entity::career;
+use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set, TransactionError, TransactionTrait,
 };
+use entity::{career, create_career_req};
 use serde::Serialize;
-use tracing::{error, info};
+use tracing::error;
 use uuid::Uuid;
 
 use crate::{
@@ -371,6 +372,10 @@ async fn handle_career_req(
 
     let num = op.count_career(account_id).await?;
     if num >= MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize {
+        error!(
+            "already reach max num of career per user account (num: {}, max num: {})",
+            num, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -455,7 +460,54 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
         submitted_career: SubmittedCareer,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        todo!()
+        let account_id = submitted_career.account_id;
+        let career = submitted_career.career;
+        let career_image1 = submitted_career.career_image1;
+        let image1_file_name_without_ext = career_image1.0.clone();
+        let (career_image2_option, image2_file_name_without_ext) =
+            SubmitCareerOperationImpl::extract_file_name(submitted_career.career_image2);
+        let _ = self
+            .pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let active_model =
+                        SubmitCareerOperationImpl::generate_create_career_req_active_model(
+                            account_id,
+                            career,
+                            image1_file_name_without_ext,
+                            image2_file_name_without_ext,
+                            current_date_time,
+                        );
+                    let _ = active_model.insert(txn).await.map_err(|e| {
+                        error!(
+                            "failed to insert create_career_req (user_account_id: {}): {}",
+                            account_id, e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+                    let _ = SubmitCareerOperationImpl::upload_png_images_to_career_storage(
+                        account_id,
+                        career_image1,
+                        career_image2_option,
+                    )
+                    .await?;
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("failed to insert create_career_req: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to insert create_career_req: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
 }
 
@@ -469,6 +521,42 @@ impl SubmitCareerOperationImpl {
             return (identity_image2, image2_file_name_without_ext);
         };
         (None, None)
+    }
+
+    fn generate_create_career_req_active_model(
+        account_id: i64,
+        career: Career,
+        image1_file_name_without_ext: String,
+        image2_file_name_without_ext: Option<String>,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> create_career_req::ActiveModel {
+        let start_date = NaiveDate::from_ymd(
+            career.career_start_date.year,
+            career.career_start_date.month,
+            career.career_start_date.day,
+        );
+        let end_date = career
+            .career_end_date
+            .map(|ymd| NaiveDate::from_ymd(ymd.year, ymd.month, ymd.day));
+        create_career_req::ActiveModel {
+            create_career_req_id: NotSet,
+            user_account_id: Set(account_id),
+            company_name: Set(career.company_name),
+            department_name: Set(career.department_name),
+            office: Set(career.office),
+            career_start_date: Set(start_date),
+            career_end_date: Set(end_date),
+            contract_type: Set(career.contract_type),
+            profession: Set(career.profession),
+            annual_income_in_man_yen: Set(career.annual_income_in_man_yen),
+            is_manager: Set(career.is_manager),
+            position_name: Set(career.position_name),
+            is_new_graduate: Set(career.is_new_graduate),
+            note: Set(career.note),
+            image1_file_name_without_ext: Set(image1_file_name_without_ext),
+            image2_file_name_without_ext: Set(image2_file_name_without_ext),
+            requested_at: Set(current_date_time),
+        }
     }
 
     async fn upload_png_images_to_career_storage(
