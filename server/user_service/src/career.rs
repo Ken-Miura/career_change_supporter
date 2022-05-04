@@ -363,8 +363,9 @@ async fn handle_career_req(
     op: impl SubmitCareerOperation,
     send_mail: impl SendMail,
 ) -> RespResult<CareerResult> {
-    let subject = "subject".to_string();
-    let text = "text".to_string();
+    let account_id = 0;
+    let subject = create_subject(account_id);
+    let text = create_text(account_id);
     let _ =
         async { send_mail.send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text) }
             .await?;
@@ -379,19 +380,17 @@ struct SubmittedCareer {
     career_image2: Option<FileNameAndBinary>,
 }
 
-fn create_subject(id: i64, update: bool) -> String {
-    let request_type = if update { "更新" } else { "新規" };
+fn create_subject(id: i64) -> String {
     format!(
-        "[{}] ユーザー (id: {}) からの本人確認依頼 ({})",
-        WEB_SITE_NAME, id, request_type
+        "[{}] ユーザー (id: {}) からの職務経歴確認依頼",
+        WEB_SITE_NAME, id
     )
 }
 
-fn create_text(id: i64, update: bool) -> String {
-    let request_type = if update { "更新" } else { "新規" };
+fn create_text(id: i64) -> String {
     format!(
-        "ユーザー (id: {}) からの本人確認依頼 ({}) が届きました。管理者サイトから対応をお願いいたします。",
-        id, request_type
+        "ユーザー (id: {}) からの職務経歴確認依頼が届きました。管理者サイトから対応をお願いいたします。",
+        id
     )
 }
 
