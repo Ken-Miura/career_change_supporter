@@ -22,9 +22,13 @@ use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
 };
-use common::{ErrRespStruct, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use common::{
+    ErrRespStruct, JAPANESE_TIME_ZONE, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT, WEB_SITE_NAME,
+};
+use entity::career;
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    Set, TransactionError, TransactionTrait,
 };
 use serde::Serialize;
 use tracing::{error, info};
@@ -363,7 +367,22 @@ async fn handle_career_req(
     op: impl SubmitCareerOperation,
     send_mail: impl SendMail,
 ) -> RespResult<CareerResult> {
-    let account_id = 0;
+    let account_id = submitted_career.account_id;
+
+    let num = op.count_career(account_id).await?;
+    if num >= MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ReachCareerNumLimit as u32,
+            }),
+        ));
+    }
+
+    let _ = op
+        .request_create_career(submitted_career, current_date_time)
+        .await?;
+
     let subject = create_subject(account_id);
     let text = create_text(account_id);
     let _ =
@@ -396,28 +415,12 @@ fn create_text(id: i64) -> String {
 
 #[async_trait]
 trait SubmitCareerOperation {
-    // async fn find_identity_by_account_id(
-    //     &self,
-    //     account_id: i64,
-    // ) -> Result<Option<Identity>, ErrResp>;
-    // async fn check_if_create_identity_req_already_exists(
-    //     &self,
-    //     account_id: i64,
-    // ) -> Result<bool, ErrResp>;
-    // async fn request_create_identity(
-    //     &self,
-    //     submitted_career: SubmittedCareer,
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> Result<(), ErrResp>;
-    // async fn check_if_update_identity_req_already_exists(
-    //     &self,
-    //     account_id: i64,
-    // ) -> Result<bool, ErrResp>;
-    // async fn request_update_identity(
-    //     &self,
-    //     submitted_career: SubmittedCareer,
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> Result<(), ErrResp>;
+    async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp>;
+    async fn request_create_career(
+        &self,
+        submitted_career: SubmittedCareer,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct SubmitCareerOperationImpl {
@@ -431,7 +434,30 @@ impl SubmitCareerOperationImpl {
 }
 
 #[async_trait]
-impl SubmitCareerOperation for SubmitCareerOperationImpl {}
+impl SubmitCareerOperation for SubmitCareerOperationImpl {
+    async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp> {
+        let num = entity::prelude::Career::find()
+            .filter(career::Column::UserAccountId.eq(account_id))
+            .count(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to count career (user_account_id: {}): {}",
+                    account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(num)
+    }
+
+    async fn request_create_career(
+        &self,
+        submitted_career: SubmittedCareer,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        todo!()
+    }
+}
 
 impl SubmitCareerOperationImpl {
     fn extract_file_name(
