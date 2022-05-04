@@ -4,7 +4,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::err::Code::IdentityReqAlreadyExists;
-use crate::util::convert_jpeg_to_png;
+use crate::util::{convert_jpeg_to_png, FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -533,8 +533,6 @@ struct SubmittedIdentity {
     identity_image1: FileNameAndBinary,
     identity_image2: Option<FileNameAndBinary>,
 }
-
-type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 fn create_subject(id: i64, update: bool) -> String {
     let request_type = if update { "更新" } else { "新規" };

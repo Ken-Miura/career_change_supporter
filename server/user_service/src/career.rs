@@ -3,9 +3,8 @@
 use std::error::Error;
 use std::io::Cursor;
 
-use crate::err::Code::IdentityReqAlreadyExists;
-use crate::util::convert_jpeg_to_png;
 use crate::util::validator::career_validator::{validate_career, CareerValidationError};
+use crate::util::{convert_jpeg_to_png, FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -17,18 +16,16 @@ use axum::{
 use bytes::Bytes;
 use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
-use common::util::{Career, Identity, Ymd};
+use common::storage::{upload_object, CAREER_IMAGES_BUCKET_NAME};
+use common::util::{Career, Ymd};
 use common::{
     smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
     ApiError, ErrResp, RespResult,
 };
 use common::{ErrRespStruct, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
-use entity::prelude::{CreateIdentityReq, UpdateIdentityReq};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
-use entity::{create_identity_req, update_identity_req};
 use serde::Serialize;
 use tracing::{error, info};
 use uuid::Uuid;
@@ -55,20 +52,19 @@ pub(crate) async fn post_career(
     let (career, career_image1, career_image2_option) =
         handle_multipart(multipart_wrapper, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await?;
 
-    todo!()
-    // let op = SubmitCareerOperationImpl::new(pool);
-    // let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    // let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
-    // let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
-    // let submitted_career = SubmittedCareer {
-    //     account_id,
-    //     career,
-    //     career_image1: (image1_file_name_without_ext, career_image1),
-    //     career_image2: career_image2_option.map(|image| (image2_file_name_without_ext, image)),
-    // };
-    // let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    // let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await?;
-    // Ok(result)
+    let op = SubmitCareerOperationImpl::new(pool);
+    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
+    let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
+    let submitted_career = SubmittedCareer {
+        account_id,
+        career,
+        career_image1: (image1_file_name_without_ext, career_image1),
+        career_image2: career_image2_option.map(|image| (image2_file_name_without_ext, image)),
+    };
+    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await?;
+    Ok(result)
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -364,159 +360,24 @@ fn trim_space_from_career(career: Career) -> Career {
 async fn handle_career_req(
     submitted_career: SubmittedCareer,
     current_date_time: DateTime<FixedOffset>,
-    op: impl SubmitIdentityOperation,
+    op: impl SubmitCareerOperation,
     send_mail: impl SendMail,
 ) -> RespResult<CareerResult> {
-    let account_id = submitted_career.account_id;
-    let career_option = op
-        .find_identity_by_account_id(account_id)
-        .await
-        .map_err(|e| {
-            error!("failed to find identity (account id: {})", account_id);
-            e
-        })?;
-    let identity_exists = career_option.is_some();
-    if let Some(identity) = career_option {
-        info!(
-            "request to update identity from account id ({})",
-            account_id
-        );
-        let _ = check_update_identity_requirement(&identity, &submitted_career.career)?;
-        let _ = handle_update_identity_request(account_id, submitted_career, current_date_time, op)
-            .await?;
-    } else {
-        info!(
-            "request to create identity from account id ({})",
-            account_id
-        );
-        let _ = handle_create_identity_request(account_id, submitted_career, current_date_time, op)
-            .await?;
-    };
-    let subject = create_subject(account_id, identity_exists);
-    let text = create_text(account_id, identity_exists);
+    let subject = "subject".to_string();
+    let text = "text".to_string();
     let _ =
         async { send_mail.send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text) }
             .await?;
     Ok((StatusCode::OK, Json(CareerResult {})))
 }
 
-fn check_update_identity_requirement(
-    identity: &Identity,
-    identity_to_update: &Identity,
-) -> Result<(), ErrResp> {
-    if identity.date_of_birth != identity_to_update.date_of_birth {
-        error!(
-            "date of birth ({:?}) is not same as submitted one ({:?})",
-            identity.date_of_birth, identity_to_update.date_of_birth
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::DateOfBirthIsNotMatch as u32,
-            }),
-        ));
-    }
-    if identity.first_name != identity_to_update.first_name {
-        error!(
-            "first name ({}) is not same as submitted one ({})",
-            identity.first_name, identity_to_update.first_name
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::FirstNameIsNotMatch as u32,
-            }),
-        ));
-    }
-    if identity == identity_to_update {
-        error!("identity ({:?}) is exactly same as submitted one", identity);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityUpdated as u32,
-            }),
-        ));
-    }
-    Ok(())
-}
-
-async fn handle_update_identity_request(
-    account_id: i64,
-    submitted_career: SubmittedCareer,
-    current_date_time: DateTime<FixedOffset>,
-    op: impl SubmitIdentityOperation,
-) -> Result<(), ErrResp> {
-    let update_req_exists = op
-        .check_if_update_identity_req_already_exists(account_id)
-        .await?;
-    if update_req_exists {
-        error!(
-            "update identity request (account id: {}) already exists",
-            account_id
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: IdentityReqAlreadyExists as u32,
-            }),
-        ));
-    }
-    let _ = op
-        .request_update_identity(submitted_career, current_date_time)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to handle update identity reqest (account id: {})",
-                account_id
-            );
-            e
-        })?;
-    Ok(())
-}
-
-async fn handle_create_identity_request(
-    account_id: i64,
-    submitted_career: SubmittedCareer,
-    current_date_time: DateTime<FixedOffset>,
-    op: impl SubmitIdentityOperation,
-) -> Result<(), ErrResp> {
-    let create_req_exists = op
-        .check_if_create_identity_req_already_exists(account_id)
-        .await?;
-    if create_req_exists {
-        error!(
-            "create identity request (account id: {}) already exists",
-            account_id
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: IdentityReqAlreadyExists as u32,
-            }),
-        ));
-    }
-    let _ = op
-        .request_create_identity(submitted_career, current_date_time)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to handle create identity request (account id: {})",
-                account_id
-            );
-            e
-        })?;
-    Ok(())
-}
-
 #[derive(Clone, Debug, PartialEq)]
 struct SubmittedCareer {
     account_id: i64,
-    career: Identity,
+    career: Career,
     career_image1: FileNameAndBinary,
     career_image2: Option<FileNameAndBinary>,
 }
-
-type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 fn create_subject(id: i64, update: bool) -> String {
     let request_type = if update { "更新" } else { "新規" };
@@ -535,29 +396,29 @@ fn create_text(id: i64, update: bool) -> String {
 }
 
 #[async_trait]
-trait SubmitIdentityOperation {
-    async fn find_identity_by_account_id(
-        &self,
-        account_id: i64,
-    ) -> Result<Option<Identity>, ErrResp>;
-    async fn check_if_create_identity_req_already_exists(
-        &self,
-        account_id: i64,
-    ) -> Result<bool, ErrResp>;
-    async fn request_create_identity(
-        &self,
-        submitted_career: SubmittedCareer,
-        current_date_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp>;
-    async fn check_if_update_identity_req_already_exists(
-        &self,
-        account_id: i64,
-    ) -> Result<bool, ErrResp>;
-    async fn request_update_identity(
-        &self,
-        submitted_career: SubmittedCareer,
-        current_date_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp>;
+trait SubmitCareerOperation {
+    // async fn find_identity_by_account_id(
+    //     &self,
+    //     account_id: i64,
+    // ) -> Result<Option<Identity>, ErrResp>;
+    // async fn check_if_create_identity_req_already_exists(
+    //     &self,
+    //     account_id: i64,
+    // ) -> Result<bool, ErrResp>;
+    // async fn request_create_identity(
+    //     &self,
+    //     submitted_career: SubmittedCareer,
+    //     current_date_time: DateTime<FixedOffset>,
+    // ) -> Result<(), ErrResp>;
+    // async fn check_if_update_identity_req_already_exists(
+    //     &self,
+    //     account_id: i64,
+    // ) -> Result<bool, ErrResp>;
+    // async fn request_update_identity(
+    //     &self,
+    //     submitted_career: SubmittedCareer,
+    //     current_date_time: DateTime<FixedOffset>,
+    // ) -> Result<(), ErrResp>;
 }
 
 struct SubmitCareerOperationImpl {
@@ -571,183 +432,7 @@ impl SubmitCareerOperationImpl {
 }
 
 #[async_trait]
-impl SubmitIdentityOperation for SubmitCareerOperationImpl {
-    async fn find_identity_by_account_id(
-        &self,
-        account_id: i64,
-    ) -> Result<Option<Identity>, ErrResp> {
-        let model = entity::prelude::Identity::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| Identity {
-            last_name: m.last_name,
-            first_name: m.first_name,
-            last_name_furigana: m.last_name_furigana,
-            first_name_furigana: m.first_name_furigana,
-            date_of_birth: Ymd {
-                year: m.date_of_birth.year(),
-                month: m.date_of_birth.month(),
-                day: m.date_of_birth.day(),
-            },
-            prefecture: m.prefecture,
-            city: m.city,
-            address_line1: m.address_line1,
-            address_line2: m.address_line2,
-            telephone_number: m.telephone_number,
-        }))
-    }
-
-    async fn check_if_create_identity_req_already_exists(
-        &self,
-        account_id: i64,
-    ) -> Result<bool, ErrResp> {
-        let model = CreateIdentityReq::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find create_identity_req (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
-    }
-
-    async fn request_create_identity(
-        &self,
-        submitted_career: SubmittedCareer,
-        current_date_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp> {
-        let account_id = submitted_career.account_id;
-        let identity = submitted_career.career;
-        let career_image1 = submitted_career.career_image1;
-        let image1_file_name_without_ext = career_image1.0.clone();
-        let (career_image2_option, image2_file_name_without_ext) =
-            SubmitCareerOperationImpl::extract_file_name(submitted_career.career_image2);
-        let _ = self
-            .pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let active_model =
-                        SubmitCareerOperationImpl::generate_create_identity_req_active_model(
-                            account_id,
-                            identity,
-                            image1_file_name_without_ext,
-                            image2_file_name_without_ext,
-                            current_date_time,
-                        );
-                    let _ = active_model.insert(txn).await.map_err(|e| {
-                        error!(
-                            "failed to insert create_identity_req (user_account_id: {}): {}",
-                            account_id, e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-                    let _ = SubmitCareerOperationImpl::upload_png_images_to_identity_storage(
-                        account_id,
-                        career_image1,
-                        career_image2_option,
-                    )
-                    .await?;
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("failed to insert create_identity_req: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to insert create_identity_req: {}", err_resp_struct);
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
-    }
-
-    async fn check_if_update_identity_req_already_exists(
-        &self,
-        account_id: i64,
-    ) -> Result<bool, ErrResp> {
-        let model = UpdateIdentityReq::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find update_identity_req (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
-    }
-
-    async fn request_update_identity(
-        &self,
-        submitted_career: SubmittedCareer,
-        current_date_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp> {
-        let account_id = submitted_career.account_id;
-        let identity = submitted_career.career;
-        let career_image1 = submitted_career.career_image1;
-        let image1_file_name_without_ext = career_image1.0.clone();
-        let (career_image2_option, image2_file_name_without_ext) =
-            SubmitCareerOperationImpl::extract_file_name(submitted_career.career_image2);
-        let _ = self
-            .pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let active_model =
-                        SubmitCareerOperationImpl::generate_update_identity_req_active_model(
-                            account_id,
-                            identity,
-                            image1_file_name_without_ext,
-                            image2_file_name_without_ext,
-                            current_date_time,
-                        );
-                    let _ = active_model.insert(txn).await.map_err(|e| {
-                        error!(
-                            "failed to insert update_identity_req (user_account_id: {}): {}",
-                            account_id, e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-                    let _ = SubmitCareerOperationImpl::upload_png_images_to_identity_storage(
-                        account_id,
-                        career_image1,
-                        career_image2_option,
-                    )
-                    .await?;
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("failed to insert update_identity_req: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to insert update_identity_req: {}", err_resp_struct);
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
-    }
-}
+impl SubmitCareerOperation for SubmitCareerOperationImpl {}
 
 impl SubmitCareerOperationImpl {
     fn extract_file_name(
@@ -761,74 +446,14 @@ impl SubmitCareerOperationImpl {
         (None, None)
     }
 
-    fn generate_create_identity_req_active_model(
-        account_id: i64,
-        identity: Identity,
-        image1_file_name_without_ext: String,
-        image2_file_name_without_ext: Option<String>,
-        current_date_time: DateTime<FixedOffset>,
-    ) -> create_identity_req::ActiveModel {
-        let date_of_birth = NaiveDate::from_ymd(
-            identity.date_of_birth.year,
-            identity.date_of_birth.month,
-            identity.date_of_birth.day,
-        );
-        create_identity_req::ActiveModel {
-            user_account_id: Set(account_id),
-            last_name: Set(identity.last_name),
-            first_name: Set(identity.first_name),
-            last_name_furigana: Set(identity.last_name_furigana),
-            first_name_furigana: Set(identity.first_name_furigana),
-            date_of_birth: Set(date_of_birth),
-            prefecture: Set(identity.prefecture),
-            city: Set(identity.city),
-            address_line1: Set(identity.address_line1),
-            address_line2: Set(identity.address_line2),
-            telephone_number: Set(identity.telephone_number),
-            image1_file_name_without_ext: Set(image1_file_name_without_ext),
-            image2_file_name_without_ext: Set(image2_file_name_without_ext),
-            requested_at: Set(current_date_time),
-        }
-    }
-
-    fn generate_update_identity_req_active_model(
-        account_id: i64,
-        identity: Identity,
-        image1_file_name_without_ext: String,
-        image2_file_name_without_ext: Option<String>,
-        current_date_time: DateTime<FixedOffset>,
-    ) -> update_identity_req::ActiveModel {
-        let date_of_birth = NaiveDate::from_ymd(
-            identity.date_of_birth.year,
-            identity.date_of_birth.month,
-            identity.date_of_birth.day,
-        );
-        update_identity_req::ActiveModel {
-            user_account_id: Set(account_id),
-            last_name: Set(identity.last_name),
-            first_name: Set(identity.first_name),
-            last_name_furigana: Set(identity.last_name_furigana),
-            first_name_furigana: Set(identity.first_name_furigana),
-            date_of_birth: Set(date_of_birth),
-            prefecture: Set(identity.prefecture),
-            city: Set(identity.city),
-            address_line1: Set(identity.address_line1),
-            address_line2: Set(identity.address_line2),
-            telephone_number: Set(identity.telephone_number),
-            image1_file_name_without_ext: Set(image1_file_name_without_ext),
-            image2_file_name_without_ext: Set(image2_file_name_without_ext),
-            requested_at: Set(current_date_time),
-        }
-    }
-
-    async fn upload_png_images_to_identity_storage(
+    async fn upload_png_images_to_career_storage(
         account_id: i64,
         career_image1: FileNameAndBinary,
         career_image2_option: Option<FileNameAndBinary>,
     ) -> Result<(), ErrRespStruct> {
         let image1_key = format!("{}/{}.png", account_id, career_image1.0);
         let image1_obj = career_image1.1.into_inner();
-        let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
+        let _ = upload_object(CAREER_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
             .await
             .map_err(|e| {
                 error!(
@@ -839,10 +464,10 @@ impl SubmitCareerOperationImpl {
                     err_resp: unexpected_err_resp(),
                 }
             })?;
-        if let Some(identity_image2) = career_image2_option {
-            let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
-            let image2_obj = identity_image2.1.into_inner();
-            let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
+        if let Some(career_image2) = career_image2_option {
+            let image2_key = format!("{}/{}.png", account_id, career_image2.0);
+            let image2_obj = career_image2.1.into_inner();
+            let _ = upload_object(CAREER_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
                 .await
                 .map_err(|e| {
                     error!(

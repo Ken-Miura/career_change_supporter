@@ -25,6 +25,8 @@ use crate::err::{unexpected_err_resp, Code};
 
 pub(crate) const ROOT_PATH: &str = "/api";
 
+pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
+
 /// PAY.JPにアクセスするための情報を保持する変数
 pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let url_without_path = var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
