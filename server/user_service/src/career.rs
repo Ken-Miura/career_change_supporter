@@ -587,6 +587,7 @@ impl SubmitCareerOperationImpl {
 
 #[cfg(test)]
 mod tests {
+    use std::cmp::max;
     use std::io::Cursor;
 
     use async_session::serde_json;
@@ -769,5 +770,47 @@ mod tests {
             convert_jpeg_to_png(Bytes::from(career_image1.into_inner())).expect("failed to get Ok");
         assert_eq!(career_image1_png.into_inner(), input.1.into_inner());
         assert_eq!(None, input.2);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_success_image_size_is_equal_to_max_size() {
+        let image1_size_in_bytes = Bytes::from(create_dummy_career_image1().into_inner()).len();
+        let image2_size_in_bytes = Bytes::from(create_dummy_career_image2().into_inner()).len();
+        let max_image_size_in_bytes = max(image1_size_in_bytes, image2_size_in_bytes);
+
+        let career = create_dummy_career();
+        let career_field = create_dummy_career_field(Some(String::from("career")), &career);
+        let career_image1 = create_dummy_career_image1();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let career_image2 = create_dummy_career_image2();
+        let career_image2_field = create_dummy_career_image_field(
+            Some(String::from("career-image2")),
+            Some(String::from("test2.jpeg")),
+            career_image2.clone(),
+        );
+        let fields = vec![career_field, career_image1_field, career_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, max_image_size_in_bytes).await;
+
+        let input = result.expect("failed to get Ok");
+        assert_eq!(career, input.0);
+        let career_image1_png =
+            convert_jpeg_to_png(Bytes::from(career_image1.into_inner())).expect("failed to get Ok");
+        assert_eq!(career_image1_png.into_inner(), input.1.into_inner());
+        let career_image2_png =
+            convert_jpeg_to_png(Bytes::from(career_image2.into_inner())).expect("failed to get Ok");
+        assert_eq!(
+            career_image2_png.into_inner(),
+            input.2.expect("failed to get Ok").into_inner()
+        );
     }
 }
