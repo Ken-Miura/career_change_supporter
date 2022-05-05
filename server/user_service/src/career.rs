@@ -743,4 +743,31 @@ mod tests {
             data,
         }
     }
+
+    #[tokio::test]
+    async fn handle_multipart_success_without_career_image2() {
+        let career = create_dummy_career();
+        let career_field = create_dummy_career_field(Some(String::from("career")), &career);
+        let career_image1 = create_dummy_career_image1();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let fields = vec![career_field, career_image1_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let input = result.expect("failed to get Ok");
+        assert_eq!(career, input.0);
+        let career_image1_png =
+            convert_jpeg_to_png(Bytes::from(career_image1.into_inner())).expect("failed to get Ok");
+        assert_eq!(career_image1_png.into_inner(), input.1.into_inner());
+        assert_eq!(None, input.2);
+    }
 }
