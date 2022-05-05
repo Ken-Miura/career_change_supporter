@@ -594,10 +594,9 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use bytes::Bytes;
-    use chrono::{TimeZone, Utc};
     use common::{
         util::{Career, Ymd},
-        ApiError, ErrResp, JAPANESE_TIME_ZONE,
+        ApiError, ErrResp,
     };
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
