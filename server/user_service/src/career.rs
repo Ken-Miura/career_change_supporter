@@ -586,4 +586,161 @@ impl SubmitCareerOperationImpl {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use std::io::Cursor;
+
+    use async_session::serde_json;
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use bytes::Bytes;
+    use chrono::{TimeZone, Utc};
+    use common::{
+        util::{Career, Ymd},
+        ApiError, ErrResp, JAPANESE_TIME_ZONE,
+    };
+    use image::{ImageBuffer, ImageOutputFormat, RgbImage};
+
+    use crate::{
+        career::{handle_multipart, MAX_CAREER_IMAGE_SIZE_IN_BYTES},
+        err::Code,
+        util::convert_jpeg_to_png,
+    };
+
+    use super::{CareerField, MultipartWrapper};
+
+    // CareerFieldのdataのResult<Bytes, Box<dyn Error>>がSendを実装しておらず、asyncメソッド内のselfに含められない
+    // そのため、テスト用にdataの型を一部修正したダミークラスを用意
+    struct DummyCareerField {
+        name: Option<String>,
+        file_name: Option<String>,
+        data: Bytes,
+    }
+
+    struct MultipartWrapperMock {
+        count: usize,
+        fields: Vec<DummyCareerField>,
+        invalid_multipart_form_data: bool,
+    }
+
+    #[async_trait]
+    impl MultipartWrapper for MultipartWrapperMock {
+        async fn next_field(&mut self) -> Result<Option<CareerField>, ErrResp> {
+            if self.invalid_multipart_form_data {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidMultiPartFormData as u32,
+                    }),
+                ));
+            }
+            let dummy_field = self.fields.get(self.count);
+            let field = dummy_field.map(|f| CareerField {
+                name: f.name.clone(),
+                file_name: f.file_name.clone(),
+                data: Ok(f.data.clone()),
+            });
+            self.count += 1;
+            Ok(field)
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_success() {
+        let career = create_dummy_career();
+        let career_field = create_dummy_career_field(Some(String::from("career")), &career);
+        let career_image1 = create_dummy_career_image1();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let career_image2 = create_dummy_career_image2();
+        let career_image2_field = create_dummy_career_image_field(
+            Some(String::from("career-image2")),
+            Some(String::from("test2.jpeg")),
+            career_image2.clone(),
+        );
+        let fields = vec![career_field, career_image1_field, career_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let input = result.expect("failed to get Ok");
+        assert_eq!(career, input.0);
+        let career_image1_png =
+            convert_jpeg_to_png(Bytes::from(career_image1.into_inner())).expect("failed to get Ok");
+        assert_eq!(career_image1_png.into_inner(), input.1.into_inner());
+        let career_image2_png =
+            convert_jpeg_to_png(Bytes::from(career_image2.into_inner())).expect("failed to get Ok");
+        assert_eq!(
+            career_image2_png.into_inner(),
+            input.2.expect("failed to get Ok").into_inner()
+        );
+    }
+
+    fn create_dummy_career() -> Career {
+        Career {
+            company_name: "テスト株式会社".to_string(),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2008,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: "regular".to_string(),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: true,
+            note: None,
+        }
+    }
+
+    fn create_dummy_career_field(name: Option<String>, career: &Career) -> DummyCareerField {
+        let career_str = serde_json::to_string(career).expect("failed to get Ok");
+        let data = Bytes::from(career_str);
+        DummyCareerField {
+            name,
+            file_name: None,
+            data,
+        }
+    }
+
+    fn create_dummy_career_image1() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(128, 128);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+            .expect("failed to get Ok");
+        bytes
+    }
+
+    fn create_dummy_career_image2() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(64, 64);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Jpeg(90))
+            .expect("failed to get Ok");
+        bytes
+    }
+
+    fn create_dummy_career_image_field(
+        name: Option<String>,
+        file_name: Option<String>,
+        jpeg_img: Cursor<Vec<u8>>,
+    ) -> DummyCareerField {
+        let data = Bytes::from(jpeg_img.into_inner());
+        DummyCareerField {
+            name,
+            file_name,
+            data,
+        }
+    }
+}
