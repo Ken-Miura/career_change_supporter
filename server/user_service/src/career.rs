@@ -4,7 +4,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::util::validator::career_validator::{validate_career, CareerValidationError};
-use crate::util::{convert_jpeg_to_png, FileNameAndBinary};
+use crate::util::{convert_jpeg_to_png, extract_file_name, FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -465,7 +465,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
         let career_image1 = submitted_career.career_image1;
         let image1_file_name_without_ext = career_image1.0.clone();
         let (career_image2_option, image2_file_name_without_ext) =
-            SubmitCareerOperationImpl::extract_file_name(submitted_career.career_image2);
+            extract_file_name(submitted_career.career_image2);
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -512,17 +512,6 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
 }
 
 impl SubmitCareerOperationImpl {
-    fn extract_file_name(
-        file_name_and_binary_option: Option<FileNameAndBinary>,
-    ) -> (Option<FileNameAndBinary>, Option<String>) {
-        if let Some(file_name_and_binary) = file_name_and_binary_option {
-            let identity_image2 = Some((file_name_and_binary.0.clone(), file_name_and_binary.1));
-            let image2_file_name_without_ext = Some(file_name_and_binary.0);
-            return (identity_image2, image2_file_name_without_ext);
-        };
-        (None, None)
-    }
-
     fn generate_create_career_req_active_model(
         account_id: i64,
         career: Career,

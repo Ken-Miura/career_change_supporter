@@ -88,6 +88,17 @@ pub(crate) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrRes
     Ok(bytes)
 }
 
+pub(crate) fn extract_file_name(
+    file_name_and_binary_option: Option<FileNameAndBinary>,
+) -> (Option<FileNameAndBinary>, Option<String>) {
+    if let Some(file_name_and_binary) = file_name_and_binary_option {
+        let image2 = Some((file_name_and_binary.0.clone(), file_name_and_binary.1));
+        let image2_file_name_without_ext = Some(file_name_and_binary.0);
+        return (image2, image2_file_name_without_ext);
+    };
+    (None, None)
+}
+
 /// 通常のテストコードに加え、共通で使うモックをまとめる
 #[cfg(test)]
 pub(crate) mod tests {

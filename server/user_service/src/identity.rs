@@ -4,7 +4,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::err::Code::IdentityReqAlreadyExists;
-use crate::util::{convert_jpeg_to_png, FileNameAndBinary};
+use crate::util::{convert_jpeg_to_png, extract_file_name, FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -647,7 +647,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         let identity_image1 = submitted_identity.identity_image1;
         let image1_file_name_without_ext = identity_image1.0.clone();
         let (identity_image2_option, image2_file_name_without_ext) =
-            SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
+            extract_file_name(submitted_identity.identity_image2);
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -719,7 +719,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         let identity_image1 = submitted_identity.identity_image1;
         let image1_file_name_without_ext = identity_image1.0.clone();
         let (identity_image2_option, image2_file_name_without_ext) =
-            SubmitIdentityOperationImpl::extract_file_name(submitted_identity.identity_image2);
+            extract_file_name(submitted_identity.identity_image2);
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -766,17 +766,6 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
 }
 
 impl SubmitIdentityOperationImpl {
-    fn extract_file_name(
-        file_name_and_binary_option: Option<FileNameAndBinary>,
-    ) -> (Option<FileNameAndBinary>, Option<String>) {
-        if let Some(file_name_and_binary) = file_name_and_binary_option {
-            let identity_image2 = Some((file_name_and_binary.0.clone(), file_name_and_binary.1));
-            let image2_file_name_without_ext = Some(file_name_and_binary.0);
-            return (identity_image2, image2_file_name_without_ext);
-        };
-        (None, None)
-    }
-
     fn generate_create_identity_req_active_model(
         account_id: i64,
         identity: Identity,
