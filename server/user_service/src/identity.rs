@@ -51,7 +51,7 @@ pub(crate) async fn post_identity(
     ContentLengthLimit(multipart): ContentLengthLimit<
         Multipart,
         {
-            9 * 1024 * 1024 /* 9mb */
+            9 * 1024 * 1024 /* 9mb */ /* サイズをオーバーした場合、ContentLengthLimitはステータスコード413を返却する */
         },
     >,
     Extension(pool): Extension<DatabaseConnection>,
