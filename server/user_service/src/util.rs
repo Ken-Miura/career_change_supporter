@@ -205,4 +205,16 @@ pub(crate) mod tests {
         assert_eq!(None, ret1);
         assert_eq!(None, ret2);
     }
+
+    #[test]
+    fn clone_file_name_if_exists_returns_arg_and_file_name_if_value_is_passed() {
+        let file_name = "c89bfd885f6df5fd-345306a47b7dd758";
+        let binary = create_dummy_jpeg_image();
+        let file_name_and_binary = (file_name.to_string(), binary);
+
+        let (ret1, ret2) = clone_file_name_if_exists(Some(file_name_and_binary.clone()));
+
+        assert_eq!(Some(file_name_and_binary), ret1);
+        assert_eq!(Some(file_name.to_string()), ret2);
+    }
 }
