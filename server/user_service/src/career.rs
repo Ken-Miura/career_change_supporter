@@ -4,7 +4,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::util::validator::career_validator::{validate_career, CareerValidationError};
-use crate::util::{convert_jpeg_to_png, extract_file_name, FileNameAndBinary};
+use crate::util::{clone_file_name_if_exists, convert_jpeg_to_png, FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -465,7 +465,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
         let career_image1 = submitted_career.career_image1;
         let image1_file_name_without_ext = career_image1.0.clone();
         let (career_image2_option, image2_file_name_without_ext) =
-            extract_file_name(submitted_career.career_image2);
+            clone_file_name_if_exists(submitted_career.career_image2);
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {

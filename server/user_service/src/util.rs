@@ -88,7 +88,8 @@ pub(crate) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrRes
     Ok(bytes)
 }
 
-pub(crate) fn extract_file_name(
+/// 引数が存在する場合、ファイル名のみ複製を行う
+pub(crate) fn clone_file_name_if_exists(
     file_name_and_binary_option: Option<FileNameAndBinary>,
 ) -> (Option<FileNameAndBinary>, Option<String>) {
     if let Some(file_name_and_binary) = file_name_and_binary_option {
@@ -111,7 +112,7 @@ pub(crate) mod tests {
 
     use crate::err::Code;
 
-    use super::convert_jpeg_to_png;
+    use super::{clone_file_name_if_exists, convert_jpeg_to_png};
 
     pub(crate) struct SendMailMock {
         to: String,
@@ -196,5 +197,12 @@ pub(crate) mod tests {
             .write_to(&mut png_img, image::ImageOutputFormat::Png)
             .expect("failed to get Ok");
         png_img
+    }
+
+    #[test]
+    fn clone_file_name_if_exists_returns_none_if_none_is_passed() {
+        let (ret1, ret2) = clone_file_name_if_exists(None);
+        assert_eq!(None, ret1);
+        assert_eq!(None, ret2);
     }
 }
