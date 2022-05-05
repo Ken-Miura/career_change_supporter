@@ -588,6 +588,8 @@ impl SubmitCareerOperationImpl {
 #[cfg(test)]
 mod tests {
     use std::cmp::max;
+    use std::error::Error;
+    use std::fmt::Display;
     use std::io::Cursor;
 
     use async_session::serde_json;
@@ -641,6 +643,31 @@ mod tests {
             });
             self.count += 1;
             Ok(field)
+        }
+    }
+
+    struct MultipartWrapperErrMock {}
+
+    #[async_trait]
+    impl MultipartWrapper for MultipartWrapperErrMock {
+        async fn next_field(&mut self) -> Result<Option<CareerField>, ErrResp> {
+            let field = CareerField {
+                name: Some(String::from("career-image1")),
+                file_name: Some(String::from("test1.jpeg")),
+                data: Err(Box::new(DummyError {})),
+            };
+            Ok(Some(field))
+        }
+    }
+
+    #[derive(Debug)]
+    struct DummyError {}
+
+    impl Error for DummyError {}
+
+    impl Display for DummyError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "dummy error")
         }
     }
 
@@ -871,6 +898,17 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(Code::NoNameFound as u32, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_data_parse() {
+        let mock = MultipartWrapperErrMock {};
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
+        assert_eq!(Code::DataParseFailure as u32, err_resp.1.code);
     }
 
     #[tokio::test]
