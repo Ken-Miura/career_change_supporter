@@ -1022,4 +1022,34 @@ mod tests {
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(Code::NoFileNameFound as u32, resp.1.code);
     }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_not_jpeg_extension() {
+        let career = create_dummy_career();
+        let career_field = create_dummy_career_field(Some(String::from("career")), &career);
+        let career_image1 = create_dummy_career_image1();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let career_image2 = create_dummy_career_image2();
+        let career_image2_field = create_dummy_career_image_field(
+            Some(String::from("career-image2")),
+            /* not jpeg extension */ Some(String::from("test2.zip")),
+            career_image2.clone(),
+        );
+        let fields = vec![career_field, career_image1_field, career_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NotJpegExtension as u32, resp.1.code);
+    }
 }
