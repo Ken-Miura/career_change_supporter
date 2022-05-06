@@ -1106,4 +1106,44 @@ mod tests {
             data,
         }
     }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_invalid_utf8_sequence() {
+        let career_field = create_invalid_utf8_career_field(Some(String::from("career")));
+        let career_image1 = create_dummy_career_image1();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let career_image2 = create_dummy_career_image2();
+        let career_image2_field = create_dummy_career_image_field(
+            Some(String::from("career-image2")),
+            Some(String::from("test2.jpg")),
+            career_image2.clone(),
+        );
+        let fields = vec![career_field, career_image1_field, career_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::InvalidUtf8Sequence as u32, resp.1.code);
+    }
+
+    fn create_invalid_utf8_career_field(name: Option<String>) -> DummyCareerField {
+        // invalid utf-8 bytes
+        // https://stackoverflow.com/questions/1301402/example-invalid-utf8-string
+        let data = Bytes::from(vec![0xf0, 0x28, 0x8c, 0xbc]);
+        DummyCareerField {
+            name,
+            file_name: None,
+            data,
+        }
+    }
 }
