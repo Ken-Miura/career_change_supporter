@@ -1947,4 +1947,98 @@ mod tests {
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(Code::IllegalCharInPositionName as u32, resp.1.code);
     }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_fail_invalid_position_note_length() {
+        let career = Career {
+            company_name: "テスト株式会社".to_string(),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2008,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: "regular".to_string(),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: true,
+            note: Some("".to_string()),
+        };
+        let career_field = create_dummy_career_field(Some(String::from("career")), &career);
+        let career_image1 = create_dummy_career_image1();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let career_image2 = create_dummy_career_image2();
+        let career_image2_field = create_dummy_career_image_field(
+            Some(String::from("career-image2")),
+            Some(String::from("test2.jpeg")),
+            career_image2.clone(),
+        );
+        let fields = vec![career_field, career_image1_field, career_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::InvalidNoteLength as u32, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_fail_illegal_char_in_note() {
+        let career = Career {
+            company_name: "テスト株式会社".to_string(),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2008,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: "regular".to_string(),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: true,
+            position_name: None,
+            is_new_graduate: false,
+            note: Some("1' or '1' = '1';--".to_string()),
+        };
+        let career_field = create_dummy_career_field(Some(String::from("career")), &career);
+        let career_image1 = create_dummy_career_image1();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let career_image2 = create_dummy_career_image2();
+        let career_image2_field = create_dummy_career_image_field(
+            Some(String::from("career-image2")),
+            Some(String::from("test2.jpeg")),
+            career_image2.clone(),
+        );
+        let fields = vec![career_field, career_image1_field, career_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::IllegalCharInNote as u32, resp.1.code);
+    }
 }
