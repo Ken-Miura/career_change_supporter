@@ -2169,6 +2169,8 @@ mod tests {
         assert_eq!(Code::ReachCareerNumLimit as u32, resp.1.code);
     }
 
+    // 基本的にMAX_NUM_OF_CAREER_PER_USER_ACCOUNTに達した場合、
+    // Careerを作れないのでありえないケースだが、テストは用意しておく
     #[tokio::test]
     async fn handle_career_req_fail_over_career_num_limit() {
         let account_id = 78515;
