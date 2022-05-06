@@ -283,7 +283,7 @@ impl ProfileOperationImpl {
     }
 }
 
-// TODO: 事前準備に用意するデータ (Career、fee_per_hour_in_yen) に関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
+// TODO: 事前準備に用意するデータ (fee_per_hour_in_yen) に関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
