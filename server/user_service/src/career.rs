@@ -596,20 +596,29 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use bytes::Bytes;
+    use chrono::{DateTime, FixedOffset, Utc};
+    use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
     use common::{
         util::{Career, Ymd},
         ApiError, ErrResp,
     };
+    use common::{JAPANESE_TIME_ZONE, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
     use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
 
+    use crate::career::CareerResult;
+    use crate::util::tests::SendMailMock;
     use crate::{
         career::{handle_multipart, MAX_CAREER_IMAGE_SIZE_IN_BYTES},
         err::Code,
         util::convert_jpeg_to_png,
     };
 
-    use super::{CareerField, MultipartWrapper};
+    use super::{
+        create_subject, create_text, handle_career_req, CareerField, MultipartWrapper,
+        SubmitCareerOperation, SubmittedCareer,
+    };
 
     // CareerFieldのdataのResult<Bytes, Box<dyn Error>>がSendを実装しておらず、asyncメソッド内のselfに含められない
     // そのため、テスト用にdataの型を一部修正したダミークラスを用意
@@ -2040,5 +2049,60 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(Code::IllegalCharInNote as u32, resp.1.code);
+    }
+
+    struct SubmitCareerOperationMock {
+        account_id: i64,
+        submitted_career: SubmittedCareer,
+        current_date_time: DateTime<FixedOffset>,
+        num_of_career: usize,
+    }
+
+    #[async_trait]
+    impl SubmitCareerOperation for SubmitCareerOperationMock {
+        async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.num_of_career)
+        }
+        async fn request_create_career(
+            &self,
+            submitted_career: SubmittedCareer,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.submitted_career, submitted_career);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_career_req_success() {
+        let account_id = 78515;
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
+        let submitted_career = SubmittedCareer {
+            account_id,
+            career: create_dummy_career(),
+            career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
+            career_image2: None,
+        };
+        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op = SubmitCareerOperationMock {
+            account_id,
+            submitted_career: submitted_career.clone(),
+            current_date_time,
+            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+        };
+        let smtp_client = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id),
+            create_text(account_id),
+        );
+
+        let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(CareerResult {}, resp.1 .0);
     }
 }
