@@ -1146,4 +1146,54 @@ mod tests {
             data,
         }
     }
+
+    #[tokio::test]
+    async fn handle_multipart_fail_invalid_jpeg_image() {
+        let career = create_dummy_career();
+        let career_field = create_dummy_career_field(Some(String::from("career")), &career);
+        let career_image1 = create_dummy_career_image1_png();
+        let career_image1_field = create_dummy_career_image_field(
+            Some(String::from("career-image1")),
+            /* 実体はpng画像だが、ファイル名で弾かれないようにjpegに設定 */
+            Some(String::from("test1.jpeg")),
+            career_image1.clone(),
+        );
+        let career_image2 = create_dummy_career_image2_bmp();
+        let career_image2_field = create_dummy_career_image_field(
+            Some(String::from("career-image2")),
+            /* 実体はbmp画像だが、ファイル名で弾かれないようにjpegに設定 */
+            Some(String::from("test2.jpg")),
+            career_image2.clone(),
+        );
+        let fields = vec![career_field, career_image1_field, career_image2_field];
+        let mock = MultipartWrapperMock {
+            count: 0,
+            fields,
+            invalid_multipart_form_data: false,
+        };
+
+        let result = handle_multipart(mock, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::InvalidJpegImage as u32, resp.1.code);
+    }
+
+    fn create_dummy_career_image1_png() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(128, 128);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Png)
+            .expect("failed to get Ok");
+        bytes
+    }
+
+    fn create_dummy_career_image2_bmp() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(64, 64);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        let _ = img
+            .write_to(&mut bytes, ImageOutputFormat::Bmp)
+            .expect("failed to get Ok");
+        bytes
+    }
 }

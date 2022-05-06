@@ -1568,7 +1568,7 @@ mod tests {
         let identity_image2 = create_dummy_identity_image2_bmp();
         let identity_image2_field = create_dummy_identity_image_field(
             Some(String::from("identity-image2")),
-            /* 実体はpng画像だが、ファイル名で弾かれないようにjpegに設定 */
+            /* 実体はbmp画像だが、ファイル名で弾かれないようにjpegに設定 */
             Some(String::from("test2.jpeg")),
             identity_image2.clone(),
         );
