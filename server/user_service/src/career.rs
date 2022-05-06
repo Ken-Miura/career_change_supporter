@@ -2105,4 +2105,36 @@ mod tests {
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(CareerResult {}, resp.1 .0);
     }
+
+    #[tokio::test]
+    async fn handle_career_req_success_with_image2() {
+        let account_id = 78515;
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
+        let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
+        let submitted_career = SubmittedCareer {
+            account_id,
+            career: create_dummy_career(),
+            career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
+            career_image2: Some((image2_file_name_without_ext, create_dummy_career_image2())),
+        };
+        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op = SubmitCareerOperationMock {
+            account_id,
+            submitted_career: submitted_career.clone(),
+            current_date_time,
+            num_of_career: 0,
+        };
+        let smtp_client = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id),
+            create_text(account_id),
+        );
+
+        let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(CareerResult {}, resp.1 .0);
+    }
 }
