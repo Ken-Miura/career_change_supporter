@@ -80,6 +80,48 @@
                 <option value="other">その他</option>
               </select>
             </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              職種（任意）（例 ITエンジニア）
+            </div>
+            <div data-test="office-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+              <input type="text" minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              年収（単位：万円）（任意）
+            </div>
+            <div data-test="annual-incom-in-man-yen-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+              <input type="text" minlength="1" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              管理職区分（必須）
+            </div>
+            <div data-test="is-manager-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-6">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option value="false">非管理職</option>
+                <option value="true">管理職</option>
+              </select>
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              職位（任意）（例 係長）
+            </div>
+            <div data-test="position-name-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+              <input type="text" minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              入社区分（必須）
+            </div>
+            <div data-test="is-new-graduate-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-6">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option value="true">新卒入社</option>
+                <option value="false">中途入社</option>
+              </select>
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              備考（任意）
+            </div>
+            <div data-test="note-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+              <textarea minlength="1" maxlength="2048" placeholder="例 職場の雰囲気、社風、女性の働きやさ、福利厚生や一日の仕事の流れ等などについてお話できます。" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
+            </div>
           </div>
           <button data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">職務経歴の確認を依頼する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
