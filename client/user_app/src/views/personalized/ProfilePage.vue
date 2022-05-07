@@ -34,8 +34,8 @@
           <button data-test="move-to-identity-page-button" v-on:click="moveToIdentityPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
         </div>
         <div data-test="career-descriptions" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">職務経歴（最大{{ MAX_CAREER_NUM }}個まで登録可能です）</h3>
-          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
+          <h3 class="font-bold text-2xl">職務経歴</h3>
+          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。職務経歴は、最大{{ MAX_CAREER_NUM }}個まで登録可能です。</p>
           <div v-if="careerDescriptions.length === 0" data-test="no-career-descriptions-set" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
           <div v-else data-test="career-descriptions-set">
             <ul>

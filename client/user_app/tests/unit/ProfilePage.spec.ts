@@ -718,7 +718,7 @@ describe('ProfilePage.vue', () => {
     expect(resultMessage).toContain(`${Message.NO_IDENTITY_FOUND}`)
   })
 
-  it(`display 職務経歴（最大${MAX_CAREER_NUM}個まで登録可能です） on 職務経歴`, async () => {
+  it(`display 職務経歴は、最大${MAX_CAREER_NUM}個まで登録可能です on 職務経歴`, async () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
@@ -742,7 +742,7 @@ describe('ProfilePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     const careerDescriptions = wrapper.find('[data-test="career-descriptions"]')
     expect(careerDescriptions.exists)
-    expect(careerDescriptions.text()).toContain(`職務経歴（最大${MAX_CAREER_NUM}個まで登録可能です）`)
+    expect(careerDescriptions.text()).toContain(`職務経歴は、最大${MAX_CAREER_NUM}個まで登録可能です`)
   })
 
   it(`display ${Message.NO_IDENTITY_FOUND} on fee area when identity is null and "相談料を編集する" is pushed`, async () => {
