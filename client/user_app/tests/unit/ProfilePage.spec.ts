@@ -10,6 +10,7 @@ import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
 import TheHeader from '@/components/TheHeader.vue'
 import { CareerDescription } from '@/util/personalized/profile/CareerDescription'
+import { MAX_CAREER_NUM } from '@/util/MaxCareerNum'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -715,6 +716,33 @@ describe('ProfilePage.vue', () => {
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(`${Message.NO_IDENTITY_FOUND}`)
+  })
+
+  it(`display 職務経歴（最大${MAX_CAREER_NUM}個まで登録可能です） on 職務経歴`, async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      career_descriptions: [],
+      fee_per_hour_in_yen: null
+      /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const careerDescriptions = wrapper.find('[data-test="career-descriptions"]')
+    expect(careerDescriptions.exists)
+    expect(careerDescriptions.text()).toContain(`職務経歴（最大${MAX_CAREER_NUM}個まで登録可能です）`)
   })
 
   it(`display ${Message.NO_IDENTITY_FOUND} on fee area when identity is null and "相談料を編集する" is pushed`, async () => {
