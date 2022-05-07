@@ -122,6 +122,24 @@
             <div data-test="note-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <textarea minlength="1" maxlength="2048" placeholder="例 職場の雰囲気、社風、女性の働きやさ、福利厚生や一日の仕事の流れ等などについて本音でお話できます。" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
             </div>
+            <div data-test="career-image-div" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              証明書類
+            </div>
+            <div class="mt-2 text-xl justify-self-start col-span-6 pt-3 pl-3">
+              勤務先名称に記載した勤め先にご本人が勤務されていた証明として、書類をアップロードしていただきます。証明書類として、<span class=" text-red-500">名刺、退職証明書または離職票</span>をご利用になれます。証明書類の画像は、<span class=" text-red-500">jpegかつサイズが4MB以下</span>で、勤務先名称に記載した内容とご本人のお名前が記載されている必要があります。離職票をご利用の場合、マイナンバーが記載されていないこと（またはマイナンバーの箇所が隠されていること）を事前にご確認下さい。表面のアップロードは必須、裏面のアップロードは任意となります。
+            </div>
+            <div data-test="career-image1-div" class="mt-6 pl-3 w-full justify-self-start col-span-1">
+              表面
+            </div>
+            <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+              <input type="file" name="image1" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div data-test="career-image2-div" class="mt-6 pl-3 w-full justify-self-start col-span-1">
+              裏面
+            </div>
+            <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+              <input type="file" name="image2" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
           </div>
           <button data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">職務経歴の確認を依頼する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
