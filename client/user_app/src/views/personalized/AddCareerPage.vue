@@ -132,13 +132,13 @@
               表面
             </div>
             <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
-              <input type="file" name="image1" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input type="file" name="image1" v-on:change="onImage1StateChange" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="career-image2-div" class="mt-6 pl-3 w-full justify-self-start col-span-1">
               裏面
             </div>
             <div class="mt-2 w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
-              <input type="file" name="image2" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+              <input type="file" name="image2" v-on:change="onImage2StateChange" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
           </div>
           <button data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">職務経歴の確認を依頼する</button>
@@ -163,6 +163,9 @@ import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { usePostCareer } from '@/util/personalized/careers/usePostCareer'
+import { useImages } from './useImages'
+import { exceedJpegMaxImageSize, isJpegExtension } from '@/util/CheckJpegImage'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
   name: 'AddCareerPage',
@@ -179,6 +182,11 @@ export default defineComponent({
       waitingRequestDone,
       postCareerFunc
     } = usePostCareer()
+    const {
+      images,
+      onImage1StateChange,
+      onImage2StateChange
+    } = useImages()
     const careerStartYearList = ref([] as string[])
     const careerStartMonthList = ref([] as string[])
     const careerStartDayList = ref([] as string[])
@@ -208,6 +216,33 @@ export default defineComponent({
       console.log('TODO: 実装後削除')
     })
     const submitCareer = async () => {
+      if (images.image1 === null) {
+        isHidden.value = false
+        errorMessage.value = Message.NO_CAREER_IMAGE1_SELECTED
+        return
+      }
+      if (!isJpegExtension(images.image1.name)) {
+        isHidden.value = false
+        errorMessage.value = Message.NO_JPEG_EXTENSION_MESSAGE
+        return
+      }
+      if (exceedJpegMaxImageSize(images.image1.size)) {
+        isHidden.value = false
+        errorMessage.value = Message.EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT_MESSAGE
+        return
+      }
+      if (images.image2 !== null) {
+        if (!isJpegExtension(images.image2.name)) {
+          isHidden.value = false
+          errorMessage.value = Message.NO_JPEG_EXTENSION_MESSAGE
+          return
+        }
+        if (exceedJpegMaxImageSize(images.image2.size)) {
+          isHidden.value = false
+          errorMessage.value = Message.EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT_MESSAGE
+          return
+        }
+      }
       console.log('submitCareer')
     }
     return {
@@ -215,6 +250,8 @@ export default defineComponent({
       isHidden,
       errorMessage,
       waitingRequestDone,
+      onImage1StateChange,
+      onImage2StateChange,
       careerStartYearList,
       careerStartMonthList,
       careerStartDayList,
