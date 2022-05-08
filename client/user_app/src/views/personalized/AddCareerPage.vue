@@ -212,10 +212,10 @@ export default defineComponent({
     onMounted(async () => {
       try {
         const resp = await refresh()
-        if (resp instanceof RefreshResp) {
-          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
-        } else if (resp instanceof ApiErrorResp) {
+        if (!(resp instanceof RefreshResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result: ${resp}`)
+          }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('/login')
@@ -223,13 +223,14 @@ export default defineComponent({
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
             await router.push('/terms-of-use')
             return
+          } else {
+            throw new Error(`unexpected result: ${resp}`)
           }
-          // TODO: エラー処理
         }
       } catch (e) {
-        // TODO: エラー処理
+        isHidden.value = false
+        errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      console.log('TODO: 実装後削除')
     })
     const submitCareer = async () => {
       if (images.image1 === null) {
