@@ -170,6 +170,9 @@ import { useCareer } from './useCareer'
 import { createDayList } from '@/util/personalized/careers/DayList'
 import { createMonthList } from '@/util/personalized/careers/MonthList'
 import { createYearList, START_YEAR } from '@/util/personalized/careers/YearList'
+import { Career } from '@/util/personalized/careers/Career'
+import { toBoolean } from '@/util/ToBoolean'
+import { Ymd } from '@/util/Ymd'
 
 export default defineComponent({
   name: 'AddCareerPage',
@@ -255,23 +258,36 @@ export default defineComponent({
           return
         }
       }
-      console.log('submitCareer')
-      console.log(form.companyName)
-      console.log(form.departmentName)
-      console.log(form.office)
-      console.log(form.contractType)
-      console.log(form.profession)
-      console.log(form.annualIncomeInManYen)
-      console.log(form.isManager)
-      console.log(form.positionName)
-      console.log(form.isNewGraduate)
-      console.log(form.note)
-      console.log(form.careerStartYear)
-      console.log(form.careerStartMonth)
-      console.log(form.careerStartDay)
-      console.log(form.careerEndYear)
-      console.log(form.careerEndMonth)
-      console.log(form.careerEndDay)
+      const careerStartDate = {
+        year: parseInt(form.careerStartYear),
+        month: parseInt(form.careerStartMonth),
+        day: parseInt(form.careerStartDay)
+      } as Ymd
+      let careerEndDate
+      if (form.careerEndYear !== '' && form.careerEndMonth !== null && form.careerEndDay !== null) {
+        careerEndDate = {
+          year: parseInt(form.careerStartYear),
+          month: parseInt(form.careerStartMonth),
+          day: parseInt(form.careerStartDay)
+        } as Ymd
+      } else {
+        careerEndDate = null
+      }
+      const career = {
+        company_name: form.companyName,
+        department_name: form.departmentName !== '' ? form.departmentName : null,
+        office: form.office !== '' ? form.office : null,
+        career_start_date: careerStartDate,
+        career_end_date: careerEndDate,
+        contract_type: form.contractType !== '' ? form.contractType : null,
+        profession: form.profession !== '' ? form.profession : null,
+        annual_income_in_man_yen: form.annualIncomeInManYen !== '' ? parseInt(form.annualIncomeInManYen) : null,
+        is_manager: toBoolean(form.isManager),
+        position_name: form.positionName !== '' ? form.positionName : null,
+        is_new_graduate: toBoolean(form.isNewGraduate),
+        note: form.note !== '' ? form.note : null
+      } as Career
+      console.log(career)
     }
     return {
       submitCareer,
