@@ -394,6 +394,20 @@ async fn handle_career_req(
             }),
         ));
     }
+    let num = op.count_create_career_req(account_id).await?;
+    // create_career_reqの最大もMAX_NUM_OF_CAREER_PER_USER_ACCOUNTとする
+    if num >= MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize {
+        error!(
+            "already reach max num of create career request per user account (num: {}, max num: {})",
+            num, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ReachCreateCareerReqNumLimit as u32,
+            }),
+        ));
+    }
 
     let _ = op
         .request_create_career(submitted_career, current_date_time)
@@ -434,6 +448,7 @@ trait SubmitCareerOperation {
     /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp>;
+    async fn count_create_career_req(&self, account_id: i64) -> Result<usize, ErrResp>;
     async fn request_create_career(
         &self,
         submitted_career: SubmittedCareer,
@@ -475,6 +490,21 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
             .map_err(|e| {
                 error!(
                     "failed to count career (user_account_id: {}): {}",
+                    account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(num)
+    }
+
+    async fn count_create_career_req(&self, account_id: i64) -> Result<usize, ErrResp> {
+        let num = entity::prelude::CreateCareerReq::find()
+            .filter(career::Column::UserAccountId.eq(account_id))
+            .count(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to count create_career_req (user_account_id: {}): {}",
                     account_id, e
                 );
                 unexpected_err_resp()
@@ -2083,6 +2113,7 @@ mod tests {
         submitted_career: SubmittedCareer,
         current_date_time: DateTime<FixedOffset>,
         num_of_career: usize,
+        num_of_create_career_req: usize,
         identity_exists: bool,
     }
 
@@ -2097,6 +2128,12 @@ mod tests {
             assert_eq!(self.account_id, account_id);
             Ok(self.num_of_career)
         }
+
+        async fn count_create_career_req(&self, account_id: i64) -> Result<usize, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.num_of_create_career_req)
+        }
+
         async fn request_create_career(
             &self,
             submitted_career: SubmittedCareer,
@@ -2124,6 +2161,7 @@ mod tests {
             submitted_career: submitted_career.clone(),
             current_date_time,
             num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2157,6 +2195,7 @@ mod tests {
             submitted_career: submitted_career.clone(),
             current_date_time,
             num_of_career: 0,
+            num_of_create_career_req: 0,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2189,6 +2228,7 @@ mod tests {
             submitted_career: submitted_career.clone(),
             current_date_time,
             num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize,
+            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2223,6 +2263,7 @@ mod tests {
             submitted_career: submitted_career.clone(),
             current_date_time,
             num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT + 1) as usize,
+            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2255,6 +2296,7 @@ mod tests {
             submitted_career: submitted_career.clone(),
             current_date_time,
             num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
             identity_exists: false,
         };
         let smtp_client = SendMailMock::new(
@@ -2269,5 +2311,73 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(Code::NoIdentityRegistered as u32, resp.1.code);
+    }
+
+    #[tokio::test]
+    async fn handle_career_req_fail_reach_create_career_req_num_limit() {
+        let account_id = 78515;
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
+        let submitted_career = SubmittedCareer {
+            account_id,
+            career: create_dummy_career(),
+            career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
+            career_image2: None,
+        };
+        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op = SubmitCareerOperationMock {
+            account_id,
+            submitted_career: submitted_career.clone(),
+            current_date_time,
+            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize,
+            identity_exists: true,
+        };
+        let smtp_client = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id),
+            create_text(account_id),
+        );
+
+        let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::ReachCreateCareerReqNumLimit as u32, resp.1.code);
+    }
+
+    // 基本的にMAX_NUM_OF_CAREER_PER_USER_ACCOUNTに達した場合、
+    // CreateCareerReqを作れないのでありえないケースだが、テストは用意しておく
+    #[tokio::test]
+    async fn handle_career_req_fail_over_creqte_career_req_num_limit() {
+        let account_id = 78515;
+        let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
+        let submitted_career = SubmittedCareer {
+            account_id,
+            career: create_dummy_career(),
+            career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
+            career_image2: None,
+        };
+        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op = SubmitCareerOperationMock {
+            account_id,
+            submitted_career: submitted_career.clone(),
+            current_date_time,
+            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT + 1) as usize,
+            identity_exists: true,
+        };
+        let smtp_client = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            create_subject(account_id),
+            create_text(account_id),
+        );
+
+        let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::ReachCreateCareerReqNumLimit as u32, resp.1.code);
     }
 }
