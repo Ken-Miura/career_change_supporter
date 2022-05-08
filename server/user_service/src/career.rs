@@ -499,7 +499,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
 
     async fn count_create_career_req(&self, account_id: i64) -> Result<usize, ErrResp> {
         let num = entity::prelude::CreateCareerReq::find()
-            .filter(career::Column::UserAccountId.eq(account_id))
+            .filter(create_career_req::Column::UserAccountId.eq(account_id))
             .count(&self.pool)
             .await
             .map_err(|e| {
