@@ -161,7 +161,7 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
-import { Code } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 import { usePostCareer } from '@/util/personalized/careers/usePostCareer'
 import { useImages } from './useImages'
 import { exceedJpegMaxImageSize, isJpegExtension } from '@/util/CheckJpegImage'
@@ -173,6 +173,7 @@ import { createYearList, START_YEAR } from '@/util/personalized/careers/YearList
 import { Career } from '@/util/personalized/careers/Career'
 import { toBoolean } from '@/util/ToBoolean'
 import { Ymd } from '@/util/Ymd'
+import { PostCareerResp } from '@/util/personalized/careers/PostCareerResp'
 
 export default defineComponent({
   name: 'AddCareerPage',
@@ -258,13 +259,25 @@ export default defineComponent({
           return
         }
       }
+      if (form.careerStartYear === '' || form.careerStartMonth === '' || form.careerStartDay === '') {
+        isHidden.value = false
+        errorMessage.value = Message.NO_CAREER_START_DATE_INPUT
+        return
+      }
       const careerStartDate = {
         year: parseInt(form.careerStartYear),
         month: parseInt(form.careerStartMonth),
         day: parseInt(form.careerStartDay)
       } as Ymd
+      const yearOrMonthOrDay = form.careerEndYear !== '' || form.careerEndMonth !== '' || form.careerEndDay !== ''
+      const yearAndMonthAndDay = form.careerEndYear !== '' && form.careerEndMonth !== '' && form.careerEndDay !== ''
+      if (yearOrMonthOrDay && !yearAndMonthAndDay) {
+        isHidden.value = false
+        errorMessage.value = Message.NO_PART_OF_CAREER_END_DATE_INPUT
+        return
+      }
       let careerEndDate
-      if (form.careerEndYear !== '' && form.careerEndMonth !== null && form.careerEndDay !== null) {
+      if (yearAndMonthAndDay) {
         careerEndDate = {
           year: parseInt(form.careerStartYear),
           month: parseInt(form.careerStartMonth),
@@ -287,7 +300,32 @@ export default defineComponent({
         is_new_graduate: toBoolean(form.isNewGraduate),
         note: form.note !== '' ? form.note : null
       } as Career
-      console.log(career)
+
+      try {
+        const response = await postCareerFunc(career, images.image1, images.image2)
+        if (response instanceof PostCareerResp) {
+          // store.commit(SET_POST_IDENTITY_RESULT_MESSAGE, Message.POST_IDENTITY_RESULT_MESSAGE)
+          // await router.push('/post-identity-result')
+          console.log('success')
+          return
+        } else if (response instanceof ApiErrorResp) {
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
+          isHidden.value = false
+          errorMessage.value = createErrorMessage(response.getApiError().getCode())
+        } else {
+          throw new Error(`unexpected result: ${response}`)
+        }
+      } catch (e) {
+        isHidden.value = false
+        errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
     return {
       submitCareer,

@@ -67,4 +67,6 @@ export namespace Message {
     export const INVALID_MULTIPART_FORM_DATA_MESSAGE = '不正なmultipart/form-dataです。他のブラウザで動作するかお試し下さい'
     export const NO_CAREER_IMAGE1_SELECTED = NO_IDENTITY_IMAGE1_SELECTED
     export const EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT_MESSAGE = EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE
+    export const NO_CAREER_START_DATE_INPUT = '入社日が入力されていません。'
+    export const NO_PART_OF_CAREER_END_DATE_INPUT = '退社日の一部が入力されていません。'
 }
