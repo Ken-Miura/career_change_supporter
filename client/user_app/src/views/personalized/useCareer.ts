@@ -15,9 +15,9 @@ export function useCareer () {
     contractType: 'regular',
     profession: '',
     annualIncomeInManYen: '',
-    isManager: '',
+    isManager: 'false',
     positionName: '',
-    isNewGraduate: '',
+    isNewGraduate: 'true',
     note: ''
   })
   const setCompanyName = (e: Event) => {
@@ -59,13 +59,6 @@ export function useCareer () {
     }
     form.annualIncomeInManYen = target.value
   }
-  const setIsManager = (e: Event) => {
-    const target = (e && e.target)
-    if (!(target instanceof HTMLInputElement)) {
-      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
-    }
-    form.isManager = target.value
-  }
   const setPositionName = (e: Event) => {
     const target = (e && e.target)
     if (!(target instanceof HTMLInputElement)) {
@@ -73,17 +66,10 @@ export function useCareer () {
     }
     form.positionName = target.value
   }
-  const setIsNewGraduate = (e: Event) => {
-    const target = (e && e.target)
-    if (!(target instanceof HTMLInputElement)) {
-      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
-    }
-    form.isNewGraduate = target.value
-  }
   const setNote = (e: Event) => {
     const target = (e && e.target)
-    if (!(target instanceof HTMLInputElement)) {
-      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    if (!(target instanceof HTMLTextAreaElement)) {
+      throw new Error(`!(target instanceof HTMLTextAreaElement): target is ${target}`)
     }
     form.note = target.value
   }
@@ -94,9 +80,7 @@ export function useCareer () {
     setOffice,
     setProfession,
     setAnnualIncomeInManYen,
-    setIsManager,
     setPositionName,
-    setIsNewGraduate,
     setNote
   }
 }
