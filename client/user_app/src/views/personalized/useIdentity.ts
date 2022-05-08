@@ -1,7 +1,7 @@
-import { createDayList } from '@/util/DayList'
-import { createMonthList } from '@/util/MonthList'
+import { createDayList } from '@/util/personalized/identity/DayList'
+import { createMonthList } from '@/util/personalized/identity/MonthList'
 import { createPrefectureList } from '@/util/personalized/profile/PrefectureList'
-import { createYearOfBirthList, MIN_AGE, START_YEAR } from '@/util/personalized/profile/YearOfBirthList'
+import { createYearOfBirthList, MIN_AGE, START_YEAR } from '@/util/personalized/identity/YearOfBirthList'
 import { reactive } from 'vue'
 
 // eslint-disable-next-line
