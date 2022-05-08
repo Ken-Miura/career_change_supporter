@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="false" class="m-6">
+    <div v-if="waitingRequestDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -162,6 +162,7 @@ import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
+import { usePostCareer } from '@/util/personalized/careers/usePostCareer'
 
 export default defineComponent({
   name: 'AddCareerPage',
@@ -174,6 +175,10 @@ export default defineComponent({
     const router = useRouter()
     const isHidden = ref(true)
     const errorMessage = ref('')
+    const {
+      waitingRequestDone,
+      postCareerFunc
+    } = usePostCareer()
     const careerStartYearList = ref([] as string[])
     const careerStartMonthList = ref([] as string[])
     const careerStartDayList = ref([] as string[])
@@ -209,6 +214,7 @@ export default defineComponent({
       submitCareer,
       isHidden,
       errorMessage,
+      waitingRequestDone,
       careerStartYearList,
       careerStartMonthList,
       careerStartDayList,
