@@ -33,19 +33,19 @@
             </div>
             <div data-test="career-start-year-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerStartYear" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option v-for="year in careerStartYearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
             <div data-test="career-start-year-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">年</div>
             <div data-test="career-start-month-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerStartMonth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option v-for="month in careerStartMonthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
             <div data-test="career-start-month-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">月</div>
             <div data-test="career-start-day-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerStartDay" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option v-for="day in careerStartDayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
             <div data-test="career-start-day-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">日</div>
@@ -54,19 +54,19 @@
             </div>
             <div data-test="career-end-year-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerEndYear" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option v-for="year in careerEndYearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
             <div data-test="career-end-year-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">年</div>
             <div data-test="career-end-month-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerEndMonth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option v-for="month in careerEndMonthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
             <div data-test="career-end-month-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">月</div>
             <div data-test="career-end-day-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerEndDay" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option v-for="day in careerEndDayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
             <div data-test="career-end-day-div" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">日</div>
@@ -167,6 +167,9 @@ import { useImages } from './useImages'
 import { exceedJpegMaxImageSize, isJpegExtension } from '@/util/CheckJpegImage'
 import { Message } from '@/util/Message'
 import { useCareer } from './useCareer'
+import { createDayList } from '@/util/personalized/careers/DayList'
+import { createMonthList } from '@/util/personalized/careers/MonthList'
+import { createYearList, START_YEAR } from '@/util/personalized/careers/YearList'
 
 export default defineComponent({
   name: 'AddCareerPage',
@@ -198,12 +201,10 @@ export default defineComponent({
       setPositionName,
       setNote
     } = useCareer()
-    const careerStartYearList = ref([] as string[])
-    const careerStartMonthList = ref([] as string[])
-    const careerStartDayList = ref([] as string[])
-    const careerEndYearList = ref([] as string[])
-    const careerEndMonthList = ref([] as string[])
-    const careerEndDayList = ref([] as string[])
+    const currentYear = new Date().getFullYear()
+    const yearList = createYearList(START_YEAR, currentYear)
+    const monthList = createMonthList()
+    const dayList = createDayList()
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -265,18 +266,21 @@ export default defineComponent({
       console.log(form.positionName)
       console.log(form.isNewGraduate)
       console.log(form.note)
+      console.log(form.careerStartYear)
+      console.log(form.careerStartMonth)
+      console.log(form.careerStartDay)
+      console.log(form.careerEndYear)
+      console.log(form.careerEndMonth)
+      console.log(form.careerEndDay)
     }
     return {
       submitCareer,
       isHidden,
       errorMessage,
       waitingRequestDone,
-      careerStartYearList,
-      careerStartMonthList,
-      careerStartDayList,
-      careerEndYearList,
-      careerEndMonthList,
-      careerEndDayList,
+      yearList,
+      monthList,
+      dayList,
       form,
       setCompanyName,
       setDepartmentName,
