@@ -280,9 +280,9 @@ export default defineComponent({
       let careerEndDate
       if (yearAndMonthAndDay) {
         careerEndDate = {
-          year: parseInt(form.careerStartYear),
-          month: parseInt(form.careerStartMonth),
-          day: parseInt(form.careerStartDay)
+          year: parseInt(form.careerEndYear),
+          month: parseInt(form.careerEndMonth),
+          day: parseInt(form.careerEndDay)
         } as Ymd
       } else {
         careerEndDate = null
