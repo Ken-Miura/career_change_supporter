@@ -14,6 +14,7 @@ import BankAccountPage from '../views/personalized/BankAccountPage.vue'
 import SchedulePage from '../views/personalized/SchedulePage.vue'
 import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
+import SubmitCareerSuccessPage from '../views/personalized/SubmitCareerSuccessPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -149,6 +150,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/accept-consultation',
     name: 'AcceptConsultionPage',
     component: AcceptConsultionPage
+  },
+  {
+    path: '/submit-career-success',
+    name: 'SubmitCareerSuccessPage',
+    component: SubmitCareerSuccessPage
   }
 ]
 

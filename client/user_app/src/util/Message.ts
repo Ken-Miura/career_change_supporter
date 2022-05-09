@@ -69,4 +69,5 @@ export namespace Message {
     export const EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT_MESSAGE = EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE
     export const NO_CAREER_START_DATE_INPUT = '入社日が入力されていません。'
     export const NO_PART_OF_CAREER_END_DATE_INPUT = '退社日の一部が入力されていません。'
+    export const SUBMIT_CAREER_SUCCESS_MESSAGE = '職務経歴確認を受け付けました。確認作業の完了後、入力した値が職務経歴に反映されます。'
 }
