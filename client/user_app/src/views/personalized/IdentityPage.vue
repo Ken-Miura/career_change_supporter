@@ -137,7 +137,6 @@ import { Identity } from '@/util/personalized/profile/Identity'
 import { usePostIdentity } from '@/util/personalized/identity/usePostIdentity'
 import { isJpegExtension, exceedJpegMaxImageSize } from '@/util/CheckJpegImage'
 import { PostIdentityResp } from '@/util/personalized/identity/PostIdentityResp'
-import { SET_POST_IDENTITY_RESULT_MESSAGE } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'IdentityPage',
@@ -264,8 +263,7 @@ export default defineComponent({
       try {
         const response = await postIdentityFunc(identity, images.image1, images.image2)
         if (response instanceof PostIdentityResp) {
-          store.commit(SET_POST_IDENTITY_RESULT_MESSAGE, Message.POST_IDENTITY_RESULT_MESSAGE)
-          await router.push('/post-identity-result')
+          await router.push('/submit-identity-success')
           return
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()

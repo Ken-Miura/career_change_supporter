@@ -1,10 +1,9 @@
 import { Identity } from '@/util/personalized/profile/Identity'
 import { BankAccount } from '@/util/personalized/reward/BankAccount'
 import { createStore } from 'vuex'
-import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY, SET_POST_IDENTITY_RESULT_MESSAGE } from './mutationTypes'
+import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from './mutationTypes'
 
 export type State = {
-  postIdentityResultMessage: string | null,
   passwordUpdateResultMessage: string | null,
   identity: Identity | null,
   feePerHourInYen: number | null,
@@ -18,16 +17,12 @@ export type State = {
 
 export default createStore<State>({
   state: {
-    postIdentityResultMessage: null,
     passwordUpdateResultMessage: null,
     identity: null,
     feePerHourInYen: null,
     bankAccount: null
   },
   mutations: {
-    [SET_POST_IDENTITY_RESULT_MESSAGE] (state: State, message: string) {
-      state.postIdentityResultMessage = message
-    },
     [SET_PASSWORD_UPDATE_RESULT_MESSAGE] (state: State, message: string) {
       state.passwordUpdateResultMessage = message
     },

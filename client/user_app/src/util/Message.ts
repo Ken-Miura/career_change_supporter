@@ -60,7 +60,7 @@ export namespace Message {
     export const NO_IDENTITY_FOUND_MESSAGE = 'ユーザー情報が含まれていない不正なリクエストです。'
     export const NO_IDENTITY_IMAGE1_FOUND_MESSAGE = '身分証明書の表面の画像が含まれていない不正なリクエストです。'
     export const IDENTITY_INFO_REQ_ALREADY_EXISTS_MESSAGE = '既に本人確認を依頼済みです。確認作業が終わるまでお待ち下さい。'
-    export const POST_IDENTITY_RESULT_MESSAGE = '本人確認を受け付けました。本人確認作業の完了後、入力した値がユーザー情報に反映されます。'
+    export const SUBMIT_IDENTITY_SUCCESS_MESSAGE = '本人確認を受け付けました。本人確認作業の完了後、入力した値がユーザー情報に反映されます。'
     export const DATE_OF_BIRTH_IS_NOT_MATCH_MESSAGE = '生年月日を変更することはできません'
     export const NO_IDENTITY_UPDATED_MESSAGE = 'ユーザー情報に変更がありません'
     export const FIRST_NAME_IS_NOT_MATCH_MESSAGE = '氏名の内、名の変更はできません'

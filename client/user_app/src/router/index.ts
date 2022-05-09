@@ -4,7 +4,7 @@ import InformationPage from '../views/InformationPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ProfilePage from '../views/personalized/ProfilePage.vue'
 import IdentityPage from '../views/personalized/IdentityPage.vue'
-import PostIdentityResultPage from '../views/personalized/PostIdentityResultPage.vue'
+import SubmitIdentitySuccessPage from '../views/personalized/SubmitIdentitySuccessPage.vue'
 import AddCareerPage from '../views/personalized/AddCareerPage.vue'
 import CareerDetailPage from '../views/personalized/CareerDetailPage.vue'
 import FeePerHourInYenPage from '../views/personalized/FeePerHourInYenPage.vue'
@@ -101,9 +101,9 @@ const routes: Array<RouteRecordRaw> = [
     component: IdentityPage
   },
   {
-    path: '/post-identity-result',
-    name: 'PostIdentityResultPage',
-    component: PostIdentityResultPage
+    path: '/submit-identity-success',
+    name: 'SubmitIdentitySuccessPage',
+    component: SubmitIdentitySuccessPage
   },
   {
     path: '/careers/:career_id',

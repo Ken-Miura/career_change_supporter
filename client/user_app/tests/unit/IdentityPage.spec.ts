@@ -11,7 +11,6 @@ import { Message } from '@/util/Message'
 import { Identity } from '@/util/personalized/profile/Identity'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { PostIdentityResp } from '@/util/personalized/identity/PostIdentityResp'
-import { SET_POST_IDENTITY_RESULT_MESSAGE } from '@/store/mutationTypes'
 import { getMaxImageJpegImageSizeInBytes, MAX_JPEG_IMAGE_SIZE_IN_BYTES } from '@/util/MaxImageSize'
 
 const waitingPostIdentityDoneMock = ref(false)
@@ -238,7 +237,7 @@ describe('IdentityPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  it(`moves to post-identity-result setting ${Message.POST_IDENTITY_RESULT_MESSAGE} on store when postIdentity is success`, async () => {
+  it('moves to submit-identity-success when postIdentity is success', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     postIdentityFuncMock.mockResolvedValue(PostIdentityResp.create())
     const identity = {
@@ -281,12 +280,10 @@ describe('IdentityPage.vue', () => {
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/post-identity-result')
-    expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
+    expect(routerPushMock).toHaveBeenCalledWith('/submit-identity-success')
   })
 
-  it(`moves to post-identity-result setting ${Message.POST_IDENTITY_RESULT_MESSAGE} on store when postIdentity is success from user input`, async () => {
+  it('moves to submit-identity-success when postIdentity is success from user input', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     postIdentityFuncMock.mockResolvedValue(PostIdentityResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
@@ -349,9 +346,7 @@ describe('IdentityPage.vue', () => {
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/post-identity-result')
-    expect(storeCommitMock).toHaveBeenCalledTimes(1)
-    expect(storeCommitMock).toHaveBeenCalledWith(SET_POST_IDENTITY_RESULT_MESSAGE, `${Message.POST_IDENTITY_RESULT_MESSAGE}`)
+    expect(routerPushMock).toHaveBeenCalledWith('/submit-identity-success')
   })
 
   it(`displays alert message ${Message.NO_IDENTITY_IMAGE1_SELECTED} when image1 is not selected`, async () => {

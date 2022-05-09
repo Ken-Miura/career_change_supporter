@@ -11,20 +11,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
-import { useStore } from 'vuex'
+import { defineComponent } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
-  name: 'PostIdentityResultPage',
+  name: 'SubmitIdentitySuccessPage',
   components: {
     TheHeader
   },
   setup () {
     // postIdentityが成功した結果を表示するだけなので、
     // onMounted内でrefreshを呼ぶことはしない
-    const store = useStore()
-    const message = ref(store.state.postIdentityResultMessage)
+    const message = Message.SUBMIT_IDENTITY_SUCCESS_MESSAGE
     return { message }
   }
 })

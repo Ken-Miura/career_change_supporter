@@ -305,9 +305,7 @@ export default defineComponent({
       try {
         const response = await postCareerFunc(career, images.image1, images.image2)
         if (response instanceof PostCareerResp) {
-          // store.commit(SET_POST_IDENTITY_RESULT_MESSAGE, Message.POST_IDENTITY_RESULT_MESSAGE)
-          // await router.push('/post-identity-result')
-          console.log('success')
+          await router.push('/submit-career-success')
           return
         } else if (response instanceof ApiErrorResp) {
           const code = response.getApiError().getCode()
