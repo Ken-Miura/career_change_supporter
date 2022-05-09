@@ -185,6 +185,54 @@ export function createErrorMessage (code: number): string {
     return `${Message.FIRST_NAME_IS_NOT_MATCH_MESSAGE} (${code})`
   } else if (code === Code.INVALID_MULTIPART_FORM_DATA) {
     return `${Message.INVALID_MULTIPART_FORM_DATA_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_CAREER_JSON) {
+    return `${Message.INVALID_CAREER_JSON_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_COMPANY_NAME_LENGTH) {
+    return `${Message.INVALID_COMPANY_NAME_LENGTH_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CHAR_IN_COMPANY_NAME) {
+    return `${Message.ILLEGAL_CHAR_IN_COMPANY_NAME_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_DEPARTMENT_NAME_LENGTH) {
+    return `${Message.INVALID_DEPARTMENT_NAME_LENGTH_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CHAR_IN_DEPARTMENT_NAME) {
+    return `${Message.ILLEGAL_CHAR_IN_DEPARTMENT_NAME_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_OFFICE_LENGTH) {
+    return `${Message.INVALID_OFFICE_LENGTH_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CHAR_IN_OFFICE) {
+    return `${Message.ILLEGAL_CHAR_IN_OFFICE_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CAREER_START_DATE) {
+    return `${Message.ILLEGAL_CAREER_START_DATE_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CAREER_END_DATE) {
+    return `${Message.ILLEGAL_CAREER_END_DATE_MESSAGE} (${code})`
+  } else if (code === Code.CAREER_START_DATE_EXCEEDS_CAREER_END_DATE) {
+    return `${Message.CAREER_START_DATE_EXCEEDS_CAREER_END_DATE_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CONTRACT_TYPE) {
+    return `${Message.ILLEGAL_CONTRACT_TYPE_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_PROFESSION_LENGTH) {
+    return `${Message.INVALID_PROFESSION_LENGTH_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CHAR_IN_PROFESSION) {
+    return `${Message.ILLEGAL_CHAR_IN_PROFESSION_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN) {
+    return `${Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_POSITION_NAME_LENGTH) {
+    return `${Message.INVALID_POSITION_NAME_LENGTH_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CHAR_IN_POSITION_NAME) {
+    return `${Message.ILLEGAL_CHAR_IN_POSITION_NAME_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_NOTE_LENGTH) {
+    return `${Message.INVALID_NOTE_LENGTH_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CHAR_IN_NOTE) {
+    return `${Message.ILLEGAL_CHAR_IN_NOTE_MESSAGE} (${code})`
+  } else if (code === Code.NO_CAREER_FOUND) {
+    return `${Message.NO_CAREER_FOUND_MESSAGE} (${code})`
+  } else if (code === Code.NO_CAREER_IMAGE1_FOUND) {
+    return `${Message.NO_CARER_IMAGE1_FOUND_MESSAGE} (${code})`
+  } else if (code === Code.EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT) {
+    return `${Message.EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT_MESSAGE} (${code})`
+  } else if (code === Code.REACH_CAREER_NUM_LIMIT) {
+    return `${Message.REACH_CAREER_NUM_LIMIT_MESSAGE} (${code})`
+  } else if (code === Code.NO_IDENTITY_REGISTERED) {
+    return `${Message.NO_IDENTITY_REGISTERED_MESSAGE} (${code})`
+  } else if (code === Code.REACH_CREATE_CAREER_REQ_NUM_LIMIT) {
+    return `${Message.REACH_CREATE_CAREER_REQ_NUM_LIMIT_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
