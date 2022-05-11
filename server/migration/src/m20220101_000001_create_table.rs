@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use entity::sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-use sea_schema::migration::*;
+use sea_orm_migration::prelude::*;
 
 pub struct Migration;
 
