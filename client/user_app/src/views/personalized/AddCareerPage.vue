@@ -13,37 +13,37 @@
             <div data-test="company-name-label" class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
               勤務先名称（必須）（例 xxx株式会社）
             </div>
-            <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div data-test="company-name-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.companyName" v-on:input="setCompanyName" type="text" required minlength="1" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="department-name-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               部署名（任意）
             </div>
-            <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div data-test="department-name-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.departmentName" v-on:input="setDepartmentName" type="text" minlength="1" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="office-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               勤務地（任意）（例 xxx事業所）
             </div>
-            <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div data-test="office-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.office" v-on:input="setOffice" type="text" minlength="1" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="career-start-date-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               入社日（必須）
             </div>
-            <div data-test="career-start-year-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="career-start-year-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerStartYear" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
             <div data-test="career-start-year-label" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">年</div>
-            <div data-test="career-start-month-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="career-start-month-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerStartMonth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
             <div data-test="career-start-month-label" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">月</div>
-            <div data-test="career-start-day-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="career-start-day-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerStartDay" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
@@ -52,19 +52,19 @@
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               退社日（任意）
             </div>
-            <div data-test="career-end-year-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="career-end-year-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerEndYear" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
             <div data-test="career-end-year-label" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">年</div>
-            <div data-test="career-end-month-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="career-end-month-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerEndMonth" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
             <div data-test="career-end-month-label" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">月</div>
-            <div data-test="career-end-day-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+            <div data-test="career-end-day-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="form.careerEndDay" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
@@ -73,7 +73,7 @@
             <div data-test="contract-type-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               雇用形態（必須）
             </div>
-            <div data-test="contract-type-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-6">
+            <div data-test="contract-type-select" class="mt-2 w-full text-2xl justify-self-start col-span-6">
               <select v-model="form.contractType" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option value="regular">正社員</option>
                 <option value="contract">契約社員</option>
@@ -83,19 +83,19 @@
             <div data-test="profession-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               職種（任意）（例 ITエンジニア）
             </div>
-            <div data-test="profession-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div data-test="profession-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.profession" v-on:input="setProfession" type="text" minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="annual-incom-in-man-yen-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               年収（単位：万円）（任意）
             </div>
-            <div data-test="annual-incom-in-man-yen-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div data-test="annual-incom-in-man-yen-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.annualIncomeInManYen" v-on:input="setAnnualIncomeInManYen" type="text" minlength="1" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="is-manager-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               管理職区分（必須）
             </div>
-            <div data-test="is-manager-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-6">
+            <div data-test="is-manager-select" class="mt-2 w-full text-2xl justify-self-start col-span-6">
               <select v-model="form.isManager" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option value="false">非管理職</option>
                 <option value="true">管理職</option>
@@ -104,13 +104,13 @@
             <div data-test="position-name-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               職位（任意）（例 係長）
             </div>
-            <div data-test="position-name-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div data-test="position-name-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.positionName" v-on:input="setPositionName" type="text" minlength="1" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="is-new-graduate-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               入社区分（必須）
             </div>
-            <div data-test="is-new-graduate-select-div" class="mt-2 w-full text-2xl justify-self-start col-span-6">
+            <div data-test="is-new-graduate-select" class="mt-2 w-full text-2xl justify-self-start col-span-6">
               <select v-model="form.isNewGraduate" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option value="true">新卒入社</option>
                 <option value="false">中途入社</option>
@@ -119,7 +119,7 @@
             <div data-test="note-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               備考（任意）
             </div>
-            <div data-test="note-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div data-test="note-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <textarea v-bind:value="form.note" v-on:input="setNote" minlength="1" maxlength="2048" placeholder="例 職場の雰囲気、社風、女性の働きやさ、福利厚生や一日の仕事の流れ等などについて本音でお話できます。" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
             </div>
             <div data-test="career-image-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">

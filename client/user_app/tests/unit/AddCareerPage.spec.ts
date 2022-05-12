@@ -9,7 +9,7 @@ import TheHeader from '@/components/TheHeader.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { Message } from '@/util/Message'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
-import { PostIdentityResp } from '@/util/personalized/identity/PostIdentityResp'
+import { PostCareerResp } from '@/util/personalized/careers/PostCareerResp'
 import { getMaxImageJpegImageSizeInBytes, MAX_JPEG_IMAGE_SIZE_IN_BYTES } from '@/util/MaxImageSize'
 
 const waitingRequestDoneMock = ref(false)
@@ -246,27 +246,9 @@ describe('AddCareerPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  it('moves to submit-identity-success when postIdentity is success', async () => {
+  it('moves to submit-career-success when postCareer is success (only mandatory input)', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    postCareerMock.mockResolvedValue(PostIdentityResp.create())
-    const identity = {
-      /* eslint-disable camelcase */
-      last_name: '山田',
-      first_name: '太郎',
-      last_name_furigana: 'ヤマダ',
-      first_name_furigana: 'タロウ',
-      date_of_birth: {
-        year: 1990,
-        month: 6,
-        day: 14
-      },
-      prefecture: '東京都',
-      city: '町田市',
-      address_line1: '２−２−２２',
-      address_line2: 'ライオンズマンション４０５',
-      telephone_number: '08012345678'
-      /* eslint-enable camelcase */
-    }
+    postCareerMock.mockResolvedValue(PostCareerResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image1 = new File(['test'], 'image1.jpeg', { type: 'image/jpeg' })
     imagesMock = reactive({
@@ -283,17 +265,25 @@ describe('AddCareerPage.vue', () => {
       }
     })
     await flushPromises()
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト（株）')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/submit-identity-success')
+    expect(routerPushMock).toHaveBeenCalledWith('/submit-career-success')
   })
 
-  it('moves to submit-identity-success when postIdentity is success from user input', async () => {
+  it('moves to submit-career-success when postCareer is success (full input)', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    postCareerMock.mockResolvedValue(PostIdentityResp.create())
+    postCareerMock.mockResolvedValue(PostCareerResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
     const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
@@ -312,54 +302,25 @@ describe('AddCareerPage.vue', () => {
       }
     })
     await flushPromises()
-
-    const lastName = wrapper.find('[data-test="last-name-div"]')
-    const lastNameInput = lastName.find('input')
-    await lastNameInput.setValue('山田')
-    const firstName = wrapper.find('[data-test="first-name-div"]')
-    const firstNameInput = firstName.find('input')
-    await firstNameInput.setValue('太郎')
-    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
-    const lastNameFuriganaInput = lastNameFurigana.find('input')
-    await lastNameFuriganaInput.setValue('ヤマダ')
-    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
-    const firstNameFuriganaInput = firstNameFurigana.find('input')
-    await firstNameFuriganaInput.setValue('タロウ')
-    const year = wrapper.find('[data-test="year-select-div"]')
-    const yearSelect = year.find('select')
-    await yearSelect.setValue('1990')
-    const month = wrapper.find('[data-test="month-select-div"]')
-    const monthSelect = month.find('select')
-    await monthSelect.setValue('5')
-    const day = wrapper.find('[data-test="day-select-div"]')
-    const daySelect = day.find('select')
-    await daySelect.setValue('12')
-    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
-    const prefectureSelect = prefecture.find('select')
-    await prefectureSelect.setValue('東京都')
-    const city = wrapper.find('[data-test="city-div"]')
-    const cityInput = city.find('input')
-    await cityInput.setValue('町田市')
-    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
-    const addressLine1Input = addressLine1.find('input')
-    await addressLine1Input.setValue('森の里２−２２−２')
-    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
-    const addressLine2Input = addressLine2.find('input')
-    await addressLine2Input.setValue('レオパレス２０３')
-    const tel = wrapper.find('[data-test="tel-input-div"]')
-    const telInput = tel.find('input')
-    await telInput.setValue('09012345678')
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト（株）')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
     await nextTick()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/submit-identity-success')
+    expect(routerPushMock).toHaveBeenCalledWith('/submit-career-success')
   })
 
   it(`displays alert message ${Message.NO_IDENTITY_IMAGE1_SELECTED} when image1 is not selected`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    postCareerMock.mockResolvedValue(PostIdentityResp.create())
+    postCareerMock.mockResolvedValue(PostCareerResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
     imagesMock = reactive({
@@ -427,7 +388,7 @@ describe('AddCareerPage.vue', () => {
 
   it(`displays alert message ${Message.NO_JPEG_EXTENSION_MESSAGE} when image1 file extension is not jpeg`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    postCareerMock.mockResolvedValue(PostIdentityResp.create())
+    postCareerMock.mockResolvedValue(PostCareerResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image1 = new File(['test'], 'image.txt', { type: 'text/plain' })
     imagesMock = reactive({
@@ -495,7 +456,7 @@ describe('AddCareerPage.vue', () => {
 
   it(`displays alert message ${Message.EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE} when image1 exceeds max size`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    postCareerMock.mockResolvedValue(PostIdentityResp.create())
+    postCareerMock.mockResolvedValue(PostCareerResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image1 = new File(['test'], 'image.jpeg', { type: 'image/jpeg' })
     imagesMock = reactive({
@@ -563,7 +524,7 @@ describe('AddCareerPage.vue', () => {
 
   it(`displays alert message ${Message.NO_JPEG_EXTENSION_MESSAGE} when image2 file extension is not jpeg`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    postCareerMock.mockResolvedValue(PostIdentityResp.create())
+    postCareerMock.mockResolvedValue(PostCareerResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
     const image2 = new File(['test2'], 'image2.txt', { type: 'text/plain' })
@@ -633,7 +594,7 @@ describe('AddCareerPage.vue', () => {
 
   it(`displays alert message ${Message.EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE} when image2 exceeds max size`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    postCareerMock.mockResolvedValue(PostIdentityResp.create())
+    postCareerMock.mockResolvedValue(PostCareerResp.create())
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image1 = new File(['test'], 'image.jpeg', { type: 'image/jpeg' })
     const image2 = new File(['test_longer_binary_than_image1'], 'image.jpeg', { type: 'image/jpeg' })
