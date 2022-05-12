@@ -10,22 +10,22 @@
         <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。職務経歴の確認を依頼後、入力した値が反映された時点で、職務経歴の登録が完了となります。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。</p>
         <form @submit.prevent="submitCareer">
           <div class="m-4 text-2xl grid grid-cols-6">
-            <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="company-name-label" class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
               勤務先名称（必須）（例 xxx株式会社）
             </div>
-            <div data-test="company-name-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.companyName" v-on:input="setCompanyName" type="text" required minlength="1" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="department-name-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               部署名（任意）
             </div>
-            <div data-test="department-name-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.departmentName" v-on:input="setDepartmentName" type="text" minlength="1" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="office-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               勤務地（任意）（例 xxx事業所）
             </div>
-            <div data-test="office-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
+            <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.office" v-on:input="setOffice" type="text" minlength="1" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
