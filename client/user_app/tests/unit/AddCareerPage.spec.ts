@@ -1294,6 +1294,102 @@ describe('AddCareerPage.vue', () => {
     expect(resultMessage).toContain(Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN.toString())
   })
 
+  it(`displays alert message ${Message.INVALID_POSITION_NAME_LENGTH_MESSAGE} when position name length is invalid`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_POSITION_NAME_LENGTH))
+    postCareerMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(AddCareerPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト株式会社')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
+    const positionName = wrapper.find('[data-test="position-name-input"]').find('input')
+    await positionName.setValue('')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_POSITION_NAME_LENGTH_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_POSITION_NAME_LENGTH.toString())
+  })
+
+  it(`displays alert message ${Message.ILLEGAL_CHAR_IN_POSITION_NAME_MESSAGE} when position name has illegal char`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CHAR_IN_POSITION_NAME))
+    postCareerMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(AddCareerPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト株式会社')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
+    const positionName = wrapper.find('[data-test="position-name-input"]').find('input')
+    await positionName.setValue('!"#$%')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_POSITION_NAME_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_POSITION_NAME.toString())
+  })
+
   it(`displays alert message ${Message.NO_NAME_FOUND_MESSAGE} (invalid request case 1)`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_NAME_FOUND))
