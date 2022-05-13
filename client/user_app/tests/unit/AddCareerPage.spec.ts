@@ -332,7 +332,7 @@ describe('AddCareerPage.vue', () => {
     await positionName.setValue('課長')
     const isNewGraduate = wrapper.find('[data-test="is-new-graduate-select"]').find('select')
     await isNewGraduate.setValue('false')
-    const note = wrapper.find('[data-test="note-input"]').find('input')
+    const note = wrapper.find('[data-test="note-input"]').find('textarea')
     await note.setValue(`備考は、
     改行を
     含むことが出来ます。`)
@@ -1421,7 +1421,7 @@ describe('AddCareerPage.vue', () => {
     await careerStarMonth.setValue('4')
     const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
     await careerStarDay.setValue('1')
-    const note = wrapper.find('[data-test="note-input"]').find('input')
+    const note = wrapper.find('[data-test="note-input"]').find('textarea')
     await note.setValue('')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
@@ -1469,7 +1469,7 @@ describe('AddCareerPage.vue', () => {
     await careerStarMonth.setValue('4')
     const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
     await careerStarDay.setValue('1')
-    const note = wrapper.find('[data-test="note-input"]').find('input')
+    const note = wrapper.find('[data-test="note-input"]').find('textarea')
     await note.setValue('&\'()=')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')

@@ -49,7 +49,7 @@
               </select>
             </div>
             <div data-test="career-start-day-label" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">日</div>
-            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="career-end-date-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               退社日（任意）
             </div>
             <div data-test="career-end-year-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
