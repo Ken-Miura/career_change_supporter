@@ -15,6 +15,8 @@ import SchedulePage from '../views/personalized/SchedulePage.vue'
 import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
 import SubmitCareerSuccessPage from '../views/personalized/SubmitCareerSuccessPage.vue'
+import PrivacyPolicyPage from '../views/PrivacyPolicyPage.vue'
+import TransactionLawPage from '../views/TransactionLawPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -155,6 +157,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/submit-career-success',
     name: 'SubmitCareerSuccessPage',
     component: SubmitCareerSuccessPage
+  },
+  {
+    path: '/privacy-policy',
+    name: 'PrivacyPolicyPage',
+    component: PrivacyPolicyPage
+  },
+  {
+    path: '/transaction-law',
+    name: 'TransactionLawPage',
+    component: TransactionLawPage
   }
 ]
 

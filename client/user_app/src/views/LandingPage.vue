@@ -79,13 +79,12 @@
     <!--Footer-->
     <footer class="bg-white">
       <div class="text-center mx-auto px-8 py-6">
-        <p class="text-gray-500 text-xl font-bold md:mb-6">お問い合わせ</p>
-        <ul class="list-reset mb-6">
-          <li class="mt-2 inline-block mr-2 md:block md:mr-0">
-            <p class="text-gray-800">お問い合わせの際は、下記のメールアドレスよりご連絡をお願い致します。</p>
-            <p class="text-gray-800">test@test.com (TODO: メールアドレス入れ替え) </p>
-          </li>
-        </ul>
+        <div>
+          <router-link class="text-gray-500 text-xl font-bold md:mb-6" to="/transaction-law">特定商取引法に基づく表記</router-link>
+        </div>
+        <div class="m-4">
+          <router-link class="text-gray-500 text-xl font-bold md:mb-6" to="/privacy-policy">プライバシーポリシー</router-link>
+        </div>
       </div>
     </footer>
   </div>
