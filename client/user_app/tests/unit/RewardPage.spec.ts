@@ -626,7 +626,7 @@ describe('RewardPage.vue', () => {
     expect(latestTwoTransfersSetMessage).toContain(`${transfer1.scheduled_date_in_jst.year}年${transfer1.scheduled_date_in_jst.month}月${transfer1.scheduled_date_in_jst.day}日`)
 
     expect(latestTwoTransfersSetMessage).toContain('入金情報2')
-    expect(latestTwoTransfersSetMessage).toContain('入金差し止め（詳細な情報はお問い合わせ下さい）')
+    expect(latestTwoTransfersSetMessage).toContain('入金差し止め（詳細な情報は、お問い合わせ先よりお問い合わせ下さい）')
     expect(latestTwoTransfersSetMessage).toContain('入金予定額')
     expect(latestTwoTransfersSetMessage).toContain(`${transfer2.amount - TRANSFER_FEE_IN_YEN}円`)
     expect(latestTwoTransfersSetMessage).toContain('入金予定日')
