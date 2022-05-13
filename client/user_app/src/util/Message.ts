@@ -89,7 +89,7 @@ export namespace Message {
     export const INVALID_NOTE_LENGTH_MESSAGE = '備考の文字数が規定範囲外です'
     export const ILLEGAL_CHAR_IN_NOTE_MESSAGE = '備考に不正な文字が含まれています（半角記号はご利用になれません。記号は全角記号でご入力下さい）'
     export const NO_CAREER_FOUND_MESSAGE = '職務経歴が含まれていない不正なリクエストです'
-    export const NO_CARER_IMAGE1_FOUND_MESSAGE = '証明書類の表面の画像が含まれていない不正なリクエストです'
+    export const NO_CAREER_IMAGE1_FOUND_MESSAGE = '証明書類の表面の画像が含まれていない不正なリクエストです'
     export const REACH_CAREER_NUM_LIMIT_MESSAGE = '既に最大数の職務経歴が登録されています'
     export const NO_IDENTITY_REGISTERED_MESSAGE = 'ユーザー情報が登録されていません。先にユーザー情報を登録して下さい'
     export const REACH_CREATE_CAREER_REQ_NUM_LIMIT_MESSAGE = '既に複数の職務経歴の確認依頼を行っています。確認作業が完了するまでお待ち下さい'

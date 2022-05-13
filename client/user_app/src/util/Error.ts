@@ -224,7 +224,7 @@ export function createErrorMessage (code: number): string {
   } else if (code === Code.NO_CAREER_FOUND) {
     return `${Message.NO_CAREER_FOUND_MESSAGE} (${code})`
   } else if (code === Code.NO_CAREER_IMAGE1_FOUND) {
-    return `${Message.NO_CARER_IMAGE1_FOUND_MESSAGE} (${code})`
+    return `${Message.NO_CAREER_IMAGE1_FOUND_MESSAGE} (${code})`
   } else if (code === Code.EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT) {
     return `${Message.EXCEED_MAX_CAREER_IMAGE_SIZE_LIMIT_MESSAGE} (${code})`
   } else if (code === Code.REACH_CAREER_NUM_LIMIT) {
