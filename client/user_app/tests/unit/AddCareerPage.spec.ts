@@ -1992,9 +1992,9 @@ describe('AddCareerPage.vue', () => {
     expect(resultMessage).toContain(Code.NO_CAREER_IMAGE1_FOUND.toString())
   })
 
-  it(`displays alert message ${Message.IDENTITY_INFO_REQ_ALREADY_EXISTS_MESSAGE} (invalid request case 12)`, async () => {
+  it(`displays alert message ${Message.REACH_CAREER_NUM_LIMIT_MESSAGE} (invalid request case 12)`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
-    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.IDENTITY_INFO_REQ_ALREADY_EXISTS))
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.REACH_CAREER_NUM_LIMIT))
     postCareerMock.mockResolvedValue(apiErrResp)
     // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
     const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
@@ -2015,42 +2015,14 @@ describe('AddCareerPage.vue', () => {
     })
     await flushPromises()
 
-    const lastName = wrapper.find('[data-test="last-name-div"]')
-    const lastNameInput = lastName.find('input')
-    await lastNameInput.setValue('山田')
-    const firstName = wrapper.find('[data-test="first-name-div"]')
-    const firstNameInput = firstName.find('input')
-    await firstNameInput.setValue('太郎')
-    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
-    const lastNameFuriganaInput = lastNameFurigana.find('input')
-    await lastNameFuriganaInput.setValue('ヤマダ')
-    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
-    const firstNameFuriganaInput = firstNameFurigana.find('input')
-    await firstNameFuriganaInput.setValue('タロウ')
-    const year = wrapper.find('[data-test="year-select-div"]')
-    const yearSelect = year.find('select')
-    await yearSelect.setValue('1990')
-    const month = wrapper.find('[data-test="month-select-div"]')
-    const monthSelect = month.find('select')
-    await monthSelect.setValue('5')
-    const day = wrapper.find('[data-test="day-select-div"]')
-    const daySelect = day.find('select')
-    await daySelect.setValue('12')
-    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
-    const prefectureSelect = prefecture.find('select')
-    await prefectureSelect.setValue('東京都')
-    const city = wrapper.find('[data-test="city-div"]')
-    const cityInput = city.find('input')
-    await cityInput.setValue('町田市')
-    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
-    const addressLine1Input = addressLine1.find('input')
-    await addressLine1Input.setValue('森の里２−２２−２')
-    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
-    const addressLine2Input = addressLine2.find('input')
-    await addressLine2Input.setValue('レオパレス２０３')
-    const tel = wrapper.find('[data-test="tel-input-div"]')
-    const telInput = tel.find('input')
-    await telInput.setValue('09012345678')
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト株式会社')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
     await nextTick()
@@ -2062,11 +2034,11 @@ describe('AddCareerPage.vue', () => {
     const classes = alertMessage.classes()
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(Message.IDENTITY_INFO_REQ_ALREADY_EXISTS_MESSAGE)
-    expect(resultMessage).toContain(Code.IDENTITY_INFO_REQ_ALREADY_EXISTS.toString())
+    expect(resultMessage).toContain(Message.REACH_CAREER_NUM_LIMIT_MESSAGE)
+    expect(resultMessage).toContain(Code.REACH_CAREER_NUM_LIMIT.toString())
   })
 
-  it(`displays alert message ${Message.INVALID_MULTIPART_FORM_DATA_MESSAGE} (invalid request case 15)`, async () => {
+  it(`displays alert message ${Message.INVALID_MULTIPART_FORM_DATA_MESSAGE} (invalid request case 13)`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_MULTIPART_FORM_DATA))
     postCareerMock.mockResolvedValue(apiErrResp)
@@ -2089,42 +2061,14 @@ describe('AddCareerPage.vue', () => {
     })
     await flushPromises()
 
-    const lastName = wrapper.find('[data-test="last-name-div"]')
-    const lastNameInput = lastName.find('input')
-    await lastNameInput.setValue('山田')
-    const firstName = wrapper.find('[data-test="first-name-div"]')
-    const firstNameInput = firstName.find('input')
-    await firstNameInput.setValue('太郎')
-    const lastNameFurigana = wrapper.find('[data-test="last-name-furigana-div"]')
-    const lastNameFuriganaInput = lastNameFurigana.find('input')
-    await lastNameFuriganaInput.setValue('ヤマダ')
-    const firstNameFurigana = wrapper.find('[data-test="first-name-furigana-div"]')
-    const firstNameFuriganaInput = firstNameFurigana.find('input')
-    await firstNameFuriganaInput.setValue('タロウ')
-    const year = wrapper.find('[data-test="year-select-div"]')
-    const yearSelect = year.find('select')
-    await yearSelect.setValue('1990')
-    const month = wrapper.find('[data-test="month-select-div"]')
-    const monthSelect = month.find('select')
-    await monthSelect.setValue('5')
-    const day = wrapper.find('[data-test="day-select-div"]')
-    const daySelect = day.find('select')
-    await daySelect.setValue('12')
-    const prefecture = wrapper.find('[data-test="prefecture-select-div"]')
-    const prefectureSelect = prefecture.find('select')
-    await prefectureSelect.setValue('東京都')
-    const city = wrapper.find('[data-test="city-div"]')
-    const cityInput = city.find('input')
-    await cityInput.setValue('町田市')
-    const addressLine1 = wrapper.find('[data-test="address-line1-div"]')
-    const addressLine1Input = addressLine1.find('input')
-    await addressLine1Input.setValue('森の里２−２２−２')
-    const addressLine2 = wrapper.find('[data-test="address-line2-div"]')
-    const addressLine2Input = addressLine2.find('input')
-    await addressLine2Input.setValue('レオパレス２０３')
-    const tel = wrapper.find('[data-test="tel-input-div"]')
-    const telInput = tel.find('input')
-    await telInput.setValue('09012345678')
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト株式会社')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     await submitButton.trigger('submit')
     await nextTick()
@@ -2138,5 +2082,143 @@ describe('AddCareerPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.INVALID_MULTIPART_FORM_DATA_MESSAGE)
     expect(resultMessage).toContain(Code.INVALID_MULTIPART_FORM_DATA.toString())
+  })
+
+  it(`displays alert message ${Message.REACH_CAREER_NUM_LIMIT_MESSAGE} (invalid request case 14)`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.REACH_CAREER_NUM_LIMIT))
+    postCareerMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(AddCareerPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト株式会社')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.REACH_CAREER_NUM_LIMIT_MESSAGE)
+    expect(resultMessage).toContain(Code.REACH_CAREER_NUM_LIMIT.toString())
+  })
+
+  it(`displays alert message ${Message.NO_IDENTITY_REGISTERED_MESSAGE} (invalid request case 15)`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_IDENTITY_REGISTERED))
+    postCareerMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(AddCareerPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト株式会社')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_IDENTITY_REGISTERED_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_IDENTITY_REGISTERED.toString())
+  })
+
+  it(`displays alert message ${Message.REACH_CREATE_CAREER_REQ_NUM_LIMIT_MESSAGE} (invalid request case 16)`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.REACH_CREATE_CAREER_REQ_NUM_LIMIT))
+    postCareerMock.mockResolvedValue(apiErrResp)
+    // クライアントサイドでは拡張子とサイズしかチェックする予定はないので、実際のファイル形式と中身はなんでもよい
+    const image1 = new File(['test1'], 'image1.jpeg', { type: 'image/jpeg' })
+    const image2 = new File(['test2'], 'image2.jpeg', { type: 'image/jpeg' })
+    imagesMock = reactive({
+      image1: image1 as File | null,
+      image2: image2 as File | null
+    })
+    const maxImageSize = Math.max(image1.size, image2.size)
+    getMaxImageJpegImageSizeInBytesMock.mockReset()
+    getMaxImageJpegImageSizeInBytesMock.mockReturnValue(maxImageSize)
+    const wrapper = mount(AddCareerPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const companyName = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyName.setValue('テスト株式会社')
+    const careerStarYear = wrapper.find('[data-test="career-start-year-select"]').find('select')
+    await careerStarYear.setValue('1999')
+    const careerStarMonth = wrapper.find('[data-test="career-start-month-select"]').find('select')
+    await careerStarMonth.setValue('4')
+    const careerStarDay = wrapper.find('[data-test="career-start-day-select"]').find('select')
+    await careerStarDay.setValue('1')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.REACH_CREATE_CAREER_REQ_NUM_LIMIT_MESSAGE)
+    expect(resultMessage).toContain(Code.REACH_CREATE_CAREER_REQ_NUM_LIMIT.toString())
   })
 })
