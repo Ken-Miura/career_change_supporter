@@ -45,7 +45,7 @@
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">サービスの提供時期</h2>
-        <p class="ml-2 text-lg">相談を申し込みたい方は、本人確認後にサービスをご利用になられます。相談を受け付けたい方は、本人確認に加え、職務経歴の確認を行い、相談料と報酬の入金口座を登録した後、サービスをご利用になられます。</p>
+        <p class="ml-2 text-lg">決済手続きの完了後、相談を申し込みたい方と相談を受け付けたい方が合意した開始時刻に相談を行うことが可能になります。</p>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
