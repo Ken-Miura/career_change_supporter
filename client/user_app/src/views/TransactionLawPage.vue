@@ -14,11 +14,38 @@
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">事業者の所在</h2>
-        <p class="ml-2 text-lg">XXX株式会社</p>
+        <p class="ml-2 text-lg">〒111-1111</p>
+        <p class="ml-2 text-lg">東京都XXX市XXX</p>
+        <p class="ml-2 text-lg">電話番号については「お問い合わせ先」にてご請求をいただければ、遅滞なく開示いたします。</p>
+        <p class="ml-2 text-lg">※ お問い合わせは下記のメールアドレスからのみ受け付けています。</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">お問い合わせ先</h2>
         <p class="ml-2 text-lg">xxx.test@example.com</p>
+      </div>
+      <div class="mt-4 ml-2">
+        <h2 class="font-bold text-xl">相談料と手数料</h2>
+        <p class="ml-2 text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザーの詳細に記載されています。相談を受け付けるユーザーに対して、以下の手数料が課されます。</p>
+        <ol class="list-disc ml-8 text-lg">
+          <li>プラットフォーム利用料：相談料の{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント</li>
+          <li>報酬の入金口座への振込手数料：{{ TRANSFER_FEE_IN_YEN }}円</li>
+        </ol>
+      </div>
+      <div class="mt-4 ml-2">
+        <h2 class="font-bold text-xl">お支払い方法</h2>
+        <p class="ml-2 text-lg">クレジットカード（Visa/Master/American Express/JCB/Diners Club/Discover）</p>
+      </div>
+      <div class="mt-4 ml-2">
+        <h2 class="font-bold text-xl">個人情報の取扱について</h2>
+        <p class="ml-2 text-lg"><router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/privacy-policy">プライバシーポリシー</router-link>をご参照下さい。</p>
+      </div>
+      <div class="mt-4 ml-2">
+        <h2 class="font-bold text-xl">返金、キャンセルについて</h2>
+        <p class="ml-2 text-lg">相談を申し込みたい方と相談を受けたい方をマッチングさせ、相談の場を提供するというサービスの性質上、相談の開始後の返金・キャンセルは一切できません。相談開始前でも相談を申し込んだ方の都合によるキャンセルの場合、返金は一切出来ません。相談開始前に相談を受け付けた方の都合により相談がキャンセルと成った場合、相談を受け付けた方に対して返金処理を行います。</p>
+      </div>
+      <div class="mt-4 ml-2">
+        <h2 class="font-bold text-xl">サービスの提供時期</h2>
+        <p class="ml-2 text-lg">相談を申し込みたい方は、本人確認後にサービスをご利用になられます。相談を受け付けたい方は、本人確認に加え、職務経歴の確認を行い、相談料と報酬の入金口座を登録した後、サービスをご利用になられます。</p>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
@@ -29,8 +56,16 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
+import { TRANSFER_FEE_IN_YEN } from '@/util/personalized/reward/TransferFee'
+import { PLATFORM_FEE_IN_PERCENTAGE } from '@/util/personalized/profile/PlatformFee'
 
 export default defineComponent({
-  name: 'TransactionLawPage'
+  name: 'TransactionLawPage',
+  setup () {
+    return {
+      PLATFORM_FEE_IN_PERCENTAGE,
+      TRANSFER_FEE_IN_YEN
+    }
+  }
 })
 </script>

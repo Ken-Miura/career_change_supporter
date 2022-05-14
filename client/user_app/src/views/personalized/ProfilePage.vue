@@ -72,7 +72,7 @@
         </div>
         <div data-test="fee-per-hour-in-yen" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
-          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>相談料から本サイト利用の手数料（30パーセント）が差し引かれた金額が報酬として計上されます。</p>
+          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>相談料から本サイト利用の手数料（{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント）が差し引かれた金額が報酬として計上されます。</p>
           <div v-if="feePerHourInYen !== null" data-test="fee-per-hour-in-yen-set" class="flex justify-end">
             <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
           </div>
@@ -107,6 +107,7 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
 import { SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from '@/store/mutationTypes'
 import { MAX_CAREER_NUM } from '@/util/MaxCareerNum'
+import { PLATFORM_FEE_IN_PERCENTAGE } from '@/util/personalized/profile/PlatformFee'
 
 export default defineComponent({
   name: 'ProfilePage',
@@ -205,7 +206,8 @@ export default defineComponent({
       moveToCareerDetailPage,
       moveToFeePerHourInYenPage,
       moveToDeleteAccountConfirmationPage,
-      MAX_CAREER_NUM
+      MAX_CAREER_NUM,
+      PLATFORM_FEE_IN_PERCENTAGE
     }
   }
 })

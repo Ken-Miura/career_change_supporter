@@ -1,0 +1,1 @@
+export const PLATFORM_FEE_IN_PERCENTAGE = 30
