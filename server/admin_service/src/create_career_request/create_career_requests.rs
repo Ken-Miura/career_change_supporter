@@ -6,10 +6,8 @@ use common::{ErrResp, RespResult};
 
 use axum::extract::{Extension, Query};
 use axum::http::StatusCode;
-use entity::{
-    create_identity_req,
-    sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder},
-};
+use entity::create_career_req;
+use entity::sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
 use serde::Serialize;
 use tracing::error;
 
@@ -32,8 +30,9 @@ pub(crate) async fn get_create_career_requests(
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateCareerReqItem {
     pub(crate) user_account_id: i64,
+    pub(crate) create_career_req_id: i64,
+    pub(crate) company_name: String,
     pub(crate) requested_at: DateTime<FixedOffset>,
-    pub(crate) name: String,
 }
 
 async fn get_create_career_request_items(
@@ -64,14 +63,14 @@ impl CreateCareerRequestItemsOperation for CreateCareerRequestItemsOperationImpl
         page: usize,
         page_size: usize,
     ) -> Result<Vec<CreateCareerReqItem>, ErrResp> {
-        let items = create_identity_req::Entity::find()
-            .order_by_asc(create_identity_req::Column::RequestedAt)
+        let items = create_career_req::Entity::find()
+            .order_by_asc(create_career_req::Column::RequestedAt)
             .paginate(&self.pool, page_size)
             .fetch_page(page)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to fetch page (page: {}, page_size: {}) in create_identity_req: {}",
+                    "failed to fetch page (page: {}, page_size: {}) in create_career_req: {}",
                     page, page_size, e
                 );
                 unexpected_err_resp()
@@ -80,8 +79,9 @@ impl CreateCareerRequestItemsOperation for CreateCareerRequestItemsOperationImpl
             .iter()
             .map(|model| CreateCareerReqItem {
                 user_account_id: model.user_account_id,
+                create_career_req_id: model.create_career_req_id,
+                company_name: model.company_name.to_string(),
                 requested_at: model.requested_at,
-                name: model.last_name.clone() + " " + model.first_name.as_str(),
             })
             .collect::<Vec<CreateCareerReqItem>>())
     }
@@ -210,22 +210,25 @@ mod tests {
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let item1 = CreateCareerReqItem {
             user_account_id: 1,
+            create_career_req_id: 1,
+            company_name: String::from("テスト１株式会社"),
             requested_at: requested_at_1,
-            name: String::from("山田 太郎"),
         };
         items.push(item1);
         let requested_at_2 = requested_at_1 + Duration::days(1);
         let item2 = CreateCareerReqItem {
-            user_account_id: 2,
+            user_account_id: 1,
+            create_career_req_id: 2,
+            company_name: String::from("テスト２株式会社"),
             requested_at: requested_at_2,
-            name: String::from("佐藤 次郎"),
         };
         items.push(item2);
         let requested_at_3 = requested_at_2 + Duration::days(1);
         let item3 = CreateCareerReqItem {
-            user_account_id: 3,
+            user_account_id: 2,
+            create_career_req_id: 3,
+            company_name: String::from("テスト３株式会社"),
             requested_at: requested_at_3,
-            name: String::from("田中 三郎"),
         };
         items.push(item3);
         items
