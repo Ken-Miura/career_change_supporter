@@ -22,9 +22,6 @@
               <router-link class="inline-block text-white no-underline py-2 px-4" to="/information">お知らせ</router-link>
             </li>
             <li class="mr-3">
-              <router-link class="inline-block text-white no-underline py-2 px-4" to="/published-terms-of-use">利用規約</router-link>
-            </li>
-            <li class="mr-3">
               <router-link class="inline-block text-white no-underline py-2 px-4" to="/new-account">新規登録</router-link>
             </li>
             <li class="mr-3">
@@ -78,12 +75,21 @@
     </div>
     <!--Footer-->
     <footer class="bg-white">
-      <div class="text-center mx-auto px-8 py-6">
-        <div>
-          <router-link class="text-gray-500 text-xl font-bold md:mb-6" to="/transaction-law">特定商取引法に基づく表記</router-link>
-        </div>
-        <div class="m-4">
-          <router-link class="text-gray-500 text-xl font-bold md:mb-6" to="/privacy-policy">プライバシーポリシー</router-link>
+      <div class="container text-center mx-auto px-8">
+        <div class="w-full flex flex-col md:flex-row py-6">
+          <div class="flex-1">
+            <ul class="list-reset mb-6">
+              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+                <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/published-terms-of-use">利用規約</router-link>
+              </li>
+              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+                <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/transaction-law">特定商取引法に基づく表記</router-link>
+              </li>
+              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+                <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/privacy-policy">プライバシーポリシー</router-link>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </footer>
