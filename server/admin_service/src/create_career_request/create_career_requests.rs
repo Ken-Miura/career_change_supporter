@@ -1,4 +1,4 @@
-// Copyright 2021 Ken Miura
+// Copyright 2022 Ken Miura
 
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset};
@@ -18,52 +18,52 @@ use crate::{
     util::{session::Admin, validate_page_size, Pagination},
 };
 
-pub(crate) async fn get_create_identity_requests(
+pub(crate) async fn get_create_career_requests(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     pagination: Query<Pagination>,
     Extension(pool): Extension<DatabaseConnection>,
-) -> RespResult<Vec<CreateIdentityReqItem>> {
+) -> RespResult<Vec<CreateCareerReqItem>> {
     let pagination = pagination.0;
     let _ = validate_page_size(pagination.per_page)?;
-    let op = CreateIdentityRequestItemsOperationImpl { pool };
-    get_create_identity_request_items(pagination, op).await
+    let op = CreateCareerRequestItemsOperationImpl { pool };
+    get_create_career_request_items(pagination, op).await
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub(crate) struct CreateIdentityReqItem {
+pub(crate) struct CreateCareerReqItem {
     pub(crate) user_account_id: i64,
     pub(crate) requested_at: DateTime<FixedOffset>,
     pub(crate) name: String,
 }
 
-async fn get_create_identity_request_items(
+async fn get_create_career_request_items(
     pagination: Pagination,
-    op: impl CreateIdentityRequestItemsOperation,
-) -> RespResult<Vec<CreateIdentityReqItem>> {
+    op: impl CreateCareerRequestItemsOperation,
+) -> RespResult<Vec<CreateCareerReqItem>> {
     let items = op.get_items(pagination.page, pagination.per_page).await?;
     Ok((StatusCode::OK, Json(items)))
 }
 
 #[async_trait]
-trait CreateIdentityRequestItemsOperation {
+trait CreateCareerRequestItemsOperation {
     async fn get_items(
         &self,
         page: usize,
         page_size: usize,
-    ) -> Result<Vec<CreateIdentityReqItem>, ErrResp>;
+    ) -> Result<Vec<CreateCareerReqItem>, ErrResp>;
 }
 
-struct CreateIdentityRequestItemsOperationImpl {
+struct CreateCareerRequestItemsOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperationImpl {
+impl CreateCareerRequestItemsOperation for CreateCareerRequestItemsOperationImpl {
     async fn get_items(
         &self,
         page: usize,
         page_size: usize,
-    ) -> Result<Vec<CreateIdentityReqItem>, ErrResp> {
+    ) -> Result<Vec<CreateCareerReqItem>, ErrResp> {
         let items = create_identity_req::Entity::find()
             .order_by_asc(create_identity_req::Column::RequestedAt)
             .paginate(&self.pool, page_size)
@@ -78,12 +78,12 @@ impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperation
             })?;
         Ok(items
             .iter()
-            .map(|model| CreateIdentityReqItem {
+            .map(|model| CreateCareerReqItem {
                 user_account_id: model.user_account_id,
                 requested_at: model.requested_at,
                 name: model.last_name.clone() + " " + model.first_name.as_str(),
             })
-            .collect::<Vec<CreateIdentityReqItem>>())
+            .collect::<Vec<CreateCareerReqItem>>())
     }
 }
 
@@ -99,21 +99,20 @@ mod tests {
     use crate::util::Pagination;
 
     use super::{
-        get_create_identity_request_items, CreateIdentityReqItem,
-        CreateIdentityRequestItemsOperation,
+        get_create_career_request_items, CreateCareerReqItem, CreateCareerRequestItemsOperation,
     };
 
-    struct CreateIdentityRequestItemsOperationMock {
-        items: Vec<CreateIdentityReqItem>,
+    struct CreateCareerRequestItemsOperationMock {
+        items: Vec<CreateCareerReqItem>,
     }
 
     #[async_trait]
-    impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperationMock {
+    impl CreateCareerRequestItemsOperation for CreateCareerRequestItemsOperationMock {
         async fn get_items(
             &self,
             page: usize,
             page_size: usize,
-        ) -> Result<Vec<CreateIdentityReqItem>, ErrResp> {
+        ) -> Result<Vec<CreateCareerReqItem>, ErrResp> {
             let items = self.items.clone();
             let length = items.len();
             let start = page * page_size;
@@ -131,9 +130,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success1() {
+    async fn get_create_career_request_items_success1() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = CreateCareerRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -141,7 +140,7 @@ mod tests {
             per_page: 3,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_create_career_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -149,9 +148,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success2() {
+    async fn get_create_career_request_items_success2() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = CreateCareerRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -159,7 +158,7 @@ mod tests {
             per_page: 2,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_create_career_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -167,9 +166,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success3() {
+    async fn get_create_career_request_items_success3() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = CreateCareerRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -177,7 +176,7 @@ mod tests {
             per_page: 2,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_create_career_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -186,9 +185,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success4() {
+    async fn get_create_career_request_items_success4() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = CreateCareerRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -196,34 +195,34 @@ mod tests {
             per_page: 2,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_create_career_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(Vec::<CreateIdentityReqItem>::with_capacity(0), resp.1 .0);
+        assert_eq!(Vec::<CreateCareerReqItem>::with_capacity(0), resp.1 .0);
     }
 
-    fn create_3_dummy_items() -> Vec<CreateIdentityReqItem> {
+    fn create_3_dummy_items() -> Vec<CreateCareerReqItem> {
         let mut items = Vec::with_capacity(3);
         let requested_at_1 = Utc
             .ymd(2021, 9, 11)
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-        let item1 = CreateIdentityReqItem {
+        let item1 = CreateCareerReqItem {
             user_account_id: 1,
             requested_at: requested_at_1,
             name: String::from("山田 太郎"),
         };
         items.push(item1);
         let requested_at_2 = requested_at_1 + Duration::days(1);
-        let item2 = CreateIdentityReqItem {
+        let item2 = CreateCareerReqItem {
             user_account_id: 2,
             requested_at: requested_at_2,
             name: String::from("佐藤 次郎"),
         };
         items.push(item2);
         let requested_at_3 = requested_at_2 + Duration::days(1);
-        let item3 = CreateIdentityReqItem {
+        let item3 = CreateCareerReqItem {
             user_account_id: 3,
             requested_at: requested_at_3,
             name: String::from("田中 三郎"),

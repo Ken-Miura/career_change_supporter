@@ -29,7 +29,7 @@ pub(crate) async fn get_update_identity_requests(
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct UpdateIdentityReqItem {
-    pub(crate) account_id: i64,
+    pub(crate) user_account_id: i64,
     pub(crate) requested_at: DateTime<FixedOffset>,
     pub(crate) name: String,
 }
@@ -77,7 +77,7 @@ impl UpdateIdentityRequestItemsOperation for UpdateIdentityRequestItemsOperation
         Ok(items
             .iter()
             .map(|model| UpdateIdentityReqItem {
-                account_id: model.user_account_id,
+                user_account_id: model.user_account_id,
                 requested_at: model.requested_at,
                 name: model.last_name.clone() + " " + model.first_name.as_str(),
             })
@@ -208,21 +208,21 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let item1 = UpdateIdentityReqItem {
-            account_id: 1,
+            user_account_id: 1,
             requested_at: requested_at_1,
             name: String::from("山田 太郎"),
         };
         items.push(item1);
         let requested_at_2 = requested_at_1 + Duration::days(1);
         let item2 = UpdateIdentityReqItem {
-            account_id: 2,
+            user_account_id: 2,
             requested_at: requested_at_2,
             name: String::from("佐藤 次郎"),
         };
         items.push(item2);
         let requested_at_3 = requested_at_2 + Duration::days(1);
         let item3 = UpdateIdentityReqItem {
-            account_id: 3,
+            user_account_id: 3,
             requested_at: requested_at_3,
             name: String::from("田中 三郎"),
         };

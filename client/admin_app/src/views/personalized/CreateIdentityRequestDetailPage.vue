@@ -110,7 +110,7 @@ export default defineComponent({
     const users = ref([] as User[])
     const route = useRoute()
     const router = useRouter()
-    const userAccountId = route.params.account_id as string
+    const userAccountId = route.params.user_account_id as string
     const image1Url = computed(() => {
       if (detail.value === null) {
         return ''
@@ -208,7 +208,7 @@ export default defineComponent({
     }
 
     const chooseRejectionReason = async () => {
-      const route = { name: 'CreateIdentityRequestRejectionDetailPage', params: { account_id: userAccountId } }
+      const route = { name: 'CreateIdentityRequestRejectionDetailPage', params: { user_account_id: userAccountId } }
       await router.push(route)
     }
 

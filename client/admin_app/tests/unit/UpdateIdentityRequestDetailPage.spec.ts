@@ -16,7 +16,7 @@ let routeParam = ''
 jest.mock('vue-router', () => ({
   useRoute: () => ({
     params: {
-      account_id: routeParam
+      user_account_id: routeParam
     }
   }),
   useRouter: () => ({
@@ -545,7 +545,7 @@ describe('UpdateIdentityRequestDetailPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = { name: 'UpdateIdentityRequestRejectionDetailPage', params: { account_id: routeParam } }
+    const data = { name: 'UpdateIdentityRequestRejectionDetailPage', params: { user_account_id: routeParam } }
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 

@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+mod create_career_request;
 mod create_identity_request;
 mod err;
 mod identity_images;
