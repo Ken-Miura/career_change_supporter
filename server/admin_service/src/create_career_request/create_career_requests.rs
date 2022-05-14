@@ -29,7 +29,6 @@ pub(crate) async fn get_create_career_requests(
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateCareerReqItem {
-    pub(crate) user_account_id: i64,
     pub(crate) create_career_req_id: i64,
     pub(crate) company_name: String,
     pub(crate) requested_at: DateTime<FixedOffset>,
@@ -78,7 +77,6 @@ impl CreateCareerRequestItemsOperation for CreateCareerRequestItemsOperationImpl
         Ok(items
             .iter()
             .map(|model| CreateCareerReqItem {
-                user_account_id: model.user_account_id,
                 create_career_req_id: model.create_career_req_id,
                 company_name: model.company_name.to_string(),
                 requested_at: model.requested_at,
@@ -209,7 +207,6 @@ mod tests {
             .and_hms(15, 30, 45)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let item1 = CreateCareerReqItem {
-            user_account_id: 1,
             create_career_req_id: 1,
             company_name: String::from("テスト１株式会社"),
             requested_at: requested_at_1,
@@ -217,7 +214,6 @@ mod tests {
         items.push(item1);
         let requested_at_2 = requested_at_1 + Duration::days(1);
         let item2 = CreateCareerReqItem {
-            user_account_id: 1,
             create_career_req_id: 2,
             company_name: String::from("テスト２株式会社"),
             requested_at: requested_at_2,
@@ -225,7 +221,6 @@ mod tests {
         items.push(item2);
         let requested_at_3 = requested_at_2 + Duration::days(1);
         let item3 = CreateCareerReqItem {
-            user_account_id: 2,
             create_career_req_id: 3,
             company_name: String::from("テスト３株式会社"),
             requested_at: requested_at_3,
