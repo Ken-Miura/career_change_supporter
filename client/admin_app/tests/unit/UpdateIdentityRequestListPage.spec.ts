@@ -42,7 +42,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
   it('has WaitingCircle and TheHeader while waiting response', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
     } as UpdateIdentityRequestItem
@@ -121,7 +121,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
   it('disables previous button just after opening page', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
     } as UpdateIdentityRequestItem
@@ -144,7 +144,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
   it('displays an item just after opening page', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
     } as UpdateIdentityRequestItem
@@ -171,10 +171,10 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     expect(list.text()).toContain('詳細を確認する')
   })
 
-  it('moves to UpdateIdentityRequestDetailPage with account_id if 詳細を確認する is pushed', async () => {
+  it('moves to UpdateIdentityRequestDetailPage with user_account_id if 詳細を確認する is pushed', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
     } as UpdateIdentityRequestItem
@@ -195,14 +195,14 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "UpdateIdentityRequestDetailPage", "params": {"account_id": ${item.account_id}}}`)
+    const data = JSON.parse(`{"name": "UpdateIdentityRequestDetailPage", "params": {"user_account_id": ${item.user_account_id}}}`)
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
   it('disables next button if items returned are less than displayable items per page', async () => {
     const date = new Date(Date.UTC(2022, 0, 1, 23, 59, 59))
     const item = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date
     } as UpdateIdentityRequestItem
@@ -228,7 +228,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date1Utc = Date.UTC(2022, 0, 1, 23, 59, 59)
     const date1 = new Date(date1Utc)
     const item1 = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date1
     } as UpdateIdentityRequestItem
@@ -236,7 +236,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      account_id: 1,
+      user_account_id: 1,
       name: '田中 太郎',
       requested_at: date2
     } as UpdateIdentityRequestItem
@@ -264,7 +264,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date1Utc = Date.UTC(2022, 0, 1, 23, 59, 59)
     const date1 = new Date(date1Utc)
     const item1 = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date1
     } as UpdateIdentityRequestItem
@@ -272,14 +272,14 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      account_id: 1,
+      user_account_id: 1,
       name: '田中 太郎',
       requested_at: date2
     } as UpdateIdentityRequestItem
     const date3Utc = date2Utc + 60
     const date3 = new Date(date3Utc)
     const item3 = {
-      account_id: 3,
+      user_account_id: 3,
       name: '鈴木 圭一',
       requested_at: date3
     } as UpdateIdentityRequestItem
@@ -307,7 +307,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date1Utc = Date.UTC(2022, 0, 1, 23, 59, 59)
     const date1 = new Date(date1Utc)
     const item1 = {
-      account_id: 1,
+      user_account_id: 1,
       name: '佐藤 次郎',
       requested_at: date1
     } as UpdateIdentityRequestItem
@@ -315,7 +315,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      account_id: 1,
+      user_account_id: 1,
       name: '田中 太郎',
       requested_at: date2
     } as UpdateIdentityRequestItem
@@ -347,7 +347,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date3Utc = date2Utc + 60
     const date3 = new Date(date3Utc)
     const item3 = {
-      account_id: 3,
+      user_account_id: 3,
       name: '鈴木 圭一',
       requested_at: date3
     } as UpdateIdentityRequestItem

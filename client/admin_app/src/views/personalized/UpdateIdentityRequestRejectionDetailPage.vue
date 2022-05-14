@@ -52,7 +52,7 @@ export default defineComponent({
   },
   setup () {
     const route = useRoute()
-    const userAccountId = route.params.account_id as string
+    const userAccountId = route.params.user_account_id as string
     const router = useRouter()
     const list = createReasonList()
     const rejectionReason = ref(list[0])

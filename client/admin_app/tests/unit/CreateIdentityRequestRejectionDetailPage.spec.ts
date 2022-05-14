@@ -15,7 +15,7 @@ let routeParam = ''
 jest.mock('vue-router', () => ({
   useRoute: () => ({
     params: {
-      account_id: routeParam
+      user_account_id: routeParam
     }
   }),
   useRouter: () => ({

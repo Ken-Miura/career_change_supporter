@@ -40,7 +40,7 @@ const routes: Array<RouteRecordRaw> = [
     component: CreateIdentityRequestListPage
   },
   {
-    path: '/create-identity-request-detail/:account_id',
+    path: '/create-identity-request-detail/:user_account_id',
     name: 'CreateIdentityRequestDetailPage',
     component: CreateIdentityRequestDetailPage
   },
@@ -50,7 +50,7 @@ const routes: Array<RouteRecordRaw> = [
     component: CreateIdentityRequestApprovalPage
   },
   {
-    path: '/create-identity-request-rejection-detail/:account_id',
+    path: '/create-identity-request-rejection-detail/:user_account_id',
     name: 'CreateIdentityRequestRejectionDetailPage',
     component: CreateIdentityRequestRejectionDetailPage
   },
@@ -65,7 +65,7 @@ const routes: Array<RouteRecordRaw> = [
     component: UpdateIdentityRequestListPage
   },
   {
-    path: '/update-identity-request-detail/:account_id',
+    path: '/update-identity-request-detail/:user_account_id',
     name: 'UpdateIdentityRequestDetailPage',
     component: UpdateIdentityRequestDetailPage
   },
@@ -75,7 +75,7 @@ const routes: Array<RouteRecordRaw> = [
     component: UpdateIdentityRequestApprovalPage
   },
   {
-    path: '/update-identity-request-rejection-detail/:account_id',
+    path: '/update-identity-request-rejection-detail/:user_account_id',
     name: 'UpdateIdentityRequestRejectionDetailPage',
     component: UpdateIdentityRequestRejectionDetailPage
   },
