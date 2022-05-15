@@ -98,8 +98,8 @@ export default defineComponent({
     onMounted(async () => {
       await getItems(0)
     })
-    const moveToCreateCareerRequestDetailPage = async (accountId: number) => {
-      await router.push({ name: 'CreateCareerRequestDetailPage', params: { create_career_req_id: accountId } })
+    const moveToCreateCareerRequestDetailPage = async (createCareerReqId: number) => {
+      await router.push({ name: 'CreateCareerRequestDetailPage', params: { create_career_req_id: createCareerReqId } })
     }
     const prev = async () => {
       const newPage = page.value - 1
