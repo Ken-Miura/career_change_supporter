@@ -14,6 +14,5 @@ export type UpdateIdentityRequestDetail = {
     telephone_number: string,
     image1_file_name_without_ext: string,
     image2_file_name_without_ext: string | null,
-    requested_at: Date,
     /* eslint-enable camelcase */
 }
