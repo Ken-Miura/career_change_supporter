@@ -1,4 +1,4 @@
-// Copyright 2021 Ken Miura
+// Copyright 2022 Ken Miura
 
 use axum::extract::{Extension, Query};
 use axum::http::StatusCode;
