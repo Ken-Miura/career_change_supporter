@@ -12,6 +12,7 @@ import UpdateIdentityRequestDetailPage from '../views/personalized/UpdateIdentit
 import UpdateIdentityRequestApprovalPage from '../views/personalized/UpdateIdentityRequestApprovalPage.vue'
 import UpdateIdentityRequestRejectionDetailPage from '../views/personalized/UpdateIdentityRequestRejectionDetailPage.vue'
 import UpdateIdentityRequestRejectionPage from '../views/personalized/UpdateIdentityRequestRejectionPage.vue'
+import CreateCareerRequestListPage from '../views/personalized/CreateCareerRequestListPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -83,6 +84,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/update-identity-request-rejection',
     name: 'UpdateIdentityRequestRejectionPage',
     component: UpdateIdentityRequestRejectionPage
+  },
+  {
+    path: '/create-career-request-list',
+    name: 'CreateCareerRequestListPage',
+    component: CreateCareerRequestListPage
   }
 ]
 
