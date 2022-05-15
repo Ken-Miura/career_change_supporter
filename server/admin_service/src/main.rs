@@ -11,6 +11,7 @@ mod refresh;
 mod update_identity_request;
 mod util;
 
+use crate::create_career_request::create_career_request_detail::get_create_career_request_detail;
 use crate::create_career_request::create_career_requests::get_create_career_requests;
 use crate::create_identity_request::create_identity_request_approval::post_create_identity_request_approval;
 use crate::create_identity_request::create_identity_request_detail::get_create_identity_request_detail;
@@ -175,6 +176,10 @@ async fn main_internal(num_of_cpus: u32) {
                 )                .route(
                     "/create-career-requests",
                     get(get_create_career_requests),
+                )
+                .route(
+                    "/create-career-request-detail",
+                    get(get_create_career_request_detail),
                 ),
         )
         .layer(
