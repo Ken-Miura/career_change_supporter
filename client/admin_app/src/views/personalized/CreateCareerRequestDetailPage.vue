@@ -81,7 +81,7 @@ import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { usePostCreateIdentityRequestApproval } from '@/util/personalized/create-identity-request-detail/usePostCreateIdentityRequestApproval'
+import { usePostCreateCareerRequestApproval } from '@/util/personalized/create-career-request-detail/usePostCreateCareerRequestApproval'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
@@ -91,6 +91,7 @@ import { useGetIdentityByUserAccountId } from '@/util/personalized/update-identi
 import { GetCreateCareerRequestDetailResp } from '@/util/personalized/create-career-request-detail/GetCreateCareerRequestDetailResp'
 import { useGetCreateCareerRequestDetail } from '@/util/personalized/create-career-request-detail/useGetCreateCareerRequestDetail'
 import { CreateCareerRequestDetail } from '@/util/personalized/create-career-request-detail/CreateCareerRequestDetail'
+import { PostCreateCareerRequestApprovalResp } from '@/util/personalized/create-career-request-detail/PostCreateCareerRequestApprovalResp'
 
 export default defineComponent({
   name: 'CreateCareerRequestDetailPage',
@@ -134,11 +135,11 @@ export default defineComponent({
       getIdentityByUserAccountIdFunc
     } = useGetIdentityByUserAccountId()
     const {
-      waitingPostCreateIdentityRequestApprovalDone,
-      postCreateIdentityRequestApprovalFunc
-    } = usePostCreateIdentityRequestApproval()
+      waitingPostCreateCareerRequestApprovalDone,
+      postCreateCareerRequestApprovalFunc
+    } = usePostCreateCareerRequestApproval()
     const waitingRequestDone = computed(() => {
-      return waitingGetCreateCareerRequestDetailDone.value || waitingGetIdentityByUserAccountIdDone.value || waitingPostCreateIdentityRequestApprovalDone.value
+      return waitingGetCreateCareerRequestDetailDone.value || waitingGetIdentityByUserAccountIdDone.value || waitingPostCreateCareerRequestApprovalDone.value
     })
     const getIdentity = async (userAccoundId: string) => {
       const response = await getIdentityByUserAccountIdFunc(userAccoundId)
@@ -185,7 +186,26 @@ export default defineComponent({
     })
 
     const approveReq = async () => {
-      console.log('approveReq')
+      try {
+        const response = await postCreateCareerRequestApprovalFunc(parseInt(createCareerReqId))
+        if (!(response instanceof PostCreateCareerRequestApprovalResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await router.push('/create-career-request-approval')
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     const chooseRejectionReason = async () => {
