@@ -34,7 +34,7 @@ https://opensearch.org/docs/latest/opensearch/install/important-settings/
 ### インデックスの生成
 docker-composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
 ```
-curl -XPUT -H "Content-Type: application/json" --data "@files_for_docker_compose/opensearch_index_definition/index.json" "http://opensearch:9200/users"
+curl -XPUT -H "Content-Type: application/json" --data "@files_for_docker_compose/opensearch/index_definition/index.json" "http://opensearch:9200/users"
 ```
 
 ### replicaシャードの数を0に設定（開発環境の設定であり、本番環境では実施しない設定）

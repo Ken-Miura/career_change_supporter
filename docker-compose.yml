@@ -75,7 +75,7 @@ services:
   # https://opensearch.org/docs/latest/opensearch/install/docker/#sample-docker-compose-file-for-development
   opensearch:
     build:
-      context: ./files_for_docker_compose/opensearch_with_plugins
+      context: ./files_for_docker_compose/opensearch/image_with_plugins
       dockerfile: Dockerfile
     restart: always
     environment:
