@@ -31,6 +31,10 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 検索エンジンとしてOpenSearchを利用する。OpenSearchを安定して動作されるため、下記のリンクの設定に従い、vm.max_map_countを262144以上に設定する。<br>
 https://opensearch.org/docs/latest/opensearch/install/important-settings/
 
+### インデックスの生成
+docker-composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
+curl -XPUT -H "Content-Type: application/json" --data "@files_for_docker_compose/opensearch_index_definition/index.json" "http://opensearch:9200/users"
+
 # TERMINOLOGY
 ## ccs
 Career Change Supporterの略称
