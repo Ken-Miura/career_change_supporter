@@ -19,6 +19,8 @@ https://docs.rs/axum/latest/axum/error_handling/index.html#applying-fallible-mid
 
 実装時点でSDKがVirtual Hosted-Styleを[サポートしていなかった](https://github.com/awslabs/aws-sdk-rust/discussions/485)。そのため、それまでPath-Styleで実装し、Virtual Hosted-Styleがサポートされた後、修正する
 
+AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサーバ→DB、APサーバ→OpenSearch）にTLSを用いるかどうか検討する
+
 # NOTE
 ## 開発環境
 開発環境にはVS Code (IDE) とRemote Container (VS Code用拡張プラグイン) が必須となる。それらを用意し開発を行う。
