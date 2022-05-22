@@ -13,7 +13,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 # USER切り替えをしないと、それらがrootとして生成されるので、開発時に実際に利用するユーザーのvscodeに切り替え
 USER vscode
 RUN cargo install --locked ripgrep \
-    && cargo install --locked ripgrep_all \
     && cargo install --locked fd-find \
     && cargo install --locked bat \
     && cargo install --locked git-delta \
