@@ -33,11 +33,15 @@ https://opensearch.org/docs/latest/opensearch/install/important-settings/
 
 ### インデックスの生成
 docker-composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
+```
 curl -XPUT -H "Content-Type: application/json" --data "@files_for_docker_compose/opensearch_index_definition/index.json" "http://opensearch:9200/users"
+```
 
 ### replicaシャードの数を0に設定（開発環境の設定であり、本番環境では実施しない設定）
 開発環境では、OpenSearchは単一ノードで構成する。単一ノードの場合、replicaシャードを配置するための別ノードが存在しない。そのため、それに起因してインデックスのステータスがyellowとなる。開発環境においては、replicaシャードが存在しないことは問題とならない。そのため、このステータスをgreenにしておくため、[インデックスの生成](インデックスの生成)で作成したインデックスに対して、下記のコマンドを打ってレプリカの数を0に設定しておく。
+```
 curl -XPUT -H "Content-Type: application/json" -d '{ "index": { "number_of_replicas": 0 } }' "http://opensearch:9200/users/_settings"
+```
 
 # TERMINOLOGY
 ## ccs
