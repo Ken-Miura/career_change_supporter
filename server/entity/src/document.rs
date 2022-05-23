@@ -3,13 +3,11 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "user_temp_account", schema_name = "ccs_schema")]
+#[sea_orm(table_name = "document")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub user_temp_account_id: String,
-    pub email_address: String,
-    pub hashed_password: Vec<u8>,
-    pub created_at: DateTimeWithTimeZone,
+    pub user_account_id: i64,
+    pub document_id: Option<i64>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
