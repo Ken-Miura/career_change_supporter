@@ -180,7 +180,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* user_account一つに対して、identityは0もしくは1の関係とする。従って、user_account_idを外部キーかつ主キーとする */
+            /* user_account一つに対して、identityは0もしくは1の関係とする。 */
             /* prefecture => 都道府県の最大文字数は4文字（神奈川県、鹿児島県、和歌山県） */
             /* city => 市区町村の最大文字数は6文字。しかし、市区町村は頻繁に名前が変更される可能性があるので長さに余裕をもたせる */
             /*
@@ -270,7 +270,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* user_account一つに対して、consulting_feeは0もしくは1の関係とする。従って、user_account_idを外部キーかつ主キーとして扱う */
+            /* user_account一つに対して、consulting_feeは0もしくは1の関係とする。 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consulting_fee (
                   user_account_id BIGINT PRIMARY KEY,
@@ -287,7 +287,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* user_account一つに対して、tenantは0もしくは1の関係とする。従って、user_account_idを外部キーかつ主キーとして扱う */
+            /* user_account一つに対して、tenantは0もしくは1の関係とする。 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.tenant (
                   user_account_id BIGINT PRIMARY KEY,
@@ -678,6 +678,29 @@ impl MigrationTrait for Migration {
             .execute(
                 sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.approved_create_career_req_appr_cre_career_req_id_seq TO admin_app;"),
             )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /* user_account一つに対して、document（検索用の情報）は0もしくは1の関係とする。 */
+            /* document_idにはuser_accountと同じ値をセットする。*/
+            /* document_idがある場合、インデックスに検索用の情報がある。ない場合、インデックスに検索用の情報が存在しない */
+            .execute(sql.stmt(r"CREATE TABLE ccs_schema.document (
+              user_account_id BIGINT PRIMARY KEY,
+              document_id BIGINT
+            );"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.document To user_app;",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.document To admin_app;"))
             .await
             .map(|_| ())?;
 
