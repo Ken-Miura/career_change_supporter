@@ -206,6 +206,9 @@
       },
       "rating": {
         "type": "double"
+      },
+      "is_bank_account_registered": {
+        "type": "boolean"
       }
     }
   }
