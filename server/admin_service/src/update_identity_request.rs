@@ -1,6 +1,44 @@
 // Copyright 2021 Ken Miura
 
+use common::ErrRespStruct;
+use entity::{
+    sea_orm::{DatabaseTransaction, EntityTrait, QuerySelect},
+    update_identity_req,
+};
+use tracing::error;
+
+use crate::err::unexpected_err_resp;
+
 pub(crate) mod update_identity_request_approval;
 pub(crate) mod update_identity_request_detail;
 pub(crate) mod update_identity_request_rejection;
 pub(crate) mod update_identity_requests;
+
+async fn find_update_identity_req_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<update_identity_req::Model, ErrRespStruct> {
+    let req_option = update_identity_req::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find update identity request (user account id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let req = req_option.ok_or_else(|| {
+        error!(
+            "no update identity request (user account id: {}) found",
+            user_account_id
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(req)
+}

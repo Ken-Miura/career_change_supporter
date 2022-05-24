@@ -28,6 +28,8 @@ use crate::{
     util::{delete_identity_images, session::Admin, validator::reason_validator::validate_reason},
 };
 
+use super::find_update_identity_req_model_by_user_account_id;
+
 static SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] ユーザー情報更新拒否通知", WEB_SITE_NAME));
 
@@ -244,35 +246,6 @@ async fn find_user_model_by_user_account_id(
             }
         })?;
     Ok(model_option)
-}
-
-async fn find_update_identity_req_model_by_user_account_id(
-    txn: &DatabaseTransaction,
-    user_account_id: i64,
-) -> Result<update_identity_req::Model, ErrRespStruct> {
-    let req_option = update_identity_req::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find update identity request (user account id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    let req = req_option.ok_or_else(|| {
-        error!(
-            "no update identity request (user account id: {}) found",
-            user_account_id
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(req)
 }
 
 fn generate_rejected_update_identity_req_active_model(
