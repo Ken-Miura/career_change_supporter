@@ -14,13 +14,14 @@ use axum::http::StatusCode;
 use entity::{
     admin_account, approved_update_identity_req, identity,
     sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, QuerySelect, Set,
-        TransactionError, TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
+        EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
     },
     update_identity_req, user_account,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
@@ -66,7 +67,7 @@ async fn handle_update_identity_request_approval(
         .get_admin_email_address_by_admin_account_id(admin_account_id)
         .await?;
     let admin_email_address = admin_email_address_option.ok_or_else(|| {
-        tracing::error!(
+        error!(
             "no admin account (admin account id: {}) found",
             admin_account_id
         );
@@ -80,7 +81,7 @@ async fn handle_update_identity_request_approval(
 
     let user_email_address = approved_user.ok_or_else(|| {
         // 承認をしようとした際、既にユーザーがアカウントを削除しているケース
-        tracing::error!(
+        error!(
             "no user account (user account id: {}) found",
             user_account_id
         );
@@ -134,10 +135,9 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
             .one(&self.pool)
             .await
             .map_err(|e| {
-                tracing::error!(
+                error!(
                     "failed to find admin account (admin account id: {}): {}",
-                    admin_account_id,
-                    e
+                    admin_account_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -154,42 +154,15 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // 承認を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
-                    let user_option = user_account::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            tracing::error!(
-                                "failed to find user account (user account id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
+                    let user_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
                     let user = match user_option {
                         Some(m) => m,
                         None => { return Ok(None) },
                     };
 
-                    let identity_option = identity::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            tracing::error!(
-                                "failed to find identity (user account id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                        let _ = identity_option.ok_or_else(|| {
-                            tracing::error!(
+                    let identity_option = find_identity_model_by_user_account_id(txn, user_account_id).await?;
+                    let _ = identity_option.ok_or_else(|| {
+                            error!(
                                 "no identity (user account id: {}) found",
                                 user_account_id
                             );
@@ -198,33 +171,11 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                             }
                         })?;
 
-                    let req_option = update_identity_req::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            tracing::error!(
-                                "failed to find update identity request (user account id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    let req = req_option.ok_or_else(|| {
-                        tracing::error!(
-                            "no update identity request (user account id: {}) found",
-                            user_account_id
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    let req = find_update_identity_req_model_by_user_account_id(txn, user_account_id).await?;
 
-                    let identity_model = UpdateIdentityReqApprovalOperationImpl::generate_identity_active_model(req.clone());
+                    let identity_model = generate_identity_active_model(req.clone());
                     let _  = identity_model.update(txn).await.map_err(|e| {
-                        tracing::error!(
+                        error!(
                             "failed to update identity (user account id: {}): {}",
                             user_account_id,
                             e
@@ -234,9 +185,9 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let approved_req = UpdateIdentityReqApprovalOperationImpl::generate_approved_update_identity_req_active_model(req, approved_time, approver_email_address);
+                    let approved_req = generate_approved_update_identity_req_active_model(req, approved_time, approver_email_address);
                     let _ = approved_req.insert(txn).await.map_err(|e| {
-                        tracing::error!(
+                        error!(
                             "failed to insert approved update identity req (user account id: {}): {}",
                             user_account_id,
                             e
@@ -247,7 +198,7 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                     })?;
 
                     let _ = update_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
-                        tracing::error!(
+                        error!(
                             "failed to delete update identity request (user account id: {}): {}",
                             user_account_id,
                             e
@@ -263,11 +214,11 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
-                    tracing::error!("connection error: {}", db_err);
+                    error!("connection error: {}", db_err);
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    tracing::error!("failed to approve update identity req: {}", err_resp_struct);
+                    error!("failed to approve update identity req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -275,46 +226,114 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
     }
 }
 
-impl UpdateIdentityReqApprovalOperationImpl {
-    fn generate_approved_update_identity_req_active_model(
-        model: update_identity_req::Model,
-        approved_time: DateTime<FixedOffset>,
-        approver_email_address: String,
-    ) -> approved_update_identity_req::ActiveModel {
-        approved_update_identity_req::ActiveModel {
-            appr_upd_identity_req_id: NotSet,
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
-            image1_file_name_without_ext: Set(model.image1_file_name_without_ext),
-            image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
-            approved_at: Set(approved_time),
-            approved_by: Set(approver_email_address),
-        }
-    }
+async fn find_user_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<user_account::Model>, ErrRespStruct> {
+    // 承認を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
+    let model_option = user_account::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model_option)
+}
 
-    fn generate_identity_active_model(model: update_identity_req::Model) -> identity::ActiveModel {
-        identity::ActiveModel {
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
+async fn find_identity_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<identity::Model>, ErrRespStruct> {
+    let identity_option = identity::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find identity (user account id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(identity_option)
+}
+
+async fn find_update_identity_req_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<update_identity_req::Model, ErrRespStruct> {
+    let req_option = update_identity_req::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find update identity request (user account id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let req = req_option.ok_or_else(|| {
+        error!(
+            "no update identity request (user account id: {}) found",
+            user_account_id
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
         }
+    })?;
+    Ok(req)
+}
+
+fn generate_approved_update_identity_req_active_model(
+    model: update_identity_req::Model,
+    approved_time: DateTime<FixedOffset>,
+    approver_email_address: String,
+) -> approved_update_identity_req::ActiveModel {
+    approved_update_identity_req::ActiveModel {
+        appr_upd_identity_req_id: NotSet,
+        user_account_id: Set(model.user_account_id),
+        last_name: Set(model.last_name),
+        first_name: Set(model.first_name),
+        last_name_furigana: Set(model.last_name_furigana),
+        first_name_furigana: Set(model.first_name_furigana),
+        date_of_birth: Set(model.date_of_birth),
+        prefecture: Set(model.prefecture),
+        city: Set(model.city),
+        address_line1: Set(model.address_line1),
+        address_line2: Set(model.address_line2),
+        telephone_number: Set(model.telephone_number),
+        image1_file_name_without_ext: Set(model.image1_file_name_without_ext),
+        image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
+        approved_at: Set(approved_time),
+        approved_by: Set(approver_email_address),
+    }
+}
+
+fn generate_identity_active_model(model: update_identity_req::Model) -> identity::ActiveModel {
+    identity::ActiveModel {
+        user_account_id: Set(model.user_account_id),
+        last_name: Set(model.last_name),
+        first_name: Set(model.first_name),
+        last_name_furigana: Set(model.last_name_furigana),
+        first_name_furigana: Set(model.first_name_furigana),
+        date_of_birth: Set(model.date_of_birth),
+        prefecture: Set(model.prefecture),
+        city: Set(model.city),
+        address_line1: Set(model.address_line1),
+        address_line2: Set(model.address_line2),
+        telephone_number: Set(model.telephone_number),
     }
 }
 

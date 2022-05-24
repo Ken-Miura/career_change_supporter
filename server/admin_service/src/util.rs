@@ -4,10 +4,14 @@ pub(crate) mod session;
 pub(crate) mod validator;
 
 use axum::{http::StatusCode, Json};
-use common::{ApiError, ErrResp};
+use common::{
+    storage::{self, IDENTITY_IMAGES_BUCKET_NAME},
+    ApiError, ErrResp, ErrRespStruct,
+};
 use serde::Deserialize;
+use tracing::error;
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 
 pub(crate) const ROOT_PATH: &str = "/admin/api";
 
@@ -28,6 +32,42 @@ pub(crate) fn validate_page_size(page_size: usize) -> Result<(), ErrResp> {
             }),
         ));
     }
+    Ok(())
+}
+
+pub(crate) async fn delete_identity_images(
+    user_account_id: i64,
+    image1_file_name_without_ext: String,
+    image2_file_name_without_ext: Option<String>,
+) -> Result<(), ErrRespStruct> {
+    let image1_key = format!("{}/{}.png", user_account_id, image1_file_name_without_ext);
+    let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image1_key.as_str())
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete identity image1 (key: {}): {}",
+                image1_key, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+
+    if let Some(image2_file_name_without_ext) = image2_file_name_without_ext {
+        let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
+        let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image2_key.as_str())
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to delete identity image2 (key: {}): {}",
+                    image2_key, e
+                );
+                ErrRespStruct {
+                    err_resp: unexpected_err_resp(),
+                }
+            })?;
+    }
+
     Ok(())
 }
 

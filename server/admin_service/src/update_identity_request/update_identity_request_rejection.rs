@@ -6,7 +6,6 @@ use common::{
     smtp::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
     },
-    storage::{self, IDENTITY_IMAGES_BUCKET_NAME},
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
@@ -15,8 +14,8 @@ use axum::http::StatusCode;
 use entity::{
     admin_account, rejected_update_identity_req,
     sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, QuerySelect, Set,
-        TransactionError, TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
+        EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
     },
     update_identity_req, user_account,
 };
@@ -26,7 +25,7 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{session::Admin, validator::reason_validator::validate_reason},
+    util::{delete_identity_images, session::Admin, validator::reason_validator::validate_reason},
 };
 
 static SUBJECT: Lazy<String> =
@@ -175,51 +174,15 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // 拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
-                    let model_option = user_account::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to find user_account (user_account_id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    let model = match model_option {
+                    let user_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
+                    let user = match user_option {
                         Some(m) => m,
-                        None => { return Ok(None)},
+                        None => { return Ok(None) },
                     };
 
-                    let req_option = update_identity_req::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to find update_identity_req (user_account_id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    let req = req_option.ok_or_else(|| {
-                        error!(
-                            "no update_identity_req (user_account_id: {}) found",
-                            user_account_id
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    let req = find_update_identity_req_model_by_user_account_id(txn, user_account_id).await?;
 
-                    let rejected_req_active_model = UpdateIdentityReqRejectionOperationImpl::generate_rejected_update_identity_req_active_model(req.clone(), rejected_time, rejection_reason, refuser_email_address);
+                    let rejected_req_active_model = generate_rejected_update_identity_req_active_model(req.clone(), rejected_time, rejection_reason, refuser_email_address);
                     let _ = rejected_req_active_model.insert(txn).await.map_err(|e| {
                         error!(
                             "failed to insert rejected_update_identity_req (user_account_id: {}): {}",
@@ -242,33 +205,9 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
                         }
                     })?;
 
-                    let image1_key = format!("{}/{}.png", user_account_id, req.image1_file_name_without_ext);
-                    let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image1_key.as_str()).await.map_err(|e| {
-                        error!(
-                            "failed to delete identity image1 (key: {}): {}",
-                            image1_key,
-                            e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    let _ = delete_identity_images(user_account_id, req.image1_file_name_without_ext, req.image2_file_name_without_ext).await?;
 
-                    if let Some (image2_file_name_without_ext) = req.image2_file_name_without_ext {
-                        let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
-                        let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image2_key.as_str()).await.map_err(|e| {
-                            error!(
-                                "failed to delete identity image2 (key: {}): {}",
-                                image2_key,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    }
-
-                    Ok(Some(model.email_address))
+                    Ok(Some(user.email_address))
                 })
             })
             .await
@@ -286,30 +225,78 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
     }
 }
 
-impl UpdateIdentityReqRejectionOperationImpl {
-    fn generate_rejected_update_identity_req_active_model(
-        model: update_identity_req::Model,
-        rejected_time: DateTime<FixedOffset>,
-        rejection_reason: String,
-        refuser_email_address: String,
-    ) -> rejected_update_identity_req::ActiveModel {
-        rejected_update_identity_req::ActiveModel {
-            rjd_upd_identity_id: NotSet,
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
-            reason: Set(rejection_reason),
-            rejected_at: Set(rejected_time),
-            rejected_by: Set(refuser_email_address),
+async fn find_user_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<user_account::Model>, ErrRespStruct> {
+    // 拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
+    let model_option = user_account::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model_option)
+}
+
+async fn find_update_identity_req_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<update_identity_req::Model, ErrRespStruct> {
+    let req_option = update_identity_req::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find update identity request (user account id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let req = req_option.ok_or_else(|| {
+        error!(
+            "no update identity request (user account id: {}) found",
+            user_account_id
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
         }
+    })?;
+    Ok(req)
+}
+
+fn generate_rejected_update_identity_req_active_model(
+    model: update_identity_req::Model,
+    rejected_time: DateTime<FixedOffset>,
+    rejection_reason: String,
+    refuser_email_address: String,
+) -> rejected_update_identity_req::ActiveModel {
+    rejected_update_identity_req::ActiveModel {
+        rjd_upd_identity_id: NotSet,
+        user_account_id: Set(model.user_account_id),
+        last_name: Set(model.last_name),
+        first_name: Set(model.first_name),
+        last_name_furigana: Set(model.last_name_furigana),
+        first_name_furigana: Set(model.first_name_furigana),
+        date_of_birth: Set(model.date_of_birth),
+        prefecture: Set(model.prefecture),
+        city: Set(model.city),
+        address_line1: Set(model.address_line1),
+        address_line2: Set(model.address_line2),
+        telephone_number: Set(model.telephone_number),
+        reason: Set(rejection_reason),
+        rejected_at: Set(rejected_time),
+        rejected_by: Set(refuser_email_address),
     }
 }
 

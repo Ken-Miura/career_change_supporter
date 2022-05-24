@@ -154,22 +154,13 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let model_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
-                    let model = match model_option {
+                    let user_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
+                    let user = match user_option {
                         Some(m) => m,
                         None => { return Ok(None) },
                     };
 
-                    let req_option = find_create_identity_req_by_user_account_id(txn, user_account_id).await?;
-                    let req = req_option.ok_or_else(|| {
-                        error!(
-                            "no create_identity_req (user_account_id: {}) found",
-                            user_account_id
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    let req = find_create_identity_req_model_by_user_account_id(txn, user_account_id).await?;
 
                     let identity_model = generate_identity_active_model(req.clone());
                     let _ = identity_model.insert(txn).await.map_err(|e| {
@@ -206,7 +197,7 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    Ok(Some(model.email_address))
+                    Ok(Some(user.email_address))
                 })
             })
             .await
@@ -245,10 +236,10 @@ async fn find_user_model_by_user_account_id(
     Ok(model_option)
 }
 
-async fn find_create_identity_req_by_user_account_id(
+async fn find_create_identity_req_model_by_user_account_id(
     txn: &DatabaseTransaction,
     user_account_id: i64,
-) -> Result<Option<create_identity_req::Model>, ErrRespStruct> {
+) -> Result<create_identity_req::Model, ErrRespStruct> {
     let req_option = create_identity_req::Entity::find_by_id(user_account_id)
         .lock_exclusive()
         .one(txn)
@@ -262,7 +253,16 @@ async fn find_create_identity_req_by_user_account_id(
                 err_resp: unexpected_err_resp(),
             }
         })?;
-    Ok(req_option)
+    let req = req_option.ok_or_else(|| {
+        error!(
+            "no create_identity_req (user_account_id: {}) found",
+            user_account_id
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(req)
 }
 
 fn generate_approved_create_identity_req_active_model(
