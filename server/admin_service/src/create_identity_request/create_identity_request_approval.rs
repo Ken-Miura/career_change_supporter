@@ -14,8 +14,8 @@ use axum::http::StatusCode;
 use entity::{
     admin_account, approved_create_identity_req, create_identity_req, identity,
     sea_orm::{
-        ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect, Set, TransactionError,
-        TransactionTrait,
+        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
+        TransactionError, TransactionTrait,
     },
     user_account,
 };
@@ -154,40 +154,13 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // 承認を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
-                    let model_option = user_account::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to find user_account (user_account_id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
+                    let model_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
                     let model = match model_option {
                         Some(m) => m,
                         None => { return Ok(None) },
                     };
 
-                    let req_option = create_identity_req::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to find create_identity_req (user_account_id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
+                    let req_option = find_create_identity_req_by_user_account_id(txn, user_account_id).await?;
                     let req = req_option.ok_or_else(|| {
                         error!(
                             "no create_identity_req (user_account_id: {}) found",
@@ -198,7 +171,7 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let identity_model = CreateIdentityReqApprovalOperationImpl::generate_identity_active_model(req.clone());
+                    let identity_model = generate_identity_active_model(req.clone());
                     let _ = identity_model.insert(txn).await.map_err(|e| {
                         error!(
                             "failed to insert identity (user_account_id: {}): {}",
@@ -210,7 +183,7 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let approved_req = CreateIdentityReqApprovalOperationImpl::generate_approved_create_identity_req_active_model(req, approved_time, approver_email_address);
+                    let approved_req = generate_approved_create_identity_req_active_model(req, approved_time, approver_email_address);
                     let _ = approved_req.insert(txn).await.map_err(|e| {
                         error!(
                             "failed to insert approved_create_identity_req (user_account_id: {}): {}",
@@ -251,45 +224,84 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
     }
 }
 
-impl CreateIdentityReqApprovalOperationImpl {
-    fn generate_approved_create_identity_req_active_model(
-        model: create_identity_req::Model,
-        approved_time: DateTime<FixedOffset>,
-        approver_email_address: String,
-    ) -> approved_create_identity_req::ActiveModel {
-        approved_create_identity_req::ActiveModel {
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
-            image1_file_name_without_ext: Set(model.image1_file_name_without_ext),
-            image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
-            approved_at: Set(approved_time),
-            approved_by: Set(approver_email_address),
-        }
-    }
+async fn find_user_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<user_account::Model>, ErrRespStruct> {
+    // 承認を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
+    let model_option = user_account::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model_option)
+}
 
-    fn generate_identity_active_model(model: create_identity_req::Model) -> identity::ActiveModel {
-        identity::ActiveModel {
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
-        }
+async fn find_create_identity_req_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<create_identity_req::Model>, ErrRespStruct> {
+    let req_option = create_identity_req::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find create_identity_req (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(req_option)
+}
+
+fn generate_approved_create_identity_req_active_model(
+    model: create_identity_req::Model,
+    approved_time: DateTime<FixedOffset>,
+    approver_email_address: String,
+) -> approved_create_identity_req::ActiveModel {
+    approved_create_identity_req::ActiveModel {
+        user_account_id: Set(model.user_account_id),
+        last_name: Set(model.last_name),
+        first_name: Set(model.first_name),
+        last_name_furigana: Set(model.last_name_furigana),
+        first_name_furigana: Set(model.first_name_furigana),
+        date_of_birth: Set(model.date_of_birth),
+        prefecture: Set(model.prefecture),
+        city: Set(model.city),
+        address_line1: Set(model.address_line1),
+        address_line2: Set(model.address_line2),
+        telephone_number: Set(model.telephone_number),
+        image1_file_name_without_ext: Set(model.image1_file_name_without_ext),
+        image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
+        approved_at: Set(approved_time),
+        approved_by: Set(approver_email_address),
+    }
+}
+
+fn generate_identity_active_model(model: create_identity_req::Model) -> identity::ActiveModel {
+    identity::ActiveModel {
+        user_account_id: Set(model.user_account_id),
+        last_name: Set(model.last_name),
+        first_name: Set(model.first_name),
+        last_name_furigana: Set(model.last_name_furigana),
+        first_name_furigana: Set(model.first_name_furigana),
+        date_of_birth: Set(model.date_of_birth),
+        prefecture: Set(model.prefecture),
+        city: Set(model.city),
+        address_line1: Set(model.address_line1),
+        address_line2: Set(model.address_line2),
+        telephone_number: Set(model.telephone_number),
     }
 }
 
