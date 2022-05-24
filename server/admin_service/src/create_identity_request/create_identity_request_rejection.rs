@@ -14,10 +14,9 @@ use axum::http::StatusCode;
 use entity::{
     admin_account, create_identity_req, rejected_create_identity_req,
     sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
-        EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set,
+        TransactionError, TransactionTrait,
     },
-    user_account,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -25,7 +24,10 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{delete_identity_images, session::Admin, validator::reason_validator::validate_reason},
+    util::{
+        delete_identity_images, find_user_model_by_user_account_id, session::Admin,
+        validator::reason_validator::validate_reason,
+    },
 };
 
 use super::find_create_identity_req_model_by_user_account_id;
@@ -225,27 +227,6 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
             })?;
         Ok(notification_email_address_option)
     }
-}
-
-async fn find_user_model_by_user_account_id(
-    txn: &DatabaseTransaction,
-    user_account_id: i64,
-) -> Result<Option<user_account::Model>, ErrRespStruct> {
-    // 拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
-    let model_option = user_account::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find user_account (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(model_option)
 }
 
 fn generate_rejected_create_identity_req_active_model(

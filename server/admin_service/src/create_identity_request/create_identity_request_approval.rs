@@ -14,10 +14,8 @@ use axum::http::StatusCode;
 use entity::{
     admin_account, approved_create_identity_req, create_identity_req, identity,
     sea_orm::{
-        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
-        TransactionError, TransactionTrait,
+        ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
     },
-    user_account,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -25,7 +23,7 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::session::Admin,
+    util::{find_user_model_by_user_account_id, session::Admin},
 };
 
 use super::find_create_identity_req_model_by_user_account_id;
@@ -215,27 +213,6 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
             })?;
         Ok(notification_email_address_option)
     }
-}
-
-async fn find_user_model_by_user_account_id(
-    txn: &DatabaseTransaction,
-    user_account_id: i64,
-) -> Result<Option<user_account::Model>, ErrRespStruct> {
-    // 承認を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
-    let model_option = user_account::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find user_account (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(model_option)
 }
 
 fn generate_approved_create_identity_req_active_model(
