@@ -15,8 +15,8 @@ use axum::http::StatusCode;
 use entity::{
     admin_account, create_identity_req, rejected_create_identity_req,
     sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, QuerySelect, Set,
-        TransactionError, TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
+        EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
     },
     user_account,
 };
@@ -175,40 +175,13 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // 拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
-                    let model_option = user_account::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to find user_account (user_account_id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
+                    let model_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
                     let model = match model_option {
                         Some(m) => m,
                         None => { return Ok(None)},
                     };
 
-                    let req_option = create_identity_req::Entity::find_by_id(user_account_id)
-                        .lock_exclusive()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to find create_identity_req (user_account_id: {}): {}",
-                                user_account_id,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
+                    let req_option = find_create_identity_req_by_user_account_id(txn, user_account_id).await?;
                     let req = req_option.ok_or_else(|| {
                         error!(
                             "no create_identity_req (user_account_id: {}) found",
@@ -219,7 +192,7 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
                         }
                     })?;
 
-                    let rejected_req_active_model = CreateIdentityReqRejectionOperationImpl::generate_rejected_create_identity_req_active_model(req.clone(), rejected_time, rejection_reason, refuser_email_address);
+                    let rejected_req_active_model = generate_rejected_create_identity_req_active_model(req.clone(), rejected_time, rejection_reason, refuser_email_address);
                     let _ = rejected_req_active_model.insert(txn).await.map_err(|e| {
                         error!(
                             "failed to insert rejected_create_identity_req (user_account_id: {}): {}",
@@ -242,31 +215,7 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
                         }
                     })?;
 
-                    let image1_key = format!("{}/{}.png", user_account_id, req.image1_file_name_without_ext);
-                    let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image1_key.as_str()).await.map_err(|e| {
-                        error!(
-                            "failed to delete identity image1 (key: {}): {}",
-                            image1_key,
-                            e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
-                    if let Some (image2_file_name_without_ext) = req.image2_file_name_without_ext {
-                        let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
-                        let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image2_key.as_str()).await.map_err(|e| {
-                            error!(
-                                "failed to delete identity image2 (key: {}): {}",
-                                image2_key,
-                                e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    }
+                    let _ = delete_identity_images(user_account_id, req.image1_file_name_without_ext, req.image2_file_name_without_ext).await?;
 
                     Ok(Some(model.email_address))
                 })
@@ -286,31 +235,106 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
     }
 }
 
-impl CreateIdentityReqRejectionOperationImpl {
-    fn generate_rejected_create_identity_req_active_model(
-        model: create_identity_req::Model,
-        rejected_time: DateTime<FixedOffset>,
-        rejection_reason: String,
-        refuser_email_address: String,
-    ) -> rejected_create_identity_req::ActiveModel {
-        rejected_create_identity_req::ActiveModel {
-            rjd_cre_identity_id: NotSet,
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
-            reason: Set(rejection_reason),
-            rejected_at: Set(rejected_time),
-            rejected_by: Set(refuser_email_address),
-        }
+async fn find_user_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<user_account::Model>, ErrRespStruct> {
+    // 拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
+    let model_option = user_account::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model_option)
+}
+
+async fn find_create_identity_req_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<create_identity_req::Model>, ErrRespStruct> {
+    let req_option = create_identity_req::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find create_identity_req (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(req_option)
+}
+
+fn generate_rejected_create_identity_req_active_model(
+    model: create_identity_req::Model,
+    rejected_time: DateTime<FixedOffset>,
+    rejection_reason: String,
+    refuser_email_address: String,
+) -> rejected_create_identity_req::ActiveModel {
+    rejected_create_identity_req::ActiveModel {
+        rjd_cre_identity_id: NotSet,
+        user_account_id: Set(model.user_account_id),
+        last_name: Set(model.last_name),
+        first_name: Set(model.first_name),
+        last_name_furigana: Set(model.last_name_furigana),
+        first_name_furigana: Set(model.first_name_furigana),
+        date_of_birth: Set(model.date_of_birth),
+        prefecture: Set(model.prefecture),
+        city: Set(model.city),
+        address_line1: Set(model.address_line1),
+        address_line2: Set(model.address_line2),
+        telephone_number: Set(model.telephone_number),
+        reason: Set(rejection_reason),
+        rejected_at: Set(rejected_time),
+        rejected_by: Set(refuser_email_address),
     }
+}
+
+async fn delete_identity_images(
+    user_account_id: i64,
+    image1_file_name_without_ext: String,
+    image2_file_name_without_ext: Option<String>,
+) -> Result<(), ErrRespStruct> {
+    let image1_key = format!("{}/{}.png", user_account_id, image1_file_name_without_ext);
+    let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image1_key.as_str())
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete identity image1 (key: {}): {}",
+                image1_key, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+
+    if let Some(image2_file_name_without_ext) = image2_file_name_without_ext {
+        let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
+        let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image2_key.as_str())
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to delete identity image2 (key: {}): {}",
+                    image2_key, e
+                );
+                ErrRespStruct {
+                    err_resp: unexpected_err_resp(),
+                }
+            })?;
+    }
+
+    Ok(())
 }
 
 fn create_text(rejection_reason: String) -> String {
