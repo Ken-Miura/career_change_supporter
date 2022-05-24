@@ -23,6 +23,7 @@ use chrono::FixedOffset;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::error;
 
 /// ユーザーに公開するサイト名
 pub const WEB_SITE_NAME: &str = "就職先・転職先を見極めるためのサイト";
@@ -96,7 +97,7 @@ where
         let payload = extract::Json::<Credential>::from_request(req)
             .await
             .map_err(|e| {
-                tracing::error!("failed to extract credential from req: {}", e);
+                error!("failed to extract credential from req: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ApiError {
@@ -108,7 +109,7 @@ where
         let _ =
             util::validator::email_address_validator::validate_email_address(&cred.email_address)
                 .map_err(|e| {
-                tracing::error!("failed to validate credential: {}", e);
+                error!("failed to validate credential: {}", e);
                 (
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
@@ -118,7 +119,7 @@ where
             })?;
         let _ = util::validator::password_validator::validate_password(&cred.password).map_err(
             |e| {
-                tracing::error!("failed to validate credential: {}", e);
+                error!("failed to validate credential: {}", e);
                 (
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {

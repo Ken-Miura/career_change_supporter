@@ -7,6 +7,7 @@ use lettre_email::EmailBuilder;
 use once_cell::sync::Lazy;
 use std::env::var;
 use std::net::ToSocketAddrs;
+use tracing::error;
 
 use crate::{err, ApiError, ErrResp};
 
@@ -50,7 +51,7 @@ impl SendMail for SmtpClient {
             .text(text)
             .build()
             .map_err(|e| {
-                tracing::error!("failed to build email: {}", e);
+                error!("failed to build email: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ApiError {
@@ -59,7 +60,7 @@ impl SendMail for SmtpClient {
                 )
             })?;
         let mut addrs = self.socket.to_socket_addrs().map_err(|e| {
-            tracing::error!("failed to get socket str: str={}, e={}", self.socket, e);
+            error!("failed to get socket str: str={}, e={}", self.socket, e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
@@ -68,7 +69,7 @@ impl SendMail for SmtpClient {
             )
         })?;
         let addr = addrs.next().ok_or_else(|| {
-            tracing::error!("failed to get socket str: str={}", self.socket);
+            error!("failed to get socket str: str={}", self.socket);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
@@ -77,7 +78,7 @@ impl SendMail for SmtpClient {
             )
         })?;
         let client = lettre::SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
-            tracing::error!("failed to create lettre::SmtpClient: {}", e);
+            error!("failed to create lettre::SmtpClient: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
@@ -87,7 +88,7 @@ impl SendMail for SmtpClient {
         })?;
         let mut mailer = client.transport();
         let _ = mailer.send(email.into()).map_err(|e| {
-            tracing::error!("failed to send email: {}", e);
+            error!("failed to send email: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
