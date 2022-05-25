@@ -1,33 +1,31 @@
 // Copyright 2021 Ken Miura
 
 mod create_career_request;
-mod create_identity_request;
 mod err;
-pub(crate) mod identity_by_user_account_id;
-mod identity_images;
+mod identity_by_user_account_id;
+mod identity_request;
 mod login;
 mod logout;
 mod refresh;
-mod update_identity_request;
 mod util;
 
 use crate::create_career_request::career_images::get_career_images;
 use crate::create_career_request::create_career_request_detail::get_create_career_request_detail;
 use crate::create_career_request::create_career_requests::get_create_career_requests;
-use crate::create_identity_request::create_identity_request_approval::post_create_identity_request_approval;
-use crate::create_identity_request::create_identity_request_detail::get_create_identity_request_detail;
-use crate::create_identity_request::create_identity_request_rejection::post_create_identity_request_rejection;
-use crate::create_identity_request::create_identity_requests::get_create_identity_requests;
-use crate::create_identity_request::users_by_date_of_birth::get_users_by_date_of_birth;
 use crate::identity_by_user_account_id::get_identity_by_user_account_id;
-use crate::identity_images::get_identity_images;
+use crate::identity_request::create_identity_request::create_identity_request_approval::post_create_identity_request_approval;
+use crate::identity_request::create_identity_request::create_identity_request_detail::get_create_identity_request_detail;
+use crate::identity_request::create_identity_request::create_identity_request_rejection::post_create_identity_request_rejection;
+use crate::identity_request::create_identity_request::create_identity_requests::get_create_identity_requests;
+use crate::identity_request::create_identity_request::users_by_date_of_birth::get_users_by_date_of_birth;
+use crate::identity_request::identity_images::get_identity_images;
+use crate::identity_request::update_identity_request::update_identity_request_approval::post_update_identity_request_approval;
+use crate::identity_request::update_identity_request::update_identity_request_detail::get_update_identity_request_detail;
+use crate::identity_request::update_identity_request::update_identity_request_rejection::post_update_identity_request_rejection;
+use crate::identity_request::update_identity_request::update_identity_requests::get_update_identity_requests;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
-use crate::update_identity_request::update_identity_request_approval::post_update_identity_request_approval;
-use crate::update_identity_request::update_identity_request_detail::get_update_identity_request_detail;
-use crate::update_identity_request::update_identity_request_rejection::post_update_identity_request_rejection;
-use crate::update_identity_request::update_identity_requests::get_update_identity_requests;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;

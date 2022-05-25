@@ -4,10 +4,7 @@ pub(crate) mod session;
 pub(crate) mod validator;
 
 use axum::{http::StatusCode, Json};
-use common::{
-    storage::{self, IDENTITY_IMAGES_BUCKET_NAME},
-    ApiError, ErrResp, ErrRespStruct,
-};
+use common::{ApiError, ErrResp, ErrRespStruct};
 use entity::{
     sea_orm::{DatabaseTransaction, EntityTrait, QuerySelect},
     user_account,
@@ -59,66 +56,6 @@ pub(crate) async fn find_user_model_by_user_account_id(
         })?;
     Ok(user_model_option)
 }
-
-pub(crate) async fn delete_identity_images(
-    user_account_id: i64,
-    image1_file_name_without_ext: String,
-    image2_file_name_without_ext: Option<String>,
-) -> Result<(), ErrRespStruct> {
-    let image1_key = format!("{}/{}.png", user_account_id, image1_file_name_without_ext);
-    let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image1_key.as_str())
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to delete identity image1 (key: {}): {}",
-                image1_key, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-
-    if let Some(image2_file_name_without_ext) = image2_file_name_without_ext {
-        let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
-        let _ = storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME, image2_key.as_str())
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to delete identity image2 (key: {}): {}",
-                    image2_key, e
-                );
-                ErrRespStruct {
-                    err_resp: unexpected_err_resp(),
-                }
-            })?;
-    }
-
-    Ok(())
-}
-
-/// PAY.JPにアクセスするための情報を保持する変数
-// pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
-//     let url_without_path = var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
-//         panic!(
-//             "Not environment variable found: environment variable \"{}\" must be set",
-//             KEY_TO_PAYMENT_PLATFORM_API_URL
-//         )
-//     });
-//     let username = var(KEY_TO_PAYMENT_PLATFORM_API_USERNAME).unwrap_or_else(|_| {
-//         panic!(
-//             "Not environment variable found: environment variable \"{}\" must be set",
-//             KEY_TO_PAYMENT_PLATFORM_API_USERNAME
-//         )
-//     });
-//     let password = var(KEY_TO_PAYMENT_PLATFORM_API_PASSWORD).unwrap_or_else(|_| {
-//         panic!(
-//             "Not environment variable found: environment variable \"{}\" must be set",
-//             KEY_TO_PAYMENT_PLATFORM_API_PASSWORD
-//         )
-//     });
-//     let access_info = AccessInfo::new(url_without_path, username, password);
-//     access_info.expect("failed to get Ok")
-// });
 
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]

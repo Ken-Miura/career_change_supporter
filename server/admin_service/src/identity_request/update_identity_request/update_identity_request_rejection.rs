@@ -12,10 +12,12 @@ use common::{
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_create_identity_req, create_identity_req, identity,
+    admin_account, rejected_update_identity_req,
     sea_orm::{
-        ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set,
+        TransactionError, TransactionTrait,
     },
+    update_identity_req,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -23,24 +25,30 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{find_user_model_by_user_account_id, session::Admin},
+    identity_request::delete_identity_images,
+    util::{
+        find_user_model_by_user_account_id, session::Admin,
+        validator::reason_validator::validate_reason,
+    },
 };
 
-use super::find_create_identity_req_model_by_user_account_id;
+use super::find_update_identity_req_model_by_user_account_id;
 
-static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
+static SUBJECT: Lazy<String> =
+    Lazy::new(|| format!("[{}] ユーザー情報更新拒否通知", WEB_SITE_NAME));
 
-pub(crate) async fn post_create_identity_request_approval(
+pub(crate) async fn post_update_identity_request_rejection(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Json(create_identity_req_approval): Json<CreateIdentityReqApproval>,
+    Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
     Extension(pool): Extension<DatabaseConnection>,
-) -> RespResult<CreateIdentityReqApprovalResult> {
+) -> RespResult<UpdateIdentityReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    let op = CreateIdentityReqApprovalOperationImpl { pool };
+    let op = UpdateIdentityReqRejectionOperationImpl { pool };
     let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
-    handle_create_identity_request_approval(
+    handle_update_identity_request_rejection(
         account_id,
-        create_identity_req_approval.user_account_id,
+        update_identity_req_rejection.user_account_id,
+        update_identity_req_rejection.rejection_reason,
         current_date_time,
         op,
         smtp_client,
@@ -49,20 +57,31 @@ pub(crate) async fn post_create_identity_request_approval(
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct CreateIdentityReqApproval {
+pub(crate) struct UpdateIdentityReqRejection {
     pub(crate) user_account_id: i64,
+    pub(crate) rejection_reason: String,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub(crate) struct CreateIdentityReqApprovalResult {}
+pub(crate) struct UpdateIdentityReqRejectionResult {}
 
-async fn handle_create_identity_request_approval(
+async fn handle_update_identity_request_rejection(
     admin_account_id: i64,
     user_account_id: i64,
-    approved_time: DateTime<FixedOffset>,
-    op: impl CreateIdentityReqApprovalOperation,
+    rejection_reason: String,
+    rejected_time: DateTime<FixedOffset>,
+    op: impl UpdateIdentityReqRejectionOperation,
     send_mail: impl SendMail,
-) -> RespResult<CreateIdentityReqApprovalResult> {
+) -> RespResult<UpdateIdentityReqRejectionResult> {
+    let _ = validate_reason(rejection_reason.as_str()).map_err(|e| {
+        error!("invalid format reason ({}): {}", rejection_reason, e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidFormatReason as u32,
+            }),
+        )
+    })?;
     let admin_email_address_option = op
         .get_admin_email_address_by_admin_account_id(admin_account_id)
         .await?;
@@ -75,12 +94,17 @@ async fn handle_create_identity_request_approval(
         unexpected_err_resp()
     })?;
 
-    let approved_user = op
-        .approve_create_identity_req(user_account_id, admin_email_address, approved_time)
+    let rejected_user = op
+        .reject_update_identity_req(
+            user_account_id,
+            admin_email_address,
+            rejection_reason.clone(),
+            rejected_time,
+        )
         .await?;
 
-    let user_email_address = approved_user.ok_or_else(|| {
-        // 承認をしようとした際、既にユーザーがアカウントを削除しているケース
+    let user_email_address = rejected_user.ok_or_else(|| {
+        // 拒否をしようとした際、既にユーザーがアカウントを削除しているケース
         error!(
             "no user account (user account id: {}) found",
             user_account_id
@@ -98,35 +122,36 @@ async fn handle_create_identity_request_approval(
             &user_email_address,
             SYSTEM_EMAIL_ADDRESS,
             &SUBJECT,
-            create_text().as_str(),
+            create_text(rejection_reason).as_str(),
         )
     }
     .await?;
 
-    Ok((StatusCode::OK, Json(CreateIdentityReqApprovalResult {})))
+    Ok((StatusCode::OK, Json(UpdateIdentityReqRejectionResult {})))
 }
 
 #[async_trait]
-trait CreateIdentityReqApprovalOperation {
+trait UpdateIdentityReqRejectionOperation {
     async fn get_admin_email_address_by_admin_account_id(
         &self,
         admin_account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 
-    async fn approve_create_identity_req(
+    async fn reject_update_identity_req(
         &self,
         user_account_id: i64,
-        approver_email_address: String,
-        approved_time: DateTime<FixedOffset>,
+        refuser_email_address: String,
+        rejection_reason: String,
+        rejected_time: DateTime<FixedOffset>,
     ) -> Result<Option<String>, ErrResp>;
 }
 
-struct CreateIdentityReqApprovalOperationImpl {
+struct UpdateIdentityReqRejectionOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationImpl {
+impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperationImpl {
     async fn get_admin_email_address_by_admin_account_id(
         &self,
         admin_account_id: i64,
@@ -144,11 +169,12 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
         Ok(model.map(|m| m.email_address))
     }
 
-    async fn approve_create_identity_req(
+    async fn reject_update_identity_req(
         &self,
         user_account_id: i64,
-        approver_email_address: String,
-        approved_time: DateTime<FixedOffset>,
+        refuser_email_address: String,
+        rejection_reason: String,
+        rejected_time: DateTime<FixedOffset>,
     ) -> Result<Option<String>, ErrResp> {
         let notification_email_address_option = self
             .pool
@@ -160,12 +186,12 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         None => { return Ok(None) },
                     };
 
-                    let req = find_create_identity_req_model_by_user_account_id(txn, user_account_id).await?;
+                    let req = find_update_identity_req_model_by_user_account_id(txn, user_account_id).await?;
 
-                    let identity_model = generate_identity_active_model(req.clone());
-                    let _ = identity_model.insert(txn).await.map_err(|e| {
+                    let rejected_req_active_model = generate_rejected_update_identity_req_active_model(req.clone(), rejected_time, rejection_reason, refuser_email_address);
+                    let _ = rejected_req_active_model.insert(txn).await.map_err(|e| {
                         error!(
-                            "failed to insert identity (user_account_id: {}): {}",
+                            "failed to insert rejected_update_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -174,10 +200,9 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let approved_req = generate_approved_create_identity_req_active_model(req, approved_time, approver_email_address);
-                    let _ = approved_req.insert(txn).await.map_err(|e| {
+                    let _ = update_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
                         error!(
-                            "failed to insert approved_create_identity_req (user_account_id: {}): {}",
+                            "failed to delete update_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -186,16 +211,7 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let _ = create_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
-                        error!(
-                            "failed to delete create_identity_req (user_account_id: {}): {}",
-                            user_account_id,
-                            e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    let _ = delete_identity_images(user_account_id, req.image1_file_name_without_ext, req.image2_file_name_without_ext).await?;
 
                     Ok(Some(user.email_address))
                 })
@@ -207,7 +223,7 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to approve create_identity_req: {}", err_resp_struct);
+                    error!("failed to reject update_identity_req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -215,12 +231,14 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
     }
 }
 
-fn generate_approved_create_identity_req_active_model(
-    model: create_identity_req::Model,
-    approved_time: DateTime<FixedOffset>,
-    approver_email_address: String,
-) -> approved_create_identity_req::ActiveModel {
-    approved_create_identity_req::ActiveModel {
+fn generate_rejected_update_identity_req_active_model(
+    model: update_identity_req::Model,
+    rejected_time: DateTime<FixedOffset>,
+    rejection_reason: String,
+    refuser_email_address: String,
+) -> rejected_update_identity_req::ActiveModel {
+    rejected_update_identity_req::ActiveModel {
+        rjd_upd_identity_id: NotSet,
         user_account_id: Set(model.user_account_id),
         last_name: Set(model.last_name),
         first_name: Set(model.first_name),
@@ -232,40 +250,19 @@ fn generate_approved_create_identity_req_active_model(
         address_line1: Set(model.address_line1),
         address_line2: Set(model.address_line2),
         telephone_number: Set(model.telephone_number),
-        image1_file_name_without_ext: Set(model.image1_file_name_without_ext),
-        image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
-        approved_at: Set(approved_time),
-        approved_by: Set(approver_email_address),
+        reason: Set(rejection_reason),
+        rejected_at: Set(rejected_time),
+        rejected_by: Set(refuser_email_address),
     }
 }
 
-fn generate_identity_active_model(model: create_identity_req::Model) -> identity::ActiveModel {
-    identity::ActiveModel {
-        user_account_id: Set(model.user_account_id),
-        last_name: Set(model.last_name),
-        first_name: Set(model.first_name),
-        last_name_furigana: Set(model.last_name_furigana),
-        first_name_furigana: Set(model.first_name_furigana),
-        date_of_birth: Set(model.date_of_birth),
-        prefecture: Set(model.prefecture),
-        city: Set(model.city),
-        address_line1: Set(model.address_line1),
-        address_line2: Set(model.address_line2),
-        telephone_number: Set(model.telephone_number),
-    }
-}
-
-fn create_text() -> String {
+fn create_text(rejection_reason: String) -> String {
     // TODO: 文面の調整
     format!(
-        r"本人確認が完了し、ユーザー情報を登録致しました。
+        r"下記の【拒否理由】により、ユーザー情報の更新を拒否いたしました。お手数ですが、再度本人確認依頼をお願いいたします。
 
-本人確認が完了したため、他のユーザーに相談を申し込むことが可能になりました。相談の申し込みは、ログイン後、画面上部にある相談申し込みの項目から行うことが出来ます。
-
-他のユーザーから相談を受けるには、ご本人確認に加え、下記の三点の登録が必要となります。他のユーザーからの相談を受けたい場合、追加で下記の三点をご登録いただくようお願いします。
-・職務経歴
-・相談料
-・銀行口座
+【拒否理由】
+{}
 
 本メールはシステムより自動配信されています。
 本メールに返信されましても、回答いたしかねます。
@@ -273,7 +270,7 @@ fn create_text() -> String {
 
 【お問い合わせ先】
 Email: {}",
-        INQUIRY_EMAIL_ADDRESS
+        rejection_reason, INQUIRY_EMAIL_ADDRESS
     )
 }
 
@@ -285,14 +282,14 @@ mod tests {
     use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
     use crate::{
-        create_identity_request::create_identity_request_approval::CreateIdentityReqApprovalResult,
-        err::Code, util::tests::SendMailMock,
+        err::Code,
+        identity_request::update_identity_request::update_identity_request_rejection::{
+            create_text, UpdateIdentityReqRejectionResult, SUBJECT,
+        },
+        util::tests::SendMailMock,
     };
 
-    use super::{
-        create_text, handle_create_identity_request_approval, CreateIdentityReqApprovalOperation,
-        SUBJECT,
-    };
+    use super::{handle_update_identity_request_rejection, UpdateIdentityReqRejectionOperation};
 
     struct Admin {
         admin_account_id: i64,
@@ -305,14 +302,15 @@ mod tests {
         email_address: String,
     }
 
-    struct CreateIdentityReqApprovalOperationMock {
+    struct UpdateIdentityReqRejectionOperationMock {
         admin: Admin,
         user_option: Option<User>,
-        approved_time: DateTime<FixedOffset>,
+        rejection_reason: String,
+        rejected_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
-    impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationMock {
+    impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperationMock {
         async fn get_admin_email_address_by_admin_account_id(
             &self,
             admin_account_id: i64,
@@ -321,16 +319,18 @@ mod tests {
             Ok(Some(self.admin.email_address.clone()))
         }
 
-        async fn approve_create_identity_req(
+        async fn reject_update_identity_req(
             &self,
             user_account_id: i64,
-            approver_email_address: String,
-            approved_time: DateTime<FixedOffset>,
+            refuser_email_address: String,
+            rejection_reason: String,
+            rejected_time: DateTime<FixedOffset>,
         ) -> Result<Option<String>, ErrResp> {
             if let Some(user) = self.user_option.clone() {
                 assert_eq!(user.user_account_id, user_account_id);
-                assert_eq!(self.admin.email_address, approver_email_address);
-                assert_eq!(self.approved_time, approved_time);
+                assert_eq!(self.admin.email_address, refuser_email_address);
+                assert_eq!(self.rejection_reason, rejection_reason);
+                assert_eq!(self.rejected_time, rejected_time);
                 Ok(Some(user.email_address))
             } else {
                 Ok(None)
@@ -339,7 +339,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_create_identity_request_approval_success() {
+    async fn handle_update_identity_request_rejection_success() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
@@ -351,26 +351,29 @@ mod tests {
             user_account_id,
             email_address: user_email_address.clone(),
         });
-        let approval_time = chrono::Utc
-            .ymd(2022, 4, 1)
+        let rejection_reason = "画像が不鮮明なため";
+        let rejected_time = chrono::Utc
+            .ymd(2022, 4, 5)
             .and_hms(21, 00, 40)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-        let op_mock = CreateIdentityReqApprovalOperationMock {
+        let op_mock = UpdateIdentityReqRejectionOperationMock {
             admin,
             user_option,
-            approved_time: approval_time,
+            rejection_reason: rejection_reason.to_string(),
+            rejected_time,
         };
         let send_mail_mock = SendMailMock::new(
-            user_email_address,
+            user_email_address.to_string(),
             SYSTEM_EMAIL_ADDRESS.to_string(),
             SUBJECT.to_string(),
-            create_text(),
+            create_text(rejection_reason.to_string()),
         );
 
-        let result = handle_create_identity_request_approval(
+        let result = handle_update_identity_request_rejection(
             admin_account_id,
             user_account_id,
-            approval_time,
+            rejection_reason.to_string(),
+            rejected_time,
             op_mock,
             send_mail_mock,
         )
@@ -378,11 +381,11 @@ mod tests {
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(CreateIdentityReqApprovalResult {}, resp.1 .0);
+        assert_eq!(UpdateIdentityReqRejectionResult {}, resp.1 .0);
     }
 
     #[tokio::test]
-    async fn handle_create_identity_request_approval_fail_no_user_account_found() {
+    async fn handle_update_identity_request_rejection_fail_invalid_format_reason() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
@@ -390,26 +393,75 @@ mod tests {
         };
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
-        let approval_time = chrono::Utc
-            .ymd(2022, 4, 1)
+        let user_option = Some(User {
+            user_account_id,
+            email_address: user_email_address.clone(),
+        });
+        let rejection_reason = "<script>alert('test');<script>";
+        let rejected_time = chrono::Utc
+            .ymd(2022, 4, 5)
             .and_hms(21, 00, 40)
             .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-        let op_mock = CreateIdentityReqApprovalOperationMock {
+        let op_mock = UpdateIdentityReqRejectionOperationMock {
             admin,
-            user_option: None,
-            approved_time: approval_time,
+            user_option,
+            rejection_reason: rejection_reason.to_string(),
+            rejected_time,
         };
         let send_mail_mock = SendMailMock::new(
-            user_email_address,
+            user_email_address.to_string(),
             SYSTEM_EMAIL_ADDRESS.to_string(),
             SUBJECT.to_string(),
-            create_text(),
+            create_text(rejection_reason.to_string()),
         );
 
-        let result = handle_create_identity_request_approval(
+        let result = handle_update_identity_request_rejection(
             admin_account_id,
             user_account_id,
-            approval_time,
+            rejection_reason.to_string(),
+            rejected_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::InvalidFormatReason as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn handle_update_identity_request_rejection_fail_no_user_account_found() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 53215;
+        let user_email_address = String::from("test@test.com");
+        let rejection_reason = "画像が不鮮明なため";
+        let rejected_time = chrono::Utc
+            .ymd(2022, 4, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = UpdateIdentityReqRejectionOperationMock {
+            admin,
+            user_option: None,
+            rejection_reason: rejection_reason.to_string(),
+            rejected_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(rejection_reason.to_string()),
+        );
+
+        let result = handle_update_identity_request_rejection(
+            admin_account_id,
+            user_account_id,
+            rejection_reason.to_string(),
+            rejected_time,
             op_mock,
             send_mail_mock,
         )
