@@ -12,12 +12,11 @@ use common::{
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_create_identity_req, create_career_req, create_identity_req, identity,
+    admin_account, approved_create_career_req, career, create_career_req,
     sea_orm::{
-        ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect, Set, TransactionError,
-        TransactionTrait,
+        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
+        TransactionError, TransactionTrait,
     },
-    user_account,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -25,7 +24,7 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::session::Admin,
+    util::{find_user_model_by_user_account_id, session::Admin},
 };
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴確認完了通知", WEB_SITE_NAME));
@@ -190,156 +189,161 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
         approver_email_address: String,
         approved_time: DateTime<FixedOffset>,
     ) -> Result<Option<String>, ErrResp> {
-        todo!()
-        // let notification_email_address_option = self
-        //     .pool
-        //     .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
-        //         Box::pin(async move {
-        //             // 承認を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得しておく
-        //             let model_option = user_account::Entity::find_by_id(user_account_id)
-        //                 .lock_exclusive()
-        //                 .one(txn)
-        //                 .await
-        //                 .map_err(|e| {
-        //                     error!(
-        //                         "failed to find user_account (user_account_id: {}): {}",
-        //                         user_account_id,
-        //                         e
-        //                     );
-        //                     ErrRespStruct {
-        //                         err_resp: unexpected_err_resp(),
-        //                     }
-        //                 })?;
-        //             let model = match model_option {
-        //                 Some(m) => m,
-        //                 None => { return Ok(None) },
-        //             };
+        let notification_email_address_option = self
+            .pool
+            .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let user_option =
+                        find_user_model_by_user_account_id(txn, user_account_id).await?;
+                    let user = match user_option {
+                        Some(m) => m,
+                        None => return Ok(None),
+                    };
 
-        //             let req_option = create_identity_req::Entity::find_by_id(user_account_id)
-        //                 .lock_exclusive()
-        //                 .one(txn)
-        //                 .await
-        //                 .map_err(|e| {
-        //                     error!(
-        //                         "failed to find create_identity_req (user_account_id: {}): {}",
-        //                         user_account_id,
-        //                         e
-        //                     );
-        //                     ErrRespStruct {
-        //                         err_resp: unexpected_err_resp(),
-        //                     }
-        //                 })?;
-        //             let req = req_option.ok_or_else(|| {
-        //                 error!(
-        //                     "no create_identity_req (user_account_id: {}) found",
-        //                     user_account_id
-        //                 );
-        //                 ErrRespStruct {
-        //                     err_resp: unexpected_err_resp(),
-        //                 }
-        //             })?;
+                    let req = find_create_career_req_model_by_create_career_req_id(
+                        txn,
+                        create_career_req_id,
+                    )
+                    .await?;
 
-        //             let identity_model = CreateCareerReqApprovalOperationImpl::generate_identity_active_model(req.clone());
-        //             let _ = identity_model.insert(txn).await.map_err(|e| {
-        //                 error!(
-        //                     "failed to insert identity (user_account_id: {}): {}",
-        //                     user_account_id,
-        //                     e
-        //                 );
-        //                 ErrRespStruct {
-        //                     err_resp: unexpected_err_resp(),
-        //                 }
-        //             })?;
+                    let career_model = generate_career_active_model(req.clone());
+                    let _ = career_model.insert(txn).await.map_err(|e| {
+                        error!(
+                            "failed to insert career (user_account_id: {}): {}",
+                            user_account_id, e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
 
-        //             let approved_req = CreateCareerReqApprovalOperationImpl::generate_approved_create_identity_req_active_model(req, approved_time, approver_email_address);
-        //             let _ = approved_req.insert(txn).await.map_err(|e| {
-        //                 error!(
-        //                     "failed to insert approved_create_identity_req (user_account_id: {}): {}",
-        //                     user_account_id,
-        //                     e
-        //                 );
-        //                 ErrRespStruct {
-        //                     err_resp: unexpected_err_resp(),
-        //                 }
-        //             })?;
+                    let approved_req = generate_approved_create_career_req_active_model(
+                        req,
+                        approved_time,
+                        approver_email_address,
+                    );
+                    let _ = approved_req.insert(txn).await.map_err(|e| {
+                        error!(
+                            "failed to insert approved_create_career_req (user_account_id: {}): {}",
+                            user_account_id, e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
 
-        //             let _ = create_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
-        //                 error!(
-        //                     "failed to delete create_identity_req (user_account_id: {}): {}",
-        //                     user_account_id,
-        //                     e
-        //                 );
-        //                 ErrRespStruct {
-        //                     err_resp: unexpected_err_resp(),
-        //                 }
-        //             })?;
+                    let _ = create_career_req::Entity::delete_by_id(user_account_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to delete create_career_req (user_account_id: {}): {}",
+                                user_account_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
 
-        //             Ok(Some(model.email_address))
-        //         })
-        //     })
-        //     .await
-        //     .map_err(|e| match e {
-        //         TransactionError::Connection(db_err) => {
-        //             error!("connection error: {}", db_err);
-        //             unexpected_err_resp()
-        //         }
-        //         TransactionError::Transaction(err_resp_struct) => {
-        //             error!("failed to approve create_identity_req: {}", err_resp_struct);
-        //             err_resp_struct.err_resp
-        //         }
-        //     })?;
-        // Ok(notification_email_address_option)
+                    Ok(Some(user.email_address))
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to approve create_career_req: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(notification_email_address_option)
     }
 }
 
-impl CreateCareerReqApprovalOperationImpl {
-    fn generate_approved_create_identity_req_active_model(
-        model: create_identity_req::Model,
-        approved_time: DateTime<FixedOffset>,
-        approver_email_address: String,
-    ) -> approved_create_identity_req::ActiveModel {
-        approved_create_identity_req::ActiveModel {
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
-            image1_file_name_without_ext: Set(model.image1_file_name_without_ext),
-            image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
-            approved_at: Set(approved_time),
-            approved_by: Set(approver_email_address),
+async fn find_create_career_req_model_by_create_career_req_id(
+    txn: &DatabaseTransaction,
+    create_career_req_id: i64,
+) -> Result<create_career_req::Model, ErrRespStruct> {
+    let req_option = create_career_req::Entity::find_by_id(create_career_req_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find create_career_req (create_career_req_id: {}): {}",
+                create_career_req_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let req = req_option.ok_or_else(|| {
+        error!(
+            "no create_career_req (create_career_req_id: {}) found",
+            create_career_req_id
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
         }
-    }
+    })?;
+    Ok(req)
+}
 
-    fn generate_identity_active_model(model: create_identity_req::Model) -> identity::ActiveModel {
-        identity::ActiveModel {
-            user_account_id: Set(model.user_account_id),
-            last_name: Set(model.last_name),
-            first_name: Set(model.first_name),
-            last_name_furigana: Set(model.last_name_furigana),
-            first_name_furigana: Set(model.first_name_furigana),
-            date_of_birth: Set(model.date_of_birth),
-            prefecture: Set(model.prefecture),
-            city: Set(model.city),
-            address_line1: Set(model.address_line1),
-            address_line2: Set(model.address_line2),
-            telephone_number: Set(model.telephone_number),
-        }
+fn generate_approved_create_career_req_active_model(
+    model: create_career_req::Model,
+    approved_time: DateTime<FixedOffset>,
+    approver_email_address: String,
+) -> approved_create_career_req::ActiveModel {
+    approved_create_career_req::ActiveModel {
+        appr_cre_career_req_id: todo!(),
+        user_account_id: todo!(),
+        company_name: todo!(),
+        department_name: todo!(),
+        office: todo!(),
+        career_start_date: todo!(),
+        career_end_date: todo!(),
+        contract_type: todo!(),
+        profession: todo!(),
+        annual_income_in_man_yen: todo!(),
+        is_manager: todo!(),
+        position_name: todo!(),
+        is_new_graduate: todo!(),
+        note: todo!(),
+        image1_file_name_without_ext: Set(model.image1_file_name_without_ext),
+        image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
+        approved_at: Set(approved_time),
+        approved_by: Set(approver_email_address),
+    }
+}
+
+fn generate_career_active_model(model: create_career_req::Model) -> career::ActiveModel {
+    career::ActiveModel {
+        career_id: todo!(),
+        user_account_id: todo!(),
+        company_name: todo!(),
+        department_name: todo!(),
+        office: todo!(),
+        career_start_date: todo!(),
+        career_end_date: todo!(),
+        contract_type: todo!(),
+        profession: todo!(),
+        annual_income_in_man_yen: todo!(),
+        is_manager: todo!(),
+        position_name: todo!(),
+        is_new_graduate: todo!(),
+        note: todo!(),
     }
 }
 
 fn create_text() -> String {
     // TODO: 文面の調整
     format!(
-        r"職務経歴確認が完了し、職務経歴情報を登録致しました。
+        r"職務経歴確認が完了し、ユーザー情報を登録致しました。
 
-他のユーザーから相談を受けるには、職務経歴確認に加え、下記の二点の登録が必要となります。他のユーザーからの相談を受けたい場合、追加で下記の二点をご登録いただくようお願いします。
+他のユーザーから相談を受けるには、職務経歴確認に加えて下記の二点の登録が必要となります。まだご登録されていない場合、下記の二点をご登録いただくようお願いします。
 ・相談料
 ・銀行口座
 
