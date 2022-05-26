@@ -10,6 +10,7 @@ mod refresh;
 mod util;
 
 use crate::create_career_request::career_images::get_career_images;
+use crate::create_career_request::create_career_request_approval::post_create_career_request_approval;
 use crate::create_career_request::create_career_request_detail::get_create_career_request_detail;
 use crate::create_career_request::create_career_requests::get_create_career_requests;
 use crate::identity_by_user_account_id::get_identity_by_user_account_id;
@@ -183,6 +184,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/career-images/:user_account_id/:image_name",
                     get(get_career_images),
+                )
+                .route(
+                    "/create-career-request-approval",
+                    post(post_create_career_request_approval),
                 ),
         )
         .layer(
