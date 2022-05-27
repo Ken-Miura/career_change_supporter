@@ -12,7 +12,7 @@ use common::{
 use axum::extract::Extension;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_create_career_req, career, create_career_req,
+    admin_account, approved_create_career_req, career, create_career_req, document,
     sea_orm::{
         ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
         EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
@@ -245,6 +245,16 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                             }
                         })?;
 
+                    let document_option =
+                        find_document_model_by_user_account_id(txn, user_account_id).await?;
+                    if let Some(document) = document_option {
+                        document.document_id
+                    } else {
+                        // document_idとしてuser_account_idを利用
+                        let _ = insert_document(txn, user_account_id, user_account_id).await?;
+                        user_account_id
+                    };
+
                     Ok(Some(user.email_address))
                 })
             })
@@ -336,6 +346,47 @@ fn generate_career_active_model(model: create_career_req::Model) -> career::Acti
         is_new_graduate: Set(model.is_new_graduate),
         note: Set(model.note),
     }
+}
+
+async fn find_document_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<document::Model>, ErrRespStruct> {
+    let doc_option = document::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find document (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(doc_option)
+}
+
+async fn insert_document(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+    document_id: i64,
+) -> Result<(), ErrRespStruct> {
+    let document = document::ActiveModel {
+        user_account_id: Set(user_account_id),
+        document_id: Set(document_id),
+    };
+    let _ = document.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert document (user_account_id: {}, document_id: {}): {}",
+            user_account_id, document_id, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 fn create_text() -> String {
