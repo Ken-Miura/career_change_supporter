@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 pub mod err;
+pub mod opensearch;
 pub mod payment_platform;
 pub mod redis;
 pub mod smtp;

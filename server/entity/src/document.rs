@@ -7,7 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub user_account_id: i64,
-    pub document_id: Option<i64>,
+    pub document_id: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

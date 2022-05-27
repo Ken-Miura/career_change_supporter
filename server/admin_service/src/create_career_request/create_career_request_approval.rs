@@ -1,8 +1,10 @@
 // Copyright 2022 Ken Miura
 
+use async_session::serde_json::json;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{
+    opensearch::{INDEX_NAME, OPENSEARCH_ENDPOINT_URI},
     smtp::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
     },
@@ -19,6 +21,7 @@ use entity::{
     },
 };
 use once_cell::sync::Lazy;
+use opensearch::{http::transport::Transport, IndexParts, OpenSearch, UpdateParts};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -206,8 +209,8 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                     )
                     .await?;
 
-                    let career_model = generate_career_active_model(req.clone());
-                    let _ = career_model.insert(txn).await.map_err(|e| {
+                    let career_active_model = generate_career_active_model(req.clone());
+                    let career_model = career_active_model.insert(txn).await.map_err(|e| {
                         error!(
                             "failed to insert career (user_account_id: {}): {}",
                             user_account_id, e
@@ -248,11 +251,24 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                     let document_option =
                         find_document_model_by_user_account_id(txn, user_account_id).await?;
                     if let Some(document) = document_option {
-                        document.document_id
+                        let _ = insert_new_career_into_document(
+                            &OPENSEARCH_ENDPOINT_URI,
+                            INDEX_NAME,
+                            document.document_id.to_string().as_str(),
+                            career_model,
+                        )
+                        .await?;
                     } else {
                         // document_idとしてuser_account_idを利用
-                        let _ = insert_document(txn, user_account_id, user_account_id).await?;
-                        user_account_id
+                        let document_id = user_account_id;
+                        let _ = insert_document(txn, user_account_id, document_id).await?;
+                        let _ = add_new_document_with_career(
+                            &OPENSEARCH_ENDPOINT_URI,
+                            INDEX_NAME,
+                            document_id.to_string().as_str(),
+                            career_model,
+                        )
+                        .await?;
                     };
 
                     Ok(Some(user.email_address))
@@ -386,6 +402,135 @@ async fn insert_document(
             err_resp: unexpected_err_resp(),
         }
     })?;
+    Ok(())
+}
+
+async fn add_new_document_with_career(
+    endpoint_uri: &str,
+    index_name: &str,
+    document_id: &str,
+    career_model: career::Model,
+) -> Result<(), ErrRespStruct> {
+    let transport = Transport::single_node(endpoint_uri).map_err(|e| {
+        error!(
+            "failed to struct transport (endpoint_uri: {}): {}",
+            endpoint_uri, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    let client = OpenSearch::new(transport);
+
+    let new_document = json!({
+        "user_account_id": career_model.user_account_id,
+        "careers": [{
+            "career_id": career_model.career_id,
+            "company_name": career_model.company_name,
+            "department_name": career_model.department_name,
+            "office": career_model.office,
+            "career_start_date": career_model.career_start_date,
+            "career_end_date": career_model.career_end_date,
+            "contract_type": career_model.contract_type,
+            "profession": career_model.profession,
+            "annual_income_in_man_yen": career_model.annual_income_in_man_yen,
+            "is_manager": career_model.is_manager,
+            "position_name": career_model.position_name,
+            "is_new_graduate": career_model.is_manager,
+            "note": career_model.note,
+        }],
+        "fee_per_hour_in_yen": null,
+        "rating": null,
+        "is_bank_account_registered": null
+    });
+
+    let response = client
+        .index(IndexParts::IndexId(index_name, document_id))
+        .body(new_document.clone())
+        .send()
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to index document (index_name: {}, document_id: {}, document: {}): {}",
+                index_name, document_id, new_document, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let status_code = response.status_code();
+    if !status_code.is_success() {
+        error!("failed to request index (status code: {})", status_code);
+        return Err(ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        });
+    }
+
+    Ok(())
+}
+
+async fn insert_new_career_into_document(
+    endpoint_uri: &str,
+    index_name: &str,
+    document_id: &str,
+    career_model: career::Model,
+) -> Result<(), ErrRespStruct> {
+    let transport = Transport::single_node(endpoint_uri).map_err(|e| {
+        error!(
+            "failed to struct transport (endpoint_uri: {}): {}",
+            endpoint_uri, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    let client = OpenSearch::new(transport);
+
+    let script = json!({
+        "script": {
+            "source": "ctx._source.careers.add(params.career)",
+            "params": {
+              "career": {
+                "career_id": career_model.career_id,
+                "company_name": career_model.company_name,
+                "department_name": career_model.department_name,
+                "office": career_model.office,
+                "career_start_date": career_model.career_start_date,
+                "career_end_date": career_model.career_end_date,
+                "contract_type": career_model.contract_type,
+                "profession": career_model.profession,
+                "annual_income_in_man_yen": career_model.annual_income_in_man_yen,
+                "is_manager": career_model.is_manager,
+                "position_name": career_model.position_name,
+                "is_new_graduate": career_model.is_manager,
+                "note": career_model.note,
+              }
+            }
+        }
+    });
+
+    let response = client
+        .update(UpdateParts::IndexId(index_name, document_id))
+        .body(script.clone())
+        .send()
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to index document (index_name: {}, document_id: {}, script: {}): {}",
+                index_name, document_id, script, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let status_code = response.status_code();
+    if !status_code.is_success() {
+        error!("failed to request index (status code: {})", status_code);
+        return Err(ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        });
+    }
+
     Ok(())
 }
 

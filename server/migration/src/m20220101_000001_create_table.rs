@@ -687,7 +687,7 @@ impl MigrationTrait for Migration {
             /* document_idがある場合、インデックスに検索用の情報がある。ない場合、インデックスに検索用の情報が存在しない */
             .execute(sql.stmt(r"CREATE TABLE ccs_schema.document (
               user_account_id BIGINT PRIMARY KEY,
-              document_id BIGINT
+              document_id BIGINT NOT NULL
             );"))
             .await
             .map(|_| ())?;
