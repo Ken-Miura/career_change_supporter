@@ -565,6 +565,7 @@ mod tests {
             create_text, handle_create_career_request_approval, CreateCareerReqApprovalResult,
             SUBJECT,
         },
+        err::Code,
         util::tests::SendMailMock,
     };
 
@@ -684,5 +685,50 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(CreateCareerReqApprovalResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_create_career_request_approval_fail_no_user_account_found() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 432;
+        let user_email_address = String::from("test@test.com");
+        let create_career_req_id = 53215;
+        let create_career_req = CreateCareerReqMock {
+            create_career_req_id,
+            user_account_id,
+        };
+        let approval_time = chrono::Utc
+            .ymd(2022, 4, 1)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = CreateCareerReqApprovalOperationMock {
+            admin,
+            user_option: None,
+            create_career_req_mock: create_career_req,
+            approved_time: approval_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address,
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_create_career_request_approval(
+            admin_account_id,
+            create_career_req_id,
+            approval_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NoUserAccountFound as u32, resp.1 .0.code);
     }
 }
