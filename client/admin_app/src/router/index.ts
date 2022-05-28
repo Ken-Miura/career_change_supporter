@@ -14,6 +14,7 @@ import UpdateIdentityRequestRejectionDetailPage from '../views/personalized/Upda
 import UpdateIdentityRequestRejectionPage from '../views/personalized/UpdateIdentityRequestRejectionPage.vue'
 import CreateCareerRequestListPage from '../views/personalized/CreateCareerRequestListPage.vue'
 import CreateCareerRequestDetailPage from '../views/personalized/CreateCareerRequestDetailPage.vue'
+import CreateCareerRequestApprovalPage from '../views/personalized/CreateCareerRequestApprovalPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -95,6 +96,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/create-career-request-detail/:create_career_req_id',
     name: 'CreateCareerRequestDetailPage',
     component: CreateCareerRequestDetailPage
+  },
+  {
+    path: '/create-career-request-approval',
+    name: 'CreateCareerRequestApprovalPage',
+    component: CreateCareerRequestApprovalPage
   }
 ]
 
