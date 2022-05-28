@@ -30,6 +30,8 @@ use crate::{
     util::{find_user_model_by_user_account_id, session::Admin},
 };
 
+use super::find_create_career_req_model_by_create_career_req_id;
+
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴確認完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_create_career_request_approval(
@@ -287,35 +289,6 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
             })?;
         Ok(notification_email_address_option)
     }
-}
-
-async fn find_create_career_req_model_by_create_career_req_id(
-    txn: &DatabaseTransaction,
-    create_career_req_id: i64,
-) -> Result<create_career_req::Model, ErrRespStruct> {
-    let req_option = create_career_req::Entity::find_by_id(create_career_req_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find create_career_req (create_career_req_id: {}): {}",
-                create_career_req_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    let req = req_option.ok_or_else(|| {
-        error!(
-            "no create_career_req (create_career_req_id: {}) found",
-            create_career_req_id
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(req)
 }
 
 fn generate_approved_create_career_req_active_model(

@@ -12,6 +12,7 @@ mod util;
 use crate::create_career_request::career_images::get_career_images;
 use crate::create_career_request::create_career_request_approval::post_create_career_request_approval;
 use crate::create_career_request::create_career_request_detail::get_create_career_request_detail;
+use crate::create_career_request::create_career_request_rejection::post_create_career_request_rejection;
 use crate::create_career_request::create_career_requests::get_create_career_requests;
 use crate::identity_by_user_account_id::get_identity_by_user_account_id;
 use crate::identity_request::create_identity_request::create_identity_request_approval::post_create_identity_request_approval;
@@ -190,6 +191,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/create-career-request-approval",
                     post(post_create_career_request_approval),
+                )
+                .route(
+                    "/create-career-request-rejection",
+                    post(post_create_career_request_rejection),
                 ),
         )
         .layer(
