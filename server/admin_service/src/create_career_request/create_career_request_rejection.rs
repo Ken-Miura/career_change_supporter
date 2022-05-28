@@ -554,45 +554,51 @@ mod tests {
         assert_eq!(Code::InvalidFormatReason as u32, resp.1 .0.code);
     }
 
-    // #[tokio::test]
-    // async fn handle_create_career_request_rejection_fail_no_user_account_found() {
-    //     let admin_account_id = 23;
-    //     let admin = Admin {
-    //         admin_account_id,
-    //         email_address: String::from("admin@test.com"),
-    //     };
-    //     let user_account_id = 53215;
-    //     let user_email_address = String::from("test@test.com");
-    //     let rejection_reason = "画像が不鮮明なため";
-    //     let rejected_time = chrono::Utc
-    //         .ymd(2022, 4, 5)
-    //         .and_hms(21, 00, 40)
-    //         .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    //     let op_mock = CreateCareerReqRejectionOperationMock {
-    //         admin,
-    //         user_option: None,
-    //         rejection_reason: rejection_reason.to_string(),
-    //         rejected_time,
-    //     };
-    //     let send_mail_mock = SendMailMock::new(
-    //         user_email_address.to_string(),
-    //         SYSTEM_EMAIL_ADDRESS.to_string(),
-    //         SUBJECT.to_string(),
-    //         create_text(rejection_reason.to_string()),
-    //     );
+    #[tokio::test]
+    async fn handle_create_career_request_rejection_fail_no_user_account_found() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 53;
+        let user_email_address = String::from("test@test.com");
+        let create_career_req_id = 51514;
+        let create_career_req = CreateCareerReqMock {
+            create_career_req_id,
+            user_account_id,
+        };
+        let rejection_reason = "画像が不鮮明なため";
+        let rejected_time = chrono::Utc
+            .ymd(2022, 4, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = CreateCareerReqRejectionOperationMock {
+            admin,
+            user_option: None,
+            create_career_req_mock: create_career_req,
+            rejection_reason: rejection_reason.to_string(),
+            rejected_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(rejection_reason.to_string()),
+        );
 
-    //     let result = handle_create_career_request_rejection(
-    //         admin_account_id,
-    //         user_account_id,
-    //         rejection_reason.to_string(),
-    //         rejected_time,
-    //         op_mock,
-    //         send_mail_mock,
-    //     )
-    //     .await;
+        let result = handle_create_career_request_rejection(
+            admin_account_id,
+            create_career_req_id,
+            rejection_reason.to_string(),
+            rejected_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
 
-    //     let resp = result.expect_err("failed to get Err");
-    //     assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-    //     assert_eq!(Code::NoUserAccountFound as u32, resp.1 .0.code);
-    // }
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NoUserAccountFound as u32, resp.1 .0.code);
+    }
 }
