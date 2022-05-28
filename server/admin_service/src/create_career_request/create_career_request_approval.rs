@@ -460,7 +460,7 @@ async fn add_new_document_with_career(
         })?;
     let status_code = response.status_code();
     if !status_code.is_success() {
-        error!("failed to request index (status code: {})", status_code);
+        error!("failed to request index (response: {:?})", response);
         return Err(ErrRespStruct {
             err_resp: unexpected_err_resp(),
         });
@@ -525,7 +525,7 @@ async fn insert_new_career_into_document(
         })?;
     let status_code = response.status_code();
     if !status_code.is_success() {
-        error!("failed to request index (status code: {})", status_code);
+        error!("failed to request index (response: {:?})", response);
         return Err(ErrRespStruct {
             err_resp: unexpected_err_resp(),
         });
