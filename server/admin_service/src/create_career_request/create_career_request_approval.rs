@@ -554,4 +554,135 @@ Email: {}",
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
+
+    use crate::{
+        create_career_request::create_career_request_approval::{
+            create_text, handle_create_career_request_approval, CreateCareerReqApprovalResult,
+            SUBJECT,
+        },
+        util::tests::SendMailMock,
+    };
+
+    use super::CreateCareerReqApprovalOperation;
+
+    struct Admin {
+        admin_account_id: i64,
+        email_address: String,
+    }
+
+    #[derive(Clone)]
+    struct User {
+        user_account_id: i64,
+        email_address: String,
+    }
+
+    #[derive(Clone)]
+    struct CreateCareerReqMock {
+        create_career_req_id: i64,
+        user_account_id: i64,
+    }
+
+    struct CreateCareerReqApprovalOperationMock {
+        admin: Admin,
+        user_option: Option<User>,
+        create_career_req_mock: CreateCareerReqMock,
+        approved_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationMock {
+        async fn get_admin_email_address_by_admin_account_id(
+            &self,
+            admin_account_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.admin.admin_account_id, admin_account_id);
+            Ok(Some(self.admin.email_address.clone()))
+        }
+
+        async fn get_user_account_id_by_create_career_req_id(
+            &self,
+            create_career_req_id: i64,
+        ) -> Result<Option<i64>, ErrResp> {
+            assert_eq!(
+                self.create_career_req_mock.create_career_req_id,
+                create_career_req_id
+            );
+            Ok(Some(self.create_career_req_mock.user_account_id))
+        }
+
+        async fn approve_create_career_req(
+            &self,
+            user_account_id: i64,
+            create_career_req_id: i64,
+            approver_email_address: String,
+            approved_time: DateTime<FixedOffset>,
+        ) -> Result<Option<String>, ErrResp> {
+            if let Some(user) = self.user_option.clone() {
+                assert_eq!(user.user_account_id, user_account_id);
+                assert_eq!(self.admin.email_address, approver_email_address);
+                assert_eq!(
+                    self.create_career_req_mock.create_career_req_id,
+                    create_career_req_id
+                );
+                assert_eq!(self.approved_time, approved_time);
+                Ok(Some(user.email_address))
+            } else {
+                Ok(None)
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_create_career_request_approval_success() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 432;
+        let user_email_address = String::from("test@test.com");
+        let user_option = Some(User {
+            user_account_id,
+            email_address: user_email_address.clone(),
+        });
+        let create_career_req_id = 53215;
+        let create_career_req = CreateCareerReqMock {
+            create_career_req_id,
+            user_account_id,
+        };
+        let approval_time = chrono::Utc
+            .ymd(2022, 4, 1)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = CreateCareerReqApprovalOperationMock {
+            admin,
+            user_option,
+            create_career_req_mock: create_career_req,
+            approved_time: approval_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address,
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_create_career_request_approval(
+            admin_account_id,
+            create_career_req_id,
+            approval_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(CreateCareerReqApprovalResult {}, resp.1 .0);
+    }
+}
