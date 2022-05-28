@@ -347,7 +347,7 @@ async fn delete_career_images(
 fn create_text(rejection_reason: String) -> String {
     // TODO: 文面の調整
     format!(
-        r"下記の【拒否理由】により、ユーザー情報の登録を拒否いたしました。お手数ですが、再度本人確認依頼をお願いいたします。
+        r"下記の【拒否理由】により、職務経歴の登録を拒否いたしました。お手数ですが、再度職務経歴確認依頼をお願いいたします。
 
 【拒否理由】
 {}
@@ -364,113 +364,142 @@ Email: {}",
 
 #[cfg(test)]
 mod tests {
-    // use axum::async_trait;
-    // use axum::http::StatusCode;
-    // use chrono::{DateTime, FixedOffset, TimeZone};
-    // use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
-    // use crate::{
-    //     err::Code,
-    //     identity_request::create_identity_request::create_identity_request_rejection::{
-    //         create_text, CreateCareerReqRejectionResult, SUBJECT,
-    //     },
-    //     util::tests::SendMailMock,
-    // };
+    use crate::{
+        create_career_request::create_career_request_rejection::{
+            create_text, handle_create_career_request_rejection, CreateCareerReqRejectionResult,
+            SUBJECT,
+        },
+        util::tests::SendMailMock,
+    };
 
-    // use super::{handle_create_career_request_rejection, CreateCareerReqRejectionOperation};
+    use super::CreateCareerReqRejectionOperation;
 
-    // struct Admin {
-    //     admin_account_id: i64,
-    //     email_address: String,
-    // }
+    struct Admin {
+        admin_account_id: i64,
+        email_address: String,
+    }
 
-    // #[derive(Clone)]
-    // struct User {
-    //     user_account_id: i64,
-    //     email_address: String,
-    // }
+    #[derive(Clone)]
+    struct User {
+        user_account_id: i64,
+        email_address: String,
+    }
 
-    // struct CreateCareerReqRejectionOperationMock {
-    //     admin: Admin,
-    //     user_option: Option<User>,
-    //     rejection_reason: String,
-    //     rejected_time: DateTime<FixedOffset>,
-    // }
+    #[derive(Clone)]
+    struct CreateCareerReqMock {
+        create_career_req_id: i64,
+        user_account_id: i64,
+    }
 
-    // #[async_trait]
-    // impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationMock {
-    //     async fn get_admin_email_address_by_admin_account_id(
-    //         &self,
-    //         admin_account_id: i64,
-    //     ) -> Result<Option<String>, ErrResp> {
-    //         assert_eq!(self.admin.admin_account_id, admin_account_id);
-    //         Ok(Some(self.admin.email_address.clone()))
-    //     }
+    struct CreateCareerReqRejectionOperationMock {
+        admin: Admin,
+        user_option: Option<User>,
+        create_career_req_mock: CreateCareerReqMock,
+        rejection_reason: String,
+        rejected_time: DateTime<FixedOffset>,
+    }
 
-    //     async fn reject_create_career_req(
-    //         &self,
-    //         user_account_id: i64,
-    //         refuser_email_address: String,
-    //         rejection_reason: String,
-    //         rejected_time: DateTime<FixedOffset>,
-    //     ) -> Result<Option<String>, ErrResp> {
-    //         if let Some(user) = self.user_option.clone() {
-    //             assert_eq!(user.user_account_id, user_account_id);
-    //             assert_eq!(self.admin.email_address, refuser_email_address);
-    //             assert_eq!(self.rejection_reason, rejection_reason);
-    //             assert_eq!(self.rejected_time, rejected_time);
-    //             Ok(Some(user.email_address))
-    //         } else {
-    //             Ok(None)
-    //         }
-    //     }
-    // }
+    #[async_trait]
+    impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationMock {
+        async fn get_admin_email_address_by_admin_account_id(
+            &self,
+            admin_account_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.admin.admin_account_id, admin_account_id);
+            Ok(Some(self.admin.email_address.clone()))
+        }
 
-    // #[tokio::test]
-    // async fn handle_create_career_request_rejection_success() {
-    //     let admin_account_id = 23;
-    //     let admin = Admin {
-    //         admin_account_id,
-    //         email_address: String::from("admin@test.com"),
-    //     };
-    //     let user_account_id = 53215;
-    //     let user_email_address = String::from("test@test.com");
-    //     let user_option = Some(User {
-    //         user_account_id,
-    //         email_address: user_email_address.clone(),
-    //     });
-    //     let rejection_reason = "画像が不鮮明なため";
-    //     let rejected_time = chrono::Utc
-    //         .ymd(2022, 4, 5)
-    //         .and_hms(21, 00, 40)
-    //         .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    //     let op_mock = CreateCareerReqRejectionOperationMock {
-    //         admin,
-    //         user_option,
-    //         rejection_reason: rejection_reason.to_string(),
-    //         rejected_time,
-    //     };
-    //     let send_mail_mock = SendMailMock::new(
-    //         user_email_address.to_string(),
-    //         SYSTEM_EMAIL_ADDRESS.to_string(),
-    //         SUBJECT.to_string(),
-    //         create_text(rejection_reason.to_string()),
-    //     );
+        async fn get_user_account_id_by_create_career_req_id(
+            &self,
+            create_career_req_id: i64,
+        ) -> Result<Option<i64>, ErrResp> {
+            assert_eq!(
+                self.create_career_req_mock.create_career_req_id,
+                create_career_req_id
+            );
+            Ok(Some(self.create_career_req_mock.user_account_id))
+        }
 
-    //     let result = handle_create_career_request_rejection(
-    //         admin_account_id,
-    //         user_account_id,
-    //         rejection_reason.to_string(),
-    //         rejected_time,
-    //         op_mock,
-    //         send_mail_mock,
-    //     )
-    //     .await;
+        async fn reject_create_career_req(
+            &self,
+            user_account_id: i64,
+            create_career_req_id: i64,
+            refuser_email_address: String,
+            rejection_reason: String,
+            rejected_time: DateTime<FixedOffset>,
+        ) -> Result<Option<String>, ErrResp> {
+            if let Some(user) = self.user_option.clone() {
+                assert_eq!(user.user_account_id, user_account_id);
+                assert_eq!(self.admin.email_address, refuser_email_address);
+                assert_eq!(
+                    self.create_career_req_mock.create_career_req_id,
+                    create_career_req_id
+                );
+                assert_eq!(self.rejection_reason, rejection_reason);
+                assert_eq!(self.rejected_time, rejected_time);
+                Ok(Some(user.email_address))
+            } else {
+                Ok(None)
+            }
+        }
+    }
 
-    //     let resp = result.expect("failed to get Ok");
-    //     assert_eq!(StatusCode::OK, resp.0);
-    //     assert_eq!(CreateCareerReqRejectionResult {}, resp.1 .0);
-    // }
+    #[tokio::test]
+    async fn handle_create_career_request_rejection_success() {
+        let admin_account_id = 23;
+        let admin = Admin {
+            admin_account_id,
+            email_address: String::from("admin@test.com"),
+        };
+        let user_account_id = 53;
+        let user_email_address = String::from("test@test.com");
+        let user_option = Some(User {
+            user_account_id,
+            email_address: user_email_address.clone(),
+        });
+        let create_career_req_id = 51514;
+        let create_career_req = CreateCareerReqMock {
+            create_career_req_id,
+            user_account_id,
+        };
+        let rejection_reason = "画像が不鮮明なため";
+        let rejected_time = chrono::Utc
+            .ymd(2022, 4, 5)
+            .and_hms(21, 00, 40)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let op_mock = CreateCareerReqRejectionOperationMock {
+            admin,
+            user_option,
+            create_career_req_mock: create_career_req,
+            rejection_reason: rejection_reason.to_string(),
+            rejected_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            user_email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(rejection_reason.to_string()),
+        );
+
+        let result = handle_create_career_request_rejection(
+            admin_account_id,
+            create_career_req_id,
+            rejection_reason.to_string(),
+            rejected_time,
+            op_mock,
+            send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(CreateCareerReqRejectionResult {}, resp.1 .0);
+    }
 
     // #[tokio::test]
     // async fn handle_create_career_request_rejection_fail_invalid_format_reason() {
