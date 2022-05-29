@@ -368,76 +368,94 @@ describe('CreateCareerRequestDetailPage.vue', () => {
     expect(resultMessage).toContain(`${Message.NO_CREATE_CAREER_REQ_DETAIL_FOUND_MESSAGE} (${Code.NO_CREATE_CAREER_REQ_DETAIL_FOUND})`)
   })
 
-  // it('displays AlertMessage when error has happened during getCreateCareerRequestDetail', async () => {
-  //   routeParam = '1'
-  //   const errDetail = 'connection error'
-  //   getCreateCareerRequestDetailFuncMock.mockRejectedValue(new Error(errDetail))
-  //   const resp2 = GetIdentityByUserAccountIdResp.create([])
-  //   getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
-  //   const wrapper = mount(CreateCareerRequestDetailPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   await flushPromises()
+  it('displays AlertMessage when error has happened during getCreateCareerRequestDetail', async () => {
+    routeParam = '1'
+    const errDetail = 'connection error'
+    getCreateCareerRequestDetailFuncMock.mockRejectedValue(new Error(errDetail))
+    const identity = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: null,
+      telephone_number: '09012345678'
+    }
+    const resp2 = GetIdentityByUserAccountIdResp.create(identity)
+    getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateCareerRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   expect(routerPushMock).toHaveBeenCalledTimes(0)
-  //   const alertMessages = wrapper.findAllComponents(AlertMessage)
-  //   expect(alertMessages.length).toBe(1)
-  //   const alertMessage = alertMessages[0]
-  //   const classes = alertMessage.classes()
-  //   expect(classes).not.toContain('hidden')
-  //   const resultMessage = alertMessage.text()
-  //   expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
-  //   expect(resultMessage).toContain(errDetail)
-  // })
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
+  })
 
-  // it('displays AlertMessage when error has happened during getIdentityByUserAccountId', async () => {
-  //   routeParam = '1'
-  //   const detail = {
-  //     last_name: '田中',
-  //     first_name: '太郎',
-  //     last_name_furigana: 'タナカ',
-  //     first_name_furigana: 'タロウ',
-  //     date_of_birth: {
-  //       year: 1994,
-  //       month: 5,
-  //       day: 21
-  //     },
-  //     prefecture: '北海道',
-  //     city: '札幌市',
-  //     address_line1: '北区２−１',
-  //     address_line2: null,
-  //     telephone_number: '09012345678',
-  //     image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
-  //     image2_file_name_without_ext: null,
-  //     requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
-  //   }
-  //   const resp1 = GetCreateCareerRequestDetailResp.create(detail)
-  //   getCreateCareerRequestDetailFuncMock.mockResolvedValue(resp1)
-  //   const errDetail = 'connection error'
-  //   getIdentityByUserAccountIdFuncMock.mockRejectedValue(new Error(errDetail))
-  //   const wrapper = mount(CreateCareerRequestDetailPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   await flushPromises()
+  it('displays AlertMessage when error has happened during getIdentityByUserAccountId', async () => {
+    routeParam = '1'
+    const detail = {
+      user_account_id: 705,
+      company_name: 'テスト株式会社１',
+      department_name: null,
+      office: null,
+      career_start_date: {
+        year: 2002,
+        month: 4,
+        day: 1
+      },
+      career_end_date: null,
+      contract_type: 'regular',
+      profession: null,
+      annual_income_in_man_yen: null,
+      is_manager: false,
+      position_name: null,
+      is_new_graduate: true,
+      note: null,
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: null
+    }
+    const resp1 = GetCreateCareerRequestDetailResp.create(detail)
+    getCreateCareerRequestDetailFuncMock.mockResolvedValue(resp1)
+    const errDetail = 'connection error'
+    getIdentityByUserAccountIdFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(CreateCareerRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   expect(routerPushMock).toHaveBeenCalledTimes(0)
-  //   const alertMessages = wrapper.findAllComponents(AlertMessage)
-  //   expect(alertMessages.length).toBe(1)
-  //   const alertMessage = alertMessages[0]
-  //   const classes = alertMessage.classes()
-  //   expect(classes).not.toContain('hidden')
-  //   const resultMessage = alertMessage.text()
-  //   expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
-  //   expect(resultMessage).toContain(errDetail)
-  // })
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
+  })
 
   // it('moves to CreateIdentityRequestRejectionDetailPage if 拒否理由を選ぶ is pushed', async () => {
   //   routeParam = '1523'
