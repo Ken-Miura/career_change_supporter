@@ -229,21 +229,21 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                     );
                     let _ = approved_req.insert(txn).await.map_err(|e| {
                         error!(
-                            "failed to insert approved_create_career_req (user_account_id: {}): {}",
-                            user_account_id, e
+                            "failed to insert approved_create_career_req (create_career_req_id: {}): {}",
+                            create_career_req_id, e
                         );
                         ErrRespStruct {
                             err_resp: unexpected_err_resp(),
                         }
                     })?;
 
-                    let _ = create_career_req::Entity::delete_by_id(user_account_id)
+                    let _ = create_career_req::Entity::delete_by_id(create_career_req_id)
                         .exec(txn)
                         .await
                         .map_err(|e| {
                             error!(
-                                "failed to delete create_career_req (user_account_id: {}): {}",
-                                user_account_id, e
+                                "failed to delete create_career_req (create_career_req_id: {}): {}",
+                                create_career_req_id, e
                             );
                             ErrRespStruct {
                                 err_resp: unexpected_err_resp(),
