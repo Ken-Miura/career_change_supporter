@@ -84,7 +84,7 @@ impl GetCareerOperation for GetCareerOperationImpl {
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find career (user_account_id: {}): {}",
+                    "failed to filter career (user_account_id: {}): {}",
                     account_id, e
                 );
                 unexpected_err_resp()

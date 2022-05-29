@@ -17,7 +17,7 @@ mod util;
 
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
-use crate::career::{get, post};
+use crate::career::{delete, get, post};
 use crate::identity::post_identity;
 use crate::login::post_login;
 use crate::logout::post_logout;
@@ -144,7 +144,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/profile", get(get_profile))
                 .route("/rewards", get(get_reward))
                 .route("/identity", post(post_identity))
-                .route("/career", post(post::career).get(get::career)),
+                .route("/career", post(post::career).get(get::career).delete(delete::career)),
         )
         .layer(
             ServiceBuilder::new()
