@@ -4,7 +4,7 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import UpdateIdentityRequestDetailPage from '@/views/personalized/UpdateIdentityRequestDetailPage.vue'
 import { GetUpdateIdentityRequestDetailResp } from '@/util/personalized/update-identity-request-detail/GetUpdateIdentityRequestDetailResp'
-import { GetIdentityByUserAccountIdResp } from '@/util/personalized/update-identity-request-detail/GetIdentityByUserAccountIdResp'
+import { GetIdentityByUserAccountIdResp } from '@/util/personalized/GetIdentityByUserAccountIdResp'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
@@ -35,7 +35,7 @@ jest.mock('@/util/personalized/update-identity-request-detail/useGetUpdateIdenti
 
 const waitingGetIdentityByUserAccountIdDoneMock = ref(false)
 const getIdentityByUserAccountIdFuncMock = jest.fn()
-jest.mock('@/util/personalized/update-identity-request-detail/useGetIdentityByUserAccountId', () => ({
+jest.mock('@/util/personalized/useGetIdentityByUserAccountId', () => ({
   useGetIdentityByUserAccountId: () => ({
     waitingGetIdentityByUserAccountIdDone: waitingGetIdentityByUserAccountIdDoneMock,
     getIdentityByUserAccountIdFunc: getIdentityByUserAccountIdFuncMock
