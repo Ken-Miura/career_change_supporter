@@ -35,8 +35,8 @@ jest.mock('@/util/personalized/create-career-request-detail/useGetCreateCareerRe
 
 const waitingGetIdentityByUserAccountIdDoneMock = ref(false)
 const getIdentityByUserAccountIdFuncMock = jest.fn()
-jest.mock('@/util/personalized/create-identity-request-detail/useGetUsersByDateOfBirth', () => ({
-  useGetUsersByDateOfBirth: () => ({
+jest.mock('@/util/personalized/useGetIdentityByUserAccountId', () => ({
+  useGetIdentityByUserAccountId: () => ({
     waitingGetIdentityByUserAccountIdDone: waitingGetIdentityByUserAccountIdDoneMock,
     getIdentityByUserAccountIdFunc: getIdentityByUserAccountIdFuncMock
   })
