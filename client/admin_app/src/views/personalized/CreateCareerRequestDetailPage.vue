@@ -11,7 +11,7 @@
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div data-test="identity" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">本人情報</h3>
           <p class="mt-2 text-lg">氏名が証明書画像の内容と一致しているか確認してください。</p>
           <div v-if="identity !== null">

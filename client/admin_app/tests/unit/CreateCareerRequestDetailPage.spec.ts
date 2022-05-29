@@ -750,7 +750,7 @@ describe('CreateCareerRequestDetailPage.vue', () => {
       prefecture: '北海道',
       city: '札幌市',
       address_line1: '北区２−１',
-      address_line2: 'メソンXXX　１０１',
+      address_line2: 'メゾンXXX　１０１',
       telephone_number: '09012345678'
     }
     const resp2 = GetIdentityByUserAccountIdResp.create(identity)
@@ -797,6 +797,28 @@ describe('CreateCareerRequestDetailPage.vue', () => {
     expect(reqDetail).toContain('証明書画像（裏面）')
     const image2Div = reqDetailDiv.find('[data-test="req-detail-image2"]')
     expect(image2Div.attributes().src).toBe(`/admin/api/career-images/${detail.user_account_id}/${detail.image2_file_name_without_ext}`)
+
+    const identityDiv = wrapper.find('[data-test="identity"]')
+    const identityDetail = identityDiv.text()
+    expect(identityDetail).toContain('本人情報')
+    expect(identityDetail).toContain('氏名が証明書画像の内容と一致しているか確認してください。')
+    expect(identityDetail).toContain('氏名')
+    expect(identityDetail).toContain(`${identity.last_name} ${identity.first_name}`)
+    expect(identityDetail).toContain('フリガナ')
+    expect(identityDetail).toContain(`${identity.last_name_furigana} ${identity.first_name_furigana}`)
+    expect(identityDetail).toContain('生年月日')
+    expect(identityDetail).toContain(`${identity.date_of_birth.year}年${identity.date_of_birth.month}月${identity.date_of_birth.day}日`)
+    expect(identityDetail).toContain('住所')
+    expect(identityDetail).toContain('都道府県')
+    expect(identityDetail).toContain(`${identity.prefecture}`)
+    expect(identityDetail).toContain('市区町村')
+    expect(identityDetail).toContain(`${identity.city}`)
+    expect(identityDetail).toContain('番地')
+    expect(identityDetail).toContain(`${identity.address_line1}`)
+    expect(identityDetail).toContain('建物名・部屋番号')
+    expect(identityDetail).toContain(`${identity.address_line2}`)
+    expect(identityDetail).toContain('電話番号')
+    expect(identityDetail).toContain(`${identity.telephone_number}`)
   })
 
   it(`displays ${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} if ${Code.NO_USER_ACCOUNT_FOUND} after 承認する is pushed`, async () => {
