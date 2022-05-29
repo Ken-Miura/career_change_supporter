@@ -49,7 +49,7 @@ async fn handle_career_req(
     Err((
         StatusCode::BAD_REQUEST,
         Json(ApiError {
-            code: Code::NoCareerToDisplayFound as u32,
+            code: Code::NoCareerToHandleFound as u32,
         }),
     ))
 }
