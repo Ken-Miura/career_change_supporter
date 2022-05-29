@@ -9,7 +9,7 @@ import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
 import AlertMessage from '@/components/AlertMessage.vue'
-import { PostCreateIdentityRequestApprovalResp } from '@/util/personalized/create-identity-request-detail/PostCreateIdentityRequestApprovalResp'
+import { PostCreateCareerRequestApprovalResp } from '@/util/personalized/create-career-request-detail/PostCreateCareerRequestApprovalResp'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -457,90 +457,126 @@ describe('CreateCareerRequestDetailPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  // it('moves to CreateIdentityRequestRejectionDetailPage if 拒否理由を選ぶ is pushed', async () => {
-  //   routeParam = '1523'
-  //   const detail = {
-  //     last_name: '田中',
-  //     first_name: '太郎',
-  //     last_name_furigana: 'タナカ',
-  //     first_name_furigana: 'タロウ',
-  //     date_of_birth: {
-  //       year: 1994,
-  //       month: 5,
-  //       day: 21
-  //     },
-  //     prefecture: '北海道',
-  //     city: '札幌市',
-  //     address_line1: '北区２−１',
-  //     address_line2: null,
-  //     telephone_number: '09012345678',
-  //     image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
-  //     image2_file_name_without_ext: null,
-  //     requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
-  //   }
-  //   const resp1 = GetCreateCareerRequestDetailResp.create(detail)
-  //   getCreateCareerRequestDetailFuncMock.mockResolvedValue(resp1)
-  //   const resp2 = GetIdentityByUserAccountIdResp.create([])
-  //   getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
-  //   const wrapper = mount(CreateCareerRequestDetailPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   await flushPromises()
+  it('moves to CreateCareerRequestRejectionDetailPage if 拒否理由を選ぶ is pushed', async () => {
+    routeParam = '1523'
+    const detail = {
+      user_account_id: 705,
+      company_name: 'テスト株式会社１',
+      department_name: null,
+      office: null,
+      career_start_date: {
+        year: 2002,
+        month: 4,
+        day: 1
+      },
+      career_end_date: null,
+      contract_type: 'regular',
+      profession: null,
+      annual_income_in_man_yen: null,
+      is_manager: false,
+      position_name: null,
+      is_new_graduate: true,
+      note: null,
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: null
+    }
+    const resp1 = GetCreateCareerRequestDetailResp.create(detail)
+    getCreateCareerRequestDetailFuncMock.mockResolvedValue(resp1)
+    const identity = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: null,
+      telephone_number: '09012345678'
+    }
+    const resp2 = GetIdentityByUserAccountIdResp.create(identity)
+    getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateCareerRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   const button = wrapper.find('[data-test="choose-rejection-reason-button"]')
-  //   await button.trigger('click')
+    const button = wrapper.find('[data-test="choose-rejection-reason-button"]')
+    await button.trigger('click')
 
-  //   expect(routerPushMock).toHaveBeenCalledTimes(1)
-  //   const data = { name: 'CreateIdentityRequestRejectionDetailPage', params: { user_account_id: routeParam } }
-  //   expect(routerPushMock).toHaveBeenCalledWith(data)
-  // })
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = { name: 'CreateCareerRequestRejectionDetailPage', params: { create_career_req_id: routeParam } }
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
 
-  // it('moves to create-identity-request-approval if 承認する is pushed', async () => {
-  //   routeParam = '1523'
-  //   const detail = {
-  //     last_name: '田中',
-  //     first_name: '太郎',
-  //     last_name_furigana: 'タナカ',
-  //     first_name_furigana: 'タロウ',
-  //     date_of_birth: {
-  //       year: 1994,
-  //       month: 5,
-  //       day: 21
-  //     },
-  //     prefecture: '北海道',
-  //     city: '札幌市',
-  //     address_line1: '北区２−１',
-  //     address_line2: null,
-  //     telephone_number: '09012345678',
-  //     image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
-  //     image2_file_name_without_ext: null,
-  //     requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
-  //   }
-  //   const resp1 = GetCreateCareerRequestDetailResp.create(detail)
-  //   getCreateCareerRequestDetailFuncMock.mockResolvedValue(resp1)
-  //   const resp2 = GetIdentityByUserAccountIdResp.create([])
-  //   getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
-  //   const resp3 = PostCreateIdentityRequestApprovalResp.create()
-  //   postCreateCareerRequestApprovalFuncMock.mockResolvedValue(resp3)
-  //   const wrapper = mount(CreateCareerRequestDetailPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   await flushPromises()
+  it('moves to create-career-request-approval if 承認する is pushed', async () => {
+    routeParam = '1523'
+    const detail = {
+      user_account_id: 705,
+      company_name: 'テスト株式会社１',
+      department_name: null,
+      office: null,
+      career_start_date: {
+        year: 2002,
+        month: 4,
+        day: 1
+      },
+      career_end_date: null,
+      contract_type: 'regular',
+      profession: null,
+      annual_income_in_man_yen: null,
+      is_manager: false,
+      position_name: null,
+      is_new_graduate: true,
+      note: null,
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: null
+    }
+    const resp1 = GetCreateCareerRequestDetailResp.create(detail)
+    getCreateCareerRequestDetailFuncMock.mockResolvedValue(resp1)
+    const identity = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: null,
+      telephone_number: '09012345678'
+    }
+    const resp2 = GetIdentityByUserAccountIdResp.create(identity)
+    getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
+    const resp3 = PostCreateCareerRequestApprovalResp.create()
+    postCreateCareerRequestApprovalFuncMock.mockResolvedValue(resp3)
+    const wrapper = mount(CreateCareerRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   const button = wrapper.find('[data-test="approve-req-button"]')
-  //   await button.trigger('click')
+    const button = wrapper.find('[data-test="approve-req-button"]')
+    await button.trigger('click')
 
-  //   expect(routerPushMock).toHaveBeenCalledTimes(1)
-  //   expect(routerPushMock).toHaveBeenCalledWith('/create-identity-request-approval')
-  // })
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/create-career-request-approval')
+  })
 
   // it(`moves to login if ${Code.UNAUTHORIZED} is returned after pushing 承認する`, async () => {
   //   routeParam = '1523'
