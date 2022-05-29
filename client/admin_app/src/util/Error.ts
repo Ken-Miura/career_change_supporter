@@ -19,6 +19,7 @@ export namespace Code {
   export const NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND = 30007
   export const NO_USER_ACCOUNT_FOUND = 30008
   export const NO_IDENTITY_FOUND = 30009
+  export const NO_CREATE_CAREER_REQ_DETAIL_FOUND = 30010
 }
 
 export function createErrorMessage (code: number): string {
@@ -48,6 +49,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} (${code})`
   } else if (code === Code.NO_IDENTITY_FOUND) {
     return `${Message.NO_IDENTITY_FOUND_MESSAGE} (${code})`
+  } else if (code === Code.NO_CREATE_CAREER_REQ_DETAIL_FOUND) {
+    return `${Message.NO_CREATE_CAREER_REQ_DETAIL_FOUND_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
