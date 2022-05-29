@@ -82,6 +82,7 @@ pub(crate) enum Code {
     ReachCareerNumLimit = 20070,
     NoIdentityRegistered = 20071,
     ReachCreateCareerReqNumLimit = 20072,
+    NoCareerToDisplayFound = 20073,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

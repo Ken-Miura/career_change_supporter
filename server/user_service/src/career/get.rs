@@ -1,17 +1,18 @@
 // Copyright 2022 Ken Miura
 
-use axum::async_trait;
+use axum::http::StatusCode;
+use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
 use chrono::Datelike;
 use common::util::Ymd;
-use common::ErrResp;
 use common::{util::Career, RespResult};
+use common::{ApiError, ErrResp};
 use entity::career;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::Deserialize;
 use tracing::error;
 
-use crate::err::unexpected_err_resp;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 
 pub(crate) async fn career(
@@ -36,12 +37,29 @@ async fn handle_career_req(
 ) -> RespResult<Career> {
     // 任意の職務経歴の取得を防ぐため、必ずログインユーザーのアカウントIDでフィルターをかけた結果を利用
     let careers = op.filter_careers_by_account_id(account_id).await?;
-    todo!()
+    for career in careers {
+        if career.0 == career_id {
+            return Ok((StatusCode::OK, Json(career.1)));
+        }
+    }
+    error!(
+        "No career associated with user account found (account_id: {}, career_id: {})",
+        account_id, career_id
+    );
+    Err((
+        StatusCode::BAD_REQUEST,
+        Json(ApiError {
+            code: Code::NoCareerToDisplayFound as u32,
+        }),
+    ))
 }
 
 #[async_trait]
 trait GetCareerOperation {
-    async fn filter_careers_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp>;
+    async fn filter_careers_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Vec<(i64, Career)>, ErrResp>;
 }
 
 struct GetCareerOperationImpl {
@@ -56,7 +74,10 @@ impl GetCareerOperationImpl {
 
 #[async_trait]
 impl GetCareerOperation for GetCareerOperationImpl {
-    async fn filter_careers_by_account_id(&self, account_id: i64) -> Result<Vec<Career>, ErrResp> {
+    async fn filter_careers_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Vec<(i64, Career)>, ErrResp> {
         let models = career::Entity::find()
             .filter(career::Column::UserAccountId.eq(account_id))
             .all(&self.pool)
@@ -70,28 +91,33 @@ impl GetCareerOperation for GetCareerOperationImpl {
             })?;
         Ok(models
             .into_iter()
-            .map(|m| Career {
-                company_name: m.company_name,
-                department_name: m.department_name,
-                office: m.office,
-                career_start_date: Ymd {
-                    year: m.career_start_date.year(),
-                    month: m.career_start_date.month(),
-                    day: m.career_start_date.day(),
-                },
-                career_end_date: m.career_end_date.map(|date| Ymd {
-                    year: date.year(),
-                    month: date.month(),
-                    day: date.day(),
-                }),
-                contract_type: m.contract_type,
-                profession: m.profession,
-                annual_income_in_man_yen: m.annual_income_in_man_yen,
-                is_manager: m.is_manager,
-                position_name: m.position_name,
-                is_new_graduate: m.is_new_graduate,
-                note: m.note,
+            .map(|m| {
+                (
+                    m.career_id,
+                    Career {
+                        company_name: m.company_name,
+                        department_name: m.department_name,
+                        office: m.office,
+                        career_start_date: Ymd {
+                            year: m.career_start_date.year(),
+                            month: m.career_start_date.month(),
+                            day: m.career_start_date.day(),
+                        },
+                        career_end_date: m.career_end_date.map(|date| Ymd {
+                            year: date.year(),
+                            month: date.month(),
+                            day: date.day(),
+                        }),
+                        contract_type: m.contract_type,
+                        profession: m.profession,
+                        annual_income_in_man_yen: m.annual_income_in_man_yen,
+                        is_manager: m.is_manager,
+                        position_name: m.position_name,
+                        is_new_graduate: m.is_new_graduate,
+                        note: m.note,
+                    },
+                )
             })
-            .collect::<Vec<Career>>())
+            .collect::<Vec<(i64, Career)>>())
     }
 }
