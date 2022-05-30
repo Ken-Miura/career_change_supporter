@@ -1,14 +1,18 @@
 // Copyright 2022 Ken Miura
 
+use async_session::serde_json::json;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
+use common::opensearch::{INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
 use common::{ApiError, ErrResp};
 use common::{ErrRespStruct, RespResult};
 use entity::sea_orm::{
     ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect, TransactionTrait,
 };
 use entity::{career, document};
+use opensearch::http::transport::Transport;
+use opensearch::{OpenSearch, UpdateParts};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -125,9 +129,72 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
                         }
                     })?;
 
+                let document_id = document.document_id.to_string();
+                let _ = remove_career_from_document(
+                    &OPENSEARCH_ENDPOINT_URI,
+                    INDEX_NAME,
+                    document_id.as_str(),
+                    career_id,
+                )
+                .await?;
+
                 Ok(())
             })
         });
         Ok(())
     }
+}
+
+async fn remove_career_from_document(
+    endpoint_uri: &str,
+    index_name: &str,
+    document_id: &str,
+    career_id: i64,
+) -> Result<(), ErrRespStruct> {
+    let transport = Transport::single_node(endpoint_uri).map_err(|e| {
+        error!(
+            "failed to struct transport (endpoint_uri: {}): {}",
+            endpoint_uri, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    let client = OpenSearch::new(transport);
+
+    let script = json!({
+        "script": {
+            "source": "ctx._source.careers.removeIf(career -> career.career_id == params.career_id)",
+            "params": {
+                "career_id": career_id
+            }
+        }
+    });
+
+    let response = client
+        .update(UpdateParts::IndexId(index_name, document_id))
+        .body(script.clone())
+        .send()
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to update document (index_name: {}, document_id: {}, script: {}): {}",
+                index_name, document_id, script, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let status_code = response.status_code();
+    if !status_code.is_success() {
+        error!(
+            "failed to request document update (response: {:?})",
+            response
+        );
+        return Err(ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        });
+    }
+
+    Ok(())
 }
