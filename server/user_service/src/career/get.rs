@@ -121,3 +121,123 @@ impl GetCareerOperation for GetCareerOperationImpl {
             .collect::<Vec<(i64, Career)>>())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use common::{
+        util::{Career, Ymd},
+        ErrResp,
+    };
+
+    use super::{handle_career_req, GetCareerOperation};
+
+    struct GetCareerOperationMock {
+        account_id: i64,
+        careers: Vec<(i64, Career)>,
+    }
+
+    #[async_trait]
+    impl GetCareerOperation for GetCareerOperationMock {
+        async fn filter_careers_by_account_id(
+            &self,
+            account_id: i64,
+        ) -> Result<Vec<(i64, Career)>, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.careers.clone())
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_career_req_success() {
+        let account_id = 45;
+        let career1_id = 642;
+        let career1 = create_dummy_career1();
+        let career2_id = 511;
+        let career2 = create_dummy_career2();
+        let career3_id = 5552;
+        let career3 = create_dummy_career3();
+        let op = GetCareerOperationMock {
+            account_id,
+            careers: vec![
+                (career1_id, career1.clone()),
+                (career2_id, career2),
+                (career3_id, career3),
+            ],
+        };
+
+        let result = handle_career_req(account_id, career1_id, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(career1, resp.1 .0);
+    }
+
+    fn create_dummy_career1() -> Career {
+        Career {
+            company_name: "テスト１株式会社".to_string(),
+            department_name: Some("営業二課".to_string()),
+            office: Some("新宿事業所".to_string()),
+            career_start_date: Ymd {
+                year: 2008,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: Some(Ymd {
+                year: 2016,
+                month: 7,
+                day: 31,
+            }),
+            contract_type: "regular".to_string(),
+            profession: Some("営業".to_string()),
+            annual_income_in_man_yen: Some(500),
+            is_manager: true,
+            position_name: Some("部長".to_string()),
+            is_new_graduate: true,
+            note: Some("備考１".to_string()),
+        }
+    }
+
+    fn create_dummy_career2() -> Career {
+        Career {
+            company_name: "テスト２株式会社".to_string(),
+            department_name: Some("開発".to_string()),
+            office: Some("札幌事業所".to_string()),
+            career_start_date: Ymd {
+                year: 2008,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: "contract".to_string(),
+            profession: Some("エンジニア".to_string()),
+            annual_income_in_man_yen: Some(500),
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: false,
+            note: Some("備考２".to_string()),
+        }
+    }
+
+    fn create_dummy_career3() -> Career {
+        Career {
+            company_name: "テスト３株式会社".to_string(),
+            department_name: None,
+            office: None,
+            career_start_date: Ymd {
+                year: 2006,
+                month: 4,
+                day: 1,
+            },
+            career_end_date: None,
+            contract_type: "other".to_string(),
+            profession: Some("企画".to_string()),
+            annual_income_in_man_yen: Some(500),
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: false,
+            note: Some("備考３".to_string()),
+        }
+    }
+}
