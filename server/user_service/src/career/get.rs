@@ -131,6 +131,8 @@ mod tests {
         ErrResp,
     };
 
+    use crate::err::Code;
+
     use super::{handle_career_req, GetCareerOperation};
 
     struct GetCareerOperationMock {
@@ -239,5 +241,34 @@ mod tests {
             is_new_graduate: false,
             note: Some("備考３".to_string()),
         }
+    }
+
+    #[tokio::test]
+    async fn handle_career_req_fail_no_career_to_handle_found() {
+        let account_id = 45;
+        let career1_id = 642;
+        let career1 = create_dummy_career1();
+        let career2_id = 511;
+        let career2 = create_dummy_career2();
+        let career3_id = 5552;
+        let career3 = create_dummy_career3();
+        let op = GetCareerOperationMock {
+            account_id,
+            careers: vec![
+                (career1_id, career1.clone()),
+                (career2_id, career2),
+                (career3_id, career3),
+            ],
+        };
+        let dummy_career_id = 56015;
+        assert_ne!(dummy_career_id, career1_id);
+        assert_ne!(dummy_career_id, career2_id);
+        assert_ne!(dummy_career_id, career3_id);
+
+        let result = handle_career_req(account_id, dummy_career_id, op).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NoCareerToHandleFound as u32, resp.1 .0.code);
     }
 }
