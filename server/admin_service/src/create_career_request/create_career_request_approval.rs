@@ -4,7 +4,7 @@ use async_session::serde_json::json;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{
-    opensearch::{INDEX_NAME, OPENSEARCH_ENDPOINT_URI},
+    opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI},
     smtp::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
     },
@@ -21,7 +21,6 @@ use entity::{
     },
 };
 use once_cell::sync::Lazy;
-use opensearch::{http::transport::Transport, IndexParts, OpenSearch, UpdateParts};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -384,17 +383,6 @@ async fn add_new_document_with_career(
     document_id: &str,
     career_model: career::Model,
 ) -> Result<(), ErrRespStruct> {
-    let transport = Transport::single_node(endpoint_uri).map_err(|e| {
-        error!(
-            "failed to struct transport (endpoint_uri: {}): {}",
-            endpoint_uri, e
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    let client = OpenSearch::new(transport);
-
     let new_document = json!({
         "user_account_id": career_model.user_account_id,
         "careers": [{
@@ -416,29 +404,15 @@ async fn add_new_document_with_career(
         "rating": null,
         "is_bank_account_registered": null
     });
-
-    let response = client
-        .index(IndexParts::IndexId(index_name, document_id))
-        .body(new_document.clone())
-        .send()
+    let _ = index_document(endpoint_uri, index_name, document_id, &new_document)
         .await
         .map_err(|e| {
             error!(
-                "failed to index document (index_name: {}, document_id: {}, document: {}): {}",
-                index_name, document_id, new_document, e
+                "failed to index new document with career (document_id: {}, career_id: {})",
+                document_id, career_model.career_id
             );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
+            ErrRespStruct { err_resp: e }
         })?;
-    let status_code = response.status_code();
-    if !status_code.is_success() {
-        error!("failed to request index (response: {:?})", response);
-        return Err(ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        });
-    }
-
     Ok(())
 }
 
@@ -448,17 +422,6 @@ async fn insert_new_career_into_document(
     document_id: &str,
     career_model: career::Model,
 ) -> Result<(), ErrRespStruct> {
-    let transport = Transport::single_node(endpoint_uri).map_err(|e| {
-        error!(
-            "failed to struct transport (endpoint_uri: {}): {}",
-            endpoint_uri, e
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    let client = OpenSearch::new(transport);
-
     let script = json!({
         "script": {
             "source": "ctx._source.careers.add(params.career)",
@@ -481,32 +444,15 @@ async fn insert_new_career_into_document(
             }
         }
     });
-
-    let response = client
-        .update(UpdateParts::IndexId(index_name, document_id))
-        .body(script.clone())
-        .send()
+    let _ = update_document(endpoint_uri, index_name, document_id, &script)
         .await
         .map_err(|e| {
             error!(
-                "failed to update document (index_name: {}, document_id: {}, script: {}): {}",
-                index_name, document_id, script, e
+                "failed to insert new career into document (document_id: {}, career_id: {})",
+                document_id, career_model.career_id
             );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
+            ErrRespStruct { err_resp: e }
         })?;
-    let status_code = response.status_code();
-    if !status_code.is_success() {
-        error!(
-            "failed to request document update (response: {:?})",
-            response
-        );
-        return Err(ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        });
-    }
-
     Ok(())
 }
 

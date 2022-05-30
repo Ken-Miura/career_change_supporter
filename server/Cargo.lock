@@ -45,7 +45,6 @@ dependencies = [
  "image",
  "num_cpus",
  "once_cell",
- "opensearch",
  "serde",
  "tokio",
  "tower",
