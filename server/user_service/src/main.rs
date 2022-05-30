@@ -34,6 +34,7 @@ use async_redis_session::RedisSessionStore;
 use axum::extract::Extension;
 use axum::routing::{get, post};
 use axum::Router;
+use common::opensearch::KEY_TO_OPENSEARCH_ENDPOINT_URI;
 use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
@@ -80,6 +81,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_AWS_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_REGION.to_string(),
         KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP.to_string(),
+        KEY_TO_OPENSEARCH_ENDPOINT_URI.to_string(),
     ]
 });
 

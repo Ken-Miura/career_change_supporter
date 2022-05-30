@@ -3,10 +3,12 @@
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
-use common::RespResult;
 use common::{ApiError, ErrResp};
-use entity::career;
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use common::{ErrRespStruct, RespResult};
+use entity::sea_orm::{
+    ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect, TransactionTrait,
+};
+use entity::{career, document};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -50,12 +52,14 @@ async fn handle_career_req(
             }),
         ));
     }
-    todo!()
+    let _ = op.delete_career(account_id, career_id).await?;
+    Ok((StatusCode::OK, Json(DeleteCareerResult {})))
 }
 
 #[async_trait]
 trait DeleteCareerOperation {
     async fn filter_career_ids_by_account_id(&self, account_id: i64) -> Result<Vec<i64>, ErrResp>;
+    async fn delete_career(&self, account_id: i64, career_id: i64) -> Result<(), ErrResp>;
 }
 
 struct DeleteCareerOperationImpl {
@@ -86,5 +90,44 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
             .into_iter()
             .map(|m| m.career_id)
             .collect::<Vec<i64>>())
+    }
+
+    async fn delete_career(&self, account_id: i64, career_id: i64) -> Result<(), ErrResp> {
+        let _ = self.pool.transaction::<_, (), ErrRespStruct>(|txn| {
+            Box::pin(async move {
+                let document_option = document::Entity::find_by_id(account_id)
+                    .lock_exclusive()
+                    .one(txn)
+                    .await
+                    .map_err(|e| {
+                        error!(
+                            "failed to find document (user_account_id: {}): {}",
+                            account_id, e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+                let document = document_option.ok_or_else(|| {
+                    error!("no document found (user_account_id: {})", account_id);
+                    ErrRespStruct {
+                        err_resp: unexpected_err_resp(),
+                    }
+                })?;
+
+                let _ = career::Entity::delete_by_id(career_id)
+                    .exec(txn)
+                    .await
+                    .map_err(|e| {
+                        error!("failed to delete career (career_id: {}): {}", career_id, e);
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
+                Ok(())
+            })
+        });
+        Ok(())
     }
 }
