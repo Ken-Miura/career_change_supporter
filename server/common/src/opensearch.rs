@@ -37,7 +37,7 @@ pub async fn index_document(
         .await
         .map_err(|e| {
             error!(
-                "failed to index document (index_name: {}, document_id: {}, json: {}): {}",
+                "failed to index document (index_name: {}, document_id: {}, json_value: {}): {}",
                 index_name, document_id, json_value, e
             );
             (
@@ -75,7 +75,7 @@ pub async fn update_document(
         .await
         .map_err(|e| {
             error!(
-                "failed to update document (index_name: {}, document_id: {}, json: {}): {}",
+                "failed to update document (index_name: {}, document_id: {}, json_value: {}): {}",
                 index_name, document_id, json_value, e
             );
             (

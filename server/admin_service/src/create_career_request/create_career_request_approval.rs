@@ -489,7 +489,7 @@ async fn insert_new_career_into_document(
         .await
         .map_err(|e| {
             error!(
-                "failed to index document (index_name: {}, document_id: {}, script: {}): {}",
+                "failed to update document (index_name: {}, document_id: {}, script: {}): {}",
                 index_name, document_id, script, e
             );
             ErrRespStruct {
@@ -498,7 +498,10 @@ async fn insert_new_career_into_document(
         })?;
     let status_code = response.status_code();
     if !status_code.is_success() {
-        error!("failed to request index (response: {:?})", response);
+        error!(
+            "failed to request document update (response: {:?})",
+            response
+        );
         return Err(ErrRespStruct {
             err_resp: unexpected_err_resp(),
         });
