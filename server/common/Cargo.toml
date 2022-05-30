@@ -17,8 +17,10 @@ http-body = "0.4.4"
 lettre = "0.9"
 lettre_email = "0.9"
 once_cell = "1.10.0"
+opensearch = "1.0.0"
 regex = "1.5.5"
 reqwest = { version = "0.11.10", features = ["json"] }
 serde = { version = "1.0.136", features = ["derive"] }
+serde_json = "1.0.81"
 tower-cookies = "0.6.0"
 tracing = "0.1.34"
