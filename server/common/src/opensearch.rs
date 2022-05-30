@@ -4,7 +4,7 @@ use std::env::var;
 
 use axum::{http::StatusCode, Json};
 use once_cell::sync::Lazy;
-use opensearch::{http::transport::Transport, OpenSearch, UpdateParts};
+use opensearch::{http::transport::Transport, IndexParts, OpenSearch, UpdateParts};
 use serde_json::Value;
 use tracing::error;
 
@@ -29,9 +29,8 @@ pub async fn index_document(
     json_value: &Value,
 ) -> Result<(), ErrResp> {
     let client = build_client(endpoint_uri)?;
-
     let response = client
-        .update(UpdateParts::IndexId(index_name, document_id))
+        .index(IndexParts::IndexId(index_name, document_id))
         .body(json_value.clone())
         .send()
         .await
@@ -67,7 +66,6 @@ pub async fn update_document(
     json_value: &Value,
 ) -> Result<(), ErrResp> {
     let client = build_client(endpoint_uri)?;
-
     let response = client
         .update(UpdateParts::IndexId(index_name, document_id))
         .body(json_value.clone())
