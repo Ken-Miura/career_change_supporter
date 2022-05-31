@@ -175,6 +175,8 @@ mod tests {
     use axum::http::StatusCode;
     use common::ErrResp;
 
+    use crate::err::Code;
+
     use super::{handle_career_req, DeleteCareerOperation, DeleteCareerResult};
 
     struct DeleteCareerOperationMock {
@@ -216,5 +218,28 @@ mod tests {
         let resp = result.expect("faile to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(DeleteCareerResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_career_req_fail_no_career_to_handle_found() {
+        let account_id = 432;
+        let career1_id = 5124;
+        let career2_id = 5125;
+        let career3_id = 5126;
+        let career_ids = vec![career1_id, career2_id, career3_id];
+        let op = DeleteCareerOperationMock {
+            account_id,
+            career_ids,
+        };
+        let dummy_career_id = 41;
+        assert_ne!(dummy_career_id, career1_id);
+        assert_ne!(dummy_career_id, career2_id);
+        assert_ne!(dummy_career_id, career3_id);
+
+        let result = handle_career_req(account_id, dummy_career_id, op).await;
+
+        let resp = result.expect_err("faile to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NoCareerToHandleFound as u32, resp.1 .0.code);
     }
 }
