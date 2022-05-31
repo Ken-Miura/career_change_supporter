@@ -1,6 +1,6 @@
 import { postCareer } from '@/util/personalized/careers/PostCareer'
 import { ref } from 'vue'
-import { Career } from './Career'
+import { Career } from '../Career'
 
 // eslint-disable-next-line
 export function usePostCareer () {

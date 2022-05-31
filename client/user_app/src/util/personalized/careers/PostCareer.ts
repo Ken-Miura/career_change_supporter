@@ -1,5 +1,5 @@
 import { ApiErrorResp, ApiError } from '../../ApiError'
-import { Career } from './Career'
+import { Career } from '../Career'
 import { PostCareerResp } from './PostCareerResp'
 
 export async function postCareer (career: Career, image1: File, image2: File | null): Promise<PostCareerResp | ApiErrorResp> {
