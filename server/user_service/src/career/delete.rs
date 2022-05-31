@@ -32,7 +32,7 @@ pub(crate) struct DeleteCareerQueryParam {
     pub(crate) career_id: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct DeleteCareerResult {}
 
 async fn handle_career_req(
@@ -167,4 +167,54 @@ async fn remove_career_from_document(
             ErrRespStruct { err_resp: e }
         })?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use common::ErrResp;
+
+    use super::{handle_career_req, DeleteCareerOperation, DeleteCareerResult};
+
+    struct DeleteCareerOperationMock {
+        account_id: i64,
+        career_ids: Vec<i64>,
+    }
+
+    #[async_trait]
+    impl DeleteCareerOperation for DeleteCareerOperationMock {
+        async fn filter_career_ids_by_account_id(
+            &self,
+            account_id: i64,
+        ) -> Result<Vec<i64>, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.career_ids.clone())
+        }
+
+        async fn delete_career(&self, account_id: i64, career_id: i64) -> Result<(), ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            assert!(self.career_ids.contains(&career_id));
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_career_req_success() {
+        let account_id = 432;
+        let career1_id = 5124;
+        let career2_id = 5125;
+        let career3_id = 5126;
+        let career_ids = vec![career1_id, career2_id, career3_id];
+        let op = DeleteCareerOperationMock {
+            account_id,
+            career_ids,
+        };
+
+        let result = handle_career_req(account_id, career1_id, op).await;
+
+        let resp = result.expect("faile to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(DeleteCareerResult {}, resp.1 .0);
+    }
 }
