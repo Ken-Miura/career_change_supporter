@@ -32,26 +32,26 @@
           <h3 class="font-bold text-2xl">職務経歴確認依頼詳細</h3>
           <div v-if="detail !== null">
             <div class="m-4 text-2xl grid grid-cols-3">
-              <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ detail.company_name }}</div>
-              <div v-if="detail.department_name !== null" class="mt-2 ml-3 justify-self-start col-span-1">部署名</div><div v-if="detail.department_name !== null" class="justify-self-start col-span-2">{{ detail.department_name }}</div>
-              <div v-if="detail.office !== null" class="mt-2 ml-3 justify-self-start col-span-1">勤務地</div><div v-if="detail.office !== null" class="justify-self-start col-span-2">{{ detail.office }}</div>
-              <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ detail.career_start_date.year }}年{{ detail.career_start_date.month }}月{{ detail.career_start_date.day }}日</div>
-              <div v-if="detail.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="detail.career_end_date !== null" class="justify-self-start col-span-2">{{ detail.career_end_date.year }}年{{ detail.career_end_date.month }}月{{ detail.career_end_date.day }}日</div>
+              <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ detail.company_name }}</div>
+              <div v-if="detail.department_name !== null" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="detail.department_name !== null" class="mt-2 justify-self-start col-span-2">{{ detail.department_name }}</div>
+              <div v-if="detail.office !== null" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="detail.office !== null" class="mt-2 justify-self-start col-span-2">{{ detail.office }}</div>
+              <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="mt-2 justify-self-start col-span-2">{{ detail.career_start_date.year }}年{{ detail.career_start_date.month }}月{{ detail.career_start_date.day }}日</div>
+              <div v-if="detail.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="detail.career_end_date !== null" class="mt-2 justify-self-start col-span-2">{{ detail.career_end_date.year }}年{{ detail.career_end_date.month }}月{{ detail.career_end_date.day }}日</div>
               <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
-              <div v-if="detail.contract_type === 'regular'" class="justify-self-start col-span-2">正社員</div>
-              <div v-else-if="detail.contract_type === 'contract'" class="justify-self-start col-span-2">契約社員</div>
-              <div v-else-if="detail.contract_type === 'other'" class="justify-self-start col-span-2">その他</div>
-              <div v-else class="justify-self-start col-span-2">想定外の値です。管理者にご連絡下さい</div>
-              <div v-if="detail.profession !== null" class="mt-2 ml-3 justify-self-start col-span-1">職種</div><div v-if="detail.profession !== null" class="justify-self-start col-span-2">{{ detail.profession }}</div>
-              <div v-if="detail.annual_income_in_man_yen !== null" class="mt-2 ml-3 justify-self-start col-span-1">年収（単位：万円）</div><div v-if="detail.annual_income_in_man_yen !== null" class="justify-self-start col-span-2">{{ detail.annual_income_in_man_yen }}</div>
+              <div v-if="detail.contract_type === 'regular'" class="mt-2 justify-self-start col-span-2">正社員</div>
+              <div v-else-if="detail.contract_type === 'contract'" class="mt-2 justify-self-start col-span-2">契約社員</div>
+              <div v-else-if="detail.contract_type === 'other'" class="mt-2 justify-self-start col-span-2">その他</div>
+              <div v-else class="mt-2 justify-self-start col-span-2">想定外の値です。管理者にご連絡下さい</div>
+              <div v-if="detail.profession !== null" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="detail.profession !== null" class="mt-2 justify-self-start col-span-2">{{ detail.profession }}</div>
+              <div v-if="detail.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-1">年収（単位：万円）</div><div v-if="detail.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-2">{{ detail.annual_income_in_man_yen }}</div>
               <div class="mt-2 justify-self-start col-span-1">管理職区分</div>
-              <div v-if="detail.is_manager" class="justify-self-start col-span-2">管理職</div>
-              <div v-else class="justify-self-start col-span-2">非管理職</div>
-              <div v-if="detail.position_name !== null" class="mt-2 ml-3 justify-self-start col-span-1">職位</div><div v-if="detail.position_name !== null" class="justify-self-start col-span-2">{{ detail.position_name }}</div>
+              <div v-if="detail.is_manager" class="mt-2 justify-self-start col-span-2">管理職</div>
+              <div v-else class="mt-2 justify-self-start col-span-2">非管理職</div>
+              <div v-if="detail.position_name !== null" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="detail.position_name !== null" class="mt-2 justify-self-start col-span-2">{{ detail.position_name }}</div>
               <div class="mt-2 justify-self-start col-span-1">入社区分</div>
-              <div v-if="detail.is_new_graduate" class="justify-self-start col-span-2">新卒入社</div>
-              <div v-else class="justify-self-start col-span-2">中途入社</div>
-              <div v-if="detail.note !== null" class="mt-2 ml-3 justify-self-start col-span-1">備考</div><div v-if="detail.note !== null" class="justify-self-start col-span-2">{{ detail.note }}</div>
+              <div v-if="detail.is_new_graduate" class="mt-2 justify-self-start col-span-2">新卒入社</div>
+              <div v-else class="mt-2 justify-self-start col-span-2">中途入社</div>
+              <div v-if="detail.note !== null" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="detail.note !== null" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ detail.note }}</div>
             </div>
             <div class="m-2 text-2xl">
               <div class="mt-2">証明書画像（表面）</div>
