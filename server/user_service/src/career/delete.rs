@@ -8,7 +8,8 @@ use common::opensearch::{update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
 use common::{ApiError, ErrResp};
 use common::{ErrRespStruct, RespResult};
 use entity::sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect, TransactionTrait,
+    ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect, TransactionError,
+    TransactionTrait,
 };
 use entity::{career, document};
 use serde::{Deserialize, Serialize};
@@ -95,50 +96,64 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
     }
 
     async fn delete_career(&self, account_id: i64, career_id: i64) -> Result<(), ErrResp> {
-        let _ = self.pool.transaction::<_, (), ErrRespStruct>(|txn| {
-            Box::pin(async move {
-                let document_option = document::Entity::find_by_id(account_id)
-                    .lock_exclusive()
-                    .one(txn)
-                    .await
-                    .map_err(|e| {
-                        error!(
-                            "failed to find document (user_account_id: {}): {}",
-                            account_id, e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-                let document = document_option.ok_or_else(|| {
-                    error!("no document found (user_account_id: {})", account_id);
-                    ErrRespStruct {
-                        err_resp: unexpected_err_resp(),
-                    }
-                })?;
-
-                let _ = career::Entity::delete_by_id(career_id)
-                    .exec(txn)
-                    .await
-                    .map_err(|e| {
-                        error!("failed to delete career (career_id: {}): {}", career_id, e);
+        let _ = self
+            .pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let document_option = document::Entity::find_by_id(account_id)
+                        .lock_exclusive()
+                        .one(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to find document (user_account_id: {}): {}",
+                                account_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                    let document = document_option.ok_or_else(|| {
+                        error!("no document found (user_account_id: {})", account_id);
                         ErrRespStruct {
                             err_resp: unexpected_err_resp(),
                         }
                     })?;
 
-                let document_id = document.document_id.to_string();
-                let _ = remove_career_from_document(
-                    &OPENSEARCH_ENDPOINT_URI,
-                    INDEX_NAME,
-                    document_id.as_str(),
-                    career_id,
-                )
-                .await?;
+                    let _ = career::Entity::delete_by_id(career_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| {
+                            error!("failed to delete career (career_id: {}): {}", career_id, e);
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
 
-                Ok(())
+                    let document_id = document.document_id.to_string();
+                    let _ = remove_career_from_document(
+                        &OPENSEARCH_ENDPOINT_URI,
+                        INDEX_NAME,
+                        document_id.as_str(),
+                        career_id,
+                    )
+                    .await?;
+
+                    Ok(())
+                })
             })
-        });
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to delete career: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+
         Ok(())
     }
 }

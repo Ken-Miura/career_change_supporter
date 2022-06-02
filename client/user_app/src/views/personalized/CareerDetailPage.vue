@@ -36,7 +36,7 @@
             <div v-if="career.note !== null" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="career.note !== null" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ career.note }}</div>
           </div>
           <p v-else data-test="no-career-set" class="m-4 text-xl">職務経歴を取得出来ませんでした。</p>
-          <button data-test="move-to-career-deletion-confirm-page-button" v-on:click="moveToCareerDeletionConfirmPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を削除する</button>
+          <button data-test="move-to-career-deletion-confirm-page-button" v-on:click="moveToCareerDeletionConfirmPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴の削除</button>
         </div>
       </div>
     </main>

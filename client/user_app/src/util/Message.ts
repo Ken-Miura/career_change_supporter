@@ -93,4 +93,6 @@ export namespace Message {
     export const REACH_CAREER_NUM_LIMIT_MESSAGE = '既に最大数の職務経歴が登録されています'
     export const NO_IDENTITY_REGISTERED_MESSAGE = 'ユーザー情報が登録されていません。先にユーザー情報を登録して下さい'
     export const REACH_CREATE_CAREER_REQ_NUM_LIMIT_MESSAGE = '既に複数の職務経歴の確認依頼を行っています。確認作業が完了するまでお待ち下さい'
+    export const DELETE_CAREER_SUCCESS_MESSAGE = '職務経歴を削除しました。'
+    export const NO_CAREER_TO_HANDLE_FOUND_MESSAGE = '職務経歴が存在しません'
 }

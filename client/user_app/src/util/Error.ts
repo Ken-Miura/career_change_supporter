@@ -82,6 +82,7 @@ export namespace Code {
   export const REACH_CAREER_NUM_LIMIT = 20070
   export const NO_IDENTITY_REGISTERED = 20071
   export const REACH_CREATE_CAREER_REQ_NUM_LIMIT = 20072
+  export const NO_CAREER_TO_HANDLE_FOUND = 20073
 }
 
 export function createErrorMessage (code: number): string {
@@ -233,6 +234,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.NO_IDENTITY_REGISTERED_MESSAGE} (${code})`
   } else if (code === Code.REACH_CREATE_CAREER_REQ_NUM_LIMIT) {
     return `${Message.REACH_CREATE_CAREER_REQ_NUM_LIMIT_MESSAGE} (${code})`
+  } else if (code === Code.NO_CAREER_TO_HANDLE_FOUND) {
+    return `${Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

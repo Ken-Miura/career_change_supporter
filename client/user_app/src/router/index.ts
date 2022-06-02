@@ -7,6 +7,8 @@ import IdentityPage from '../views/personalized/IdentityPage.vue'
 import SubmitIdentitySuccessPage from '../views/personalized/SubmitIdentitySuccessPage.vue'
 import AddCareerPage from '../views/personalized/AddCareerPage.vue'
 import CareerDetailPage from '../views/personalized/CareerDetailPage.vue'
+import CareerDeletionConfirmPage from '../views/personalized/CareerDeletionConfirmPage.vue'
+import DeleteCareerSuccessPage from '../views/personalized/DeleteCareerSuccessPage.vue'
 import FeePerHourInYenPage from '../views/personalized/FeePerHourInYenPage.vue'
 import DeleteAccountConfirmationPage from '../views/personalized/DeleteAccountConfirmationPage.vue'
 import RewardPage from '../views/personalized/RewardPage.vue'
@@ -112,6 +114,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/careers/:career_id',
     name: 'CareerDetailPage',
     component: CareerDetailPage
+  },
+  {
+    path: '/career-deletion-confirm/:career_id',
+    name: 'CareerDeletionConfirmPage',
+    component: CareerDeletionConfirmPage
+  },
+  {
+    path: '/delete-career-success',
+    name: 'DeleteCareerSuccessPage',
+    component: DeleteCareerSuccessPage
   },
   {
     path: '/careers',
