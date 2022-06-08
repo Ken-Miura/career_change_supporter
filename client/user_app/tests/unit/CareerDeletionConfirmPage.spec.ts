@@ -227,4 +227,30 @@ describe('CareerDeletionConfirmPage.vue', () => {
     expect(resultMessage).toContain(Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE)
     expect(resultMessage).toContain(Code.NO_CAREER_TO_HANDLE_FOUND.toString())
   })
+
+  it('displays AlertMessage when error has happened on clicking page', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const errDetail = 'connection error'
+    deleteCareerFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(CareerDeletionConfirmPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="delete-career-button"]')
+    await button.trigger('click')
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
+  })
 })
