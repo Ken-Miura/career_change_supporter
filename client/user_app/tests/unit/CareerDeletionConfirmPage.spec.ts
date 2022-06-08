@@ -105,6 +105,40 @@ describe('CareerDeletionConfirmPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
+  it(`moves to login if ${Code.UNAUTHORIZED} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshMock.mockResolvedValue(resp)
+    deleteCareerFuncMock.mockResolvedValue(DeleteCareerResp.create())
+    mount(CareerDeletionConfirmPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`moves to terms-of-use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    refreshMock.mockResolvedValue(resp)
+    deleteCareerFuncMock.mockResolvedValue(DeleteCareerResp.create())
+    mount(CareerDeletionConfirmPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
   it(`moves to login if ${Code.UNAUTHORIZED} is returned on clicking button`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const resp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
