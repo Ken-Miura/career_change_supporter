@@ -2356,9 +2356,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "opensearch"
-version = "1.0.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b5ce765d658d222df97659d6a4f93f1e049ca479bf00c64e2623f9974953a5f"
+checksum = "a6024cf389648eefe4ff215561fe0d7c64c9c5193ed6c054987a3ee3c969d61b"
 dependencies = [
  "base64 0.11.0",
  "bytes",
