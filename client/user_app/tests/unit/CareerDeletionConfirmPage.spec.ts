@@ -1,5 +1,5 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import CareerDeletionConfirmPage from '@/views/personalized/CareerDeletionConfirmPage.vue'
@@ -7,6 +7,7 @@ import TheHeader from '@/components/TheHeader.vue'
 import { DeleteCareerResp } from '@/util/personalized/career-deletion-confirm/DeleteCareerResp'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { Message } from '@/util/Message'
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -79,5 +80,26 @@ describe('CareerDeletionConfirmPage.vue', () => {
 
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(0)
+  })
+
+  it('displays AlertMessage when error has happened', async () => {
+    const errDetail = 'connection error'
+    refreshMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(CareerDeletionConfirmPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
