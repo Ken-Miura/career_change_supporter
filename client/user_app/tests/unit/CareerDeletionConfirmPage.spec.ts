@@ -181,6 +181,26 @@ describe('CareerDeletionConfirmPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
+  it('moves to delete-career-success on clicking button', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    deleteCareerFuncMock.mockResolvedValue(DeleteCareerResp.create())
+    const wrapper = mount(CareerDeletionConfirmPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="delete-career-button"]')
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/delete-career-success')
+  })
+
   it(`displays ${Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE} if ${Code.NO_CAREER_TO_HANDLE_FOUND} is returned on clicking button`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const resp = ApiErrorResp.create(400, ApiError.create(Code.NO_CAREER_TO_HANDLE_FOUND))
