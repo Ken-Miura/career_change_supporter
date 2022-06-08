@@ -8,6 +8,8 @@ import { DeleteCareerResp } from '@/util/personalized/career-deletion-confirm/De
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { Message } from '@/util/Message'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -101,5 +103,32 @@ describe('CareerDeletionConfirmPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it(`displays ${Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE} if ${Code.NO_CAREER_TO_HANDLE_FOUND} is returned`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const resp = ApiErrorResp.create(400, ApiError.create(Code.NO_CAREER_TO_HANDLE_FOUND))
+    deleteCareerFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(CareerDeletionConfirmPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="delete-career-button"]')
+    await button.trigger('click')
+    await nextTick()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_CAREER_TO_HANDLE_FOUND.toString())
   })
 })
