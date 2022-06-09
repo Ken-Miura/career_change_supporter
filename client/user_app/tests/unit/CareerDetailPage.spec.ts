@@ -57,6 +57,29 @@ const career1 = {
   note: null
 } as Career
 
+const career2 = {
+  company_name: 'テスト２株式会社',
+  department_name: '総務部',
+  office: '三重事業所',
+  career_start_date: {
+    year: 1999,
+    month: 4,
+    day: 1
+  },
+  career_end_date: {
+    year: 2003,
+    month: 12,
+    day: 31
+  },
+  contract_type: 'other',
+  profession: '総務',
+  annual_income_in_man_yen: 450,
+  is_manager: true,
+  position_name: '課長',
+  is_new_graduate: true,
+  note: '備考'
+} as Career
+
 describe('CareerDetailPage.vue', () => {
   beforeEach(() => {
     routeParam = '1'
@@ -145,6 +168,48 @@ describe('CareerDetailPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it('displays Career', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const resp = GetCareerResp.create(career2)
+    getCareerFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(CareerDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const careerDiv = wrapper.find('[data-test="career-set"]').text()
+    expect(careerDiv).toContain('勤務先名称')
+    expect(careerDiv).toContain(`${career2.company_name}`)
+    expect(careerDiv).toContain('部署名')
+    expect(careerDiv).toContain(`${career2.department_name}`)
+    expect(careerDiv).toContain('勤務地')
+    expect(careerDiv).toContain(`${career2.office}`)
+    expect(careerDiv).toContain('入社日')
+    expect(careerDiv).toContain(`${career2.career_start_date.year}年${career2.career_start_date.month}月${career2.career_start_date.day}日`)
+    expect(careerDiv).toContain('退社日')
+    const careerEndDate = career2.career_end_date
+    if (!careerEndDate) {
+      throw new Error('careerEndDate')
+    }
+    expect(careerDiv).toContain(`${careerEndDate.year}年${careerEndDate.month}月${careerEndDate.day}日`)
+    expect(careerDiv).toContain('雇用形態')
+    expect(careerDiv).toContain('その他') // contract_type => "その他"
+    expect(careerDiv).toContain('職種')
+    expect(careerDiv).toContain(`${career2.profession}`)
+    expect(careerDiv).toContain('年収（単位：万円）')
+    expect(careerDiv).toContain(`${career2.annual_income_in_man_yen}`)
+    expect(careerDiv).toContain('管理職区分')
+    expect(careerDiv).toContain('管理職') // is_manager
+    expect(careerDiv).toContain('入社区分')
+    expect(careerDiv).toContain('新卒入社') // is_new_graduate
+    expect(careerDiv).toContain('備考')
+    expect(careerDiv).toContain(`${career2.note}`)
   })
 
   it(`displays ${Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE} if ${Code.NO_CAREER_TO_HANDLE_FOUND} is returned`, async () => {
