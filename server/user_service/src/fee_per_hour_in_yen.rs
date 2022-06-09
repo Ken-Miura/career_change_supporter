@@ -9,7 +9,7 @@ use crate::util::session::User;
 
 pub(crate) async fn post_fee_per_hour_in_yen(
     User { account_id }: User,
-    Json(temp_account): Json<Fee>,
+    Json(fee): Json<Fee>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<FeePerHourInYenResult> {
     // Identityチェック
