@@ -202,4 +202,28 @@ describe('CareerDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
+
+  it('moves to CareerDeletionConfirmPage if button is clicked', async () => {
+    routeParam = '4321'
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const resp = GetCareerResp.create(career1)
+    getCareerFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(CareerDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="move-to-career-deletion-confirm-page-button"]')
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"name": "CareerDeletionConfirmPage", "params": {"career_id": ${routeParam}}}`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
 })

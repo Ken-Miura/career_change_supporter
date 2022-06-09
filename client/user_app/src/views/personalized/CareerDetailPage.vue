@@ -125,7 +125,7 @@ export default defineComponent({
     })
 
     const moveToCareerDeletionConfirmPage = async () => {
-      const route = { name: 'CareerDeletionConfirmPage', params: { career_id: careerId } }
+      const route = JSON.parse(`{"name": "CareerDeletionConfirmPage", "params": {"career_id": ${careerId}}}`)
       await router.push(route)
     }
 
