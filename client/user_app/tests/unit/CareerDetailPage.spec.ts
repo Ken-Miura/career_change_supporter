@@ -88,7 +88,7 @@ describe('CareerDetailPage.vue', () => {
     // mainが出ていないことまで確認しない。
   })
 
-  it('displays AlertMessage when error has happened', async () => {
+  it('displays AlertMessage when error has happened on refresh', async () => {
     const errDetail = 'connection error'
     refreshMock.mockRejectedValue(new Error(errDetail))
     const resp = GetCareerResp.create(career1)
@@ -145,6 +145,28 @@ describe('CareerDetailPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it('displays AlertMessage when error has happened on getCareer', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const errDetail = 'connection error'
+    getCareerFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(CareerDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 
   it(`moves to login if getCareer returns ${Code.UNAUTHORIZED}`, async () => {
