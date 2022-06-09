@@ -147,6 +147,28 @@ describe('CareerDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
+  it(`displays ${Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE} if ${Code.NO_CAREER_TO_HANDLE_FOUND} is returned`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_CAREER_TO_HANDLE_FOUND))
+    getCareerFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(CareerDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_CAREER_TO_HANDLE_FOUND.toString())
+  })
+
   it('displays AlertMessage when error has happened on getCareer', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const errDetail = 'connection error'
