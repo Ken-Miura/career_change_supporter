@@ -10,6 +10,8 @@ import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { Message } from '@/util/Message'
 import { GetCareerResp } from '@/util/personalized/career-detail/GetCareerResp'
 import { Career } from '@/util/personalized/Career'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -35,6 +37,25 @@ jest.mock('vue-router', () => ({
     push: routerPushMock
   })
 }))
+
+const career1 = {
+  company_name: 'テスト1株式会社',
+  department_name: null,
+  office: null,
+  career_start_date: {
+    year: 1999,
+    month: 4,
+    day: 1
+  },
+  career_end_date: null,
+  contract_type: 'regular',
+  profession: null,
+  annual_income_in_man_yen: null,
+  is_manager: false,
+  position_name: null,
+  is_new_graduate: false,
+  note: null
+} as Career
 
 describe('CareerDetailPage.vue', () => {
   beforeEach(() => {
@@ -70,25 +91,7 @@ describe('CareerDetailPage.vue', () => {
   it('displays AlertMessage when error has happened', async () => {
     const errDetail = 'connection error'
     refreshMock.mockRejectedValue(new Error(errDetail))
-    const career = {
-      company_name: 'テスト株式会社',
-      department_name: null,
-      office: null,
-      career_start_date: {
-        year: 1999,
-        month: 4,
-        day: 1
-      },
-      career_end_date: null,
-      contract_type: 'regular',
-      profession: null,
-      annual_income_in_man_yen: null,
-      is_manager: false,
-      position_name: null,
-      is_new_graduate: false,
-      note: null
-    } as Career
-    const resp = GetCareerResp.create(career)
+    const resp = GetCareerResp.create(career1)
     getCareerFuncMock.mockResolvedValue(resp)
     const wrapper = mount(CareerDetailPage, {
       global: {
@@ -106,5 +109,41 @@ describe('CareerDetailPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it(`moves to login if refresh returns ${Code.UNAUTHORIZED}`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshMock.mockResolvedValue(apiErrResp)
+    const resp = GetCareerResp.create(career1)
+    getCareerFuncMock.mockResolvedValue(resp)
+    mount(CareerDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`moves to terms-of-use if refresh returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    refreshMock.mockResolvedValue(apiErrResp)
+    const resp = GetCareerResp.create(career1)
+    getCareerFuncMock.mockResolvedValue(resp)
+    mount(CareerDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 })
