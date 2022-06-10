@@ -285,9 +285,43 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_fee_per_hour_yen_req_success() {
+    async fn handle_fee_per_hour_yen_req_success1() {
         let account_id = 4151;
         let fee_per_hour_in_yen = 4500;
+        let op = SubmitFeePerHourYenOperationMock {
+            account_id,
+            fee_per_hour_in_yen,
+            identity_exists: true,
+        };
+
+        let result = handle_fee_per_hour_yen_req(account_id, fee_per_hour_in_yen, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(FeePerHourInYenResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_fee_per_hour_yen_req_success2() {
+        let account_id = 4151;
+        let fee_per_hour_in_yen = MIN_FEE_PER_HOUR_IN_YEN;
+        let op = SubmitFeePerHourYenOperationMock {
+            account_id,
+            fee_per_hour_in_yen,
+            identity_exists: true,
+        };
+
+        let result = handle_fee_per_hour_yen_req(account_id, fee_per_hour_in_yen, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(FeePerHourInYenResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_fee_per_hour_yen_req_success3() {
+        let account_id = 4151;
+        let fee_per_hour_in_yen = MAX_FEE_PER_HOUR_IN_YEN;
         let op = SubmitFeePerHourYenOperationMock {
             account_id,
             fee_per_hour_in_yen,
