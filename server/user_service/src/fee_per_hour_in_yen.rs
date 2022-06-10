@@ -1,8 +1,10 @@
 // Copyright 2022 Ken Miura
 
+use async_session::serde_json::json;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use common::opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
 use entity::consulting_fee;
 use entity::sea_orm::{
@@ -135,7 +137,14 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                                 err_resp: unexpected_err_resp(),
                             }
                         })?;
-                        // update
+                        let document_id = account_id;
+                        let _ = update_new_fee_per_hour_in_yen_on_document(
+                            &OPENSEARCH_ENDPOINT_URI,
+                            INDEX_NAME,
+                            document_id.to_string().as_str(),
+                            fee_per_hour_in_yen,
+                        )
+                        .await?;
                     } else {
                         let active_model = consulting_fee::ActiveModel {
                             user_account_id: Set(account_id),
@@ -150,7 +159,15 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                                 err_resp: unexpected_err_resp(),
                             }
                         })?;
-                        // insert
+                        let document_id = account_id;
+                        let _ = add_new_fee_per_hour_in_yen_into_document(
+                            &OPENSEARCH_ENDPOINT_URI,
+                            INDEX_NAME,
+                            document_id.to_string().as_str(),
+                            account_id,
+                            fee_per_hour_in_yen,
+                        )
+                        .await?;
                     }
                     Ok(())
                 })
@@ -168,4 +185,54 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
             })?;
         Ok(())
     }
+}
+
+async fn update_new_fee_per_hour_in_yen_on_document(
+    endpoint_uri: &str,
+    index_name: &str,
+    document_id: &str,
+    fee_per_hour_in_yen: i32,
+) -> Result<(), ErrRespStruct> {
+    let value = format!("ctx._source.fee_per_hour_in_yen = {}", fee_per_hour_in_yen);
+    let script = json!({
+        "script": {
+            "source": value
+        }
+    });
+    let _ = update_document(endpoint_uri, index_name, document_id, &script)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to update fee_per_hour_in_yen on document (document_id: {}, fee_per_hour_in_yen: {})",
+                document_id, fee_per_hour_in_yen
+            );
+            ErrRespStruct { err_resp: e }
+        })?;
+    Ok(())
+}
+
+async fn add_new_fee_per_hour_in_yen_into_document(
+    endpoint_uri: &str,
+    index_name: &str,
+    document_id: &str,
+    account_id: i64,
+    fee_per_hour_in_yen: i32,
+) -> Result<(), ErrRespStruct> {
+    let new_document = json!({
+        "user_account_id": account_id,
+        "careers": [],
+        "fee_per_hour_in_yen": fee_per_hour_in_yen,
+        "rating": null,
+        "is_bank_account_registered": null
+    });
+    let _ = index_document(endpoint_uri, index_name, document_id, &new_document)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to index new document with fee_per_hour_in_yen (document_id: {}, fee_per_hour_in_yen: {})",
+                document_id, fee_per_hour_in_yen
+            );
+            ErrRespStruct { err_resp: e }
+        })?;
+    Ok(())
 }
