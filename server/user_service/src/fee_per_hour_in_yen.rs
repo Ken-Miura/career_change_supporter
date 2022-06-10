@@ -248,15 +248,51 @@ async fn add_new_fee_per_hour_in_yen_into_document(
 
 #[cfg(test)]
 mod tests {
-    use super::handle_fee_per_hour_yen_req;
+    use axum::async_trait;
+    use common::ErrResp;
+    use hyper::StatusCode;
+
+    use crate::fee_per_hour_in_yen::FeePerHourInYenResult;
+
+    use super::{handle_fee_per_hour_yen_req, SubmitFeePerHourYenOperation};
+
+    struct SubmitFeePerHourYenOperationMock {
+        account_id: i64,
+        fee_per_hour_in_yen: i32,
+        identity_exists: bool,
+    }
+
+    #[async_trait]
+    impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationMock {
+        async fn check_if_identity_exists(&self, _account_id: i64) -> Result<bool, ErrResp> {
+            Ok(self.identity_exists)
+        }
+
+        async fn submit_fee_per_hour_in_yen(
+            &self,
+            account_id: i64,
+            fee_per_hour_in_yen: i32,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.fee_per_hour_in_yen, fee_per_hour_in_yen);
+            Ok(())
+        }
+    }
 
     #[tokio::test]
     async fn handle_fee_per_hour_yen_req_success() {
-        // let account_id = 4151;
-        // let fee_per_hour_in_yen = 4500;
+        let account_id = 4151;
+        let fee_per_hour_in_yen = 4500;
+        let op = SubmitFeePerHourYenOperationMock {
+            account_id,
+            fee_per_hour_in_yen,
+            identity_exists: true,
+        };
 
-        // let result = handle_fee_per_hour_yen_req(account_id, fee_per_hour_in_yen, op).await;
+        let result = handle_fee_per_hour_yen_req(account_id, fee_per_hour_in_yen, op).await;
 
-        // let resp = result.expect("failed to get Ok");
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(FeePerHourInYenResult {}, resp.1 .0);
     }
 }
