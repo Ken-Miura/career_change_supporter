@@ -16,6 +16,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
+use crate::util::{find_document_model_by_user_account_id, insert_document};
 
 const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
 const MAX_FEE_PER_HOUR_IN_YEN: i32 = 50000;
@@ -124,7 +125,6 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                                 err_resp: unexpected_err_resp(),
                             }
                         })?;
-
                     if let Some(fee) = fee_option {
                         let mut active_model: consulting_fee::ActiveModel = fee.into();
                         active_model.fee_per_hour_in_yen = Set(fee_per_hour_in_yen);
@@ -137,14 +137,6 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                                 err_resp: unexpected_err_resp(),
                             }
                         })?;
-                        let document_id = account_id;
-                        let _ = update_new_fee_per_hour_in_yen_on_document(
-                            &OPENSEARCH_ENDPOINT_URI,
-                            INDEX_NAME,
-                            document_id.to_string().as_str(),
-                            fee_per_hour_in_yen,
-                        )
-                        .await?;
                     } else {
                         let active_model = consulting_fee::ActiveModel {
                             user_account_id: Set(account_id),
@@ -159,7 +151,23 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                                 err_resp: unexpected_err_resp(),
                             }
                         })?;
+                    }
+
+                    let document_option =
+                        find_document_model_by_user_account_id(txn, account_id).await?;
+                    if let Some(document) = document_option {
+                        let document_id = document.document_id;
+                        let _ = update_new_fee_per_hour_in_yen_on_document(
+                            &OPENSEARCH_ENDPOINT_URI,
+                            INDEX_NAME,
+                            document_id.to_string().as_str(),
+                            fee_per_hour_in_yen,
+                        )
+                        .await?;
+                    } else {
+                        // document_idとしてuser_account_idを利用
                         let document_id = account_id;
+                        let _ = insert_document(txn, account_id, document_id).await?;
                         let _ = add_new_fee_per_hour_in_yen_into_document(
                             &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
@@ -168,7 +176,8 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                             fee_per_hour_in_yen,
                         )
                         .await?;
-                    }
+                    };
+
                     Ok(())
                 })
             })
@@ -235,4 +244,19 @@ async fn add_new_fee_per_hour_in_yen_into_document(
             ErrRespStruct { err_resp: e }
         })?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::handle_fee_per_hour_yen_req;
+
+    #[tokio::test]
+    async fn handle_fee_per_hour_yen_req_success() {
+        // let account_id = 4151;
+        // let fee_per_hour_in_yen = 4500;
+
+        // let result = handle_fee_per_hour_yen_req(account_id, fee_per_hour_in_yen, op).await;
+
+        // let resp = result.expect("failed to get Ok");
+    }
 }

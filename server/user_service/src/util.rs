@@ -14,7 +14,11 @@ use common::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
-    ApiError, ErrResp,
+    ApiError, ErrResp, ErrRespStruct,
+};
+use entity::{
+    document,
+    sea_orm::{ActiveModelTrait, DatabaseTransaction, EntityTrait, QuerySelect, Set},
 };
 use image::{ImageError, ImageFormat};
 use once_cell::sync::Lazy;
@@ -98,6 +102,54 @@ pub(crate) fn clone_file_name_if_exists(
         return (image2, image2_file_name_without_ext);
     };
     (None, None)
+}
+
+/// documentテーブルからドキュメントIDを取得する
+///
+/// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
+pub(crate) async fn find_document_model_by_user_account_id(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<document::Model>, ErrRespStruct> {
+    let doc_option = document::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find document (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(doc_option)
+}
+
+/// documentテーブルにドキュメントIDを挿入する
+///
+/// opensearchにドキュメントを登録する際、そのドキュメントIDをDBに保管しておくために利用する<br>
+/// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
+pub(crate) async fn insert_document(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+    document_id: i64,
+) -> Result<(), ErrRespStruct> {
+    let document = document::ActiveModel {
+        user_account_id: Set(user_account_id),
+        document_id: Set(document_id),
+    };
+    let _ = document.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert document (user_account_id: {}, document_id: {}): {}",
+            user_account_id, document_id, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 /// 通常のテストコードに加え、共通で使うモックをまとめる
