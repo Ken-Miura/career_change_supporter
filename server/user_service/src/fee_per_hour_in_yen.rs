@@ -252,7 +252,7 @@ mod tests {
     use common::ErrResp;
     use hyper::StatusCode;
 
-    use crate::fee_per_hour_in_yen::FeePerHourInYenResult;
+    use crate::{err::Code, fee_per_hour_in_yen::FeePerHourInYenResult};
 
     use super::{handle_fee_per_hour_yen_req, SubmitFeePerHourYenOperation};
 
@@ -294,5 +294,22 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(FeePerHourInYenResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_fee_per_hour_yen_req_fail_no_identity_registered() {
+        let account_id = 4151;
+        let fee_per_hour_in_yen = 4500;
+        let op = SubmitFeePerHourYenOperationMock {
+            account_id,
+            fee_per_hour_in_yen,
+            identity_exists: false,
+        };
+
+        let result = handle_fee_per_hour_yen_req(account_id, fee_per_hour_in_yen, op).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NoIdentityRegistered as u32, resp.1 .0.code);
     }
 }
