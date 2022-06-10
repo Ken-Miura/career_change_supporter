@@ -83,6 +83,7 @@ pub(crate) enum Code {
     NoIdentityRegistered = 20071,
     ReachCreateCareerReqNumLimit = 20072,
     NoCareerToHandleFound = 20073,
+    IllegalFeePerHourInYen = 20074,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
