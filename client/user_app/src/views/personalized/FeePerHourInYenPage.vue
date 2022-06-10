@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!true" class="m-6">
+    <div v-if="!postFeePerHourInYenDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
@@ -37,6 +37,9 @@ import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
+import { Message } from '@/util/Message'
+import { usePostFeePerHourInYen } from '@/util/personalized/fee-per-hour-in-yen/usePostFeePerHourInYen'
+import { PostFeePerHourInYenResp } from '@/util/personalized/fee-per-hour-in-yen/PostFeePerHourInYenResp'
 
 export default defineComponent({
   name: 'FeePerHourInYenPage',
@@ -54,25 +57,30 @@ export default defineComponent({
     const router = useRouter()
     const store = useStore()
     onMounted(async () => {
-      const resp = await refresh()
-      if (!(resp instanceof RefreshResp)) {
-        if (!(resp instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${resp}`)
-        }
-        const code = resp.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const resp = await refresh()
+        if (!(resp instanceof RefreshResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(resp.getApiError().getCode())
           return
-        } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-          await router.push('/terms-of-use')
-          return
         }
+        const value = store.state.feePerHourInYen
+        feePerHourInYen.value = value ? value.toString() : ''
+      } catch (e) {
         error.exists = true
-        error.message = createErrorMessage(resp.getApiError().getCode())
-        return
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const value = store.state.feePerHourInYen
-      feePerHourInYen.value = value ? value.toString() : ''
     })
 
     const setFeePerHourInYen = (e: Event) => {
@@ -83,11 +91,41 @@ export default defineComponent({
       feePerHourInYen.value = target.value
     }
 
+    const {
+      postFeePerHourInYenDone,
+      postFeePerHourInYenFunc
+    } = usePostFeePerHourInYen()
+
     const submitFeePerHourInYen = async () => {
-      console.log('submitFeePerHourInYen')
+      if (!feePerHourInYen.value) {
+        return
+      }
+      try {
+        const response = await postFeePerHourInYenFunc(parseInt(feePerHourInYen.value))
+        if (!(response instanceof PostFeePerHourInYenResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        // move to new page
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
-    return { error, feePerHourInYen, setFeePerHourInYen, submitFeePerHourInYen }
+    return { postFeePerHourInYenDone, error, feePerHourInYen, setFeePerHourInYen, submitFeePerHourInYen }
   }
 })
 </script>

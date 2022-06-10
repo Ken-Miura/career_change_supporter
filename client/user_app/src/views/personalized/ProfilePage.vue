@@ -74,7 +74,7 @@
           <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
           <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>相談料から本サイト利用の手数料（{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント）が差し引かれた金額が報酬として計上されます。</p>
           <div v-if="feePerHourInYen !== null" data-test="fee-per-hour-in-yen-set" class="flex justify-end">
-            <p class="m-4 text-2xl">{{ feePerHourInYen }}円</p>
+            <p class="m-4 mr-10 text-3xl">{{ feePerHourInYen }}円</p>
           </div>
           <p v-else data-test="no-fee-per-hour-in-yen-set" class="m-4 text-xl">相談料が設定されていません。</p>
           <button data-test="move-to-fee-per-hour-in-yen-page-button" v-on:click="moveToFeePerHourInYenPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
