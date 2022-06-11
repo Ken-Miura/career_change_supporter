@@ -9,7 +9,7 @@
       <p class="mt-2 text-lg">相談一回（１時間）の相談料には、{{ MIN_FEE_PER_HOUR_IN_YEN }}円以上、{{ MAX_FEE_PER_HOUR_IN_YEN }}円以下の値を設定出来ます。</p>
       <form @submit.prevent="submitFeePerHourInYen">
         <div class="m-4 text-2xl grid grid-cols-6">
-          <div class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+          <div data-test="fee-input-div" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
             <input v-bind:value="feePerHourInYen" v-on:input="setFeePerHourInYen" type="text" minlength="4" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
           </div>
           <div class="mt-2 ml-4 min-w-full justify-self-start col-span-1 pt-3">
