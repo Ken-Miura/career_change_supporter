@@ -10,6 +10,7 @@ import CareerDetailPage from '../views/personalized/CareerDetailPage.vue'
 import CareerDeletionConfirmPage from '../views/personalized/CareerDeletionConfirmPage.vue'
 import DeleteCareerSuccessPage from '../views/personalized/DeleteCareerSuccessPage.vue'
 import FeePerHourInYenPage from '../views/personalized/FeePerHourInYenPage.vue'
+import SubmitFeePerHourInYenSuccessPage from '../views/personalized/SubmitFeePerHourInYenSuccessPage.vue'
 import DeleteAccountConfirmationPage from '../views/personalized/DeleteAccountConfirmationPage.vue'
 import RewardPage from '../views/personalized/RewardPage.vue'
 import BankAccountPage from '../views/personalized/BankAccountPage.vue'
@@ -134,6 +135,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/fee-per-hour-in-yen',
     name: 'FeePerHourInYenPage',
     component: FeePerHourInYenPage
+  },
+  {
+    path: '/submit-fee-per-hour-in-yen-success',
+    name: 'SubmitFeePerHourInYenSuccessPage',
+    component: SubmitFeePerHourInYenSuccessPage
   },
   {
     path: '/delete-account-confirmation',

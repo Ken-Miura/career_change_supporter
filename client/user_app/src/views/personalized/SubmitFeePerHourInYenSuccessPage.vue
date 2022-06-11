@@ -16,14 +16,14 @@ import TheHeader from '@/components/TheHeader.vue'
 import { Message } from '@/util/Message'
 
 export default defineComponent({
-  name: 'SubmitCareerSuccessPage',
+  name: 'SubmitFeePerHourInYenSuccessPage',
   components: {
     TheHeader
   },
   setup () {
-    // postCareerが成功した結果を表示するだけなので、
+    // postFeePerHourInYenが成功した結果を表示するだけなので、
     // onMounted内でrefreshを呼ぶことはしない
-    const message = Message.SUBMIT_CAREER_SUCCESS_MESSAGE
+    const message = Message.SUBMIT_FEE_PER_HOUR_IN_YEN_SUCCESS_MESSAGE
     return { message }
   }
 })

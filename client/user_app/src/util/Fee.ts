@@ -1,0 +1,2 @@
+export const MIN_FEE_PER_HOUR_IN_YEN = 3000
+export const MAX_FEE_PER_HOUR_IN_YEN = 50000

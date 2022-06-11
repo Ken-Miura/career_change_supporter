@@ -1,3 +1,5 @@
+import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from './Fee'
+
 const RETRY_REQUEST = '通信環境を確認し、一定時間後に再度お試し下さい'
 
 // classを利用を検討したが、constにできないためnamespaceを選択
@@ -95,4 +97,6 @@ export namespace Message {
     export const REACH_CREATE_CAREER_REQ_NUM_LIMIT_MESSAGE = '既に複数の職務経歴の確認依頼を行っています。確認作業が完了するまでお待ち下さい'
     export const DELETE_CAREER_SUCCESS_MESSAGE = '職務経歴を削除しました。'
     export const NO_CAREER_TO_HANDLE_FOUND_MESSAGE = '職務経歴が存在しません'
+    export const ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE = `相談料は${MIN_FEE_PER_HOUR_IN_YEN}円以上、${MAX_FEE_PER_HOUR_IN_YEN}円以下の値を設定して下さい`
+    export const SUBMIT_FEE_PER_HOUR_IN_YEN_SUCCESS_MESSAGE = '相談料を設定しました。'
 }

@@ -6,7 +6,7 @@
     </div>
     <main v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
-      <p class="mt-2 text-lg">相談一回（１時間）の相談料には、3,000円以上、50,000円以下の値を設定出来ます。</p>
+      <p class="mt-2 text-lg">相談一回（１時間）の相談料には、{{ MIN_FEE_PER_HOUR_IN_YEN }}円以上、{{ MAX_FEE_PER_HOUR_IN_YEN }}円以下の値を設定出来ます。</p>
       <form @submit.prevent="submitFeePerHourInYen">
         <div class="m-4 text-2xl grid grid-cols-6">
           <div class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
@@ -40,6 +40,7 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { usePostFeePerHourInYen } from '@/util/personalized/fee-per-hour-in-yen/usePostFeePerHourInYen'
 import { PostFeePerHourInYenResp } from '@/util/personalized/fee-per-hour-in-yen/PostFeePerHourInYenResp'
+import { MIN_FEE_PER_HOUR_IN_YEN, MAX_FEE_PER_HOUR_IN_YEN } from '@/util/Fee'
 
 export default defineComponent({
   name: 'FeePerHourInYenPage',
@@ -98,10 +99,18 @@ export default defineComponent({
 
     const submitFeePerHourInYen = async () => {
       if (!feePerHourInYen.value) {
+        // inputタグのminlength属性で空文字を拒否している。
+        // 空文字かどうかチェックしてエラーを表示するのは上記のロジックと重複するので特にエラー表示はしない。
         return
       }
       try {
-        const response = await postFeePerHourInYenFunc(parseInt(feePerHourInYen.value))
+        const feaPerHourInYen = parseInt(feePerHourInYen.value)
+        if (feaPerHourInYen < MIN_FEE_PER_HOUR_IN_YEN || feaPerHourInYen > MAX_FEE_PER_HOUR_IN_YEN) {
+          error.exists = true
+          error.message = Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE
+          return
+        }
+        const response = await postFeePerHourInYenFunc(feaPerHourInYen)
         if (!(response instanceof PostFeePerHourInYenResp)) {
           if (!(response instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${response}`)
@@ -118,14 +127,22 @@ export default defineComponent({
           error.message = createErrorMessage(response.getApiError().getCode())
           return
         }
-        // move to new page
+        await router.push('/submit-fee-per-hour-in-yen-success')
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
-    return { postFeePerHourInYenDone, error, feePerHourInYen, setFeePerHourInYen, submitFeePerHourInYen }
+    return {
+      postFeePerHourInYenDone,
+      error,
+      feePerHourInYen,
+      setFeePerHourInYen,
+      submitFeePerHourInYen,
+      MIN_FEE_PER_HOUR_IN_YEN,
+      MAX_FEE_PER_HOUR_IN_YEN
+    }
   }
 })
 </script>
