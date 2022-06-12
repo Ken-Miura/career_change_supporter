@@ -57,11 +57,11 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {
-    pub bank_code: String, // 明確な仕様は見つからなかったが数字4桁が最も普及しているように見える
-    pub branch_code: String,
-    pub account_type: String,
-    pub account_number: String,
-    pub account_holder_name: String,
+    pub bank_code: String,           // pay.jpの仕様に合わせ数字4桁
+    pub branch_code: String,         // pay.jpの仕様に合わせ数字3桁
+    pub account_type: String,        // "普通"のみサポート
+    pub account_number: String, // pay.jpの仕様に記載なし。一般的にゆうちょ銀行が8桁、それ以外の金融機関は7桁と成る。
+    pub account_holder_name: String, // pay.jpの問い合わせ回答によると全角が推奨される。pay.jpは255文字以内だが、CCSでの入力制限により129文字（セイ64文字＋空白＋メイ64文字）以内となる
 }
 
 /// jpeg画像をpng画像に変換する<br>

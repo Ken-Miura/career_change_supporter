@@ -2,6 +2,7 @@
 
 mod accounts;
 mod agreement;
+mod bank_account;
 mod career;
 mod err;
 mod fee_per_hour_in_yen;
@@ -18,6 +19,7 @@ mod util;
 
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
+use crate::bank_account::post_bank_account;
 use crate::career::{delete, get, post};
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::identity::post_identity;
@@ -149,7 +151,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/rewards", get(get_reward))
                 .route("/identity", post(post_identity))
                 .route("/career", post(post::career).get(get::career).delete(delete::career))
-                .route("/fee-per-hour-in-yen", post(post_fee_per_hour_in_yen)),
+                .route("/fee-per-hour-in-yen", post(post_fee_per_hour_in_yen))
+                .route("/bank-account", post(post_bank_account)),
         )
         .layer(
             ServiceBuilder::new()
