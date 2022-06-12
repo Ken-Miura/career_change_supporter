@@ -235,7 +235,7 @@ describe('FeePerHourInYenPage.vue', () => {
     // expect(resultMessage).toContain(Code.ILLEGAL_FEE_PER_HOUR_IN_YEN.toString())
   })
 
-  it(`displays ${Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE} fee more than ${MAX_FEE_PER_HOUR_IN_YEN})`, async () => {
+  it(`displays ${Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE} (fee more than ${MAX_FEE_PER_HOUR_IN_YEN})`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_FEE_PER_HOUR_IN_YEN))
     postFeePerHourInYenFuncMock.mockResolvedValue(apiErrResp)
