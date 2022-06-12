@@ -5,13 +5,16 @@ use common::RespResult;
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::util::{session::User, BankAccount};
+use crate::util::{
+    session::User, validator::bank_account_validator::validate_bank_account, BankAccount,
+};
 
 pub(crate) async fn post_bank_account(
     User { account_id }: User,
     Json(bank_account): Json<BankAccount>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<BankAccountResult> {
+    let _ = validate_bank_account(&bank_account).expect("msg");
     todo!()
 }
 

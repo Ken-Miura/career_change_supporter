@@ -1,0 +1,147 @@
+// Copyright 2022 Ken Miura
+
+use std::collections::HashSet;
+
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+use crate::util::BankAccount;
+
+use super::identity_validator;
+
+const BANK_CODE_REGEXP: &str = r"^[0-9]{4}$";
+/// 数字を4桁のケース。pay.jpの仕様に合わせ数字4桁とする
+static BANK_CODE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(BANK_CODE_REGEXP).expect("failed to compile num char regexp"));
+
+const BRANCH_CODE_REGEXP: &str = r"^[0-9]{3}$";
+/// 数字を3桁のケース。pay.jpの仕様に合わせ数字3桁とする
+static BRANCH_CODE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(BRANCH_CODE_REGEXP).expect("failed to compile num char regexp"));
+
+/// サポートする預金種別。問い合わせの回答からpay.jpは"普通"、"当座"をサポートしている。
+/// CCSとしては個人利用を想定しているため、"普通"のみのサポートとする。
+static ACCOUNT_TYPE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
+    let mut set: HashSet<String> = HashSet::with_capacity(1);
+    set.insert("普通".to_string());
+    set
+});
+
+const ACCOUNT_NUMBER_REGEXP: &str = r"^[0-9]{7,8}$";
+/// 数字を7桁、または8桁のケース
+///
+/// pay.jpには明確な仕様はない。しかし、一般的にゆうちょ銀行が8桁、それ以外の金融機関は7桁と成るため、それらに沿うか確認する。
+static ACCOUNT_NUMBER_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(ACCOUNT_NUMBER_REGEXP).expect("failed to compile num char regexp"));
+
+/// 口座名義の長さの最小値
+static ACCOUNT_HOLDER_NAME_MIN_LENGTH: Lazy<usize> = Lazy::new(|| {
+    // "セイ＋空白＋メイ"分の長さ
+    identity_validator::LAST_NAME_MIN_LENGTH + 1 + identity_validator::FIRST_NAME_MIN_LENGTH
+});
+
+/// 口座名義の長さの最大値
+///
+/// pay.jpとしては255文字まで受け付ける。しかし、このシステムの入力制限に合わせて数字を調整する。
+static ACCOUNT_HOLDER_NAME_MAX_LENGTH: Lazy<usize> = Lazy::new(|| {
+    // "セイ＋空白＋メイ"分の長さ
+    let length =
+        identity_validator::LAST_NAME_MAX_LENGTH + 1 + identity_validator::FIRST_NAME_MAX_LENGTH;
+    if length > 255 {
+        panic!("exceed pay.jp limit")
+    }
+    length
+});
+
+const ZENKAKU_KATAKANA_ZENKAKU_SPACE_REGEXP: &str = r"^[ァ-ヴーイ　]+$";
+/// 全角カタカナと全角スペースのみのケース<br>
+/// 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d<br>
+/// \p{katakana}は、半角カタカナも含むので使わない<br>
+///  pay.jpの問い合わせ回答によると全角が推奨されるため、全角のみの利用を想定する。
+static ZENKAKU_KATAKANA_ZENKAKU_SPACE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(ZENKAKU_KATAKANA_ZENKAKU_SPACE_REGEXP)
+        .expect("failed to compile zenkaku katakana regexp")
+});
+
+pub(crate) fn validate_bank_account(
+    bank_account: &BankAccount,
+) -> Result<(), BankAccountValidationError> {
+    let _ = validate_bank_code(bank_account.bank_code.as_str())?;
+    let _ = validate_branch_code(bank_account.branch_code.as_str())?;
+    let _ = validate_account_type(bank_account.account_type.as_str())?;
+    let _ = validate_account_number(bank_account.account_number.as_str())?;
+    let _ = validate_account_holder_name(bank_account.account_holder_name.as_str())?;
+    Ok(())
+}
+
+fn validate_bank_code(bank_code: &str) -> Result<(), BankAccountValidationError> {
+    if !BANK_CODE_RE.is_match(bank_code) {
+        return Err(BankAccountValidationError::InvalidBankCodeFormat(
+            bank_code.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_branch_code(branch_code: &str) -> Result<(), BankAccountValidationError> {
+    if !BRANCH_CODE_RE.is_match(branch_code) {
+        return Err(BankAccountValidationError::InvalidBranchCodeFormat(
+            branch_code.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_account_type(account_type: &str) -> Result<(), BankAccountValidationError> {
+    if !ACCOUNT_TYPE_SET.contains(account_type) {
+        return Err(BankAccountValidationError::InvalidAccountType(
+            account_type.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_account_number(account_number: &str) -> Result<(), BankAccountValidationError> {
+    if !ACCOUNT_NUMBER_RE.is_match(account_number) {
+        return Err(BankAccountValidationError::InvalidAccountNumberFormat(
+            account_number.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_account_holder_name(
+    account_holder_name: &str,
+) -> Result<(), BankAccountValidationError> {
+    let account_holder_name_length = account_holder_name.chars().count();
+    let min_length = *ACCOUNT_HOLDER_NAME_MIN_LENGTH;
+    let max_length = *ACCOUNT_HOLDER_NAME_MAX_LENGTH;
+    if !(min_length..=max_length).contains(&account_holder_name_length) {
+        return Err(BankAccountValidationError::InvalidAccountHolderNameLength {
+            length: account_holder_name_length,
+            min_length,
+            max_length,
+        });
+    }
+    if !ZENKAKU_KATAKANA_ZENKAKU_SPACE_RE.is_match(account_holder_name) {
+        return Err(BankAccountValidationError::IllegalCharInAccountHolderName(
+            account_holder_name.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+/// Error related to [validate_bank_account()]
+#[derive(Debug, PartialEq)]
+pub(crate) enum BankAccountValidationError {
+    InvalidBankCodeFormat(String),
+    InvalidBranchCodeFormat(String),
+    InvalidAccountType(String),
+    InvalidAccountNumberFormat(String),
+    InvalidAccountHolderNameLength {
+        length: usize,
+        min_length: usize,
+        max_length: usize,
+    },
+    IllegalCharInAccountHolderName(String),
+}
