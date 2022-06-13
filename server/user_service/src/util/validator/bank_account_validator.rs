@@ -189,7 +189,7 @@ mod tests {
         let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
 
         assert_eq!(
-            BankAccountValidationError::InvalidBankCodeFormat(bank_account.bank_code.to_string()),
+            BankAccountValidationError::InvalidBankCodeFormat(bank_account.bank_code),
             err
         )
     }
@@ -207,7 +207,7 @@ mod tests {
         let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
 
         assert_eq!(
-            BankAccountValidationError::InvalidBankCodeFormat(bank_account.bank_code.to_string()),
+            BankAccountValidationError::InvalidBankCodeFormat(bank_account.bank_code),
             err
         )
     }
