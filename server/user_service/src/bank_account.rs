@@ -10,9 +10,9 @@ use crate::util::{
 };
 
 pub(crate) async fn post_bank_account(
-    User { account_id }: User,
+    User { account_id: _ }: User,
     Json(bank_account): Json<BankAccount>,
-    Extension(pool): Extension<DatabaseConnection>,
+    Extension(_pool): Extension<DatabaseConnection>,
 ) -> RespResult<BankAccountResult> {
     let _ = validate_bank_account(&bank_account).expect("msg");
     todo!()

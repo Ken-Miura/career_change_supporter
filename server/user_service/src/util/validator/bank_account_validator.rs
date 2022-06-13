@@ -145,3 +145,34 @@ pub(crate) enum BankAccountValidationError {
     },
     IllegalCharInAccountHolderName(String),
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::util::BankAccount;
+
+    use super::validate_bank_account;
+
+    #[test]
+    fn validate_bank_account_success1() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "タナカ　タロウ".to_string(),
+        };
+        let _ = validate_bank_account(&bank_account).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_bank_account_success2() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "12345678".to_string(),
+            account_holder_name: "タナカ　タロウ".to_string(),
+        };
+        let _ = validate_bank_account(&bank_account).expect("failed to get Ok");
+    }
+}
