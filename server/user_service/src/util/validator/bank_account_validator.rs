@@ -150,7 +150,7 @@ pub(crate) enum BankAccountValidationError {
 mod tests {
     use crate::util::BankAccount;
 
-    use super::validate_bank_account;
+    use super::{validate_bank_account, BankAccountValidationError};
 
     #[test]
     fn validate_bank_account_success1() {
@@ -174,5 +174,43 @@ mod tests {
             account_holder_name: "タナカ　タロウ".to_string(),
         };
         let _ = validate_bank_account(&bank_account).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_bank_account_fail_3_digit_bank_code() {
+        let bank_code = "012";
+        let bank_account = BankAccount {
+            bank_code: bank_code.to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "タナカ　タロウ".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::InvalidBankCodeFormat(bank_code.to_string()),
+            err
+        )
+    }
+
+    #[test]
+    fn validate_bank_account_fail_5_digit_bank_code() {
+        let bank_code = "01234";
+        let bank_account = BankAccount {
+            bank_code: bank_code.to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "タナカ　タロウ".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::InvalidBankCodeFormat(bank_code.to_string()),
+            err
+        )
     }
 }
