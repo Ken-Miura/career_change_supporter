@@ -826,4 +826,22 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_bank_account_fail_unsupported_account_type() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "当座".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "タナカ　タロウ".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::InvalidAccountType(bank_account.account_type),
+            err
+        )
+    }
 }
