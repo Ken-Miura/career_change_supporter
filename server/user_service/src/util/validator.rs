@@ -212,4 +212,19 @@ mod tests {
         set.insert("　".to_string());
         set
     });
+
+    pub(in crate::util::validator) static NUMBER_SET: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut set: HashSet<String> = HashSet::with_capacity(10);
+        set.insert("0".to_string());
+        set.insert("1".to_string());
+        set.insert("2".to_string());
+        set.insert("3".to_string());
+        set.insert("4".to_string());
+        set.insert("5".to_string());
+        set.insert("6".to_string());
+        set.insert("7".to_string());
+        set.insert("8".to_string());
+        set.insert("9".to_string());
+        set
+    });
 }

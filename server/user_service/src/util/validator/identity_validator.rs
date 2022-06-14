@@ -598,7 +598,7 @@ mod tests {
             LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH, LAST_NAME_MAX_LENGTH,
             LAST_NAME_MIN_LENGTH,
         },
-        tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
+        tests::{CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET},
     };
     use common::util::Ymd;
 
@@ -644,21 +644,6 @@ mod tests {
         let mut set: HashSet<String> = HashSet::with_capacity(2);
         set.insert("-".to_string());
         set.insert("ー".to_string());
-        set
-    });
-
-    static NUMBER_SET: Lazy<HashSet<String>> = Lazy::new(|| {
-        let mut set: HashSet<String> = HashSet::with_capacity(10);
-        set.insert("0".to_string());
-        set.insert("1".to_string());
-        set.insert("2".to_string());
-        set.insert("3".to_string());
-        set.insert("4".to_string());
-        set.insert("5".to_string());
-        set.insert("6".to_string());
-        set.insert("7".to_string());
-        set.insert("8".to_string());
-        set.insert("9".to_string());
         set
     });
 
