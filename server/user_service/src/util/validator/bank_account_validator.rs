@@ -148,7 +148,10 @@ pub(crate) enum BankAccountValidationError {
 
 #[cfg(test)]
 mod tests {
-    use crate::util::{validator::tests::CONTROL_CHAR_SET, BankAccount};
+    use crate::util::{
+        validator::tests::{CONTROL_CHAR_SET, SYMBOL_SET},
+        BankAccount,
+    };
 
     use super::{validate_bank_account, BankAccountValidationError};
 
@@ -288,6 +291,102 @@ mod tests {
     fn validate_bank_account_returns_err_if_bank_code_ends_with_control_char() {
         let mut bank_account_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
         for s in CONTROL_CHAR_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "012".to_string() + s,
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBankCodeFormat(
+                    bank_account.bank_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_bank_code_is_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: s.to_string(),
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBankCodeFormat(
+                    bank_account.bank_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_bank_code_includes_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "01".to_string() + s + "3",
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBankCodeFormat(
+                    bank_account.bank_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_bank_code_starts_with_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: s.to_string() + "123",
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBankCodeFormat(
+                    bank_account.bank_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_bank_code_ends_with_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
             let bank_account = BankAccount {
                 bank_code: "012".to_string() + s,
                 branch_code: "456".to_string(),
