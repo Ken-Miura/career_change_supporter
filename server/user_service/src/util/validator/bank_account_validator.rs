@@ -502,4 +502,328 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_bank_account_fail_2_digit_branch_code() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "45".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "タナカ　タロウ".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::InvalidBranchCodeFormat(bank_account.branch_code),
+            err
+        )
+    }
+
+    #[test]
+    fn validate_bank_account_fail_4_digit_branch_code() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "4567".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "タナカ　タロウ".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::InvalidBranchCodeFormat(bank_account.branch_code),
+            err
+        )
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_is_control_char() {
+        let mut bank_account_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: s.to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_includes_control_char() {
+        let mut bank_account_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "4".to_string() + s + "6",
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_starts_with_control_char() {
+        let mut bank_account_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: s.to_string() + "45",
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_ends_with_control_char() {
+        let mut bank_account_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "45".to_string() + s,
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_is_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: s.to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_includes_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "4".to_string() + s + "6",
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_starts_with_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: s.to_string() + "56",
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_ends_with_symbol() {
+        let mut bank_account_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "45".to_string() + s,
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_is_space() {
+        let mut bank_account_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: s.to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_includes_space() {
+        let mut bank_account_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "4".to_string() + s + "6",
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_starts_with_space() {
+        let mut bank_account_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: s.to_string() + "56",
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_branch_code_ends_with_space() {
+        let mut bank_account_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "45".to_string() + s,
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string(),
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::InvalidBranchCodeFormat(
+                    bank_account.branch_code.to_string()
+                ),
+                err
+            );
+        }
+    }
 }
