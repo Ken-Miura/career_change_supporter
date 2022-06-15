@@ -1917,4 +1917,100 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_account_holder_name_is_number() {
+        let mut bank_account_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: s.to_string() + s + s,
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::IllegalCharInAccountHolderName(
+                    bank_account.account_holder_name.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_account_holder_name_includes_number() {
+        let mut bank_account_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ".to_string() + s + "　タロウ",
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::IllegalCharInAccountHolderName(
+                    bank_account.account_holder_name.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_account_holder_name_starts_with_number() {
+        let mut bank_account_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: s.to_string() + "　タロウ",
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::IllegalCharInAccountHolderName(
+                    bank_account.account_holder_name.to_string()
+                ),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_bank_account_returns_err_if_account_holder_name_ends_with_number() {
+        let mut bank_account_list = Vec::with_capacity(NUMBER_SET.len());
+        for s in NUMBER_SET.iter() {
+            let bank_account = BankAccount {
+                bank_code: "0123".to_string(),
+                branch_code: "456".to_string(),
+                account_type: "普通".to_string(),
+                account_number: "1234567".to_string(),
+                account_holder_name: "タナカ　タロウ".to_string() + s,
+            };
+            bank_account_list.push(bank_account);
+        }
+        for bank_account in bank_account_list {
+            let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+            assert_eq!(
+                BankAccountValidationError::IllegalCharInAccountHolderName(
+                    bank_account.account_holder_name.to_string()
+                ),
+                err
+            );
+        }
+    }
 }
