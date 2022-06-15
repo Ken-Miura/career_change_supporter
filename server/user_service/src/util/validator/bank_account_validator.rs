@@ -153,7 +153,10 @@ mod tests {
         BankAccount,
     };
 
-    use super::{validate_bank_account, BankAccountValidationError};
+    use super::{
+        validate_bank_account, BankAccountValidationError, ACCOUNT_HOLDER_NAME_MAX_LENGTH,
+        ACCOUNT_HOLDER_NAME_MIN_LENGTH,
+    };
 
     #[test]
     fn validate_bank_account_success1() {
@@ -1551,6 +1554,50 @@ mod tests {
                 err
             );
         }
+    }
+
+    #[test]
+    fn validate_bank_account_fail_account_holder_name_invalid_account_holder_name_length1() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "アア".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::InvalidAccountHolderNameLength {
+                length: bank_account.account_holder_name.chars().count(),
+                min_length: *ACCOUNT_HOLDER_NAME_MIN_LENGTH,
+                max_length: *ACCOUNT_HOLDER_NAME_MAX_LENGTH
+            },
+            err
+        )
+    }
+
+    #[test]
+    fn validate_bank_account_fail_account_holder_name_invalid_account_holder_name_length2() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "アアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアア".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::InvalidAccountHolderNameLength {
+                length: bank_account.account_holder_name.chars().count(),
+                min_length: *ACCOUNT_HOLDER_NAME_MIN_LENGTH,
+                max_length: *ACCOUNT_HOLDER_NAME_MAX_LENGTH
+            },
+            err
+        )
     }
 
     #[test]
