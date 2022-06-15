@@ -1645,4 +1645,64 @@ mod tests {
             err
         )
     }
+
+    #[test]
+    fn validate_bank_account_fail_account_holder_name_includes_hiragana() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "たなか　たろう".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::IllegalCharInAccountHolderName(
+                bank_account.account_holder_name
+            ),
+            err
+        )
+    }
+
+    #[test]
+    fn validate_bank_account_fail_account_holder_name_includes_kanji() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "田中　太郎".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::IllegalCharInAccountHolderName(
+                bank_account.account_holder_name
+            ),
+            err
+        )
+    }
+
+    #[test]
+    fn validate_bank_account_fail_account_holder_name_includes_hiragana_partly() {
+        let bank_account = BankAccount {
+            bank_code: "0123".to_string(),
+            branch_code: "456".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: "タナか　たロウ".to_string(),
+        };
+
+        let err = validate_bank_account(&bank_account).expect_err("failed to get Err");
+
+        assert_eq!(
+            BankAccountValidationError::IllegalCharInAccountHolderName(
+                bank_account.account_holder_name
+            ),
+            err
+        )
+    }
 }
