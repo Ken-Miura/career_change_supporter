@@ -3,6 +3,8 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use chrono::Datelike;
+use common::util::{Identity, Ymd};
 use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::Serialize;
@@ -40,24 +42,28 @@ async fn handle_bank_account_req(
         create_invalid_bank_account_err(&e)
     })?;
 
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
+    let identity_option = op.find_identity_by_account_id(account_id).await?;
+    let identity = identity_option.ok_or_else(|| {
         error!("identity is not registered (account id: {})", account_id);
-        return Err((
+        (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::NoIdentityRegistered as u32,
             }),
-        ));
-    }
-
+        )
+    })?;
+    // 口座名義チェック
+    // tenantチェック＋tenant作成＋tenant新規or更新
+    // documentチェック＋更新
     todo!()
 }
 
 #[async_trait]
 trait SubmitBankAccountOperation {
-    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+    async fn find_identity_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Option<Identity>, ErrResp>;
 }
 
 struct SubmitBankAccountOperationImpl {
@@ -66,7 +72,10 @@ struct SubmitBankAccountOperationImpl {
 
 #[async_trait]
 impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+    async fn find_identity_by_account_id(
+        &self,
+        account_id: i64,
+    ) -> Result<Option<Identity>, ErrResp> {
         let model = entity::prelude::Identity::find_by_id(account_id)
             .one(&self.pool)
             .await
@@ -77,7 +86,22 @@ impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(model.is_some())
+        Ok(model.map(|m| Identity {
+            last_name: m.last_name,
+            first_name: m.first_name,
+            last_name_furigana: m.last_name_furigana,
+            first_name_furigana: m.first_name_furigana,
+            date_of_birth: Ymd {
+                year: m.date_of_birth.year(),
+                month: m.date_of_birth.month(),
+                day: m.date_of_birth.day(),
+            },
+            prefecture: m.prefecture,
+            city: m.city,
+            address_line1: m.address_line1,
+            address_line2: m.address_line2,
+            telephone_number: m.telephone_number,
+        }))
     }
 }
 
