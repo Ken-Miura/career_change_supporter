@@ -41,6 +41,7 @@ async fn handle_bank_account_req(
         error!("invalid bank account: {}", e);
         create_invalid_bank_account_err(&e)
     })?;
+    let bank_account = trim_space_from_bank_account(bank_account);
 
     let identity_option = op.find_identity_by_account_id(account_id).await?;
     let identity = identity_option.ok_or_else(|| {
@@ -129,4 +130,14 @@ fn create_invalid_bank_account_err(e: &BankAccountValidationError) -> ErrResp {
         StatusCode::BAD_REQUEST,
         Json(ApiError { code: code as u32 }),
     )
+}
+
+fn trim_space_from_bank_account(bank_account: BankAccount) -> BankAccount {
+    BankAccount {
+        bank_code: bank_account.bank_code.trim().to_string(),
+        branch_code: bank_account.branch_code.trim().to_string(),
+        account_type: bank_account.account_type.trim().to_string(),
+        account_number: bank_account.account_number.trim().to_string(),
+        account_holder_name: bank_account.account_holder_name.trim().to_string(),
+    }
 }
