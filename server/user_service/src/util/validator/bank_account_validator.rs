@@ -1,6 +1,6 @@
 // Copyright 2022 Ken Miura
 
-use std::collections::HashSet;
+use std::{collections::HashSet, error::Error, fmt::Display};
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -145,6 +145,56 @@ pub(crate) enum BankAccountValidationError {
     },
     IllegalCharInAccountHolderName(String),
 }
+
+impl Display for BankAccountValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BankAccountValidationError::InvalidBankCodeFormat(bank_code) => write!(
+                f,
+                "bank_code: invalid format: {} (binary: {:X?})",
+                bank_code,
+                bank_code.as_bytes().to_vec()
+            ),
+            BankAccountValidationError::InvalidBranchCodeFormat(branch_code) => write!(
+                f,
+                "branch_code: invalid format: {} (binary: {:X?})",
+                branch_code,
+                branch_code.as_bytes().to_vec()
+            ),
+            BankAccountValidationError::InvalidAccountType(account_type) => write!(
+                f,
+                "account_type: invalid format: {} (binary: {:X?})",
+                account_type,
+                account_type.as_bytes().to_vec()
+            ),
+            BankAccountValidationError::InvalidAccountNumberFormat(account_number) => write!(
+                f,
+                "account_number: invalid format: {} (binary: {:X?})",
+                account_number,
+                account_number.as_bytes().to_vec()
+            ),
+            BankAccountValidationError::InvalidAccountHolderNameLength {
+                length,
+                min_length,
+                max_length,
+            } => write!(
+                f,
+                "invalid account_holder_name length: {} (length must be {} or more, and {} or less)",
+                length, min_length, max_length
+            ),
+            BankAccountValidationError::IllegalCharInAccountHolderName(account_holder_name) => {
+                write!(
+                    f,
+                    "account_holder_name: invalid charcter included: {} (binary: {:X?})",
+                    account_holder_name,
+                    account_holder_name.as_bytes().to_vec()
+                )
+            }
+        }
+    }
+}
+
+impl Error for BankAccountValidationError {}
 
 #[cfg(test)]
 mod tests {
