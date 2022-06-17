@@ -2,10 +2,12 @@
 
 use std::collections::HashSet;
 
+use async_session::serde_json::json;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use chrono::Datelike;
+use common::opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
 use common::payment_platform::tenant::{
     CreateTenant, TenantOperation, TenantOperationImpl, UpdateTenant,
 };
@@ -22,7 +24,7 @@ use tracing::error;
 use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
-use crate::util::ACCESS_INFO;
+use crate::util::{find_document_model_by_user_account_id, insert_document, ACCESS_INFO};
 use crate::{
     err::Code,
     util::{
@@ -282,9 +284,100 @@ impl SubmitBankAccountOperationImpl {
     }
 
     async fn set_bank_account_registered_on_index(&self, account_id: i64) -> Result<(), ErrResp> {
-        // documentチェック＋更新
-        todo!()
+        let _ = self
+            .pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let document_option =
+                        find_document_model_by_user_account_id(txn, account_id).await?;
+                    if let Some(document) = document_option {
+                        let document_id = document.document_id;
+                        let _ = update_is_bank_account_registered_on_document(
+                            &OPENSEARCH_ENDPOINT_URI,
+                            INDEX_NAME,
+                            document_id.to_string().as_str(),
+                        )
+                        .await?;
+                    } else {
+                        // document_idとしてuser_account_idを利用
+                        let document_id = account_id;
+                        let _ = insert_document(txn, account_id, document_id).await?;
+                        let _ = add_new_document_with_is_bank_account_registered(
+                            &OPENSEARCH_ENDPOINT_URI,
+                            INDEX_NAME,
+                            document_id.to_string().as_str(),
+                            account_id,
+                        )
+                        .await?;
+                    };
+
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!(
+                        "failed to index document with is_bank_account_registered: {}",
+                        err_resp_struct
+                    );
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
+}
+
+async fn update_is_bank_account_registered_on_document(
+    endpoint_uri: &str,
+    index_name: &str,
+    document_id: &str,
+) -> Result<(), ErrRespStruct> {
+    let value = format!("ctx._source.is_bank_account_registered = {}", true);
+    let script = json!({
+        "script": {
+            "source": value
+        }
+    });
+    let _ = update_document(endpoint_uri, index_name, document_id, &script)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to update is_bank_account_registered on document (document_id: {})",
+                document_id
+            );
+            ErrRespStruct { err_resp: e }
+        })?;
+    Ok(())
+}
+
+async fn add_new_document_with_is_bank_account_registered(
+    endpoint_uri: &str,
+    index_name: &str,
+    document_id: &str,
+    account_id: i64,
+) -> Result<(), ErrRespStruct> {
+    let new_document = json!({
+        "user_account_id": account_id,
+        "careers": [],
+        "fee_per_hour_in_yen": null,
+        "rating": null,
+        "is_bank_account_registered": true
+    });
+    let _ = index_document(endpoint_uri, index_name, document_id, &new_document)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to index new document with is_bank_account_registered (document_id: {})",
+                document_id
+            );
+            ErrRespStruct { err_resp: e }
+        })?;
+    Ok(())
 }
 
 fn create_invalid_bank_account_err(e: &BankAccountValidationError) -> ErrResp {
