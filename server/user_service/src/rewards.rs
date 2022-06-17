@@ -439,7 +439,7 @@ mod tests {
         payment_platform::{
             charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
             customer::Card,
-            tenant::{ReviewedBrands, TenantOperation},
+            tenant::{CreateTenant, ReviewedBrands, TenantOperation, UpdateTenant},
             tenant_transfer::{
                 Query as SearchTenantTransfersQuery, Summary, TenantTransfer,
                 TenantTransferOperation,
@@ -493,6 +493,23 @@ mod tests {
                 return Err(common::payment_platform::Error::ApiError(err_info));
             }
             return Ok(self.tenant.clone());
+        }
+
+        async fn create_tenant(
+            &self,
+            _create_tenant: &CreateTenant,
+        ) -> Result<common::payment_platform::tenant::Tenant, common::payment_platform::Error>
+        {
+            panic!("must not reach this line")
+        }
+
+        async fn update_tenant(
+            &self,
+            _tenant_id: &str,
+            _update_tenant: &UpdateTenant,
+        ) -> Result<common::payment_platform::tenant::Tenant, common::payment_platform::Error>
+        {
+            panic!("must not reach this line")
         }
     }
 

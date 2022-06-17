@@ -6,14 +6,23 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use chrono::Datelike;
+use common::payment_platform::tenant::{
+    CreateTenant, TenantOperation, TenantOperationImpl, UpdateTenant,
+};
 use common::util::{Identity, Ymd};
-use common::{ApiError, ErrResp, RespResult};
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
+use entity::prelude::Tenant as TenantEntity;
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect, Set, TransactionError,
+    TransactionTrait,
+};
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use tracing::error;
+use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
+use crate::util::ACCESS_INFO;
 use crate::{
     err::Code,
     util::{
@@ -37,6 +46,10 @@ static KATAKANA_LOWER_CASE_UPPER_CASE_SET: Lazy<HashSet<(String, String)>> = Laz
     set.insert(("ヮ".to_string(), "ワ".to_string()));
     set
 });
+
+const PLATFORM_FEE_RATE: &str = "30.00";
+const PAYJP_FEE_INCLUDED: bool = true;
+const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 
 pub(crate) async fn post_bank_account(
     User { account_id }: User,
@@ -91,7 +104,7 @@ async fn handle_bank_account_req(
         ));
     }
 
-    let _ = op.submit_bank_account(bank_account).await?;
+    let _ = op.submit_bank_account(account_id, bank_account).await?;
 
     Ok((StatusCode::OK, Json(BankAccountResult {})))
 }
@@ -103,7 +116,11 @@ trait SubmitBankAccountOperation {
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
 
-    async fn submit_bank_account(&self, bank_account: BankAccount) -> Result<(), ErrResp>;
+    async fn submit_bank_account(
+        &self,
+        account_id: i64,
+        bank_account: BankAccount,
+    ) -> Result<(), ErrResp>;
 }
 
 struct SubmitBankAccountOperationImpl {
@@ -144,8 +161,127 @@ impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
         }))
     }
 
-    async fn submit_bank_account(&self, bank_account: BankAccount) -> Result<(), ErrResp> {
-        // tenantチェック＋tenant作成＋tenant新規or更新
+    async fn submit_bank_account(
+        &self,
+        account_id: i64,
+        bank_account: BankAccount,
+    ) -> Result<(), ErrResp> {
+        // pay.jp上のテナントの作成（更新）とopensearch上のインデックスの作成（更新）は
+        // まとめて一つのトランザクションで実施したい。
+        // しかし、片方が失敗し、もう片方が成功するケースのハンドリングが複雑になるため、それぞれ独立したトランザクションで対応する
+        let _ = self.submit_tenant(account_id, bank_account).await?;
+        let _ = self
+            .set_bank_account_registered_on_index(account_id)
+            .await?;
+        Ok(())
+    }
+}
+
+impl SubmitBankAccountOperationImpl {
+    async fn submit_tenant(
+        &self,
+        account_id: i64,
+        bank_account: BankAccount,
+    ) -> Result<(), ErrResp> {
+        let _ = self
+            .pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let tenant_option = TenantEntity::find_by_id(account_id)
+                        .lock_exclusive()
+                        .one(txn)
+                        .await
+                        .map_err(|e| {
+                            error!("failed to find tenant (account_id: {}): {}", account_id, e);
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+
+                    let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
+                    if let Some(tenant) = tenant_option {
+                        let update_tenant = UpdateTenant {
+                            name: bank_account.account_holder_name.clone(),
+                            platform_fee_rate: PLATFORM_FEE_RATE.to_string(),
+                            minimum_transfer_amount: MINIMUM_TRANSFER_AMOUNT,
+                            bank_code: bank_account.bank_code,
+                            bank_branch_code: bank_account.branch_code,
+                            bank_account_type: bank_account.account_type,
+                            bank_account_number: bank_account.account_number,
+                            bank_account_holder_name: bank_account.account_holder_name,
+                            metadata: None,
+                        };
+                        // TODO: どのようなエラーが出るのか確認し、ハンドリングする
+                        let _ = tenant_op
+                            .update_tenant(tenant.tenant_id.as_str(), &update_tenant)
+                            .await
+                            .map_err(|e| {
+                                error!(
+                                "failed to update tenant (account_id: {}, update_tenant: {:?}): {}",
+                                account_id, update_tenant, e
+                            );
+                                ErrRespStruct {
+                                    err_resp: unexpected_err_resp(),
+                                }
+                            })?;
+                    } else {
+                        let uuid = Uuid::new_v4().simple().to_string();
+                        let active_model = entity::tenant::ActiveModel {
+                            user_account_id: Set(account_id),
+                            tenant_id: Set(uuid.clone()),
+                        };
+                        active_model.insert(txn).await.map_err(|e| {
+                            error!(
+                                "failed to insert tenant (account_id: {}, uuid: {}): {}",
+                                account_id, uuid, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                        let create_tenant = CreateTenant {
+                            name: bank_account.account_holder_name.clone(),
+                            id: uuid,
+                            platform_fee_rate: PLATFORM_FEE_RATE.to_string(),
+                            payjp_fee_included: PAYJP_FEE_INCLUDED,
+                            minimum_transfer_amount: MINIMUM_TRANSFER_AMOUNT,
+                            bank_code: bank_account.bank_code,
+                            bank_branch_code: bank_account.branch_code,
+                            bank_account_type: bank_account.account_type,
+                            bank_account_number: bank_account.account_number,
+                            bank_account_holder_name: bank_account.account_holder_name,
+                            metadata: None,
+                        };
+                        // TODO: どのようなエラーが出るのか確認し、ハンドリングする
+                        let _ = tenant_op.create_tenant(&create_tenant).await.map_err(|e| {
+                            error!(
+                                "failed to create tenant (account_id: {}, create_tenant: {:?}): {}",
+                                account_id, create_tenant, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                    }
+
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to submit tenant: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
+    }
+
+    async fn set_bank_account_registered_on_index(&self, account_id: i64) -> Result<(), ErrResp> {
         // documentチェック＋更新
         todo!()
     }
