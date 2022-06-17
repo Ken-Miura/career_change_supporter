@@ -90,9 +90,10 @@ async fn handle_bank_account_req(
             }),
         ));
     }
-    // tenantチェック＋tenant作成＋tenant新規or更新
-    // documentチェック＋更新
-    todo!()
+
+    let _ = op.submit_bank_account(bank_account).await?;
+
+    Ok((StatusCode::OK, Json(BankAccountResult {})))
 }
 
 #[async_trait]
@@ -101,6 +102,8 @@ trait SubmitBankAccountOperation {
         &self,
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
+
+    async fn submit_bank_account(&self, bank_account: BankAccount) -> Result<(), ErrResp>;
 }
 
 struct SubmitBankAccountOperationImpl {
@@ -139,6 +142,12 @@ impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
             address_line2: m.address_line2,
             telephone_number: m.telephone_number,
         }))
+    }
+
+    async fn submit_bank_account(&self, bank_account: BankAccount) -> Result<(), ErrResp> {
+        // tenantチェック＋tenant作成＋tenant新規or更新
+        // documentチェック＋更新
+        todo!()
     }
 }
 
