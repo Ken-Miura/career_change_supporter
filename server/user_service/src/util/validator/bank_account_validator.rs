@@ -53,7 +53,7 @@ static ACCOUNT_HOLDER_NAME_MAX_LENGTH: Lazy<usize> = Lazy::new(|| {
     length
 });
 
-const ZENKAKU_KATAKANA_ZENKAKU_SPACE_REGEXP: &str = r"^[ァ-ヴーイ　]+$";
+const ZENKAKU_KATAKANA_ZENKAKU_SPACE_REGEXP: &str = r"^[ァ-ヴー　]+$";
 /// 全角カタカナと全角スペースのみのケース<br>
 /// 参考: https://qiita.com/nasuB7373/items/17adc4b808a8bd39624d<br>
 /// \p{katakana}は、半角カタカナも含むので使わない<br>

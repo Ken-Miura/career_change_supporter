@@ -90,6 +90,7 @@ pub(crate) enum Code {
     InvalidAccountNumberFormat = 20078,
     InvalidAccountHolderNameLength = 20079,
     IllegalCharInAccountHolderName = 20080,
+    AccountHolderNameDoesNotMatchFullName = 20081,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

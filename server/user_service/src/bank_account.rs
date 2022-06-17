@@ -1,5 +1,7 @@
 // Copyright 2022 Ken Miura
 
+use std::collections::HashSet;
+
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
@@ -7,6 +9,7 @@ use chrono::Datelike;
 use common::util::{Identity, Ymd};
 use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use once_cell::sync::Lazy;
 use serde::Serialize;
 use tracing::error;
 
@@ -19,6 +22,21 @@ use crate::{
         BankAccount,
     },
 };
+
+static KATAKANA_LOWER_CASE_UPPER_CASE_SET: Lazy<HashSet<(String, String)>> = Lazy::new(|| {
+    let mut set: HashSet<(String, String)> = HashSet::with_capacity(10);
+    set.insert(("ァ".to_string(), "ア".to_string()));
+    set.insert(("ィ".to_string(), "イ".to_string()));
+    set.insert(("ゥ".to_string(), "ウ".to_string()));
+    set.insert(("ェ".to_string(), "エ".to_string()));
+    set.insert(("ォ".to_string(), "オ".to_string()));
+    set.insert(("ッ".to_string(), "ツ".to_string()));
+    set.insert(("ャ".to_string(), "ヤ".to_string()));
+    set.insert(("ュ".to_string(), "ユ".to_string()));
+    set.insert(("ョ".to_string(), "ヨ".to_string()));
+    set.insert(("ヮ".to_string(), "ワ".to_string()));
+    set
+});
 
 pub(crate) async fn post_bank_account(
     User { account_id }: User,
@@ -53,7 +71,25 @@ async fn handle_bank_account_req(
             }),
         )
     })?;
-    // 口座名義チェック
+
+    let zenkaku_space = "　";
+    let full_name =
+        identity.last_name_furigana + zenkaku_space + identity.first_name_furigana.as_str();
+    if !account_holder_name_matches_full_name(
+        bank_account.account_holder_name.as_str(),
+        full_name.as_str(),
+    ) {
+        error!(
+            "account_holder_name ({}) does not match full_name ({})",
+            bank_account.account_holder_name, full_name
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::AccountHolderNameDoesNotMatchFullName as u32,
+            }),
+        ));
+    }
     // tenantチェック＋tenant作成＋tenant新規or更新
     // documentチェック＋更新
     todo!()
@@ -140,4 +176,28 @@ fn trim_space_from_bank_account(bank_account: BankAccount) -> BankAccount {
         account_number: bank_account.account_number.trim().to_string(),
         account_holder_name: bank_account.account_holder_name.trim().to_string(),
     }
+}
+
+fn account_holder_name_matches_full_name(account_holder_name: &str, full_name: &str) -> bool {
+    if account_holder_name == full_name {
+        return true;
+    }
+    // 多くの金融機関が小さなカタカナは、大きなカタカナとして登録する。
+    // 従って、小さなカタカナを大きなカタカナに変換した結果と比較して一致する場合も
+    // trueとして処理する
+    let full_name_upper_case = to_upper_case_of_katakana(full_name);
+    if account_holder_name == full_name_upper_case {
+        return true;
+    }
+    false
+}
+
+fn to_upper_case_of_katakana(katakana: &str) -> String {
+    let mut result = katakana.to_string();
+    for l_u in KATAKANA_LOWER_CASE_UPPER_CASE_SET.iter() {
+        if result.contains(l_u.0.as_str()) {
+            result = result.replace(l_u.0.as_str(), l_u.1.as_str());
+        }
+    }
+    result
 }
