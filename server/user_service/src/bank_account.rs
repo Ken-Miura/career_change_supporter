@@ -20,7 +20,7 @@ use entity::sea_orm::{
 };
 use once_cell::sync::Lazy;
 use serde::Serialize;
-use tracing::error;
+use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
@@ -213,6 +213,10 @@ impl SubmitBankAccountOperationImpl {
                             bank_account_holder_name: bank_account.account_holder_name,
                             metadata: None,
                         };
+                        info!(
+                            "update tenant (account_id: {}, tenant_id: {}, update_tenant: {:?})",
+                            account_id, tenant.tenant_id, update_tenant
+                        );
                         // TODO: どのようなエラーが出るのか確認し、ハンドリングする
                         let _ = tenant_op
                             .update_tenant(tenant.tenant_id.as_str(), &update_tenant)
@@ -243,7 +247,7 @@ impl SubmitBankAccountOperationImpl {
                         })?;
                         let create_tenant = CreateTenant {
                             name: bank_account.account_holder_name.clone(),
-                            id: uuid,
+                            id: uuid.clone(),
                             platform_fee_rate: PLATFORM_FEE_RATE.to_string(),
                             payjp_fee_included: PAYJP_FEE_INCLUDED,
                             minimum_transfer_amount: MINIMUM_TRANSFER_AMOUNT,
@@ -254,6 +258,10 @@ impl SubmitBankAccountOperationImpl {
                             bank_account_holder_name: bank_account.account_holder_name,
                             metadata: None,
                         };
+                        info!(
+                            "create tenant (account_id: {}, tenant_id: {}, create_tenant: {:?})",
+                            account_id, uuid, create_tenant
+                        );
                         // TODO: どのようなエラーが出るのか確認し、ハンドリングする
                         let _ = tenant_op.create_tenant(&create_tenant).await.map_err(|e| {
                             error!(
