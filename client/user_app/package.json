@@ -58,7 +58,9 @@
     "parserOptions": {
       "ecmaVersion": 2020
     },
-    "rules": {},
+    "rules": {
+      "no-irregular-whitespace": 0
+    },
     "overrides": [
       {
         "files": [
