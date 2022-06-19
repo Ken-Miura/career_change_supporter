@@ -63,6 +63,8 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { useStore } from 'vuex'
 import { BankAccount } from '@/util/personalized/BankAccount'
+import { usePostBankAccount } from '@/util/personalized/bank-account/usePostBankAccount'
+import { PostBankAccountResp } from '@/util/personalized/bank-account/PostBankAccountResp'
 
 export default defineComponent({
   name: 'BankAccountPage',
@@ -83,7 +85,10 @@ export default defineComponent({
       account_number: '',
       account_holder_name: ''
     } as BankAccount)
-    const postBankAccountDone = ref(true)
+    const {
+      postBankAccountDone,
+      postBankAccountFunc
+    } = usePostBankAccount()
     const router = useRouter()
     const store = useStore()
     onMounted(async () => {
@@ -116,7 +121,29 @@ export default defineComponent({
       }
     })
     const submitBankAccount = async () => {
-      console.log('bank account')
+      try {
+        const response = await postBankAccountFunc(bankAccount.value)
+        if (!(response instanceof PostBankAccountResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await router.push('/submit-bank-account-success')
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
     return {
       error,
