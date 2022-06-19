@@ -84,6 +84,13 @@ export namespace Code {
   export const REACH_CREATE_CAREER_REQ_NUM_LIMIT = 20072
   export const NO_CAREER_TO_HANDLE_FOUND = 20073
   export const ILLEGAL_FEE_PER_HOUR_IN_YEN = 20074
+  export const INVALID_BANK_CODE_FORMAT = 20075
+  export const INVALID_BRANCH_CODE_FORMAT = 20076
+  export const INVALID_ACCOUNT_TYPE = 20077
+  export const INVALID_ACCOUNT_NUMBER_FORMAT = 20078
+  export const INVALID_ACCOUNT_HOLDER_NAME_LENGTH = 20079
+  export const ILLEGAL_CHAR_IN_ACCOUNT_HOLDER_NAME = 20080
+  export const ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME = 20081
 }
 
 export function createErrorMessage (code: number): string {
@@ -239,6 +246,20 @@ export function createErrorMessage (code: number): string {
     return `${Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE} (${code})`
   } else if (code === Code.ILLEGAL_FEE_PER_HOUR_IN_YEN) {
     return `${Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_BANK_CODE_FORMAT) {
+    return `${Message.INVALID_BANK_CODE_FORMAT_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_BRANCH_CODE_FORMAT) {
+    return `${Message.INVALID_BRANCH_CODE_FORMAT_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_ACCOUNT_TYPE) {
+    return `${Message.INVALID_ACCOUNT_TYPE_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_ACCOUNT_NUMBER_FORMAT) {
+    return `${Message.INVALID_ACCOUNT_NUMBER_FORMAT_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_ACCOUNT_HOLDER_NAME_LENGTH) {
+    return `${Message.INVALID_ACCOUNT_HOLDER_NAME_LENGTH_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CHAR_IN_ACCOUNT_HOLDER_NAME) {
+    return `${Message.ILLEGAL_CHAR_IN_ACCOUNT_HOLDER_NAME_MESSAGE} (${code})`
+  } else if (code === Code.ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME) {
+    return `${Message.ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

@@ -100,4 +100,11 @@ export namespace Message {
     export const ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE = `相談料は${MIN_FEE_PER_HOUR_IN_YEN}円以上、${MAX_FEE_PER_HOUR_IN_YEN}円以下の値を設定して下さい`
     export const SUBMIT_FEE_PER_HOUR_IN_YEN_SUCCESS_MESSAGE = '相談料を設定しました。'
     export const SUBMIT_BANK_ACCOUNT_SUCCESS_MESSAGE = '報酬の入金口座を設定しました。'
+    export const INVALID_BANK_CODE_FORMAT_MESSAGE = '不正な形式の銀行コードです'
+    export const INVALID_BRANCH_CODE_FORMAT_MESSAGE = '不正な形式の支店コードです'
+    export const INVALID_ACCOUNT_TYPE_MESSAGE = '不正な形式の預金種別です'
+    export const INVALID_ACCOUNT_NUMBER_FORMAT_MESSAGE = '不正な形式の口座番号です'
+    export const INVALID_ACCOUNT_HOLDER_NAME_LENGTH_MESSAGE = '不正な長さの口座名義です'
+    export const ILLEGAL_CHAR_IN_ACCOUNT_HOLDER_NAME_MESSAGE = '不正な形式の口座名義です'
+    export const ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME_MESSAGE = '口座名義とユーザー情報で本人確認された情報と異なります。セイ、メイの間に全角空白１文字が入っていること（全角空白１文字以外に余計な文字が含まれていないこと）をご確認下さい'
 }
