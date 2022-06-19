@@ -114,11 +114,12 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(
-                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.deleted_user_account To user_app;"),
-            )
+            .execute(sql.stmt(
+                r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.deleted_user_account To user_app;",
+            ))
             .await
             .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.deleted_user_account To admin_app;",
@@ -140,6 +141,13 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.user_temp_account To user_app;"))
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, DELETE ON ccs_schema.user_temp_account To admin_app;"),
+            )
             .await
             .map(|_| ())?;
 
@@ -164,6 +172,13 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.terms_of_use To user_app;"))
             .await
             .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.terms_of_use To admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
 
         let _ = conn
             /* 一度パスワード変更依頼を出した後、もう一度パスワード変更依頼を出したいケースを考慮し、email_addressをUNIQUEにしない。pwd_change_req_idがPRIMARY KEYなので一意に検索は可能 */
@@ -176,6 +191,11 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.pwd_change_req To user_app;"))
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, DELETE ON ccs_schema.pwd_change_req To admin_app;"))
             .await
             .map(|_| ())?;
 
@@ -205,12 +225,15 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             /* 身分情報は、管理者 (admin_app) が提出されたエビデンスを確認し、レコードを挿入、更新する。従って、ユーザー (user_app) には挿入、更新権限は持たせない。*/
-            /* アカウント削除はユーザー自身が行う。そのため削除権限はユーザー (user_app) に付与する */
-            .execute(sql.stmt(r"GRANT SELECT, DELETE ON ccs_schema.identity To user_app;"))
+            /* アカウント削除はユーザー自身が行う。しかし、紐付いた情報は定期実行ツールで削除するためDELETE権限は付与しない */
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.identity To user_app;"))
             .await
             .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.identity To admin_app;"))
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ =
+            conn.execute(sql.stmt(
+                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.identity To admin_app;",
+            ))
             .await
             .map(|_| ())?;
         let _ = conn
@@ -253,13 +276,16 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(
                 /* 職務経歴は、管理者 (admin_app) が提出されたエビデンスを確認し、レコードを挿入、更新する。従って、ユーザー (user_app) には挿入、更新権限は持たせない。*/
-                /* アカウント削除はユーザー自身が行う。そのため削除権限はユーザー (user_app) に付与する */
+                /* 職務経歴の削除はユーザー自身でも可能。そのため削除権限をユーザー (user_app) に付与する */
                 sql.stmt(r"GRANT SELECT, DELETE ON ccs_schema.career To user_app;"),
             )
             .await
             .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.career To admin_app;"))
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE DELETE ON ccs_schema.career To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
@@ -280,9 +306,18 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(
-                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.consulting_fee To user_app;",
-            ))
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.consulting_fee To user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.consulting_fee To admin_app;",
+                ),
+            )
             .await
             .map(|_| ())?;
 
@@ -297,10 +332,12 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            /* 一度作成したtenant_idは、payjpとの連携に必要となる。ユーザーに同じtenant_idを利用することを強制するため、UPDATEは許可しない */
-            .execute(sql.stmt(
-                r"GRANT SELECT, INSERT, DELETE ON ccs_schema.tenant To user_app;",
-            ))
+            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.tenant To user_app;"))
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.tenant To admin_app;"))
             .await
             .map(|_| ())?;
 
@@ -341,6 +378,7 @@ impl MigrationTrait for Migration {
             )
             .await
             .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.create_identity_req To admin_app;",
@@ -476,6 +514,7 @@ impl MigrationTrait for Migration {
             )
             .await
             .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.update_identity_req To admin_app;",
@@ -618,6 +657,7 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.create_career_req To user_app;"))
             .await
             .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.create_career_req To admin_app;",
@@ -692,13 +732,10 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(
-                sql.stmt(
-                    r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.document To user_app;",
-                ),
-            )
+            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.document To user_app;"))
             .await
             .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ =
             conn.execute(sql.stmt(
                 r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.document To admin_app;",
