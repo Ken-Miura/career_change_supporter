@@ -22,5 +22,5 @@ regex = "1.5.5"
 reqwest = { version = "0.11.10", features = ["json"] }
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.81"
-tower-cookies = "0.6.0"
+tower-cookies = "0.7.0"
 tracing = "0.1.34"
