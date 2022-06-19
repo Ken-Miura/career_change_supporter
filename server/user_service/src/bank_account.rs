@@ -300,6 +300,7 @@ impl SubmitBankAccountOperationImpl {
                         find_document_model_by_user_account_id(txn, account_id).await?;
                     if let Some(document) = document_option {
                         let document_id = document.document_id;
+                        info!("update document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
                         let _ = update_is_bank_account_registered_on_document(
                             &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
@@ -309,6 +310,7 @@ impl SubmitBankAccountOperationImpl {
                     } else {
                         // document_idとしてuser_account_idを利用
                         let document_id = account_id;
+                        info!("create document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
                         let _ = insert_document(txn, account_id, document_id).await?;
                         let _ = add_new_document_with_is_bank_account_registered(
                             &OPENSEARCH_ENDPOINT_URI,

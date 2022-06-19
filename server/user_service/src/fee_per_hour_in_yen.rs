@@ -12,7 +12,7 @@ use entity::sea_orm::{
     TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
@@ -157,6 +157,7 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                         find_document_model_by_user_account_id(txn, account_id).await?;
                     if let Some(document) = document_option {
                         let document_id = document.document_id;
+                        info!("update document for \"fee_per_hour_in_yen\" (account_id: {}, document_id: {}, fee_per_hour_in_yen: {})", account_id, document_id, fee_per_hour_in_yen);
                         let _ = update_new_fee_per_hour_in_yen_on_document(
                             &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
@@ -167,6 +168,7 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                     } else {
                         // document_idとしてuser_account_idを利用
                         let document_id = account_id;
+                        info!("create document for \"fee_per_hour_in_yen\" (account_id: {}, document_id: {}, fee_per_hour_in_yen: {})", account_id, document_id, fee_per_hour_in_yen);
                         let _ = insert_document(txn, account_id, document_id).await?;
                         let _ = add_new_fee_per_hour_in_yen_into_document(
                             &OPENSEARCH_ENDPOINT_URI,
