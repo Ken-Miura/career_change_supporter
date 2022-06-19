@@ -284,7 +284,9 @@ impl MigrationTrait for Migration {
         // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
             .execute(
-                sql.stmt(r"GRANT SELECT, INSERT, UPDATE DELETE ON ccs_schema.career To admin_app;"),
+                sql.stmt(
+                    r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.career To admin_app;",
+                ),
             )
             .await
             .map(|_| ())?;
