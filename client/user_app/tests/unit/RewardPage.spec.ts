@@ -8,7 +8,7 @@ import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
 import TheHeader from '@/components/TheHeader.vue'
 import RewardPage from '@/views/personalized/RewardPage.vue'
-import { BankAccount } from '@/util/personalized/reward/BankAccount'
+import { BankAccount } from '@/util/personalized/BankAccount'
 import { TRANSFER_FEE_IN_YEN } from '@/util/personalized/reward/TransferFee'
 
 const routerPushMock = jest.fn()

@@ -1,4 +1,4 @@
-import { BankAccount } from './BankAccount'
+import { BankAccount } from '../BankAccount'
 import { Transfer } from './Transfer'
 
 export type Rewards = {

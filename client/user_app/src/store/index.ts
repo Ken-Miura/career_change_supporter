@@ -1,5 +1,5 @@
 import { Identity } from '@/util/personalized/profile/Identity'
-import { BankAccount } from '@/util/personalized/reward/BankAccount'
+import { BankAccount } from '@/util/personalized/BankAccount'
 import { createStore } from 'vuex'
 import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY } from './mutationTypes'
 
