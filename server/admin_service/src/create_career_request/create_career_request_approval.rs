@@ -22,7 +22,7 @@ use entity::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::{
     err::{unexpected_err_resp, Code},
@@ -252,6 +252,7 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                     let document_option =
                         find_document_model_by_user_account_id(txn, user_account_id).await?;
                     if let Some(document) = document_option {
+                        info!("update document for \"careers\" (user_account_id: {}, document_id: {}, career_model: {:?})", user_account_id, document.document_id, career_model);
                         let _ = insert_new_career_into_document(
                             &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
@@ -262,6 +263,7 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                     } else {
                         // document_idとしてuser_account_idを利用
                         let document_id = user_account_id;
+                        info!("create document for \"careers\" (user_account_id: {}, document_id: {}, career_model: {:?})", user_account_id, document_id, career_model);
                         let _ = insert_document(txn, user_account_id, document_id).await?;
                         let _ = add_new_document_with_career(
                             &OPENSEARCH_ENDPOINT_URI,
