@@ -14,6 +14,7 @@ import SubmitFeePerHourInYenSuccessPage from '../views/personalized/SubmitFeePer
 import DeleteAccountConfirmationPage from '../views/personalized/DeleteAccountConfirmationPage.vue'
 import RewardPage from '../views/personalized/RewardPage.vue'
 import BankAccountPage from '../views/personalized/BankAccountPage.vue'
+import SubmitBankAccountSuccessPage from '../views/personalized/SubmitBankAccountSuccessPage.vue'
 import SchedulePage from '../views/personalized/SchedulePage.vue'
 import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
@@ -155,6 +156,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/bank-account',
     name: 'BankAccountPage',
     component: BankAccountPage
+  },
+  {
+    path: '/submit-bank-account-success',
+    name: 'SubmitBankAccountSuccessPage',
+    component: SubmitBankAccountSuccessPage
   },
   {
     path: '/schedule',

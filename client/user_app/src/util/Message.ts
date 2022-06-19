@@ -99,4 +99,5 @@ export namespace Message {
     export const NO_CAREER_TO_HANDLE_FOUND_MESSAGE = '職務経歴が存在しません'
     export const ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE = `相談料は${MIN_FEE_PER_HOUR_IN_YEN}円以上、${MAX_FEE_PER_HOUR_IN_YEN}円以下の値を設定して下さい`
     export const SUBMIT_FEE_PER_HOUR_IN_YEN_SUCCESS_MESSAGE = '相談料を設定しました。'
+    export const SUBMIT_BANK_ACCOUNT_SUCCESS_MESSAGE = '報酬の入金口座を設定しました。'
 }
