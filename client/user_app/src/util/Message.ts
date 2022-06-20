@@ -107,4 +107,7 @@ export namespace Message {
     export const INVALID_ACCOUNT_HOLDER_NAME_LENGTH_MESSAGE = '不正な長さの口座名義です'
     export const ILLEGAL_CHAR_IN_ACCOUNT_HOLDER_NAME_MESSAGE = '不正な形式の口座名義です'
     export const ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME_MESSAGE = '口座名義とユーザー情報で本人確認された情報と異なります。セイ、メイの間に全角空白１文字が入っていること（全角空白１文字以外に余計な文字が含まれていないこと）をご確認下さい'
+    export const INVALID_BANK_MESSAGE = '不正な銀行コードです。正しい銀行コードか再度お確かめの上、ご入力下さい'
+    export const INVALID_BANK_BRANCH_MESSAGE = '不正な支店コードです。正しい支店コードか再度お確かめの上、ご入力下さい'
+    export const INVALID_BANK_ACCOUNT_NUMBER_MESSAGE = '不正な口座番号です。口座番号の桁数が適切か再度お確かめの上、ご入力下さい'
 }

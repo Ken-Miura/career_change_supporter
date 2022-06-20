@@ -217,7 +217,6 @@ impl SubmitBankAccountOperationImpl {
                             "update tenant (account_id: {}, tenant_id: {}, update_tenant: {:?})",
                             account_id, tenant.tenant_id, update_tenant
                         );
-                        // TODO: どのようなエラーが出るのか確認し、ハンドリングする
                         let _ = tenant_op
                             .update_tenant(tenant.tenant_id.as_str(), &update_tenant)
                             .await
@@ -227,7 +226,7 @@ impl SubmitBankAccountOperationImpl {
                                 account_id, update_tenant, e
                             );
                                 ErrRespStruct {
-                                    err_resp: unexpected_err_resp(),
+                                    err_resp: create_err_resp(&e),
                                 }
                             })?;
                     } else {
@@ -262,14 +261,13 @@ impl SubmitBankAccountOperationImpl {
                             "create tenant (account_id: {}, tenant_id: {}, create_tenant: {:?})",
                             account_id, uuid, create_tenant
                         );
-                        // TODO: どのようなエラーが出るのか確認し、ハンドリングする
                         let _ = tenant_op.create_tenant(&create_tenant).await.map_err(|e| {
                             error!(
                                 "failed to create tenant (account_id: {}, create_tenant: {:?}): {}",
                                 account_id, create_tenant, e
                             );
                             ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
+                                err_resp: create_err_resp(&e),
                             }
                         })?;
                     }
@@ -448,4 +446,54 @@ fn to_upper_case_of_katakana(katakana: &str) -> String {
         }
     }
     result
+}
+
+fn create_err_resp(e: &common::payment_platform::Error) -> ErrResp {
+    match e {
+        common::payment_platform::Error::RequestProcessingError(_) => unexpected_err_resp(),
+        common::payment_platform::Error::ApiError(e) => {
+            let status_code = e.error.status;
+            if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() as u32 {
+                return (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                );
+            }
+            let code = &e.error.code;
+            if let Some(code) = code {
+                create_err_resp_from_code(code.as_str())
+            } else {
+                unexpected_err_resp()
+            }
+        }
+    }
+}
+
+fn create_err_resp_from_code(code: &str) -> ErrResp {
+    if code == "invalid_bank_code" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidBank as u32,
+            }),
+        )
+    } else if code == "invalid_bank_branch_code" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidBankBranch as u32,
+            }),
+        )
+    } else if code == "invalid_bank_account_number" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidBankAccountNumber as u32,
+            }),
+        )
+    } else {
+        unexpected_err_resp()
+    }
 }

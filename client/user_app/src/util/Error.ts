@@ -91,6 +91,9 @@ export namespace Code {
   export const INVALID_ACCOUNT_HOLDER_NAME_LENGTH = 20079
   export const ILLEGAL_CHAR_IN_ACCOUNT_HOLDER_NAME = 20080
   export const ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME = 20081
+  export const INVALID_BANK = 20082
+  export const INVALID_BANK_BRANCH = 20083
+  export const INVALID_BANK_ACCOUNT_NUMBER = 20084
 }
 
 export function createErrorMessage (code: number): string {
@@ -260,6 +263,12 @@ export function createErrorMessage (code: number): string {
     return `${Message.ILLEGAL_CHAR_IN_ACCOUNT_HOLDER_NAME_MESSAGE} (${code})`
   } else if (code === Code.ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME) {
     return `${Message.ACCOUNT_HOLDER_NAME_DOES_NOT_MATCH_FULL_NAME_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_BANK) {
+    return `${Message.INVALID_BANK_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_BANK_BRANCH) {
+    return `${Message.INVALID_BANK_BRANCH_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_BANK_ACCOUNT_NUMBER) {
+    return `${Message.INVALID_BANK_ACCOUNT_NUMBER_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
