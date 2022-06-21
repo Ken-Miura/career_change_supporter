@@ -7,15 +7,15 @@ use axum::{extract::Query, Extension};
 use common::opensearch::{update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
 use common::{ApiError, ErrResp};
 use common::{ErrRespStruct, RespResult};
+use entity::career;
 use entity::sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect, TransactionError,
-    TransactionTrait,
+    ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, TransactionError, TransactionTrait,
 };
-use entity::{career, document};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::util::find_document_model_by_user_account_id;
 use crate::util::session::User;
 
 pub(crate) async fn career(
@@ -100,26 +100,6 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let document_option = document::Entity::find_by_id(account_id)
-                        .lock_shared()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to find document (user_account_id: {}): {}",
-                                account_id, e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                    let document = document_option.ok_or_else(|| {
-                        error!("no document found (user_account_id: {})", account_id);
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
                     let _ = career::Entity::delete_by_id(career_id)
                         .exec(txn)
                         .await
@@ -130,6 +110,14 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
                             }
                         })?;
 
+                    let document_option =
+                        find_document_model_by_user_account_id(txn, account_id).await?;
+                    let document = document_option.ok_or_else(|| {
+                        error!("no document found (user_account_id: {})", account_id);
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
                     let document_id = document.document_id.to_string();
                     let _ = remove_career_from_document(
                         &OPENSEARCH_ENDPOINT_URI,

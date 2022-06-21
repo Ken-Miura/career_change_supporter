@@ -104,15 +104,15 @@ pub(crate) fn clone_file_name_if_exists(
     (None, None)
 }
 
-/// documentテーブルからドキュメントIDを取得する
+/// 共有ロックを行い、documentテーブルからドキュメントIDを取得する
 ///
-/// 取得の際に更新の可能性があるため排他ロックを行う。opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
+/// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
 pub(crate) async fn find_document_model_by_user_account_id(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<document::Model>, ErrRespStruct> {
     let doc_option = document::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
+        .lock_shared()
         .one(txn)
         .await
         .map_err(|e| {
