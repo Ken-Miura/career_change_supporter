@@ -182,7 +182,7 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
                     let user_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
                     let user = match user_option {
                         Some(m) => m,
-                        None => { return Ok(None)},
+                        None => { return Ok(None) },
                     };
 
                     let req = find_create_identity_req_model_by_user_account_id(txn, user_account_id).await?;

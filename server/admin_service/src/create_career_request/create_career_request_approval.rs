@@ -343,7 +343,7 @@ async fn find_document_model_by_user_account_id(
     user_account_id: i64,
 ) -> Result<Option<document::Model>, ErrRespStruct> {
     let doc_option = document::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
+        .lock_shared()
         .one(txn)
         .await
         .map_err(|e| {

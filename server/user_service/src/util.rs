@@ -106,7 +106,7 @@ pub(crate) fn clone_file_name_if_exists(
 
 /// documentテーブルからドキュメントIDを取得する
 ///
-/// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
+/// 取得の際に更新の可能性があるため排他ロックを行う。opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
 pub(crate) async fn find_document_model_by_user_account_id(
     txn: &DatabaseTransaction,
     user_account_id: i64,

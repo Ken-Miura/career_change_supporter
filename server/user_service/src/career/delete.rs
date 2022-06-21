@@ -101,7 +101,7 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let document_option = document::Entity::find_by_id(account_id)
-                        .lock_exclusive()
+                        .lock_shared()
                         .one(txn)
                         .await
                         .map_err(|e| {

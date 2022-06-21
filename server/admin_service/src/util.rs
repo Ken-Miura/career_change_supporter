@@ -36,13 +36,13 @@ pub(crate) fn validate_page_size(page_size: usize) -> Result<(), ErrResp> {
     Ok(())
 }
 
-/// 承認、拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的にロックを取得し、user_accountを取得する
+/// 承認、拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的に共有ロックを取得し、user_accountを取得する
 pub(crate) async fn find_user_model_by_user_account_id(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<user_account::Model>, ErrRespStruct> {
     let user_model_option = user_account::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
+        .lock_shared()
         .one(txn)
         .await
         .map_err(|e| {

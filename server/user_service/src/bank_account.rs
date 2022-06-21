@@ -190,7 +190,7 @@ impl SubmitBankAccountOperationImpl {
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let tenant_option = TenantEntity::find_by_id(account_id)
-                        .lock_exclusive()
+                        .lock_shared()
                         .one(txn)
                         .await
                         .map_err(|e| {
