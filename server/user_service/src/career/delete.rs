@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::find_document_model_by_user_account_id;
+use crate::util::find_document_model_by_user_account_id_with_shared_lock;
 use crate::util::session::User;
 
 pub(crate) async fn career(
@@ -111,7 +111,8 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
                         })?;
 
                     let document_option =
-                        find_document_model_by_user_account_id(txn, account_id).await?;
+                        find_document_model_by_user_account_id_with_shared_lock(txn, account_id)
+                            .await?;
                     let document = document_option.ok_or_else(|| {
                         error!("no document found (user_account_id: {})", account_id);
                         ErrRespStruct {

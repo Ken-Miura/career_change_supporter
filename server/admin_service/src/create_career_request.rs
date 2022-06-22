@@ -15,7 +15,7 @@ pub(crate) mod create_career_request_detail;
 pub(crate) mod create_career_request_rejection;
 pub(crate) mod create_career_requests;
 
-async fn find_create_career_req_model_by_create_career_req_id(
+async fn find_create_career_req_model_by_create_career_req_id_with_exclusive_lock(
     txn: &DatabaseTransaction,
     create_career_req_id: i64,
 ) -> Result<create_career_req::Model, ErrRespStruct> {

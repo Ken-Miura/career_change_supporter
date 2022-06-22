@@ -26,12 +26,12 @@ use tracing::error;
 use crate::{
     err::{unexpected_err_resp, Code},
     util::{
-        find_user_model_by_user_account_id, session::Admin,
+        find_user_model_by_user_account_id_with_shared_lock, session::Admin,
         validator::reason_validator::validate_reason,
     },
 };
 
-use super::find_create_career_req_model_by_create_career_req_id;
+use super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴登録拒否通知", WEB_SITE_NAME));
 
@@ -214,17 +214,19 @@ impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationImpl
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let user_option =
-                        find_user_model_by_user_account_id(txn, user_account_id).await?;
+                        find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id)
+                            .await?;
                     let user = match user_option {
                         Some(m) => m,
                         None => return Ok(None),
                     };
 
-                    let req = find_create_career_req_model_by_create_career_req_id(
-                        txn,
-                        create_career_req_id,
-                    )
-                    .await?;
+                    let req =
+                        find_create_career_req_model_by_create_career_req_id_with_exclusive_lock(
+                            txn,
+                            create_career_req_id,
+                        )
+                        .await?;
 
                     let rejected_req_active_model =
                         generate_rejected_create_career_req_active_model(

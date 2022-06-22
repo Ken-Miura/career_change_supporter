@@ -24,7 +24,9 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
-use crate::util::{find_document_model_by_user_account_id, insert_document, ACCESS_INFO};
+use crate::util::{
+    find_document_model_by_user_account_id_with_shared_lock, insert_document, ACCESS_INFO,
+};
 use crate::{
     err::Code,
     util::{
@@ -295,7 +297,7 @@ impl SubmitBankAccountOperationImpl {
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let document_option =
-                        find_document_model_by_user_account_id(txn, account_id).await?;
+                        find_document_model_by_user_account_id_with_shared_lock(txn, account_id).await?;
                     if let Some(document) = document_option {
                         let document_id = document.document_id;
                         info!("update document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);

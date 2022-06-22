@@ -107,7 +107,7 @@ pub(crate) fn clone_file_name_if_exists(
 /// 共有ロックを行い、documentテーブルからドキュメントIDを取得する
 ///
 /// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
-pub(crate) async fn find_document_model_by_user_account_id(
+pub(crate) async fn find_document_model_by_user_account_id_with_shared_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<document::Model>, ErrRespStruct> {

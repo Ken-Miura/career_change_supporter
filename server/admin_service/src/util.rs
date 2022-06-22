@@ -37,7 +37,7 @@ pub(crate) fn validate_page_size(page_size: usize) -> Result<(), ErrResp> {
 }
 
 /// 承認、拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的に共有ロックを取得し、user_accountを取得する
-pub(crate) async fn find_user_model_by_user_account_id(
+pub(crate) async fn find_user_model_by_user_account_id_with_shared_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<user_account::Model>, ErrRespStruct> {

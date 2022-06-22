@@ -26,10 +26,10 @@ use tracing::{error, info};
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{find_user_model_by_user_account_id, session::Admin},
+    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
 };
 
-use super::find_create_career_req_model_by_create_career_req_id;
+use super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴確認完了通知", WEB_SITE_NAME));
 
@@ -198,13 +198,13 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let user_option =
-                        find_user_model_by_user_account_id(txn, user_account_id).await?;
+                        find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
                     let user = match user_option {
                         Some(m) => m,
                         None => return Ok(None),
                     };
 
-                    let req = find_create_career_req_model_by_create_career_req_id(
+                    let req = find_create_career_req_model_by_create_career_req_id_with_exclusive_lock(
                         txn,
                         create_career_req_id,
                     )
@@ -250,7 +250,7 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                         })?;
 
                     let document_option =
-                        find_document_model_by_user_account_id(txn, user_account_id).await?;
+                        find_document_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
                     if let Some(document) = document_option {
                         info!("update document for \"careers\" (user_account_id: {}, document_id: {}, career_model: {:?})", user_account_id, document.document_id, career_model);
                         let _ = insert_new_career_into_document(
@@ -338,7 +338,7 @@ fn generate_career_active_model(model: create_career_req::Model) -> career::Acti
     }
 }
 
-async fn find_document_model_by_user_account_id(
+async fn find_document_model_by_user_account_id_with_shared_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<document::Model>, ErrRespStruct> {

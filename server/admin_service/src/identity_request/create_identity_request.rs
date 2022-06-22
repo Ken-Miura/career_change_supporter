@@ -15,7 +15,7 @@ pub(crate) mod create_identity_request_rejection;
 pub(crate) mod create_identity_requests;
 pub(crate) mod users_by_date_of_birth;
 
-async fn find_create_identity_req_model_by_user_account_id(
+async fn find_create_identity_req_model_by_user_account_id_with_exclusive_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<create_identity_req::Model, ErrRespStruct> {

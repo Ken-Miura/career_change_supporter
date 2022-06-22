@@ -25,10 +25,10 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{find_user_model_by_user_account_id, session::Admin},
+    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
 };
 
-use super::find_update_identity_req_model_by_user_account_id;
+use super::find_update_identity_req_model_by_user_account_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
 
@@ -156,13 +156,13 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let user_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
+                    let user_option = find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
                     let user = match user_option {
                         Some(m) => m,
                         None => { return Ok(None) },
                     };
 
-                    let identity_option = find_identity_model_by_user_account_id(txn, user_account_id).await?;
+                    let identity_option = find_identity_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
                     let _ = identity_option.ok_or_else(|| {
                             error!(
                                 "no identity (user account id: {}) found",
@@ -173,7 +173,7 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                             }
                         })?;
 
-                    let req = find_update_identity_req_model_by_user_account_id(txn, user_account_id).await?;
+                    let req = find_update_identity_req_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
 
                     let identity_model = generate_identity_active_model(req.clone());
                     let _  = identity_model.update(txn).await.map_err(|e| {
@@ -228,7 +228,7 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
     }
 }
 
-async fn find_identity_model_by_user_account_id(
+async fn find_identity_model_by_user_account_id_with_exclusive_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<identity::Model>, ErrRespStruct> {

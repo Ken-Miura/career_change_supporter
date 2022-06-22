@@ -23,10 +23,10 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{find_user_model_by_user_account_id, session::Admin},
+    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
 };
 
-use super::find_create_identity_req_model_by_user_account_id;
+use super::find_create_identity_req_model_by_user_account_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
 
@@ -154,13 +154,13 @@ impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationIm
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let user_option = find_user_model_by_user_account_id(txn, user_account_id).await?;
+                    let user_option = find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
                     let user = match user_option {
                         Some(m) => m,
                         None => { return Ok(None) },
                     };
 
-                    let req = find_create_identity_req_model_by_user_account_id(txn, user_account_id).await?;
+                    let req = find_create_identity_req_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
 
                     let identity_model = generate_identity_active_model(req.clone());
                     let _ = identity_model.insert(txn).await.map_err(|e| {

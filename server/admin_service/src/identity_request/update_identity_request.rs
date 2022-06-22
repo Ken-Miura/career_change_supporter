@@ -14,7 +14,7 @@ pub(crate) mod update_identity_request_detail;
 pub(crate) mod update_identity_request_rejection;
 pub(crate) mod update_identity_requests;
 
-async fn find_update_identity_req_model_by_user_account_id(
+async fn find_update_identity_req_model_by_user_account_id_with_exclusive_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<update_identity_req::Model, ErrRespStruct> {
