@@ -499,3 +499,90 @@ fn create_err_resp_from_code(code: &str) -> ErrResp {
         unexpected_err_resp()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use common::{
+        util::{Identity, Ymd},
+        ApiError, ErrResp,
+    };
+
+    use crate::bank_account::BankAccountResult;
+    use crate::util::BankAccount;
+
+    use super::{handle_bank_account_req, SubmitBankAccountOperation};
+
+    struct SubmitBankAccountOperationMock {
+        identity: Option<Identity>,
+        submit_bank_account_err: Option<ErrResp>,
+    }
+
+    #[async_trait]
+    impl SubmitBankAccountOperation for SubmitBankAccountOperationMock {
+        async fn find_identity_by_account_id(
+            &self,
+            _account_id: i64,
+        ) -> Result<Option<Identity>, ErrResp> {
+            Ok(self.identity.clone())
+        }
+
+        async fn submit_bank_account(
+            &self,
+            _account_id: i64,
+            _bank_account: BankAccount,
+        ) -> Result<(), ErrResp> {
+            if let Some(err) = &self.submit_bank_account_err {
+                Err((
+                    err.0,
+                    Json(ApiError {
+                        code: err.1.code as u32,
+                    }),
+                ))
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_bank_account_req_test() {
+        let account_id = 5135;
+        let identity = Identity {
+            last_name: "田中".to_string(),
+            first_name: "太郎".to_string(),
+            last_name_furigana: "タナカ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1999,
+                month: 12,
+                day: 5,
+            },
+            prefecture: "北海道".to_string(),
+            city: "札幌市".to_string(),
+            address_line1: "北区２−１".to_string(),
+            address_line2: None,
+            telephone_number: "09012345678".to_string(),
+        };
+        let bank_account = BankAccount {
+            bank_code: "0001".to_string(),
+            branch_code: "001".to_string(),
+            account_type: "普通".to_string(),
+            account_number: "1234567".to_string(),
+            account_holder_name: identity.last_name_furigana.clone()
+                + "　"
+                + identity.first_name_furigana.as_str(),
+        };
+        let op = SubmitBankAccountOperationMock {
+            identity: Some(identity),
+            submit_bank_account_err: None,
+        };
+
+        let resp = handle_bank_account_req(account_id, bank_account, op).await;
+
+        let result = resp.expect("failed to get Ok");
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(result.1 .0, BankAccountResult {});
+    }
+}
