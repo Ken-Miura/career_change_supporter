@@ -38,7 +38,7 @@ pub type ErrResp = Resp<ApiError>;
 /// API呼び出しに失敗した際のエラー
 ///
 /// メンバー[`Self::code`]に、エラーの理由を示すコードを含む。
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ApiError {
     pub code: u32,
 }

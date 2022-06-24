@@ -504,16 +504,20 @@ fn create_err_resp_from_code(code: &str) -> ErrResp {
 mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
+    use common::RespResult;
     use common::{
         util::{Identity, Ymd},
         ApiError, ErrResp,
     };
+    use once_cell::sync::Lazy;
 
     use crate::bank_account::BankAccountResult;
+    use crate::err::Code;
     use crate::util::BankAccount;
 
     use super::{handle_bank_account_req, SubmitBankAccountOperation};
 
+    #[derive(Debug, Clone)]
     struct SubmitBankAccountOperationMock {
         identity: Option<Identity>,
         submit_bank_account_err: Option<ErrResp>,
@@ -546,10 +550,22 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn handle_bank_account_req_test() {
-        let account_id = 5135;
-        let identity = Identity {
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<BankAccountResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        bank_account: BankAccount,
+        op: SubmitBankAccountOperationMock,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let identity1 = Identity {
             last_name: "田中".to_string(),
             first_name: "太郎".to_string(),
             last_name_furigana: "タナカ".to_string(),
@@ -565,24 +581,78 @@ mod tests {
             address_line2: None,
             telephone_number: "09012345678".to_string(),
         };
-        let bank_account = BankAccount {
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "1234567".to_string(),
-            account_holder_name: identity.last_name_furigana.clone()
-                + "　"
-                + identity.first_name_furigana.as_str(),
-        };
-        let op = SubmitBankAccountOperationMock {
-            identity: Some(identity),
-            submit_bank_account_err: None,
-        };
 
-        let resp = handle_bank_account_req(account_id, bank_account, op).await;
+        vec![
+            TestCase {
+                name: "success case".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Ok((StatusCode::OK, Json(BankAccountResult {}))),
+            },
+            TestCase {
+                name: "fail invalid bank code".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "違法な形式の銀行コード".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidBankCodeFormat as u32,
+                    }),
+                )),
+            },
+        ]
+    });
 
-        let result = resp.expect("failed to get Ok");
-        assert_eq!(result.0, StatusCode::OK);
-        assert_eq!(result.1 .0, BankAccountResult {});
+    #[tokio::test]
+    async fn handle_bank_account_req_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let resp = handle_bank_account_req(
+                test_case.input.account_id,
+                test_case.input.bank_account.clone(),
+                test_case.input.op.clone(),
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let result = resp.expect("failed to get Ok");
+                let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            } else {
+                let result = resp.expect_err("failed to get Err");
+                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            }
+        }
     }
 }
