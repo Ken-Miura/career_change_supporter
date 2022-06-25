@@ -608,7 +608,7 @@ mod tests {
                 input: Input {
                     account_id: 514,
                     bank_account: BankAccount {
-                        bank_code: "違法な形式の銀行コード".to_string(),
+                        bank_code: "不当な形式の銀行コード".to_string(),
                         branch_code: "001".to_string(),
                         account_type: "普通".to_string(),
                         account_number: "1234567".to_string(),
@@ -625,6 +625,81 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::InvalidBankCodeFormat as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail invalid branch code".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "不当な形式の支店コード".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidBranchCodeFormat as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail invalid account type".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "当座".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidAccountType as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail invalid account number".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "不当な形式の口座番号".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidAccountNumberFormat as u32,
                     }),
                 )),
             },
