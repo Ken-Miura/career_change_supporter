@@ -582,9 +582,43 @@ mod tests {
             telephone_number: "09012345678".to_string(),
         };
 
+        let identity2 = Identity {
+            last_name: "庄司".to_string(),
+            first_name: "ジロウ".to_string(),
+            last_name_furigana: "ショウジ".to_string(),
+            first_name_furigana: "ジロウ".to_string(),
+            date_of_birth: Ymd {
+                year: 1999,
+                month: 12,
+                day: 5,
+            },
+            prefecture: "北海道".to_string(),
+            city: "札幌市".to_string(),
+            address_line1: "北区２−１".to_string(),
+            address_line2: None,
+            telephone_number: "09012345678".to_string(),
+        };
+
+        let identity3 = Identity {
+            last_name: "ウィンストン".to_string(),
+            first_name: "チャーチル".to_string(),
+            last_name_furigana: "ウィンストン".to_string(),
+            first_name_furigana: "チャーチル".to_string(),
+            date_of_birth: Ymd {
+                year: 1999,
+                month: 12,
+                day: 5,
+            },
+            prefecture: "北海道".to_string(),
+            city: "札幌市".to_string(),
+            address_line1: "北区２−１".to_string(),
+            address_line2: None,
+            telephone_number: "09012345678".to_string(),
+        };
+
         vec![
             TestCase {
-                name: "success case".to_string(),
+                name: "success case1".to_string(),
                 input: Input {
                     account_id: 514,
                     bank_account: BankAccount {
@@ -598,6 +632,78 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Ok((StatusCode::OK, Json(BankAccountResult {}))),
+            },
+            TestCase {
+                name: "success case2".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: "ショウジ　ジロウ".to_string(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity2.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Ok((StatusCode::OK, Json(BankAccountResult {}))),
+            },
+            TestCase {
+                name: "success case3".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: "シヨウジ　ジロウ".to_string(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity2),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Ok((StatusCode::OK, Json(BankAccountResult {}))),
+            },
+            TestCase {
+                name: "success case4".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: "ウィンストン　チャーチル".to_string(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity3.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Ok((StatusCode::OK, Json(BankAccountResult {}))),
+            },
+            TestCase {
+                name: "success case5".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: "ウインストン　チヤーチル".to_string(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity3.clone()),
                         submit_bank_account_err: None,
                     },
                 },
@@ -746,6 +852,77 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::InvalidAccountHolderNameLength as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail no identity registered".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: "タナカ　タロウ".to_string(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: None,
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail account holder name does not match full name1".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: "タナカ　ジロウ".to_string(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::AccountHolderNameDoesNotMatchFullName as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail account holder name does not match full name2".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        // 小さいカタカナはすべて小さいカタカナのまま、もしくはすべて大きいカタカナに変換されている必要がある。
+                        // 混在はNG
+                        account_holder_name: "ウィンストン　チヤーチル".to_string(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity3),
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::AccountHolderNameDoesNotMatchFullName as u32,
                     }),
                 )),
             },
