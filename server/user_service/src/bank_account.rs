@@ -1016,6 +1016,36 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail too many requests".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: Some((
+                            StatusCode::TOO_MANY_REQUESTS,
+                            Json(ApiError {
+                                code: Code::ReachPaymentPlatformRateLimit as u32,
+                            }),
+                        )),
+                    },
+                },
+                expected: Err((
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                )),
+            },
         ]
     });
 
