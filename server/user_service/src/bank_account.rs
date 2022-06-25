@@ -926,6 +926,96 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail illegal bank code".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0004".to_string(), // 存在しない銀行コード
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: Some((
+                            StatusCode::BAD_REQUEST,
+                            Json(ApiError {
+                                code: Code::InvalidBank as u32,
+                            }),
+                        )),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidBank as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail illegal branch code".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "002".to_string(), // 存在しない支店コード
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: Some((
+                            StatusCode::BAD_REQUEST,
+                            Json(ApiError {
+                                code: Code::InvalidBankBranch as u32,
+                            }),
+                        )),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidBankBranch as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail illegal account number".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(), // みずほ銀行（ゆうちょではない）
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "12345678".to_string(), // ゆうちょのみ8桁。それ以外は７桁
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        submit_bank_account_err: Some((
+                            StatusCode::BAD_REQUEST,
+                            Json(ApiError {
+                                code: Code::InvalidBankAccountNumber as u32,
+                            }),
+                        )),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidBankAccountNumber as u32,
+                    }),
+                )),
+            },
         ]
     });
 
