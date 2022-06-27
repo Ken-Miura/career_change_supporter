@@ -145,11 +145,11 @@
               }
             }
           },
-          "career_start_date": {
-            "type": "date"
+          "years_of_service": {
+            "type": "integer"
           },
-          "career_end_date": {
-            "type": "date"
+          "employed": {
+            "type": "boolean"
           },
           "contract_type": {
             "type": "keyword"
@@ -201,14 +201,17 @@
           }
         }
       },
+      "num_of_careers": {
+        "type": "integer"
+      },
       "fee_per_hour_in_yen": {
         "type": "integer"
       },
-      "rating": {
-        "type": "double"
-      },
       "is_bank_account_registered": {
         "type": "boolean"
+      },
+      "rating": {
+        "type": "double"
       }
     }
   }
