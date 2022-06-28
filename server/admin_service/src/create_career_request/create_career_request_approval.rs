@@ -2,7 +2,7 @@
 
 use async_session::serde_json::json;
 use axum::{async_trait, Json};
-use chrono::{DateTime, FixedOffset, Utc};
+use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::{
     opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI},
     smtp::{
@@ -16,8 +16,9 @@ use axum::http::StatusCode;
 use entity::{
     admin_account, approved_create_career_req, career, create_career_req, document,
     sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
-        EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection,
+        DatabaseTransaction, EntityTrait, PaginatorTrait, QueryFilter, QuerySelect, Set,
+        TransactionError, TransactionTrait,
     },
 };
 use once_cell::sync::Lazy;
@@ -249,6 +250,20 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                             }
                         })?;
 
+                    let num_of_careers = career::Entity::find()
+                        .filter(career::Column::UserAccountId.eq(user_account_id))
+                        .count(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to count career (user_account_id: {}): {}",
+                                user_account_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+
                     let document_option =
                         find_document_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
                     if let Some(document) = document_option {
@@ -258,6 +273,8 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                             INDEX_NAME,
                             document.document_id.to_string().as_str(),
                             career_model,
+                            num_of_careers,
+                            approved_time
                         )
                         .await?;
                     } else {
@@ -270,6 +287,8 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                             INDEX_NAME,
                             document_id.to_string().as_str(),
                             career_model,
+                            num_of_careers,
+                            approved_time
                         )
                         .await?;
                     };
@@ -384,7 +403,14 @@ async fn add_new_document_with_career(
     index_name: &str,
     document_id: &str,
     career_model: career::Model,
+    num_of_careers: usize,
+    current_time: DateTime<FixedOffset>,
 ) -> Result<(), ErrRespStruct> {
+    let (years_of_service, employed) = convert_career_dates_for_index(
+        career_model.career_start_date,
+        career_model.career_end_date,
+        current_time,
+    );
     let new_document = json!({
         "user_account_id": career_model.user_account_id,
         "careers": [{
@@ -392,8 +418,8 @@ async fn add_new_document_with_career(
             "company_name": career_model.company_name,
             "department_name": career_model.department_name,
             "office": career_model.office,
-            "career_start_date": career_model.career_start_date,
-            "career_end_date": career_model.career_end_date,
+            "years_of_service": years_of_service,
+            "employed": employed,
             "contract_type": career_model.contract_type,
             "profession": career_model.profession,
             "annual_income_in_man_yen": career_model.annual_income_in_man_yen,
@@ -402,9 +428,10 @@ async fn add_new_document_with_career(
             "is_new_graduate": career_model.is_manager,
             "note": career_model.note,
         }],
+        "num_of_careers": num_of_careers,
         "fee_per_hour_in_yen": null,
-        "rating": null,
-        "is_bank_account_registered": null
+        "is_bank_account_registered": null,
+        "rating": null
     });
     let _ = index_document(endpoint_uri, index_name, document_id, &new_document)
         .await
@@ -423,18 +450,29 @@ async fn insert_new_career_into_document(
     index_name: &str,
     document_id: &str,
     career_model: career::Model,
+    num_of_careers: usize,
+    current_time: DateTime<FixedOffset>,
 ) -> Result<(), ErrRespStruct> {
+    let (years_of_service, employed) = convert_career_dates_for_index(
+        career_model.career_start_date,
+        career_model.career_end_date,
+        current_time,
+    );
+    let source = format!(
+        "ctx._source.careers.add(params.career); ctx._source.num_of_careers = {}",
+        num_of_careers
+    );
     let script = json!({
         "script": {
-            "source": "ctx._source.careers.add(params.career)",
+            "source": source,
             "params": {
               "career": {
                 "career_id": career_model.career_id,
                 "company_name": career_model.company_name,
                 "department_name": career_model.department_name,
                 "office": career_model.office,
-                "career_start_date": career_model.career_start_date,
-                "career_end_date": career_model.career_end_date,
+                "years_of_service": years_of_service,
+                "employed": employed,
                 "contract_type": career_model.contract_type,
                 "profession": career_model.profession,
                 "annual_income_in_man_yen": career_model.annual_income_in_man_yen,
@@ -456,6 +494,26 @@ async fn insert_new_career_into_document(
             ErrRespStruct { err_resp: e }
         })?;
     Ok(())
+}
+
+fn convert_career_dates_for_index(
+    career_start_date: NaiveDate,
+    career_end_date_option: Option<NaiveDate>,
+    current_time: DateTime<FixedOffset>,
+) -> (i64, bool) {
+    let years_of_service;
+    let employed;
+    let days_in_year = 365; // 1日の誤差（1年が365日か366日か）は、年という単位に対して無視して良いと判断し、365日固定で計算する
+    if let Some(career_end_date) = career_end_date_option {
+        let days_of_service = (career_end_date - career_start_date).num_days();
+        years_of_service = days_of_service / days_in_year;
+        employed = false
+    } else {
+        let days_of_service = (current_time.naive_local().date() - career_start_date).num_days();
+        years_of_service = days_of_service / days_in_year;
+        employed = true;
+    }
+    (years_of_service, employed)
 }
 
 fn create_text() -> String {

@@ -9,7 +9,8 @@ use common::{ApiError, ErrResp};
 use common::{ErrRespStruct, RespResult};
 use entity::career;
 use entity::sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, TransactionError, TransactionTrait,
+    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, TransactionError,
+    TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use tracing::error;
@@ -110,6 +111,20 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
                             }
                         })?;
 
+                    let num_of_careers = career::Entity::find()
+                        .filter(career::Column::UserAccountId.eq(account_id))
+                        .count(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to count career (user_account_id: {}): {}",
+                                account_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+
                     let document_option =
                         find_document_model_by_user_account_id_with_shared_lock(txn, account_id)
                             .await?;
@@ -125,6 +140,7 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
                         INDEX_NAME,
                         document_id.as_str(),
                         career_id,
+                        num_of_careers,
                     )
                     .await?;
 
@@ -152,10 +168,12 @@ async fn remove_career_from_document(
     index_name: &str,
     document_id: &str,
     career_id: i64,
+    num_of_careers: usize,
 ) -> Result<(), ErrRespStruct> {
+    let source = format!("ctx._source.careers.removeIf(career -> career.career_id == params.career_id); ctx._source.num_of_careers = {}", num_of_careers);
     let script = json!({
         "script": {
-            "source": "ctx._source.careers.removeIf(career -> career.career_id == params.career_id)",
+            "source": source,
             "params": {
                 "career_id": career_id
             }
