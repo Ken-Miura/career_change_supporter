@@ -539,8 +539,9 @@ Email: {}",
 mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
-    use chrono::{DateTime, FixedOffset, TimeZone};
+    use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
     use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
+    use once_cell::sync::Lazy;
 
     use crate::{
         create_career_request::create_career_request_approval::{
@@ -551,7 +552,7 @@ mod tests {
         util::tests::SendMailMock,
     };
 
-    use super::CreateCareerReqApprovalOperation;
+    use super::{convert_career_dates_for_index, CreateCareerReqApprovalOperation};
 
     struct Admin {
         admin_account_id: i64,
@@ -712,5 +713,114 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(Code::NoUserAccountFound as u32, resp.1 .0.code);
+    }
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: (i64, bool),
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        career_start_date: NaiveDate,
+        career_end_date_option: Option<NaiveDate>,
+        current_time: DateTime<FixedOffset>,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let dummy_current_time = Utc
+            .ymd(2022, 6, 11)
+            .and_hms(15, 30, 45)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        vec![
+            TestCase {
+                name: "less 1 year".to_string(),
+                input: Input {
+                    career_start_date: NaiveDate::from_ymd(2009, 4, 1),
+                    career_end_date_option: Some(NaiveDate::from_ymd(2010, 3, 31)),
+                    current_time: dummy_current_time,
+                },
+                expected: (0, false),
+            },
+            TestCase {
+                name: "just 1 year".to_string(),
+                input: Input {
+                    career_start_date: NaiveDate::from_ymd(2009, 4, 1),
+                    career_end_date_option: Some(NaiveDate::from_ymd(2010, 4, 1)),
+                    current_time: dummy_current_time,
+                },
+                expected: (1, false),
+            },
+            TestCase {
+                name: "less 1 year (leap year)".to_string(),
+                input: Input {
+                    career_start_date: NaiveDate::from_ymd(2011, 4, 1),
+                    career_end_date_option: Some(NaiveDate::from_ymd(2012, 3, 30)),
+                    current_time: dummy_current_time,
+                },
+                expected: (0, false),
+            },
+            TestCase {
+                name: "just 1 year (leap year)".to_string(),
+                input: Input {
+                    career_start_date: NaiveDate::from_ymd(2011, 4, 1),
+                    career_end_date_option: Some(NaiveDate::from_ymd(2012, 3, 31)),
+                    current_time: dummy_current_time,
+                },
+                expected: (1, false),
+            },
+            TestCase {
+                name: "status employed".to_string(),
+                input: Input {
+                    career_start_date: NaiveDate::from_ymd(2010, 4, 1),
+                    career_end_date_option: None,
+                    current_time: Utc
+                        .ymd(2011, 4, 1)
+                        .and_hms(15, 30, 45)
+                        .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
+                },
+                expected: (1, true),
+            },
+            TestCase {
+                name: "passed leap year 2 times".to_string(),
+                input: Input {
+                    career_start_date: NaiveDate::from_ymd(2010, 4, 1),
+                    career_end_date_option: None,
+                    current_time: Utc
+                        .ymd(2019, 3, 30)
+                        .and_hms(15, 30, 45)
+                        .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
+                },
+                expected: (9, true),
+            },
+            TestCase {
+                name: "passed leap year 3 times".to_string(),
+                input: Input {
+                    career_start_date: NaiveDate::from_ymd(2010, 4, 1),
+                    career_end_date_option: None,
+                    current_time: Utc
+                        .ymd(2020, 3, 29)
+                        .and_hms(15, 30, 45)
+                        .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
+                },
+                expected: (10, true),
+            },
+        ]
+    });
+
+    #[test]
+    fn convert_career_dates_for_index_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let (years_of_service, employed) = convert_career_dates_for_index(
+                test_case.input.career_start_date,
+                test_case.input.career_end_date_option,
+                test_case.input.current_time,
+            );
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(test_case.expected.0, years_of_service, "{}", message);
+            assert_eq!(test_case.expected.1, employed, "{}", message);
+        }
     }
 }
