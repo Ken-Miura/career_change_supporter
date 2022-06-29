@@ -406,11 +406,15 @@ async fn add_new_document_with_career(
     num_of_careers: usize,
     current_time: DateTime<FixedOffset>,
 ) -> Result<(), ErrRespStruct> {
-    let (years_of_service, employed) = convert_career_dates_for_index(
-        career_model.career_start_date,
-        career_model.career_end_date,
-        current_time,
-    );
+    let employed = career_model.career_end_date.is_none();
+    let years_of_service = if let Some(career_end_date) = career_model.career_end_date {
+        calculate_years_of_service(career_model.career_start_date, career_end_date)
+    } else {
+        calculate_years_of_service(
+            career_model.career_start_date,
+            current_time.naive_local().date(),
+        )
+    };
     let new_document = json!({
         "user_account_id": career_model.user_account_id,
         "careers": [{
@@ -453,11 +457,15 @@ async fn insert_new_career_into_document(
     num_of_careers: usize,
     current_time: DateTime<FixedOffset>,
 ) -> Result<(), ErrRespStruct> {
-    let (years_of_service, employed) = convert_career_dates_for_index(
-        career_model.career_start_date,
-        career_model.career_end_date,
-        current_time,
-    );
+    let employed = career_model.career_end_date.is_none();
+    let years_of_service = if let Some(career_end_date) = career_model.career_end_date {
+        calculate_years_of_service(career_model.career_start_date, career_end_date)
+    } else {
+        calculate_years_of_service(
+            career_model.career_start_date,
+            current_time.naive_local().date(),
+        )
+    };
     let source = format!(
         "ctx._source.careers.add(params.career); ctx._source.num_of_careers = {}",
         num_of_careers
@@ -496,24 +504,10 @@ async fn insert_new_career_into_document(
     Ok(())
 }
 
-fn convert_career_dates_for_index(
-    career_start_date: NaiveDate,
-    career_end_date_option: Option<NaiveDate>,
-    current_time: DateTime<FixedOffset>,
-) -> (i64, bool) {
-    let years_of_service;
-    let employed;
+fn calculate_years_of_service(from: NaiveDate, to: NaiveDate) -> i64 {
     let days_in_year = 365; // 1日の誤差（1年が365日か366日か）は、年という単位に対して無視して良いと判断し、365日固定で計算する
-    if let Some(career_end_date) = career_end_date_option {
-        let days_of_service = (career_end_date - career_start_date).num_days();
-        years_of_service = days_of_service / days_in_year;
-        employed = false
-    } else {
-        let days_of_service = (current_time.naive_local().date() - career_start_date).num_days();
-        years_of_service = days_of_service / days_in_year;
-        employed = true;
-    }
-    (years_of_service, employed)
+    let days_of_service = (to - from).num_days();
+    days_of_service / days_in_year
 }
 
 fn create_text() -> String {
@@ -539,7 +533,7 @@ Email: {}",
 mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
-    use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
+    use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
     use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
@@ -552,7 +546,7 @@ mod tests {
         util::tests::SendMailMock,
     };
 
-    use super::{convert_career_dates_for_index, CreateCareerReqApprovalOperation};
+    use super::{calculate_years_of_service, CreateCareerReqApprovalOperation};
 
     struct Admin {
         admin_account_id: i64,
@@ -719,108 +713,75 @@ mod tests {
     struct TestCase {
         name: String,
         input: Input,
-        expected: (i64, bool),
+        expected: i64,
     }
 
     #[derive(Debug)]
     struct Input {
-        career_start_date: NaiveDate,
-        career_end_date_option: Option<NaiveDate>,
-        current_time: DateTime<FixedOffset>,
+        from: NaiveDate,
+        to: NaiveDate,
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        let dummy_current_time = Utc
-            .ymd(2022, 6, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         vec![
             TestCase {
                 name: "less 1 year".to_string(),
                 input: Input {
-                    career_start_date: NaiveDate::from_ymd(2009, 4, 1),
-                    career_end_date_option: Some(NaiveDate::from_ymd(2010, 3, 31)),
-                    current_time: dummy_current_time,
+                    from: NaiveDate::from_ymd(2009, 4, 1),
+                    to: NaiveDate::from_ymd(2010, 3, 31),
                 },
-                expected: (0, false),
+                expected: 0,
             },
             TestCase {
                 name: "just 1 year".to_string(),
                 input: Input {
-                    career_start_date: NaiveDate::from_ymd(2009, 4, 1),
-                    career_end_date_option: Some(NaiveDate::from_ymd(2010, 4, 1)),
-                    current_time: dummy_current_time,
+                    from: NaiveDate::from_ymd(2009, 4, 1),
+                    to: NaiveDate::from_ymd(2010, 4, 1),
                 },
-                expected: (1, false),
+                expected: 1,
             },
             TestCase {
                 name: "less 1 year (leap year)".to_string(),
                 input: Input {
-                    career_start_date: NaiveDate::from_ymd(2011, 4, 1),
-                    career_end_date_option: Some(NaiveDate::from_ymd(2012, 3, 30)),
-                    current_time: dummy_current_time,
+                    from: NaiveDate::from_ymd(2011, 4, 1),
+                    to: NaiveDate::from_ymd(2012, 3, 30),
                 },
-                expected: (0, false),
+                expected: 0,
             },
             TestCase {
                 name: "just 1 year (leap year)".to_string(),
                 input: Input {
-                    career_start_date: NaiveDate::from_ymd(2011, 4, 1),
-                    career_end_date_option: Some(NaiveDate::from_ymd(2012, 3, 31)),
-                    current_time: dummy_current_time,
+                    from: NaiveDate::from_ymd(2011, 4, 1),
+                    to: NaiveDate::from_ymd(2012, 3, 31),
                 },
-                expected: (1, false),
-            },
-            TestCase {
-                name: "status employed".to_string(),
-                input: Input {
-                    career_start_date: NaiveDate::from_ymd(2010, 4, 1),
-                    career_end_date_option: None,
-                    current_time: Utc
-                        .ymd(2011, 4, 1)
-                        .and_hms(15, 30, 45)
-                        .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
-                },
-                expected: (1, true),
+                expected: 1,
             },
             TestCase {
                 name: "passed leap year 2 times".to_string(),
                 input: Input {
-                    career_start_date: NaiveDate::from_ymd(2010, 4, 1),
-                    career_end_date_option: None,
-                    current_time: Utc
-                        .ymd(2019, 3, 30)
-                        .and_hms(15, 30, 45)
-                        .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
+                    from: NaiveDate::from_ymd(2010, 4, 1),
+                    to: NaiveDate::from_ymd(2019, 3, 30),
                 },
-                expected: (9, true),
+                expected: 9,
             },
             TestCase {
                 name: "passed leap year 3 times".to_string(),
                 input: Input {
-                    career_start_date: NaiveDate::from_ymd(2010, 4, 1),
-                    career_end_date_option: None,
-                    current_time: Utc
-                        .ymd(2020, 3, 29)
-                        .and_hms(15, 30, 45)
-                        .with_timezone(&JAPANESE_TIME_ZONE.to_owned()),
+                    from: NaiveDate::from_ymd(2010, 4, 1),
+                    to: NaiveDate::from_ymd(2020, 3, 29),
                 },
-                expected: (10, true),
+                expected: 10,
             },
         ]
     });
 
     #[test]
-    fn convert_career_dates_for_index_tests() {
+    fn calculate_years_of_service_tests() {
         for test_case in TEST_CASE_SET.iter() {
-            let (years_of_service, employed) = convert_career_dates_for_index(
-                test_case.input.career_start_date,
-                test_case.input.career_end_date_option,
-                test_case.input.current_time,
-            );
+            let years_of_service =
+                calculate_years_of_service(test_case.input.from, test_case.input.to);
             let message = format!("test case \"{}\" failed", test_case.name.clone());
-            assert_eq!(test_case.expected.0, years_of_service, "{}", message);
-            assert_eq!(test_case.expected.1, employed, "{}", message);
+            assert_eq!(test_case.expected, years_of_service, "{}", message);
         }
     }
 }
