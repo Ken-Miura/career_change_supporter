@@ -212,6 +212,9 @@
       },
       "rating": {
         "type": "double"
+      },
+      "num_of_rated": {
+        "type": "integer"
       }
     }
   }
