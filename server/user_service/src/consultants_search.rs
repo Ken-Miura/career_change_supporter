@@ -1,7 +1,8 @@
 // Copyright 2022 Ken Miura
 
-use axum::Json;
+use axum::{Extension, Json};
 use common::RespResult;
+use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
 use crate::util::session::User;
@@ -9,6 +10,7 @@ use crate::util::session::User;
 pub(crate) async fn post_consultants_search(
     User { account_id: _ }: User,
     Json(_req): Json<ConsultantsSearchRequest>,
+    Extension(_pool): Extension<DatabaseConnection>,
 ) -> RespResult<ConsultantsSearchResult> {
     todo!()
 }
