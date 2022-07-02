@@ -20,8 +20,8 @@ pub(crate) struct ConsultantsSearchRequest {
     pub career_param: CareerParam,
     pub fee_per_hour_yen_param: FeePerHourYenParam,
     pub sort: Option<Sort>,
-    pub from: usize,
-    pub size: usize,
+    pub from: i32,
+    pub size: i32,
 }
 
 #[derive(Deserialize)]
@@ -60,7 +60,7 @@ pub(crate) struct Sort {
 
 #[derive(Serialize, Debug)]
 pub(crate) struct ConsultantsSearchResult {
-    total: u32,
+    total: i32,
     consultants: Vec<ConsultantDescription>,
 }
 
