@@ -2,7 +2,7 @@
 
 pub(crate) mod bank_account_validator;
 pub(crate) mod career_validator;
-pub(crate) mod consultant_search_param_validator;
+pub(crate) mod consultant_search_param;
 pub(crate) mod file_name_validator;
 pub(crate) mod identity_validator;
 
