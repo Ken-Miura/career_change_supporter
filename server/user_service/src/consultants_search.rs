@@ -9,14 +9,14 @@ use crate::util::session::User;
 
 pub(crate) async fn post_consultants_search(
     User { account_id: _ }: User,
-    Json(_req): Json<ConsultantsSearchRequest>,
+    Json(_req): Json<ConsultantSearchParam>,
     Extension(_pool): Extension<DatabaseConnection>,
 ) -> RespResult<ConsultantsSearchResult> {
     todo!()
 }
 
 #[derive(Deserialize)]
-pub(crate) struct ConsultantsSearchRequest {
+pub(crate) struct ConsultantSearchParam {
     pub career_param: CareerParam,
     pub fee_per_hour_yen_param: FeePerHourYenParam,
     pub sort: Option<Sort>,
