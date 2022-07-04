@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 aws-config = "0.14.0"
 aws-sdk-s3 = "0.14.0"
-axum = "0.5.10"
+axum = "0.5.11"
 bcrypt = "0.13.0"
 chrono = "0.4.19"
 cookie = "0.16.0"
