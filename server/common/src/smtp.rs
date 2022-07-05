@@ -116,10 +116,9 @@ impl SendMail for SmtpClient {
                 )
             })?;
 
-        let credentials = Credentials::new(self.username.clone(), self.password.clone());
+        let _credentials = Credentials::new(self.username.clone(), self.password.clone());
         let mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(self.host.clone())
             .port(self.port)
-            .credentials(credentials)
             .build();
 
         let resp = mailer.send(email.clone()).await.map_err(|e| {
