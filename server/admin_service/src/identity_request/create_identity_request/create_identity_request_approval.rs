@@ -4,7 +4,8 @@ use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{
     smtp::{
-        SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
+        SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
+        SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
     },
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
@@ -37,7 +38,12 @@ pub(crate) async fn post_create_identity_request_approval(
 ) -> RespResult<CreateIdentityReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = CreateIdentityReqApprovalOperationImpl { pool };
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
     handle_create_identity_request_approval(
         account_id,
         create_identity_req_approval.user_account_id,
@@ -93,15 +99,14 @@ async fn handle_create_identity_request_approval(
         )
     })?;
 
-    let _ = async move {
-        send_mail.send_mail(
+    let _ = send_mail
+        .send_mail(
             &user_email_address,
             SYSTEM_EMAIL_ADDRESS,
             &SUBJECT,
             create_text().as_str(),
         )
-    }
-    .await?;
+        .await?;
 
     Ok((StatusCode::OK, Json(CreateIdentityReqApprovalResult {})))
 }

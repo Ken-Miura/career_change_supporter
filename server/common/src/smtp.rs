@@ -1,13 +1,13 @@
 // Copyright 2021 Ken Miura
 
-use axum::{http::StatusCode, Json};
-use lettre;
-use lettre::{ClientSecurity, Transport};
-use lettre_email::EmailBuilder;
+use axum::{async_trait, http::StatusCode, Json};
+use lettre::{
+    message::Mailbox, transport::smtp::authentication::Credentials, AsyncSmtpTransport,
+    AsyncTransport, Message, Tokio1Executor,
+};
 use once_cell::sync::Lazy;
 use std::env::var;
-use std::net::ToSocketAddrs;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::{err, ApiError, ErrResp};
 
@@ -18,38 +18,94 @@ pub const SYSTEM_EMAIL_ADDRESS: &str = "admin-no-reply@test.com";
 // TODO: 実際にメールアドレスを取得した後、修正する
 pub const INQUIRY_EMAIL_ADDRESS: &str = "inquiry@test.com";
 
-pub const KEY_TO_SOCKET_FOR_SMTP_SERVER: &str = "SOCKET_FOR_SMTP_SERVER";
-pub static SOCKET_FOR_SMTP_SERVER: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_SOCKET_FOR_SMTP_SERVER).unwrap_or_else(|_| {
+pub const KEY_TO_SMTP_HOST: &str = "SMTP_HOST";
+pub static SMTP_HOST: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_SMTP_HOST).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"127.0.0.1:1080\") must be set",
-            KEY_TO_SOCKET_FOR_SMTP_SERVER
+            "Not environment variable found: environment variable \"{}\" (example value: \"127.0.0.1\") must be set",
+            KEY_TO_SMTP_HOST
         );
     })
 });
 
+pub const KEY_TO_SMTP_PORT: &str = "SMTP_PORT";
+pub static SMTP_PORT: Lazy<u16> = Lazy::new(|| {
+    let port_str = var(KEY_TO_SMTP_PORT).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"1025\") must be set",
+            KEY_TO_SMTP_PORT
+        );
+    });
+    port_str.parse::<u16>().unwrap_or_else(|op| {
+        panic!("failed to parse SMTP_PORT ({}): {}", port_str, op);
+    })
+});
+
+pub const KEY_TO_SMTP_USERNAME: &str = "SMTP_USERNAME";
+pub static SMTP_USERNAME: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_SMTP_USERNAME).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"username\") must be set",
+            KEY_TO_SMTP_USERNAME
+        );
+    })
+});
+
+pub const KEY_TO_SMTP_PASSWORD: &str = "SMTP_PASSWORD";
+pub static SMTP_PASSWORD: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_SMTP_PASSWORD).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"password\") must be set",
+            KEY_TO_SMTP_PASSWORD
+        );
+    })
+});
+
+#[async_trait]
 pub trait SendMail {
-    fn send_mail(&self, to: &str, from: &str, subject: &str, text: &str) -> Result<(), ErrResp>;
+    async fn send_mail(
+        &self,
+        to: &str,
+        from: &str,
+        subject: &str,
+        text: &str,
+    ) -> Result<(), ErrResp>;
 }
 
 pub struct SmtpClient {
-    socket: String,
+    host: String,
+    port: u16,
+    username: String,
+    password: String,
 }
 
 impl SmtpClient {
-    pub fn new(socket: String) -> Self {
-        Self { socket }
+    pub fn new(host: String, port: u16, username: String, password: String) -> Self {
+        Self {
+            host,
+            port,
+            username,
+            password,
+        }
     }
 }
 
+#[async_trait]
 impl SendMail for SmtpClient {
-    fn send_mail(&self, to: &str, from: &str, subject: &str, text: &str) -> Result<(), ErrResp> {
-        let email = EmailBuilder::new()
-            .to(to)
-            .from(from)
+    async fn send_mail(
+        &self,
+        to: &str,
+        from: &str,
+        subject: &str,
+        text: &str,
+    ) -> Result<(), ErrResp> {
+        let to_email_addr = SmtpClient::parse_email_address(to)?;
+        let from_email_addr = SmtpClient::parse_email_address(from)?;
+        let email = Message::builder()
+            .to(to_email_addr)
+            .from(from_email_addr)
             .subject(subject)
-            .text(text)
-            .build()
+            .body(String::from(text))
             .map_err(|e| {
                 error!("failed to build email: {}", e);
                 (
@@ -59,8 +115,15 @@ impl SendMail for SmtpClient {
                     }),
                 )
             })?;
-        let mut addrs = self.socket.to_socket_addrs().map_err(|e| {
-            error!("failed to get socket str: str={}, e={}", self.socket, e);
+
+        let credentials = Credentials::new(self.username.clone(), self.password.clone());
+        let mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(self.host.clone())
+            .port(self.port)
+            .credentials(credentials)
+            .build();
+
+        let resp = mailer.send(email.clone()).await.map_err(|e| {
+            error!("failed to send email ({:?}): {}", email, e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
@@ -68,34 +131,21 @@ impl SendMail for SmtpClient {
                 }),
             )
         })?;
-        let addr = addrs.next().ok_or_else(|| {
-            error!("failed to get socket str: str={}", self.socket);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    code: err::Code::UnexpectedErr as u32,
-                }),
-            )
-        })?;
-        let client = lettre::SmtpClient::new(addr, ClientSecurity::None).map_err(|e| {
-            error!("failed to create lettre::SmtpClient: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    code: err::Code::UnexpectedErr as u32,
-                }),
-            )
-        })?;
-        let mut mailer = client.transport();
-        let _ = mailer.send(email.into()).map_err(|e| {
-            error!("failed to send email: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    code: err::Code::UnexpectedErr as u32,
-                }),
-            )
-        })?;
+        info!("send email successfull (response: {:?})", resp);
         Ok(())
+    }
+}
+
+impl SmtpClient {
+    fn parse_email_address(email_address: &str) -> Result<Mailbox, ErrResp> {
+        email_address.parse().map_err(|e| {
+            error!("failed to parse email_address ({}): {}", e, email_address);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: err::Code::UnexpectedErr as u32,
+                }),
+            )
+        })
     }
 }

@@ -61,6 +61,7 @@ pub(crate) async fn find_user_model_by_user_account_id_with_shared_lock(
 #[cfg(test)]
 pub(crate) mod tests {
 
+    use axum::async_trait;
     use axum::http::StatusCode;
 
     use crate::err::Code;
@@ -99,8 +100,9 @@ pub(crate) mod tests {
         }
     }
 
+    #[async_trait]
     impl SendMail for SendMailMock {
-        fn send_mail(
+        async fn send_mail(
             &self,
             to: &str,
             from: &str,

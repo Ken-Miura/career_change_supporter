@@ -9,7 +9,8 @@ use axum::Json;
 use chrono::DateTime;
 use chrono::{Duration, FixedOffset};
 use common::smtp::{
-    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
+    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
+    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::hash_password;
 use common::util::validator::{
@@ -61,7 +62,12 @@ pub(crate) async fn post_password_update(
 
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = PasswordUpdateOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
     handle_password_update_req(
         &pwd_update_req.pwd_change_req_id,
         &pwd_update_req.password,
@@ -170,15 +176,14 @@ async fn handle_password_update_req(
     );
 
     let text = create_text();
-    let _ = async {
-        send_mail.send_mail(
+    let _ = send_mail
+        .send_mail(
             &pwd_change_req.email_address,
             SYSTEM_EMAIL_ADDRESS,
             &SUBJECT,
             &text,
         )
-    }
-    .await?;
+        .await?;
     Ok((StatusCode::OK, Json(PasswordUpdateResult {})))
 }
 

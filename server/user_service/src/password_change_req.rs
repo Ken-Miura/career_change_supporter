@@ -4,10 +4,12 @@ use axum::async_trait;
 use axum::extract::Extension;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
-use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
+use common::smtp::{
+    INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
+};
 use common::util::validator::email_address_validator::validate_email_address;
 use common::{
-    smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
+    smtp::{SendMail, SmtpClient},
     ErrResp, RespResult,
 };
 use common::{
@@ -50,7 +52,12 @@ pub(crate) async fn post_password_change_req(
     let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = PasswordChangeReqOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
     handle_password_change_req(
         &account.email_address,
         &URL_FOR_FRONT_END.to_string(),
@@ -114,8 +121,9 @@ async fn handle_password_change_req(
         email_addr, simple_uuid, requested_time
     );
     let text = create_text(url, &uuid_for_url);
-    let _ =
-        async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
+    let _ = send_mail
+        .send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text)
+        .await?;
     Ok((StatusCode::OK, Json(PasswordChangeReqResult {})))
 }
 

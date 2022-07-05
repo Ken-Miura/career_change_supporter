@@ -7,7 +7,8 @@ use axum::Json;
 use chrono::DateTime;
 use chrono::{Duration, FixedOffset};
 use common::smtp::{
-    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
+    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
+    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
 };
 use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
@@ -41,7 +42,12 @@ pub(crate) async fn post_accounts(
 ) -> RespResult<AccountsResult> {
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = AccountsOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
     handle_accounts_req(
         &temp_account.temp_account_id,
         &current_date_time,
@@ -118,15 +124,14 @@ async fn handle_accounts_req(
         temp_account.email_address, current_date_time
     );
     let text = create_text();
-    let _ = async {
-        send_mail.send_mail(
+    let _ = send_mail
+        .send_mail(
             &temp_account.email_address,
             SYSTEM_EMAIL_ADDRESS,
             &SUBJECT,
             &text,
         )
-    }
-    .await?;
+        .await?;
     Ok((StatusCode::OK, Json(AccountsResult {})))
 }
 

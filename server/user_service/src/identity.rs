@@ -15,11 +15,13 @@ use axum::{
 };
 use bytes::Bytes;
 use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
-use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
+use common::smtp::{
+    ADMIN_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
+};
 use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
 use common::util::{Identity, Ymd};
 use common::{
-    smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
+    smtp::{SendMail, SmtpClient},
     ApiError, ErrResp, RespResult,
 };
 use common::{ErrRespStruct, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
@@ -67,7 +69,12 @@ pub(crate) async fn post_identity(
     .await?;
 
     let op = SubmitIdentityOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
     let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let submitted_identity = SubmittedIdentity {
@@ -412,9 +419,9 @@ async fn handle_identity_req(
     };
     let subject = create_subject(account_id, identity_exists);
     let text = create_text(account_id, identity_exists);
-    let _ =
-        async { send_mail.send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text) }
-            .await?;
+    let _ = send_mail
+        .send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text)
+        .await?;
     Ok((StatusCode::OK, Json(IdentityResult {})))
 }
 

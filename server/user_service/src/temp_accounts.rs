@@ -7,7 +7,7 @@ use chrono::{DateTime, FixedOffset};
 use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::hash_password;
 use common::{
-    smtp::{SendMail, SmtpClient, SOCKET_FOR_SMTP_SERVER},
+    smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME},
     ErrResp, RespResult, ValidCred,
 };
 use common::{
@@ -48,7 +48,12 @@ pub(crate) async fn post_temp_accounts(
     let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = TempAccountsOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
     handle_temp_accounts_req(
         &cred.email_address,
         &cred.password,
@@ -101,8 +106,9 @@ async fn handle_temp_accounts_req(
         email_addr, simple_uuid, register_time
     );
     let text = create_text(url, &uuid_for_url);
-    let _ =
-        async { send_mail.send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text) }.await?;
+    let _ = send_mail
+        .send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text)
+        .await?;
     Ok((StatusCode::OK, Json(TempAccountsResult {})))
 }
 

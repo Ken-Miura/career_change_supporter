@@ -6,7 +6,8 @@ use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::{
     opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI},
     smtp::{
-        SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SOCKET_FOR_SMTP_SERVER, SYSTEM_EMAIL_ADDRESS,
+        SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
+        SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
     },
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
@@ -41,7 +42,12 @@ pub(crate) async fn post_create_career_request_approval(
 ) -> RespResult<CreateCareerReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = CreateCareerReqApprovalOperationImpl { pool };
-    let smtp_client = SmtpClient::new(SOCKET_FOR_SMTP_SERVER.to_string());
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
     handle_create_career_request_approval(
         account_id,
         create_career_req_approval.create_career_req_id,
@@ -113,15 +119,14 @@ async fn handle_create_career_request_approval(
         )
     })?;
 
-    let _ = async move {
-        send_mail.send_mail(
+    let _ = send_mail
+        .send_mail(
             &user_email_address,
             SYSTEM_EMAIL_ADDRESS,
             &SUBJECT,
             create_text().as_str(),
         )
-    }
-    .await?;
+        .await?;
 
     Ok((StatusCode::OK, Json(CreateCareerReqApprovalResult {})))
 }

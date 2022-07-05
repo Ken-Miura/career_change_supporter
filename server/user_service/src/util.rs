@@ -157,6 +157,7 @@ pub(crate) async fn insert_document(
 pub(crate) mod tests {
     use std::io::Cursor;
 
+    use axum::async_trait;
     use axum::http::StatusCode;
     use bytes::Bytes;
     use common::{smtp::SendMail, ErrResp};
@@ -184,8 +185,9 @@ pub(crate) mod tests {
         }
     }
 
+    #[async_trait]
     impl SendMail for SendMailMock {
-        fn send_mail(
+        async fn send_mail(
             &self,
             to: &str,
             from: &str,
