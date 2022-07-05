@@ -117,6 +117,11 @@ impl SendMail for SmtpClient {
             })?;
 
         let _credentials = Credentials::new(self.username.clone(), self.password.clone());
+        // TODO: SMTP over TLSまたはSTARTLSを使うAPIに置き換える
+        // TODO: SMTP over TLSまたはSTARTLSに対応したローカルの開発環境の整備
+        //         mailcatcher、またはmailhogのイメージがそれらをサポートしてる場合、そのまま利用する
+        //         サポートされていない場合、下記URLを参考にSTUNNELを通して準備する
+        //           https://github.com/mailhog/MailHog/issues/84#issuecomment-947124617
         let mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(self.host.clone())
             .port(self.port)
             .build();
