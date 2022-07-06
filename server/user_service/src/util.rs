@@ -27,6 +27,9 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 
+pub(crate) const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
+pub(crate) const MAX_FEE_PER_HOUR_IN_YEN: i32 = 50000;
+
 pub(crate) const ROOT_PATH: &str = "/api";
 
 pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);

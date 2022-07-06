@@ -16,10 +16,10 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
-use crate::util::{find_document_model_by_user_account_id_with_shared_lock, insert_document};
-
-const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
-const MAX_FEE_PER_HOUR_IN_YEN: i32 = 50000;
+use crate::util::{
+    find_document_model_by_user_account_id_with_shared_lock, insert_document,
+    MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
+};
 
 pub(crate) async fn post_fee_per_hour_in_yen(
     User { account_id }: User,
