@@ -28,7 +28,7 @@ pub(crate) struct ConsultantSearchParam {
     pub size: i32,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct CareerParam {
     pub company_name: Option<String>,
     pub department_name: Option<String>,
@@ -44,19 +44,19 @@ pub(crate) struct CareerParam {
     pub note: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct AnnualInComeInManYenParam {
     pub equal_or_more: Option<i32>,
     pub equal_or_less: Option<i32>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct FeePerHourYenParam {
     pub equal_or_more: Option<i32>,
     pub equal_or_less: Option<i32>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct Sort {
     pub key: String,
     pub order: String,

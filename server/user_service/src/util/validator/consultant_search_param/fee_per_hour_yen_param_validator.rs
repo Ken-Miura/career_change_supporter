@@ -85,4 +85,149 @@ impl Display for FeePerHourYenParamError {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use once_cell::sync::Lazy;
+
+    use crate::{
+        consultants_search::FeePerHourYenParam,
+        util::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
+    };
+
+    use super::{validate_fee_per_hour_yen_param, FeePerHourYenParamError};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: FeePerHourYenParam,
+        expected: Result<(), FeePerHourYenParamError>,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![
+            TestCase {
+                name: "no parameters specified".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: None,
+                    equal_or_less: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "min equal_or_more".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN),
+                    equal_or_less: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "max equal_or_more".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: Some(MAX_FEE_PER_HOUR_IN_YEN),
+                    equal_or_less: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "min equal_or_less".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: None,
+                    equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN),
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "max equal_or_less".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: None,
+                    equal_or_less: Some(MAX_FEE_PER_HOUR_IN_YEN),
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "min equal_or_more and max equal_or_less".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN),
+                    equal_or_less: Some(MAX_FEE_PER_HOUR_IN_YEN),
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "equal_or_more == equal_or_less".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN),
+                    equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN),
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "invalid equal_or_more 1".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN - 1),
+                    equal_or_less: None,
+                },
+                expected: Err(FeePerHourYenParamError::InvalidEqualOrMore {
+                    value: MIN_FEE_PER_HOUR_IN_YEN - 1,
+                    min: MIN_FEE_PER_HOUR_IN_YEN,
+                    max: MAX_FEE_PER_HOUR_IN_YEN,
+                }),
+            },
+            TestCase {
+                name: "invalid equal_or_more 2".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: Some(MAX_FEE_PER_HOUR_IN_YEN + 1),
+                    equal_or_less: None,
+                },
+                expected: Err(FeePerHourYenParamError::InvalidEqualOrMore {
+                    value: MAX_FEE_PER_HOUR_IN_YEN + 1,
+                    min: MIN_FEE_PER_HOUR_IN_YEN,
+                    max: MAX_FEE_PER_HOUR_IN_YEN,
+                }),
+            },
+            TestCase {
+                name: "invalid equal_or_less 1".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: None,
+                    equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN - 1),
+                },
+                expected: Err(FeePerHourYenParamError::InvalidEqualOrLess {
+                    value: MIN_FEE_PER_HOUR_IN_YEN - 1,
+                    min: MIN_FEE_PER_HOUR_IN_YEN,
+                    max: MAX_FEE_PER_HOUR_IN_YEN,
+                }),
+            },
+            TestCase {
+                name: "invalid equal_or_less 2".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: None,
+                    equal_or_less: Some(MAX_FEE_PER_HOUR_IN_YEN + 1),
+                },
+                expected: Err(FeePerHourYenParamError::InvalidEqualOrLess {
+                    value: MAX_FEE_PER_HOUR_IN_YEN + 1,
+                    min: MIN_FEE_PER_HOUR_IN_YEN,
+                    max: MAX_FEE_PER_HOUR_IN_YEN,
+                }),
+            },
+            TestCase {
+                name: "equal_or_less exceeds equal_or_less".to_string(),
+                input: FeePerHourYenParam {
+                    equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN + 200),
+                    equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN + 100),
+                },
+                expected: Err(FeePerHourYenParamError::EqualOrMoreExceedsEqualOrLess {
+                    equal_or_more: MIN_FEE_PER_HOUR_IN_YEN + 200,
+                    equal_or_less: MIN_FEE_PER_HOUR_IN_YEN + 100,
+                }),
+            },
+        ]
+    });
+
+    #[test]
+    fn test_validate_fee_per_hour_yen_param() {
+        for test_case in TEST_CASE_SET.iter() {
+            let result = validate_fee_per_hour_yen_param(&test_case.input);
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(test_case.expected, result, "{}", message);
+        }
+    }
+}
