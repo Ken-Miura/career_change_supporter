@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::util::{
     session::User,
-    validator::consultant_search_param::fee_per_hour_yen_param_validator::validate_fee_per_hour_yen_param,
+    validator::consultant_search_param::{
+        fee_per_hour_yen_param_validator::validate_fee_per_hour_yen_param,
+        sort_param_validator::validate_sort_param,
+    },
 };
 
 pub(crate) async fn post_consultants_search(
@@ -16,6 +19,9 @@ pub(crate) async fn post_consultants_search(
     Extension(_pool): Extension<DatabaseConnection>,
 ) -> RespResult<ConsultantsSearchResult> {
     let _ = validate_fee_per_hour_yen_param(&req.fee_per_hour_yen_param).expect("failed to get Ok");
+    if let Some(sort_param) = req.sort_param {
+        let _ = validate_sort_param(&sort_param).expect("failed to get Ok");
+    }
     todo!()
 }
 
@@ -23,7 +29,7 @@ pub(crate) async fn post_consultants_search(
 pub(crate) struct ConsultantSearchParam {
     pub career_param: CareerParam,
     pub fee_per_hour_yen_param: FeePerHourYenParam,
-    pub sort: Option<Sort>,
+    pub sort_param: Option<SortParam>,
     pub from: i32,
     pub size: i32,
 }
@@ -57,7 +63,7 @@ pub(crate) struct FeePerHourYenParam {
 }
 
 #[derive(Debug, Deserialize)]
-pub(crate) struct Sort {
+pub(crate) struct SortParam {
     pub key: String,
     pub order: String,
 }
