@@ -211,12 +211,12 @@ mod tests {
             TestCase {
                 name: "equal_or_less exceeds equal_or_less".to_string(),
                 input: FeePerHourYenParam {
-                    equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN + 200),
-                    equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN + 100),
+                    equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN + 1),
+                    equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN),
                 },
                 expected: Err(FeePerHourYenParamError::EqualOrMoreExceedsEqualOrLess {
-                    equal_or_more: MIN_FEE_PER_HOUR_IN_YEN + 200,
-                    equal_or_less: MIN_FEE_PER_HOUR_IN_YEN + 100,
+                    equal_or_more: MIN_FEE_PER_HOUR_IN_YEN + 1,
+                    equal_or_less: MIN_FEE_PER_HOUR_IN_YEN,
                 }),
             },
         ]
