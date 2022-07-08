@@ -52,7 +52,10 @@ impl Display for SortParamError {
 mod tests {
     use once_cell::sync::Lazy;
 
-    use crate::{consultants_search::SortParam, util::validator::tests::SYMBOL_SET};
+    use crate::{
+        consultants_search::SortParam,
+        util::validator::tests::{CONTROL_CHAR_SET, SYMBOL_SET},
+    };
 
     use super::{validate_sort_param, SortParamError};
 
@@ -214,6 +217,102 @@ mod tests {
     #[test]
     fn validate_sort_param_returns_err_if_order_includes_symbol() {
         for s in SYMBOL_SET.iter() {
+            let param = SortParam {
+                key: "fee_per_hour_in_yen".to_string(),
+                order: "descending".to_string() + s + "ascending",
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_key_is_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
+            let param = SortParam {
+                key: s.to_string(),
+                order: "descending".to_string(),
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_order_is_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
+            let param = SortParam {
+                key: "fee_per_hour_in_yen".to_string(),
+                order: s.to_string(),
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_key_starts_with_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
+            let param = SortParam {
+                key: s.to_string() + "fee_per_hour_in_yen",
+                order: "descending".to_string(),
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_order_starts_with_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
+            let param = SortParam {
+                key: "fee_per_hour_in_yen".to_string(),
+                order: s.to_string() + "descending",
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_key_ends_with_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
+            let param = SortParam {
+                key: "fee_per_hour_in_yen".to_string() + s,
+                order: "descending".to_string(),
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_order_ends_with_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
+            let param = SortParam {
+                key: "fee_per_hour_in_yen".to_string(),
+                order: "descending".to_string() + s,
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_key_includes_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
+            let param = SortParam {
+                key: "fee_per_hour".to_string() + s + "_in_yen",
+                order: "descending".to_string(),
+            };
+            let result = validate_sort_param(&param);
+            assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
+        }
+    }
+
+    #[test]
+    fn validate_sort_param_returns_err_if_order_includes_control_char() {
+        for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
                 order: "descending".to_string() + s + "ascending",
