@@ -97,6 +97,24 @@ mod tests {
                 },
                 expected: Ok(()),
             },
+            TestCase {
+                name: "invalid key".to_string(),
+                input: SortParam {
+                    key: "1' or '1' = '1';--".to_string(),
+                    order: "ascending".to_string(),
+                },
+                expected: Err(SortParamError::InvalidKey("1' or '1' = '1';--".to_string())),
+            },
+            TestCase {
+                name: "invalid order".to_string(),
+                input: SortParam {
+                    key: "rating".to_string(),
+                    order: "1' or '1' = '1';--".to_string(),
+                },
+                expected: Err(SortParamError::InvalidOrder(
+                    "1' or '1' = '1';--".to_string(),
+                )),
+            },
         ]
     });
 
