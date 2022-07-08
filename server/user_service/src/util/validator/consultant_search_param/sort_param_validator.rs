@@ -49,4 +49,63 @@ impl Display for SortParamError {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use once_cell::sync::Lazy;
+
+    use crate::consultants_search::SortParam;
+
+    use super::{validate_sort_param, SortParamError};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: SortParam,
+        expected: Result<(), SortParamError>,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![
+            TestCase {
+                name: "fee_per_hour_in_yen ascending".to_string(),
+                input: SortParam {
+                    key: "fee_per_hour_in_yen".to_string(),
+                    order: "ascending".to_string(),
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "fee_per_hour_in_yen descending".to_string(),
+                input: SortParam {
+                    key: "fee_per_hour_in_yen".to_string(),
+                    order: "descending".to_string(),
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "rating ascending".to_string(),
+                input: SortParam {
+                    key: "rating".to_string(),
+                    order: "ascending".to_string(),
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "rating descending".to_string(),
+                input: SortParam {
+                    key: "rating".to_string(),
+                    order: "descending".to_string(),
+                },
+                expected: Ok(()),
+            },
+        ]
+    });
+
+    #[test]
+    fn test_validate_sort_param() {
+        for test_case in TEST_CASE_SET.iter() {
+            let result = validate_sort_param(&test_case.input);
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(test_case.expected, result, "{}", message);
+        }
+    }
+}
