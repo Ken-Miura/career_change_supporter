@@ -283,7 +283,6 @@ impl ProfileOperationImpl {
     }
 }
 
-// TODO: 事前準備に用意するデータ (fee_per_hour_in_yen) に関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
@@ -296,6 +295,8 @@ mod tests {
 
     use crate::err::Code::NoAccountFound;
     use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
+    use crate::util::MAX_FEE_PER_HOUR_IN_YEN;
+    use crate::util::MIN_FEE_PER_HOUR_IN_YEN;
 
     use super::CareerDescription;
     use super::{handle_profile_req, ProfileOperation};
@@ -440,7 +441,9 @@ mod tests {
         let career_description = create_dummy_career_description();
         let career_descriptions = vec![career_description];
 
-        let fee_per_hour_in_yen_option = Some(3000);
+        let fee_per_hour_in_yen = 3000;
+        assert!((MIN_FEE_PER_HOUR_IN_YEN..=MAX_FEE_PER_HOUR_IN_YEN).contains(&fee_per_hour_in_yen));
+        let fee_per_hour_in_yen_option = Some(fee_per_hour_in_yen);
 
         let profile_op = ProfileOperationMock {
             email_address_option,
@@ -478,7 +481,9 @@ mod tests {
 
         let career_descriptions = create_max_num_of_dummy_career_descriptions();
 
-        let fee_per_hour_in_yen_option = Some(3000);
+        let fee_per_hour_in_yen = 3000;
+        assert!((MIN_FEE_PER_HOUR_IN_YEN..=MAX_FEE_PER_HOUR_IN_YEN).contains(&fee_per_hour_in_yen));
+        let fee_per_hour_in_yen_option = Some(fee_per_hour_in_yen);
 
         let profile_op = ProfileOperationMock {
             email_address_option,
