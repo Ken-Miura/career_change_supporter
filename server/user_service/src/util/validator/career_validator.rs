@@ -1,36 +1,9 @@
 // Copyright 2022 Ken Miura
 
-use std::{collections::HashSet, error::Error, fmt::Display};
+use std::{error::Error, fmt::Display};
 
 use chrono::NaiveDate;
-use common::util::validator::{
-    has_control_char, has_non_new_line_control_char, SPACE_RE, SYMBOL_CHAR_RE,
-};
 use common::util::{Career, Ymd};
-use once_cell::sync::Lazy;
-
-pub(crate) const COMPANY_NAME_MIN_LENGTH: usize = 1;
-pub(crate) const COMPANY_NAME_MAX_LENGTH: usize = 256;
-pub(crate) const DEPARTMENT_NAME_MIN_LENGTH: usize = 1;
-pub(crate) const DEPARTMENT_NAME_MAX_LENGTH: usize = 256;
-pub(crate) const OFFICE_MIN_LENGTH: usize = 1;
-pub(crate) const OFFICE_MAX_LENGTH: usize = 256;
-pub(crate) const PROFESSION_MIN_LENGTH: usize = 1;
-pub(crate) const PROFESSION_MAX_LENGTH: usize = 128;
-pub(crate) const POSITION_NAME_MIN_LENGTH: usize = 1;
-pub(crate) const POSITION_NAME_MAX_LENGTH: usize = 128;
-pub(crate) const NOTE_MIN_LENGTH: usize = 1;
-pub(crate) const NOTE_MAX_LENGTH: usize = 2048;
-/// 99999万円（9億9999万円）が最大値
-pub(crate) const MAX_ANNUAL_INCOME_IN_MAN_YEN: i32 = 99999;
-
-static CONTRACT_TYPE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
-    let mut set: HashSet<String> = HashSet::with_capacity(3);
-    set.insert("regular".to_string());
-    set.insert("contract".to_string());
-    set.insert("other".to_string());
-    set
-});
 
 pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationError> {
     let _ = validate_company_name(&career.company_name)?;
@@ -64,83 +37,52 @@ pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationErr
     Ok(())
 }
 
-// NOTE:
-// - 英単語の区切りに空白が許可されているので、空白のチェックはしない
-// - 脆弱性の作り込みをさけるため、半角記号は許可しない。記号が必要な場合、全角を用いてもらう
-// 補足：
-//   日本の会社名は、仕様としていくつかの記号が許可されている（※1）
-//   今後サービスを改善し、半角記号を利用可能にする場合、アプリのみでなく、ORMとDBを含めた自動の結合テストを必ず用意する。
-//   そして用意されたテストでは、SQLインジェクションが発生しないことを必ずテストする（※2）
-//   （'（アポストロフィー）が、会社名の仕様として許可されているので、特にそれが問題ないことは確認する）
-// （※1）https://vs-group.jp/tax/startup/48check/10check/
-// （※2）ORMがアポストロフィー含め、エスケープが必要な文字をすべてエスケープしていること、
-//        DBがORMの実装しているエスケープ方法（DBやそのDBのバージョンによってエスケープが必要な文字に対するエスケープ方法が異なるケースがある）に対応していること、
-//        は、ぞれぞれORMとDBを含めた結合テストまで実施しないと確認できない。重要なセキュリティインシデントにつながる可能性があるため、
-//        必ず自動化されたテストとして実装し、テストの実施漏れによる問題の検出漏れをさけるようにする必要がある。
 fn validate_company_name(company_name: &str) -> Result<(), CareerValidationError> {
-    let company_name_length = company_name.chars().count();
-    if !(COMPANY_NAME_MIN_LENGTH..=COMPANY_NAME_MAX_LENGTH).contains(&company_name_length) {
-        return Err(CareerValidationError::InvalidCompanyNameLength {
-            length: company_name_length,
-            min_length: COMPANY_NAME_MIN_LENGTH,
-            max_length: COMPANY_NAME_MAX_LENGTH,
-        });
-    }
-    if has_control_char(company_name) {
-        return Err(CareerValidationError::IllegalCharInCompanyName(
-            company_name.to_string(),
-        ));
-    }
-    if SYMBOL_CHAR_RE.is_match(company_name) {
-        return Err(CareerValidationError::IllegalCharInCompanyName(
-            company_name.to_string(),
-        ));
-    }
+    let _ = crate::util::validator::validate_company_name(company_name).map_err(|e| match e {
+        crate::util::validator::CompanyNameValidationError::InvalidCompanyNameLength {
+            length,
+            min_length,
+            max_length,
+        } => CareerValidationError::InvalidCompanyNameLength {
+            length,
+            min_length,
+            max_length,
+        },
+        crate::util::validator::CompanyNameValidationError::IllegalCharInCompanyName(
+            company_name,
+        ) => CareerValidationError::IllegalCharInCompanyName(company_name),
+    })?;
     Ok(())
 }
 
 fn validate_department_name(department_name: &str) -> Result<(), CareerValidationError> {
-    let department_name_length = department_name.chars().count();
-    if !(DEPARTMENT_NAME_MIN_LENGTH..=DEPARTMENT_NAME_MAX_LENGTH).contains(&department_name_length)
-    {
-        return Err(CareerValidationError::InvalidDepartmentNameLength {
-            length: department_name_length,
-            min_length: DEPARTMENT_NAME_MIN_LENGTH,
-            max_length: DEPARTMENT_NAME_MAX_LENGTH,
-        });
-    }
-    if has_control_char(department_name) {
-        return Err(CareerValidationError::IllegalCharInDepartmentName(
-            department_name.to_string(),
-        ));
-    }
-    if SYMBOL_CHAR_RE.is_match(department_name) {
-        return Err(CareerValidationError::IllegalCharInDepartmentName(
-            department_name.to_string(),
-        ));
-    }
+    let _ =
+        crate::util::validator::validate_department_name(department_name).map_err(|e| match e {
+            crate::util::validator::DepartmentNameValidationError::InvalidDepartmentNameLength {
+                length,
+                min_length,
+                max_length,
+            } => CareerValidationError::InvalidDepartmentNameLength { length, min_length, max_length },
+            crate::util::validator::DepartmentNameValidationError::IllegalCharInDepartmentName(department_name) => CareerValidationError::IllegalCharInDepartmentName(department_name),
+        })?;
     Ok(())
 }
 
 fn validate_office(office: &str) -> Result<(), CareerValidationError> {
-    let office_length = office.chars().count();
-    if !(OFFICE_MIN_LENGTH..=OFFICE_MAX_LENGTH).contains(&office_length) {
-        return Err(CareerValidationError::InvalidOfficeLength {
-            length: office_length,
-            min_length: OFFICE_MIN_LENGTH,
-            max_length: OFFICE_MAX_LENGTH,
-        });
-    }
-    if has_control_char(office) {
-        return Err(CareerValidationError::IllegalCharInOffice(
-            office.to_string(),
-        ));
-    }
-    if SYMBOL_CHAR_RE.is_match(office) || SPACE_RE.is_match(office) {
-        return Err(CareerValidationError::IllegalCharInOffice(
-            office.to_string(),
-        ));
-    }
+    let _ = crate::util::validator::validate_office(office).map_err(|e| match e {
+        crate::util::validator::OfficeValidationError::InvalidOfficeLength {
+            length,
+            min_length,
+            max_length,
+        } => CareerValidationError::InvalidOfficeLength {
+            length,
+            min_length,
+            max_length,
+        },
+        crate::util::validator::OfficeValidationError::IllegalCharInOffice(office) => {
+            CareerValidationError::IllegalCharInOffice(office)
+        }
+    })?;
     Ok(())
 }
 
@@ -199,89 +141,74 @@ fn ensure_career_start_date_does_not_exceed_career_end_date(
 }
 
 fn validate_contract_type(contract_type: &str) -> Result<(), CareerValidationError> {
-    if !CONTRACT_TYPE_SET.contains(contract_type) {
-        return Err(CareerValidationError::IllegalContractType(
-            contract_type.to_string(),
-        ));
-    }
+    let _ = crate::util::validator::validate_contract_type(contract_type).map_err(|e| match e {
+        crate::util::validator::ContractTypeValidationError::IllegalContractType(contract_type) => {
+            CareerValidationError::IllegalContractType(contract_type)
+        }
+    })?;
     Ok(())
 }
 
 fn validate_profession(profession: &str) -> Result<(), CareerValidationError> {
-    let profession_length = profession.chars().count();
-    if !(PROFESSION_MIN_LENGTH..=PROFESSION_MAX_LENGTH).contains(&profession_length) {
-        return Err(CareerValidationError::InvalidProfessionLength {
-            length: profession_length,
-            min_length: PROFESSION_MIN_LENGTH,
-            max_length: PROFESSION_MAX_LENGTH,
-        });
-    }
-    if has_control_char(profession) {
-        return Err(CareerValidationError::IllegalCharInProfession(
-            profession.to_string(),
-        ));
-    }
-    if SYMBOL_CHAR_RE.is_match(profession) || SPACE_RE.is_match(profession) {
-        return Err(CareerValidationError::IllegalCharInProfession(
-            profession.to_string(),
-        ));
-    }
+    let _ = crate::util::validator::validate_profession(profession).map_err(|e| match e {
+        crate::util::validator::ProfessionValidationError::InvalidProfessionLength {
+            length,
+            min_length,
+            max_length,
+        } => CareerValidationError::InvalidProfessionLength {
+            length,
+            min_length,
+            max_length,
+        },
+        crate::util::validator::ProfessionValidationError::IllegalCharInProfession(profession) => {
+            CareerValidationError::IllegalCharInProfession(profession)
+        }
+    })?;
     Ok(())
 }
 
 fn validate_annual_income_in_man_yen(
     annual_income_in_man_yen: i32,
 ) -> Result<(), CareerValidationError> {
-    if annual_income_in_man_yen.is_negative() {
-        return Err(CareerValidationError::IllegalAnnualIncomInManYen(
-            annual_income_in_man_yen,
-        ));
-    }
-    if annual_income_in_man_yen > MAX_ANNUAL_INCOME_IN_MAN_YEN {
-        return Err(CareerValidationError::IllegalAnnualIncomInManYen(
-            annual_income_in_man_yen,
-        ));
-    }
+    let _ = crate::util::validator::validate_annual_income_in_man_yen(annual_income_in_man_yen).map_err(|e| match e {
+        crate::util::validator::AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(annual_income_in_man_yen) => CareerValidationError::IllegalAnnualIncomInManYen(annual_income_in_man_yen),
+    })?;
     Ok(())
 }
 
 fn validate_position_name(position_name: &str) -> Result<(), CareerValidationError> {
-    let position_name_length = position_name.chars().count();
-    if !(POSITION_NAME_MIN_LENGTH..=POSITION_NAME_MAX_LENGTH).contains(&position_name_length) {
-        return Err(CareerValidationError::InvalidPositionNameLength {
-            length: position_name_length,
-            min_length: POSITION_NAME_MIN_LENGTH,
-            max_length: POSITION_NAME_MAX_LENGTH,
-        });
-    }
-    if has_control_char(position_name) {
-        return Err(CareerValidationError::IllegalCharInPositionName(
-            position_name.to_string(),
-        ));
-    }
-    if SYMBOL_CHAR_RE.is_match(position_name) || SPACE_RE.is_match(position_name) {
-        return Err(CareerValidationError::IllegalCharInPositionName(
-            position_name.to_string(),
-        ));
-    }
+    let _ = crate::util::validator::validate_position_name(position_name).map_err(|e| match e {
+        crate::util::validator::PositionNameValidationError::InvalidPositionNameLength {
+            length,
+            min_length,
+            max_length,
+        } => CareerValidationError::InvalidPositionNameLength {
+            length,
+            min_length,
+            max_length,
+        },
+        crate::util::validator::PositionNameValidationError::IllegalCharInPositionName(
+            position_name,
+        ) => CareerValidationError::IllegalCharInPositionName(position_name),
+    })?;
     Ok(())
 }
 
 fn validate_note(note: &str) -> Result<(), CareerValidationError> {
-    let note_length = note.chars().count();
-    if !(NOTE_MIN_LENGTH..=NOTE_MAX_LENGTH).contains(&note_length) {
-        return Err(CareerValidationError::InvalidNoteLength {
-            length: note_length,
-            min_length: NOTE_MIN_LENGTH,
-            max_length: NOTE_MAX_LENGTH,
-        });
-    }
-    if has_non_new_line_control_char(note) {
-        return Err(CareerValidationError::IllegalCharInNote(note.to_string()));
-    }
-    if SYMBOL_CHAR_RE.is_match(note) {
-        return Err(CareerValidationError::IllegalCharInNote(note.to_string()));
-    }
+    let _ = crate::util::validator::validate_note(note).map_err(|e| match e {
+        crate::util::validator::NoteValidationError::InvalidNoteLength {
+            length,
+            min_length,
+            max_length,
+        } => CareerValidationError::InvalidNoteLength {
+            length,
+            min_length,
+            max_length,
+        },
+        crate::util::validator::NoteValidationError::IllegalCharInNote(note) => {
+            CareerValidationError::IllegalCharInNote(note)
+        }
+    })?;
     Ok(())
 }
 
@@ -488,19 +415,19 @@ mod tests {
     use common::util::{Career, Ymd};
 
     use crate::util::validator::{
-        career_validator::{
-            CareerValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
-            DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, NOTE_MAX_LENGTH,
-            NOTE_MIN_LENGTH, OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH,
-            POSITION_NAME_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
-        },
+        career_validator::CareerValidationError,
         tests::{
             CONTROL_CHAR_SET, NEW_LINE_CONTROL_CHAR_SET, NON_NEW_LINE_CONTROL_CHAR_SET, SPACE_SET,
             SYMBOL_SET,
         },
+        COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, CONTRACT_TYPE_SET,
+        DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN,
+        NOTE_MAX_LENGTH, NOTE_MIN_LENGTH, OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH,
+        POSITION_NAME_MAX_LENGTH, POSITION_NAME_MIN_LENGTH, PROFESSION_MAX_LENGTH,
+        PROFESSION_MIN_LENGTH,
     };
 
-    use super::{validate_career, CONTRACT_TYPE_SET, MAX_ANNUAL_INCOME_IN_MAN_YEN};
+    use super::validate_career;
 
     #[test]
     fn validate_career_returns_ok_if_valid_career_is_passed() {
