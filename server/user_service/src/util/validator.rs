@@ -285,10 +285,11 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::util::validator::{
-        CompanyNameValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
+        CompanyNameValidationError, DepartmentNameValidationError, COMPANY_NAME_MAX_LENGTH,
+        COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH,
     };
 
-    use super::validate_company_name;
+    use super::{validate_company_name, validate_department_name};
 
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(32);
@@ -666,6 +667,186 @@ mod tests {
             let err = validate_company_name(company_name.as_str()).expect_err("failed to get Err");
             assert_eq!(
                 CompanyNameValidationError::IllegalCharInCompanyName(company_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_ok_if_1_char_department_name_is_passed() {
+        let department_name = "あ";
+        let _ = validate_department_name(department_name).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_department_name_returns_ok_if_256_char_department_name_is_passed() {
+        let department_name = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+        let _ = validate_department_name(department_name).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_empty_char_department_name_is_passed() {
+        let department_name = "";
+
+        let result = validate_department_name(department_name).expect_err("failed to get Err");
+
+        assert_eq!(
+            DepartmentNameValidationError::InvalidDepartmentNameLength {
+                length: department_name.chars().count(),
+                min_length: DEPARTMENT_NAME_MIN_LENGTH,
+                max_length: DEPARTMENT_NAME_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_257_char_department_name_is_passed() {
+        let department_name = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+
+        let result = validate_department_name(department_name).expect_err("failed to get Err");
+
+        assert_eq!(
+            DepartmentNameValidationError::InvalidDepartmentNameLength {
+                length: department_name.chars().count(),
+                min_length: DEPARTMENT_NAME_MIN_LENGTH,
+                max_length: DEPARTMENT_NAME_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_is_control_char() {
+        let mut department_names = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let department_name = s.to_string();
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_starts_with_control_char() {
+        let mut department_names = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let department_name = s.to_string() + "第二営業部";
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_ends_with_control_char() {
+        let mut department_names = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let department_name = "第二営業部".to_string() + s;
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_includes_control_char() {
+        let mut department_names = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let department_name = "第二".to_string() + s + "営業部";
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_is_symbol() {
+        let mut department_names = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let department_name = s.to_string();
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_starts_with_symbol() {
+        let mut department_names = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let department_name = s.to_string() + "第二営業部";
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_ends_with_symbol() {
+        let mut department_names = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let department_name = "第二営業部".to_string() + s;
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_department_name_returns_err_if_department_name_includes_symbol() {
+        let mut department_names = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let department_name = "第二".to_string() + s + "営業部";
+            department_names.push(department_name);
+        }
+        for department_name in department_names {
+            let err =
+                validate_department_name(department_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
                 err
             );
         }
