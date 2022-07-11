@@ -285,11 +285,12 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::util::validator::{
-        CompanyNameValidationError, DepartmentNameValidationError, COMPANY_NAME_MAX_LENGTH,
-        COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH,
+        CompanyNameValidationError, DepartmentNameValidationError, OfficeValidationError,
+        COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH,
+        DEPARTMENT_NAME_MIN_LENGTH, OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH,
     };
 
-    use super::{validate_company_name, validate_department_name};
+    use super::{validate_company_name, validate_department_name, validate_office};
 
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(32);
@@ -849,6 +850,206 @@ mod tests {
                 DepartmentNameValidationError::IllegalCharInDepartmentName(department_name),
                 err
             );
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_ok_if_1_char_office_is_passed() {
+        let office = "あ";
+        let _ = validate_office(office).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_office_returns_ok_if_256_char_office_is_passed() {
+        let office = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+        let _ = validate_office(office).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_empty_char_office_is_passed() {
+        let office = "";
+
+        let result = validate_office(office).expect_err("failed to get Err");
+
+        assert_eq!(
+            OfficeValidationError::InvalidOfficeLength {
+                length: office.chars().count(),
+                min_length: OFFICE_MIN_LENGTH,
+                max_length: OFFICE_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_257_char_office_is_passed() {
+        let office = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+
+        let result = validate_office(office).expect_err("failed to get Err");
+
+        assert_eq!(
+            OfficeValidationError::InvalidOfficeLength {
+                length: office.chars().count(),
+                min_length: OFFICE_MIN_LENGTH,
+                max_length: OFFICE_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_is_control_char() {
+        let mut offices = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let office = s.to_string();
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_starts_with_control_char() {
+        let mut offices = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let office = s.to_string() + "松山事業所";
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_ends_with_control_char() {
+        let mut offices = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let office = "松山事業所".to_string() + s;
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_includes_control_char() {
+        let mut offices = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let office = "松山".to_string() + s + "事業所";
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_is_symbol() {
+        let mut offices = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let office = s.to_string();
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_starts_with_symbol() {
+        let mut offices = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let office = s.to_string() + "松山事業所";
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_ends_with_symbol() {
+        let mut offices = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let office = "松山事業所".to_string() + s;
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_includes_symbol() {
+        let mut offices = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let office = "松山".to_string() + s + "事業所";
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_is_space() {
+        let mut offices = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let office = s.to_string();
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_starts_with_space() {
+        let mut offices = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let office = s.to_string() + "松山事業所";
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_ends_with_space() {
+        let mut offices = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let office = "松山事業所".to_string() + s;
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
+        }
+    }
+
+    #[test]
+    fn validate_office_returns_err_if_office_includes_space() {
+        let mut offices = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let office = "松山".to_string() + s + "事業所";
+            offices.push(office);
+        }
+        for office in offices {
+            let err = validate_office(office.as_str()).expect_err("failed to get Err");
+            assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
         }
     }
 }
