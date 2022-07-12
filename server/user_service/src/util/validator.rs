@@ -285,12 +285,16 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::util::validator::{
-        CompanyNameValidationError, DepartmentNameValidationError, OfficeValidationError,
-        COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH,
-        DEPARTMENT_NAME_MIN_LENGTH, OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH,
+        CompanyNameValidationError, ContractTypeValidationError, DepartmentNameValidationError,
+        OfficeValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
+        DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, OFFICE_MAX_LENGTH,
+        OFFICE_MIN_LENGTH,
     };
 
-    use super::{validate_company_name, validate_department_name, validate_office};
+    use super::{
+        validate_company_name, validate_contract_type, validate_department_name, validate_office,
+        CONTRACT_TYPE_SET,
+    };
 
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(32);
@@ -1051,5 +1055,27 @@ mod tests {
             let err = validate_office(office.as_str()).expect_err("failed to get Err");
             assert_eq!(OfficeValidationError::IllegalCharInOffice(office), err);
         }
+    }
+
+    #[test]
+    fn validate_contract_type_returns_ok_if_valid_contract_type_is_passed() {
+        let mut contract_types = Vec::with_capacity(CONTRACT_TYPE_SET.len());
+        for s in CONTRACT_TYPE_SET.iter() {
+            let contract_type = s.to_string();
+            contract_types.push(contract_type);
+        }
+        for contract_type in contract_types {
+            let _ = validate_contract_type(contract_type.as_str()).expect("failed to get Ok");
+        }
+    }
+
+    #[test]
+    fn validate_contract_type_returns_err_if_illegal_contract_type_is_passed() {
+        let contract_type = "1' or '1' = '1';--";
+        let err = validate_contract_type(contract_type).expect_err("failed to get Err");
+        assert_eq!(
+            ContractTypeValidationError::IllegalContractType(contract_type.to_string()),
+            err
+        );
     }
 }
