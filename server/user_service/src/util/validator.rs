@@ -286,14 +286,14 @@ mod tests {
 
     use crate::util::validator::{
         CompanyNameValidationError, ContractTypeValidationError, DepartmentNameValidationError,
-        OfficeValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
-        DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, OFFICE_MAX_LENGTH,
-        OFFICE_MIN_LENGTH,
+        OfficeValidationError, ProfessionValidationError, COMPANY_NAME_MAX_LENGTH,
+        COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH,
+        OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
     };
 
     use super::{
         validate_company_name, validate_contract_type, validate_department_name, validate_office,
-        CONTRACT_TYPE_SET,
+        validate_profession, CONTRACT_TYPE_SET,
     };
 
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
@@ -1077,5 +1077,241 @@ mod tests {
             ContractTypeValidationError::IllegalContractType(contract_type.to_string()),
             err
         );
+    }
+
+    #[test]
+    fn validate_profession_returns_ok_if_1_char_profession_is_passed() {
+        let profession = "あ";
+        let _ = validate_profession(profession).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_profession_returns_ok_if_128_char_profession_is_passed() {
+        let profession = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+        let _ = validate_profession(profession).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_empty_char_profession_is_passed() {
+        let profession = "";
+
+        let result = validate_profession(profession).expect_err("failed to get Err");
+
+        assert_eq!(
+            ProfessionValidationError::InvalidProfessionLength {
+                length: profession.chars().count(),
+                min_length: PROFESSION_MIN_LENGTH,
+                max_length: PROFESSION_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_129_char_profession_is_passed() {
+        let profession = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+
+        let result = validate_profession(profession).expect_err("failed to get Err");
+
+        assert_eq!(
+            ProfessionValidationError::InvalidProfessionLength {
+                length: profession.chars().count(),
+                min_length: PROFESSION_MIN_LENGTH,
+                max_length: PROFESSION_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_is_control_char() {
+        let mut professions = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let profession = s.to_string();
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_starts_with_control_char() {
+        let mut professions = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let profession = s.to_string() + "営業";
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_ends_with_control_char() {
+        let mut professions = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let profession = "営業".to_string() + s;
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_includes_control_char() {
+        let mut professions = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let profession = "営".to_string() + s + "業";
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_is_symbol() {
+        let mut professions = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let profession = s.to_string();
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_starts_with_symbol() {
+        let mut professions = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let profession = s.to_string() + "営業";
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_ends_with_symbol() {
+        let mut professions = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let profession = "営業".to_string() + s;
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_includes_symbol() {
+        let mut professions = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let profession = "営".to_string() + s + "業";
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_is_space() {
+        let mut professions = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let profession = s.to_string();
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_starts_with_space() {
+        let mut professions = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let profession = s.to_string() + "営業";
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_ends_with_space() {
+        let mut professions = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let profession = "営業".to_string() + s;
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_profession_returns_err_if_profession_includes_space() {
+        let mut professions = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let profession = "営".to_string() + s + "業";
+            professions.push(profession);
+        }
+        for profession in professions {
+            let err = validate_profession(profession.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                ProfessionValidationError::IllegalCharInProfession(profession),
+                err
+            );
+        }
     }
 }
