@@ -285,15 +285,17 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::util::validator::{
-        CompanyNameValidationError, ContractTypeValidationError, DepartmentNameValidationError,
-        OfficeValidationError, ProfessionValidationError, COMPANY_NAME_MAX_LENGTH,
-        COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH,
-        OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
+        AnnualIncomInManYenValidationError, CompanyNameValidationError,
+        ContractTypeValidationError, DepartmentNameValidationError, OfficeValidationError,
+        ProfessionValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
+        DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, OFFICE_MAX_LENGTH,
+        OFFICE_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
     };
 
     use super::{
-        validate_company_name, validate_contract_type, validate_department_name, validate_office,
-        validate_profession, CONTRACT_TYPE_SET,
+        validate_annual_income_in_man_yen, validate_company_name, validate_contract_type,
+        validate_department_name, validate_office, validate_profession, CONTRACT_TYPE_SET,
+        MAX_ANNUAL_INCOME_IN_MAN_YEN,
     };
 
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
@@ -1313,5 +1315,67 @@ mod tests {
                 err
             );
         }
+    }
+
+    #[test]
+    fn validate_annual_income_in_man_yen_returns_ok_if_annual_imcom_in_man_yen_0_is_passed() {
+        let annual_income_in_man_yen = 0;
+        let _ =
+            validate_annual_income_in_man_yen(annual_income_in_man_yen).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_annual_income_in_man_yen_returns_ok_if_max_annual_imcom_in_man_yen_is_passed() {
+        let annual_income_in_man_yen = MAX_ANNUAL_INCOME_IN_MAN_YEN;
+        let _ =
+            validate_annual_income_in_man_yen(annual_income_in_man_yen).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_annual_income_in_man_yen_returns_err_if_over_max_annual_imcom_in_man_yen_is_passed()
+    {
+        let annual_income_in_man_yen = MAX_ANNUAL_INCOME_IN_MAN_YEN + 1;
+
+        let err = validate_annual_income_in_man_yen(annual_income_in_man_yen)
+            .expect_err("failed to get Err");
+
+        assert_eq!(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+                annual_income_in_man_yen
+            ),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_annual_income_in_man_yen_returns_err_if_negative_annual_imcom_in_man_yen_is_passed()
+    {
+        let annual_income_in_man_yen = -1;
+
+        let err = validate_annual_income_in_man_yen(annual_income_in_man_yen)
+            .expect_err("failed to get Err");
+
+        assert_eq!(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+                annual_income_in_man_yen
+            ),
+            err
+        );
+    }
+
+    #[test]
+    fn validate_annual_income_in_man_yen_returns_err_if_i32_min_annual_imcom_in_man_yen_is_passed()
+    {
+        let annual_income_in_man_yen = i32::MIN;
+
+        let err = validate_annual_income_in_man_yen(annual_income_in_man_yen)
+            .expect_err("failed to get Err");
+
+        assert_eq!(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+                annual_income_in_man_yen
+            ),
+            err
+        );
     }
 }
