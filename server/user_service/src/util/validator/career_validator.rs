@@ -3547,7 +3547,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_career_returns_err_if_note_includes_space_and_new_line() {
+    fn validate_career_returns_ok_if_note_includes_space_and_new_line() {
         let career = Career {
             company_name: String::from("佐藤商事"),
             department_name: None,

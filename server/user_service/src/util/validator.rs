@@ -286,17 +286,18 @@ mod tests {
 
     use crate::util::validator::{
         AnnualIncomInManYenValidationError, CompanyNameValidationError,
-        ContractTypeValidationError, DepartmentNameValidationError, OfficeValidationError,
-        PositionNameValidationError, ProfessionValidationError, COMPANY_NAME_MAX_LENGTH,
-        COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH,
-        OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH, POSITION_NAME_MIN_LENGTH,
+        ContractTypeValidationError, DepartmentNameValidationError, NoteValidationError,
+        OfficeValidationError, PositionNameValidationError, ProfessionValidationError,
+        COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH,
+        DEPARTMENT_NAME_MIN_LENGTH, NOTE_MAX_LENGTH, NOTE_MIN_LENGTH, OFFICE_MAX_LENGTH,
+        OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH, POSITION_NAME_MIN_LENGTH,
         PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
     };
 
     use super::{
         validate_annual_income_in_man_yen, validate_company_name, validate_contract_type,
-        validate_department_name, validate_office, validate_position_name, validate_profession,
-        CONTRACT_TYPE_SET, MAX_ANNUAL_INCOME_IN_MAN_YEN,
+        validate_department_name, validate_note, validate_office, validate_position_name,
+        validate_profession, CONTRACT_TYPE_SET, MAX_ANNUAL_INCOME_IN_MAN_YEN,
     };
 
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
@@ -1625,6 +1626,190 @@ mod tests {
                 PositionNameValidationError::IllegalCharInPositionName(position_name),
                 err
             );
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_ok_if_1_char_note_is_passed() {
+        let note = "あ";
+        let _ = validate_note(note).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_note_returns_ok_if_2048_char_note_is_passed() {
+        let note = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+        let _ = validate_note(note).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_empty_char_note_is_passed() {
+        let note = "";
+
+        let result = validate_note(note).expect_err("failed to get Err");
+
+        assert_eq!(
+            NoteValidationError::InvalidNoteLength {
+                length: note.chars().count(),
+                min_length: NOTE_MIN_LENGTH,
+                max_length: NOTE_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_2045_char_note_is_passed() {
+        let note = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+
+        let result = validate_note(note).expect_err("failed to get Err");
+
+        assert_eq!(
+            NoteValidationError::InvalidNoteLength {
+                length: note.chars().count(),
+                min_length: NOTE_MIN_LENGTH,
+                max_length: NOTE_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_is_non_new_line_control_char() {
+        let mut note_list = Vec::with_capacity(NON_NEW_LINE_CONTROL_CHAR_SET.len());
+        for s in NON_NEW_LINE_CONTROL_CHAR_SET.iter() {
+            let note = s.to_string();
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_starts_with_non_new_line_control_char() {
+        let mut note_list = Vec::with_capacity(NON_NEW_LINE_CONTROL_CHAR_SET.len());
+        for s in NON_NEW_LINE_CONTROL_CHAR_SET.iter() {
+            let note = s.to_string() + "備考";
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_ends_with_non_new_line_control_char() {
+        let mut note_list = Vec::with_capacity(NON_NEW_LINE_CONTROL_CHAR_SET.len());
+        for s in NON_NEW_LINE_CONTROL_CHAR_SET.iter() {
+            let note = "備考".to_string() + s;
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_includes_non_new_line_control_char() {
+        let mut note_list = Vec::with_capacity(NON_NEW_LINE_CONTROL_CHAR_SET.len());
+        for s in NON_NEW_LINE_CONTROL_CHAR_SET.iter() {
+            let note = "備".to_string() + s + "考";
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_ok_if_note_is_new_line_control_char() {
+        let mut note_list = Vec::with_capacity(NEW_LINE_CONTROL_CHAR_SET.len());
+        for s in NEW_LINE_CONTROL_CHAR_SET.iter() {
+            let note = s.to_string();
+            note_list.push(note);
+        }
+        for note in note_list {
+            let _ = validate_note(note.as_str()).expect("failed to get Ok");
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_ok_if_note_is_space() {
+        let mut note_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let note = s.to_string();
+            note_list.push(note);
+        }
+        for note in note_list {
+            let _ = validate_note(note.as_str()).expect("failed to get Ok");
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_ok_if_note_includes_space_and_new_line() {
+        let note = "備考は、
+            
+        改行や\n
+         　空白を\r
+         受け入れます。\r\n
+         
+         ";
+        let _ = validate_note(note).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_is_symbol() {
+        let mut note_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let note = s.to_string();
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_starts_with_symbol() {
+        let mut note_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let note = s.to_string() + "備考";
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_ends_with_symbol() {
+        let mut note_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let note = "備考".to_string() + s;
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
+        }
+    }
+
+    #[test]
+    fn validate_note_returns_err_if_note_includes_symbol() {
+        let mut note_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let note = "備".to_string() + s + "考";
+            note_list.push(note);
+        }
+        for note in note_list {
+            let err = validate_note(note.as_str()).expect_err("failed to get Err");
+            assert_eq!(NoteValidationError::IllegalCharInNote(note), err);
         }
     }
 }
