@@ -287,15 +287,16 @@ mod tests {
     use crate::util::validator::{
         AnnualIncomInManYenValidationError, CompanyNameValidationError,
         ContractTypeValidationError, DepartmentNameValidationError, OfficeValidationError,
-        ProfessionValidationError, COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH,
-        DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, OFFICE_MAX_LENGTH,
-        OFFICE_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
+        PositionNameValidationError, ProfessionValidationError, COMPANY_NAME_MAX_LENGTH,
+        COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH,
+        OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH, POSITION_NAME_MIN_LENGTH,
+        PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
     };
 
     use super::{
         validate_annual_income_in_man_yen, validate_company_name, validate_contract_type,
-        validate_department_name, validate_office, validate_profession, CONTRACT_TYPE_SET,
-        MAX_ANNUAL_INCOME_IN_MAN_YEN,
+        validate_department_name, validate_office, validate_position_name, validate_profession,
+        CONTRACT_TYPE_SET, MAX_ANNUAL_INCOME_IN_MAN_YEN,
     };
 
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
@@ -1377,5 +1378,253 @@ mod tests {
             ),
             err
         );
+    }
+
+    #[test]
+    fn validate_position_name_returns_ok_if_1_char_position_name_is_passed() {
+        let position_name = "あ";
+        let _ = validate_position_name(position_name).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_position_name_returns_ok_if_128_char_position_name_is_passed() {
+        let position_name = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+        let _ = validate_position_name(position_name).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_empty_char_position_name_is_passed() {
+        let position_name = "";
+
+        let result = validate_position_name(position_name).expect_err("failed to get Err");
+
+        assert_eq!(
+            PositionNameValidationError::InvalidPositionNameLength {
+                length: position_name.chars().count(),
+                min_length: POSITION_NAME_MIN_LENGTH,
+                max_length: POSITION_NAME_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_129_char_position_name_is_passed() {
+        let position_name = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+
+        let result = validate_position_name(position_name).expect_err("failed to get Err");
+
+        assert_eq!(
+            PositionNameValidationError::InvalidPositionNameLength {
+                length: position_name.chars().count(),
+                min_length: POSITION_NAME_MIN_LENGTH,
+                max_length: POSITION_NAME_MAX_LENGTH
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_is_control_char() {
+        let mut position_name_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let position_name = s.to_string();
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_starts_with_control_char() {
+        let mut position_name_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let position_name = s.to_string() + "係長";
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_ends_with_control_char() {
+        let mut position_name_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let position_name = "係長".to_string() + s;
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_includes_control_char() {
+        let mut position_name_list = Vec::with_capacity(CONTROL_CHAR_SET.len());
+        for s in CONTROL_CHAR_SET.iter() {
+            let position_name = "係".to_string() + s + "長";
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_is_symbol() {
+        let mut position_name_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let position_name = s.to_string();
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_starts_with_symbol() {
+        let mut position_name_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let position_name = s.to_string() + "係長";
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_ends_with_symbol() {
+        let mut position_name_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let position_name = "係長".to_string() + s;
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_includes_symbol() {
+        let mut position_name_list = Vec::with_capacity(SYMBOL_SET.len());
+        for s in SYMBOL_SET.iter() {
+            let position_name = "係".to_string() + s + "長";
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_is_space() {
+        let mut position_name_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let position_name = s.to_string();
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_starts_with_space() {
+        let mut position_name_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let position_name = s.to_string() + "係長";
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_ends_with_space() {
+        let mut position_name_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let position_name = "係長".to_string() + s;
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn validate_position_name_returns_err_if_position_name_includes_space() {
+        let mut position_name_list = Vec::with_capacity(SPACE_SET.len());
+        for s in SPACE_SET.iter() {
+            let position_name = "係".to_string() + s + "長";
+            position_name_list.push(position_name);
+        }
+        for position_name in position_name_list {
+            let err =
+                validate_position_name(position_name.as_str()).expect_err("failed to get Err");
+            assert_eq!(
+                PositionNameValidationError::IllegalCharInPositionName(position_name),
+                err
+            );
+        }
     }
 }
