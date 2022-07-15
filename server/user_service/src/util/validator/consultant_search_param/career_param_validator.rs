@@ -506,7 +506,7 @@ mod tests {
                 }),
             },
             TestCase {
-                name: "illegal length company_name".to_string(),
+                name: "illegal char company_name".to_string(),
                 input: CareerParam {
                     company_name: Some("’ or ‘A’=‘A".to_string()),
                     department_name: None,
