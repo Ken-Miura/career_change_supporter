@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::util::{
     session::User,
     validator::consultant_search_param::{
+        career_param_validator::validate_career_param,
         fee_per_hour_yen_param_validator::validate_fee_per_hour_yen_param,
         sort_param_validator::validate_sort_param,
     },
@@ -22,6 +23,7 @@ pub(crate) async fn post_consultants_search(
     if let Some(sort_param) = req.sort_param {
         let _ = validate_sort_param(&sort_param).expect("failed to get Ok");
     }
+    let _ = validate_career_param(&req.career_param).expect("failed to get Ok");
     todo!()
 }
 
