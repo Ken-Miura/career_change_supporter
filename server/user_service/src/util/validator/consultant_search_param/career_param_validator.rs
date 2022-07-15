@@ -1,6 +1,6 @@
 // Copyright 2022 Ken Miura
 
-use std::{collections::HashSet, fmt::Display};
+use std::{collections::HashSet, error::Error, fmt::Display};
 
 use once_cell::sync::Lazy;
 
@@ -412,3 +412,8 @@ impl Display for CareerParamValidationError {
         }
     }
 }
+
+impl Error for CareerParamValidationError {}
+
+#[cfg(test)]
+mod tests {}
