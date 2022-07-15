@@ -421,7 +421,10 @@ mod tests {
 
     use crate::{
         consultants_search::{AnnualInComeInManYenParam, CareerParam},
-        util::validator::consultant_search_param::career_param_validator::validate_career_param,
+        util::validator::{
+            consultant_search_param::career_param_validator::validate_career_param,
+            MAX_ANNUAL_INCOME_IN_MAN_YEN,
+        },
     };
 
     use super::CareerParamValidationError;
@@ -434,27 +437,50 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        vec![TestCase {
-            name: "no parameters specified".to_string(),
-            input: CareerParam {
-                company_name: None,
-                department_name: None,
-                office: None,
-                years_of_service: None,
-                employed: None,
-                contract_type: None,
-                profession: None,
-                annual_income_in_man_yen: AnnualInComeInManYenParam {
-                    equal_or_more: None,
-                    equal_or_less: None,
+        vec![
+            TestCase {
+                name: "no parameters specified".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
                 },
-                is_manager: None,
-                position_name: None,
-                is_new_graduate: None,
-                note: None,
+                expected: Ok(()),
             },
-            expected: Ok(()),
-        }]
+            TestCase {
+                name: "all parameters specified".to_string(),
+                input: CareerParam {
+                    company_name: Some("テスト株式会社".to_string()),
+                    department_name: Some("開発部".to_string()),
+                    office: Some("山梨事業所".to_string()),
+                    years_of_service: Some("THREE_YEARS_OR_MORE".to_string()),
+                    employed: Some(true),
+                    contract_type: Some("regular".to_string()),
+                    profession: Some("ITエンジニア".to_string()),
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: Some(0),
+                        equal_or_less: Some(MAX_ANNUAL_INCOME_IN_MAN_YEN),
+                    },
+                    is_manager: Some(false),
+                    position_name: Some("主任".to_string()),
+                    is_new_graduate: Some(true),
+                    note: Some("備考".to_string()),
+                },
+                expected: Ok(()),
+            },
+        ]
     });
 
     #[test]
