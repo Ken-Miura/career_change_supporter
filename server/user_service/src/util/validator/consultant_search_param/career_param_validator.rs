@@ -481,7 +481,7 @@ mod tests {
                 expected: Ok(()),
             },
             TestCase {
-                name: "illegal length company_name".to_string(),
+                name: "invalid length company_name".to_string(),
                 input: CareerParam {
                     company_name: Some("".to_string()),
                     department_name: None,
