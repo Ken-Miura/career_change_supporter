@@ -416,4 +416,53 @@ impl Display for CareerParamValidationError {
 impl Error for CareerParamValidationError {}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use once_cell::sync::Lazy;
+
+    use crate::{
+        consultants_search::{AnnualInComeInManYenParam, CareerParam},
+        util::validator::consultant_search_param::career_param_validator::validate_career_param,
+    };
+
+    use super::CareerParamValidationError;
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: CareerParam,
+        expected: Result<(), CareerParamValidationError>,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![TestCase {
+            name: "no parameters specified".to_string(),
+            input: CareerParam {
+                company_name: None,
+                department_name: None,
+                office: None,
+                years_of_service: None,
+                employed: None,
+                contract_type: None,
+                profession: None,
+                annual_income_in_man_yen: AnnualInComeInManYenParam {
+                    equal_or_more: None,
+                    equal_or_less: None,
+                },
+                is_manager: None,
+                position_name: None,
+                is_new_graduate: None,
+                note: None,
+            },
+            expected: Ok(()),
+        }]
+    });
+
+    #[test]
+    fn test_validate_career_param() {
+        for test_case in TEST_CASE_SET.iter() {
+            let result = validate_career_param(&test_case.input);
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(test_case.expected, result, "{}", message);
+        }
+    }
+}
