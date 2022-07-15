@@ -423,7 +423,7 @@ mod tests {
         consultants_search::{AnnualInComeInManYenParam, CareerParam},
         util::validator::{
             consultant_search_param::career_param_validator::validate_career_param,
-            MAX_ANNUAL_INCOME_IN_MAN_YEN,
+            COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN,
         },
     };
 
@@ -479,6 +479,54 @@ mod tests {
                     note: Some("備考".to_string()),
                 },
                 expected: Ok(()),
+            },
+            TestCase {
+                name: "illegal length company_name".to_string(),
+                input: CareerParam {
+                    company_name: Some("".to_string()),
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::InvalidCompanyNameLength {
+                    length: 0,
+                    min_length: COMPANY_NAME_MIN_LENGTH,
+                    max_length: COMPANY_NAME_MAX_LENGTH,
+                }),
+            },
+            TestCase {
+                name: "illegal length company_name".to_string(),
+                input: CareerParam {
+                    company_name: Some("’ or ‘A’=‘A".to_string()),
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::IllegalCharInCompanyName(
+                    "’ or ‘A’=‘A".to_string(),
+                )),
             },
         ]
     });
