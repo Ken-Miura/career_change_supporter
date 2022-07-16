@@ -1,17 +1,22 @@
 // Copyright 2022 Ken Miura
 
 use async_session::async_trait;
+use axum::http::StatusCode;
 use axum::{Extension, Json};
-use common::RespResult;
-use entity::sea_orm::DatabaseConnection;
+use common::{ApiError, ErrResp, RespResult};
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
-use crate::util::{
-    session::User,
-    validator::consultant_search_param::{
-        career_param_validator::validate_career_param,
-        fee_per_hour_yen_param_validator::validate_fee_per_hour_yen_param,
-        sort_param_validator::validate_sort_param,
+use crate::{
+    err::{unexpected_err_resp, Code},
+    util::{
+        session::User,
+        validator::consultant_search_param::{
+            career_param_validator::{validate_career_param, CareerParamValidationError},
+            fee_per_hour_yen_param_validator::validate_fee_per_hour_yen_param,
+            sort_param_validator::validate_sort_param,
+        },
     },
 };
 
@@ -94,21 +99,111 @@ async fn handle_consultants_search(
     param: ConsultantSearchParam,
     op: impl ConsultantsSearchOperation,
 ) -> RespResult<ConsultantsSearchResult> {
+    let _ = validate_career_param(&param.career_param).map_err(|e| {
+        error!("invalid career_param: {}", e);
+        create_invalid_career_param_err(&e)
+    })?;
     let _ =
         validate_fee_per_hour_yen_param(&param.fee_per_hour_yen_param).expect("failed to get Ok");
     if let Some(sort_param) = param.sort_param {
         let _ = validate_sort_param(&sort_param).expect("failed to get Ok");
     }
-    let _ = validate_career_param(&param.career_param).expect("failed to get Ok");
     todo!()
 }
 
 #[async_trait]
-trait ConsultantsSearchOperation {}
+trait ConsultantsSearchOperation {
+    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+}
 
 struct ConsultantsSearchOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {}
+impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+        let model = entity::prelude::Identity::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find identity (user_account_id: {}): {}",
+                    account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.is_some())
+    }
+}
+
+fn create_invalid_career_param_err(e: &CareerParamValidationError) -> ErrResp {
+    let code;
+    match e {
+        CareerParamValidationError::InvalidCompanyNameLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = Code::InvalidCompanyNameLength,
+        CareerParamValidationError::IllegalCharInCompanyName(_) => {
+            code = Code::IllegalCharInCompanyName
+        }
+        CareerParamValidationError::InvalidDepartmentNameLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = Code::InvalidDepartmentNameLength,
+        CareerParamValidationError::IllegalCharInDepartmentName(_) => {
+            code = Code::IllegalCharInDepartmentName
+        }
+        CareerParamValidationError::InvalidOfficeLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = Code::InvalidOfficeLength,
+        CareerParamValidationError::IllegalCharInOffice(_) => code = Code::IllegalCharInOffice,
+        CareerParamValidationError::IllegalYearsOfService(_) => code = Code::IllegalYearsOfService,
+        CareerParamValidationError::IllegalContractType(_) => code = Code::IllegalContractType,
+        CareerParamValidationError::InvalidProfessionLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = Code::InvalidProfessionLength,
+        CareerParamValidationError::IllegalCharInProfession(_) => {
+            code = Code::IllegalCharInProfession
+        }
+        CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+            value: _,
+            min: _,
+            max: _,
+        } => code = Code::IllegalAnnualIncomInManYen,
+        CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+            value: _,
+            min: _,
+            max: _,
+        } => code = Code::IllegalAnnualIncomInManYen,
+        CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen {
+            equal_or_more: _,
+            equal_or_less: _,
+        } => code = Code::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen,
+        CareerParamValidationError::InvalidPositionNameLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = Code::InvalidPositionNameLength,
+        CareerParamValidationError::IllegalCharInPositionName(_) => {
+            code = Code::IllegalCharInPositionName
+        }
+        CareerParamValidationError::InvalidNoteLength {
+            length: _,
+            min_length: _,
+            max_length: _,
+        } => code = Code::InvalidNoteLength,
+        CareerParamValidationError::IllegalCharInNote(_) => code = Code::IllegalCharInNote,
+    }
+    (
+        StatusCode::BAD_REQUEST,
+        Json(ApiError { code: code as u32 }),
+    )
+}
