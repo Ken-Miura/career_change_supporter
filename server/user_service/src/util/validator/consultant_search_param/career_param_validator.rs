@@ -528,6 +528,54 @@ mod tests {
                     "’ or ‘A’=‘A".to_string(),
                 )),
             },
+            TestCase {
+                name: "invalid length department_name".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: Some("".to_string()),
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::InvalidDepartmentNameLength {
+                    length: 0,
+                    min_length: COMPANY_NAME_MIN_LENGTH,
+                    max_length: COMPANY_NAME_MAX_LENGTH,
+                }),
+            },
+            TestCase {
+                name: "illegal char department_name".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: Some("’ or ‘A’=‘A".to_string()),
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::IllegalCharInDepartmentName(
+                    "’ or ‘A’=‘A".to_string(),
+                )),
+            },
         ]
     });
 
