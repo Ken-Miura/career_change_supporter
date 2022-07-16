@@ -893,6 +893,48 @@ mod tests {
                     "’ or ‘A’=‘A".to_string(),
                 )),
             },
+            TestCase {
+                name: "valid equal_or_more in annual_income_in_man_yen 0".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: Some(0),
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "valid equal_or_more in annual_income_in_man_yen max value".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: Some(MAX_ANNUAL_INCOME_IN_MAN_YEN),
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
         ]
     });
 
