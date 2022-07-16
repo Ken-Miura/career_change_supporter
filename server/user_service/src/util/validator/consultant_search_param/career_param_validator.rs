@@ -421,9 +421,14 @@ mod tests {
 
     use crate::{
         consultants_search::{AnnualInComeInManYenParam, CareerParam},
-        util::validator::{
-            consultant_search_param::career_param_validator::validate_career_param,
-            COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN,
+        util::{
+            validator::{
+                consultant_search_param::career_param_validator::validate_career_param,
+                COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN,
+            },
+            YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE, YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE,
+            YEARS_OF_SERVICE_TEN_YEARS_OR_MORE, YEARS_OF_SERVICE_THREE_YEARS_OR_MORE,
+            YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE,
         },
     };
 
@@ -622,6 +627,134 @@ mod tests {
                 },
                 expected: Err(CareerParamValidationError::IllegalCharInOffice(
                     "’ or ‘A’=‘A".to_string(),
+                )),
+            },
+            TestCase {
+                name: "valid years_of_service THREE_YEARS_OR_MORE".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: Some(YEARS_OF_SERVICE_THREE_YEARS_OR_MORE.to_string()),
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "valid years_of_service FIVE_YEARS_OR_MORE".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: Some(YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE.to_string()),
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "valid years_of_service TEN_YEARS_OR_MORE".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: Some(YEARS_OF_SERVICE_TEN_YEARS_OR_MORE.to_string()),
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "valid years_of_service FIFTEEN_YEARS_OR_MORE".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: Some(YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE.to_string()),
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "valid years_of_service TWENTY_YEARS_OR_MORE".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: Some(YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE.to_string()),
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "invalid years_of_service".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: Some("1' or '1' = '1';--".to_string()),
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::IllegalYearsOfService(
+                    "1' or '1' = '1';--".to_string(),
                 )),
             },
         ]
