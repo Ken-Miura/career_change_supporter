@@ -1087,6 +1087,48 @@ mod tests {
                     },
                 ),
             },
+            TestCase {
+                name: "valid equal_or_less == equal_or_more".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: Some(MAX_ANNUAL_INCOME_IN_MAN_YEN),
+                        equal_or_less: Some(MAX_ANNUAL_INCOME_IN_MAN_YEN),
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "invalid equal_or_less exceeds equal_or_more".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: Some(1),
+                        equal_or_less: Some(0),
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen { equal_or_more: 1, equal_or_less: 0 }),
+            },
         ]
     });
 
