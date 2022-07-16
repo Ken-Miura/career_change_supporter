@@ -990,6 +990,103 @@ mod tests {
                     },
                 ),
             },
+            TestCase {
+                name: "valid equal_or_less in annual_income_in_man_yen 0".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: Some(0),
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "valid equal_or_less in annual_income_in_man_yen max value".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: Some(MAX_ANNUAL_INCOME_IN_MAN_YEN),
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Ok(()),
+            },
+            TestCase {
+                name: "invalid equal_or_less in annual_income_in_man_yen negative value"
+                    .to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: Some(-1),
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(
+                    CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+                        value: -1,
+                        min: 0,
+                        max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
+                    },
+                ),
+            },
+            TestCase {
+                name: "valid equal_or_less in annual_income_in_man_yen max value".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: Some(MAX_ANNUAL_INCOME_IN_MAN_YEN + 1),
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(
+                    CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+                        value: MAX_ANNUAL_INCOME_IN_MAN_YEN + 1,
+                        min: 0,
+                        max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
+                    },
+                ),
+            },
         ]
     });
 
