@@ -1,5 +1,6 @@
 // Copyright 2022 Ken Miura
 
+use async_session::async_trait;
 use axum::{Extension, Json};
 use common::RespResult;
 use entity::sea_orm::DatabaseConnection;
@@ -15,16 +16,12 @@ use crate::util::{
 };
 
 pub(crate) async fn post_consultants_search(
-    User { account_id: _ }: User,
+    User { account_id }: User,
     Json(req): Json<ConsultantSearchParam>,
-    Extension(_pool): Extension<DatabaseConnection>,
+    Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<ConsultantsSearchResult> {
-    let _ = validate_fee_per_hour_yen_param(&req.fee_per_hour_yen_param).expect("failed to get Ok");
-    if let Some(sort_param) = req.sort_param {
-        let _ = validate_sort_param(&sort_param).expect("failed to get Ok");
-    }
-    let _ = validate_career_param(&req.career_param).expect("failed to get Ok");
-    todo!()
+    let op = ConsultantsSearchOperationImpl { pool };
+    handle_consultants_search(account_id, req, op).await
 }
 
 #[derive(Deserialize)]
@@ -91,3 +88,27 @@ pub(crate) struct ConsultantCareerDescription {
     profession: Option<String>,
     office: Option<String>,
 }
+
+async fn handle_consultants_search(
+    account_id: i64,
+    param: ConsultantSearchParam,
+    op: impl ConsultantsSearchOperation,
+) -> RespResult<ConsultantsSearchResult> {
+    let _ =
+        validate_fee_per_hour_yen_param(&param.fee_per_hour_yen_param).expect("failed to get Ok");
+    if let Some(sort_param) = param.sort_param {
+        let _ = validate_sort_param(&sort_param).expect("failed to get Ok");
+    }
+    let _ = validate_career_param(&param.career_param).expect("failed to get Ok");
+    todo!()
+}
+
+#[async_trait]
+trait ConsultantsSearchOperation {}
+
+struct ConsultantsSearchOperationImpl {
+    pool: DatabaseConnection,
+}
+
+#[async_trait]
+impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {}
