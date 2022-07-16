@@ -424,7 +424,9 @@ mod tests {
         util::{
             validator::{
                 consultant_search_param::career_param_validator::validate_career_param,
-                COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN,
+                COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH,
+                DEPARTMENT_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN, OFFICE_MAX_LENGTH,
+                OFFICE_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
             },
             YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE, YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE,
             YEARS_OF_SERVICE_TEN_YEARS_OR_MORE, YEARS_OF_SERVICE_THREE_YEARS_OR_MORE,
@@ -554,8 +556,8 @@ mod tests {
                 },
                 expected: Err(CareerParamValidationError::InvalidDepartmentNameLength {
                     length: 0,
-                    min_length: COMPANY_NAME_MIN_LENGTH,
-                    max_length: COMPANY_NAME_MAX_LENGTH,
+                    min_length: DEPARTMENT_NAME_MIN_LENGTH,
+                    max_length: DEPARTMENT_NAME_MAX_LENGTH,
                 }),
             },
             TestCase {
@@ -602,8 +604,8 @@ mod tests {
                 },
                 expected: Err(CareerParamValidationError::InvalidOfficeLength {
                     length: 0,
-                    min_length: COMPANY_NAME_MIN_LENGTH,
-                    max_length: COMPANY_NAME_MAX_LENGTH,
+                    min_length: OFFICE_MIN_LENGTH,
+                    max_length: OFFICE_MAX_LENGTH,
                 }),
             },
             TestCase {
@@ -841,6 +843,54 @@ mod tests {
                 },
                 expected: Err(CareerParamValidationError::IllegalContractType(
                     "1' or '1' = '1';--".to_string(),
+                )),
+            },
+            TestCase {
+                name: "invalid length profession".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: Some("".to_string()),
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::InvalidProfessionLength {
+                    length: 0,
+                    min_length: PROFESSION_MIN_LENGTH,
+                    max_length: PROFESSION_MAX_LENGTH,
+                }),
+            },
+            TestCase {
+                name: "illegal char profession".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: Some("’ or ‘A’=‘A".to_string()),
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(CareerParamValidationError::IllegalCharInProfession(
+                    "’ or ‘A’=‘A".to_string(),
                 )),
             },
         ]
