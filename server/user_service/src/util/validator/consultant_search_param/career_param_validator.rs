@@ -146,7 +146,7 @@ fn validate_annual_income_in_man_yen_param(
     if let Some(equal_or_more) = annual_income_in_man_yen_param.equal_or_more {
         if !(0..=MAX_ANNUAL_INCOME_IN_MAN_YEN).contains(&equal_or_more) {
             return Err(
-                CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+                CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
                     value: equal_or_more,
                     min: 0,
                     max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -157,7 +157,7 @@ fn validate_annual_income_in_man_yen_param(
     if let Some(equal_or_less) = annual_income_in_man_yen_param.equal_or_less {
         if !(0..=MAX_ANNUAL_INCOME_IN_MAN_YEN).contains(&equal_or_less) {
             return Err(
-                CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+                CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
                     value: equal_or_less,
                     min: 0,
                     max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -934,6 +934,61 @@ mod tests {
                     note: None,
                 },
                 expected: Ok(()),
+            },
+            TestCase {
+                name: "invalid equal_or_more in annual_income_in_man_yen negative value"
+                    .to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: Some(-1),
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(
+                    CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+                        value: -1,
+                        min: 0,
+                        max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
+                    },
+                ),
+            },
+            TestCase {
+                name: "valid equal_or_more in annual_income_in_man_yen max value".to_string(),
+                input: CareerParam {
+                    company_name: None,
+                    department_name: None,
+                    office: None,
+                    years_of_service: None,
+                    employed: None,
+                    contract_type: None,
+                    profession: None,
+                    annual_income_in_man_yen: AnnualInComeInManYenParam {
+                        equal_or_more: Some(MAX_ANNUAL_INCOME_IN_MAN_YEN + 1),
+                        equal_or_less: None,
+                    },
+                    is_manager: None,
+                    position_name: None,
+                    is_new_graduate: None,
+                    note: None,
+                },
+                expected: Err(
+                    CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+                        value: MAX_ANNUAL_INCOME_IN_MAN_YEN + 1,
+                        min: 0,
+                        max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
+                    },
+                ),
             },
         ]
     });
