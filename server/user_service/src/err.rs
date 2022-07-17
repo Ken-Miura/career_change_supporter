@@ -99,6 +99,8 @@ pub(crate) enum Code {
     EqualOrMoreExceedsEqualOrLessInFeePerHourYen = 20087,
     InvalidSortKey = 20088,
     InvalidSortOrder = 20089,
+    InvalidConsultantSearchParamFrom = 20090,
+    InvalidConsultantSearchParamSize = 20091,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

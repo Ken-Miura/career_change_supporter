@@ -22,6 +22,8 @@ use crate::{
     },
 };
 
+pub(crate) const VALID_SIZE: i32 = 20;
+
 pub(crate) async fn post_consultants_search(
     User { account_id }: User,
     Json(req): Json<ConsultantSearchParam>,
@@ -102,18 +104,42 @@ async fn handle_consultants_search(
     op: impl ConsultantsSearchOperation,
 ) -> RespResult<ConsultantsSearchResult> {
     let _ = validate_career_param(&param.career_param).map_err(|e| {
-        error!("invalid career_param: {}", e);
+        error!("invalid career_param: {} (account id: {})", e, account_id);
         create_invalid_career_param_err(&e)
     })?;
     let _ = validate_fee_per_hour_yen_param(&param.fee_per_hour_yen_param).map_err(|e| {
-        error!("invalid fee_per_hour_yen_param: {}", e);
+        error!(
+            "invalid fee_per_hour_yen_param: {} (account id: {})",
+            e, account_id
+        );
         create_invalid_fee_per_hour_yen_param_err(&e)
     })?;
     if let Some(sort_param) = param.sort_param {
         let _ = validate_sort_param(&sort_param).map_err(|e| {
-            error!("invalid sort_param: {}", e);
+            error!("invalid sort_param: {} (account id: {})", e, account_id);
             create_invalid_sort_param_err(&e)
         });
+    }
+    if param.from.is_negative() {
+        error!(
+            "from is negative: {} (account id: {})",
+            param.from, account_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidConsultantSearchParamFrom as u32,
+            }),
+        ));
+    }
+    if param.size != VALID_SIZE {
+        error!("invalid size: {} (account id: {})", param.size, account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidConsultantSearchParamSize as u32,
+            }),
+        ));
     }
     let identity_exists = op.check_if_identity_exists(account_id).await?;
     if !identity_exists {
