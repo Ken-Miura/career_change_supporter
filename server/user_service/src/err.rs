@@ -97,6 +97,8 @@ pub(crate) enum Code {
     IllegalYearsOfService = 20085,
     EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen = 20086,
     EqualOrMoreExceedsEqualOrLessInFeePerHourYen = 20087,
+    InvalidSortKey = 20088,
+    InvalidSortOrder = 20089,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

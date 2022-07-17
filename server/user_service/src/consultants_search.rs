@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::util::validator::consultant_search_param::fee_per_hour_yen_param_validator::FeePerHourYenParamError;
+use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
 use crate::{
     err::{unexpected_err_resp, Code},
     util::{
@@ -109,7 +110,10 @@ async fn handle_consultants_search(
         create_invalid_fee_per_hour_yen_param_err(&e)
     })?;
     if let Some(sort_param) = param.sort_param {
-        let _ = validate_sort_param(&sort_param).expect("failed to get Ok");
+        let _ = validate_sort_param(&sort_param).map_err(|e| {
+            error!("invalid sort_param: {}", e);
+            create_invalid_sort_param_err(&e)
+        });
     }
     todo!()
 }
@@ -228,6 +232,18 @@ fn create_invalid_fee_per_hour_yen_param_err(e: &FeePerHourYenParamError) -> Err
             equal_or_more: _,
             equal_or_less: _,
         } => code = Code::EqualOrMoreExceedsEqualOrLessInFeePerHourYen,
+    }
+    (
+        StatusCode::BAD_REQUEST,
+        Json(ApiError { code: code as u32 }),
+    )
+}
+
+fn create_invalid_sort_param_err(e: &SortParamError) -> ErrResp {
+    let code;
+    match e {
+        SortParamError::InvalidKey(_) => code = Code::InvalidSortKey,
+        SortParamError::InvalidOrder(_) => code = Code::InvalidSortOrder,
     }
     (
         StatusCode::BAD_REQUEST,
