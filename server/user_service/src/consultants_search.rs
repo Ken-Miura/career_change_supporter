@@ -115,6 +115,16 @@ async fn handle_consultants_search(
             create_invalid_sort_param_err(&e)
         });
     }
+    let identity_exists = op.check_if_identity_exists(account_id).await?;
+    if !identity_exists {
+        error!("identity is not registered (account id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
     todo!()
 }
 
