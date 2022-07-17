@@ -96,6 +96,7 @@ pub(crate) enum Code {
     InvalidBankAccountNumber = 20084,
     IllegalYearsOfService = 20085,
     EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen = 20086,
+    EqualOrMoreExceedsEqualOrLessInFeePerHourYen = 20087,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
