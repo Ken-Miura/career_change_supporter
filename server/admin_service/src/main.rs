@@ -36,7 +36,10 @@ use axum::extract::Extension;
 use axum::http::Request;
 use axum::routing::{get, post};
 use axum::Router;
-use common::opensearch::KEY_TO_OPENSEARCH_ENDPOINT_URI;
+use common::opensearch::{
+    create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
+    KEY_TO_OPENSEARCH_USERNAME,
+};
 use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
@@ -85,6 +88,8 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_AWS_REGION.to_string(),
         KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP.to_string(),
         KEY_TO_OPENSEARCH_ENDPOINT_URI.to_string(),
+        KEY_TO_OPENSEARCH_USERNAME.to_string(),
+        KEY_TO_OPENSEARCH_PASSWORD.to_string(),
     ]
 });
 
@@ -133,6 +138,31 @@ async fn main_internal(num_of_cpus: u32) {
         )
     });
     let store = RedisSessionStore::new(redis_url).expect("failed to connect redis");
+
+    let opensearch_url = var(KEY_TO_OPENSEARCH_ENDPOINT_URI).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_OPENSEARCH_ENDPOINT_URI
+        )
+    });
+    let opensearch_username = var(KEY_TO_OPENSEARCH_USERNAME).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_OPENSEARCH_USERNAME
+        )
+    });
+    let opensearch_password = var(KEY_TO_OPENSEARCH_PASSWORD).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_OPENSEARCH_PASSWORD
+        )
+    });
+    let index_client = create_client(
+        opensearch_url.as_str(),
+        opensearch_username.as_str(),
+        opensearch_password.as_str(),
+    )
+    .expect("failed to create OpenSearch client");
 
     let app = Router::new()
         .nest(
@@ -235,6 +265,7 @@ async fn main_internal(num_of_cpus: u32) {
             )
                 .layer(CookieManagerLayer::new())
                 .layer(Extension(store))
+                .layer(Extension(index_client))
                 .layer(Extension(pool)),
         );
 

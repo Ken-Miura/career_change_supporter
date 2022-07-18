@@ -4,13 +4,14 @@ use async_session::serde_json::json;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use common::opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
+use common::opensearch::{index_document, update_document, INDEX_NAME};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
 use entity::consulting_fee;
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect, Set, TransactionError,
     TransactionTrait,
 };
+use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -25,8 +26,9 @@ pub(crate) async fn post_fee_per_hour_in_yen(
     User { account_id }: User,
     Json(fee): Json<Fee>,
     Extension(pool): Extension<DatabaseConnection>,
+    Extension(index_client): Extension<OpenSearch>,
 ) -> RespResult<FeePerHourInYenResult> {
-    let op = SubmitFeePerHourYenOperationImpl { pool };
+    let op = SubmitFeePerHourYenOperationImpl { pool, index_client };
     handle_fee_per_hour_yen_req(account_id, fee.fee_per_hour_in_yen, op).await
 }
 
@@ -85,6 +87,7 @@ trait SubmitFeePerHourYenOperation {
 
 struct SubmitFeePerHourYenOperationImpl {
     pool: DatabaseConnection,
+    index_client: OpenSearch,
 }
 
 #[async_trait]
@@ -108,6 +111,7 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
         account_id: i64,
         fee_per_hour_in_yen: i32,
     ) -> Result<(), ErrResp> {
+        let index_client = self.index_client.clone();
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -159,10 +163,10 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                         let document_id = document.document_id;
                         info!("update document for \"fee_per_hour_in_yen\" (account_id: {}, document_id: {}, fee_per_hour_in_yen: {})", account_id, document_id, fee_per_hour_in_yen);
                         let _ = update_new_fee_per_hour_in_yen_on_document(
-                            &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
                             document_id.to_string().as_str(),
                             fee_per_hour_in_yen,
+                            index_client
                         )
                         .await?;
                     } else {
@@ -171,11 +175,11 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
                         info!("create document for \"fee_per_hour_in_yen\" (account_id: {}, document_id: {}, fee_per_hour_in_yen: {})", account_id, document_id, fee_per_hour_in_yen);
                         let _ = insert_document(txn, account_id, document_id).await?;
                         let _ = add_new_fee_per_hour_in_yen_into_document(
-                            &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
                             document_id.to_string().as_str(),
                             account_id,
                             fee_per_hour_in_yen,
+                            index_client
                         )
                         .await?;
                     };
@@ -199,10 +203,10 @@ impl SubmitFeePerHourYenOperation for SubmitFeePerHourYenOperationImpl {
 }
 
 async fn update_new_fee_per_hour_in_yen_on_document(
-    endpoint_uri: &str,
     index_name: &str,
     document_id: &str,
     fee_per_hour_in_yen: i32,
+    index_client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let value = format!("ctx._source.fee_per_hour_in_yen = {}", fee_per_hour_in_yen);
     let script = json!({
@@ -210,7 +214,7 @@ async fn update_new_fee_per_hour_in_yen_on_document(
             "source": value
         }
     });
-    let _ = update_document(endpoint_uri, index_name, document_id, &script)
+    let _ = update_document(index_name, document_id, &script, &index_client)
         .await
         .map_err(|e| {
             error!(
@@ -223,11 +227,11 @@ async fn update_new_fee_per_hour_in_yen_on_document(
 }
 
 async fn add_new_fee_per_hour_in_yen_into_document(
-    endpoint_uri: &str,
     index_name: &str,
     document_id: &str,
     account_id: i64,
     fee_per_hour_in_yen: i32,
+    index_client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let new_document = json!({
         "user_account_id": account_id,
@@ -236,7 +240,7 @@ async fn add_new_fee_per_hour_in_yen_into_document(
         "rating": null,
         "is_bank_account_registered": null
     });
-    let _ = index_document(endpoint_uri, index_name, document_id, &new_document)
+    let _ = index_document(index_name, document_id, &new_document, &index_client)
         .await
         .map_err(|e| {
             error!(

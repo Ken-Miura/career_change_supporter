@@ -4,7 +4,7 @@ use async_session::serde_json::json;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::{
-    opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI},
+    opensearch::{index_document, update_document, INDEX_NAME},
     smtp::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
         SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
@@ -23,6 +23,7 @@ use entity::{
     },
 };
 use once_cell::sync::Lazy;
+use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -39,9 +40,10 @@ pub(crate) async fn post_create_career_request_approval(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
     Json(create_career_req_approval): Json<CreateCareerReqApproval>,
     Extension(pool): Extension<DatabaseConnection>,
+    Extension(index_client): Extension<OpenSearch>,
 ) -> RespResult<CreateCareerReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-    let op = CreateCareerReqApprovalOperationImpl { pool };
+    let op = CreateCareerReqApprovalOperationImpl { pool, index_client };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
         *SMTP_PORT,
@@ -154,6 +156,7 @@ trait CreateCareerReqApprovalOperation {
 
 struct CreateCareerReqApprovalOperationImpl {
     pool: DatabaseConnection,
+    index_client: OpenSearch,
 }
 
 #[async_trait]
@@ -199,6 +202,7 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
         approver_email_address: String,
         approved_time: DateTime<FixedOffset>,
     ) -> Result<Option<String>, ErrResp> {
+        let index_client = self.index_client.clone();
         let notification_email_address_option = self
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
@@ -274,12 +278,12 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                     if let Some(document) = document_option {
                         info!("update document for \"careers\" (user_account_id: {}, document_id: {}, career_model: {:?})", user_account_id, document.document_id, career_model);
                         let _ = insert_new_career_into_document(
-                            &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
                             document.document_id.to_string().as_str(),
                             career_model,
                             num_of_careers,
-                            approved_time
+                            approved_time,
+                            index_client
                         )
                         .await?;
                     } else {
@@ -288,12 +292,12 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                         info!("create document for \"careers\" (user_account_id: {}, document_id: {}, career_model: {:?})", user_account_id, document_id, career_model);
                         let _ = insert_document(txn, user_account_id, document_id).await?;
                         let _ = add_new_document_with_career(
-                            &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
                             document_id.to_string().as_str(),
                             career_model,
                             num_of_careers,
-                            approved_time
+                            approved_time,
+                            index_client
                         )
                         .await?;
                     };
@@ -404,12 +408,12 @@ async fn insert_document(
 }
 
 async fn add_new_document_with_career(
-    endpoint_uri: &str,
     index_name: &str,
     document_id: &str,
     career_model: career::Model,
     num_of_careers: usize,
     current_time: DateTime<FixedOffset>,
+    client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let employed = career_model.career_end_date.is_none();
     let years_of_service = if let Some(career_end_date) = career_model.career_end_date {
@@ -442,7 +446,7 @@ async fn add_new_document_with_career(
         "is_bank_account_registered": null,
         "rating": null
     });
-    let _ = index_document(endpoint_uri, index_name, document_id, &new_document)
+    let _ = index_document(index_name, document_id, &new_document, &client)
         .await
         .map_err(|e| {
             error!(
@@ -455,12 +459,12 @@ async fn add_new_document_with_career(
 }
 
 async fn insert_new_career_into_document(
-    endpoint_uri: &str,
     index_name: &str,
     document_id: &str,
     career_model: career::Model,
     num_of_careers: usize,
     current_time: DateTime<FixedOffset>,
+    client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let employed = career_model.career_end_date.is_none();
     let years_of_service = if let Some(career_end_date) = career_model.career_end_date {
@@ -497,7 +501,7 @@ async fn insert_new_career_into_document(
             }
         }
     });
-    let _ = update_document(endpoint_uri, index_name, document_id, &script)
+    let _ = update_document(index_name, document_id, &script, &client)
         .await
         .map_err(|e| {
             error!(

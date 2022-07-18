@@ -4,7 +4,7 @@ use async_session::serde_json::json;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
-use common::opensearch::{update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
+use common::opensearch::{update_document, INDEX_NAME};
 use common::{ApiError, ErrResp};
 use common::{ErrRespStruct, RespResult};
 use entity::career;
@@ -12,6 +12,7 @@ use entity::sea_orm::{
     ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, TransactionError,
     TransactionTrait,
 };
+use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -23,9 +24,10 @@ pub(crate) async fn career(
     User { account_id }: User,
     param: Query<DeleteCareerQueryParam>,
     Extension(pool): Extension<DatabaseConnection>,
+    Extension(index_client): Extension<OpenSearch>,
 ) -> RespResult<DeleteCareerResult> {
     let param = param.0;
-    let op = DeleteCareerOperationImpl::new(pool);
+    let op = DeleteCareerOperationImpl::new(pool, index_client);
     handle_career_req(account_id, param.career_id, op).await
 }
 
@@ -68,11 +70,12 @@ trait DeleteCareerOperation {
 
 struct DeleteCareerOperationImpl {
     pool: DatabaseConnection,
+    index_client: OpenSearch,
 }
 
 impl DeleteCareerOperationImpl {
-    fn new(pool: DatabaseConnection) -> Self {
-        Self { pool }
+    fn new(pool: DatabaseConnection, index_client: OpenSearch) -> Self {
+        Self { pool, index_client }
     }
 }
 
@@ -97,6 +100,7 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
     }
 
     async fn delete_career(&self, account_id: i64, career_id: i64) -> Result<(), ErrResp> {
+        let index_client = self.index_client.clone();
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -136,11 +140,11 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
                     })?;
                     let document_id = document.document_id.to_string();
                     let _ = remove_career_from_document(
-                        &OPENSEARCH_ENDPOINT_URI,
                         INDEX_NAME,
                         document_id.as_str(),
                         career_id,
                         num_of_careers,
+                        index_client,
                     )
                     .await?;
 
@@ -164,11 +168,11 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
 }
 
 async fn remove_career_from_document(
-    endpoint_uri: &str,
     index_name: &str,
     document_id: &str,
     career_id: i64,
     num_of_careers: usize,
+    index_client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let source = format!("ctx._source.careers.removeIf(career -> career.career_id == params.career_id); ctx._source.num_of_careers = {}", num_of_careers);
     let script = json!({
@@ -179,7 +183,7 @@ async fn remove_career_from_document(
             }
         }
     });
-    let _ = update_document(endpoint_uri, index_name, document_id, &script)
+    let _ = update_document(index_name, document_id, &script, &index_client)
         .await
         .map_err(|e| {
             error!(

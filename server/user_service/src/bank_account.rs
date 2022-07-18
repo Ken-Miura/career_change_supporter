@@ -7,7 +7,7 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use chrono::Datelike;
-use common::opensearch::{index_document, update_document, INDEX_NAME, OPENSEARCH_ENDPOINT_URI};
+use common::opensearch::{index_document, update_document, INDEX_NAME};
 use common::payment_platform::tenant::{
     CreateTenant, TenantOperation, TenantOperationImpl, UpdateTenant,
 };
@@ -19,6 +19,7 @@ use entity::sea_orm::{
     TransactionTrait,
 };
 use once_cell::sync::Lazy;
+use opensearch::OpenSearch;
 use serde::Serialize;
 use tracing::{error, info};
 use uuid::Uuid;
@@ -59,8 +60,9 @@ pub(crate) async fn post_bank_account(
     User { account_id }: User,
     Json(bank_account): Json<BankAccount>,
     Extension(pool): Extension<DatabaseConnection>,
+    Extension(index_client): Extension<OpenSearch>,
 ) -> RespResult<BankAccountResult> {
-    let op = SubmitBankAccountOperationImpl { pool };
+    let op = SubmitBankAccountOperationImpl { pool, index_client };
     handle_bank_account_req(account_id, bank_account, op).await
 }
 
@@ -129,6 +131,7 @@ trait SubmitBankAccountOperation {
 
 struct SubmitBankAccountOperationImpl {
     pool: DatabaseConnection,
+    index_client: OpenSearch,
 }
 
 #[async_trait]
@@ -292,6 +295,7 @@ impl SubmitBankAccountOperationImpl {
     }
 
     async fn set_bank_account_registered_on_index(&self, account_id: i64) -> Result<(), ErrResp> {
+        let index_client = self.index_client.clone();
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -302,9 +306,9 @@ impl SubmitBankAccountOperationImpl {
                         let document_id = document.document_id;
                         info!("update document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
                         let _ = update_is_bank_account_registered_on_document(
-                            &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
                             document_id.to_string().as_str(),
+                            index_client
                         )
                         .await?;
                     } else {
@@ -313,10 +317,10 @@ impl SubmitBankAccountOperationImpl {
                         info!("create document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
                         let _ = insert_document(txn, account_id, document_id).await?;
                         let _ = add_new_document_with_is_bank_account_registered(
-                            &OPENSEARCH_ENDPOINT_URI,
                             INDEX_NAME,
                             document_id.to_string().as_str(),
                             account_id,
+                            index_client
                         )
                         .await?;
                     };
@@ -343,9 +347,9 @@ impl SubmitBankAccountOperationImpl {
 }
 
 async fn update_is_bank_account_registered_on_document(
-    endpoint_uri: &str,
     index_name: &str,
     document_id: &str,
+    index_client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let value = format!("ctx._source.is_bank_account_registered = {}", true);
     let script = json!({
@@ -353,7 +357,7 @@ async fn update_is_bank_account_registered_on_document(
             "source": value
         }
     });
-    let _ = update_document(endpoint_uri, index_name, document_id, &script)
+    let _ = update_document(index_name, document_id, &script, &index_client)
         .await
         .map_err(|e| {
             error!(
@@ -366,10 +370,10 @@ async fn update_is_bank_account_registered_on_document(
 }
 
 async fn add_new_document_with_is_bank_account_registered(
-    endpoint_uri: &str,
     index_name: &str,
     document_id: &str,
     account_id: i64,
+    index_client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let new_document = json!({
         "user_account_id": account_id,
@@ -378,7 +382,7 @@ async fn add_new_document_with_is_bank_account_registered(
         "rating": null,
         "is_bank_account_registered": true
     });
-    let _ = index_document(endpoint_uri, index_name, document_id, &new_document)
+    let _ = index_document(index_name, document_id, &new_document, &index_client)
         .await
         .map_err(|e| {
             error!(
