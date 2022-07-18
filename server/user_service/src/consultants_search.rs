@@ -1,6 +1,7 @@
 // Copyright 2022 Ken Miura
 
 use async_session::async_trait;
+use async_session::serde_json::{json, Value};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use common::{ApiError, ErrResp, RespResult};
@@ -10,6 +11,11 @@ use tracing::error;
 
 use crate::util::validator::consultant_search_param::fee_per_hour_yen_param_validator::FeePerHourYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
+use crate::util::{
+    YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE, YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE,
+    YEARS_OF_SERVICE_TEN_YEARS_OR_MORE, YEARS_OF_SERVICE_THREE_YEARS_OR_MORE,
+    YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE,
+};
 use crate::{
     err::{unexpected_err_resp, Code},
     util::{
@@ -284,5 +290,214 @@ fn create_invalid_sort_param_err(e: &SortParamError) -> ErrResp {
     (
         StatusCode::BAD_REQUEST,
         Json(ApiError { code: code as u32 }),
+    )
+}
+
+fn create_query_json(
+    account_id: i32,
+    career_param: CareerParam,
+    fee_per_hour_yen_param: FeePerHourYenParam,
+) -> Result<Value, ErrResp> {
+    let mut params = Vec::<Value>::new();
+    if let Some(company_name) = career_param.company_name {
+        let company_name_criteria = create_company_name_criteria(company_name.as_str());
+        params.push(company_name_criteria);
+    }
+    if let Some(department_name) = career_param.department_name {
+        let department_name_criteria = create_department_name_criteria(department_name.as_str());
+        params.push(department_name_criteria);
+    }
+    if let Some(office) = career_param.office {
+        let office_criteria = create_office_criteria(office.as_str());
+        params.push(office_criteria);
+    }
+    if let Some(years_of_service) = career_param.years_of_service {
+        let value = convert_years_of_service_into_integer_value(years_of_service.as_str())?;
+        let years_of_service_criteria = create_years_of_service_criteria(value);
+        params.push(years_of_service_criteria);
+    }
+
+    Ok(json!({
+        "query": {
+            "bool": {
+                "must": params
+            },
+            "filter": [
+                {
+                    "range": {
+                        "num_of_careers": {
+                            "gt": 0
+                        }
+                    }
+                },
+                {
+                    "exists": {
+                        "field": "fee_per_hour_in_yen"
+                    }
+                },
+                {
+                    "term": {
+                        "is_bank_account_registered": true
+                    }
+                }
+            ],
+            "must_not": [
+                {
+                    "term": {
+                        "user_account_id": account_id
+                    }
+                }
+            ]
+        }
+    }))
+}
+
+fn create_company_name_criteria(company_name: &str) -> Value {
+    json!(
+        {
+            "nested": {
+                "path": "careers",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "multi_match": {
+                                    "query": company_name,
+                                    "fields": [
+                                        "careers.company_name.ngram^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ],
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "query": company_name,
+                                    "fields": [
+                                        "careers.company_name^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+}
+
+fn create_department_name_criteria(department_name: &str) -> Value {
+    json!(
+        {
+            "nested": {
+                "path": "careers",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "multi_match": {
+                                    "query": department_name,
+                                    "fields": [
+                                        "careers.department_name.ngram^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ],
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "query": department_name,
+                                    "fields": [
+                                        "careers.department_name^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+}
+
+fn create_office_criteria(office: &str) -> Value {
+    json!(
+        {
+            "nested": {
+                "path": "careers",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "multi_match": {
+                                    "query": office,
+                                    "fields": [
+                                        "careers.office.ngram^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ],
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "query": office,
+                                    "fields": [
+                                        "careers.office^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+}
+
+fn convert_years_of_service_into_integer_value(years_of_service: &str) -> Result<u32, ErrResp> {
+    if years_of_service == YEARS_OF_SERVICE_THREE_YEARS_OR_MORE {
+        Ok(3)
+    } else if years_of_service == YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE {
+        Ok(5)
+    } else if years_of_service == YEARS_OF_SERVICE_TEN_YEARS_OR_MORE {
+        Ok(10)
+    } else if years_of_service == YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE {
+        Ok(15)
+    } else if years_of_service == YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE {
+        Ok(20)
+    } else {
+        // 事前にvalidationしているため、ここを通る場合は障害を意味する
+        // そのため、500系のステータスコードでレスポンスを返す
+        error!("unexpected years_of_service: ({})", years_of_service);
+        Err(unexpected_err_resp())
+    }
+}
+
+fn create_years_of_service_criteria(years_of_service: u32) -> Value {
+    json!(
+        {
+            "nested": {
+                "path": "careers",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "range": {
+                                    "careers.years_of_service": {
+                                        "gte": years_of_service
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
     )
 }
