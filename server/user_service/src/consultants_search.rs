@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use axum::{Extension, Json};
 use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -34,8 +35,9 @@ pub(crate) async fn post_consultants_search(
     User { account_id }: User,
     Json(req): Json<ConsultantSearchParam>,
     Extension(pool): Extension<DatabaseConnection>,
+    Extension(index_client): Extension<OpenSearch>,
 ) -> RespResult<ConsultantsSearchResult> {
-    let op = ConsultantsSearchOperationImpl { pool };
+    let op = ConsultantsSearchOperationImpl { pool, index_client };
     handle_consultants_search(account_id, req, op).await
 }
 
@@ -168,6 +170,7 @@ trait ConsultantsSearchOperation {
 
 struct ConsultantsSearchOperationImpl {
     pool: DatabaseConnection,
+    index_client: OpenSearch,
 }
 
 #[async_trait]
