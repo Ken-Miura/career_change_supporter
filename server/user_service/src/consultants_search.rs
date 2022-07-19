@@ -191,69 +191,62 @@ impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {
 }
 
 fn create_invalid_career_param_err(e: &CareerParamValidationError) -> ErrResp {
-    let code;
-    match e {
+    let code = match e {
         CareerParamValidationError::InvalidCompanyNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidCompanyNameLength,
-        CareerParamValidationError::IllegalCharInCompanyName(_) => {
-            code = Code::IllegalCharInCompanyName
-        }
+        } => Code::InvalidCompanyNameLength,
+        CareerParamValidationError::IllegalCharInCompanyName(_) => Code::IllegalCharInCompanyName,
         CareerParamValidationError::InvalidDepartmentNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidDepartmentNameLength,
+        } => Code::InvalidDepartmentNameLength,
         CareerParamValidationError::IllegalCharInDepartmentName(_) => {
-            code = Code::IllegalCharInDepartmentName
+            Code::IllegalCharInDepartmentName
         }
         CareerParamValidationError::InvalidOfficeLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidOfficeLength,
-        CareerParamValidationError::IllegalCharInOffice(_) => code = Code::IllegalCharInOffice,
-        CareerParamValidationError::IllegalYearsOfService(_) => code = Code::IllegalYearsOfService,
-        CareerParamValidationError::IllegalContractType(_) => code = Code::IllegalContractType,
+        } => Code::InvalidOfficeLength,
+        CareerParamValidationError::IllegalCharInOffice(_) => Code::IllegalCharInOffice,
+        CareerParamValidationError::IllegalYearsOfService(_) => Code::IllegalYearsOfService,
+        CareerParamValidationError::IllegalContractType(_) => Code::IllegalContractType,
         CareerParamValidationError::InvalidProfessionLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidProfessionLength,
-        CareerParamValidationError::IllegalCharInProfession(_) => {
-            code = Code::IllegalCharInProfession
-        }
+        } => Code::InvalidProfessionLength,
+        CareerParamValidationError::IllegalCharInProfession(_) => Code::IllegalCharInProfession,
         CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
             value: _,
             min: _,
             max: _,
-        } => code = Code::IllegalAnnualIncomInManYen,
+        } => Code::IllegalAnnualIncomInManYen,
         CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
             value: _,
             min: _,
             max: _,
-        } => code = Code::IllegalAnnualIncomInManYen,
+        } => Code::IllegalAnnualIncomInManYen,
         CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen {
             equal_or_more: _,
             equal_or_less: _,
-        } => code = Code::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen,
+        } => Code::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen,
         CareerParamValidationError::InvalidPositionNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidPositionNameLength,
-        CareerParamValidationError::IllegalCharInPositionName(_) => {
-            code = Code::IllegalCharInPositionName
-        }
+        } => Code::InvalidPositionNameLength,
+        CareerParamValidationError::IllegalCharInPositionName(_) => Code::IllegalCharInPositionName,
         CareerParamValidationError::InvalidNoteLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidNoteLength,
-        CareerParamValidationError::IllegalCharInNote(_) => code = Code::IllegalCharInNote,
-    }
+        } => Code::InvalidNoteLength,
+        CareerParamValidationError::IllegalCharInNote(_) => Code::IllegalCharInNote,
+    };
     (
         StatusCode::BAD_REQUEST,
         Json(ApiError { code: code as u32 }),
@@ -261,23 +254,22 @@ fn create_invalid_career_param_err(e: &CareerParamValidationError) -> ErrResp {
 }
 
 fn create_invalid_fee_per_hour_yen_param_err(e: &FeePerHourYenParamError) -> ErrResp {
-    let code;
-    match e {
+    let code = match e {
         FeePerHourYenParamError::InvalidEqualOrMore {
             value: _,
             min: _,
             max: _,
-        } => code = Code::IllegalFeePerHourInYen,
+        } => Code::IllegalFeePerHourInYen,
         FeePerHourYenParamError::InvalidEqualOrLess {
             value: _,
             min: _,
             max: _,
-        } => code = Code::IllegalFeePerHourInYen,
+        } => Code::IllegalFeePerHourInYen,
         FeePerHourYenParamError::EqualOrMoreExceedsEqualOrLess {
             equal_or_more: _,
             equal_or_less: _,
-        } => code = Code::EqualOrMoreExceedsEqualOrLessInFeePerHourYen,
-    }
+        } => Code::EqualOrMoreExceedsEqualOrLessInFeePerHourYen,
+    };
     (
         StatusCode::BAD_REQUEST,
         Json(ApiError { code: code as u32 }),
@@ -285,11 +277,10 @@ fn create_invalid_fee_per_hour_yen_param_err(e: &FeePerHourYenParamError) -> Err
 }
 
 fn create_invalid_sort_param_err(e: &SortParamError) -> ErrResp {
-    let code;
-    match e {
-        SortParamError::InvalidKey(_) => code = Code::InvalidSortKey,
-        SortParamError::InvalidOrder(_) => code = Code::InvalidSortOrder,
-    }
+    let code = match e {
+        SortParamError::InvalidKey(_) => Code::InvalidSortKey,
+        SortParamError::InvalidOrder(_) => Code::InvalidSortOrder,
+    };
     (
         StatusCode::BAD_REQUEST,
         Json(ApiError { code: code as u32 }),

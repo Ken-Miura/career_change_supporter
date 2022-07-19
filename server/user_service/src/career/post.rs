@@ -279,67 +279,60 @@ fn ensure_mandatory_params_exist(
 }
 
 fn create_invalid_career_err(e: &CareerValidationError) -> ErrResp {
-    let code;
-    match e {
+    let code = match e {
         CareerValidationError::InvalidCompanyNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidCompanyNameLength,
-        CareerValidationError::IllegalCharInCompanyName(_) => code = Code::IllegalCharInCompanyName,
+        } => Code::InvalidCompanyNameLength,
+        CareerValidationError::IllegalCharInCompanyName(_) => Code::IllegalCharInCompanyName,
         CareerValidationError::InvalidDepartmentNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidDepartmentNameLength,
-        CareerValidationError::IllegalCharInDepartmentName(_) => {
-            code = Code::IllegalCharInDepartmentName
-        }
+        } => Code::InvalidDepartmentNameLength,
+        CareerValidationError::IllegalCharInDepartmentName(_) => Code::IllegalCharInDepartmentName,
         CareerValidationError::InvalidOfficeLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidOfficeLength,
-        CareerValidationError::IllegalCharInOffice(_) => code = Code::IllegalCharInOffice,
+        } => Code::InvalidOfficeLength,
+        CareerValidationError::IllegalCharInOffice(_) => Code::IllegalCharInOffice,
         CareerValidationError::IllegalCareerStartDate {
             year: _,
             month: _,
             day: _,
-        } => code = Code::IllegalCareerStartDate,
+        } => Code::IllegalCareerStartDate,
         CareerValidationError::IllegalCareerEndDate {
             year: _,
             month: _,
             day: _,
-        } => code = Code::IllegalCareerEndDate,
+        } => Code::IllegalCareerEndDate,
         CareerValidationError::CareerStartDateExceedsCareerEndDate {
             career_start_date: _,
             career_end_date: _,
-        } => code = Code::CareerStartDateExceedsCareerEndDate,
-        CareerValidationError::IllegalContractType(_) => code = Code::IllegalContractType,
+        } => Code::CareerStartDateExceedsCareerEndDate,
+        CareerValidationError::IllegalContractType(_) => Code::IllegalContractType,
         CareerValidationError::InvalidProfessionLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidProfessionLength,
-        CareerValidationError::IllegalCharInProfession(_) => code = Code::IllegalCharInProfession,
-        CareerValidationError::IllegalAnnualIncomInManYen(_) => {
-            code = Code::IllegalAnnualIncomInManYen
-        }
+        } => Code::InvalidProfessionLength,
+        CareerValidationError::IllegalCharInProfession(_) => Code::IllegalCharInProfession,
+        CareerValidationError::IllegalAnnualIncomInManYen(_) => Code::IllegalAnnualIncomInManYen,
         CareerValidationError::InvalidPositionNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidPositionNameLength,
-        CareerValidationError::IllegalCharInPositionName(_) => {
-            code = Code::IllegalCharInPositionName
-        }
+        } => Code::InvalidPositionNameLength,
+        CareerValidationError::IllegalCharInPositionName(_) => Code::IllegalCharInPositionName,
         CareerValidationError::InvalidNoteLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidNoteLength,
-        CareerValidationError::IllegalCharInNote(_) => code = Code::IllegalCharInNote,
-    }
+        } => Code::InvalidNoteLength,
+        CareerValidationError::IllegalCharInNote(_) => Code::IllegalCharInNote,
+    };
     (
         StatusCode::BAD_REQUEST,
         Json(ApiError { code: code as u32 }),

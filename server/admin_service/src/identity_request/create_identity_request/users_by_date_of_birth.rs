@@ -58,7 +58,7 @@ async fn get_users_by_date_of_birth_internal(
     op: impl UsersByDateOfBirthOperation,
 ) -> RespResult<Vec<User>> {
     let date_of_birth_option = NaiveDate::from_ymd_opt(year, month, day);
-    let date_of_birth = date_of_birth_option.ok_or_else(|| {
+    let date_of_birth = date_of_birth_option.ok_or({
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {

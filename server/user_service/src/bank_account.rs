@@ -395,25 +395,22 @@ async fn add_new_document_with_is_bank_account_registered(
 }
 
 fn create_invalid_bank_account_err(e: &BankAccountValidationError) -> ErrResp {
-    let code;
-    match e {
-        BankAccountValidationError::InvalidBankCodeFormat(_) => code = Code::InvalidBankCodeFormat,
-        BankAccountValidationError::InvalidBranchCodeFormat(_) => {
-            code = Code::InvalidBranchCodeFormat
-        }
-        BankAccountValidationError::InvalidAccountType(_) => code = Code::InvalidAccountType,
+    let code = match e {
+        BankAccountValidationError::InvalidBankCodeFormat(_) => Code::InvalidBankCodeFormat,
+        BankAccountValidationError::InvalidBranchCodeFormat(_) => Code::InvalidBranchCodeFormat,
+        BankAccountValidationError::InvalidAccountType(_) => Code::InvalidAccountType,
         BankAccountValidationError::InvalidAccountNumberFormat(_) => {
-            code = Code::InvalidAccountNumberFormat
+            Code::InvalidAccountNumberFormat
         }
         BankAccountValidationError::InvalidAccountHolderNameLength {
             length: _,
             min_length: _,
             max_length: _,
-        } => code = Code::InvalidAccountHolderNameLength,
+        } => Code::InvalidAccountHolderNameLength,
         BankAccountValidationError::IllegalCharInAccountHolderName(_) => {
-            code = Code::IllegalCharInAccountHolderName
+            Code::IllegalCharInAccountHolderName
         }
-    }
+    };
     (
         StatusCode::BAD_REQUEST,
         Json(ApiError { code: code as u32 }),
