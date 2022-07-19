@@ -9,5 +9,6 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
+async-std = { version = "1.11.0", features = ["attributes", "tokio1"] }
 entity = { path = "../entity" }
-sea-orm-migration = "0.8.2"
+sea-orm-migration = "0.9.0"
