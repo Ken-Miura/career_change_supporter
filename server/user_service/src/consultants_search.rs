@@ -310,6 +310,18 @@ fn create_query_json(
         let years_of_service_criteria = create_years_of_service_criteria(value);
         params.push(years_of_service_criteria);
     }
+    if let Some(employed) = career_param.employed {
+        let employed_criteria = create_employed_criteria(employed);
+        params.push(employed_criteria);
+    }
+    if let Some(contract_type) = career_param.contract_type {
+        let contract_type_criteria = create_contract_type_criteria(contract_type.as_str());
+        params.push(contract_type_criteria);
+    }
+    if let Some(profession) = career_param.profession {
+        let profession_criteria = create_profession_criteria(profession.as_str());
+        params.push(profession_criteria);
+    }
 
     Ok(json!({
         "query": {
@@ -486,6 +498,99 @@ fn create_years_of_service_criteria(years_of_service: u32) -> Value {
                                     "careers.years_of_service": {
                                         "gte": years_of_service
                                     }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+}
+
+fn create_employed_criteria(employed: bool) -> Value {
+    json!(
+        {
+            "nested": {
+                "path": "careers",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "term": {
+                                    "careers.employed": employed
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+}
+
+fn create_contract_type_criteria(contract_type: &str) -> Value {
+    json!(
+        {
+            "nested": {
+                "path": "careers",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "multi_match": {
+                                    "query": contract_type,
+                                    "fields": [
+                                        "careers.contract_type.ngram^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ],
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "query": contract_type,
+                                    "fields": [
+                                        "careers.contract_type^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+}
+
+fn create_profession_criteria(profession: &str) -> Value {
+    json!(
+        {
+            "nested": {
+                "path": "careers",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "multi_match": {
+                                    "query": profession,
+                                    "fields": [
+                                        "careers.profession.ngram^1"
+                                    ],
+                                    "type": "phrase"
+                                }
+                            }
+                        ],
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "query": profession,
+                                    "fields": [
+                                        "careers.profession^1"
+                                    ],
+                                    "type": "phrase"
                                 }
                             }
                         ]
