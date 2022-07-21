@@ -6,7 +6,7 @@ use axum::{http::StatusCode, Json};
 use opensearch::{
     auth::Credentials,
     http::transport::{SingleNodeConnectionPool, TransportBuilder},
-    IndexParts, OpenSearch, UpdateParts,
+    IndexParts, OpenSearch, SearchParts, UpdateParts,
 };
 use serde_json::Value;
 use tracing::error;
@@ -92,6 +92,54 @@ pub async fn update_document(
         ));
     }
     Ok(())
+}
+
+pub async fn search_documents(
+    index_name: &str,
+    from: i64,
+    size: i64,
+    query: &Value,
+    client: &OpenSearch,
+) -> Result<Value, ErrResp> {
+    let response = client
+        .search(SearchParts::Index(&[index_name]))
+        .from(from)
+        .size(size)
+        .body(query.clone())
+        .send()
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to search documents (index_name: {}, from: {}, size: {}, query: {}): {}",
+                index_name, from, size, query, e
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: Code::UnexpectedErr as u32,
+                }),
+            )
+        })?;
+    let status_code = response.status_code();
+    if !status_code.is_success() {
+        error!("failed to search documents (response: {:?})", response);
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        ));
+    }
+    let response_body = response.json::<Value>().await.map_err(|e| {
+        error!("failed to read body as json: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    Ok(response_body)
 }
 
 /// OpenSearchノードへアクセスするためのクライアントを作成する

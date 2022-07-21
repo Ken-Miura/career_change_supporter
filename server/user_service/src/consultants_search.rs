@@ -4,6 +4,7 @@ use async_session::async_trait;
 use async_session::serde_json::{json, Value};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use common::opensearch::{search_documents, INDEX_NAME};
 use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use opensearch::OpenSearch;
@@ -29,7 +30,7 @@ use crate::{
     },
 };
 
-pub(crate) const VALID_SIZE: i32 = 20;
+pub(crate) const VALID_SIZE: i64 = 20;
 
 pub(crate) async fn post_consultants_search(
     User { account_id }: User,
@@ -46,8 +47,8 @@ pub(crate) struct ConsultantSearchParam {
     pub career_param: CareerParam,
     pub fee_per_hour_yen_param: FeePerHourYenParam,
     pub sort_param: Option<SortParam>,
-    pub from: i32,
-    pub size: i32,
+    pub from: i64,
+    pub size: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -161,6 +162,9 @@ async fn handle_consultants_search(
     }
 
     let query = create_query_json(account_id, param.career_param, param.fee_per_hour_yen_param)?;
+    let result = op
+        .search_documents(INDEX_NAME, param.from, param.size, &query)
+        .await?;
     todo!()
 }
 
@@ -168,6 +172,13 @@ async fn handle_consultants_search(
 trait ConsultantsSearchOperation {
     /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+    async fn search_documents(
+        &self,
+        index_name: &str,
+        from: i64,
+        size: i64,
+        query: &Value,
+    ) -> Result<Value, ErrResp>;
 }
 
 struct ConsultantsSearchOperationImpl {
@@ -189,6 +200,17 @@ impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {
                 unexpected_err_resp()
             })?;
         Ok(model.is_some())
+    }
+
+    async fn search_documents(
+        &self,
+        index_name: &str,
+        from: i64,
+        size: i64,
+        query: &Value,
+    ) -> Result<Value, ErrResp> {
+        let result = search_documents(index_name, from, size, query, &self.index_client).await?;
+        Ok(result)
     }
 }
 
