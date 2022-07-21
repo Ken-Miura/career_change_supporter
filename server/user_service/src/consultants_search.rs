@@ -4,7 +4,7 @@ use async_session::async_trait;
 use async_session::serde_json::{json, Value};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use common::opensearch::{search_documents, INDEX_NAME};
+use common::opensearch::{search_documents, Sort, INDEX_NAME};
 use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use opensearch::OpenSearch;
@@ -79,7 +79,7 @@ pub(crate) struct FeePerHourYenParam {
     pub equal_or_less: Option<i32>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(crate) struct SortParam {
     pub key: String,
     pub order: String,
@@ -123,7 +123,7 @@ async fn handle_consultants_search(
         );
         create_invalid_fee_per_hour_yen_param_err(&e)
     })?;
-    if let Some(sort_param) = param.sort_param {
+    if let Some(sort_param) = param.sort_param.clone() {
         let _ = validate_sort_param(&sort_param).map_err(|e| {
             error!("invalid sort_param: {} (account id: {})", e, account_id);
             create_invalid_sort_param_err(&e)
@@ -162,12 +162,16 @@ async fn handle_consultants_search(
     }
 
     info!(
-        "query param (account_id: {}, career_param: {:?}, fee_per_hour_yen_param: {:?})",
-        account_id, param.career_param, param.fee_per_hour_yen_param
+        "query param (account_id: {}, career_param: {:?}, fee_per_hour_yen_param: {:?}, sort_param: {:?})",
+        account_id, param.career_param, param.fee_per_hour_yen_param, param.sort_param
     );
     let query = create_query_json(account_id, param.career_param, param.fee_per_hour_yen_param)?;
+    let sort = param.sort_param.map(|s| Sort {
+        key: s.key,
+        order: s.order,
+    });
     let query_result = op
-        .search_documents(INDEX_NAME, param.from, param.size, &query)
+        .search_documents(INDEX_NAME, param.from, param.size, sort, &query)
         .await?;
 
     parse_query_result(query_result)
@@ -182,6 +186,7 @@ trait ConsultantsSearchOperation {
         index_name: &str,
         from: i64,
         size: i64,
+        sort: Option<Sort>,
         query: &Value,
     ) -> Result<Value, ErrResp>;
 }
@@ -212,9 +217,11 @@ impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {
         index_name: &str,
         from: i64,
         size: i64,
+        sort: Option<Sort>,
         query: &Value,
     ) -> Result<Value, ErrResp> {
-        let result = search_documents(index_name, from, size, query, &self.index_client).await?;
+        let result =
+            search_documents(index_name, from, size, sort, query, &self.index_client).await?;
         Ok(result)
     }
 }
@@ -853,7 +860,7 @@ fn parse_query_result(query_result: Value) -> RespResult<ConsultantsSearchResult
             }),
         )
     })?;
-    let mut consultants = Vec::with_capacity(VALID_SIZE as usize);
+    let consultants = Vec::with_capacity(VALID_SIZE as usize);
     for hit in hits {
         // print the source document
         println!("{:?}", hit["_source"]);

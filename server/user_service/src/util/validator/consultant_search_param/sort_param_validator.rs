@@ -15,8 +15,8 @@ static KEY_SET: Lazy<HashSet<String>> = Lazy::new(|| {
 
 static ORDER_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     let mut set: HashSet<String> = HashSet::with_capacity(2);
-    set.insert("ascending".to_string());
-    set.insert("descending".to_string());
+    set.insert("asc".to_string());
+    set.insert("desc".to_string());
     set
 });
 
@@ -69,34 +69,34 @@ mod tests {
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         vec![
             TestCase {
-                name: "fee_per_hour_in_yen ascending".to_string(),
+                name: "fee_per_hour_in_yen asc".to_string(),
                 input: SortParam {
                     key: "fee_per_hour_in_yen".to_string(),
-                    order: "ascending".to_string(),
+                    order: "asc".to_string(),
                 },
                 expected: Ok(()),
             },
             TestCase {
-                name: "fee_per_hour_in_yen descending".to_string(),
+                name: "fee_per_hour_in_yen desc".to_string(),
                 input: SortParam {
                     key: "fee_per_hour_in_yen".to_string(),
-                    order: "descending".to_string(),
+                    order: "desc".to_string(),
                 },
                 expected: Ok(()),
             },
             TestCase {
-                name: "rating ascending".to_string(),
+                name: "rating asc".to_string(),
                 input: SortParam {
                     key: "rating".to_string(),
-                    order: "ascending".to_string(),
+                    order: "asc".to_string(),
                 },
                 expected: Ok(()),
             },
             TestCase {
-                name: "rating descending".to_string(),
+                name: "rating desc".to_string(),
                 input: SortParam {
                     key: "rating".to_string(),
-                    order: "descending".to_string(),
+                    order: "desc".to_string(),
                 },
                 expected: Ok(()),
             },
@@ -104,7 +104,7 @@ mod tests {
                 name: "invalid key".to_string(),
                 input: SortParam {
                     key: "1' or '1' = '1';--".to_string(),
-                    order: "ascending".to_string(),
+                    order: "asc".to_string(),
                 },
                 expected: Err(SortParamError::InvalidKey("1' or '1' = '1';--".to_string())),
             },
@@ -135,7 +135,7 @@ mod tests {
         for s in SYMBOL_SET.iter() {
             let param = SortParam {
                 key: s.to_string(),
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -159,7 +159,7 @@ mod tests {
         for s in SYMBOL_SET.iter() {
             let param = SortParam {
                 key: s.to_string() + "fee_per_hour_in_yen",
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -171,7 +171,7 @@ mod tests {
         for s in SYMBOL_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: s.to_string() + "descending",
+                order: s.to_string() + "desc",
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -183,7 +183,7 @@ mod tests {
         for s in SYMBOL_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string() + s,
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -195,7 +195,7 @@ mod tests {
         for s in SYMBOL_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: "descending".to_string() + s,
+                order: "desc".to_string() + s,
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -207,7 +207,7 @@ mod tests {
         for s in SYMBOL_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour".to_string() + s + "_in_yen",
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -219,7 +219,7 @@ mod tests {
         for s in SYMBOL_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: "descending".to_string() + s + "ascending",
+                order: "desc".to_string() + s + "asc",
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -231,7 +231,7 @@ mod tests {
         for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: s.to_string(),
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -255,7 +255,7 @@ mod tests {
         for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: s.to_string() + "fee_per_hour_in_yen",
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -267,7 +267,7 @@ mod tests {
         for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: s.to_string() + "descending",
+                order: s.to_string() + "desc",
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -279,7 +279,7 @@ mod tests {
         for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string() + s,
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -291,7 +291,7 @@ mod tests {
         for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: "descending".to_string() + s,
+                order: "desc".to_string() + s,
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -303,7 +303,7 @@ mod tests {
         for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour".to_string() + s + "_in_yen",
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -315,7 +315,7 @@ mod tests {
         for s in CONTROL_CHAR_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: "descending".to_string() + s + "ascending",
+                order: "desc".to_string() + s + "asc",
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -327,7 +327,7 @@ mod tests {
         for s in SPACE_SET.iter() {
             let param = SortParam {
                 key: s.to_string(),
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -351,7 +351,7 @@ mod tests {
         for s in SPACE_SET.iter() {
             let param = SortParam {
                 key: s.to_string() + "fee_per_hour_in_yen",
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -363,7 +363,7 @@ mod tests {
         for s in SPACE_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: s.to_string() + "descending",
+                order: s.to_string() + "desc",
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -375,7 +375,7 @@ mod tests {
         for s in SPACE_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string() + s,
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -387,7 +387,7 @@ mod tests {
         for s in SPACE_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: "descending".to_string() + s,
+                order: "desc".to_string() + s,
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
@@ -399,7 +399,7 @@ mod tests {
         for s in SPACE_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour".to_string() + s + "_in_yen",
-                order: "descending".to_string(),
+                order: "desc".to_string(),
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidKey(param.key)))
@@ -411,7 +411,7 @@ mod tests {
         for s in SPACE_SET.iter() {
             let param = SortParam {
                 key: "fee_per_hour_in_yen".to_string(),
-                order: "descending".to_string() + s + "ascending",
+                order: "desc".to_string() + s + "asc",
             };
             let result = validate_sort_param(&param);
             assert_eq!(result, Err(SortParamError::InvalidOrder(param.order)))
