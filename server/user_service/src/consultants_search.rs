@@ -9,7 +9,7 @@ use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::util::validator::consultant_search_param::fee_per_hour_yen_param_validator::FeePerHourYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
@@ -161,11 +161,16 @@ async fn handle_consultants_search(
         ));
     }
 
+    info!(
+        "query param (account_id: {}, career_param: {:?}, fee_per_hour_yen_param: {:?})",
+        account_id, param.career_param, param.fee_per_hour_yen_param
+    );
     let query = create_query_json(account_id, param.career_param, param.fee_per_hour_yen_param)?;
-    let result = op
+    let query_result = op
         .search_documents(INDEX_NAME, param.from, param.size, &query)
         .await?;
-    todo!()
+
+    parse_query_result(query_result)
 }
 
 #[async_trait]
@@ -814,4 +819,18 @@ fn generate_query_json(account_id: i64, params: Vec<Value>) -> Value {
             ]
         }
     })
+}
+
+fn parse_query_result(query_result: Value) -> RespResult<ConsultantsSearchResult> {
+    let took = query_result["took"].as_i64().ok_or_else(|| {
+        error!("failed to get processing time: {}", query_result);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    info!("took {} milliseconds", took);
+    todo!()
 }
