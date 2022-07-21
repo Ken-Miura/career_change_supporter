@@ -159,6 +159,8 @@ async fn handle_consultants_search(
             }),
         ));
     }
+
+    let query = create_query_json(account_id, param.career_param, param.fee_per_hour_yen_param)?;
     todo!()
 }
 
@@ -288,7 +290,7 @@ fn create_invalid_sort_param_err(e: &SortParamError) -> ErrResp {
 }
 
 fn create_query_json(
-    account_id: i32,
+    account_id: i64,
     career_param: CareerParam,
     fee_per_hour_yen_param: FeePerHourYenParam,
 ) -> Result<Value, ErrResp> {
@@ -322,8 +324,442 @@ fn create_query_json(
         let profession_criteria = create_profession_criteria(profession.as_str());
         params.push(profession_criteria);
     }
+    if let Some(equal_or_more) = career_param.annual_income_in_man_yen.equal_or_more {
+        let equal_or_more_criteria =
+            create_annual_income_in_man_yen_equal_or_more_criteria(equal_or_more);
+        params.push(equal_or_more_criteria);
+    }
+    if let Some(equal_or_less) = career_param.annual_income_in_man_yen.equal_or_less {
+        let equal_or_less_criteria =
+            create_annual_income_in_man_yen_equal_or_less_criteria(equal_or_less);
+        params.push(equal_or_less_criteria);
+    }
+    if let Some(is_manager) = career_param.is_manager {
+        let is_manager_criteria = create_is_manager_criteria(is_manager);
+        params.push(is_manager_criteria);
+    }
+    if let Some(position_name) = career_param.position_name {
+        let position_name_criteria = create_position_name_criteria(position_name.as_str());
+        params.push(position_name_criteria);
+    }
+    if let Some(is_new_graduate) = career_param.is_new_graduate {
+        let is_new_graduate_criteria = create_is_new_graduate_criteria(is_new_graduate);
+        params.push(is_new_graduate_criteria);
+    }
+    if let Some(note) = career_param.note {
+        let note_criteria = create_note_criteria(note.as_str());
+        params.push(note_criteria);
+    }
+    if let Some(equal_or_more) = fee_per_hour_yen_param.equal_or_more {
+        let equal_or_more_criteria = create_fee_per_hour_yen_equal_or_more_criteria(equal_or_more);
+        params.push(equal_or_more_criteria);
+    }
+    if let Some(equal_or_less) = fee_per_hour_yen_param.equal_or_less {
+        let equal_or_less_criteria = create_fee_per_hour_yen_equal_or_less_criteria(equal_or_less);
+        params.push(equal_or_less_criteria);
+    }
+    Ok(generate_query_json(account_id, params))
+}
 
-    Ok(json!({
+fn create_company_name_criteria(company_name: &str) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": company_name,
+                                "fields": [
+                                    "careers.company_name.ngram^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": company_name,
+                                "fields": [
+                                    "careers.company_name^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_department_name_criteria(department_name: &str) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": department_name,
+                                "fields": [
+                                    "careers.department_name.ngram^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": department_name,
+                                "fields": [
+                                    "careers.department_name^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_office_criteria(office: &str) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": office,
+                                "fields": [
+                                    "careers.office.ngram^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": office,
+                                "fields": [
+                                    "careers.office^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn convert_years_of_service_into_integer_value(years_of_service: &str) -> Result<u32, ErrResp> {
+    if years_of_service == YEARS_OF_SERVICE_THREE_YEARS_OR_MORE {
+        Ok(3)
+    } else if years_of_service == YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE {
+        Ok(5)
+    } else if years_of_service == YEARS_OF_SERVICE_TEN_YEARS_OR_MORE {
+        Ok(10)
+    } else if years_of_service == YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE {
+        Ok(15)
+    } else if years_of_service == YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE {
+        Ok(20)
+    } else {
+        // 事前にvalidationしているため、ここを通る場合は障害を意味する
+        // そのため、500系のステータスコードでレスポンスを返す
+        error!("unexpected years_of_service: ({})", years_of_service);
+        Err(unexpected_err_resp())
+    }
+}
+
+fn create_years_of_service_criteria(years_of_service: u32) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "range": {
+                                "careers.years_of_service": {
+                                    "gte": years_of_service
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_employed_criteria(employed: bool) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "careers.employed": employed
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_contract_type_criteria(contract_type: &str) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": contract_type,
+                                "fields": [
+                                    "careers.contract_type.ngram^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": contract_type,
+                                "fields": [
+                                    "careers.contract_type^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_profession_criteria(profession: &str) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": profession,
+                                "fields": [
+                                    "careers.profession.ngram^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": profession,
+                                "fields": [
+                                    "careers.profession^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_annual_income_in_man_yen_equal_or_more_criteria(equal_or_more: i32) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "range": {
+                                "careers.years_of_service": {
+                                    "gte": equal_or_more
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_annual_income_in_man_yen_equal_or_less_criteria(equal_or_less: i32) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "range": {
+                                "careers.years_of_service": {
+                                    "lte": equal_or_less
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_is_manager_criteria(is_manager: bool) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "careers.is_manager": is_manager
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_position_name_criteria(position_name: &str) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": position_name,
+                                "fields": [
+                                    "careers.position_name.ngram^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": position_name,
+                                "fields": [
+                                    "careers.position_name^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_is_new_graduate_criteria(is_new_graduate: bool) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "careers.is_new_graduate": is_new_graduate
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_note_criteria(note: &str) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": note,
+                                "fields": [
+                                    "careers.note.ngram^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": note,
+                                "fields": [
+                                    "careers.note^1"
+                                ],
+                                "type": "phrase"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_fee_per_hour_yen_equal_or_more_criteria(equal_or_more: i32) -> Value {
+    json!({
+        "range": {
+            "fee_per_hour_in_yen": {
+                "gte": equal_or_more
+            }
+        }
+    })
+}
+
+fn create_fee_per_hour_yen_equal_or_less_criteria(equal_or_less: i32) -> Value {
+    json!({
+        "range": {
+            "fee_per_hour_in_yen": {
+                "lte": equal_or_less
+            }
+        }
+    })
+}
+
+fn generate_query_json(account_id: i64, params: Vec<Value>) -> Value {
+    json!({
         "query": {
             "bool": {
                 "must": params
@@ -355,248 +791,5 @@ fn create_query_json(
                 }
             ]
         }
-    }))
-}
-
-fn create_company_name_criteria(company_name: &str) -> Value {
-    json!(
-        {
-            "nested": {
-                "path": "careers",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "multi_match": {
-                                    "query": company_name,
-                                    "fields": [
-                                        "careers.company_name.ngram^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ],
-                        "should": [
-                            {
-                                "multi_match": {
-                                    "query": company_name,
-                                    "fields": [
-                                        "careers.company_name^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    )
-}
-
-fn create_department_name_criteria(department_name: &str) -> Value {
-    json!(
-        {
-            "nested": {
-                "path": "careers",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "multi_match": {
-                                    "query": department_name,
-                                    "fields": [
-                                        "careers.department_name.ngram^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ],
-                        "should": [
-                            {
-                                "multi_match": {
-                                    "query": department_name,
-                                    "fields": [
-                                        "careers.department_name^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    )
-}
-
-fn create_office_criteria(office: &str) -> Value {
-    json!(
-        {
-            "nested": {
-                "path": "careers",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "multi_match": {
-                                    "query": office,
-                                    "fields": [
-                                        "careers.office.ngram^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ],
-                        "should": [
-                            {
-                                "multi_match": {
-                                    "query": office,
-                                    "fields": [
-                                        "careers.office^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    )
-}
-
-fn convert_years_of_service_into_integer_value(years_of_service: &str) -> Result<u32, ErrResp> {
-    if years_of_service == YEARS_OF_SERVICE_THREE_YEARS_OR_MORE {
-        Ok(3)
-    } else if years_of_service == YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE {
-        Ok(5)
-    } else if years_of_service == YEARS_OF_SERVICE_TEN_YEARS_OR_MORE {
-        Ok(10)
-    } else if years_of_service == YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE {
-        Ok(15)
-    } else if years_of_service == YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE {
-        Ok(20)
-    } else {
-        // 事前にvalidationしているため、ここを通る場合は障害を意味する
-        // そのため、500系のステータスコードでレスポンスを返す
-        error!("unexpected years_of_service: ({})", years_of_service);
-        Err(unexpected_err_resp())
-    }
-}
-
-fn create_years_of_service_criteria(years_of_service: u32) -> Value {
-    json!(
-        {
-            "nested": {
-                "path": "careers",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "range": {
-                                    "careers.years_of_service": {
-                                        "gte": years_of_service
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    )
-}
-
-fn create_employed_criteria(employed: bool) -> Value {
-    json!(
-        {
-            "nested": {
-                "path": "careers",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "term": {
-                                    "careers.employed": employed
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    )
-}
-
-fn create_contract_type_criteria(contract_type: &str) -> Value {
-    json!(
-        {
-            "nested": {
-                "path": "careers",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "multi_match": {
-                                    "query": contract_type,
-                                    "fields": [
-                                        "careers.contract_type.ngram^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ],
-                        "should": [
-                            {
-                                "multi_match": {
-                                    "query": contract_type,
-                                    "fields": [
-                                        "careers.contract_type^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    )
-}
-
-fn create_profession_criteria(profession: &str) -> Value {
-    json!(
-        {
-            "nested": {
-                "path": "careers",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "multi_match": {
-                                    "query": profession,
-                                    "fields": [
-                                        "careers.profession.ngram^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ],
-                        "should": [
-                            {
-                                "multi_match": {
-                                    "query": profession,
-                                    "fields": [
-                                        "careers.profession^1"
-                                    ],
-                                    "type": "phrase"
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    )
+    })
 }
