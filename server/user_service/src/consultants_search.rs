@@ -87,7 +87,7 @@ pub(crate) struct SortParam {
 
 #[derive(Serialize, Debug)]
 pub(crate) struct ConsultantsSearchResult {
-    total: i32,
+    total: i64,
     consultants: Vec<ConsultantDescription>,
 }
 
@@ -832,5 +832,66 @@ fn parse_query_result(query_result: Value) -> RespResult<ConsultantsSearchResult
         )
     })?;
     info!("took {} milliseconds", took);
-    todo!()
+
+    let total = query_result["hits"]["total"]["value"]
+        .as_i64()
+        .ok_or_else(|| {
+            error!("failed to get total value: {}", query_result);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: Code::UnexpectedErr as u32,
+                }),
+            )
+        })?;
+    let hits = query_result["hits"]["hits"].as_array().ok_or_else(|| {
+        error!("failed to get hits: {}", query_result);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let mut consultants = Vec::with_capacity(VALID_SIZE as usize);
+    for hit in hits {
+        // print the source document
+        println!("{:?}", hit["_source"]);
+        // sample
+        // "hits" : [
+        //   {
+        //     "_index" : "users",
+        //     "_id" : "1",
+        //     "_score" : 2.287682,
+        //     "_source" : {
+        //       "careers" : [
+        //         {
+        //           "annual_income_in_man_yen" : null,
+        //           "career_id" : 1,
+        //           "company_name" : "テスト株式会社",
+        //           "contract_type" : "regular",
+        //           "department_name" : null,
+        //           "employed" : true,
+        //           "is_manager" : false,
+        //           "is_new_graduate" : false,
+        //           "note" : null,
+        //           "office" : null,
+        //           "position_name" : null,
+        //           "profession" : null,
+        //           "years_of_service" : 5
+        //         }
+        //       ],
+        //       "fee_per_hour_in_yen" : 4500,
+        //       "is_bank_account_registered" : true,
+        //       "num_of_careers" : 1,
+        //       "rating" : null,
+        //       "user_account_id" : 1
+        //     }
+        //   }
+        // ]
+    }
+    // NOTE: 将来的にパフォーマンスに影響する場合、ログに出力する内容を制限する
+    info!("total: {}, consultants: {:?}", total, consultants);
+    let results = ConsultantsSearchResult { total, consultants };
+    Ok((StatusCode::OK, Json(results)))
 }
