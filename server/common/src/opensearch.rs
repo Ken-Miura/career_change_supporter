@@ -94,6 +94,7 @@ pub async fn update_document(
     Ok(())
 }
 
+#[derive(Debug, Clone)]
 pub struct Sort {
     pub key: String,
     pub order: String,
@@ -107,7 +108,7 @@ pub async fn search_documents(
     query: &Value,
     client: &OpenSearch,
 ) -> Result<Value, ErrResp> {
-    let result = if let Some(s) = sort {
+    let result = if let Some(s) = sort.clone() {
         let pair = format!("{}:{}", s.key, s.order);
         client
             .search(SearchParts::Index(&[index_name]))
@@ -139,17 +140,11 @@ pub async fn search_documents(
         )
     })?;
     let status_code = response.status_code();
-    if !status_code.is_success() {
-        error!("failed to search documents (response: {:?})", response);
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiError {
-                code: Code::UnexpectedErr as u32,
-            }),
-        ));
-    }
     let response_body = response.json::<Value>().await.map_err(|e| {
-        error!("failed to read body as json: {}", e);
+        error!(
+            "failed to read body as json (index_name: {}, from: {}, size: {}, sort: {:?}, query: {}): {}",
+            index_name, from, size, sort, query, e
+        );
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiError {
@@ -157,6 +152,15 @@ pub async fn search_documents(
             }),
         )
     })?;
+    if !status_code.is_success() {
+        error!("failed to search documents (index_name: {}, from: {}, size: {}, sort: {:?}, query: {}, response_body: {})", index_name, from, size, sort, query, response_body);
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        ));
+    }
     Ok(response_body)
 }
 
