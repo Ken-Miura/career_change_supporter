@@ -796,34 +796,34 @@ fn generate_query_json(account_id: i64, params: Vec<Value>) -> Value {
     json!({
         "query": {
             "bool": {
-                "must": params
-            },
-            "filter": [
-                {
-                    "range": {
-                        "num_of_careers": {
-                            "gt": 0
+                "must": params,
+                "filter": [
+                    {
+                        "range": {
+                            "num_of_careers": {
+                                "gt": 0
+                            }
+                        }
+                    },
+                    {
+                        "exists": {
+                            "field": "fee_per_hour_in_yen"
+                        }
+                    },
+                    {
+                        "term": {
+                            "is_bank_account_registered": true
                         }
                     }
-                },
-                {
-                    "exists": {
-                        "field": "fee_per_hour_in_yen"
+                ],
+                "must_not": [
+                    {
+                        "term": {
+                            "user_account_id": account_id
+                        }
                     }
-                },
-                {
-                    "term": {
-                        "is_bank_account_registered": true
-                    }
-                }
-            ],
-            "must_not": [
-                {
-                    "term": {
-                        "user_account_id": account_id
-                    }
-                }
-            ]
+                ]
+            }
         }
     })
 }
@@ -838,7 +838,7 @@ fn parse_query_result(query_result: Value) -> RespResult<ConsultantsSearchResult
             }),
         )
     })?;
-    info!("took {} milliseconds", took);
+    info!("opensearch took {} milliseconds", took);
 
     let total = query_result["hits"]["total"]["value"]
         .as_i64()
