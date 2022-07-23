@@ -127,7 +127,7 @@ async fn handle_consultants_search(
         let _ = validate_sort_param(&sort_param).map_err(|e| {
             error!("invalid sort_param: {} (account id: {})", e, account_id);
             create_invalid_sort_param_err(&e)
-        });
+        })?;
     }
     if param.from.is_negative() {
         error!(
@@ -963,7 +963,7 @@ mod tests {
     use super::{
         handle_consultants_search, AnnualInComeInManYenParam, CareerParam,
         ConsultantCareerDescription, ConsultantDescription, ConsultantSearchParam,
-        ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourInYenParam,
+        ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourInYenParam, SortParam,
     };
 
     #[derive(Clone, Debug)]
@@ -1035,7 +1035,10 @@ mod tests {
                             equal_or_more: Some(3000),
                             equal_or_less: Some(50000),
                         },
-                        sort_param: None,
+                        sort_param: Some(SortParam {
+                            key: "rating".to_string(),
+                            order: "asc".to_string(),
+                        }),
                         from: 0,
                         size: 20,
                     },
@@ -2046,6 +2049,96 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::EqualOrMoreExceedsEqualOrLessInFeePerHourInYen as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "invalid sort key".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: None,
+                            department_name: None,
+                            office: None,
+                            years_of_service: None,
+                            employed: None,
+                            contract_type: None,
+                            profession: None,
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: None,
+                                equal_or_less: None,
+                            },
+                            is_manager: None,
+                            position_name: None,
+                            is_new_graduate: None,
+                            note: None,
+                        },
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
+                            equal_or_more: None,
+                            equal_or_less: None,
+                        },
+                        sort_param: Some(SortParam {
+                            key: "*".to_string(),
+                            order: "asc".to_string(),
+                        }),
+                        from: 0,
+                        size: 20,
+                    },
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 1,
+                        query_result: create_empty_result(),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidSortKey as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "invalid sort order".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: None,
+                            department_name: None,
+                            office: None,
+                            years_of_service: None,
+                            employed: None,
+                            contract_type: None,
+                            profession: None,
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: None,
+                                equal_or_less: None,
+                            },
+                            is_manager: None,
+                            position_name: None,
+                            is_new_graduate: None,
+                            note: None,
+                        },
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
+                            equal_or_more: None,
+                            equal_or_less: None,
+                        },
+                        sort_param: Some(SortParam {
+                            key: "fee_per_hour_in_yen".to_string(),
+                            order: "*".to_string(),
+                        }),
+                        from: 0,
+                        size: 20,
+                    },
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 1,
+                        query_result: create_empty_result(),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidSortOrder as u32,
                     }),
                 )),
             },
