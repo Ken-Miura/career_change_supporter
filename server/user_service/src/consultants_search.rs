@@ -956,23 +956,29 @@ mod tests {
     };
 
     #[derive(Clone, Debug)]
-    struct ConsultantsSearchOperationMock {}
+    struct ConsultantsSearchOperationMock {
+        account_id: i64,
+        query_result: Value,
+    }
 
     #[async_trait]
     impl ConsultantsSearchOperation for ConsultantsSearchOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            };
+            Ok(true)
         }
 
         async fn search_documents(
             &self,
-            index_name: &str,
-            from: i64,
-            size: i64,
-            sort: Option<Sort>,
-            query: &Value,
+            _index_name: &str,
+            _from: i64,
+            _size: i64,
+            _sort: Option<Sort>,
+            _query: &Value,
         ) -> Result<Value, ErrResp> {
-            todo!()
+            Ok(self.query_result.clone())
         }
     }
 
