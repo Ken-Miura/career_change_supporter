@@ -945,14 +945,17 @@ fn create_consultant_career_description(
 
 #[cfg(test)]
 mod tests {
-    use async_session::serde_json::Value;
-    use axum::async_trait;
-    use common::{opensearch::Sort, ErrResp, RespResult};
+    use async_session::serde_json::{json, Value};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use common::{opensearch::Sort, ApiError, ErrResp, RespResult};
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
+
     use super::{
-        handle_consultants_search, ConsultantSearchParam, ConsultantsSearchOperation,
-        ConsultantsSearchResult,
+        handle_consultants_search, AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam,
+        ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourYenParam,
     };
 
     #[derive(Clone, Debug)]
@@ -996,7 +999,68 @@ mod tests {
         op: ConsultantsSearchOperationMock,
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| todo!());
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![TestCase {
+            name: "no identity registered".to_string(),
+            input: Input {
+                account_id: 1,
+                param: ConsultantSearchParam {
+                    career_param: CareerParam {
+                        company_name: None,
+                        department_name: None,
+                        office: None,
+                        years_of_service: None,
+                        employed: None,
+                        contract_type: None,
+                        profession: None,
+                        annual_income_in_man_yen: AnnualInComeInManYenParam {
+                            equal_or_more: None,
+                            equal_or_less: None,
+                        },
+                        is_manager: None,
+                        position_name: None,
+                        is_new_graduate: None,
+                        note: None,
+                    },
+                    fee_per_hour_yen_param: FeePerHourYenParam {
+                        equal_or_more: None,
+                        equal_or_less: None,
+                    },
+                    sort_param: None,
+                    from: 0,
+                    size: 20,
+                },
+                op: ConsultantsSearchOperationMock {
+                    account_id: 2,
+                    query_result: json!({
+                      "took" : 2,
+                      "timed_out" : false,
+                      "_shards" : {
+                        "total" : 1,
+                        "successful" : 1,
+                        "skipped" : 0,
+                        "failed" : 0
+                      },
+                      "hits" : {
+                        "total" : {
+                          "value" : 1,
+                          "relation" : "eq"
+                        },
+                        "max_score" : 1.0,
+                        "hits" : [
+                        ]
+                      }
+                    }),
+                },
+            },
+            expected: Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NoIdentityRegistered as u32,
+                }),
+            )),
+        }]
+    });
 
     #[tokio::test]
     async fn test_handle_consultants_search() {
