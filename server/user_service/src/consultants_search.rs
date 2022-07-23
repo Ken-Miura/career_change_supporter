@@ -954,7 +954,8 @@ mod tests {
     use crate::err::Code;
 
     use super::{
-        handle_consultants_search, AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam,
+        handle_consultants_search, AnnualInComeInManYenParam, CareerParam,
+        ConsultantCareerDescription, ConsultantDescription, ConsultantSearchParam,
         ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourYenParam,
     };
 
@@ -1000,66 +1001,168 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        vec![TestCase {
-            name: "no identity registered".to_string(),
-            input: Input {
-                account_id: 1,
-                param: ConsultantSearchParam {
-                    career_param: CareerParam {
-                        company_name: None,
-                        department_name: None,
-                        office: None,
-                        years_of_service: None,
-                        employed: None,
-                        contract_type: None,
-                        profession: None,
-                        annual_income_in_man_yen: AnnualInComeInManYenParam {
+        vec![
+            TestCase {
+                name: "all parameters specified".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: Some("テスト１".to_string()),
+                            department_name: Some("テスト２".to_string()),
+                            office: Some("テスト３".to_string()),
+                            years_of_service: Some("THREE_YEARS_OR_MORE".to_string()),
+                            employed: Some(true),
+                            contract_type: Some("regular".to_string()),
+                            profession: Some("テスト４".to_string()),
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: Some(300),
+                                equal_or_less: Some(800),
+                            },
+                            is_manager: Some(false),
+                            position_name: Some("テスト５".to_string()),
+                            is_new_graduate: Some(true),
+                            note: Some("テスト６".to_string()),
+                        },
+                        fee_per_hour_yen_param: FeePerHourYenParam {
+                            equal_or_more: Some(3000),
+                            equal_or_less: Some(50000),
+                        },
+                        sort_param: None,
+                        from: 0,
+                        size: 20,
+                    },
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 1,
+                        query_result: json!({
+                          "took" : 2,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 1,
+                              "relation" : "eq"
+                            },
+                            "max_score" : 1.0,
+                            "hits" : [
+                                {
+                                    "_index" : "users",
+                                    "_id" : "2",
+                                    "_score" : 1.0,
+                                    "_source" : {
+                                      "careers" : [
+                                        {
+                                          "annual_income_in_man_yen" : null,
+                                          "career_id" : 1,
+                                          "company_name" : "テスト１",
+                                          "contract_type" : "regular",
+                                          "department_name" : "テスト２",
+                                          "employed" : true,
+                                          "is_manager" : false,
+                                          "is_new_graduate" : true,
+                                          "note" : "テスト６",
+                                          "office" : "テスト３",
+                                          "position_name" : "テスト５",
+                                          "profession" : "テスト４",
+                                          "years_of_service" : 3
+                                        }
+                                    ],
+                                    "fee_per_hour_in_yen" : 4500,
+                                    "is_bank_account_registered" : true,
+                                    "num_of_careers" : 1,
+                                    "rating" : null,
+                                    "user_account_id" : 2
+                                  }
+                                }
+                            ]
+                          }
+                        }),
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultantsSearchResult {
+                        total: 1,
+                        consultants: vec![ConsultantDescription {
+                            account_id: 2,
+                            fee_per_hour_in_yen: 4500,
+                            rating: None,
+                            num_of_rated: 0,
+                            careers: vec![ConsultantCareerDescription {
+                                company_name: "テスト１".to_string(),
+                                profession: Some("テスト４".to_string()),
+                                office: Some("テスト３".to_string()),
+                            }],
+                        }],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "no identity registered".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: None,
+                            department_name: None,
+                            office: None,
+                            years_of_service: None,
+                            employed: None,
+                            contract_type: None,
+                            profession: None,
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: None,
+                                equal_or_less: None,
+                            },
+                            is_manager: None,
+                            position_name: None,
+                            is_new_graduate: None,
+                            note: None,
+                        },
+                        fee_per_hour_yen_param: FeePerHourYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
-                        is_manager: None,
-                        position_name: None,
-                        is_new_graduate: None,
-                        note: None,
+                        sort_param: None,
+                        from: 0,
+                        size: 20,
                     },
-                    fee_per_hour_yen_param: FeePerHourYenParam {
-                        equal_or_more: None,
-                        equal_or_less: None,
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 2,
+                        query_result: json!({
+                          "took" : 2,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 1,
+                              "relation" : "eq"
+                            },
+                            "max_score" : 1.0,
+                            "hits" : [
+                            ]
+                          }
+                        }),
                     },
-                    sort_param: None,
-                    from: 0,
-                    size: 20,
                 },
-                op: ConsultantsSearchOperationMock {
-                    account_id: 2,
-                    query_result: json!({
-                      "took" : 2,
-                      "timed_out" : false,
-                      "_shards" : {
-                        "total" : 1,
-                        "successful" : 1,
-                        "skipped" : 0,
-                        "failed" : 0
-                      },
-                      "hits" : {
-                        "total" : {
-                          "value" : 1,
-                          "relation" : "eq"
-                        },
-                        "max_score" : 1.0,
-                        "hits" : [
-                        ]
-                      }
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
                     }),
-                },
+                )),
             },
-            expected: Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: Code::NoIdentityRegistered as u32,
-                }),
-            )),
-        }]
+        ]
     });
 
     #[tokio::test]
