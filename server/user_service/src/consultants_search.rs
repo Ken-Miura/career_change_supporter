@@ -42,7 +42,7 @@ pub(crate) async fn post_consultants_search(
     handle_consultants_search(account_id, req, op).await
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(crate) struct ConsultantSearchParam {
     pub career_param: CareerParam,
     pub fee_per_hour_yen_param: FeePerHourYenParam,
@@ -51,7 +51,7 @@ pub(crate) struct ConsultantSearchParam {
     pub size: i64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(crate) struct CareerParam {
     pub company_name: Option<String>,
     pub department_name: Option<String>,
@@ -67,13 +67,13 @@ pub(crate) struct CareerParam {
     pub note: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(crate) struct AnnualInComeInManYenParam {
     pub equal_or_more: Option<i32>,
     pub equal_or_less: Option<i32>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(crate) struct FeePerHourYenParam {
     pub equal_or_more: Option<i32>,
     pub equal_or_less: Option<i32>,
@@ -91,7 +91,7 @@ pub(crate) struct ConsultantsSearchResult {
     consultants: Vec<ConsultantDescription>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Clone, Serialize, Debug)]
 pub(crate) struct ConsultantDescription {
     account_id: i64,
     fee_per_hour_in_yen: i32,
@@ -100,7 +100,7 @@ pub(crate) struct ConsultantDescription {
     careers: Vec<ConsultantCareerDescription>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Clone, Serialize, Debug, PartialEq)]
 pub(crate) struct ConsultantCareerDescription {
     company_name: String,
     profession: Option<String>,
@@ -944,4 +944,101 @@ fn create_consultant_career_description(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use async_session::serde_json::Value;
+    use axum::async_trait;
+    use common::{opensearch::Sort, ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use super::{
+        handle_consultants_search, ConsultantSearchParam, ConsultantsSearchOperation,
+        ConsultantsSearchResult,
+    };
+
+    #[derive(Clone, Debug)]
+    struct ConsultantsSearchOperationMock {}
+
+    #[async_trait]
+    impl ConsultantsSearchOperation for ConsultantsSearchOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn search_documents(
+            &self,
+            index_name: &str,
+            from: i64,
+            size: i64,
+            sort: Option<Sort>,
+            query: &Value,
+        ) -> Result<Value, ErrResp> {
+            todo!()
+        }
+    }
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<ConsultantsSearchResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        param: ConsultantSearchParam,
+        op: ConsultantsSearchOperationMock,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| todo!());
+
+    #[tokio::test]
+    async fn test_handle_consultants_search() {
+        for test_case in TEST_CASE_SET.iter() {
+            let resp = handle_consultants_search(
+                test_case.input.account_id,
+                test_case.input.param.clone(),
+                test_case.input.op.clone(),
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let result = resp.expect("failed to get Ok");
+                let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0.total, result.1 .0.total, "{}", message);
+                assert_eq!(
+                    expected_result.1 .0.consultants.len(),
+                    result.1 .0.consultants.len(),
+                    "{}",
+                    message
+                );
+                for n in 0..expected_result.1 .0.consultants.len() {
+                    let expected = expected_result.1 .0.consultants[n].clone();
+                    let result = result.1 .0.consultants[n].clone();
+                    assert_eq!(expected.account_id, result.account_id, "{}", message);
+                    assert_eq!(
+                        expected.fee_per_hour_in_yen, result.fee_per_hour_in_yen,
+                        "{}",
+                        message
+                    );
+                    if let Some(expected_rating) = expected.rating {
+                        let result_rating = result.rating.unwrap();
+                        let diff = (expected_rating - result_rating).abs();
+                        assert!(diff < f64::EPSILON, "{}", message);
+                    } else {
+                        assert_eq!(None, result.rating, "{}", message);
+                    }
+                    assert_eq!(expected.num_of_rated, result.num_of_rated, "{}", message);
+                    assert_eq!(expected.careers, result.careers, "{}", message);
+                }
+            } else {
+                let result = resp.expect_err("failed to get Err");
+                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            }
+        }
+    }
+}
