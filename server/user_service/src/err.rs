@@ -96,7 +96,7 @@ pub(crate) enum Code {
     InvalidBankAccountNumber = 20084,
     IllegalYearsOfService = 20085,
     EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen = 20086,
-    EqualOrMoreExceedsEqualOrLessInFeePerHourYen = 20087,
+    EqualOrMoreExceedsEqualOrLessInFeePerHourInYen = 20087,
     InvalidSortKey = 20088,
     InvalidSortOrder = 20089,
     InvalidConsultantSearchParamFrom = 20090,

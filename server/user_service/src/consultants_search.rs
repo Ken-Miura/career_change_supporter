@@ -11,7 +11,7 @@ use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::util::validator::consultant_search_param::fee_per_hour_yen_param_validator::FeePerHourYenParamError;
+use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
 use crate::util::{
     YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE, YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE,
@@ -24,7 +24,7 @@ use crate::{
         session::User,
         validator::consultant_search_param::{
             career_param_validator::{validate_career_param, CareerParamValidationError},
-            fee_per_hour_yen_param_validator::validate_fee_per_hour_yen_param,
+            fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param,
             sort_param_validator::validate_sort_param,
         },
     },
@@ -45,7 +45,7 @@ pub(crate) async fn post_consultants_search(
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct ConsultantSearchParam {
     pub career_param: CareerParam,
-    pub fee_per_hour_yen_param: FeePerHourYenParam,
+    pub fee_per_hour_in_yen_param: FeePerHourInYenParam,
     pub sort_param: Option<SortParam>,
     pub from: i64,
     pub size: i64,
@@ -74,7 +74,7 @@ pub(crate) struct AnnualInComeInManYenParam {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub(crate) struct FeePerHourYenParam {
+pub(crate) struct FeePerHourInYenParam {
     pub equal_or_more: Option<i32>,
     pub equal_or_less: Option<i32>,
 }
@@ -116,12 +116,12 @@ async fn handle_consultants_search(
         error!("invalid career_param: {} (account id: {})", e, account_id);
         create_invalid_career_param_err(&e)
     })?;
-    let _ = validate_fee_per_hour_yen_param(&param.fee_per_hour_yen_param).map_err(|e| {
+    let _ = validate_fee_per_hour_in_yen_param(&param.fee_per_hour_in_yen_param).map_err(|e| {
         error!(
-            "invalid fee_per_hour_yen_param: {} (account id: {})",
+            "invalid fee_per_hour_in_yen_param: {} (account id: {})",
             e, account_id
         );
-        create_invalid_fee_per_hour_yen_param_err(&e)
+        create_invalid_fee_per_hour_in_yen_param_err(&e)
     })?;
     if let Some(sort_param) = param.sort_param.clone() {
         let _ = validate_sort_param(&sort_param).map_err(|e| {
@@ -162,10 +162,14 @@ async fn handle_consultants_search(
     }
 
     info!(
-        "query param (account_id: {}, career_param: {:?}, fee_per_hour_yen_param: {:?}, sort_param: {:?})",
-        account_id, param.career_param, param.fee_per_hour_yen_param, param.sort_param
+        "query param (account_id: {}, career_param: {:?}, fee_per_hour_in_yen_param: {:?}, sort_param: {:?})",
+        account_id, param.career_param, param.fee_per_hour_in_yen_param, param.sort_param
     );
-    let query = create_query_json(account_id, param.career_param, param.fee_per_hour_yen_param)?;
+    let query = create_query_json(
+        account_id,
+        param.career_param,
+        param.fee_per_hour_in_yen_param,
+    )?;
     let sort = param.sort_param.map(|s| Sort {
         key: s.key,
         order: s.order,
@@ -289,22 +293,22 @@ fn create_invalid_career_param_err(e: &CareerParamValidationError) -> ErrResp {
     )
 }
 
-fn create_invalid_fee_per_hour_yen_param_err(e: &FeePerHourYenParamError) -> ErrResp {
+fn create_invalid_fee_per_hour_in_yen_param_err(e: &FeePerHourInYenParamError) -> ErrResp {
     let code = match e {
-        FeePerHourYenParamError::InvalidEqualOrMore {
+        FeePerHourInYenParamError::InvalidEqualOrMore {
             value: _,
             min: _,
             max: _,
         } => Code::IllegalFeePerHourInYen,
-        FeePerHourYenParamError::InvalidEqualOrLess {
+        FeePerHourInYenParamError::InvalidEqualOrLess {
             value: _,
             min: _,
             max: _,
         } => Code::IllegalFeePerHourInYen,
-        FeePerHourYenParamError::EqualOrMoreExceedsEqualOrLess {
+        FeePerHourInYenParamError::EqualOrMoreExceedsEqualOrLess {
             equal_or_more: _,
             equal_or_less: _,
-        } => Code::EqualOrMoreExceedsEqualOrLessInFeePerHourYen,
+        } => Code::EqualOrMoreExceedsEqualOrLessInFeePerHourInYen,
     };
     (
         StatusCode::BAD_REQUEST,
@@ -326,7 +330,7 @@ fn create_invalid_sort_param_err(e: &SortParamError) -> ErrResp {
 fn create_query_json(
     account_id: i64,
     career_param: CareerParam,
-    fee_per_hour_yen_param: FeePerHourYenParam,
+    fee_per_hour_in_yen_param: FeePerHourInYenParam,
 ) -> Result<Value, ErrResp> {
     let mut params = Vec::<Value>::new();
     if let Some(company_name) = career_param.company_name {
@@ -384,12 +388,14 @@ fn create_query_json(
         let note_criteria = create_note_criteria(note.as_str());
         params.push(note_criteria);
     }
-    if let Some(equal_or_more) = fee_per_hour_yen_param.equal_or_more {
-        let equal_or_more_criteria = create_fee_per_hour_yen_equal_or_more_criteria(equal_or_more);
+    if let Some(equal_or_more) = fee_per_hour_in_yen_param.equal_or_more {
+        let equal_or_more_criteria =
+            create_fee_per_hour_in_yen_equal_or_more_criteria(equal_or_more);
         params.push(equal_or_more_criteria);
     }
-    if let Some(equal_or_less) = fee_per_hour_yen_param.equal_or_less {
-        let equal_or_less_criteria = create_fee_per_hour_yen_equal_or_less_criteria(equal_or_less);
+    if let Some(equal_or_less) = fee_per_hour_in_yen_param.equal_or_less {
+        let equal_or_less_criteria =
+            create_fee_per_hour_in_yen_equal_or_less_criteria(equal_or_less);
         params.push(equal_or_less_criteria);
     }
     Ok(generate_query_json(account_id, params))
@@ -772,7 +778,7 @@ fn create_note_criteria(note: &str) -> Value {
     })
 }
 
-fn create_fee_per_hour_yen_equal_or_more_criteria(equal_or_more: i32) -> Value {
+fn create_fee_per_hour_in_yen_equal_or_more_criteria(equal_or_more: i32) -> Value {
     json!({
         "range": {
             "fee_per_hour_in_yen": {
@@ -782,7 +788,7 @@ fn create_fee_per_hour_yen_equal_or_more_criteria(equal_or_more: i32) -> Value {
     })
 }
 
-fn create_fee_per_hour_yen_equal_or_less_criteria(equal_or_less: i32) -> Value {
+fn create_fee_per_hour_in_yen_equal_or_less_criteria(equal_or_less: i32) -> Value {
     json!({
         "range": {
             "fee_per_hour_in_yen": {
@@ -957,7 +963,7 @@ mod tests {
     use super::{
         handle_consultants_search, AnnualInComeInManYenParam, CareerParam,
         ConsultantCareerDescription, ConsultantDescription, ConsultantSearchParam,
-        ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourYenParam,
+        ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourInYenParam,
     };
 
     #[derive(Clone, Debug)]
@@ -1025,7 +1031,7 @@ mod tests {
                             is_new_graduate: Some(true),
                             note: Some("テスト６".to_string()),
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: Some(3000),
                             equal_or_less: Some(50000),
                         },
@@ -1125,7 +1131,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1225,7 +1231,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1267,7 +1273,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1309,7 +1315,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1351,7 +1357,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1393,7 +1399,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1435,7 +1441,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1477,7 +1483,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1519,7 +1525,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1561,7 +1567,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1603,7 +1609,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1645,7 +1651,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1687,7 +1693,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1729,7 +1735,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1771,7 +1777,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1813,7 +1819,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1855,7 +1861,7 @@ mod tests {
                             is_new_graduate: None,
                             note: Some("".to_string()),
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1897,7 +1903,7 @@ mod tests {
                             is_new_graduate: None,
                             note: Some("*".to_string()),
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
@@ -1918,7 +1924,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "illegal equal_or_more fee_per_hour_yen".to_string(),
+                name: "illegal equal_or_more fee_per_hour_in_yen".to_string(),
                 input: Input {
                     account_id: 1,
                     param: ConsultantSearchParam {
@@ -1939,7 +1945,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: Some(-1),
                             equal_or_less: None,
                         },
@@ -1960,7 +1966,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "illegal equal_or_less fee_per_hour_yen".to_string(),
+                name: "illegal equal_or_less fee_per_hour_in_yen".to_string(),
                 input: Input {
                     account_id: 1,
                     param: ConsultantSearchParam {
@@ -1981,7 +1987,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: Some(-1),
                         },
@@ -2002,7 +2008,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "equal_or_more exceeds equal_or_less fee_per_hour_yen".to_string(),
+                name: "equal_or_more exceeds equal_or_less fee_per_hour_in_yen".to_string(),
                 input: Input {
                     account_id: 1,
                     param: ConsultantSearchParam {
@@ -2023,7 +2029,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN + 1),
                             equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN),
                         },
@@ -2039,7 +2045,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::EqualOrMoreExceedsEqualOrLessInFeePerHourYen as u32,
+                        code: Code::EqualOrMoreExceedsEqualOrLessInFeePerHourInYen as u32,
                     }),
                 )),
             },
@@ -2065,7 +2071,7 @@ mod tests {
                             is_new_graduate: None,
                             note: None,
                         },
-                        fee_per_hour_yen_param: FeePerHourYenParam {
+                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: None,
                             equal_or_less: None,
                         },
