@@ -1455,6 +1455,48 @@ mod tests {
                 )),
             },
             TestCase {
+                name: "illegal years of service".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: None,
+                            department_name: None,
+                            office: None,
+                            years_of_service: Some("*".to_string()),
+                            employed: None,
+                            contract_type: None,
+                            profession: None,
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: None,
+                                equal_or_less: None,
+                            },
+                            is_manager: None,
+                            position_name: None,
+                            is_new_graduate: None,
+                            note: None,
+                        },
+                        fee_per_hour_yen_param: FeePerHourYenParam {
+                            equal_or_more: None,
+                            equal_or_less: None,
+                        },
+                        sort_param: None,
+                        from: 0,
+                        size: 20,
+                    },
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 2,
+                        query_result: create_empty_result(),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::IllegalYearsOfService as u32,
+                    }),
+                )),
+            },
+            TestCase {
                 name: "no identity registered".to_string(),
                 input: Input {
                     account_id: 1,
