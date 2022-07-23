@@ -952,6 +952,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
+    use crate::util::MIN_FEE_PER_HOUR_IN_YEN;
 
     use super::{
         handle_consultants_search, AnnualInComeInManYenParam, CareerParam,
@@ -1913,6 +1914,132 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::IllegalCharInNote as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "illegal equal_or_more fee_per_hour_yen".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: None,
+                            department_name: None,
+                            office: None,
+                            years_of_service: None,
+                            employed: None,
+                            contract_type: None,
+                            profession: None,
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: None,
+                                equal_or_less: None,
+                            },
+                            is_manager: None,
+                            position_name: None,
+                            is_new_graduate: None,
+                            note: None,
+                        },
+                        fee_per_hour_yen_param: FeePerHourYenParam {
+                            equal_or_more: Some(-1),
+                            equal_or_less: None,
+                        },
+                        sort_param: None,
+                        from: 0,
+                        size: 20,
+                    },
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 2,
+                        query_result: create_empty_result(),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::IllegalFeePerHourInYen as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "illegal equal_or_less fee_per_hour_yen".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: None,
+                            department_name: None,
+                            office: None,
+                            years_of_service: None,
+                            employed: None,
+                            contract_type: None,
+                            profession: None,
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: None,
+                                equal_or_less: None,
+                            },
+                            is_manager: None,
+                            position_name: None,
+                            is_new_graduate: None,
+                            note: None,
+                        },
+                        fee_per_hour_yen_param: FeePerHourYenParam {
+                            equal_or_more: None,
+                            equal_or_less: Some(-1),
+                        },
+                        sort_param: None,
+                        from: 0,
+                        size: 20,
+                    },
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 2,
+                        query_result: create_empty_result(),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::IllegalFeePerHourInYen as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "equal_or_more exceeds equal_or_less fee_per_hour_yen".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: ConsultantSearchParam {
+                        career_param: CareerParam {
+                            company_name: None,
+                            department_name: None,
+                            office: None,
+                            years_of_service: None,
+                            employed: None,
+                            contract_type: None,
+                            profession: None,
+                            annual_income_in_man_yen: AnnualInComeInManYenParam {
+                                equal_or_more: None,
+                                equal_or_less: None,
+                            },
+                            is_manager: None,
+                            position_name: None,
+                            is_new_graduate: None,
+                            note: None,
+                        },
+                        fee_per_hour_yen_param: FeePerHourYenParam {
+                            equal_or_more: Some(MIN_FEE_PER_HOUR_IN_YEN + 1),
+                            equal_or_less: Some(MIN_FEE_PER_HOUR_IN_YEN),
+                        },
+                        sort_param: None,
+                        from: 0,
+                        size: 20,
+                    },
+                    op: ConsultantsSearchOperationMock {
+                        account_id: 2,
+                        query_result: create_empty_result(),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::EqualOrMoreExceedsEqualOrLessInFeePerHourYen as u32,
                     }),
                 )),
             },
