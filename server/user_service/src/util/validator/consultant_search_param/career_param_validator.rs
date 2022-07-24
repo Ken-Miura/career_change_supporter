@@ -146,7 +146,7 @@ fn validate_annual_income_in_man_yen_param(
     if let Some(equal_or_more) = annual_income_in_man_yen_param.equal_or_more {
         if !(0..=MAX_ANNUAL_INCOME_IN_MAN_YEN).contains(&equal_or_more) {
             return Err(
-                CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+                CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomeInManYen {
                     value: equal_or_more,
                     min: 0,
                     max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -157,7 +157,7 @@ fn validate_annual_income_in_man_yen_param(
     if let Some(equal_or_less) = annual_income_in_man_yen_param.equal_or_less {
         if !(0..=MAX_ANNUAL_INCOME_IN_MAN_YEN).contains(&equal_or_less) {
             return Err(
-                CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+                CareerParamValidationError::InvalidEqualOrLessInAnnualIncomeInManYen {
                     value: equal_or_less,
                     min: 0,
                     max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -168,7 +168,7 @@ fn validate_annual_income_in_man_yen_param(
     if let Some(equal_or_more) = annual_income_in_man_yen_param.equal_or_more {
         if let Some(equal_or_less) = annual_income_in_man_yen_param.equal_or_less {
             if equal_or_more > equal_or_less {
-                return Err(CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen { equal_or_more, equal_or_less });
+                return Err(CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomeInManYen { equal_or_more, equal_or_less });
             }
         }
     }
@@ -240,17 +240,17 @@ pub(crate) enum CareerParamValidationError {
         max_length: usize,
     },
     IllegalCharInProfession(String),
-    InvalidEqualOrMoreInAnnualIncomInManYen {
+    InvalidEqualOrMoreInAnnualIncomeInManYen {
         value: i32,
         min: i32,
         max: i32,
     },
-    InvalidEqualOrLessInAnnualIncomInManYen {
+    InvalidEqualOrLessInAnnualIncomeInManYen {
         value: i32,
         min: i32,
         max: i32,
     },
-    EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen {
+    EqualOrMoreExceedsEqualOrLessInAnnualIncomeInManYen {
         equal_or_more: i32,
         equal_or_less: i32,
     },
@@ -345,7 +345,7 @@ impl Display for CareerParamValidationError {
                     profession.as_bytes().to_vec()
                 )
             }
-            CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+            CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomeInManYen {
                 value,
                 min,
                 max,
@@ -356,7 +356,7 @@ impl Display for CareerParamValidationError {
                     value, min, max
                 )
             }
-            CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+            CareerParamValidationError::InvalidEqualOrLessInAnnualIncomeInManYen {
                 value,
                 min,
                 max,
@@ -367,7 +367,7 @@ impl Display for CareerParamValidationError {
                     value, min, max
                 )
             }
-            CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen {
+            CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomeInManYen {
                 equal_or_more,
                 equal_or_less,
             } => write!(
@@ -957,7 +957,7 @@ mod tests {
                     note: None,
                 },
                 expected: Err(
-                    CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+                    CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomeInManYen {
                         value: -1,
                         min: 0,
                         max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -984,7 +984,7 @@ mod tests {
                     note: None,
                 },
                 expected: Err(
-                    CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+                    CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomeInManYen {
                         value: MAX_ANNUAL_INCOME_IN_MAN_YEN + 1,
                         min: 0,
                         max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -1054,7 +1054,7 @@ mod tests {
                     note: None,
                 },
                 expected: Err(
-                    CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+                    CareerParamValidationError::InvalidEqualOrLessInAnnualIncomeInManYen {
                         value: -1,
                         min: 0,
                         max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -1081,7 +1081,7 @@ mod tests {
                     note: None,
                 },
                 expected: Err(
-                    CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+                    CareerParamValidationError::InvalidEqualOrLessInAnnualIncomeInManYen {
                         value: MAX_ANNUAL_INCOME_IN_MAN_YEN + 1,
                         min: 0,
                         max: MAX_ANNUAL_INCOME_IN_MAN_YEN,
@@ -1128,7 +1128,7 @@ mod tests {
                     is_new_graduate: None,
                     note: None,
                 },
-                expected: Err(CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen { equal_or_more: 1, equal_or_less: 0 }),
+                expected: Err(CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomeInManYen { equal_or_more: 1, equal_or_less: 0 }),
             },
             TestCase {
                 name: "invalid length position name".to_string(),

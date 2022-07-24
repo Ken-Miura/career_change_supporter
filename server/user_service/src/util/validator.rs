@@ -198,14 +198,14 @@ fn validate_annual_income_in_man_yen(
 ) -> Result<(), AnnualIncomInManYenValidationError> {
     if annual_income_in_man_yen.is_negative() {
         return Err(
-            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomeInManYen(
                 annual_income_in_man_yen,
             ),
         );
     }
     if annual_income_in_man_yen > MAX_ANNUAL_INCOME_IN_MAN_YEN {
         return Err(
-            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomeInManYen(
                 annual_income_in_man_yen,
             ),
         );
@@ -215,7 +215,7 @@ fn validate_annual_income_in_man_yen(
 
 #[derive(Debug, PartialEq)]
 enum AnnualIncomInManYenValidationError {
-    IllegalAnnualIncomInManYen(i32),
+    IllegalAnnualIncomeInManYen(i32),
 }
 
 fn validate_position_name(position_name: &str) -> Result<(), PositionNameValidationError> {
@@ -1342,7 +1342,7 @@ mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(
-            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomeInManYen(
                 annual_income_in_man_yen
             ),
             err
@@ -1358,7 +1358,7 @@ mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(
-            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomeInManYen(
                 annual_income_in_man_yen
             ),
             err
@@ -1374,7 +1374,7 @@ mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(
-            AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(
+            AnnualIncomInManYenValidationError::IllegalAnnualIncomeInManYen(
                 annual_income_in_man_yen
             ),
             err

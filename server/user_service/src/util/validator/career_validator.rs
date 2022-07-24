@@ -171,7 +171,7 @@ fn validate_annual_income_in_man_yen(
     annual_income_in_man_yen: i32,
 ) -> Result<(), CareerValidationError> {
     let _ = crate::util::validator::validate_annual_income_in_man_yen(annual_income_in_man_yen).map_err(|e| match e {
-        crate::util::validator::AnnualIncomInManYenValidationError::IllegalAnnualIncomInManYen(annual_income_in_man_yen) => CareerValidationError::IllegalAnnualIncomInManYen(annual_income_in_man_yen),
+        crate::util::validator::AnnualIncomInManYenValidationError::IllegalAnnualIncomeInManYen(annual_income_in_man_yen) => CareerValidationError::IllegalAnnualIncomeInManYen(annual_income_in_man_yen),
     })?;
     Ok(())
 }
@@ -254,7 +254,7 @@ pub(crate) enum CareerValidationError {
         max_length: usize,
     },
     IllegalCharInProfession(String),
-    IllegalAnnualIncomInManYen(i32),
+    IllegalAnnualIncomeInManYen(i32),
     InvalidPositionNameLength {
         length: usize,
         min_length: usize,
@@ -364,7 +364,7 @@ impl Display for CareerValidationError {
                     profession.as_bytes().to_vec()
                 )
             }
-            CareerValidationError::IllegalAnnualIncomInManYen(annual_income_in_man_yen) => {
+            CareerValidationError::IllegalAnnualIncomeInManYen(annual_income_in_man_yen) => {
                 write!(
                     f,
                     "illegal annual_income_in_man_yen: {}",
@@ -2623,7 +2623,7 @@ mod tests {
         let err = validate_career(&career).expect_err("failed to get Err");
 
         assert_eq!(
-            CareerValidationError::IllegalAnnualIncomInManYen(
+            CareerValidationError::IllegalAnnualIncomeInManYen(
                 career
                     .annual_income_in_man_yen
                     .expect("failed to get annual_income_in_man_yen")
@@ -2656,7 +2656,7 @@ mod tests {
         let err = validate_career(&career).expect_err("failed to get Err");
 
         assert_eq!(
-            CareerValidationError::IllegalAnnualIncomInManYen(
+            CareerValidationError::IllegalAnnualIncomeInManYen(
                 career
                     .annual_income_in_man_yen
                     .expect("failed to get annual_income_in_man_yen")
@@ -2689,7 +2689,7 @@ mod tests {
         let err = validate_career(&career).expect_err("failed to get Err");
 
         assert_eq!(
-            CareerValidationError::IllegalAnnualIncomInManYen(
+            CareerValidationError::IllegalAnnualIncomeInManYen(
                 career
                     .annual_income_in_man_yen
                     .expect("failed to get annual_income_in_man_yen")

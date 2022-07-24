@@ -260,20 +260,20 @@ fn create_invalid_career_param_err(e: &CareerParamValidationError) -> ErrResp {
             max_length: _,
         } => Code::InvalidProfessionLength,
         CareerParamValidationError::IllegalCharInProfession(_) => Code::IllegalCharInProfession,
-        CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomInManYen {
+        CareerParamValidationError::InvalidEqualOrMoreInAnnualIncomeInManYen {
             value: _,
             min: _,
             max: _,
-        } => Code::IllegalAnnualIncomInManYen,
-        CareerParamValidationError::InvalidEqualOrLessInAnnualIncomInManYen {
+        } => Code::IllegalAnnualIncomeInManYen,
+        CareerParamValidationError::InvalidEqualOrLessInAnnualIncomeInManYen {
             value: _,
             min: _,
             max: _,
-        } => Code::IllegalAnnualIncomInManYen,
-        CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen {
+        } => Code::IllegalAnnualIncomeInManYen,
+        CareerParamValidationError::EqualOrMoreExceedsEqualOrLessInAnnualIncomeInManYen {
             equal_or_more: _,
             equal_or_less: _,
-        } => Code::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen,
+        } => Code::EqualOrMoreExceedsEqualOrLessInAnnualIncomeInManYen,
         CareerParamValidationError::InvalidPositionNameLength {
             length: _,
             min_length: _,
@@ -1670,7 +1670,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::IllegalAnnualIncomInManYen as u32,
+                        code: Code::IllegalAnnualIncomeInManYen as u32,
                     }),
                 )),
             },
@@ -1712,7 +1712,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::IllegalAnnualIncomInManYen as u32,
+                        code: Code::IllegalAnnualIncomeInManYen as u32,
                     }),
                 )),
             },
@@ -1754,7 +1754,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::EqualOrMoreExceedsEqualOrLessInAnnualIncomInManYen as u32,
+                        code: Code::EqualOrMoreExceedsEqualOrLessInAnnualIncomeInManYen as u32,
                     }),
                 )),
             },

@@ -319,7 +319,7 @@ fn create_invalid_career_err(e: &CareerValidationError) -> ErrResp {
             max_length: _,
         } => Code::InvalidProfessionLength,
         CareerValidationError::IllegalCharInProfession(_) => Code::IllegalCharInProfession,
-        CareerValidationError::IllegalAnnualIncomInManYen(_) => Code::IllegalAnnualIncomInManYen,
+        CareerValidationError::IllegalAnnualIncomeInManYen(_) => Code::IllegalAnnualIncomeInManYen,
         CareerValidationError::InvalidPositionNameLength {
             length: _,
             min_length: _,
@@ -1913,7 +1913,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(Code::IllegalAnnualIncomInManYen as u32, resp.1.code);
+        assert_eq!(Code::IllegalAnnualIncomeInManYen as u32, resp.1.code);
     }
 
     #[tokio::test]
