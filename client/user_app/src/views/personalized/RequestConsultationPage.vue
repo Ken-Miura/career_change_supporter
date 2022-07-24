@@ -11,7 +11,7 @@
         <form @submit.prevent="searchConsultants">
           <div class="m-4 text-2xl grid grid-cols-6">
             <div data-test="company-name-label" class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
-              勤務先名称
+              勤務先名称（例 xxx株式会社）
             </div>
             <div data-test="company-name-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.companyName" v-on:input="setCompanyName" type="text" minlength="0" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
@@ -23,7 +23,7 @@
               <input v-bind:value="form.departmentName" v-on:input="setDepartmentName" type="text" minlength="0" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
             <div data-test="office-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
-              勤務地
+              勤務地（例 xxx事業所）
             </div>
             <div data-test="office-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.office" v-on:input="setOffice" type="text" minlength="0" maxlength="256" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
@@ -63,24 +63,24 @@
               </select>
             </div>
             <div data-test="profession-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
-              職種
+              職種（例 ITエンジニア）
             </div>
             <div data-test="profession-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.profession" v-on:input="setProfession" type="text" minlength="0" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div data-test="annual-incom-in-man-yen-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+            <div data-test="annual-income-in-man-yen-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               年収（単位：万円）
             </div>
-            <div data-test="annual-incom-in-man-yen-input" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+            <div data-test="annual-income-in-man-yen-equal-or-more-input" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.equalOrMoreAnnualIncomeInManYen" v-on:input="setEqualOrMoreAnnualIncomeInManYen" type="text" minlength="0" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div data-test="annual-incom-in-man-yen-label" class="ml-2 mt-2 text-2xl justify-self-start col-span-1 pt-3">
+            <div data-test="annual-income-in-man-yen-equal-or-more-label" class="ml-2 mt-2 text-2xl justify-self-start col-span-1 pt-3">
               万円以上
             </div>
-            <div data-test="annual-incom-in-man-yen-input" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+            <div data-test="annual-income-in-man-yen-equal-or-less-input" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.equalOrLessAnnualIncomeInManYen" v-on:input="setEqualOrLessAnnualIncomeInManYen" type="text" minlength="0" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div data-test="annual-incom-in-man-yen-label" class="ml-2 mt-2 text-2xl justify-self-start col-span-1 pt-3">
+            <div data-test="annual-income-in-man-yen-equal-or-less-label" class="ml-2 mt-2 text-2xl justify-self-start col-span-1 pt-3">
               万円以下
             </div>
             <div data-test="is-manager-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
@@ -94,7 +94,7 @@
               </select>
             </div>
             <div data-test="position-name-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
-              職位
+              職位（例 係長）
             </div>
             <div data-test="position-name-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.positionName" v-on:input="setPositionName" type="text" minlength="0" maxlength="128" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
@@ -114,6 +114,21 @@
             </div>
             <div data-test="note-input" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <textarea v-bind:value="form.note" v-on:input="setNote" minlength="0" maxlength="2048" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
+            </div>
+            <div data-test="fee-per-hour-in-yen-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              相談料金（単位：円）
+            </div>
+            <div data-test="fee-per-hour-in-yen-input" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+              <input v-bind:value="form.equalOrMoreFeePerHourInYen" v-on:input="setEqualOrMoreFeePerHourInYen" type="text" minlength="0" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div data-test="fee-per-hour-in-yen-label" class="ml-2 mt-2 text-2xl justify-self-start col-span-1 pt-3">
+              円以上
+            </div>
+            <div data-test="fee-per-hour-in-yen-input" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
+              <input v-bind:value="form.equalOrLessFeePerHourInYen" v-on:input="setEqualOrLessFeePerHourInYen" type="text" minlength="0" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            </div>
+            <div data-test="fee-per-hour-in-yen-label" class="ml-2 mt-2 text-2xl justify-self-start col-span-1 pt-3">
+              円以下
             </div>
           </div>
           <button data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">検索する</button>
@@ -161,7 +176,9 @@ export default defineComponent({
       setEqualOrMoreAnnualIncomeInManYen,
       setEqualOrLessAnnualIncomeInManYen,
       setPositionName,
-      setNote
+      setNote,
+      setEqualOrMoreFeePerHourInYen,
+      setEqualOrLessFeePerHourInYen
     } = useConsultantSearchParam()
     const router = useRouter()
     onMounted(async () => {
@@ -236,6 +253,8 @@ export default defineComponent({
       setEqualOrLessAnnualIncomeInManYen,
       setPositionName,
       setNote,
+      setEqualOrMoreFeePerHourInYen,
+      setEqualOrLessFeePerHourInYen,
       searchConsultants
     }
   }

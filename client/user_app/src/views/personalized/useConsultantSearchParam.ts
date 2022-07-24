@@ -15,7 +15,9 @@ export function useConsultantSearchParam () {
     isManager: '',
     positionName: '',
     isNewGraduate: '',
-    note: ''
+    note: '',
+    equalOrMoreFeePerHourInYen: '',
+    equalOrLessFeePerHourInYen: ''
   })
   const setCompanyName = (e: Event) => {
     const target = (e && e.target)
@@ -77,6 +79,20 @@ export function useConsultantSearchParam () {
     }
     form.note = target.value
   }
+  const setEqualOrMoreFeePerHourInYen = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.equalOrMoreFeePerHourInYen = target.value
+  }
+  const setEqualOrLessFeePerHourInYen = (e: Event) => {
+    const target = (e && e.target)
+    if (!(target instanceof HTMLInputElement)) {
+      throw new Error(`!(target instanceof HTMLInputElement): target is ${target}`)
+    }
+    form.equalOrLessFeePerHourInYen = target.value
+  }
   return {
     form,
     setCompanyName,
@@ -86,6 +102,10 @@ export function useConsultantSearchParam () {
     setEqualOrMoreAnnualIncomeInManYen,
     setEqualOrLessAnnualIncomeInManYen,
     setPositionName,
-    setNote
+    setNote,
+    setEqualOrMoreFeePerHourInYen,
+    setEqualOrLessFeePerHourInYen,
+    equalOrMoreFeePerHourInYen: '',
+    equalOrLessFeePerHourInYen: ''
   }
 }
