@@ -116,7 +116,7 @@
               <textarea v-bind:value="form.note" v-on:input="setNote" minlength="0" maxlength="2048" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
             </div>
             <div data-test="fee-per-hour-in-yen-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
-              相談料金（単位：円）
+              相談一回（１時間）の相談料（単位：円）
             </div>
             <div data-test="fee-per-hour-in-yen-input" class="mt-2 min-w-full justify-self-start col-span-5 pt-3 rounded bg-gray-200">
               <input v-bind:value="form.equalOrMoreFeePerHourInYen" v-on:input="setEqualOrMoreFeePerHourInYen" type="text" minlength="0" maxlength="5" pattern="\d*" title="半角数字でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
