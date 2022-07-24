@@ -45,7 +45,7 @@
               在籍の有無
             </div>
             <div data-test="employed-select" class="mt-2 w-full text-2xl justify-self-start col-span-6">
-              <select v-model="form.yearsOfService" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="form.employed" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option value="">指定なし</option>
                 <option value="true">在籍中</option>
                 <option value="false">退職済</option>
