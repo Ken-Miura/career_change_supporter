@@ -1,3 +1,4 @@
+import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from './AnnualIncome'
 import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from './Fee'
 
 const RETRY_REQUEST = '通信環境を確認し、一定時間後に再度お試し下さい'
@@ -85,7 +86,7 @@ export namespace Message {
     export const ILLEGAL_CONTRACT_TYPE_MESSAGE = '不正な雇用形態が指定されています'
     export const INVALID_PROFESSION_LENGTH_MESSAGE = '職種の文字数が規定範囲外です'
     export const ILLEGAL_CHAR_IN_PROFESSION_MESSAGE = '職種に不正な文字が含まれています（半角記号と空白はご利用になれません。記号は全角記号でご入力下さい）'
-    export const ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE = '不正な年収が指定されています'
+    export const ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE = `年収（単位：万円）には${MIN_ANNUAL_INCOME_IN_MAN_YEN}以上${MAX_ANNUAL_INCOME_IN_MAN_YEN}以下の数字を指定して下さい`
     export const INVALID_POSITION_NAME_LENGTH_MESSAGE = '職位の文字数が規定範囲外です'
     export const ILLEGAL_CHAR_IN_POSITION_NAME_MESSAGE = '職位に不正な文字が含まれています（半角記号と空白はご利用になれません。記号は全角記号でご入力下さい）'
     export const INVALID_NOTE_LENGTH_MESSAGE = '備考の文字数が規定範囲外です'

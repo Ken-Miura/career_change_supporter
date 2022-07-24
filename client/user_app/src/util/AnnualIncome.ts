@@ -1,0 +1,2 @@
+export const MIN_ANNUAL_INCOME_IN_MAN_YEN = 0
+export const MAX_ANNUAL_INCOME_IN_MAN_YEN = 99999
