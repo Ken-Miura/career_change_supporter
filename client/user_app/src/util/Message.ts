@@ -110,4 +110,11 @@ export namespace Message {
     export const INVALID_BANK_MESSAGE = '不正な銀行コードです。正しい銀行コードか再度お確かめの上、ご入力下さい'
     export const INVALID_BANK_BRANCH_MESSAGE = '不正な支店コードです。正しい支店コードか再度お確かめの上、ご入力下さい'
     export const INVALID_BANK_ACCOUNT_NUMBER_MESSAGE = '不正な口座番号です。口座番号の桁数が適切か再度お確かめの上、ご入力下さい'
+    export const ILLEGAL_YEARS_OF_SERVICE_MESSAGE = '不正な在籍年数です'
+    export const EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE = '年収に関して、以上で指定した年収が以下で指定した年収を超えています'
+    export const EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN_MESSAGE = '相談一回（１時間）の相談料に関して、以上で指定した金額が以下で指定した金額を超えています'
+    export const INVALID_SORT_KEY_MESSAGE = '不正なソートキーです'
+    export const INVALID_SORT_ORDER_MESSAGE = '不正なソートオーダーです'
+    export const INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE = '不正な検索結果の始点が指定されています'
+    export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE = '不正なサイズです'
 }

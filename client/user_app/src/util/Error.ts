@@ -94,6 +94,13 @@ export namespace Code {
   export const INVALID_BANK = 20082
   export const INVALID_BANK_BRANCH = 20083
   export const INVALID_BANK_ACCOUNT_NUMBER = 20084
+  export const ILLEGAL_YEARS_OF_SERVICE = 20085
+  export const EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN = 20086
+  export const EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN = 20087
+  export const INVALID_SORT_KEY = 20088
+  export const INVALID_SORT_ORDER = 20089
+  export const INVALID_CONSULTANT_SEARCH_PARAM_FROM = 20090
+  export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE = 20091
 }
 
 export function createErrorMessage (code: number): string {
@@ -269,6 +276,20 @@ export function createErrorMessage (code: number): string {
     return `${Message.INVALID_BANK_BRANCH_MESSAGE} (${code})`
   } else if (code === Code.INVALID_BANK_ACCOUNT_NUMBER) {
     return `${Message.INVALID_BANK_ACCOUNT_NUMBER_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_YEARS_OF_SERVICE) {
+    return `${Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE} (${code})`
+  } else if (code === Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN) {
+    return `${Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} (${code})`
+  } else if (code === Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN) {
+    return `${Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_SORT_KEY) {
+    return `${Message.INVALID_SORT_KEY_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_SORT_ORDER) {
+    return `${Message.INVALID_SORT_ORDER_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_CONSULTANT_SEARCH_PARAM_FROM) {
+    return `${Message.INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_CONSULTANT_SEARCH_PARAM_SIZE) {
+    return `${Message.INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
