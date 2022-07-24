@@ -150,6 +150,8 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { useConsultantSearchParam } from './useConsultantSearchParam'
 import { Message } from '@/util/Message'
+import { useStore } from 'vuex'
+import { SET_CONSULTANT_SEARCH_PARAM } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -176,6 +178,7 @@ export default defineComponent({
       setEqualOrLessFeePerHourInYen
     } = useConsultantSearchParam()
     const router = useRouter()
+    const store = useStore()
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -197,6 +200,8 @@ export default defineComponent({
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        store.commit(SET_CONSULTANT_SEARCH_PARAM, null)
       }
     })
 
