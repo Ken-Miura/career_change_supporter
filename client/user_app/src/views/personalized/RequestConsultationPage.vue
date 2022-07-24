@@ -152,6 +152,8 @@ import { useConsultantSearchParam } from './useConsultantSearchParam'
 import { Message } from '@/util/Message'
 import { useStore } from 'vuex'
 import { SET_CONSULTANT_SEARCH_PARAM } from '@/store/mutationTypes'
+import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
+import { PAGE_SIZE } from '@/util/PageSize'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -206,6 +208,33 @@ export default defineComponent({
     })
 
     const moveToConsultantList = async () => {
+      const consultantSearchParam = {
+        career_param: {
+          company_name: null,
+          department_name: null,
+          office: null,
+          years_of_service: null,
+          employed: null,
+          contract_type: null,
+          profession: null,
+          annual_income_in_man_yen: {
+            equal_or_more: null,
+            equal_or_less: null
+          },
+          is_manager: null,
+          position_name: null,
+          is_new_graduate: null,
+          note: null
+        },
+        fee_per_hour_in_yen_param: {
+          equal_or_more: null,
+          equal_or_less: null
+        },
+        sort_param: null,
+        from: 0,
+        size: PAGE_SIZE
+      } as ConsultantSearchParam
+      store.commit(SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
       console.log('moveToConsultantList')
     }
 
