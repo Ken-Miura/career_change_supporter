@@ -248,21 +248,21 @@ export default defineComponent({
 
       const consultantSearchParam = {
         career_param: {
-          company_name: null,
-          department_name: null,
-          office: null,
-          years_of_service: null,
-          employed: null,
-          contract_type: null,
-          profession: null,
+          company_name: parseStringInput(form.companyName),
+          department_name: parseStringInput(form.departmentName),
+          office: parseStringInput(form.office),
+          years_of_service: parseStringInput(form.yearsOfService),
+          employed: parseBooleanInput(form.employed),
+          contract_type: parseStringInput(form.contractType),
+          profession: parseStringInput(form.profession),
           annual_income_in_man_yen: {
             equal_or_more: equalOrMoreAnnualIncomeInManYen,
             equal_or_less: equalOrLessAnnualIncomeInManYen
           },
-          is_manager: null,
-          position_name: null,
-          is_new_graduate: null,
-          note: null
+          is_manager: parseBooleanInput(form.isManager),
+          position_name: parseStringInput(form.positionName),
+          is_new_graduate: parseBooleanInput(form.isNewGraduate),
+          note: parseStringInput(form.note)
         },
         fee_per_hour_in_yen_param: {
           equal_or_more: equalOrMoreFeePerHourInYen,
@@ -303,5 +303,23 @@ function parseNumberInput (numStr: string) : number | null {
 
 function checkIfInputIsInValidRange (numberInput: number, min: number, max: number) : boolean {
   return min <= numberInput && numberInput <= max
+}
+
+function parseStringInput (str: string) : string | null {
+  if (str.length === 0) {
+    return null
+  }
+  return str
+}
+
+function parseBooleanInput (bool: string) : boolean | null {
+  if (bool.length === 0) {
+    return null
+  }
+  if (bool === 'true') {
+    return true
+  } else {
+    return false
+  }
 }
 </script>
