@@ -154,6 +154,8 @@ import { useStore } from 'vuex'
 import { SET_CONSULTANT_SEARCH_PARAM } from '@/store/mutationTypes'
 import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
 import { PAGE_SIZE } from '@/util/PageSize'
+import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from '@/util/Fee'
+import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from '@/util/AnnualIncome'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -208,6 +210,42 @@ export default defineComponent({
     })
 
     const moveToConsultantList = async () => {
+      const equalOrMoreAnnualIncomeInManYen = parseNumberInput(form.equalOrMoreAnnualIncomeInManYen)
+      if (equalOrMoreAnnualIncomeInManYen && !checkIfInputIsInValidRange(equalOrMoreAnnualIncomeInManYen, MIN_ANNUAL_INCOME_IN_MAN_YEN, MAX_ANNUAL_INCOME_IN_MAN_YEN)) {
+        error.exists = true
+        error.message = Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE
+        return
+      }
+      const equalOrLessAnnualIncomeInManYen = parseNumberInput(form.equalOrLessAnnualIncomeInManYen)
+      if (equalOrLessAnnualIncomeInManYen && !checkIfInputIsInValidRange(equalOrLessAnnualIncomeInManYen, MIN_ANNUAL_INCOME_IN_MAN_YEN, MAX_ANNUAL_INCOME_IN_MAN_YEN)) {
+        error.exists = true
+        error.message = Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE
+        return
+      }
+      if (equalOrMoreAnnualIncomeInManYen && equalOrLessAnnualIncomeInManYen && (equalOrMoreAnnualIncomeInManYen > equalOrLessAnnualIncomeInManYen)) {
+        error.exists = true
+        error.message = Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE
+        return
+      }
+
+      const equalOrMoreFeePerHourInYen = parseNumberInput(form.equalOrMoreFeePerHourInYen)
+      if (equalOrMoreFeePerHourInYen && !checkIfInputIsInValidRange(equalOrMoreFeePerHourInYen, MIN_FEE_PER_HOUR_IN_YEN, MAX_FEE_PER_HOUR_IN_YEN)) {
+        error.exists = true
+        error.message = Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE
+        return
+      }
+      const equalOrLessFeePerHourInYen = parseNumberInput(form.equalOrLessFeePerHourInYen)
+      if (equalOrLessFeePerHourInYen && !checkIfInputIsInValidRange(equalOrLessFeePerHourInYen, MIN_FEE_PER_HOUR_IN_YEN, MAX_FEE_PER_HOUR_IN_YEN)) {
+        error.exists = true
+        error.message = Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE
+        return
+      }
+      if (equalOrMoreFeePerHourInYen && equalOrLessFeePerHourInYen && (equalOrMoreFeePerHourInYen > equalOrLessFeePerHourInYen)) {
+        error.exists = true
+        error.message = Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN_MESSAGE
+        return
+      }
+
       const consultantSearchParam = {
         career_param: {
           company_name: null,
@@ -218,8 +256,8 @@ export default defineComponent({
           contract_type: null,
           profession: null,
           annual_income_in_man_yen: {
-            equal_or_more: null,
-            equal_or_less: null
+            equal_or_more: equalOrMoreAnnualIncomeInManYen,
+            equal_or_less: equalOrLessAnnualIncomeInManYen
           },
           is_manager: null,
           position_name: null,
@@ -227,15 +265,15 @@ export default defineComponent({
           note: null
         },
         fee_per_hour_in_yen_param: {
-          equal_or_more: null,
-          equal_or_less: null
+          equal_or_more: equalOrMoreFeePerHourInYen,
+          equal_or_less: equalOrLessFeePerHourInYen
         },
         sort_param: null,
         from: 0,
         size: PAGE_SIZE
       } as ConsultantSearchParam
       store.commit(SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
-      console.log('moveToConsultantList')
+      console.log(consultantSearchParam)
     }
 
     return {
@@ -255,4 +293,15 @@ export default defineComponent({
     }
   }
 })
+
+function parseNumberInput (numStr: string) : number | null {
+  if (numStr.length === 0) {
+    return null
+  }
+  return parseInt(numStr)
+}
+
+function checkIfInputIsInValidRange (numberInput: number, min: number, max: number) : boolean {
+  return min <= numberInput && numberInput <= max
+}
 </script>
