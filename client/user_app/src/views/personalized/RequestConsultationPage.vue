@@ -273,7 +273,7 @@ export default defineComponent({
         size: PAGE_SIZE
       } as ConsultantSearchParam
       store.commit(SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
-      console.log(consultantSearchParam)
+      await router.push('/consultant-list')
     }
 
     return {

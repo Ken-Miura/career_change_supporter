@@ -21,6 +21,7 @@ import RequestConsultationPage from '../views/personalized/RequestConsultationPa
 import SubmitCareerSuccessPage from '../views/personalized/SubmitCareerSuccessPage.vue'
 import PrivacyPolicyPage from '../views/PrivacyPolicyPage.vue'
 import TransactionLawPage from '../views/TransactionLawPage.vue'
+import ConsultantListPage from '../views/personalized/ConsultantListPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -191,6 +192,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/transaction-law',
     name: 'TransactionLawPage',
     component: TransactionLawPage
+  },
+  {
+    path: '/consultant-list',
+    name: 'ConsultantListPage',
+    component: ConsultantListPage
   }
 ]
 
