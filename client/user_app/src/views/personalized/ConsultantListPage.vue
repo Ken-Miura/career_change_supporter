@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="waitingRequestDone" class="m-6">
+    <div v-if="!postConsultantsSearchDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -26,12 +26,13 @@ import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
-import { Code } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
 import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
+import { usePostConsultantsSearch } from '@/util/personalized/consultant-list/usePostConsultantsSearch'
+import { Message } from '@/util/Message'
+import { PostConsultantsSearchResp } from '@/util/personalized/consultant-list/PostConsultantsSearchResp'
 
 export default defineComponent({
   name: 'ConsultantListPage',
@@ -41,7 +42,10 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
-    const waitingRequestDone = ref(false)
+    const {
+      postConsultantsSearchDone,
+      postConsultantsSearchFunc
+    } = usePostConsultantsSearch()
     const error = reactive({
       exists: false,
       message: ''
@@ -49,15 +53,19 @@ export default defineComponent({
     const message = ref('相談者リスト用テストページ')
     const router = useRouter()
     const store = useStore()
-    const consultantSearchParam = store.state.consultantSearchParam as ConsultantSearchParam | null
-    console.log(consultantSearchParam)
     onMounted(async () => {
+      const consultantSearchParam = store.state.consultantSearchParam as ConsultantSearchParam | null
+      if (!consultantSearchParam) {
+        error.exists = true
+        error.message = 'null'
+        return
+      }
       try {
-        const resp = await refresh()
-        if (resp instanceof RefreshResp) {
-          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
-        } else if (resp instanceof ApiErrorResp) {
+        const resp = await postConsultantsSearchFunc(consultantSearchParam)
+        if (!(resp instanceof PostConsultantsSearchResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('/login')
@@ -66,14 +74,19 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          // TODO: エラー処理
+          error.exists = true
+          error.message = createErrorMessage(resp.getApiError().getCode())
+          return
         }
+        const result = resp.getConsultantsSearchResult()
+        message.value = `${result.total}: ${result.consultants}`
+        console.log(result)
       } catch (e) {
-        // TODO: エラー処理
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      console.log('TODO: 実装後削除')
     })
-    return { waitingRequestDone, error, message }
+    return { postConsultantsSearchDone, error, message }
   }
 })
 </script>
