@@ -7,9 +7,6 @@
     <main v-else>
       <div v-if="error.exists" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <AlertMessage v-bind:message="error.message"/>
-        <div class="mt-6">
-          <router-link class="text-black hover:underline py-2 px-4" to="/request-consultation">検索画面へ</router-link>
-        </div>
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
