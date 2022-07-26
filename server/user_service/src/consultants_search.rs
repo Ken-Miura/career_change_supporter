@@ -93,7 +93,7 @@ pub(crate) struct ConsultantsSearchResult {
 
 #[derive(Clone, Serialize, Debug)]
 pub(crate) struct ConsultantDescription {
-    account_id: i64,
+    consultant_id: i64,
     fee_per_hour_in_yen: i32,
     rating: Option<f64>,
     num_of_rated: i32,
@@ -920,7 +920,7 @@ fn create_consultant_description(hit: &Value) -> Result<ConsultantDescription, E
         consultant_career_descriptions.push(career_description);
     }
     Ok(ConsultantDescription {
-        account_id,
+        consultant_id: account_id,
         fee_per_hour_in_yen: fee_per_hour_in_yen as i32,
         rating,
         num_of_rated: num_of_rated as i32,
@@ -1099,7 +1099,7 @@ mod tests {
                     Json(ConsultantsSearchResult {
                         total: 1,
                         consultants: vec![ConsultantDescription {
-                            account_id: 2,
+                            consultant_id: 2,
                             fee_per_hour_in_yen: 4500,
                             rating: None,
                             num_of_rated: 0,
@@ -1199,7 +1199,7 @@ mod tests {
                     Json(ConsultantsSearchResult {
                         total: 1,
                         consultants: vec![ConsultantDescription {
-                            account_id: 2,
+                            consultant_id: 2,
                             fee_per_hour_in_yen: 4500,
                             rating: None,
                             num_of_rated: 0,
@@ -2317,7 +2317,7 @@ mod tests {
                 for n in 0..expected_result.1 .0.consultants.len() {
                     let expected = expected_result.1 .0.consultants[n].clone();
                     let result = result.1 .0.consultants[n].clone();
-                    assert_eq!(expected.account_id, result.account_id, "{}", message);
+                    assert_eq!(expected.consultant_id, result.consultant_id, "{}", message);
                     assert_eq!(
                         expected.fee_per_hour_in_yen, result.fee_per_hour_in_yen,
                         "{}",
