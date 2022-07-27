@@ -10,7 +10,7 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-lg">{{ message }}</h3>
+          <h3 class="font-bold text-lg">{{ consultantsSearchResult.total }}</h3>
         </div>
       </div>
     </main>
@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, reactive, ref } from 'vue'
+import { computed, defineComponent, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -33,6 +33,7 @@ import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam
 import { usePostConsultantsSearch } from '@/util/personalized/consultant-list/usePostConsultantsSearch'
 import { Message } from '@/util/Message'
 import { PostConsultantsSearchResp } from '@/util/personalized/consultant-list/PostConsultantsSearchResp'
+import { ConsultantsSearchResult } from '@/util/personalized/consultant-list/ConsultantsSearchResult'
 
 export default defineComponent({
   name: 'ConsultantListPage',
@@ -50,18 +51,36 @@ export default defineComponent({
       exists: false,
       message: ''
     })
-    const message = ref('相談者リスト用テストページ')
+    const consultantsSearchResult = ref({
+      total: 0,
+      consultants: []
+    } as ConsultantsSearchResult)
+    const searchParam = ref(null as ConsultantSearchParam | null)
+    const currentPage = computed(() => {
+      if (!searchParam.value) {
+        return 0
+      }
+      return Math.floor(searchParam.value.from / searchParam.value.size)
+    })
+    const prevDisabled = computed(() => currentPage.value <= 0)
+    const nextDisabled = computed(() => {
+      if (!searchParam.value) {
+        return true
+      }
+      return Math.floor(consultantsSearchResult.value.total / searchParam.value.size) >= currentPage.value
+    })
     const router = useRouter()
     const store = useStore()
     onMounted(async () => {
       const consultantSearchParam = store.state.consultantSearchParam as ConsultantSearchParam | null
-      if (!consultantSearchParam) {
+      searchParam.value = consultantSearchParam
+      if (!searchParam.value) {
         error.exists = true
         error.message = Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE
         return
       }
       try {
-        const resp = await postConsultantsSearchFunc(consultantSearchParam)
+        const resp = await postConsultantsSearchFunc(searchParam.value)
         if (!(resp instanceof PostConsultantsSearchResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
@@ -78,15 +97,21 @@ export default defineComponent({
           error.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        const result = resp.getConsultantsSearchResult()
-        message.value = `${result.total}: ${result.consultants}`
-        console.log(result)
+        consultantsSearchResult.value = resp.getConsultantsSearchResult()
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
-    return { postConsultantsSearchDone, error, message }
+    return {
+      postConsultantsSearchDone,
+      error,
+      consultantsSearchResult,
+      searchParam,
+      currentPage,
+      prevDisabled,
+      nextDisabled
+    }
   }
 })
 </script>
