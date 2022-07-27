@@ -57,7 +57,7 @@ export default defineComponent({
       const consultantSearchParam = store.state.consultantSearchParam as ConsultantSearchParam | null
       if (!consultantSearchParam) {
         error.exists = true
-        error.message = 'null'
+        error.message = Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE
         return
       }
       try {

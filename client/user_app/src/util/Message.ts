@@ -118,4 +118,5 @@ export namespace Message {
     export const INVALID_SORT_ORDER_MESSAGE = '不正なソートオーダーです'
     export const INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE = '不正な検索結果の始点が指定されています'
     export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE = '不正なページサイズです'
+    export const NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE = '相談申し込みから相談相手の検索を行って下さい'
 }
