@@ -67,7 +67,22 @@ export default defineComponent({
       if (!searchParam.value) {
         return true
       }
-      return Math.floor(consultantsSearchResult.value.total / searchParam.value.size) >= currentPage.value
+      const lastPage = Math.floor(consultantsSearchResult.value.total / searchParam.value.size)
+      return lastPage >= currentPage.value
+    })
+    const pageSelection = computed(() => {
+      const pageSize = 3
+      if (!searchParam.value) {
+        return []
+      }
+      const min = Math.max(0, currentPage.value - pageSize)
+      const lastPage = Math.floor(consultantsSearchResult.value.total / searchParam.value.size)
+      const max = Math.min(lastPage, currentPage.value + pageSize)
+      const pageSelection = []
+      for (let i = min; i < max; i++) {
+        pageSelection.push(i)
+      }
+      return pageSelection
     })
     const router = useRouter()
     const store = useStore()
@@ -110,7 +125,8 @@ export default defineComponent({
       searchParam,
       currentPage,
       prevDisabled,
-      nextDisabled
+      nextDisabled,
+      pageSelection
     }
   }
 })
