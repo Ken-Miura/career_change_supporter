@@ -62,13 +62,12 @@ export default defineComponent({
       }
       return Math.floor(searchParam.value.from / searchParam.value.size)
     })
-    const prevDisabled = computed(() => currentPage.value <= 0)
-    const nextDisabled = computed(() => {
+    const firstPage = 0
+    const lastPage = computed(() => {
       if (!searchParam.value) {
-        return true
+        return firstPage
       }
-      const lastPage = Math.floor(consultantsSearchResult.value.total / searchParam.value.size)
-      return lastPage >= currentPage.value
+      return Math.floor(consultantsSearchResult.value.total / searchParam.value.size)
     })
     const pageSelection = computed(() => {
       const pageSize = 3
@@ -124,8 +123,8 @@ export default defineComponent({
       consultantsSearchResult,
       searchParam,
       currentPage,
-      prevDisabled,
-      nextDisabled,
+      firstPage,
+      lastPage,
       pageSelection
     }
   }
