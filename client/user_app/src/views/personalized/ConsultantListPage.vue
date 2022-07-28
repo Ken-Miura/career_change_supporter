@@ -8,9 +8,13 @@
       <div v-if="error.exists" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <AlertMessage v-bind:message="error.message"/>
       </div>
-      <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-lg">{{ consultantsSearchResult.total }}</h3>
+      <div v-else class="flex flex-col justify-center max-w-4xl mx-auto">
+        <div class="grid grid-cols-2 max-w-4xl">
+          <div class="justify-self-start ml-2 col-span-1">{{ consultantsSearchResult.total }}</div>
+          <div class="justify-self-end mr-2 col-span-1">ソート</div>
+        </div>
+        <div class="bg-white p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-lg">{{ consultantsSearchResult.consultants }}</h3>
         </div>
       </div>
     </main>
@@ -70,7 +74,7 @@ export default defineComponent({
       return Math.floor(consultantsSearchResult.value.total / searchParam.value.size)
     })
     const pageSelection = computed(() => {
-      const pageSize = 3
+      const pageSize = 2
       if (!searchParam.value) {
         return []
       }

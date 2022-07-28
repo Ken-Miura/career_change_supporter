@@ -4,9 +4,10 @@ import { postConsultantsSearch } from './PostConsultantsSearch'
 
 // eslint-disable-next-line
 export function usePostConsultantsSearch () {
-  const postConsultantsSearchDone = ref(false)
+  const postConsultantsSearchDone = ref(true)
   const postConsultantsSearchFunc = async (consultantSearchParam: ConsultantSearchParam) => {
     try {
+      postConsultantsSearchDone.value = false
       const response = await postConsultantsSearch(consultantSearchParam)
       return response
     } finally {
