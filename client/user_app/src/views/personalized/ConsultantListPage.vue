@@ -16,12 +16,12 @@
           <div class="justify-self-end mr-2 col-span-1">
             <div class="grid grid-cols-3 items-center bg-white text-xl px-4 py-2 rounded-lg shadow-2xl">
               <div class="col-span-1">ソート：</div>
-              <select class="col-span-2 block p-3 w-full rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option value="true">指定なし</option>
-                <option value="false">相談料が安い順</option>
-                <option value="false">相談料が高い順</option>
-                <option value="false">評価が高い順</option>
-                <option value="false">評価が安い順</option>
+              <select v-model="sortParam" v-on:change="onSortParamChanged" class="col-span-2 block p-3 w-full rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option value="0" selected>指定なし</option>
+                <option value="1">相談料が安い順</option>
+                <option value="2">相談料が高い順</option>
+                <option value="3">評価が高い順</option>
+                <option value="4">評価が安い順</option>
               </select>
             </div>
           </div>
@@ -100,6 +100,7 @@ export default defineComponent({
       }
       return pageSelection
     })
+    const sortParam = ref('0')
     const router = useRouter()
     const store = useStore()
     onMounted(async () => {
@@ -134,6 +135,11 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
+    const onSortParamChanged = async () => {
+      console.log(sortParam.value)
+    }
+
     return {
       postConsultantsSearchDone,
       error,
@@ -142,7 +148,9 @@ export default defineComponent({
       currentPage,
       firstPage,
       lastPage,
-      pageSelection
+      pageSelection,
+      sortParam,
+      onSortParamChanged
     }
   }
 })
