@@ -17,11 +17,11 @@
             <div class="grid grid-cols-3 items-center bg-white text-xl px-4 py-2 rounded-lg shadow-2xl">
               <div class="col-span-1">ソート：</div>
               <select v-model="sortParam" v-on:change="onSortParamChanged" class="col-span-2 block p-3 w-full rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option value="0" selected>指定なし</option>
-                <option value="1">相談料が安い順</option>
-                <option value="2">相談料が高い順</option>
-                <option value="3">評価が高い順</option>
-                <option value="4">評価が安い順</option>
+                <option value="none">指定なし</option>
+                <option value="fee_asc">相談料が安い順</option>
+                <option value="fee_desc">相談料が高い順</option>
+                <option value="rating_desc">評価が高い順</option>
+                <option value="rating_asc">評価が安い順</option>
               </select>
             </div>
           </div>
@@ -46,7 +46,7 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
-import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
+import { ConsultantSearchParam, SortParam } from '@/util/personalized/ConsultantSearchParam'
 import { usePostConsultantsSearch } from '@/util/personalized/consultant-list/usePostConsultantsSearch'
 import { Message } from '@/util/Message'
 import { PostConsultantsSearchResp } from '@/util/personalized/consultant-list/PostConsultantsSearchResp'
@@ -100,19 +100,13 @@ export default defineComponent({
       }
       return pageSelection
     })
-    const sortParam = ref('0')
+    const sortParam = ref('none')
     const router = useRouter()
     const store = useStore()
-    onMounted(async () => {
-      const consultantSearchParam = store.state.consultantSearchParam as ConsultantSearchParam | null
-      searchParam.value = consultantSearchParam
-      if (!searchParam.value) {
-        error.exists = true
-        error.message = Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE
-        return
-      }
+
+    const searchConsultants = async (searchParam: ConsultantSearchParam) => {
       try {
-        const resp = await postConsultantsSearchFunc(searchParam.value)
+        const resp = await postConsultantsSearchFunc(searchParam)
         if (!(resp instanceof PostConsultantsSearchResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
@@ -134,10 +128,32 @@ export default defineComponent({
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
+    }
+
+    onMounted(async () => {
+      const consultantSearchParam = store.state.consultantSearchParam as ConsultantSearchParam | null
+      searchParam.value = consultantSearchParam
+      if (!searchParam.value) {
+        error.exists = true
+        error.message = Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE
+        return
+      }
+      searchConsultants(searchParam.value)
     })
 
     const onSortParamChanged = async () => {
-      console.log(sortParam.value)
+      if (!searchParam.value) {
+        error.exists = true
+        error.message = Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE
+        return
+      }
+      try {
+        searchParam.value.sort_param = generateSortParam(sortParam.value)
+        searchConsultants(searchParam.value)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     return {
@@ -154,4 +170,32 @@ export default defineComponent({
     }
   }
 })
+
+function generateSortParam (sort: string): SortParam | null {
+  if (sort === 'none') {
+    return null
+  } else if (sort === 'fee_asc') {
+    return {
+      key: 'fee_per_hour_in_yen',
+      order: 'asc'
+    } as SortParam
+  } else if (sort === 'fee_desc') {
+    return {
+      key: 'fee_per_hour_in_yen',
+      order: 'desc'
+    } as SortParam
+  } else if (sort === 'rating_desc') {
+    return {
+      key: 'rating',
+      order: 'desc'
+    } as SortParam
+  } else if (sort === 'rating_asc') {
+    return {
+      key: 'rating',
+      order: 'asc'
+    } as SortParam
+  } else {
+    throw new Error('invalid sort parameter')
+  }
+}
 </script>
