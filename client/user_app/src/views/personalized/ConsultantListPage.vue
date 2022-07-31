@@ -26,8 +26,8 @@
             </div>
           </div>
         </div>
-        <div class="bg-white p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-lg">{{ consultantsSearchResult.consultants }}</h3>
+        <div v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant" v-bind:value="consultant" class="bg-white p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          {{ consultant }}
         </div>
       </div>
     </main>
