@@ -10,8 +10,21 @@
       </div>
       <div v-else class="flex flex-col justify-center max-w-4xl mx-auto">
         <div class="grid grid-cols-2 max-w-4xl">
-          <div class="justify-self-start ml-2 col-span-1">{{ consultantsSearchResult.total }}</div>
-          <div class="justify-self-end mr-2 col-span-1">ソート</div>
+          <div class="justify-self-start ml-2 col-span-1">
+            <div class="bg-white text-xl px-6 py-4 rounded-lg shadow-2xl">{{ consultantsSearchResult.total }} 件</div>
+          </div>
+          <div class="justify-self-end mr-2 col-span-1">
+            <div class="grid grid-cols-3 items-center bg-white text-xl px-4 py-2 rounded-lg shadow-2xl">
+              <div class="col-span-1">ソート：</div>
+              <select class="col-span-2 block p-3 w-full rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option value="true">指定なし</option>
+                <option value="false">相談料が安い順</option>
+                <option value="false">相談料が高い順</option>
+                <option value="false">評価が高い順</option>
+                <option value="false">評価が安い順</option>
+              </select>
+            </div>
+          </div>
         </div>
         <div class="bg-white p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-lg">{{ consultantsSearchResult.consultants }}</h3>
