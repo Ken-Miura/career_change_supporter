@@ -26,8 +26,28 @@
             </div>
           </div>
         </div>
-        <div v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant" v-bind:value="consultant" class="bg-white p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          {{ consultant }}
+        <div class="flex flex-col justify-center my-5">
+          <div v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant" v-bind:value="consultant" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
+            <h3 class="font-bold text-xl">コンサルタントID: {{ consultant.consultant_id }}</h3>
+            <p class="mt-3 text-xl">相談一回（１時間）の相談料：{{ consultant.fee_per_hour_in_yen }} 円</p>
+            <div class="mt-3 text-xl">評価：<span v-if="consultant.rating"> {{ consultant.rating }}</span><span v-else>0</span>/5（評価件数：{{ consultant.num_of_rated }} 件）</div>
+            <div class="mt-5 font-bold text-xl">職務経歴概要</div>
+            <ul>
+              <li v-for="(consultantCareerDescription, index) in consultant.careers" v-bind:key="consultantCareerDescription">
+                <div class="mt-2">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴概要{{ index + 1 }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ consultantCareerDescription.company_name }}</div>
+                    <div v-if="consultantCareerDescription.profession" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="consultantCareerDescription.profession" class="justify-self-start col-span-2">{{ consultantCareerDescription.profession }}</div>
+                    <div v-if="consultantCareerDescription.office" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="consultantCareerDescription.office" class="justify-self-start col-span-2">{{ consultantCareerDescription.office }}</div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <div class="grid-cols-3 flex justify-end">
+              <button v-on:click="moveToConsultantDetailPage(consultant.consultant_id)" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -156,6 +176,10 @@ export default defineComponent({
       }
     }
 
+    const moveToConsultantDetailPage = async (consultantId: number) => {
+      console.log(consultantId)
+    }
+
     return {
       postConsultantsSearchDone,
       error,
@@ -166,7 +190,8 @@ export default defineComponent({
       lastPage,
       pageSelection,
       sortParam,
-      onSortParamChanged
+      onSortParamChanged,
+      moveToConsultantDetailPage
     }
   }
 })
