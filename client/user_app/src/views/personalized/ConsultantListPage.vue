@@ -45,7 +45,8 @@
               </li>
             </ul>
             <div class="grid-cols-3 flex justify-end">
-              <button v-on:click="moveToConsultantDetailPage(consultant.consultant_id)" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
+              <!-- <button v-on:click="moveToConsultantDetailPage(consultant.consultant_id)" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button> -->
+              <router-link :to="{ name: 'ConsultantDetailPage', params: { consultant_id: consultant.consultant_id } }" target="_blank" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</router-link>
             </div>
           </div>
         </div>
