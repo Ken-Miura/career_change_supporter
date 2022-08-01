@@ -45,7 +45,6 @@
               </li>
             </ul>
             <div class="grid-cols-3 flex justify-end">
-              <!-- <button v-on:click="moveToConsultantDetailPage(consultant.consultant_id)" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button> -->
               <router-link :to="{ name: 'ConsultantDetailPage', params: { consultant_id: consultant.consultant_id } }" target="_blank" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</router-link>
             </div>
           </div>
@@ -177,12 +176,6 @@ export default defineComponent({
       }
     }
 
-    const moveToConsultantDetailPage = async (consultantId: number) => {
-      console.log(consultantId)
-      const routeData = router.resolve({ name: 'LandingPage', query: { data: consultantId } })
-      window.open(routeData.href, '_blank')
-    }
-
     return {
       postConsultantsSearchDone,
       error,
@@ -193,8 +186,7 @@ export default defineComponent({
       lastPage,
       pageSelection,
       sortParam,
-      onSortParamChanged,
-      moveToConsultantDetailPage
+      onSortParamChanged
     }
   }
 })
