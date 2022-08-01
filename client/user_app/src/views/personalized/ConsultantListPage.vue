@@ -178,6 +178,8 @@ export default defineComponent({
 
     const moveToConsultantDetailPage = async (consultantId: number) => {
       console.log(consultantId)
+      const routeData = router.resolve({ name: 'LandingPage', query: { data: consultantId } })
+      window.open(routeData.href, '_blank')
     }
 
     return {
