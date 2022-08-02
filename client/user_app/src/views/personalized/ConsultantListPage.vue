@@ -49,7 +49,7 @@
             </div>
           </div>
         </div>
-        <div v-if="pages.length !== 0" class="w-fit mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex self-end">
+        <div v-if="pages.length > 1" class="w-fit mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex self-end">
           <button v-on:click="getConsultantsByPageIndex(firstPage)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;&lt;</button>
           <button v-on:click="getConsultantsByPageIndex(currentPage - 1)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;</button>
           <div v-for="page in pages" v-bind:key="page" v-bind:value="page">
@@ -123,7 +123,7 @@ export default defineComponent({
         return []
       }
       const min = Math.max(0, currentPage.value - pageSize)
-      const max = Math.min(lastPage.value, currentPage.value + pageSize)
+      const max = Math.min(lastPage.value, currentPage.value + pageSize) + 1
       const pages = []
       for (let i = min; i < max; i++) {
         pages.push(i)
