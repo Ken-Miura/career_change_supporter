@@ -49,12 +49,15 @@
             </div>
           </div>
         </div>
-        <div v-if="pageSelection.length !== 0" class="mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex">
-          <button v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＜＜</button>
-          <button v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＜</button>
-          <button v-for="pageNum in pageSelection" v-bind:key="pageNum" v-bind:value="pageNum" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ pageNum }}</button>
-          <button v-if="currentPage < lastPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＞</button>
-          <button v-if="currentPage < lastPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＞＞</button>
+        <div v-if="pages.length !== 0" class="w-fit mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex self-end">
+          <button v-on:click="getConsultantsByPageIndex(firstPage)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;&lt;</button>
+          <button v-on:click="getConsultantsByPageIndex(currentPage - 1)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;</button>
+          <div v-for="page in pages" v-bind:key="page" v-bind:value="page">
+            <button v-if="page === currentPage" v-on:click="getConsultantsByPageIndex(page)" class="bg-gray-400 hover:bg-gray-500 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ page + 1 }}</button>
+            <button v-else v-on:click="getConsultantsByPageIndex(page)" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ page + 1 }}</button>
+          </div>
+          <button v-on:click="getConsultantsByPageIndex(currentPage + 1)" v-if="currentPage < lastPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&gt;</button>
+          <button v-on:click="getConsultantsByPageIndex(lastPage)" v-if="currentPage < lastPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&gt;&gt;</button>
         </div>
       </div>
     </main>
@@ -111,21 +114,21 @@ export default defineComponent({
       if (!searchParam.value) {
         return firstPage
       }
-      return Math.floor(consultantsSearchResult.value.total / searchParam.value.size)
+      const total = Math.max(0, consultantsSearchResult.value.total - 1)
+      return Math.floor(total / searchParam.value.size)
     })
-    const pageSelection = computed(() => {
+    const pages = computed(() => {
       const pageSize = 2
       if (!searchParam.value) {
         return []
       }
       const min = Math.max(0, currentPage.value - pageSize)
-      const lastPage = Math.floor(consultantsSearchResult.value.total / searchParam.value.size)
-      const max = Math.min(lastPage, currentPage.value + pageSize)
-      const pageSelection = []
+      const max = Math.min(lastPage.value, currentPage.value + pageSize)
+      const pages = []
       for (let i = min; i < max; i++) {
-        pageSelection.push(i)
+        pages.push(i)
       }
-      return pageSelection
+      return pages
     })
     const sortParam = ref('none')
     const router = useRouter()
@@ -183,6 +186,17 @@ export default defineComponent({
       }
     }
 
+    const getConsultantsByPageIndex = async (page: number) => {
+      if (!searchParam.value) {
+        error.exists = true
+        error.message = Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE
+        return
+      }
+      const from = page * searchParam.value.size
+      searchParam.value.from = from
+      searchConsultants(searchParam.value)
+    }
+
     return {
       postConsultantsSearchDone,
       error,
@@ -191,9 +205,10 @@ export default defineComponent({
       currentPage,
       firstPage,
       lastPage,
-      pageSelection,
+      pages,
       sortParam,
-      onSortParamChanged
+      onSortParamChanged,
+      getConsultantsByPageIndex
     }
   }
 })
