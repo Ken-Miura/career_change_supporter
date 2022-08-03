@@ -21,7 +21,7 @@
             <router-link class="inline-block text-white no-underline py-2 px-4" to="/reward">報酬</router-link>
           </li>
           <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/request-consultation">相談申し込み</router-link>
+            <router-link class="inline-block text-white no-underline py-2 px-4" to="/consultants-search">相談申し込み</router-link>
           </li>
           <li class="mr-3">
             <router-link class="inline-block text-white no-underline py-2 px-4" to="/accept-consultation">相談受け付け</router-link>

@@ -158,7 +158,7 @@ import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from '@/util/Fee'
 import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from '@/util/AnnualIncome'
 
 export default defineComponent({
-  name: 'RequestConsultationPage',
+  name: 'ConsultantsSearchPage',
   components: {
     TheHeader,
     AlertMessage
