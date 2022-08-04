@@ -17,7 +17,7 @@ import BankAccountPage from '../views/personalized/BankAccountPage.vue'
 import SubmitBankAccountSuccessPage from '../views/personalized/SubmitBankAccountSuccessPage.vue'
 import SchedulePage from '../views/personalized/SchedulePage.vue'
 import AcceptConsultionPage from '../views/personalized/AcceptConsultionPage.vue'
-import ConsultantsSearch from '../views/personalized/ConsultantsSearch.vue'
+import ConsultantsSearchPage from '../views/personalized/ConsultantsSearchPage.vue'
 import SubmitCareerSuccessPage from '../views/personalized/SubmitCareerSuccessPage.vue'
 import PrivacyPolicyPage from '../views/PrivacyPolicyPage.vue'
 import TransactionLawPage from '../views/TransactionLawPage.vue'
@@ -171,8 +171,8 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/consultants-search',
-    name: 'ConsultantsSearch',
-    component: ConsultantsSearch
+    name: 'ConsultantsSearchPage',
+    component: ConsultantsSearchPage
   },
   {
     path: '/accept-consultation',
