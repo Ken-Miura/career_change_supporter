@@ -153,7 +153,7 @@ import { Message } from '@/util/Message'
 import { useStore } from 'vuex'
 import { SET_CONSULTANT_SEARCH_PARAM } from '@/store/mutationTypes'
 import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
-import { PAGE_SIZE } from '@/util/PageSize'
+import { getPageSize } from '@/util/PageSize'
 import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from '@/util/Fee'
 import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from '@/util/AnnualIncome'
 
@@ -270,7 +270,7 @@ export default defineComponent({
         },
         sort_param: null,
         from: 0,
-        size: PAGE_SIZE
+        size: getPageSize()
       } as ConsultantSearchParam
       store.commit(SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
       await router.push('/consultant-list')
