@@ -222,7 +222,7 @@ export default defineComponent({
         error.message = Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE
         return
       }
-      if (equalOrMoreAnnualIncomeInManYen && equalOrLessAnnualIncomeInManYen && (equalOrMoreAnnualIncomeInManYen > equalOrLessAnnualIncomeInManYen)) {
+      if (equalOrMoreAnnualIncomeInManYen !== null && equalOrLessAnnualIncomeInManYen !== null && (equalOrMoreAnnualIncomeInManYen > equalOrLessAnnualIncomeInManYen)) {
         error.exists = true
         error.message = Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE
         return

@@ -470,11 +470,11 @@ describe('ConsultantsSearchPage.vue', () => {
     await flushPromises()
     expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
 
-    const annualIncomeInManYenEqualOrMore = 100
+    const annualIncomeInManYenEqualOrMore = MIN_ANNUAL_INCOME_IN_MAN_YEN + 1
     const annualIncomeInManYenEqualOrMoreInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-more-input"]').find('input')
     await annualIncomeInManYenEqualOrMoreInput.setValue(annualIncomeInManYenEqualOrMore)
 
-    const annualIncomeInManYenEqualOrLess = 99
+    const annualIncomeInManYenEqualOrLess = MIN_ANNUAL_INCOME_IN_MAN_YEN
     const annualIncomeInManYenEqualOrLessInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-less-input"]').find('input')
     await annualIncomeInManYenEqualOrLessInput.setValue(annualIncomeInManYenEqualOrLess)
 
