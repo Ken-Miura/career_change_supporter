@@ -399,4 +399,62 @@ describe('ConsultantsSearchPage.vue', () => {
     } as ConsultantSearchParam
     expect(storeCommitMock).toHaveBeenNthCalledWith(2, SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
   })
+
+  it(`displays ${Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} if illegal annual income in man yen is passed case 1`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+
+    const annualIncomeInManYenEqualOrMore = MIN_ANNUAL_INCOME_IN_MAN_YEN - 1
+    const annualIncomeInManYenEqualOrMoreInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-more-input"]').find('input')
+    await annualIncomeInManYenEqualOrMoreInput.setValue(annualIncomeInManYenEqualOrMore)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    expect(alertMessage.text()).toContain(Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
+  })
+
+  it(`displays ${Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} if illegal annual income in man yen is passed case 2`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+
+    const annualIncomeInManYenEqualOrLess = MAX_ANNUAL_INCOME_IN_MAN_YEN + 1
+    const annualIncomeInManYenEqualOrLessInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-less-input"]').find('input')
+    await annualIncomeInManYenEqualOrLessInput.setValue(annualIncomeInManYenEqualOrLess)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    expect(alertMessage.text()).toContain(Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
+  })
 })
