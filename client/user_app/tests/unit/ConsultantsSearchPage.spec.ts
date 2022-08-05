@@ -458,6 +458,62 @@ describe('ConsultantsSearchPage.vue', () => {
     expect(alertMessage.text()).toContain(Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
   })
 
+  it('moves to consultant-list if same value is specified on annualIncomeInManYen', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+
+    const annualIncomeInManYenEqualOrMore = MIN_ANNUAL_INCOME_IN_MAN_YEN
+    const annualIncomeInManYenEqualOrMoreInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-more-input"]').find('input')
+    await annualIncomeInManYenEqualOrMoreInput.setValue(annualIncomeInManYenEqualOrMore)
+
+    const annualIncomeInManYenEqualOrLess = annualIncomeInManYenEqualOrMore
+    const annualIncomeInManYenEqualOrLessInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-less-input"]').find('input')
+    await annualIncomeInManYenEqualOrLessInput.setValue(annualIncomeInManYenEqualOrLess)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/consultant-list')
+    expect(storeCommitMock).toHaveBeenCalledTimes(2)
+    const consultantSearchParam = {
+      career_param: {
+        company_name: null,
+        department_name: null,
+        office: null,
+        years_of_service: null,
+        employed: null,
+        contract_type: null,
+        profession: null,
+        annual_income_in_man_yen: {
+          equal_or_more: annualIncomeInManYenEqualOrMore,
+          equal_or_less: annualIncomeInManYenEqualOrLess
+        } as AnnualInComeInManYenParam,
+        is_manager: null,
+        position_name: null,
+        is_new_graduate: null,
+        note: null
+      } as CareerParam,
+      fee_per_hour_in_yen_param: {
+        equal_or_more: null,
+        equal_or_less: null
+      } as FeePerHourInYenParam,
+      sort_param: null,
+      from: 0,
+      size: getPageSize()
+    } as ConsultantSearchParam
+    expect(storeCommitMock).toHaveBeenNthCalledWith(2, SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
+  })
+
   it(`displays ${Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} if illegal annual incomes in man yen is passed`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const wrapper = mount(ConsultantsSearchPage, {
