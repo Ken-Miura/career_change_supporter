@@ -10,6 +10,8 @@ import { getPageSize, PAGE_SIZE } from '@/util/PageSize'
 import { AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam, FeePerHourInYenParam } from '@/util/personalized/ConsultantSearchParam'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { SET_CONSULTANT_SEARCH_PARAM } from '@/store/mutationTypes'
+import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from '@/util/AnnualIncome'
+import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from '@/util/Fee'
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -142,7 +144,7 @@ describe('ConsultantsSearchPage.vue', () => {
     const noteLabel = wrapper.find('[data-test="note-label"]')
     expect(noteLabel.exists)
     expect(noteLabel.text()).toContain('備考')
-    const noteInput = wrapper.find('[data-test="note-input"]').find('input')
+    const noteInput = wrapper.find('[data-test="note-input"]').find('textarea')
     expect(noteInput.exists)
 
     const feePerHourInYenLabel = wrapper.find('[data-test="fee-per-hour-in-yen-label"]')
@@ -282,6 +284,114 @@ describe('ConsultantsSearchPage.vue', () => {
       fee_per_hour_in_yen_param: {
         equal_or_more: null,
         equal_or_less: null
+      } as FeePerHourInYenParam,
+      sort_param: null,
+      from: 0,
+      size: getPageSize()
+    } as ConsultantSearchParam
+    expect(storeCommitMock).toHaveBeenNthCalledWith(2, SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
+  })
+
+  it('moves to consultant-list and pass specified params if all params are specified', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+
+    const companyName = 'テスト株式会社'
+    const companyNameInput = wrapper.find('[data-test="company-name-input"]').find('input')
+    await companyNameInput.setValue(companyName)
+
+    const departmentName = 'ソフトウェア開発'
+    const departmentNameInput = wrapper.find('[data-test="department-name-input"]').find('input')
+    await departmentNameInput.setValue(departmentName)
+
+    const office = '町田事業所'
+    const officeInput = wrapper.find('[data-test="office-input"]').find('input')
+    await officeInput.setValue(office)
+
+    const yearsOfService = 'THREE_YEARS_OR_MORE'
+    const yearsOfServiceSelect = wrapper.find('[data-test="years-of-service-select"]').find('select')
+    await yearsOfServiceSelect.setValue(yearsOfService)
+
+    const employed = 'true'
+    const employedSelect = wrapper.find('[data-test="employed-select"]').find('select')
+    await employedSelect.setValue(employed)
+
+    const contractType = 'regular'
+    const contractTypeSelect = wrapper.find('[data-test="contract-type-select"]').find('select')
+    await contractTypeSelect.setValue(contractType)
+
+    const profession = 'ITエンジニア'
+    const professionInput = wrapper.find('[data-test="profession-input"]').find('input')
+    await professionInput.setValue(profession)
+
+    const annualIncomeInManYenEqualOrMore = MIN_ANNUAL_INCOME_IN_MAN_YEN
+    const annualIncomeInManYenEqualOrMoreInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-more-input"]').find('input')
+    await annualIncomeInManYenEqualOrMoreInput.setValue(annualIncomeInManYenEqualOrMore)
+
+    const annualIncomeInManYenEqualOrLess = MAX_ANNUAL_INCOME_IN_MAN_YEN
+    const annualIncomeInManYenEqualOrLessInput = wrapper.find('[data-test="annual-income-in-man-yen-equal-or-less-input"]').find('input')
+    await annualIncomeInManYenEqualOrLessInput.setValue(annualIncomeInManYenEqualOrLess)
+
+    const isManager = 'false' as string
+    const isManagerSelect = wrapper.find('[data-test="is-manager-select"]').find('select')
+    await isManagerSelect.setValue(isManager)
+
+    const positionName = '主任'
+    const positionNameInput = wrapper.find('[data-test="position-name-input"]').find('input')
+    await positionNameInput.setValue(positionName)
+
+    const isNewGraduate = 'true'
+    const isNewGraduateSelect = wrapper.find('[data-test="is-new-graduate-select"]').find('select')
+    await isNewGraduateSelect.setValue(isNewGraduate)
+
+    const note = '備考'
+    const noteInput = wrapper.find('[data-test="note-input"]').find('textarea')
+    await noteInput.setValue(note)
+
+    const feePerHourInYenEqualOrMore = MIN_FEE_PER_HOUR_IN_YEN
+    const feePerHourInYenEqualOrMoreInput = wrapper.find('[data-test="fee-per-hour-in-yen-equal-or-more-input"]').find('input')
+    await feePerHourInYenEqualOrMoreInput.setValue(feePerHourInYenEqualOrMore)
+
+    const feePerHourInYenEqualOrLess = MAX_FEE_PER_HOUR_IN_YEN
+    const feePerHourInYenEqualOrLessInput = wrapper.find('[data-test="fee-per-hour-in-yen-equal-or-less-input"]').find('input')
+    await feePerHourInYenEqualOrLessInput.setValue(feePerHourInYenEqualOrLess)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/consultant-list')
+    expect(storeCommitMock).toHaveBeenCalledTimes(2)
+    const consultantSearchParam = {
+      career_param: {
+        company_name: companyName,
+        department_name: departmentName,
+        office: office,
+        years_of_service: yearsOfService,
+        employed: employed === 'true',
+        contract_type: contractType,
+        profession: profession,
+        annual_income_in_man_yen: {
+          equal_or_more: annualIncomeInManYenEqualOrMore,
+          equal_or_less: annualIncomeInManYenEqualOrLess
+        } as AnnualInComeInManYenParam,
+        is_manager: isManager === 'true',
+        position_name: positionName,
+        is_new_graduate: isNewGraduate === 'true',
+        note: note
+      } as CareerParam,
+      fee_per_hour_in_yen_param: {
+        equal_or_more: feePerHourInYenEqualOrMore,
+        equal_or_less: feePerHourInYenEqualOrLess
       } as FeePerHourInYenParam,
       sort_param: null,
       from: 0,
