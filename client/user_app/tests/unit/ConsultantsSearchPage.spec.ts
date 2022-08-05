@@ -228,6 +228,20 @@ describe('ConsultantsSearchPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
+  it('clears search param on opening ConsultantsSearchPage', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+  })
+
   it('moves to consultant-list and pass empty param if no param specified', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const wrapper = mount(ConsultantsSearchPage, {
