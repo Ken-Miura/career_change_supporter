@@ -7,7 +7,9 @@ import { refresh } from '@/util/personalized/refresh/Refresh'
 import TheHeader from '@/components/TheHeader.vue'
 import { Message } from '@/util/Message'
 import { getPageSize, PAGE_SIZE } from '@/util/PageSize'
-import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
+import { AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam, FeePerHourInYenParam } from '@/util/personalized/ConsultantSearchParam'
+import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { SET_CONSULTANT_SEARCH_PARAM } from '@/store/mutationTypes'
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -22,14 +24,10 @@ jest.mock('vue-router', () => ({
   })
 }))
 
-let consultantSearchParamMock = null as ConsultantSearchParam | null
 const storeCommitMock = jest.fn()
 jest.mock('vuex', () => ({
   useStore: () => ({
-    commit: storeCommitMock,
-    state: {
-      consultantSearchParam: consultantSearchParamMock
-    }
+    commit: storeCommitMock
   })
 }))
 
@@ -40,7 +38,6 @@ describe('ConsultantsSearchPage.vue', () => {
     getPageSizeMock.mockReturnValue(PAGE_SIZE)
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
-    consultantSearchParamMock = null
   })
 
   it('has one TheHeader, one submit button and one AlertMessage', () => {
@@ -229,5 +226,53 @@ describe('ConsultantsSearchPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it('moves to consultant-list and pass empty param if no param specified', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/consultant-list')
+    expect(storeCommitMock).toHaveBeenCalledTimes(2)
+    const consultantSearchParam = {
+      career_param: {
+        company_name: null,
+        department_name: null,
+        office: null,
+        years_of_service: null,
+        employed: null,
+        contract_type: null,
+        profession: null,
+        annual_income_in_man_yen: {
+          equal_or_more: null,
+          equal_or_less: null
+        } as AnnualInComeInManYenParam,
+        is_manager: null,
+        position_name: null,
+        is_new_graduate: null,
+        note: null
+      } as CareerParam,
+      fee_per_hour_in_yen_param: {
+        equal_or_more: null,
+        equal_or_less: null
+      } as FeePerHourInYenParam,
+      sort_param: null,
+      from: 0,
+      size: getPageSize()
+    } as ConsultantSearchParam
+    expect(storeCommitMock).toHaveBeenNthCalledWith(2, SET_CONSULTANT_SEARCH_PARAM, consultantSearchParam)
   })
 })
