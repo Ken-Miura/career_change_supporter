@@ -203,6 +203,10 @@ describe('ConsultantListPage.vue', () => {
   })
 
   it(`displays ${Message.INVALID_COMPANY_NAME_LENGTH_MESSAGE} if company name length is invalid`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    consultantSearchParamMock.career_param.company_name = ''
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_COMPANY_NAME_LENGTH))
     postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(ConsultantListPage, {
