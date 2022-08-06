@@ -37,7 +37,7 @@ export type SortParam = {
 export type ConsultantSearchParam = {
   /* eslint-disable camelcase */
   career_param: CareerParam,
-  fee_per_hour_in_yen_param: FeePerHourInYenParam
+  fee_per_hour_in_yen_param: FeePerHourInYenParam,
   sort_param: SortParam | null,
   from: number,
   size: number,

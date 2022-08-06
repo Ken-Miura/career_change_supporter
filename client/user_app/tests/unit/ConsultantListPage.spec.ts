@@ -1,11 +1,12 @@
 import { getPageSize, PAGE_SIZE } from '@/util/PageSize'
-import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
+import { AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam, FeePerHourInYenParam } from '@/util/personalized/ConsultantSearchParam'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import ConsultantListPage from '@/views/personalized/ConsultantListPage.vue'
 import { PostConsultantsSearchResp } from '@/util/personalized/consultant-list/PostConsultantsSearchResp'
 import { ConsultantsSearchResult } from '@/util/personalized/consultant-list/ConsultantsSearchResult'
@@ -23,7 +24,7 @@ jest.mock('vue-router', () => ({
   })
 }))
 
-const consultantSearchParamMock = null as ConsultantSearchParam | null
+let consultantSearchParamMock = null as ConsultantSearchParam | null
 jest.mock('vuex', () => ({
   useStore: () => ({
     state: {
@@ -47,7 +48,33 @@ describe('ConsultantListPage.vue', () => {
     getPageSizeMock.mockReset()
     getPageSizeMock.mockReturnValue(PAGE_SIZE)
     routerPushMock.mockClear()
-    postConsultantsSearchDoneMock.value = false
+    consultantSearchParamMock = {
+      career_param: {
+        company_name: null,
+        department_name: null,
+        office: null,
+        years_of_service: null,
+        employed: null,
+        contract_type: null,
+        profession: null,
+        annual_income_in_man_yen: {
+          equal_or_more: null,
+          equal_or_less: null
+        } as AnnualInComeInManYenParam,
+        is_manager: null,
+        position_name: null,
+        is_new_graduate: null,
+        note: null
+      } as CareerParam,
+      fee_per_hour_in_yen_param: {
+        equal_or_more: null,
+        equal_or_less: null
+      } as FeePerHourInYenParam,
+      sort_param: null,
+      from: 0,
+      size: getPageSize()
+    } as ConsultantSearchParam
+    postConsultantsSearchDoneMock.value = true
     postConsultantsSearchFuncMock.mockReset()
   })
 
@@ -75,5 +102,30 @@ describe('ConsultantListPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('has TheHeader, has no AlertMessage and WaitingCircle if request is done successfully', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const result = {
+      total: 0,
+      consultants: []
+    } as ConsultantsSearchResult
+    const resp = PostConsultantsSearchResp.create(result)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
   })
 })
