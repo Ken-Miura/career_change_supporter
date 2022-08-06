@@ -11,6 +11,7 @@ import { ConsultantsSearchResult } from '@/util/personalized/consultant-list/Con
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from '@/util/AnnualIncome'
 
 jest.mock('@/util/PageSize')
 const getPageSizeMock = getPageSize as jest.MockedFunction<typeof getPageSize>
@@ -470,5 +471,59 @@ describe('ConsultantListPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_PROFESSION_MESSAGE)
     expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_PROFESSION.toString())
+  })
+
+  it(`displays ${Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} if ${Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN} is returned case 1`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.annual_income_in_man_yen.equal_or_more = MIN_ANNUAL_INCOME_IN_MAN_YEN - 1
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN.toString())
+  })
+
+  it(`displays ${Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} if ${Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN} is returned case 2`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.annual_income_in_man_yen.equal_or_less = MAX_ANNUAL_INCOME_IN_MAN_YEN + 1
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN.toString())
   })
 })
