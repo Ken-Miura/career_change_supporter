@@ -7,7 +7,7 @@ import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import ConsultantListPage from '@/views/personalized/ConsultantListPage.vue'
 import { PostConsultantsSearchResp } from '@/util/personalized/consultant-list/PostConsultantsSearchResp'
-import { ConsultantsSearchResult } from '@/util/personalized/consultant-list/ConsultantsSearchResult'
+import { ConsultantCareerDescription, ConsultantDescription, ConsultantsSearchResult } from '@/util/personalized/consultant-list/ConsultantsSearchResult'
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
@@ -881,7 +881,7 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Code.NO_IDENTITY_REGISTERED.toString())
   })
 
-  it('displays total 0, initial sort value and has not page move buttons if total is 0', async () => {
+  it('displays total 0, initial sort value and has no page move buttons if total is 0', async () => {
     const result = {
       total: 0,
       consultants: []
@@ -907,6 +907,62 @@ describe('ConsultantListPage.vue', () => {
 
     const consultants = wrapper.findAll('[data-test="consultants"]')
     expect(consultants.length).toBe(0)
+
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(!pageMoveButtons.exists)
+  })
+
+  it('displays 1 consultant and has no page move buttons if total is 1', async () => {
+    const result = {
+      total: 1,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 5000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト株式会社',
+              profession: 'ITエンジニア',
+              office: '東北事業所'
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp = PostConsultantsSearchResp.create(result)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const totalDiv = wrapper.find('[data-test="total"]')
+    expect(totalDiv.text()).toContain(`${result.total} 件`)
+
+    const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+    expect(sortLabelDiv.text()).toContain('ソート：')
+    const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+    expect(sortValueDiv.text()).toContain('指定なし')
+
+    const consultants = wrapper.findAll('[data-test="consultants"]')
+    expect(consultants.length).toBe(1)
+    const consultant = result.consultants[0]
+    expect(consultants[0].text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
+    expect(consultants[0].text()).toContain(`相談一回（１時間）の相談料：${consultant.fee_per_hour_in_yen} 円`)
+    expect(consultants[0].text()).toContain(`評価：0/5（評価件数：${consultant.num_of_rated} 件）`)
+    expect(consultants[0].text()).toContain('職務経歴概要')
+    expect(consultants[0].text()).toContain('勤務先名称')
+    expect(consultants[0].text()).toContain(`${consultant.careers[0].company_name}`)
+    expect(consultants[0].text()).toContain('職種')
+    expect(consultants[0].text()).toContain(`${consultant.careers[0].profession}`)
+    expect(consultants[0].text()).toContain('勤務地')
+    expect(consultants[0].text()).toContain(`${consultant.careers[0].office}`)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(!pageMoveButtons.exists)
