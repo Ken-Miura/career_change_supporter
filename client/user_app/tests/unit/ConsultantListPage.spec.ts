@@ -880,4 +880,35 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.NO_IDENTITY_REGISTERED_MESSAGE)
     expect(resultMessage).toContain(Code.NO_IDENTITY_REGISTERED.toString())
   })
+
+  it('displays total 0, initial sort value and has not page move buttons if total is 0', async () => {
+    const result = {
+      total: 0,
+      consultants: []
+    } as ConsultantsSearchResult
+    const resp = PostConsultantsSearchResp.create(result)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const totalDiv = wrapper.find('[data-test="total"]')
+    expect(totalDiv.text()).toContain(`${result.total} 件`)
+
+    const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+    expect(sortLabelDiv.text()).toContain('ソート：')
+    const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+    expect(sortValueDiv.text()).toContain('指定なし')
+
+    const consultants = wrapper.findAll('[data-test="consultants"]')
+    expect(consultants.length).toBe(0)
+
+    const pageMoveButtons = wrapper.findAll('[data-test="page-move-buttons"]')
+    expect(pageMoveButtons.length).toBe(0)
+  })
 })

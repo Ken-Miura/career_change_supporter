@@ -10,13 +10,13 @@
       </div>
       <div v-else class="flex flex-col justify-center max-w-4xl mx-auto">
         <div class="grid grid-cols-2 max-w-4xl">
-          <div class="justify-self-start ml-2 col-span-1">
+          <div data-test="total" class="justify-self-start ml-2 col-span-1">
             <div class="bg-white text-xl px-6 py-4 rounded-lg shadow-2xl">{{ consultantsSearchResult.total }} 件</div>
           </div>
           <div class="justify-self-end mr-2 col-span-1">
             <div class="grid grid-cols-3 items-center bg-white text-xl px-4 py-2 rounded-lg shadow-2xl">
-              <div class="col-span-1">ソート：</div>
-              <select v-model="sortParam" v-on:change="onSortParamChanged" class="col-span-2 block p-3 w-full rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <div data-test="sort-label" class="col-span-1">ソート：</div>
+              <select data-test="sort-value" v-model="sortParam" v-on:change="onSortParamChanged" class="col-span-2 block p-3 w-full rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option value="none">指定なし</option>
                 <option value="fee_asc">相談料が安い順</option>
                 <option value="fee_desc">相談料が高い順</option>
@@ -27,7 +27,7 @@
           </div>
         </div>
         <div class="flex flex-col justify-center my-5">
-          <div v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant" v-bind:value="consultant" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
+          <div data-test="consultants" v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant" v-bind:value="consultant" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
             <h3 class="font-bold text-xl">コンサルタントID: {{ consultant.consultant_id }}</h3>
             <p class="mt-3 text-xl">相談一回（１時間）の相談料：{{ consultant.fee_per_hour_in_yen }} 円</p>
             <div class="mt-3 text-xl">評価：<span v-if="consultant.rating"> {{ consultant.rating }}</span><span v-else>0</span>/5（評価件数：{{ consultant.num_of_rated }} 件）</div>
@@ -49,7 +49,7 @@
             </div>
           </div>
         </div>
-        <div v-if="pages.length > 1" class="w-fit mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex self-end">
+        <div data-test="page-move-buttons" v-if="pages.length > 1" class="w-fit mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex self-end">
           <button v-on:click="getConsultantsByPageIndex(firstPage)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;&lt;</button>
           <button v-on:click="getConsultantsByPageIndex(currentPage - 1)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;</button>
           <div v-for="page in pages" v-bind:key="page" v-bind:value="page">
