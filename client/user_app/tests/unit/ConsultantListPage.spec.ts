@@ -417,4 +417,58 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.ILLEGAL_CONTRACT_TYPE_MESSAGE)
     expect(resultMessage).toContain(Code.ILLEGAL_CONTRACT_TYPE.toString())
   })
+
+  it(`displays ${Message.INVALID_PROFESSION_LENGTH_MESSAGE} if ${Code.INVALID_PROFESSION_LENGTH} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.profession = ''
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_PROFESSION_LENGTH))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_PROFESSION_LENGTH_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_PROFESSION_LENGTH.toString())
+  })
+
+  it(`displays ${Message.ILLEGAL_CHAR_IN_PROFESSION_MESSAGE} if ${Code.ILLEGAL_CHAR_IN_PROFESSION} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.profession = '\' OR 1=1--'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CHAR_IN_PROFESSION))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_PROFESSION_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_PROFESSION.toString())
+  })
 })
