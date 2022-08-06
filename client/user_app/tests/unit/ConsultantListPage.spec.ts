@@ -1,7 +1,5 @@
 import { getPageSize, PAGE_SIZE } from '@/util/PageSize'
 import { AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam, FeePerHourInYenParam } from '@/util/personalized/ConsultantSearchParam'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -10,9 +8,7 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import ConsultantListPage from '@/views/personalized/ConsultantListPage.vue'
 import { PostConsultantsSearchResp } from '@/util/personalized/consultant-list/PostConsultantsSearchResp'
 import { ConsultantsSearchResult } from '@/util/personalized/consultant-list/ConsultantsSearchResult'
-
-jest.mock('@/util/personalized/refresh/Refresh')
-const refreshMock = refresh as jest.MockedFunction<typeof refresh>
+import { Message } from '@/util/Message'
 
 jest.mock('@/util/PageSize')
 const getPageSizeMock = getPageSize as jest.MockedFunction<typeof getPageSize>
@@ -44,7 +40,6 @@ jest.mock('@/util/personalized/consultant-list/usePostConsultantsSearch', () => 
 
 describe('ConsultantListPage.vue', () => {
   beforeEach(() => {
-    refreshMock.mockReset()
     getPageSizeMock.mockReset()
     getPageSizeMock.mockReturnValue(PAGE_SIZE)
     routerPushMock.mockClear()
@@ -79,7 +74,6 @@ describe('ConsultantListPage.vue', () => {
   })
 
   it('has WaitingCircle and TheHeader while waiting response', async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     postConsultantsSearchDoneMock.value = false
     const result = {
       total: 0,
@@ -105,7 +99,6 @@ describe('ConsultantListPage.vue', () => {
   })
 
   it('has TheHeader, has no AlertMessage and WaitingCircle if request is done successfully', async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     const result = {
       total: 0,
       consultants: []
@@ -127,5 +120,26 @@ describe('ConsultantListPage.vue', () => {
     expect(waitingCircles.length).toBe(0)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(0)
+  })
+
+  it('displays AlertMessage when error has happened on opening ConsultantListPage', async () => {
+    const errDetail = 'connection error'
+    postConsultantsSearchFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
