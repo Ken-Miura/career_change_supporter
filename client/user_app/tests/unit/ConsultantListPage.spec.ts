@@ -964,10 +964,12 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants[0].text()).toContain('勤務地')
     expect(consultants[0].text()).toContain(`${consultant.careers[0].office}`)
 
-    const link = consultants[0].find('[data-test="consultant-detail-link"]')
-    expect(link.text()).toContain('詳細を確認する')
-    // expect(link.attributes).toContain('to')
-    // expect(link.attributes).toContain('target')
+    const linkDiv = consultants[0].find('[data-test="consultant-detail-link"]')
+    expect(linkDiv.text()).toContain('詳細を確認する')
+    const link = linkDiv.findComponent(RouterLinkStub)
+    const toValue = `{"name": "ConsultantDetailPage", "params": {"consultant_id": ${consultant.consultant_id}}}`
+    expect(link.props().to).toStrictEqual(JSON.parse(toValue))
+    expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(!pageMoveButtons.exists)
@@ -1024,6 +1026,13 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants[0].text()).toContain(`${consultant.careers[0].profession}`)
     expect(consultants[0].text()).toContain('勤務地')
     expect(consultants[0].text()).toContain(`${consultant.careers[0].office}`)
+
+    const linkDiv = consultants[0].find('[data-test="consultant-detail-link"]')
+    expect(linkDiv.text()).toContain('詳細を確認する')
+    const link = linkDiv.findComponent(RouterLinkStub)
+    const toValue = `{"name": "ConsultantDetailPage", "params": {"consultant_id": ${consultant.consultant_id}}}`
+    expect(link.props().to).toStrictEqual(JSON.parse(toValue))
+    expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(!pageMoveButtons.exists)

@@ -44,8 +44,8 @@
                 </div>
               </li>
             </ul>
-            <div class="grid-cols-3 flex justify-end">
-              <router-link data-test="consultant-detail-link" v-bind:to="{ name: 'ConsultantDetailPage', params: { consultant_id: consultant.consultant_id } }" target="_blank" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</router-link>
+            <div data-test="consultant-detail-link" class="grid-cols-3 flex justify-end">
+              <router-link v-bind:to="{ name: 'ConsultantDetailPage', params: { consultant_id: consultant.consultant_id } }" target="_blank" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</router-link>
             </div>
           </div>
         </div>
