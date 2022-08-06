@@ -201,4 +201,25 @@ describe('ConsultantListPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE)
   })
+
+  it(`displays ${Message.INVALID_COMPANY_NAME_LENGTH_MESSAGE} if company name length is invalid`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_COMPANY_NAME_LENGTH))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_COMPANY_NAME_LENGTH_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_COMPANY_NAME_LENGTH.toString())
+  })
 })
