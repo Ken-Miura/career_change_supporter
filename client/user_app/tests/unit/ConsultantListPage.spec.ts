@@ -805,4 +805,58 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.INVALID_SORT_ORDER_MESSAGE)
     expect(resultMessage).toContain(Code.INVALID_SORT_ORDER.toString())
   })
+
+  it(`displays ${Message.INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE} if ${Code.INVALID_CONSULTANT_SEARCH_PARAM_FROM} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.from = -1
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_CONSULTANT_SEARCH_PARAM_FROM))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_CONSULTANT_SEARCH_PARAM_FROM.toString())
+  })
+
+  it(`displays ${Message.INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE} if ${Code.INVALID_CONSULTANT_SEARCH_PARAM_SIZE} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.size = getPageSize() + 1
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_CONSULTANT_SEARCH_PARAM_SIZE))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_CONSULTANT_SEARCH_PARAM_SIZE.toString())
+  })
 })
