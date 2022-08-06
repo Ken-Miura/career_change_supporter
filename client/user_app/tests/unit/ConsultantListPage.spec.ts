@@ -554,4 +554,58 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
     expect(resultMessage).toContain(Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN.toString())
   })
+
+  it(`displays ${Message.INVALID_POSITION_NAME_LENGTH_MESSAGE} if ${Code.INVALID_POSITION_NAME_LENGTH} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.position_name = ''
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_POSITION_NAME_LENGTH))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_POSITION_NAME_LENGTH_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_POSITION_NAME_LENGTH.toString())
+  })
+
+  it(`displays ${Message.ILLEGAL_CHAR_IN_POSITION_NAME_MESSAGE} if ${Code.ILLEGAL_CHAR_IN_POSITION_NAME} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.position_name = '\' OR 1=1--'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CHAR_IN_POSITION_NAME))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_POSITION_NAME_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_POSITION_NAME.toString())
+  })
 })
