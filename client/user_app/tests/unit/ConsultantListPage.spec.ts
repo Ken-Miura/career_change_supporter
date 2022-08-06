@@ -176,4 +176,29 @@ describe('ConsultantListPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
+
+  it(`displays ${Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE} when search param is not passed`, async () => {
+    consultantSearchParamMock = null
+    const result = {
+      total: 0,
+      consultants: []
+    } as ConsultantsSearchResult
+    const resp = PostConsultantsSearchResp.create(result)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE)
+  })
 })
