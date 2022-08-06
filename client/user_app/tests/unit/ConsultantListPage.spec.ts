@@ -859,4 +859,25 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE)
     expect(resultMessage).toContain(Code.INVALID_CONSULTANT_SEARCH_PARAM_SIZE.toString())
   })
+
+  it(`displays ${Message.NO_IDENTITY_REGISTERED_MESSAGE} if ${Code.NO_IDENTITY_REGISTERED} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_IDENTITY_REGISTERED))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_IDENTITY_REGISTERED_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_IDENTITY_REGISTERED.toString())
+  })
 })
