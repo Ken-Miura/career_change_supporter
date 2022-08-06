@@ -1024,7 +1024,7 @@ describe('ConsultantListPage.vue', () => {
     expect(!pageMoveButtons.exists)
   })
 
-  it('displays 1 consultant with 2 careers and has no page move buttons if total is 1', async () => {
+  it('displays 1 consultant with 8 careers and has no page move buttons if total is 1', async () => {
     const result = {
       total: 1,
       consultants: [
@@ -1041,6 +1041,36 @@ describe('ConsultantListPage.vue', () => {
             } as ConsultantCareerDescription,
             {
               company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription,
+            {
+              company_name: 'テスト３株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription,
+            {
+              company_name: 'テスト４株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription,
+            {
+              company_name: 'テスト５株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription,
+            {
+              company_name: 'テスト６株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription,
+            {
+              company_name: 'テスト７株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription,
+            {
+              company_name: 'テスト８株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription
@@ -1083,6 +1113,18 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants[0].text()).toContain(`${consultant.careers[0].office}`)
     expect(consultants[0].text()).toContain('職務経歴概要2')
     expect(consultants[0].text()).toContain(`${consultant.careers[1].company_name}`)
+    expect(consultants[0].text()).toContain('職務経歴概要3')
+    expect(consultants[0].text()).toContain(`${consultant.careers[2].company_name}`)
+    expect(consultants[0].text()).toContain('職務経歴概要4')
+    expect(consultants[0].text()).toContain(`${consultant.careers[3].company_name}`)
+    expect(consultants[0].text()).toContain('職務経歴概要5')
+    expect(consultants[0].text()).toContain(`${consultant.careers[4].company_name}`)
+    expect(consultants[0].text()).toContain('職務経歴概要6')
+    expect(consultants[0].text()).toContain(`${consultant.careers[5].company_name}`)
+    expect(consultants[0].text()).toContain('職務経歴概要7')
+    expect(consultants[0].text()).toContain(`${consultant.careers[6].company_name}`)
+    expect(consultants[0].text()).toContain('職務経歴概要8')
+    expect(consultants[0].text()).toContain(`${consultant.careers[7].company_name}`)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(!pageMoveButtons.exists)
