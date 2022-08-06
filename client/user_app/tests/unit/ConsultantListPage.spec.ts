@@ -526,4 +526,32 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
     expect(resultMessage).toContain(Code.ILLEGAL_ANNUAL_INCOME_IN_MAN_YEN.toString())
   })
+
+  it(`displays ${Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE} if ${Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.annual_income_in_man_yen.equal_or_more = MIN_ANNUAL_INCOME_IN_MAN_YEN + 1
+    consultantSearchParamMock.career_param.annual_income_in_man_yen.equal_or_less = MIN_ANNUAL_INCOME_IN_MAN_YEN
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN_MESSAGE)
+    expect(resultMessage).toContain(Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_ANNUAL_INCOME_IN_MAN_YEN.toString())
+  })
 })
