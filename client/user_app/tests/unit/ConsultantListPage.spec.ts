@@ -905,7 +905,7 @@ describe('ConsultantListPage.vue', () => {
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
 
-    const consultants = wrapper.findAll('[data-test="consultants"]')
+    const consultants = wrapper.findAll('[data-test="consultant"]')
     expect(consultants.length).toBe(0)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
@@ -950,7 +950,7 @@ describe('ConsultantListPage.vue', () => {
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
 
-    const consultants = wrapper.findAll('[data-test="consultants"]')
+    const consultants = wrapper.findAll('[data-test="consultant"]')
     expect(consultants.length).toBe(1)
     const consultant = result.consultants[0]
     expect(consultants[0].text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
@@ -963,6 +963,11 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants[0].text()).toContain(`${consultant.careers[0].profession}`)
     expect(consultants[0].text()).toContain('勤務地')
     expect(consultants[0].text()).toContain(`${consultant.careers[0].office}`)
+
+    const link = consultants[0].find('[data-test="consultant-detail-link"]')
+    expect(link.text()).toContain('詳細を確認する')
+    // expect(link.attributes).toContain('to')
+    // expect(link.attributes).toContain('target')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(!pageMoveButtons.exists)
@@ -1006,7 +1011,7 @@ describe('ConsultantListPage.vue', () => {
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
 
-    const consultants = wrapper.findAll('[data-test="consultants"]')
+    const consultants = wrapper.findAll('[data-test="consultant"]')
     expect(consultants.length).toBe(1)
     const consultant = result.consultants[0]
     expect(consultants[0].text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
@@ -1097,7 +1102,7 @@ describe('ConsultantListPage.vue', () => {
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
 
-    const consultants = wrapper.findAll('[data-test="consultants"]')
+    const consultants = wrapper.findAll('[data-test="consultant"]')
     expect(consultants.length).toBe(1)
     const consultant = result.consultants[0]
     expect(consultants[0].text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
