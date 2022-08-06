@@ -908,7 +908,7 @@ describe('ConsultantListPage.vue', () => {
     const consultants = wrapper.findAll('[data-test="consultants"]')
     expect(consultants.length).toBe(0)
 
-    const pageMoveButtons = wrapper.findAll('[data-test="page-move-buttons"]')
-    expect(pageMoveButtons.length).toBe(0)
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(!pageMoveButtons.exists)
   })
 })
