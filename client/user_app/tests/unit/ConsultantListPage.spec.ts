@@ -608,4 +608,58 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_POSITION_NAME_MESSAGE)
     expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_POSITION_NAME.toString())
   })
+
+  it(`displays ${Message.INVALID_NOTE_LENGTH_MESSAGE} if ${Code.INVALID_NOTE_LENGTH} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.note = ''
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_NOTE_LENGTH))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_NOTE_LENGTH_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_NOTE_LENGTH.toString())
+  })
+
+  it(`displays ${Message.ILLEGAL_CHAR_IN_NOTE_MESSAGE} if ${Code.ILLEGAL_CHAR_IN_NOTE} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.note = '\' OR 1=1--'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CHAR_IN_NOTE))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_NOTE_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_NOTE.toString())
+  })
 })
