@@ -12,6 +12,7 @@ import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from '@/util/AnnualIncome'
+import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from '@/util/Fee'
 
 jest.mock('@/util/PageSize')
 const getPageSizeMock = getPageSize as jest.MockedFunction<typeof getPageSize>
@@ -661,5 +662,87 @@ describe('ConsultantListPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.ILLEGAL_CHAR_IN_NOTE_MESSAGE)
     expect(resultMessage).toContain(Code.ILLEGAL_CHAR_IN_NOTE.toString())
+  })
+
+  it(`displays ${Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE} if ${Code.ILLEGAL_FEE_PER_HOUR_IN_YEN} is returned case 1`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.fee_per_hour_in_yen_param.equal_or_more = MIN_FEE_PER_HOUR_IN_YEN - 1
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_FEE_PER_HOUR_IN_YEN))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_FEE_PER_HOUR_IN_YEN.toString())
+  })
+
+  it(`displays ${Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE} if ${Code.ILLEGAL_FEE_PER_HOUR_IN_YEN} is returned case 2`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.fee_per_hour_in_yen_param.equal_or_less = MAX_FEE_PER_HOUR_IN_YEN + 1
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_FEE_PER_HOUR_IN_YEN))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.ILLEGAL_FEE_PER_HOUR_IN_YEN_MESSAGE)
+    expect(resultMessage).toContain(Code.ILLEGAL_FEE_PER_HOUR_IN_YEN.toString())
+  })
+
+  it(`displays ${Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN_MESSAGE} if ${Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.fee_per_hour_in_yen_param.equal_or_more = MAX_FEE_PER_HOUR_IN_YEN
+    consultantSearchParamMock.fee_per_hour_in_yen_param.equal_or_less = MAX_FEE_PER_HOUR_IN_YEN - 1
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN_MESSAGE)
+    expect(resultMessage).toContain(Code.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN.toString())
   })
 })
