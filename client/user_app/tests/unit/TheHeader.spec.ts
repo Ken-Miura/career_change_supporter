@@ -29,9 +29,9 @@ describe('TheHeader.vue', () => {
     const buttons = wrapper.findAll('button')
     expect(buttons.length).toBe(1)
     const list = wrapper.find('[data-test="div"]')
-    expect(list.exists())
+    expect(list.exists()).toBe(true)
     const logoutHandle = wrapper.find('[data-test="p"]')
-    expect(logoutHandle.exists())
+    expect(logoutHandle.exists()).toBe(true)
   })
 
   it('has list with a hidden attribute when created', () => {
@@ -43,7 +43,7 @@ describe('TheHeader.vue', () => {
       }
     })
     const list = wrapper.find('[data-test="div"]')
-    expect(list.exists())
+    expect(list.exists()).toBe(true)
     const classes = list.classes()
     expect(classes).toContain('hidden')
   })
@@ -57,7 +57,7 @@ describe('TheHeader.vue', () => {
       }
     })
     const list = wrapper.find('[data-test="div"]')
-    expect(list.exists())
+    expect(list.exists()).toBe(true)
     const firstState = list.classes()
     expect(firstState).toContain('hidden')
 

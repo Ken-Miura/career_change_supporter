@@ -205,7 +205,7 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     const emailAddressDiv = wrapper.find('[data-test="email-address"]')
-    expect(emailAddressDiv.exists())
+    expect(emailAddressDiv.exists()).toBe(true)
     const message = emailAddressDiv.text()
     expect(message).toContain('Eメールアドレス')
     expect(message).toContain('登録したEメールアドレスです。他のユーザーに公開されることはありません。')
@@ -234,17 +234,17 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     const noIdentitySetDiv = wrapper.find('[data-test="no-identity-set"]')
-    expect(noIdentitySetDiv.exists())
+    expect(noIdentitySetDiv.exists()).toBe(true)
     const noIdentitySetMessage = noIdentitySetDiv.text()
     expect(noIdentitySetMessage).toContain('ユーザー情報が設定されていません。')
 
     const noCareerDescriptionsSetDiv = wrapper.find('[data-test="no-career-descriptions-set"]')
-    expect(noCareerDescriptionsSetDiv.exists())
+    expect(noCareerDescriptionsSetDiv.exists()).toBe(true)
     const noCareerDescriptionsSetMessage = noCareerDescriptionsSetDiv.text()
     expect(noCareerDescriptionsSetMessage).toContain('職務経歴は登録されていません。')
 
     const noFeePerHourInYerSetDiv = wrapper.find('[data-test="no-fee-per-hour-in-yen-set"]')
-    expect(noFeePerHourInYerSetDiv.exists())
+    expect(noFeePerHourInYerSetDiv.exists()).toBe(true)
     const noFeePerHourInYerSetMessage = noFeePerHourInYerSetDiv.text()
     expect(noFeePerHourInYerSetMessage).toContain('相談料が設定されていません。')
   })
@@ -289,7 +289,7 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     const identitySetDiv = wrapper.find('[data-test="identity-set"]')
-    expect(identitySetDiv.exists())
+    expect(identitySetDiv.exists()).toBe(true)
     const message = identitySetDiv.text()
     expect(message).toContain('名前')
     expect(message).toContain(`${identity.last_name}　${identity.first_name}`)
@@ -367,7 +367,7 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     const oneCereerDiv = wrapper.find('[data-test="career-descriptions-set"]')
-    expect(oneCereerDiv.exists())
+    expect(oneCereerDiv.exists()).toBe(true)
     const message = oneCereerDiv.text()
     expect(message).toContain('勤務先名称')
     expect(message).toContain(`${careerDescription.company_name}`)
@@ -421,7 +421,7 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     const cereerDescriptionsSetDiv = wrapper.find('[data-test="career-descriptions-set"]')
-    expect(cereerDescriptionsSetDiv.exists())
+    expect(cereerDescriptionsSetDiv.exists()).toBe(true)
     const message = cereerDescriptionsSetDiv.text()
     // 一つの職務経歴を表示したときにその他の表示を確認しているので、
     // ここでは最大数分会社名が表示されていることのみ確認する
@@ -471,7 +471,7 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     const feePerHourInYenDiv = wrapper.find('[data-test="fee-per-hour-in-yen-set"]')
-    expect(feePerHourInYenDiv.exists())
+    expect(feePerHourInYenDiv.exists()).toBe(true)
     const message = feePerHourInYenDiv.text()
     expect(message).toContain(`${feePerHourInYen}円`)
   })
@@ -496,7 +496,7 @@ describe('ProfilePage.vue', () => {
       }
     })
     const button = wrapper.find('[data-test="move-to-identity-page-button"]')
-    expect(button.exists())
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
@@ -542,7 +542,7 @@ describe('ProfilePage.vue', () => {
       }
     })
     const button = wrapper.find('[data-test="move-to-add-career-page-button"]')
-    expect(button.exists())
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
@@ -605,7 +605,7 @@ describe('ProfilePage.vue', () => {
     })
     await flushPromises() // 描画が終わっていること（onMountedが完了していること）を保証するために実施
     const button = wrapper.find('[data-test="move-to-career-detail-page-button"]')
-    expect(button.exists())
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
@@ -652,7 +652,7 @@ describe('ProfilePage.vue', () => {
       }
     })
     const button = wrapper.find('[data-test="move-to-fee-per-hour-in-yen-page-button"]')
-    expect(button.exists())
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
@@ -679,7 +679,7 @@ describe('ProfilePage.vue', () => {
       }
     })
     const button = wrapper.find('[data-test="move-to-delete-account-confirmation-page-button"]')
-    expect(button.exists())
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
@@ -706,7 +706,7 @@ describe('ProfilePage.vue', () => {
       }
     })
     const button = wrapper.find('[data-test="move-to-add-career-page-button"]')
-    expect(button.exists())
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
@@ -741,7 +741,7 @@ describe('ProfilePage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)
     const careerDescriptions = wrapper.find('[data-test="career-descriptions"]')
-    expect(careerDescriptions.exists())
+    expect(careerDescriptions.exists()).toBe(true)
     expect(careerDescriptions.text()).toContain(`職務経歴は、最大${MAX_CAREER_NUM}個まで登録可能です`)
   })
 
@@ -765,7 +765,7 @@ describe('ProfilePage.vue', () => {
       }
     })
     const button = wrapper.find('[data-test="move-to-fee-per-hour-in-yen-page-button"]')
-    expect(button.exists())
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(0)

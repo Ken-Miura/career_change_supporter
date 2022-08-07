@@ -909,7 +909,7 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants.length).toBe(0)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists())
+    expect(pageMoveButtons.exists()).toBe(false)
   })
 
   it('displays 1 consultant and has no page move buttons if total is 1', async () => {
@@ -972,7 +972,7 @@ describe('ConsultantListPage.vue', () => {
     expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists())
+    expect(pageMoveButtons.exists()).toBe(false)
   })
 
   it('displays 1 consultant with rating and has no page move buttons if total is 1', async () => {
@@ -1035,7 +1035,7 @@ describe('ConsultantListPage.vue', () => {
     expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists())
+    expect(pageMoveButtons.exists()).toBe(false)
   })
 
   it('displays 1 consultant with 8 careers and has no page move buttons if total is 1', async () => {
@@ -1141,7 +1141,7 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants[0].text()).toContain(`${consultant.careers[7].company_name}`)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists())
+    expect(pageMoveButtons.exists()).toBe(false)
   })
 
   it('displays 2 consultants and has no page move buttons if total is 2', async () => {
@@ -1221,7 +1221,7 @@ describe('ConsultantListPage.vue', () => {
     expect(links.length).toBe(2)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists())
+    expect(pageMoveButtons.exists()).toBe(false)
   })
 
   it('has no page move buttons if total num of consultants is equal to page size', async () => {
@@ -1286,7 +1286,7 @@ describe('ConsultantListPage.vue', () => {
     expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists())
+    expect(pageMoveButtons.exists()).toBe(false)
   })
 
   it('has next and last buttons and has no first and prev buttons if total num of consultants is page size or more and on first page', async () => {
@@ -1342,8 +1342,8 @@ describe('ConsultantListPage.vue', () => {
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
 
-    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(pageMoveButtons.exists())
+    // const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    // expect(pageMoveButtons.exists()).toBe(true)
 
     // const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
     // expect(!toFirstButton.exists())
