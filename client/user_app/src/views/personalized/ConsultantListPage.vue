@@ -33,7 +33,7 @@
             <div class="mt-3 text-xl">評価：<span v-if="consultant.rating"> {{ consultant.rating }}</span><span v-else>0</span>/5（評価件数：{{ consultant.num_of_rated }} 件）</div>
             <div class="mt-5 font-bold text-xl">職務経歴概要</div>
             <ul>
-              <li v-for="(consultantCareerDescription, index) in consultant.careers" v-bind:key="consultantCareerDescription">
+              <li v-for="(consultantCareerDescription, index) in consultant.careers" v-bind:key="createUniqueKeyOfConsultantCareerDescription(consultantCareerDescription)">
                 <div class="mt-2">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴概要{{ index + 1 }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
@@ -80,7 +80,7 @@ import { ConsultantSearchParam, SortParam } from '@/util/personalized/Consultant
 import { usePostConsultantsSearch } from '@/util/personalized/consultant-list/usePostConsultantsSearch'
 import { Message } from '@/util/Message'
 import { PostConsultantsSearchResp } from '@/util/personalized/consultant-list/PostConsultantsSearchResp'
-import { ConsultantsSearchResult } from '@/util/personalized/consultant-list/ConsultantsSearchResult'
+import { ConsultantCareerDescription, ConsultantsSearchResult } from '@/util/personalized/consultant-list/ConsultantsSearchResult'
 
 export default defineComponent({
   name: 'ConsultantListPage',
@@ -197,6 +197,14 @@ export default defineComponent({
       searchConsultants(searchParam.value)
     }
 
+    const createUniqueKeyOfConsultantCareerDescription = (consultantCareerDescription: ConsultantCareerDescription): string => {
+      const companyName = consultantCareerDescription.company_name
+      const profession = consultantCareerDescription.profession === null ? 'null' : consultantCareerDescription.profession
+      const office = consultantCareerDescription.office === null ? 'null' : consultantCareerDescription.office
+      // 半角記号を禁止していてメンバー内に , を含むものがないため、区切り文字として使用して問題なし
+      return [companyName, profession, office].join(',')
+    }
+
     return {
       postConsultantsSearchDone,
       error,
@@ -208,7 +216,8 @@ export default defineComponent({
       pages,
       sortParam,
       onSortParamChanged,
-      getConsultantsByPageIndex
+      getConsultantsByPageIndex,
+      createUniqueKeyOfConsultantCareerDescription
     }
   }
 })
