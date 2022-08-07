@@ -1292,6 +1292,10 @@ describe('ConsultantListPage.vue', () => {
   it('has next and last buttons and has no first and prev buttons if total num of consultants is page size or more and on first page', async () => {
     getPageSizeMock.mockReset()
     getPageSizeMock.mockReturnValue(1)
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    consultantSearchParamMock.size = getPageSize()
     const result = {
       total: 2,
       consultants: [
@@ -1342,17 +1346,17 @@ describe('ConsultantListPage.vue', () => {
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
 
-    // const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    // expect(pageMoveButtons.exists()).toBe(true)
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(pageMoveButtons.exists()).toBe(true)
 
-    // const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
-    // expect(!toFirstButton.exists())
-    // const toPrevButton = pageMoveButtons.get('[data-test="to-prev-button"]')
-    // expect(!toPrevButton)
+    const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
+    expect(toFirstButton.exists()).toBe(false)
+    const toPrevButton = pageMoveButtons.find('[data-test="to-prev-button"]')
+    expect(toPrevButton.exists()).toBe(false)
 
-    // const toNextButton = pageMoveButtons.find('[data-test="to-next-button"]')
-    // expect(toNextButton.exists())
-    // const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
-    // expect(toLastButton.exists())
+    const toNextButton = pageMoveButtons.find('[data-test="to-next-button"]')
+    expect(toNextButton.exists()).toBe(true)
+    const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
+    expect(toLastButton.exists()).toBe(true)
   })
 })
