@@ -1223,4 +1223,69 @@ describe('ConsultantListPage.vue', () => {
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(!pageMoveButtons.exists)
   })
+
+  it('has no page move buttons if total num of consultants is equal to page size', async () => {
+    getPageSizeMock.mockReset()
+    getPageSizeMock.mockReturnValue(1)
+    const result = {
+      total: 1,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 5000,
+          rating: 4.5,
+          num_of_rated: 325,
+          careers: [
+            {
+              company_name: 'テスト株式会社',
+              profession: 'ITエンジニア',
+              office: '東北事業所'
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp = PostConsultantsSearchResp.create(result)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const totalDiv = wrapper.find('[data-test="total"]')
+    expect(totalDiv.text()).toContain(`${result.total} 件`)
+
+    const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+    expect(sortLabelDiv.text()).toContain('ソート：')
+    const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+    expect(sortValueDiv.text()).toContain('指定なし')
+
+    const consultants = wrapper.findAll('[data-test="consultant"]')
+    expect(consultants.length).toBe(1)
+    const consultant = result.consultants[0]
+    expect(consultants[0].text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
+    expect(consultants[0].text()).toContain(`相談一回（１時間）の相談料：${consultant.fee_per_hour_in_yen} 円`)
+    expect(consultants[0].text()).toContain(`評価：${consultant.rating}/5（評価件数：${consultant.num_of_rated} 件）`)
+    expect(consultants[0].text()).toContain('職務経歴概要')
+    expect(consultants[0].text()).toContain('勤務先名称')
+    expect(consultants[0].text()).toContain(`${consultant.careers[0].company_name}`)
+    expect(consultants[0].text()).toContain('職種')
+    expect(consultants[0].text()).toContain(`${consultant.careers[0].profession}`)
+    expect(consultants[0].text()).toContain('勤務地')
+    expect(consultants[0].text()).toContain(`${consultant.careers[0].office}`)
+
+    const linkDiv = consultants[0].find('[data-test="consultant-detail-link"]')
+    expect(linkDiv.text()).toContain('詳細を確認する')
+    const link = linkDiv.findComponent(RouterLinkStub)
+    const toValue = `{"name": "ConsultantDetailPage", "params": {"consultant_id": ${consultant.consultant_id}}}`
+    expect(link.props().to).toStrictEqual(JSON.parse(toValue))
+    expect(link.attributes().target).toBe('_blank')
+
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(!pageMoveButtons.exists)
+  })
 })
