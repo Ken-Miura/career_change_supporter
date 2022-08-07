@@ -1216,6 +1216,10 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants.text()).toContain(`${consultant1.careers[0].profession}`)
     expect(consultants.text()).toContain(`${consultant1.careers[0].office}`)
 
+    expect(consultants.text()).toContain('詳細を確認する')
+    const links = consultants.findAllComponents(RouterLinkStub)
+    expect(links.length).toBe(2)
+
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(!pageMoveButtons.exists)
   })
