@@ -199,17 +199,17 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const noBankAccountSetDiv = wrapper.find('[data-test="no-bank-account-set"]')
-    expect(noBankAccountSetDiv.exists)
+    expect(noBankAccountSetDiv.exists())
     const noBankAccountSetMessage = noBankAccountSetDiv.text()
     expect(noBankAccountSetMessage).toContain('報酬の入金口座が設定されていません。')
 
     const noRewardsOfTheMonthSetDiv = wrapper.find('[data-test="no-rewards-of-the-month-set"]')
-    expect(noRewardsOfTheMonthSetDiv.exists)
+    expect(noRewardsOfTheMonthSetDiv.exists())
     const noRewardsOfTheMonthSetMessage = noRewardsOfTheMonthSetDiv.text()
     expect(noRewardsOfTheMonthSetMessage).toContain('まだ相談を受け付けていません。')
 
     const noLatestTwoTransfersSetDiv = wrapper.find('[data-test="no-latest-two-transfers-set"]')
-    expect(noLatestTwoTransfersSetDiv.exists)
+    expect(noLatestTwoTransfersSetDiv.exists())
     const noLatestTwoTransfersSetMessage = noLatestTwoTransfersSetDiv.text()
     expect(noLatestTwoTransfersSetMessage).toContain('入金情報はありません。')
   })
@@ -235,7 +235,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const latestTwoTransfersSetDescriptionDiv = wrapper.find('[data-test="latest-two-transfers-set-description"]')
-    expect(latestTwoTransfersSetDescriptionDiv.exists)
+    expect(latestTwoTransfersSetDescriptionDiv.exists())
     const description = latestTwoTransfersSetDescriptionDiv.text()
     expect(description).toContain(`報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料（${TRANSFER_FEE_IN_YEN}円）が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。`)
   })
@@ -270,7 +270,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const bankAccountSetDiv = wrapper.find('[data-test="bank-account-set"]')
-    expect(bankAccountSetDiv.exists)
+    expect(bankAccountSetDiv.exists())
     const bankAccountSetMessage = bankAccountSetDiv.text()
     expect(bankAccountSetMessage).toContain('銀行コード')
     expect(bankAccountSetMessage).toContain(`${bankAccount.bank_code}`)
@@ -315,7 +315,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const rewardsOfTheMonthSetDiv = wrapper.find('[data-test="rewards-of-the-month-set"]')
-    expect(rewardsOfTheMonthSetDiv.exists)
+    expect(rewardsOfTheMonthSetDiv.exists())
     const rewardsOfTheMonthSetMessage = rewardsOfTheMonthSetDiv.text()
     expect(rewardsOfTheMonthSetMessage).toContain(`${rewardsOfTheMonth}円`)
   })
@@ -383,7 +383,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const latestTwoTransfersSetDiv = wrapper.find('[data-test="latest-two-transfers-set"]')
-    expect(latestTwoTransfersSetDiv.exists)
+    expect(latestTwoTransfersSetDiv.exists())
     const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
     expect(latestTwoTransfersSetMessage).toContain('入金情報1')
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
@@ -464,7 +464,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const latestTwoTransfersSetDiv = wrapper.find('[data-test="latest-two-transfers-set"]')
-    expect(latestTwoTransfersSetDiv.exists)
+    expect(latestTwoTransfersSetDiv.exists())
     const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
     expect(latestTwoTransfersSetMessage).toContain('入金情報1')
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
@@ -541,7 +541,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const latestTwoTransfersSetDiv = wrapper.find('[data-test="latest-two-transfers-set"]')
-    expect(latestTwoTransfersSetDiv.exists)
+    expect(latestTwoTransfersSetDiv.exists())
     const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
     expect(latestTwoTransfersSetMessage).toContain('入金情報1')
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
@@ -615,7 +615,7 @@ describe('RewardPage.vue', () => {
     await flushPromises()
 
     const latestTwoTransfersSetDiv = wrapper.find('[data-test="latest-two-transfers-set"]')
-    expect(latestTwoTransfersSetDiv.exists)
+    expect(latestTwoTransfersSetDiv.exists())
     const latestTwoTransfersSetMessage = latestTwoTransfersSetDiv.text()
     expect(latestTwoTransfersSetMessage).toContain('入金情報1')
     expect(latestTwoTransfersSetMessage).toContain('処理状態')
@@ -652,7 +652,7 @@ describe('RewardPage.vue', () => {
       }
     })
     const button = wrapper.find('[data-test="move-to-bank-account-page-button"]')
-    expect(button.exists)
+    expect(button.exists())
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)

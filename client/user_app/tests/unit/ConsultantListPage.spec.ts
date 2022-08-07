@@ -909,7 +909,7 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants.length).toBe(0)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists)
+    expect(!pageMoveButtons.exists())
   })
 
   it('displays 1 consultant and has no page move buttons if total is 1', async () => {
@@ -972,7 +972,7 @@ describe('ConsultantListPage.vue', () => {
     expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists)
+    expect(!pageMoveButtons.exists())
   })
 
   it('displays 1 consultant with rating and has no page move buttons if total is 1', async () => {
@@ -1035,7 +1035,7 @@ describe('ConsultantListPage.vue', () => {
     expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists)
+    expect(!pageMoveButtons.exists())
   })
 
   it('displays 1 consultant with 8 careers and has no page move buttons if total is 1', async () => {
@@ -1141,7 +1141,7 @@ describe('ConsultantListPage.vue', () => {
     expect(consultants[0].text()).toContain(`${consultant.careers[7].company_name}`)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists)
+    expect(!pageMoveButtons.exists())
   })
 
   it('displays 2 consultants and has no page move buttons if total is 2', async () => {
@@ -1221,7 +1221,7 @@ describe('ConsultantListPage.vue', () => {
     expect(links.length).toBe(2)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists)
+    expect(!pageMoveButtons.exists())
   })
 
   it('has no page move buttons if total num of consultants is equal to page size', async () => {
@@ -1286,6 +1286,73 @@ describe('ConsultantListPage.vue', () => {
     expect(link.attributes().target).toBe('_blank')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
-    expect(!pageMoveButtons.exists)
+    expect(!pageMoveButtons.exists())
+  })
+
+  it('has next and last buttons and has no first and prev buttons if total num of consultants is page size or more and on first page', async () => {
+    getPageSizeMock.mockReset()
+    getPageSizeMock.mockReturnValue(1)
+    const result = {
+      total: 2,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 5000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription,
+        {
+          consultant_id: 2,
+          fee_per_hour_in_yen: 5000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp = PostConsultantsSearchResp.create(result)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const totalDiv = wrapper.find('[data-test="total"]')
+    expect(totalDiv.text()).toContain(`${result.total} 件`)
+
+    const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+    expect(sortLabelDiv.text()).toContain('ソート：')
+    const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+    expect(sortValueDiv.text()).toContain('指定なし')
+
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(pageMoveButtons.exists())
+
+    // const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
+    // expect(!toFirstButton.exists())
+    // const toPrevButton = pageMoveButtons.get('[data-test="to-prev-button"]')
+    // expect(!toPrevButton)
+
+    // const toNextButton = pageMoveButtons.find('[data-test="to-next-button"]')
+    // expect(toNextButton.exists())
+    // const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
+    // expect(toLastButton.exists())
   })
 })
