@@ -172,8 +172,8 @@ export default defineComponent({
       const scheduledDateInJst = [transfer.scheduled_date_in_jst.year.toString(), transfer.scheduled_date_in_jst.month.toString(), transfer.scheduled_date_in_jst.day.toString()].join(':')
       const transferAmount = transfer.transfer_amount === null ? 'null' : transfer.transfer_amount.toString()
       // メンバー内に : を含むものがないため、区切り文字として使用して問題なし
-      const transferDateInJst = transfer.transfer_date_in_jst == null ? 'null' : [transfer.transfer_date_in_jst.year.toString(), transfer.transfer_date_in_jst.month.toString(), transfer.transfer_date_in_jst.day.toString()].join(':')
-      const carriedBalance = transfer.carried_balance == null ? 'null' : transfer.carried_balance.toString()
+      const transferDateInJst = transfer.transfer_date_in_jst === null ? 'null' : [transfer.transfer_date_in_jst.year.toString(), transfer.transfer_date_in_jst.month.toString(), transfer.transfer_date_in_jst.day.toString()].join(':')
+      const carriedBalance = transfer.carried_balance === null ? 'null' : transfer.carried_balance.toString()
       // メンバー内に , を含むものがないため、区切り文字として使用して問題なし
       return [status, amount, scheduledDateInJst, transferAmount, transferDateInJst, carriedBalance].join(',')
     }
