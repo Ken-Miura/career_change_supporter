@@ -52,7 +52,7 @@
         <div data-test="page-move-buttons" v-if="pages.length > 1" class="w-fit mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex self-end">
           <button data-test="to-first-button" v-on:click="getConsultantsByPageIndex(firstPage)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;&lt;</button>
           <button  data-test="to-prev-button" v-on:click="getConsultantsByPageIndex(currentPage - 1)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;</button>
-          <div v-bind:data-page-index="page" v-for="page in pages" v-bind:key="page" v-bind:value="page">
+          <div v-for="page in pages" v-bind:key="page" v-bind:value="page">
             <button v-if="page === currentPage" v-on:click="getConsultantsByPageIndex(page)" class="bg-gray-400 hover:bg-gray-500 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ page + 1 }}</button>
             <button v-else v-on:click="getConsultantsByPageIndex(page)" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ page + 1 }}</button>
           </div>

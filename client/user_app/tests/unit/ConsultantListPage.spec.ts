@@ -1354,10 +1354,10 @@ describe('ConsultantListPage.vue', () => {
     const toPrevButton = pageMoveButtons.find('[data-test="to-prev-button"]')
     expect(toPrevButton.exists()).toBe(false)
 
-    const zeroButton = pageMoveButtons.find('[data-page-index="0"]')
-    expect(zeroButton.exists()).toBe(true)
-    const oneButton = pageMoveButtons.find('[data-page-index="1"]')
-    expect(oneButton.exists()).toBe(true)
+    // const zeroButton = pageMoveButtons.find('[value="0"]')
+    // expect(zeroButton.exists()).toBe(true)
+    // const oneButton = pageMoveButtons.find('[value="1"]')
+    // expect(oneButton.exists()).toBe(true)
 
     const toNextButton = pageMoveButtons.find('[data-test="to-next-button"]')
     expect(toNextButton.exists()).toBe(true)
