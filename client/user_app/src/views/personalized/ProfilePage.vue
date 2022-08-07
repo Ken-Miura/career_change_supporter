@@ -39,7 +39,7 @@
           <div v-if="careerDescriptions.length === 0" data-test="no-career-descriptions-set" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
           <div v-else data-test="career-descriptions-set">
             <ul>
-              <li v-for="(careerDescription, index) in careerDescriptions" v-bind:key="careerDescription">
+              <li v-for="(careerDescription, index) in careerDescriptions" v-bind:key="careerDescription.career_id">
                 <div class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">

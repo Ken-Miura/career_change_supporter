@@ -27,7 +27,7 @@
           </div>
         </div>
         <div data-test="consultants-area" class="flex flex-col justify-center my-5">
-          <div data-test="consultant" v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant" v-bind:value="consultant" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
+          <div data-test="consultant" v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant.consultant_id" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
             <h3 class="font-bold text-xl">コンサルタントID: {{ consultant.consultant_id }}</h3>
             <p class="mt-3 text-xl">相談一回（１時間）の相談料：{{ consultant.fee_per_hour_in_yen }} 円</p>
             <div class="mt-3 text-xl">評価：<span v-if="consultant.rating"> {{ consultant.rating }}</span><span v-else>0</span>/5（評価件数：{{ consultant.num_of_rated }} 件）</div>
@@ -52,7 +52,7 @@
         <div data-test="page-move-buttons" v-if="pages.length > 1" class="w-fit mb-4 bg-white px-4 py-3 rounded-lg text-black text-xl flex self-end">
           <button data-test="to-first-button" v-on:click="getConsultantsByPageIndex(firstPage)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;&lt;</button>
           <button  data-test="to-prev-button" v-on:click="getConsultantsByPageIndex(currentPage - 1)" v-if="currentPage > firstPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >&lt;</button>
-          <div v-for="page in pages" v-bind:key="page" v-bind:value="page">
+          <div v-for="page in pages" v-bind:key="page">
             <button v-if="page === currentPage" v-on:click="getConsultantsByPageIndex(page)" class="bg-gray-400 hover:bg-gray-500 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ page + 1 }}</button>
             <button v-else v-on:click="getConsultantsByPageIndex(page)" class="bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ page + 1 }}</button>
           </div>
