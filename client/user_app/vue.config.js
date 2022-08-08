@@ -1,10 +1,16 @@
 function removeDataTestAttrs (node) {
   if (node.type === 1 /* NodeTypes.ELEMENT */) {
-    node.props = node.props.filter(prop =>
-      prop.type === 6 /* NodeTypes.ATTRIBUTE */
-        ? prop.name !== 'data-test'
-        : true
-    )
+    node.props = node.props.filter(prop => {
+      if (prop.type === 6 /* NodeTypes.ATTRIBUTE */) {
+        return prop.name !== 'data-test'
+      }
+      if (prop.type === 7 /* NodeTypes.DIRECTIVE */) {
+        if (prop.arg && prop.arg.content) {
+          return prop.arg.content !== 'data-test'
+        }
+      }
+      return true
+    })
   }
 }
 
