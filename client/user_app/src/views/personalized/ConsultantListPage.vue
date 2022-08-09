@@ -27,7 +27,7 @@
           </div>
         </div>
         <div data-test="consultants-area" class="flex flex-col justify-center my-5">
-          <div data-test="consultant" v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant.consultant_id" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
+          <div v-bind:data-test="'consultant-id-' + consultant.consultant_id" v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant.consultant_id" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
             <h3 class="font-bold text-xl">コンサルタントID: {{ consultant.consultant_id }}</h3>
             <p class="mt-3 text-xl">相談一回（１時間）の相談料：{{ consultant.fee_per_hour_in_yen }} 円</p>
             <div class="mt-3 text-xl">評価：<span v-if="consultant.rating"> {{ consultant.rating }}</span><span v-else>0</span>/5（評価件数：{{ consultant.num_of_rated }} 件）</div>
