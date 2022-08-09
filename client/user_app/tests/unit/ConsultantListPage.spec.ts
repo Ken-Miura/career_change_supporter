@@ -1311,19 +1311,6 @@ describe('ConsultantListPage.vue', () => {
               office: null
             } as ConsultantCareerDescription
           ]
-        } as ConsultantDescription,
-        {
-          consultant_id: 2,
-          fee_per_hour_in_yen: 5000,
-          rating: null,
-          num_of_rated: 0,
-          careers: [
-            {
-              company_name: 'テスト２株式会社',
-              profession: null,
-              office: null
-            } as ConsultantCareerDescription
-          ]
         } as ConsultantDescription
       ]
     } as ConsultantsSearchResult
@@ -1402,19 +1389,6 @@ describe('ConsultantListPage.vue', () => {
               office: null
             } as ConsultantCareerDescription
           ]
-        } as ConsultantDescription,
-        {
-          consultant_id: 3,
-          fee_per_hour_in_yen: 6000,
-          rating: null,
-          num_of_rated: 0,
-          careers: [
-            {
-              company_name: 'テスト３株式会社',
-              profession: null,
-              office: null
-            } as ConsultantCareerDescription
-          ]
         } as ConsultantDescription
       ]
     } as ConsultantsSearchResult
@@ -1456,5 +1430,98 @@ describe('ConsultantListPage.vue', () => {
     expect(toNextButton.exists()).toBe(true)
     const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
     expect(toLastButton.exists()).toBe(true)
+  })
+
+  it('has no next and last buttons and has first and prev buttons if user moves last page by next button', async () => {
+    getPageSizeMock.mockReset()
+    getPageSizeMock.mockReturnValue(1)
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    consultantSearchParamMock.size = getPageSize()
+    const result1 = {
+      total: 2,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 5000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp1 = PostConsultantsSearchResp.create(result1)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp1)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const result2 = {
+      total: 2,
+      consultants: [
+        {
+          consultant_id: 2,
+          fee_per_hour_in_yen: 4000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp2 = PostConsultantsSearchResp.create(result2)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp2)
+
+    const btns = wrapper.find('[data-test="page-move-buttons"]')
+    expect(btns.exists()).toBe(true)
+    const btn = btns.find('[data-test="to-next-button"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    await flushPromises()
+
+    const totalDiv = wrapper.find('[data-test="total"]')
+    expect(totalDiv.text()).toContain(`${result2.total} 件`)
+
+    const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+    expect(sortLabelDiv.text()).toContain('ソート：')
+    const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+    expect(sortValueDiv.text()).toContain('指定なし')
+
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(pageMoveButtons.exists()).toBe(true)
+
+    const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
+    expect(toFirstButton.exists()).toBe(true)
+    const toPrevButton = pageMoveButtons.find('[data-test="to-prev-button"]')
+    expect(toPrevButton.exists()).toBe(true)
+
+    const zeroButtonDiv = pageMoveButtons.find('[data-test="page-index-0"]')
+    expect(zeroButtonDiv.exists()).toBe(true)
+    expect(zeroButtonDiv.get('button').classes()).toContain('bg-gray-600')
+    const oneButtonDiv = pageMoveButtons.find('[data-test="page-index-1"]')
+    expect(oneButtonDiv.exists()).toBe(true)
+    expect(oneButtonDiv.get('button').classes()).toContain('bg-gray-400')
+
+    const toNextButton = pageMoveButtons.find('[data-test="to-next-button"]')
+    expect(toNextButton.exists()).toBe(false)
+    const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
+    expect(toLastButton.exists()).toBe(false)
   })
 })
