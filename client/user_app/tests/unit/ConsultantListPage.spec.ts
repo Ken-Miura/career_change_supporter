@@ -1983,4 +1983,77 @@ describe('ConsultantListPage.vue', () => {
     const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
     expect(toLastButton.exists()).toBe(true)
   })
+
+  it('has next, last and 3 index buttons case1', async () => {
+    getPageSizeMock.mockReset()
+    getPageSizeMock.mockReturnValue(1)
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    consultantSearchParamMock.size = getPageSize()
+    const result1 = {
+      total: 3,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 5000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp1 = PostConsultantsSearchResp.create(result1)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp1)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const totalDiv = wrapper.find('[data-test="total"]')
+    expect(totalDiv.text()).toContain(`${result1.total} 件`)
+
+    const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+    expect(sortLabelDiv.text()).toContain('ソート：')
+    const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+    expect(sortValueDiv.text()).toContain('指定なし')
+
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(pageMoveButtons.exists()).toBe(true)
+
+    const consultant = result1.consultants[0]
+    const consultantDiv = wrapper.find(`[data-test="consultant-id-${consultant.consultant_id}"]`)
+    expect(consultantDiv.exists()).toBe(true)
+    expect(consultantDiv.text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
+
+    const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
+    expect(toFirstButton.exists()).toBe(false)
+    const toPrevButton = pageMoveButtons.find('[data-test="to-prev-button"]')
+    expect(toPrevButton.exists()).toBe(false)
+
+    const zeroButtonDiv = pageMoveButtons.find('[data-test="page-index-0"]')
+    expect(zeroButtonDiv.exists()).toBe(true)
+    expect(zeroButtonDiv.get('button').classes()).toContain('bg-gray-400')
+    const oneButtonDiv = pageMoveButtons.find('[data-test="page-index-1"]')
+    expect(oneButtonDiv.exists()).toBe(true)
+    expect(oneButtonDiv.get('button').classes()).toContain('bg-gray-600')
+    const twoButtonDiv = pageMoveButtons.find('[data-test="page-index-2"]')
+    expect(twoButtonDiv.exists()).toBe(true)
+    expect(twoButtonDiv.get('button').classes()).toContain('bg-gray-600')
+
+    const toNextButton = pageMoveButtons.find('[data-test="to-next-button"]')
+    expect(toNextButton.exists()).toBe(true)
+    const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
+    expect(toLastButton.exists()).toBe(true)
+  })
 })
