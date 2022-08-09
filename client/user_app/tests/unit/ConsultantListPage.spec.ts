@@ -1289,7 +1289,7 @@ describe('ConsultantListPage.vue', () => {
     expect(pageMoveButtons.exists()).toBe(false)
   })
 
-  it('has next and last buttons and has no first and prev buttons if total num of consultants is page size or more and on first page', async () => {
+  it('has next and last buttons and has no first and prev buttons if total num of consultants is page size or more and on first page case 1', async () => {
     getPageSizeMock.mockReset()
     getPageSizeMock.mockReturnValue(1)
     if (!consultantSearchParamMock) {
@@ -1320,6 +1320,97 @@ describe('ConsultantListPage.vue', () => {
           careers: [
             {
               company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp = PostConsultantsSearchResp.create(result)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const totalDiv = wrapper.find('[data-test="total"]')
+    expect(totalDiv.text()).toContain(`${result.total} 件`)
+
+    const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+    expect(sortLabelDiv.text()).toContain('ソート：')
+    const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+    expect(sortValueDiv.text()).toContain('指定なし')
+
+    const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+    expect(pageMoveButtons.exists()).toBe(true)
+
+    const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
+    expect(toFirstButton.exists()).toBe(false)
+    const toPrevButton = pageMoveButtons.find('[data-test="to-prev-button"]')
+    expect(toPrevButton.exists()).toBe(false)
+
+    const zeroButtonDiv = pageMoveButtons.find('[data-test="page-index-0"]')
+    expect(zeroButtonDiv.exists()).toBe(true)
+    expect(zeroButtonDiv.get('button').classes()).toContain('bg-gray-400')
+    const oneButtonDiv = pageMoveButtons.find('[data-test="page-index-1"]')
+    expect(oneButtonDiv.exists()).toBe(true)
+    expect(oneButtonDiv.get('button').classes()).toContain('bg-gray-600')
+
+    const toNextButton = pageMoveButtons.find('[data-test="to-next-button"]')
+    expect(toNextButton.exists()).toBe(true)
+    const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
+    expect(toLastButton.exists()).toBe(true)
+  })
+
+  it('has next and last buttons and has no first and prev buttons if total num of consultants is page size or more and on first page case 2', async () => {
+    getPageSizeMock.mockReset()
+    getPageSizeMock.mockReturnValue(2)
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    consultantSearchParamMock.size = getPageSize()
+    const result = {
+      total: 3,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 5000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription,
+        {
+          consultant_id: 2,
+          fee_per_hour_in_yen: 5000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription,
+        {
+          consultant_id: 3,
+          fee_per_hour_in_yen: 6000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト３株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription
