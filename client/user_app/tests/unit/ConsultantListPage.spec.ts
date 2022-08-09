@@ -1520,6 +1520,11 @@ describe('ConsultantListPage.vue', () => {
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
 
+    const consultant = result2.consultants[0]
+    const consultantDiv = wrapper.find(`[data-test="consultant-id-${consultant.consultant_id}"]`)
+    expect(consultantDiv.exists()).toBe(true)
+    expect(consultantDiv.text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
+
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(pageMoveButtons.exists()).toBe(true)
 
@@ -1612,6 +1617,11 @@ describe('ConsultantListPage.vue', () => {
     expect(sortLabelDiv.text()).toContain('ソート：')
     const sortValueDiv = wrapper.find('[data-test="sort-value"]')
     expect(sortValueDiv.text()).toContain('指定なし')
+
+    const consultant = result2.consultants[0]
+    const consultantDiv = wrapper.find(`[data-test="consultant-id-${consultant.consultant_id}"]`)
+    expect(consultantDiv.exists()).toBe(true)
+    expect(consultantDiv.text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(pageMoveButtons.exists()).toBe(true)
@@ -1708,6 +1718,11 @@ describe('ConsultantListPage.vue', () => {
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(pageMoveButtons.exists()).toBe(true)
+
+    const consultant = result2.consultants[0]
+    const consultantDiv = wrapper.find(`[data-test="consultant-id-${consultant.consultant_id}"]`)
+    expect(consultantDiv.exists()).toBe(true)
+    expect(consultantDiv.text()).toContain(`コンサルタントID: ${consultant.consultant_id}`)
 
     const toFirstButton = pageMoveButtons.find('[data-test="to-first-button"]')
     expect(toFirstButton.exists()).toBe(true)
