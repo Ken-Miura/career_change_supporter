@@ -3524,4 +3524,167 @@ describe('ConsultantListPage.vue', () => {
       expect(consultant2Div.text()).toContain(`コンサルタントID: ${consultant2.consultant_id}`)
     }
   })
+
+  it('displays sort param case 3', async () => {
+    const result1 = {
+      total: 2,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
+          rating: 4.9,
+          num_of_rated: 10,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription,
+        {
+          consultant_id: 2,
+          fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
+          rating: 5.0,
+          num_of_rated: 10,
+          careers: [
+            {
+              company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp1 = PostConsultantsSearchResp.create(result1)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp1)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const mock1 = {
+      career_param: {
+        company_name: null,
+        department_name: null,
+        office: null,
+        years_of_service: null,
+        employed: null,
+        contract_type: null,
+        profession: null,
+        annual_income_in_man_yen: {
+          equal_or_more: null,
+          equal_or_less: null
+        } as AnnualInComeInManYenParam,
+        is_manager: null,
+        position_name: null,
+        is_new_graduate: null,
+        note: null
+      } as CareerParam,
+      fee_per_hour_in_yen_param: {
+        equal_or_more: null,
+        equal_or_less: null
+      } as FeePerHourInYenParam,
+      sort_param: null,
+      from: 0,
+      size: getPageSize()
+    } as ConsultantSearchParam
+    expect(postConsultantsSearchFuncMock).toHaveBeenCalledWith(mock1)
+    {
+      const totalDiv = wrapper.find('[data-test="total"]')
+      expect(totalDiv.text()).toContain(`${result1.total} 件`)
+
+      const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+      expect(sortLabelDiv.text()).toContain('ソート：')
+      const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+      const options = sortValueDiv.findAll('option')
+      expect(options[0].element.selected).toBe(true)
+
+      const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+      expect(pageMoveButtons.exists()).toBe(false)
+
+      const consultant1 = result1.consultants[0]
+      const consultant1Div = wrapper.find(`[data-test="consultant-id-${consultant1.consultant_id}"]`)
+      expect(consultant1Div.exists()).toBe(true)
+      expect(consultant1Div.text()).toContain(`コンサルタントID: ${consultant1.consultant_id}`)
+
+      const consultant2 = result1.consultants[1]
+      const consultant2Div = wrapper.find(`[data-test="consultant-id-${consultant2.consultant_id}"]`)
+      expect(consultant2Div.exists()).toBe(true)
+      expect(consultant2Div.text()).toContain(`コンサルタントID: ${consultant2.consultant_id}`)
+    }
+
+    const result2 = {
+      total: 2,
+      consultants: [
+        {
+          consultant_id: 2,
+          fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
+          rating: 5.0,
+          num_of_rated: 10,
+          careers: [
+            {
+              company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription,
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
+          rating: 4.9,
+          num_of_rated: 10,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp2 = PostConsultantsSearchResp.create(result2)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp2)
+
+    const sortSelect = wrapper.get('[data-test="sort-value"]')
+    await sortSelect.setValue('rating_desc')
+    await flushPromises()
+
+    const mock2 = mock1
+    mock2.sort_param = {
+      key: 'rating',
+      order: 'desc'
+    } as SortParam
+    expect(postConsultantsSearchFuncMock).toHaveBeenNthCalledWith(1, mock2)
+    {
+      const totalDiv = wrapper.find('[data-test="total"]')
+      expect(totalDiv.text()).toContain(`${result2.total} 件`)
+
+      const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+      expect(sortLabelDiv.text()).toContain('ソート：')
+      const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+      const options = sortValueDiv.findAll('option')
+      expect(options[3].element.selected).toBe(true)
+
+      const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+      expect(pageMoveButtons.exists()).toBe(false)
+
+      const consultant1 = result2.consultants[0]
+      const consultant1Div = wrapper.find(`[data-test="consultant-id-${consultant1.consultant_id}"]`)
+      expect(consultant1Div.exists()).toBe(true)
+      expect(consultant1Div.text()).toContain(`コンサルタントID: ${consultant1.consultant_id}`)
+
+      const consultant2 = result2.consultants[1]
+      const consultant2Div = wrapper.find(`[data-test="consultant-id-${consultant2.consultant_id}"]`)
+      expect(consultant2Div.exists()).toBe(true)
+      expect(consultant2Div.text()).toContain(`コンサルタントID: ${consultant2.consultant_id}`)
+    }
+  })
 })
