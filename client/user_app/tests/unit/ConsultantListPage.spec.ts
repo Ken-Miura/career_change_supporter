@@ -3173,4 +3173,141 @@ describe('ConsultantListPage.vue', () => {
     const toLastButton = pageMoveButtons.find('[data-test="to-last-button"]')
     expect(toLastButton.exists()).toBe(false)
   })
+
+  it('displays sort param case 1', async () => {
+    const result1 = {
+      total: 2,
+      consultants: [
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 6000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription,
+        {
+          consultant_id: 2,
+          fee_per_hour_in_yen: 5999,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp1 = PostConsultantsSearchResp.create(result1)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp1)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(postConsultantsSearchFuncMock).toHaveBeenNthCalledWith(1, consultantSearchParamMock)
+    {
+      const totalDiv = wrapper.find('[data-test="total"]')
+      expect(totalDiv.text()).toContain(`${result1.total} 件`)
+
+      const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+      expect(sortLabelDiv.text()).toContain('ソート：')
+      const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+      expect(sortValueDiv.text()).toContain('指定なし')
+
+      const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+      expect(pageMoveButtons.exists()).toBe(false)
+
+      const consultant1 = result1.consultants[0]
+      const consultant1Div = wrapper.find(`[data-test="consultant-id-${consultant1.consultant_id}"]`)
+      expect(consultant1Div.exists()).toBe(true)
+      expect(consultant1Div.text()).toContain(`コンサルタントID: ${consultant1.consultant_id}`)
+
+      const consultant2 = result1.consultants[1]
+      const consultant2Div = wrapper.find(`[data-test="consultant-id-${consultant2.consultant_id}"]`)
+      expect(consultant2Div.exists()).toBe(true)
+      expect(consultant2Div.text()).toContain(`コンサルタントID: ${consultant2.consultant_id}`)
+    }
+
+    const result2 = {
+      total: 2,
+      consultants: [
+        {
+          consultant_id: 2,
+          fee_per_hour_in_yen: 5999,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト２株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription,
+        {
+          consultant_id: 1,
+          fee_per_hour_in_yen: 6000,
+          rating: null,
+          num_of_rated: 0,
+          careers: [
+            {
+              company_name: 'テスト１株式会社',
+              profession: null,
+              office: null
+            } as ConsultantCareerDescription
+          ]
+        } as ConsultantDescription
+      ]
+    } as ConsultantsSearchResult
+    const resp2 = PostConsultantsSearchResp.create(result2)
+    postConsultantsSearchFuncMock.mockResolvedValue(resp2)
+
+    const sortSelect = wrapper.get('[data-test="sort-value"]')
+    await sortSelect.setValue('fee_asc')
+    await flushPromises()
+
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    consultantSearchParamMock.sort_param = {
+      key: 'fee_per_hour_in_yen',
+      order: 'asc'
+    } as SortParam
+    expect(postConsultantsSearchFuncMock).toHaveBeenNthCalledWith(2, consultantSearchParamMock)
+    {
+      const totalDiv = wrapper.find('[data-test="total"]')
+      expect(totalDiv.text()).toContain(`${result2.total} 件`)
+
+      const sortLabelDiv = wrapper.find('[data-test="sort-label"]')
+      expect(sortLabelDiv.text()).toContain('ソート：')
+      const sortValueDiv = wrapper.find('[data-test="sort-value"]')
+      expect(sortValueDiv.text()).toContain('相談料が安い順')
+
+      const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
+      expect(pageMoveButtons.exists()).toBe(false)
+
+      const consultant1 = result2.consultants[0]
+      const consultant1Div = wrapper.find(`[data-test="consultant-id-${consultant1.consultant_id}"]`)
+      expect(consultant1Div.exists()).toBe(true)
+      expect(consultant1Div.text()).toContain(`コンサルタントID: ${consultant1.consultant_id}`)
+
+      const consultant2 = result2.consultants[1]
+      const consultant2Div = wrapper.find(`[data-test="consultant-id-${consultant2.consultant_id}"]`)
+      expect(consultant2Div.exists()).toBe(true)
+      expect(consultant2Div.text()).toContain(`コンサルタントID: ${consultant2.consultant_id}`)
+    }
+  })
 })
