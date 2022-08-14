@@ -3242,7 +3242,33 @@ describe('ConsultantListPage.vue', () => {
     })
     await flushPromises()
 
-    expect(postConsultantsSearchFuncMock).toHaveBeenNthCalledWith(1, consultantSearchParamMock)
+    const mock1 = {
+      career_param: {
+        company_name: null,
+        department_name: null,
+        office: null,
+        years_of_service: null,
+        employed: null,
+        contract_type: null,
+        profession: null,
+        annual_income_in_man_yen: {
+          equal_or_more: null,
+          equal_or_less: null
+        } as AnnualInComeInManYenParam,
+        is_manager: null,
+        position_name: null,
+        is_new_graduate: null,
+        note: null
+      } as CareerParam,
+      fee_per_hour_in_yen_param: {
+        equal_or_more: null,
+        equal_or_less: null
+      } as FeePerHourInYenParam,
+      sort_param: null,
+      from: 0,
+      size: getPageSize()
+    } as ConsultantSearchParam
+    expect(postConsultantsSearchFuncMock).toHaveBeenCalledWith(mock1)
     {
       const totalDiv = wrapper.find('[data-test="total"]')
       expect(totalDiv.text()).toContain(`${result1.total} 件`)
@@ -3305,14 +3331,12 @@ describe('ConsultantListPage.vue', () => {
     await sortSelect.setValue('fee_asc')
     await flushPromises()
 
-    if (!consultantSearchParamMock) {
-      throw new Error('!consultantSearchParamMock')
-    }
-    consultantSearchParamMock.sort_param = {
+    const mock2 = mock1
+    mock2.sort_param = {
       key: 'fee_per_hour_in_yen',
       order: 'asc'
     } as SortParam
-    expect(postConsultantsSearchFuncMock).toHaveBeenNthCalledWith(2, consultantSearchParamMock)
+    expect(postConsultantsSearchFuncMock).toHaveBeenNthCalledWith(1, mock2)
     {
       const totalDiv = wrapper.find('[data-test="total"]')
       expect(totalDiv.text()).toContain(`${result2.total} 件`)
