@@ -31,6 +31,7 @@
     "@vue/vue3-jest": "^27.0.0-alpha.1",
     "autoprefixer": "^10.4.2",
     "babel-jest": "^27.0.6",
+    "caniuse-lite": "^1.0.30001375",
     "cypress": "^8.3.0",
     "eslint": "^7.32.0",
     "eslint-plugin-import": "^2.25.3",
