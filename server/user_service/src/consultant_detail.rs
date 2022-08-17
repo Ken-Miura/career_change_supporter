@@ -1,15 +1,16 @@
 // Copyright 2022 Ken Miura
 
 use async_session::serde_json::Value;
-use axum::async_trait;
+use axum::http::StatusCode;
+use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
-use common::{ErrResp, RespResult};
+use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::unexpected_err_resp;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 
 pub(crate) async fn get_consultant_detail(
@@ -93,7 +94,28 @@ async fn handle_consultant_detail(
     op: impl ConsultantDetailOperation,
 ) -> RespResult<ConsultantDetail> {
     if !consultant_id.is_positive() {
-        todo!()
+        error!(
+            "consultant_id is not positive (consultant id: {})",
+            consultant_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonPositiveConsultantId as u32,
+            }),
+        ));
     }
+    let identity_exists = op.check_if_identity_exists(account_id).await?;
+    if !identity_exists {
+        error!("identity is not registered (account id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    // UserAccountの存在のチェック
+    // Detail取得
     todo!()
 }
