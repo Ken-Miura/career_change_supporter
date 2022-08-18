@@ -102,6 +102,7 @@ pub(crate) enum Code {
     InvalidConsultantSearchParamFrom = 20090,
     InvalidConsultantSearchParamSize = 20091,
     NonPositiveConsultantId = 20092,
+    ConsultantDoesNotExist = 20093,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

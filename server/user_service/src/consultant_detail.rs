@@ -91,7 +91,7 @@ impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find user_account (consultant_id): {}): {}",
+                    "failed to find user_account (user_account_id): {}): {}",
                     consultant_id, e
                 );
                 unexpected_err_resp()
@@ -110,10 +110,7 @@ async fn handle_consultant_detail(
     op: impl ConsultantDetailOperation,
 ) -> RespResult<ConsultantDetail> {
     if !consultant_id.is_positive() {
-        error!(
-            "consultant_id is not positive (consultant id: {})",
-            consultant_id
-        );
+        error!("consultant_id ({}) is not positive", consultant_id);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -123,7 +120,7 @@ async fn handle_consultant_detail(
     }
     let identity_exists = op.check_if_identity_exists(account_id).await?;
     if !identity_exists {
-        error!("identity is not registered (account id: {})", account_id);
+        error!("identity is not registered (account_id: {})", account_id);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -131,7 +128,19 @@ async fn handle_consultant_detail(
             }),
         ));
     }
-    // consultant_idのUserAccountの存在のチェック
+    let consultant_exists = op.check_if_consultant_exists(consultant_id).await?;
+    if !consultant_exists {
+        error!(
+            "consultant does not exist (consultant_id: {})",
+            consultant_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantDoesNotExist as u32,
+            }),
+        ));
+    }
     // Detail取得
     todo!()
 }
