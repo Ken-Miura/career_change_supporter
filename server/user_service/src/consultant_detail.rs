@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
 use common::{ApiError, ErrResp, RespResult};
+use entity::prelude::UserAccount;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
@@ -40,7 +41,6 @@ pub(crate) struct ConsultantDetail {
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultantCareerDetail {
-    pub career_id: i64,
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,
@@ -59,6 +59,8 @@ pub(crate) struct ConsultantCareerDetail {
 trait ConsultantDetailOperation {
     /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+    /// コンサルタントのUserAccountが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
+    async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn search_consultant(&self, index_name: &str, query: &Value) -> Result<Value, ErrResp>;
 }
 
@@ -77,6 +79,20 @@ impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
                 error!(
                     "failed to find identity (user_account_id: {}): {}",
                     account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.is_some())
+    }
+
+    async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
+        let model = UserAccount::find_by_id(consultant_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find user_account (consultant_id): {}): {}",
+                    consultant_id, e
                 );
                 unexpected_err_resp()
             })?;
@@ -115,7 +131,7 @@ async fn handle_consultant_detail(
             }),
         ));
     }
-    // UserAccountの存在のチェック
+    // consultant_idのUserAccountの存在のチェック
     // Detail取得
     todo!()
 }
