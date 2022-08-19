@@ -1,6 +1,5 @@
 export type ConsultantCareerDescription = {
   /* eslint-disable camelcase */
-  consultant_career_id: number,
   company_name: string,
   profession: string | null,
   office: string | null,
