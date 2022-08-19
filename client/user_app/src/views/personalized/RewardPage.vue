@@ -38,7 +38,7 @@
           <div v-if="latestTwoTransfers.length === 0" data-test="no-latest-two-transfers-set" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
           <div v-else data-test="latest-two-transfers-set">
             <ul>
-              <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="createUniqueKeyOfTransfer(transfer)">
+              <li v-for="(transfer, index) in latestTwoTransfers" v-bind:key="transfer.transfer_id">
                 <div class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">入金情報{{ index + 1 }}</div>
                   <div v-if="transfer.status === 'pending'">
@@ -165,18 +165,6 @@ export default defineComponent({
       // vuexにidentityがあるかどうかはチェックしない
       await router.push('/bank-account')
     }
-    const createUniqueKeyOfTransfer = (transfer: Transfer): string => {
-      const status = transfer.status as string
-      const amount = transfer.amount.toString()
-      // メンバー内に : を含むものがないため、区切り文字として使用して問題なし
-      const scheduledDateInJst = [transfer.scheduled_date_in_jst.year.toString(), transfer.scheduled_date_in_jst.month.toString(), transfer.scheduled_date_in_jst.day.toString()].join(':')
-      const transferAmount = transfer.transfer_amount === null ? 'null' : transfer.transfer_amount.toString()
-      // メンバー内に : を含むものがないため、区切り文字として使用して問題なし
-      const transferDateInJst = transfer.transfer_date_in_jst === null ? 'null' : [transfer.transfer_date_in_jst.year.toString(), transfer.transfer_date_in_jst.month.toString(), transfer.transfer_date_in_jst.day.toString()].join(':')
-      const carriedBalance = transfer.carried_balance === null ? 'null' : transfer.carried_balance.toString()
-      // メンバー内に , を含むものがないため、区切り文字として使用して問題なし
-      return [status, amount, scheduledDateInJst, transferAmount, transferDateInJst, carriedBalance].join(',')
-    }
     return {
       getRewardsDone,
       bankAccount,
@@ -185,8 +173,7 @@ export default defineComponent({
       TRANSFER_FEE_IN_YEN,
       errorExists,
       errorMessage,
-      moveToBankAccountPage,
-      createUniqueKeyOfTransfer
+      moveToBankAccountPage
     }
   }
 })

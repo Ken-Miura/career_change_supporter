@@ -924,6 +924,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト株式会社',
               profession: 'ITエンジニア',
               office: '東北事業所'
@@ -988,6 +989,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 325,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト株式会社',
               profession: 'ITエンジニア',
               office: '東北事業所'
@@ -1052,41 +1054,49 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 325,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: 'ITエンジニア',
               office: '東北事業所'
             } as ConsultantCareerDescription,
             {
+              consultant_career_id: 1,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription,
             {
+              consultant_career_id: 2,
               company_name: 'テスト３株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription,
             {
+              consultant_career_id: 3,
               company_name: 'テスト４株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription,
             {
+              consultant_career_id: 4,
               company_name: 'テスト５株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription,
             {
+              consultant_career_id: 5,
               company_name: 'テスト６株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription,
             {
+              consultant_career_id: 6,
               company_name: 'テスト７株式会社',
               profession: null,
               office: null
             } as ConsultantCareerDescription,
             {
+              consultant_career_id: 7,
               company_name: 'テスト８株式会社',
               profession: null,
               office: null
@@ -1159,6 +1169,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 325,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: 'ITエンジニア',
               office: '東北事業所'
@@ -1172,6 +1183,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: 'インフラエンジニア',
               office: '九州事業所'
@@ -1259,6 +1271,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 325,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト株式会社',
               profession: 'ITエンジニア',
               office: '東北事業所'
@@ -1328,6 +1341,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -1394,6 +1408,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -1407,6 +1422,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 1,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -1473,6 +1489,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -1502,6 +1519,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -1572,6 +1590,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -1601,6 +1620,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -1671,6 +1691,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -1770,6 +1791,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -1799,6 +1821,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -1878,6 +1901,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -1907,6 +1931,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -1935,6 +1960,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト３株式会社',
               profession: null,
               office: null
@@ -2014,6 +2040,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2088,6 +2115,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2162,6 +2190,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2191,6 +2220,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -2264,6 +2294,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2293,6 +2324,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -2366,6 +2398,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2395,6 +2428,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -2423,6 +2457,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト３株式会社',
               profession: null,
               office: null
@@ -2496,6 +2531,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2525,6 +2561,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -2553,6 +2590,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト３株式会社',
               profession: null,
               office: null
@@ -2626,6 +2664,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2655,6 +2694,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -2728,6 +2768,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2757,6 +2798,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -2830,6 +2872,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2859,6 +2902,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -2935,6 +2979,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -2964,6 +3009,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -3040,6 +3086,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -3114,6 +3161,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -3143,6 +3191,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -3223,6 +3272,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -3316,6 +3366,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -3386,6 +3437,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -3479,6 +3531,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 0,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -3549,6 +3602,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 10,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null
@@ -3642,6 +3696,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 10,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -3712,6 +3767,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 10,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト１株式会社',
               profession: null,
               office: null
@@ -3805,6 +3861,7 @@ describe('ConsultantListPage.vue', () => {
           num_of_rated: 10,
           careers: [
             {
+              consultant_career_id: 0,
               company_name: 'テスト２株式会社',
               profession: null,
               office: null

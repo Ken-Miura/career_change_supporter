@@ -10,6 +10,7 @@ import TheHeader from '@/components/TheHeader.vue'
 import RewardPage from '@/views/personalized/RewardPage.vue'
 import { BankAccount } from '@/util/personalized/BankAccount'
 import { TRANSFER_FEE_IN_YEN } from '@/util/personalized/reward/TransferFee'
+import { Rewards } from '@/util/personalized/reward/Rewards'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -333,6 +334,7 @@ describe('RewardPage.vue', () => {
     const rewardsOfTheMonth = 2100
     const transfer1 = {
       /* eslint-disable camelcase */
+      transfer_id: 0,
       status: 'paid' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 4000,
       scheduled_date_in_jst: {
@@ -351,6 +353,7 @@ describe('RewardPage.vue', () => {
     }
     const transfer2 = {
       /* eslint-disable camelcase */
+      transfer_id: 1,
       status: 'pending' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 2100,
       scheduled_date_in_jst: {
@@ -369,7 +372,7 @@ describe('RewardPage.vue', () => {
       rewards_of_the_month: rewardsOfTheMonth,
       latest_two_transfers: [transfer1, transfer2]
     /* eslint-enable camelcase */
-    }
+    } as Rewards
     const resp = GetRewardsResp.create(reward)
     getRewardsFuncMock.mockResolvedValue(resp)
     getRewardsDoneMock.value = true
@@ -417,6 +420,7 @@ describe('RewardPage.vue', () => {
 
     const transfer2 = {
       /* eslint-disable camelcase */
+      transfer_id: 1,
       status: 'carried_over' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 980,
       scheduled_date_in_jst: {
@@ -431,6 +435,7 @@ describe('RewardPage.vue', () => {
     }
     const transfer1 = {
       /* eslint-disable camelcase */
+      transfer_id: 0,
       status: 'pending' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 7000,
       scheduled_date_in_jst: {
@@ -450,7 +455,7 @@ describe('RewardPage.vue', () => {
       rewards_of_the_month: rewardsOfTheMonth,
       latest_two_transfers: [transfer1, transfer2]
     /* eslint-enable camelcase */
-    }
+    } as Rewards
     const resp = GetRewardsResp.create(reward)
     getRewardsFuncMock.mockResolvedValue(resp)
     getRewardsDoneMock.value = true
@@ -495,6 +500,7 @@ describe('RewardPage.vue', () => {
 
     const transfer1 = {
       /* eslint-disable camelcase */
+      transfer_id: 0,
       status: 'recombination' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 4000,
       scheduled_date_in_jst: {
@@ -509,6 +515,7 @@ describe('RewardPage.vue', () => {
     }
     const transfer2 = {
       /* eslint-disable camelcase */
+      transfer_id: 1,
       status: 'failed' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 3000,
       scheduled_date_in_jst: {
@@ -527,7 +534,7 @@ describe('RewardPage.vue', () => {
       rewards_of_the_month: rewardsOfTheMonth,
       latest_two_transfers: [transfer1, transfer2]
     /* eslint-enable camelcase */
-    }
+    } as Rewards
     const resp = GetRewardsResp.create(reward)
     getRewardsFuncMock.mockResolvedValue(resp)
     getRewardsDoneMock.value = true
@@ -569,6 +576,7 @@ describe('RewardPage.vue', () => {
 
     const transfer1 = {
       /* eslint-disable camelcase */
+      transfer_id: 0,
       status: 'failed' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 4000,
       scheduled_date_in_jst: {
@@ -583,6 +591,7 @@ describe('RewardPage.vue', () => {
     }
     const transfer2 = {
       /* eslint-disable camelcase */
+      transfer_id: 1,
       status: 'stop' as 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
       amount: 1980,
       scheduled_date_in_jst: {
@@ -601,7 +610,7 @@ describe('RewardPage.vue', () => {
       rewards_of_the_month: rewardsOfTheMonth,
       latest_two_transfers: [transfer1, transfer2]
     /* eslint-enable camelcase */
-    }
+    } as Rewards
     const resp = GetRewardsResp.create(reward)
     getRewardsFuncMock.mockResolvedValue(resp)
     getRewardsDoneMock.value = true

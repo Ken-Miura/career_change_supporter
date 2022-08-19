@@ -1,8 +1,7 @@
-import { Ymd } from '../../Ymd'
+import { Ymd } from '../../../Ymd'
 
 export type Transfer = {
     /* eslint-disable camelcase */
-    transfer_id: number,
     status: 'pending' | 'paid' | 'failed' | 'stop' | 'carried_over' | 'recombination',
     amount: number,
     scheduled_date_in_jst: Ymd,
