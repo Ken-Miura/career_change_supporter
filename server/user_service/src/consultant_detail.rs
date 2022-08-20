@@ -1,15 +1,16 @@
 // Copyright 2022 Ken Miura
 
-use async_session::serde_json::Value;
+use async_session::serde_json::{json, Value};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
-use common::{ApiError, ErrResp, RespResult};
+use common::opensearch::{search_documents, INDEX_NAME};
+use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use entity::prelude::UserAccount;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
@@ -100,7 +101,8 @@ impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
     }
 
     async fn search_consultant(&self, index_name: &str, query: &Value) -> Result<Value, ErrResp> {
-        todo!()
+        let result = search_documents(index_name, 0, 1, None, query, &self.index_client).await?;
+        Ok(result)
     }
 }
 
@@ -141,6 +143,179 @@ async fn handle_consultant_detail(
             }),
         ));
     }
-    // Detail取得
+    info!(
+        "query param (account_id (for consultant): {}, account_id: {})",
+        consultant_id, account_id
+    );
+    let query = create_query_json(consultant_id, account_id);
+    let result = op.search_consultant(INDEX_NAME, &query).await?;
+    parse_query_result(result)
+}
+
+fn create_query_json(account_id_for_consultant: i64, account_id: i64) -> Value {
+    json!({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "term": {
+                            "user_account_id": account_id_for_consultant
+                        }
+                    }
+                ],
+                "filter": [
+                    {
+                        "range": {
+                            "num_of_careers": {
+                                "gt": 0
+                            }
+                        }
+                    },
+                    {
+                        "exists": {
+                            "field": "fee_per_hour_in_yen"
+                        }
+                    },
+                    {
+                        "term": {
+                            "is_bank_account_registered": true
+                        }
+                    }
+                ],
+                "must_not": [
+                    {
+                        "term": {
+                            "user_account_id": account_id
+                        }
+                    }
+                ]
+            }
+        }
+    })
+}
+
+fn parse_query_result(query_result: Value) -> RespResult<ConsultantDetail> {
+    let took = query_result["took"].as_i64().ok_or_else(|| {
+        error!("failed to get processing time: {}", query_result);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    info!("opensearch took {} milliseconds", took);
+
+    let total = query_result["hits"]["total"]["value"]
+        .as_i64()
+        .ok_or_else(|| {
+            error!("failed to get total value: {}", query_result);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: Code::UnexpectedErr as u32,
+                }),
+            )
+        })?;
+    // コンサルタントをIDで指定してる検索しているので1より大きなヒット数はありえない。0または1のみがありえる
+    if total > 1 {
+        error!("found multiple consultants (total: {})", total);
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        ));
+    }
+
+    let hits = query_result["hits"]["hits"].as_array().ok_or_else(|| {
+        error!("failed to get hits: {}", query_result);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let hit_num = hits.len();
+    if hit_num != 1 {
+        error!("no consultant found (hit_num: {})", hit_num);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantDoesNotExist as u32,
+            }),
+        ));
+    }
+    let consultant_detail = create_consultant_detail(&hits[0])?;
+    // NOTE: 将来的にパフォーマンスに影響する場合、ログに出力する内容を制限する
+    info!("consultant_detail: {:?}", consultant_detail);
+    Ok((StatusCode::OK, Json(consultant_detail)))
+}
+
+fn create_consultant_detail(hit: &Value) -> Result<ConsultantDetail, ErrResp> {
+    let account_id = hit["_source"]["user_account_id"].as_i64().ok_or_else(|| {
+        error!("failed to find account id in _source: {:?}", hit);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let fee_per_hour_in_yen = hit["_source"]["fee_per_hour_in_yen"]
+        .as_i64()
+        .ok_or_else(|| {
+            error!(
+                "failed to find fee_per_hour_in_yen id in _source: {:?}",
+                hit
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: Code::UnexpectedErr as u32,
+                }),
+            )
+        })?;
+    let rating = hit["_source"]["rating"].as_f64();
+    let num_of_rated = hit["_source"]["num_of_rated"].as_i64().unwrap_or(0);
+    // 検索条件で num_of_careers > 0 を指定しているので、careersがないケースはエラーとして扱う
+    let careers = hit["_source"]["careers"].as_array().ok_or_else(|| {
+        error!("failed to find careers id in _source: {:?}", hit);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let mut consultant_career_details =
+        Vec::with_capacity(MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize);
+    for career in careers {
+        let consultant_career_detail = create_consultant_career_detail(career)?;
+        consultant_career_details.push(consultant_career_detail);
+    }
+    Ok(ConsultantDetail {
+        consultant_id: account_id,
+        fee_per_hour_in_yen: fee_per_hour_in_yen as i32,
+        rating,
+        num_of_rated: num_of_rated as i32,
+        careers: consultant_career_details,
+    })
+}
+
+fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDetail, ErrResp> {
+    let company_name = career["company_name"].as_str().ok_or_else(|| {
+        error!("failed to find company_name id in career: {:?}", career);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let profession = career["profession"].as_str();
+    let office = career["office"].as_str();
+
     todo!()
 }
