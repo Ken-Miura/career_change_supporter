@@ -306,7 +306,36 @@ fn create_consultant_detail(hit: &Value) -> Result<ConsultantDetail, ErrResp> {
 
 fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDetail, ErrResp> {
     let company_name = career["company_name"].as_str().ok_or_else(|| {
-        error!("failed to find company_name id in career: {:?}", career);
+        error!("failed to find company_name in career: {:?}", career);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let department_name = career["department_name"].as_str();
+    let office = career["office"].as_str();
+    let years_of_service = career["years_of_service"].as_str().ok_or_else(|| {
+        error!("failed to find years_of_service in career: {:?}", career);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let employed = career["employed"].as_bool().ok_or_else(|| {
+        error!("failed to find employed in career: {:?}", career);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let contract_type = career["contract_type"].as_str().ok_or_else(|| {
+        error!("failed to find contract_type in career: {:?}", career);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiError {
@@ -315,7 +344,39 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
         )
     })?;
     let profession = career["profession"].as_str();
-    let office = career["office"].as_str();
-
-    todo!()
+    let annual_income_in_man_yen = career["annual_income_in_man_yen"].as_i64();
+    let is_manager = career["is_manager"].as_bool().ok_or_else(|| {
+        error!("failed to find is_manager in career: {:?}", career);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let position_name = career["position_name"].as_str();
+    let is_new_graduate = career["is_new_graduate"].as_bool().ok_or_else(|| {
+        error!("failed to find is_new_graduate in career: {:?}", career);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        )
+    })?;
+    let note = career["note"].as_str();
+    Ok(ConsultantCareerDetail {
+        company_name: company_name.to_string(),
+        department_name: department_name.map(|s| s.to_string()),
+        office: office.map(|s| s.to_string()),
+        years_of_service: years_of_service.to_string(),
+        employed,
+        contract_type: contract_type.to_string(),
+        profession: profession.map(|s| s.to_string()),
+        annual_income_in_man_yen: annual_income_in_man_yen.map(|i| i as i32),
+        is_manager,
+        position_name: position_name.map(|s| s.to_string()),
+        is_new_graduate,
+        note: note.map(|s| s.to_string()),
+    })
 }

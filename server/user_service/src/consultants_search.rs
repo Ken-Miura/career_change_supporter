@@ -932,7 +932,7 @@ fn create_consultant_career_description(
     career: &Value,
 ) -> Result<ConsultantCareerDescription, ErrResp> {
     let company_name = career["company_name"].as_str().ok_or_else(|| {
-        error!("failed to find company_name id in career: {:?}", career);
+        error!("failed to find company_name in career: {:?}", career);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiError {
