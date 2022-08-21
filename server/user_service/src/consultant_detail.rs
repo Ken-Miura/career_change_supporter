@@ -380,3 +380,6 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
         note: note.map(|s| s.to_string()),
     })
 }
+
+#[cfg(test)]
+mod tests {}
