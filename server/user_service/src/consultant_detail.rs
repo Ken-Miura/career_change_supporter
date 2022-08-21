@@ -45,7 +45,7 @@ pub(crate) struct ConsultantCareerDetail {
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,
-    pub years_of_service: String,
+    pub years_of_service: i64,
     pub employed: bool,
     pub contract_type: String,
     pub profession: Option<String>,
@@ -316,7 +316,7 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
     })?;
     let department_name = career["department_name"].as_str();
     let office = career["office"].as_str();
-    let years_of_service = career["years_of_service"].as_str().ok_or_else(|| {
+    let years_of_service = career["years_of_service"].as_i64().ok_or_else(|| {
         error!("failed to find years_of_service in career: {:?}", career);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -369,7 +369,7 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
         company_name: company_name.to_string(),
         department_name: department_name.map(|s| s.to_string()),
         office: office.map(|s| s.to_string()),
-        years_of_service: years_of_service.to_string(),
+        years_of_service,
         employed,
         contract_type: contract_type.to_string(),
         profession: profession.map(|s| s.to_string()),
