@@ -382,4 +382,114 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use async_session::serde_json::Value;
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use common::{ApiError, ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::err::Code;
+
+    use super::{handle_consultant_detail, ConsultantDetail, ConsultantDetailOperation};
+
+    #[derive(Clone, Debug)]
+    struct ConsultantDetailOperationMock {}
+
+    #[async_trait]
+    impl ConsultantDetailOperation for ConsultantDetailOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn search_consultant(
+            &self,
+            index_name: &str,
+            query: &Value,
+        ) -> Result<Value, ErrResp> {
+            todo!()
+        }
+    }
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<ConsultantDetail>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        consultant_id: i64,
+        op: ConsultantDetailOperationMock,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![TestCase {
+            name: "consultant id is not positive".to_string(),
+            input: Input {
+                account_id: 1,
+                consultant_id: 0,
+                op: ConsultantDetailOperationMock {},
+            },
+            expected: Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NonPositiveConsultantId as u32,
+                }),
+            )),
+        }]
+    });
+
+    #[tokio::test]
+    async fn test_handle_consultants_search() {
+        for test_case in TEST_CASE_SET.iter() {
+            let resp = handle_consultant_detail(
+                test_case.input.account_id,
+                test_case.input.consultant_id,
+                test_case.input.op.clone(),
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let result = resp.expect("failed to get Ok");
+                let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(
+                    expected_result.1.consultant_id, result.1.consultant_id,
+                    "{}",
+                    message
+                );
+                assert_eq!(
+                    expected_result.1.fee_per_hour_in_yen, result.1.fee_per_hour_in_yen,
+                    "{}",
+                    message
+                );
+                if let Some(expected_rating) = expected_result.1.rating {
+                    let result_rating = result.1.rating.unwrap();
+                    let diff = (expected_rating - result_rating).abs();
+                    assert!(diff < f64::EPSILON, "{}", message);
+                } else {
+                    assert_eq!(None, result.1.rating, "{}", message);
+                }
+                assert_eq!(
+                    expected_result.1.num_of_rated, result.1.num_of_rated,
+                    "{}",
+                    message
+                );
+                assert_eq!(expected_result.1.careers, result.1.careers, "{}", message);
+            } else {
+                let result = resp.expect_err("failed to get Err");
+                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            }
+        }
+    }
+}
