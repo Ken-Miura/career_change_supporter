@@ -477,7 +477,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "consultant id is not positive".to_string(),
+                name: "no identity found".to_string(),
                 input: Input {
                     account_id: 1,
                     consultant_id: 2,
@@ -508,6 +508,41 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::NoIdentityRegistered as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "no counsultant found".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 2,
+                    op: ConsultantDetailOperationMock {
+                        account_id: 1,
+                        consultant_id: 3,
+                        query_result: json!({
+                          "took" : 6,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 0,
+                              "relation" : "eq"
+                            },
+                            "max_score" : null,
+                            "hits" : [ ]
+                          }
+                        }),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultantDoesNotExist as u32,
                     }),
                 )),
             },
