@@ -383,7 +383,7 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
 
 #[cfg(test)]
 mod tests {
-    use async_session::serde_json::Value;
+    use async_session::serde_json::{json, Value};
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use common::{ApiError, ErrResp, RespResult};
@@ -394,24 +394,34 @@ mod tests {
     use super::{handle_consultant_detail, ConsultantDetail, ConsultantDetailOperation};
 
     #[derive(Clone, Debug)]
-    struct ConsultantDetailOperationMock {}
+    struct ConsultantDetailOperationMock {
+        account_id: i64,
+        consultant_id: i64,
+        query_result: Value,
+    }
 
     #[async_trait]
     impl ConsultantDetailOperation for ConsultantDetailOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            };
+            Ok(true)
         }
 
         async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.consultant_id != consultant_id {
+                return Ok(false);
+            };
+            Ok(true)
         }
 
         async fn search_consultant(
             &self,
-            index_name: &str,
-            query: &Value,
+            _index_name: &str,
+            _query: &Value,
         ) -> Result<Value, ErrResp> {
-            todo!()
+            Ok(self.query_result.clone())
         }
     }
 
@@ -435,7 +445,28 @@ mod tests {
             input: Input {
                 account_id: 1,
                 consultant_id: 0,
-                op: ConsultantDetailOperationMock {},
+                op: ConsultantDetailOperationMock {
+                    account_id: 1,
+                    consultant_id: 1,
+                    query_result: json!({
+                      "took" : 6,
+                      "timed_out" : false,
+                      "_shards" : {
+                        "total" : 1,
+                        "successful" : 1,
+                        "skipped" : 0,
+                        "failed" : 0
+                      },
+                      "hits" : {
+                        "total" : {
+                          "value" : 0,
+                          "relation" : "eq"
+                        },
+                        "max_score" : null,
+                        "hits" : [ ]
+                      }
+                    }),
+                },
             },
             expected: Err((
                 StatusCode::BAD_REQUEST,
