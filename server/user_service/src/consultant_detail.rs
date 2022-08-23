@@ -512,13 +512,78 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "no counsultant found".to_string(),
+                name: "no counsultant found 1".to_string(),
+                input: Input {
+                    account_id: 3,
+                    consultant_id: 4,
+                    op: ConsultantDetailOperationMock {
+                        account_id: 3,
+                        consultant_id: 5,
+                        query_result: json!({
+                          "took" : 5,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 1,
+                              "relation" : "eq"
+                            },
+                            "max_score" : 1.0,
+                            "hits" : [
+                              {
+                                "_index" : "users",
+                                "_id" : "3",
+                                "_score" : 1.0,
+                                "_source" : {
+                                  "careers" : [
+                                    {
+                                      "annual_income_in_man_yen" : null,
+                                      "career_id" : 2,
+                                      "company_name" : "テスト５（株）",
+                                      "contract_type" : "regular",
+                                      "department_name" : null,
+                                      "employed" : true,
+                                      "is_manager" : false,
+                                      "is_new_graduate" : false,
+                                      "note" : null,
+                                      "office" : null,
+                                      "position_name" : null,
+                                      "profession" : null,
+                                      "years_of_service" : 4
+                                    }
+                                  ],
+                                  "fee_per_hour_in_yen" : 3000,
+                                  "is_bank_account_registered" : true,
+                                  "num_of_careers" : 1,
+                                  "rating" : null,
+                                  "user_account_id" : 3
+                                }
+                              }
+                            ]
+                          }
+                        }),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultantDoesNotExist as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "no counsultant found 2".to_string(),
                 input: Input {
                     account_id: 1,
                     consultant_id: 2,
                     op: ConsultantDetailOperationMock {
                         account_id: 1,
-                        consultant_id: 3,
+                        consultant_id: 2,
                         query_result: json!({
                           "took" : 6,
                           "timed_out" : false,
