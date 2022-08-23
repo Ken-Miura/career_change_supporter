@@ -391,7 +391,10 @@ mod tests {
 
     use crate::err::Code;
 
-    use super::{handle_consultant_detail, ConsultantDetail, ConsultantDetailOperation};
+    use super::{
+        handle_consultant_detail, ConsultantCareerDetail, ConsultantDetail,
+        ConsultantDetailOperation,
+    };
 
     #[derive(Clone, Debug)]
     struct ConsultantDetailOperationMock {
@@ -608,6 +611,89 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::ConsultantDoesNotExist as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "succeed in getting consultant 1".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 3,
+                    op: ConsultantDetailOperationMock {
+                        account_id: 1,
+                        consultant_id: 3,
+                        query_result: json!({
+                          "took" : 5,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 1,
+                              "relation" : "eq"
+                            },
+                            "max_score" : 1.0,
+                            "hits" : [
+                              {
+                                "_index" : "users",
+                                "_id" : "3",
+                                "_score" : 1.0,
+                                "_source" : {
+                                  "careers" : [
+                                    {
+                                      "annual_income_in_man_yen" : 400,
+                                      "career_id" : 2,
+                                      "company_name" : "テスト５（株）",
+                                      "contract_type" : "regular",
+                                      "department_name" : "開発部",
+                                      "employed" : true,
+                                      "is_manager" : false,
+                                      "is_new_graduate" : false,
+                                      "note" : "備考",
+                                      "office" : "東京事業所",
+                                      "position_name" : "主任",
+                                      "profession" : "ITエンジニア",
+                                      "years_of_service" : 4
+                                    }
+                                  ],
+                                  "fee_per_hour_in_yen" : 3000,
+                                  "is_bank_account_registered" : true,
+                                  "num_of_careers" : 1,
+                                  "num_of_rated" : 43,
+                                  "rating" : 4.2,
+                                  "user_account_id" : 3
+                                }
+                              }
+                            ]
+                          }
+                        }),
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultantDetail {
+                        consultant_id: 3,
+                        fee_per_hour_in_yen: 3000,
+                        rating: Some(4.2),
+                        num_of_rated: 43,
+                        careers: vec![ConsultantCareerDetail {
+                            company_name: "テスト５（株）".to_string(),
+                            department_name: Some("開発部".to_string()),
+                            office: Some("東京事業所".to_string()),
+                            years_of_service: 4,
+                            employed: true,
+                            contract_type: "regular".to_string(),
+                            profession: Some("ITエンジニア".to_string()),
+                            annual_income_in_man_yen: Some(400),
+                            is_manager: false,
+                            position_name: Some("主任".to_string()),
+                            is_new_graduate: false,
+                            note: Some("備考".to_string()),
+                        }],
                     }),
                 )),
             },
