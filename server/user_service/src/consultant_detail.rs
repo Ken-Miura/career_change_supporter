@@ -440,41 +440,78 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        vec![TestCase {
-            name: "consultant id is not positive".to_string(),
-            input: Input {
-                account_id: 1,
-                consultant_id: 0,
-                op: ConsultantDetailOperationMock {
+        vec![
+            TestCase {
+                name: "consultant id is not positive".to_string(),
+                input: Input {
                     account_id: 1,
-                    consultant_id: 1,
-                    query_result: json!({
-                      "took" : 6,
-                      "timed_out" : false,
-                      "_shards" : {
-                        "total" : 1,
-                        "successful" : 1,
-                        "skipped" : 0,
-                        "failed" : 0
-                      },
-                      "hits" : {
-                        "total" : {
-                          "value" : 0,
-                          "relation" : "eq"
-                        },
-                        "max_score" : null,
-                        "hits" : [ ]
-                      }
-                    }),
+                    consultant_id: 0,
+                    op: ConsultantDetailOperationMock {
+                        account_id: 1,
+                        consultant_id: 1,
+                        query_result: json!({
+                          "took" : 6,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 0,
+                              "relation" : "eq"
+                            },
+                            "max_score" : null,
+                            "hits" : [ ]
+                          }
+                        }),
+                    },
                 },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultantId as u32,
+                    }),
+                )),
             },
-            expected: Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    code: Code::NonPositiveConsultantId as u32,
-                }),
-            )),
-        }]
+            TestCase {
+                name: "consultant id is not positive".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 2,
+                    op: ConsultantDetailOperationMock {
+                        account_id: 3,
+                        consultant_id: 2,
+                        query_result: json!({
+                          "took" : 6,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 0,
+                              "relation" : "eq"
+                            },
+                            "max_score" : null,
+                            "hits" : [ ]
+                          }
+                        }),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
