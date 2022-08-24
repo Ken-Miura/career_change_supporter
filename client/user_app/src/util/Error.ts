@@ -101,6 +101,7 @@ export namespace Code {
   export const INVALID_SORT_ORDER = 20089
   export const INVALID_CONSULTANT_SEARCH_PARAM_FROM = 20090
   export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE = 20091
+  export const EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE = 20094
 }
 
 export function createErrorMessage (code: number): string {
@@ -290,6 +291,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE} (${code})`
   } else if (code === Code.INVALID_CONSULTANT_SEARCH_PARAM_SIZE) {
     return `${Message.INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE} (${code})`
+  } else if (code === Code.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE) {
+    return `${Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

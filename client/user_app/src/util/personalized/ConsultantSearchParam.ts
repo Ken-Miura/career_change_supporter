@@ -1,3 +1,10 @@
+export type YearsOfServiceParam = {
+  /* eslint-disable camelcase */
+  equal_or_more: number | null,
+  less_than: number | null,
+  /* eslint-enable camelcase */
+}
+
 export type AnnualInComeInManYenParam = {
   /* eslint-disable camelcase */
   equal_or_more: number | null,
@@ -10,7 +17,7 @@ export type CareerParam = {
     company_name: string | null,
     department_name: string | null,
     office: string | null,
-    years_of_service: string | null,
+    years_of_service: YearsOfServiceParam,
     employed: boolean | null,
     contract_type: string | null,
     profession: string | null,

@@ -1,5 +1,5 @@
 import { getPageSize, PAGE_SIZE } from '@/util/PageSize'
-import { AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam, FeePerHourInYenParam, SortParam } from '@/util/personalized/ConsultantSearchParam'
+import { AnnualInComeInManYenParam, CareerParam, ConsultantSearchParam, FeePerHourInYenParam, SortParam, YearsOfServiceParam } from '@/util/personalized/ConsultantSearchParam'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -52,7 +52,10 @@ describe('ConsultantListPage.vue', () => {
         company_name: null,
         department_name: null,
         office: null,
-        years_of_service: null,
+        years_of_service: {
+          equal_or_more: null,
+          less_than: null
+        } as YearsOfServiceParam,
         employed: null,
         contract_type: null,
         profession: null,
@@ -372,7 +375,7 @@ describe('ConsultantListPage.vue', () => {
     }
     // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
     // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
-    consultantSearchParamMock.career_param.years_of_service = '\' OR 1=1--'
+    consultantSearchParamMock.career_param.years_of_service.equal_or_more = -1
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_YEARS_OF_SERVICE))
     postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(ConsultantListPage, {
@@ -3297,7 +3300,10 @@ describe('ConsultantListPage.vue', () => {
         company_name: null,
         department_name: null,
         office: null,
-        years_of_service: null,
+        years_of_service: {
+          equal_or_more: null,
+          less_than: null
+        } as YearsOfServiceParam,
         employed: null,
         contract_type: null,
         profession: null,
@@ -3462,7 +3468,10 @@ describe('ConsultantListPage.vue', () => {
         company_name: null,
         department_name: null,
         office: null,
-        years_of_service: null,
+        years_of_service: {
+          equal_or_more: null,
+          less_than: null
+        } as YearsOfServiceParam,
         employed: null,
         contract_type: null,
         profession: null,
@@ -3627,7 +3636,10 @@ describe('ConsultantListPage.vue', () => {
         company_name: null,
         department_name: null,
         office: null,
-        years_of_service: null,
+        years_of_service: {
+          equal_or_more: null,
+          less_than: null
+        } as YearsOfServiceParam,
         employed: null,
         contract_type: null,
         profession: null,
@@ -3792,7 +3804,10 @@ describe('ConsultantListPage.vue', () => {
         company_name: null,
         department_name: null,
         office: null,
-        years_of_service: null,
+        years_of_service: {
+          equal_or_more: null,
+          less_than: null
+        } as YearsOfServiceParam,
         employed: null,
         contract_type: null,
         profession: null,

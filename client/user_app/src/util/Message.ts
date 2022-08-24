@@ -119,4 +119,5 @@ export namespace Message {
     export const INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE = '不正な検索結果の始点が指定されています'
     export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE = '不正なページサイズです'
     export const NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE = '相談申し込みから相談相手の検索を行って下さい'
+    export const EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE = '在籍年数に関して、"年以上"または"年未満"の指定が不正です（"年以上"は"年未満"よりも小さい値である必要が有ります）'
 }

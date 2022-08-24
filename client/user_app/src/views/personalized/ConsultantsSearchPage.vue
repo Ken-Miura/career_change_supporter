@@ -28,15 +28,31 @@
             <div data-test="years-of-service-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               在籍年数
             </div>
-            <div data-test="years-of-service-select" class="mt-2 w-full text-2xl justify-self-start col-span-6">
-              <select v-model="form.yearsOfService" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+            <div data-test="years-of-service-equal-or-more-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="form.equalOrMoreYearsOfService" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option value="">指定なし</option>
-                <option value="THREE_YEARS_OR_MORE">３年以上</option>
-                <option value="FIVE_YEARS_OR_MORE">５年以上</option>
-                <option value="TEN_YEARS_OR_MORE">１０年以上</option>
-                <option value="FIFTEEN_YEARS_OR_MORE">１５年以上</option>
-                <option value="TWENTY_YEARS_OR_MORE">２０年以上</option>
+                <option value="3">３</option>
+                <option value="5">５</option>
+                <option value="10">１０</option>
+                <option value="15">１５</option>
+                <option value="20">２０</option>
               </select>
+            </div>
+            <div data-test="years-of-service-equal-or-more-label" class="ml-3 mt-2 text-2xl justify-self-start col-span-1 pt-3">
+              年以上
+            </div>
+            <div data-test="years-of-service-less-than-select" class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="form.lessThanYearsOfService" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option value="">指定なし</option>
+                <option value="3">３</option>
+                <option value="5">５</option>
+                <option value="10">１０</option>
+                <option value="15">１５</option>
+                <option value="20">２０</option>
+              </select>
+            </div>
+            <div data-test="years-of-service-less-than-label" class="ml-3 mt-2 text-2xl justify-self-start col-span-1 pt-3">
+              年未満
             </div>
             <div data-test="employed-label" class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               在籍の有無
@@ -210,6 +226,24 @@ export default defineComponent({
     })
 
     const moveToConsultantList = async () => {
+      const equalOrMoreYearsOfService = parseNumberInput(form.equalOrMoreYearsOfService)
+      if (equalOrMoreYearsOfService !== null && !checkIfYearsOfServiceIsValid(equalOrMoreYearsOfService)) {
+        error.exists = true
+        error.message = Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE
+        return
+      }
+      const lessThanYearsOfService = parseNumberInput(form.lessThanYearsOfService)
+      if (lessThanYearsOfService !== null && !checkIfYearsOfServiceIsValid(lessThanYearsOfService)) {
+        error.exists = true
+        error.message = Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE
+        return
+      }
+      if (equalOrMoreYearsOfService !== null && lessThanYearsOfService !== null && equalOrMoreYearsOfService >= lessThanYearsOfService) {
+        error.exists = true
+        error.message = Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE
+        return
+      }
+
       const equalOrMoreAnnualIncomeInManYen = parseNumberInput(form.equalOrMoreAnnualIncomeInManYen)
       if (equalOrMoreAnnualIncomeInManYen && !checkIfInputIsInValidRange(equalOrMoreAnnualIncomeInManYen, MIN_ANNUAL_INCOME_IN_MAN_YEN, MAX_ANNUAL_INCOME_IN_MAN_YEN)) {
         error.exists = true
@@ -251,7 +285,10 @@ export default defineComponent({
           company_name: parseStringInput(form.companyName),
           department_name: parseStringInput(form.departmentName),
           office: parseStringInput(form.office),
-          years_of_service: parseStringInput(form.yearsOfService),
+          years_of_service: {
+            equal_or_more: equalOrMoreYearsOfService,
+            less_than: lessThanYearsOfService
+          },
           employed: parseBooleanInput(form.employed),
           contract_type: parseStringInput(form.contractType),
           profession: parseStringInput(form.profession),
@@ -321,5 +358,11 @@ function parseBooleanInput (bool: string) : boolean | null {
   } else {
     return false
   }
+}
+
+const VALID_YEARS_OF_SERVICE_SET = [3, 5, 10, 15, 20]
+
+function checkIfYearsOfServiceIsValid (yearsOfServcie: number) : boolean {
+  return VALID_YEARS_OF_SERVICE_SET.includes(yearsOfServcie)
 }
 </script>
