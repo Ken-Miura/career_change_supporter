@@ -319,9 +319,13 @@ describe('ConsultantsSearchPage.vue', () => {
     const officeInput = wrapper.find('[data-test="office-input"]').find('input')
     await officeInput.setValue(office)
 
-    const yearsOfService = '3'
-    const yearsOfServiceSelect = wrapper.find('[data-test="years-of-service-equal-or-more-select"]').find('select')
-    await yearsOfServiceSelect.setValue(yearsOfService)
+    const equalOrMoreYearsOfService = '3'
+    const equalOrMoreYearsOfServiceSelect = wrapper.find('[data-test="years-of-service-equal-or-more-select"]').find('select')
+    await equalOrMoreYearsOfServiceSelect.setValue(equalOrMoreYearsOfService)
+
+    const lessThanYearsOfService = '20'
+    const lessThanYearsOfServiceSelect = wrapper.find('[data-test="years-of-service-less-than-select"]').find('select')
+    await lessThanYearsOfServiceSelect.setValue(lessThanYearsOfService)
 
     const employed = 'true'
     const employedSelect = wrapper.find('[data-test="employed-select"]').find('select')
@@ -380,8 +384,8 @@ describe('ConsultantsSearchPage.vue', () => {
         department_name: departmentName,
         office: office,
         years_of_service: {
-          equal_or_more: parseInt(yearsOfServiceSelect.element.value),
-          less_than: null
+          equal_or_more: parseInt(equalOrMoreYearsOfServiceSelect.element.value),
+          less_than: parseInt(lessThanYearsOfServiceSelect.element.value)
         } as YearsOfServiceParam,
         employed: employed === 'true',
         contract_type: contractType,
