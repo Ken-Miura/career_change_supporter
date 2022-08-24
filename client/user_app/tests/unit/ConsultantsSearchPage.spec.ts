@@ -710,7 +710,7 @@ describe('ConsultantsSearchPage.vue', () => {
     expect(alertMessage.text()).toContain(Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN_MESSAGE)
   })
 
-  it(`displays ${Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed case 1`, async () => {
+  it(`displays ${Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed case 1`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const wrapper = mount(ConsultantsSearchPage, {
       global: {

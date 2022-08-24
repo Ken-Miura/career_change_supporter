@@ -396,6 +396,34 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Code.ILLEGAL_YEARS_OF_SERVICE.toString())
   })
 
+  it(`displays ${Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE} if ${Code.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE} is returned`, async () => {
+    if (!consultantSearchParamMock) {
+      throw new Error('!consultantSearchParamMock')
+    }
+    // モックで返却されるコードが決まっているので、パラメータをしてする必要はない。
+    // しかし、どのような値が該当のコードを返すか示すためにエラーになるパラメータを指定しておく
+    consultantSearchParamMock.career_param.years_of_service.equal_or_more = 3
+    consultantSearchParamMock.career_param.years_of_service.less_than = 3
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE))
+    postConsultantsSearchFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE)
+    expect(resultMessage).toContain(Code.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE.toString())
+  })
+
   it(`displays ${Message.ILLEGAL_CONTRACT_TYPE_MESSAGE} if ${Code.ILLEGAL_CONTRACT_TYPE} is returned`, async () => {
     if (!consultantSearchParamMock) {
       throw new Error('!consultantSearchParamMock')
