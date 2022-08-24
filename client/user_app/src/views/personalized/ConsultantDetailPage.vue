@@ -1,9 +1,17 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <h3 class="font-bold text-lg">{{ consultantDetail }}</h3>
-      <h3 class="font-bold text-lg">{{ error.exists }} {{ error.message }}</h3>
+    <div v-if="!getConsultantDetailDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else>
+      <div v-if="error.exists">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <AlertMessage class="mt-2" v-bind:message="error.message"/>
+        </div>
+      </div>
+      <div v-else>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
@@ -15,6 +23,8 @@
 import { defineComponent, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
@@ -25,7 +35,9 @@ import { ConsultantDetail } from '@/util/personalized/consultant-detail/Consulta
 export default defineComponent({
   name: 'ConsultantDetailPage',
   components: {
-    TheHeader
+    TheHeader,
+    WaitingCircle,
+    AlertMessage
   },
   setup () {
     const error = reactive({
