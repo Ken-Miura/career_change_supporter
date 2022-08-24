@@ -14,6 +14,11 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
+use crate::util::{
+    YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE, YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE,
+    YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS, YEARS_OF_SERVICE_TEN_YEARS_OR_MORE,
+    YEARS_OF_SERVICE_THREE_YEARS_OR_MORE, YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE,
+};
 
 pub(crate) async fn get_consultant_detail(
     User { account_id }: User,
@@ -45,7 +50,7 @@ pub(crate) struct ConsultantCareerDetail {
     pub company_name: String,
     pub department_name: Option<String>,
     pub office: Option<String>,
-    pub years_of_service: i64,
+    pub years_of_service: String,
     pub employed: bool,
     pub contract_type: String,
     pub profession: Option<String>,
@@ -325,6 +330,7 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
             }),
         )
     })?;
+    let years_of_service = convert_years_of_service(years_of_service)?;
     let employed = career["employed"].as_bool().ok_or_else(|| {
         error!("failed to find employed in career: {:?}", career);
         (
@@ -381,6 +387,30 @@ fn create_consultant_career_detail(career: &Value) -> Result<ConsultantCareerDet
     })
 }
 
+fn convert_years_of_service(years_of_service: i64) -> Result<String, ErrResp> {
+    if (0..3).contains(&years_of_service) {
+        Ok(YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS.to_string())
+    } else if (3..5).contains(&years_of_service) {
+        Ok(YEARS_OF_SERVICE_THREE_YEARS_OR_MORE.to_string())
+    } else if (5..10).contains(&years_of_service) {
+        Ok(YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE.to_string())
+    } else if (10..15).contains(&years_of_service) {
+        Ok(YEARS_OF_SERVICE_TEN_YEARS_OR_MORE.to_string())
+    } else if (15..20).contains(&years_of_service) {
+        Ok(YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE.to_string())
+    } else if years_of_service >= 20 {
+        Ok(YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE.to_string())
+    } else {
+        error!("invalid years_of_service: {}", years_of_service);
+        Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use async_session::serde_json::{json, Value};
@@ -390,6 +420,14 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
+    use crate::util::{
+        YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE, YEARS_OF_SERVICE_THREE_YEARS_OR_MORE,
+        YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE,
+    };
+    use crate::util::{
+        YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE, YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS,
+        YEARS_OF_SERVICE_TEN_YEARS_OR_MORE,
+    };
 
     use super::{
         handle_consultant_detail, ConsultantCareerDetail, ConsultantDetail,
@@ -557,7 +595,7 @@ mod tests {
                                       "office" : null,
                                       "position_name" : null,
                                       "profession" : null,
-                                      "years_of_service" : 4
+                                      "years_of_service" : 2
                                     }
                                   ],
                                   "fee_per_hour_in_yen" : 3000,
@@ -657,7 +695,7 @@ mod tests {
                                       "office" : "東京事業所",
                                       "position_name" : "主任",
                                       "profession" : "ITエンジニア",
-                                      "years_of_service" : 4
+                                      "years_of_service" : 5
                                     }
                                   ],
                                   "fee_per_hour_in_yen" : 3000,
@@ -684,7 +722,7 @@ mod tests {
                             company_name: "テスト５（株）".to_string(),
                             department_name: Some("開発部".to_string()),
                             office: Some("東京事業所".to_string()),
-                            years_of_service: 4,
+                            years_of_service: YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE.to_string(),
                             employed: true,
                             contract_type: "regular".to_string(),
                             profession: Some("ITエンジニア".to_string()),
@@ -739,7 +777,7 @@ mod tests {
                                       "employed" : true,
                                       "career_id" : 5,
                                       "contract_type" : "regular",
-                                      "years_of_service" : 2,
+                                      "years_of_service" : 10,
                                       "company_name" : "タナカ株式会社"
                                     }
                                   ],
@@ -766,7 +804,7 @@ mod tests {
                             company_name: "タナカ株式会社".to_string(),
                             department_name: None,
                             office: None,
-                            years_of_service: 2,
+                            years_of_service: YEARS_OF_SERVICE_TEN_YEARS_OR_MORE.to_string(),
                             employed: true,
                             contract_type: "regular".to_string(),
                             profession: None,
@@ -836,7 +874,7 @@ mod tests {
                                         "employed" : true,
                                         "career_id" : 6,
                                         "contract_type" : "regular",
-                                        "years_of_service" : 2,
+                                        "years_of_service" : 3,
                                         "company_name" : "テスト２株式会社"
                                       },
                                       {
@@ -851,7 +889,7 @@ mod tests {
                                         "employed" : true,
                                         "career_id" : 7,
                                         "contract_type" : "regular",
-                                        "years_of_service" : 2,
+                                        "years_of_service" : 5,
                                         "company_name" : "テスト３株式会社"
                                       },
                                       {
@@ -866,7 +904,7 @@ mod tests {
                                         "employed" : true,
                                         "career_id" : 8,
                                         "contract_type" : "regular",
-                                        "years_of_service" : 2,
+                                        "years_of_service" : 10,
                                         "company_name" : "テスト４株式会社"
                                       },
                                       {
@@ -881,7 +919,7 @@ mod tests {
                                         "employed" : true,
                                         "career_id" : 9,
                                         "contract_type" : "regular",
-                                        "years_of_service" : 2,
+                                        "years_of_service" : 15,
                                         "company_name" : "テスト５株式会社"
                                       },
                                       {
@@ -896,7 +934,7 @@ mod tests {
                                         "employed" : true,
                                         "career_id" : 10,
                                         "contract_type" : "regular",
-                                        "years_of_service" : 2,
+                                        "years_of_service" : 20,
                                         "company_name" : "テスト６株式会社"
                                       },
                                       {
@@ -911,7 +949,7 @@ mod tests {
                                         "employed" : true,
                                         "career_id" : 11,
                                         "contract_type" : "regular",
-                                        "years_of_service" : 2,
+                                        "years_of_service" : 19,
                                         "company_name" : "テスト７株式会社"
                                       },
                                       {
@@ -926,7 +964,7 @@ mod tests {
                                         "employed" : true,
                                         "career_id" : 12,
                                         "contract_type" : "regular",
-                                        "years_of_service" : 2,
+                                        "years_of_service" : 14,
                                         "company_name" : "テスト８株式会社"
                                       },
                                   ],
@@ -954,7 +992,8 @@ mod tests {
                                 company_name: "テスト１株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS
+                                    .to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,
@@ -968,7 +1007,7 @@ mod tests {
                                 company_name: "テスト２株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_THREE_YEARS_OR_MORE.to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,
@@ -982,7 +1021,7 @@ mod tests {
                                 company_name: "テスト３株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE.to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,
@@ -996,7 +1035,7 @@ mod tests {
                                 company_name: "テスト４株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_TEN_YEARS_OR_MORE.to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,
@@ -1010,7 +1049,8 @@ mod tests {
                                 company_name: "テスト５株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE
+                                    .to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,
@@ -1024,7 +1064,7 @@ mod tests {
                                 company_name: "テスト６株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE.to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,
@@ -1038,7 +1078,8 @@ mod tests {
                                 company_name: "テスト７株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE
+                                    .to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,
@@ -1052,7 +1093,7 @@ mod tests {
                                 company_name: "テスト８株式会社".to_string(),
                                 department_name: None,
                                 office: None,
-                                years_of_service: 2,
+                                years_of_service: YEARS_OF_SERVICE_TEN_YEARS_OR_MORE.to_string(),
                                 employed: true,
                                 contract_type: "regular".to_string(),
                                 profession: None,

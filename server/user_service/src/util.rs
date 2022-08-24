@@ -30,6 +30,7 @@ use crate::err::{unexpected_err_resp, Code};
 pub(crate) const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
 pub(crate) const MAX_FEE_PER_HOUR_IN_YEN: i32 = 50000;
 
+pub(crate) const YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS: &str = "LESS_THAN_THREE_YEARS";
 pub(crate) const YEARS_OF_SERVICE_THREE_YEARS_OR_MORE: &str = "THREE_YEARS_OR_MORE";
 pub(crate) const YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE: &str = "FIVE_YEARS_OR_MORE";
 pub(crate) const YEARS_OF_SERVICE_TEN_YEARS_OR_MORE: &str = "TEN_YEARS_OR_MORE";
