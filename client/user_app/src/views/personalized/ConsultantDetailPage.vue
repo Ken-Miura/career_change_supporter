@@ -25,8 +25,9 @@
                     <div class="bg-gray-600 text-white font-bold text-xl rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                       <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.company_name }}</div>
-                      <div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.profession }}</div>
+                      <div v-if="consultantCareerDetail.department_name" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="consultantCareerDetail.department_name" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.department_name }}</div>
                       <div v-if="consultantCareerDetail.office" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="consultantCareerDetail.office" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.office }}</div>
+                      <div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.profession }}</div>
                     </div>
                   </div>
                 </li>
