@@ -4,7 +4,7 @@ export type ConsultantCareerDetail = {
   company_name: string,
   department_name: string | null,
   office: string | null,
-  years_of_service: number,
+  years_of_service: string,
   employed: boolean,
   contract_type: string,
   profession: string | null,
