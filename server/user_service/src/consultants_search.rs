@@ -13,11 +13,6 @@ use tracing::{error, info};
 
 use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
-use crate::util::{
-    YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE, YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE,
-    YEARS_OF_SERVICE_TEN_YEARS_OR_MORE, YEARS_OF_SERVICE_THREE_YEARS_OR_MORE,
-    YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE,
-};
 use crate::{
     err::{unexpected_err_resp, Code},
     util::{
@@ -56,7 +51,7 @@ pub(crate) struct CareerParam {
     pub company_name: Option<String>,
     pub department_name: Option<String>,
     pub office: Option<String>,
-    pub years_of_service: Option<String>,
+    pub years_of_service: YearsOfServiceParam,
     pub employed: Option<bool>,
     pub contract_type: Option<String>,
     pub profession: Option<String>,
@@ -65,6 +60,12 @@ pub(crate) struct CareerParam {
     pub position_name: Option<String>,
     pub is_new_graduate: Option<bool>,
     pub note: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct YearsOfServiceParam {
+    pub equal_or_more: Option<i32>,
+    pub less_than: Option<i32>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -253,6 +254,10 @@ fn create_invalid_career_param_err(e: &CareerParamValidationError) -> ErrResp {
         } => Code::InvalidOfficeLength,
         CareerParamValidationError::IllegalCharInOffice(_) => Code::IllegalCharInOffice,
         CareerParamValidationError::IllegalYearsOfService(_) => Code::IllegalYearsOfService,
+        CareerParamValidationError::EqualOrMoreIsLessThanOrMoreYearsOfService {
+            equal_or_more: _,
+            less_than: _,
+        } => Code::EqualOrMoreIsLessThanOrMoreYearsOfService,
         CareerParamValidationError::IllegalContractType(_) => Code::IllegalContractType,
         CareerParamValidationError::InvalidProfessionLength {
             length: _,
@@ -345,10 +350,15 @@ fn create_query_json(
         let office_criteria = create_office_criteria(office.as_str());
         params.push(office_criteria);
     }
-    if let Some(years_of_service) = career_param.years_of_service {
-        let value = convert_years_of_service_into_integer_value(years_of_service.as_str())?;
-        let years_of_service_criteria = create_years_of_service_criteria(value);
-        params.push(years_of_service_criteria);
+    if let Some(equal_or_more) = career_param.years_of_service.equal_or_more {
+        let years_of_service_equal_or_more_criteria =
+            create_years_of_service_equal_or_more_criteria(equal_or_more);
+        params.push(years_of_service_equal_or_more_criteria);
+    }
+    if let Some(less_than) = career_param.years_of_service.less_than {
+        let years_of_service_less_than_criteria =
+            create_years_of_service_less_than_criteria(less_than);
+        params.push(years_of_service_less_than_criteria);
     }
     if let Some(employed) = career_param.employed {
         let employed_criteria = create_employed_criteria(employed);
@@ -503,26 +513,7 @@ fn create_office_criteria(office: &str) -> Value {
     })
 }
 
-fn convert_years_of_service_into_integer_value(years_of_service: &str) -> Result<u32, ErrResp> {
-    if years_of_service == YEARS_OF_SERVICE_THREE_YEARS_OR_MORE {
-        Ok(3)
-    } else if years_of_service == YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE {
-        Ok(5)
-    } else if years_of_service == YEARS_OF_SERVICE_TEN_YEARS_OR_MORE {
-        Ok(10)
-    } else if years_of_service == YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE {
-        Ok(15)
-    } else if years_of_service == YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE {
-        Ok(20)
-    } else {
-        // 事前にvalidationしているため、ここを通る場合は障害を意味する
-        // そのため、500系のステータスコードでレスポンスを返す
-        error!("unexpected years_of_service: ({})", years_of_service);
-        Err(unexpected_err_resp())
-    }
-}
-
-fn create_years_of_service_criteria(years_of_service: u32) -> Value {
+fn create_years_of_service_equal_or_more_criteria(years_of_service: i32) -> Value {
     json!({
         "nested": {
             "path": "careers",
@@ -533,6 +524,27 @@ fn create_years_of_service_criteria(years_of_service: u32) -> Value {
                             "range": {
                                 "careers.years_of_service": {
                                     "gte": years_of_service
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    })
+}
+
+fn create_years_of_service_less_than_criteria(years_of_service: i32) -> Value {
+    json!({
+        "nested": {
+            "path": "careers",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "range": {
+                                "careers.years_of_service": {
+                                    "lt": years_of_service
                                 }
                             }
                         }
@@ -964,6 +976,7 @@ mod tests {
         handle_consultants_search, AnnualInComeInManYenParam, CareerParam,
         ConsultantCareerDescription, ConsultantDescription, ConsultantSearchParam,
         ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourInYenParam, SortParam,
+        YearsOfServiceParam,
     };
 
     #[derive(Clone, Debug)]
@@ -1018,7 +1031,10 @@ mod tests {
                             company_name: Some("テスト１".to_string()),
                             department_name: Some("テスト２".to_string()),
                             office: Some("テスト３".to_string()),
-                            years_of_service: Some("THREE_YEARS_OR_MORE".to_string()),
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: Some(3),
+                                less_than: None,
+                            },
                             employed: Some(true),
                             contract_type: Some("regular".to_string()),
                             profession: Some("テスト４".to_string()),
@@ -1121,7 +1137,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1221,7 +1240,10 @@ mod tests {
                             company_name: Some("".to_string()),
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1263,7 +1285,10 @@ mod tests {
                             company_name: Some("*".to_string()),
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1305,7 +1330,10 @@ mod tests {
                             company_name: None,
                             department_name: Some("".to_string()),
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1347,7 +1375,10 @@ mod tests {
                             company_name: None,
                             department_name: Some("*".to_string()),
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1389,7 +1420,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: Some("".to_string()),
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1431,7 +1465,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: Some("*".to_string()),
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1473,7 +1510,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: Some("*".to_string()),
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: Some(-1),
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1515,7 +1555,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: Some("*".to_string()),
                             profession: None,
@@ -1557,7 +1600,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: Some("".to_string()),
@@ -1599,7 +1645,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: Some("*".to_string()),
@@ -1641,7 +1690,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1683,7 +1735,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1725,7 +1780,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1767,7 +1825,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1809,7 +1870,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1851,7 +1915,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1893,7 +1960,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1935,7 +2005,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -1977,7 +2050,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -2019,7 +2095,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -2061,7 +2140,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -2106,7 +2188,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -2151,7 +2236,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -2193,7 +2281,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,
@@ -2235,7 +2326,10 @@ mod tests {
                             company_name: None,
                             department_name: None,
                             office: None,
-                            years_of_service: None,
+                            years_of_service: YearsOfServiceParam {
+                                equal_or_more: None,
+                                less_than: None,
+                            },
                             employed: None,
                             contract_type: None,
                             profession: None,

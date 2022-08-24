@@ -30,12 +30,11 @@ use crate::err::{unexpected_err_resp, Code};
 pub(crate) const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
 pub(crate) const MAX_FEE_PER_HOUR_IN_YEN: i32 = 50000;
 
-pub(crate) const YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS: &str = "LESS_THAN_THREE_YEARS";
-pub(crate) const YEARS_OF_SERVICE_THREE_YEARS_OR_MORE: &str = "THREE_YEARS_OR_MORE";
-pub(crate) const YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE: &str = "FIVE_YEARS_OR_MORE";
-pub(crate) const YEARS_OF_SERVICE_TEN_YEARS_OR_MORE: &str = "TEN_YEARS_OR_MORE";
-pub(crate) const YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE: &str = "FIFTEEN_YEARS_OR_MORE";
-pub(crate) const YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE: &str = "TWENTY_YEARS_OR_MORE";
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_THREE: i32 = 3;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_FIVE: i32 = 5;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TEN: i32 = 10;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN: i32 = 15;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TWENTY: i32 = 20;
 
 pub(crate) const ROOT_PATH: &str = "/api";
 
