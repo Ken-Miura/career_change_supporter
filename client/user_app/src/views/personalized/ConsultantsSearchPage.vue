@@ -226,8 +226,18 @@ export default defineComponent({
     })
 
     const moveToConsultantList = async () => {
+      if (form.equalOrMoreYearsOfService === undefined) {
+        error.exists = true
+        error.message = Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE
+        return
+      }
       const equalOrMoreYearsOfService = parseNumberInput(form.equalOrMoreYearsOfService)
       if (equalOrMoreYearsOfService !== null && !checkIfYearsOfServiceIsValid(equalOrMoreYearsOfService)) {
+        error.exists = true
+        error.message = Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE
+        return
+      }
+      if (form.lessThanYearsOfService === undefined) {
         error.exists = true
         error.message = Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE
         return

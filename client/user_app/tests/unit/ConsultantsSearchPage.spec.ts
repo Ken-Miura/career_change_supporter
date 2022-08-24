@@ -710,7 +710,7 @@ describe('ConsultantsSearchPage.vue', () => {
     expect(alertMessage.text()).toContain(Message.EQUAL_OR_MORE_EXCEEDS_EQUAL_OR_LESS_IN_FEE_PER_HOUR_IN_YEN_MESSAGE)
   })
 
-  it(`displays ${Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed case 1`, async () => {
+  it(`displays ${Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const wrapper = mount(ConsultantsSearchPage, {
       global: {
@@ -741,5 +741,63 @@ describe('ConsultantsSearchPage.vue', () => {
     const classes = alertMessage.classes()
     expect(classes).not.toContain('hidden')
     expect(alertMessage.text()).toContain(Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE)
+  })
+
+  it(`displays ${Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed case 1`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+
+    const equalOrMoreYearsOfService = '1'
+    const equalOrMoreYearsOfServiceSelect = wrapper.find('[data-test="years-of-service-equal-or-more-select"]').find('select')
+    await equalOrMoreYearsOfServiceSelect.setValue(equalOrMoreYearsOfService)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    expect(alertMessage.text()).toContain(Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE)
+  })
+
+  it(`displays ${Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed case 2`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(ConsultantsSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_CONSULTANT_SEARCH_PARAM, null)
+
+    const lessThanYearsOfService = '21'
+    const lessThanYearsOfServiceSelect = wrapper.find('[data-test="years-of-service-less-than-select"]').find('select')
+    await lessThanYearsOfServiceSelect.setValue(lessThanYearsOfService)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    expect(alertMessage.text()).toContain(Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE)
   })
 })
