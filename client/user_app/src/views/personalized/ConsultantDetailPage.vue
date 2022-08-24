@@ -17,6 +17,21 @@
             <div class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantDetail.consultant_id }}</div>
             <div class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ consultantDetail.fee_per_hour_in_yen }}円</div>
             <div class="mt-2 justify-self-start col-span-2">評価（評価件数：{{ consultantDetail.num_of_rated }} 件）</div><div class="mt-2 justify-self-start col-span-1"><span v-if="consultantDetail.rating !== null">{{ consultantDetail.rating }}</span><span v-else>0</span>/5</div>
+            <div class="mt-5 justify-self-start col-span-3 font-bold text-2xl">職務経歴</div>
+            <div class="mt-2 justify-self-start col-span-3 flex flex-col justify-center w-full">
+              <ul>
+                <li v-for="(consultantCareerDetail, index) in consultantDetail.careers" v-bind:key="consultantCareerDetail.counsultant_career_detail_id">
+                  <div class="mt-2">
+                    <div class="bg-gray-600 text-white font-bold text-xl rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.company_name }}</div>
+                      <div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.profession }}</div>
+                      <div v-if="consultantCareerDetail.office" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="consultantCareerDetail.office" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.office }}</div>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
           <p v-else class="m-4 text-xl">コンサルタントの詳細を取得出来ませんでした。</p>
           <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談を申し込む</button>
