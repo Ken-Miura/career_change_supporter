@@ -1107,6 +1107,149 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "succeed in getting consultant 4".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 5,
+                    op: ConsultantDetailOperationMock {
+                        account_id: 1,
+                        consultant_id: 5,
+                        query_result: json!({
+                          "took" : 6,
+                          "timed_out" : false,
+                          "_shards" : {
+                            "total" : 1,
+                            "successful" : 1,
+                            "skipped" : 0,
+                            "failed" : 0
+                          },
+                          "hits" : {
+                            "total" : {
+                              "value" : 1,
+                              "relation" : "eq"
+                            },
+                            "max_score" : 1.0,
+                            "hits" : [
+                              {
+                                "_index" : "users",
+                                "_id" : "5",
+                                "_score" : 1.0,
+                                "_source" : {
+                                  "careers" : [
+                                    {
+                                      "profession" : null,
+                                      "note" : null,
+                                      "department_name" : null,
+                                      "position_name" : null,
+                                      "is_new_graduate" : false,
+                                      "office" : null,
+                                      "is_manager" : false,
+                                      "annual_income_in_man_yen" : null,
+                                      "employed" : true,
+                                      "career_id" : 5,
+                                      "contract_type" : "regular",
+                                      "years_of_service" : 0,
+                                      "company_name" : "テスト１株式会社"
+                                    },
+                                    {
+                                        "profession" : null,
+                                        "note" : null,
+                                        "department_name" : null,
+                                        "position_name" : null,
+                                        "is_new_graduate" : false,
+                                        "office" : null,
+                                        "is_manager" : false,
+                                        "annual_income_in_man_yen" : null,
+                                        "employed" : true,
+                                        "career_id" : 6,
+                                        "contract_type" : "regular",
+                                        "years_of_service" : 4,
+                                        "company_name" : "テスト２株式会社"
+                                      },
+                                      {
+                                        "profession" : null,
+                                        "note" : null,
+                                        "department_name" : null,
+                                        "position_name" : null,
+                                        "is_new_graduate" : false,
+                                        "office" : null,
+                                        "is_manager" : false,
+                                        "annual_income_in_man_yen" : null,
+                                        "employed" : true,
+                                        "career_id" : 7,
+                                        "contract_type" : "regular",
+                                        "years_of_service" : 9,
+                                        "company_name" : "テスト３株式会社"
+                                      },
+                                  ],
+                                  "fee_per_hour_in_yen" : 4500,
+                                  "is_bank_account_registered" : true,
+                                  "rating" : null,
+                                  "user_account_id" : 5,
+                                  "num_of_careers" : 3
+                                }
+                              }
+                            ]
+                          }
+                        }),
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultantDetail {
+                        consultant_id: 5,
+                        fee_per_hour_in_yen: 4500,
+                        rating: None,
+                        num_of_rated: 0,
+                        careers: vec![
+                            ConsultantCareerDetail {
+                                company_name: "テスト１株式会社".to_string(),
+                                department_name: None,
+                                office: None,
+                                years_of_service: YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS
+                                    .to_string(),
+                                employed: true,
+                                contract_type: "regular".to_string(),
+                                profession: None,
+                                annual_income_in_man_yen: None,
+                                is_manager: false,
+                                position_name: None,
+                                is_new_graduate: false,
+                                note: None,
+                            },
+                            ConsultantCareerDetail {
+                                company_name: "テスト２株式会社".to_string(),
+                                department_name: None,
+                                office: None,
+                                years_of_service: YEARS_OF_SERVICE_THREE_YEARS_OR_MORE.to_string(),
+                                employed: true,
+                                contract_type: "regular".to_string(),
+                                profession: None,
+                                annual_income_in_man_yen: None,
+                                is_manager: false,
+                                position_name: None,
+                                is_new_graduate: false,
+                                note: None,
+                            },
+                            ConsultantCareerDetail {
+                                company_name: "テスト３株式会社".to_string(),
+                                department_name: None,
+                                office: None,
+                                years_of_service: YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE.to_string(),
+                                employed: true,
+                                contract_type: "regular".to_string(),
+                                profession: None,
+                                annual_income_in_man_yen: None,
+                                is_manager: false,
+                                position_name: None,
+                                is_new_graduate: false,
+                                note: None,
+                            },
+                        ],
+                    }),
+                )),
+            },
         ]
     });
 
