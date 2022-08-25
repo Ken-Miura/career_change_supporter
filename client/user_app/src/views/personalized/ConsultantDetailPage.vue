@@ -27,7 +27,11 @@
                       <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.company_name }}</div>
                       <div v-if="consultantCareerDetail.department_name" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="consultantCareerDetail.department_name" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.department_name }}</div>
                       <div v-if="consultantCareerDetail.office" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="consultantCareerDetail.office" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.office }}</div>
+                      <div class="mt-2 justify-self-start col-span-1">在籍年数</div><div class="mt-2 justify-self-start col-span-2">{{ convertYearsOfServiceValue(consultantCareerDetail.years_of_service) }}</div>
+                      <div class="mt-2 justify-self-start col-span-1">在籍の有無</div><div class="mt-2 justify-self-start col-span-2">{{ convertEmployedValue(consultantCareerDetail.employed) }}</div>
+                      <div class="mt-2 justify-self-start col-span-1">雇用形態</div><div class="mt-2 justify-self-start col-span-2">{{ convertContractTypeValue(consultantCareerDetail.contract_type) }}</div>
                       <div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.profession }}</div>
+                      <div v-if="consultantCareerDetail.annual_income_in_man_yen" class="mt-2 justify-self-start col-span-1">年収</div><div v-if="consultantCareerDetail.annual_income_in_man_yen" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.annual_income_in_man_yen }}万円</div>
                     </div>
                   </div>
                 </li>
@@ -105,11 +109,52 @@ export default defineComponent({
       }
     })
 
+    const convertYearsOfServiceValue = (yearsOfService: string): string => {
+      if (yearsOfService === 'LESS_THAN_THREE_YEARS') {
+        return '3年未満'
+      } else if (yearsOfService === 'THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS') {
+        return '3年以上5年未満'
+      } else if (yearsOfService === 'FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS') {
+        return '5年以上10年未満'
+      } else if (yearsOfService === 'TEN_YEARS_OR_MORE_LESS_THAN_FIFTEEN_YEARS') {
+        return '10年以上15年未満'
+      } else if (yearsOfService === 'FIFTEEN_YEARS_OR_MORE_LESS_THAN_TWENTY_YEARS') {
+        return '15年以上20年未満'
+      } else if (yearsOfService === 'TWENTY_YEARS_OR_MORE') {
+        return '20年以上'
+      } else {
+        return '不明'
+      }
+    }
+
+    const convertEmployedValue = (employed: boolean): string => {
+      if (employed) {
+        return '在籍中'
+      } else {
+        return '退職済'
+      }
+    }
+
+    const convertContractTypeValue = (contractType: string): string => {
+      if (contractType === 'regular') {
+        return '正社員'
+      } else if (contractType === 'contract') {
+        return '契約社員'
+      } else if (contractType === 'other') {
+        return 'その他'
+      } else {
+        return '不明'
+      }
+    }
+
     return {
       error,
       consultantDetail,
       getConsultantDetailDone,
-      getConsultantDetailFunc
+      getConsultantDetailFunc,
+      convertYearsOfServiceValue,
+      convertEmployedValue,
+      convertContractTypeValue
     }
   }
 })
