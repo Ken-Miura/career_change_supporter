@@ -32,6 +32,10 @@
                       <div class="mt-2 justify-self-start col-span-1">雇用形態</div><div class="mt-2 justify-self-start col-span-2">{{ convertContractTypeValue(consultantCareerDetail.contract_type) }}</div>
                       <div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="consultantCareerDetail.profession" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.profession }}</div>
                       <div v-if="consultantCareerDetail.annual_income_in_man_yen" class="mt-2 justify-self-start col-span-1">年収</div><div v-if="consultantCareerDetail.annual_income_in_man_yen" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.annual_income_in_man_yen }}万円</div>
+                      <div class="mt-2 justify-self-start col-span-1">管理職区分</div><div class="mt-2 justify-self-start col-span-2">{{ convertIsManagerValue(consultantCareerDetail.is_manager) }}</div>
+                      <div v-if="consultantCareerDetail.position_name" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="consultantCareerDetail.position_name" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.position_name }}</div>
+                      <div class="mt-2 justify-self-start col-span-1">入社区分</div><div class="mt-2 justify-self-start col-span-2">{{ convertIsNewGraduateValue(consultantCareerDetail.is_new_graduate) }}</div>
+                      <div v-if="consultantCareerDetail.note" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="consultantCareerDetail.note" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.note }}</div>
                     </div>
                   </div>
                 </li>
@@ -147,6 +151,22 @@ export default defineComponent({
       }
     }
 
+    const convertIsManagerValue = (isManager: boolean): string => {
+      if (isManager) {
+        return '管理職'
+      } else {
+        return '非管理職'
+      }
+    }
+
+    const convertIsNewGraduateValue = (isNewGraduate: boolean): string => {
+      if (isNewGraduate) {
+        return '新卒入社'
+      } else {
+        return '中途入社'
+      }
+    }
+
     return {
       error,
       consultantDetail,
@@ -154,7 +174,9 @@ export default defineComponent({
       getConsultantDetailFunc,
       convertYearsOfServiceValue,
       convertEmployedValue,
-      convertContractTypeValue
+      convertContractTypeValue,
+      convertIsManagerValue,
+      convertIsNewGraduateValue
     }
   }
 })
