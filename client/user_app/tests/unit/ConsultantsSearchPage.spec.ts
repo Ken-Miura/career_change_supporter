@@ -743,6 +743,7 @@ describe('ConsultantsSearchPage.vue', () => {
     expect(alertMessage.text()).toContain(Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE)
   })
 
+  // 選択肢以外の値を用いると発生するケース。基本的にはありえないが念の為実施しておく。
   it(`displays ${Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed case 1`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const wrapper = mount(ConsultantsSearchPage, {
@@ -772,6 +773,7 @@ describe('ConsultantsSearchPage.vue', () => {
     expect(alertMessage.text()).toContain(Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE)
   })
 
+  // 選択肢以外の値を用いると発生するケース。基本的にはありえないが念の為実施しておく。
   it(`displays ${Message.ILLEGAL_YEARS_OF_SERVICE_MESSAGE} if illegal years of service is passed case 2`, async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const wrapper = mount(ConsultantsSearchPage, {
