@@ -35,7 +35,7 @@
                       <div class="mt-2 justify-self-start col-span-1">管理職区分</div><div class="mt-2 justify-self-start col-span-2">{{ convertIsManagerValue(consultantCareerDetail.is_manager) }}</div>
                       <div v-if="consultantCareerDetail.position_name" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="consultantCareerDetail.position_name" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.position_name }}</div>
                       <div class="mt-2 justify-self-start col-span-1">入社区分</div><div class="mt-2 justify-self-start col-span-2">{{ convertIsNewGraduateValue(consultantCareerDetail.is_new_graduate) }}</div>
-                      <div v-if="consultantCareerDetail.note" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="consultantCareerDetail.note" class="mt-2 justify-self-start col-span-2">{{ consultantCareerDetail.note }}</div>
+                      <div v-if="consultantCareerDetail.note" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="consultantCareerDetail.note" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ consultantCareerDetail.note }}</div>
                     </div>
                   </div>
                 </li>
