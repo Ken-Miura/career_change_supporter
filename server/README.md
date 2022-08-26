@@ -1,15 +1,15 @@
 # ローカルの開発環境のセットアップ
 
 ## 連携するサーバ群を立ち上げる
-VS Code remote developmentで開発している場合、自動的に連携するサーバ群が立ち上がるため、特に対応は必要ない（連携するサーバ群の情報を含んだdocker-compose.ymlが、プロジェクトルートの.devcontainer/devcontainer.jsonに記載されているため、VS Code remote development利用時に自動的に立ち上がる）<br>
+VS Code remote developmentで開発している場合、自動的に連携するサーバ群が立ち上がるため、特に対応は必要ない（連携するサーバ群の情報を含んだcompose.ymlが、プロジェクトルートの.devcontainer/devcontainer.jsonに記載されているため、VS Code remote development利用時に自動的に立ち上がる）<br>
 <br>
 VS Code remote developmentを使っていない場合、下記のコマンドで連携するサーバ群を立ち上げる。
 ```
-docker-compose up -d
+docker compose up -d
 ```
 連携するサーバを削除したくなった場合、下記のコマンドで削除する
 ```
-docker-compose down
+docker compose down
 ```
 
 ## 環境変数の用意
@@ -28,9 +28,9 @@ OpenSearchを安定して動作させるため、下記のリンクの設定に�
 https://opensearch.org/docs/latest/opensearch/install/important-settings/
 
 ### インデックスの生成
-docker-composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
+docker composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
 ```
-curl -XPUT -H "Content-Type: application/json" --data "@files_for_docker_compose/opensearch/index_definition/index.json" "http://opensearch:9200/users"
+curl -XPUT -H "Content-Type: application/json" --data "@files_for_compose/opensearch/index_definition/index.json" "http://opensearch:9200/users"
 ```
 
 ### replicaシャードの数を0に設定（開発環境の設定であり、本番環境では実施しない設定）
