@@ -29,22 +29,6 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 ### VS Code (IDE) とRemote Container (VS Code用拡張プラグイン) が必須の理由
 ファイルストレージとしてAWS S3との連携を想定している。S3は、バケットにそのバケット名を含むホスト名を割り当てる。開発者はバケットにアクセスするため、そのバケット名が含まれたホスト名を用いてそのバケットへアクセスする（virtual-hosted style）バケットが複数ある場合、どのバケットにアクセスすべきか決めるため、ローカルの開発環境でもホスト名の利用が必須となる。ホスト名を利用することは同時に名前解決システムの導入も必須となる。名前解決システムはDockerのネットワーク上に自動構築されるDNSサーバを利用するのが最も簡単であると判断し、それを利用することとする。開発中のアプリが名前解決ができるようにするには、そのアプリをDockerネットワーク上のコンテナ内で起動し、動作確認する必要がある。コンテナ内でアプリのビルドと動作確認が可能な環境が、現状VS CodeとRemote Containerだけのため、開発環境にこれらが必須となる。
 
-### OSの設定値の変更
-検索エンジンとしてOpenSearchを利用する。OpenSearchを安定して動作されるため、下記のリンクの設定に従い、vm.max_map_countを262144以上に設定する。<br>
-https://opensearch.org/docs/latest/opensearch/install/important-settings/
-
-### インデックスの生成
-docker-composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
-```
-curl -XPUT -H "Content-Type: application/json" --data "@files_for_docker_compose/opensearch/index_definition/index.json" "http://opensearch:9200/users"
-```
-
-### replicaシャードの数を0に設定（開発環境の設定であり、本番環境では実施しない設定）
-開発環境では、OpenSearchは単一ノードで構成する。単一ノードの場合、replicaシャードを配置するための別ノードが存在しない。そのため、それに起因してインデックスのステータスがyellowとなる。開発環境においては、replicaシャードが存在しないことは問題とならない。そのため、このステータスをgreenにしておくため、[インデックスの生成](#インデックスの生成)で作成したインデックスに対して、下記のコマンドを打ってレプリカの数を0に設定しておく。
-```
-curl -XPUT -H "Content-Type: application/json" -d '{ "index": { "number_of_replicas": 0 } }' "http://opensearch:9200/users/_settings"
-```
-
 # TERMINOLOGY
 ## ccs
 Career Change Supporterの略称

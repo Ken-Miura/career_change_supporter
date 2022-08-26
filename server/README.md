@@ -1,53 +1,86 @@
 # ローカルの開発環境のセットアップ
 
-## DBにスキーマとテーブルを作成
+## 連携するサーバ群を立ち上げる
+VS Code remote developmentで開発している場合、自動的に連携するサーバ群が立ち上がるため、特に対応は必要ない（連携するサーバ群の情報を含んだdocker-compose.ymlが、プロジェクトルートの.devcontainer/devcontainer.jsonに記載されているため、VS Code remote development利用時に自動的に立ち上がる）<br>
+<br>
+VS Code remote developmentを使っていない場合、下記のコマンドで連携するサーバ群を立ち上げる。
 ```
-export DATABASE_URL=postgres://postgres:example@db/ccs_db
-sea-orm-cli migrate up
+docker-compose up -d
+```
+連携するサーバを削除したくなった場合、下記のコマンドで削除する
+```
+docker-compose down
 ```
 
 ## 環境変数の用意
 sample.envファイルを.envへリネームし、環境にあった変数を設定する
 
-# DBのテーブルの変更と反映
+## DBのセットアップ
+### DBにスキーマとテーブルを作成（空のDBを初期化する処理）
+```
+export DATABASE_URL=postgres://postgres:example@db/ccs_db
+sea-orm-cli migrate up
+```
 
-## DBのテーブルを変更
+## OpenSearchのセットアップ
+### OSの設定値の変更
+OpenSearchを安定して動作させるため、下記のリンクの設定に従い、vm.max_map_countを262144以上に設定する。<br>
+https://opensearch.org/docs/latest/opensearch/install/important-settings/
+
+### インデックスの生成
+docker-composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
+```
+curl -XPUT -H "Content-Type: application/json" --data "@files_for_docker_compose/opensearch/index_definition/index.json" "http://opensearch:9200/users"
+```
+
+### replicaシャードの数を0に設定（開発環境の設定であり、本番環境では実施しない設定）
+開発環境では、OpenSearchは単一ノードで構成する。単一ノードの場合、replicaシャードを配置するための別ノードが存在しない。そのため、それに起因してインデックスのステータスがyellowとなる。開発環境においては、replicaシャードが存在しないことは問題とならない。そのため、このステータスをgreenにしておくため、[インデックスの生成](#インデックスの生成)で作成したインデックスに対して、下記のコマンドを打ってレプリカの数を0に設定しておく。
+```
+curl -XPUT -H "Content-Type: application/json" -d '{ "index": { "number_of_replicas": 0 } }' "http://opensearch:9200/users/_settings"
+```
+
+# ローカルの開発環境の更新
+## DBのテーブルの変更と反映
+開発中、DBのテーブル定義を更新したい場合、下記の項目を実施する。
+
+### DBのテーブルを変更（DBのテーブル定義が記載されているソースコードを変更した場合、それをDBに反映する処理）
 migration/src以下のソースコードを変更する。その後、下記のコマンドを実行する
 ```
 export DATABASE_URL=postgres://postgres:example@db/ccs_db
 sea-orm-cli migrate refresh
 ```
 
-## 変更されたテーブルをentity以下のソースコードに反映
+### 変更されたテーブルをentity以下のソースコードに反映（DBのテーブルをEntityを表すソースコードに反映する処理）
 ```
 export DATABASE_URL=postgres://postgres:example@db/ccs_db
 sea-orm-cli generate entity -s ccs_schema -o entity/src
 ```
 
-# DBのテーブル設計方針
+# 設計
+## DBのテーブル設計方針
 
-## トランザクション分離レベル
+### トランザクション分離レベル
 PostgreSQLのデフォルト（READ COMMITTED）を想定して設計。SERIALIZABLEではないので、トランザクション中でもアプリケーションで明示的なロック取得が必要なことを念頭に置く
 
-## 外部キー採用時の検討事項
+### 外部キー採用時の検討事項
 外部キーを採用するときは、下記の事項を検討し、課題がないことを明確にした上で採用する
-### パーティション化できなくなる
+#### パーティション化できなくなる
 多くのDBでは、外部キーで関連付けたテーブルはパーティション化できなくなる。本プロジェクトで利用しているPostgreSQLも同様
-### 暗黙的ロックの発生を許容できる（アプリケーションコードに明示的にロックを取得するコードが出てこないことが許容できる）
+#### 暗黙的ロックの発生を許容できる（アプリケーションコードに明示的にロックを取得するコードが出てこないことが許容できる）
 子テーブルにinsertやupdateをかけたとき、親テーブルの対応するレコードに対し、暗黙的に共有ロックがかかる（アプリケーションコード上には子テーブルに対するinsertやupdateしか出てこない）
-### 外部キーのカラムに対してインデックス作成が許容できる
+#### 外部キーのカラムに対してインデックス作成が許容できる
 親テーブルのレコードの更新、削除で自動的に子テーブルのレコードの更新、削除が発生した場合、子テーブルの外部キーにインデックスがないと親テーブルの１レコードの操作に対して想定以上に遅い操作が発生する可能性がある。そのため、インデックスの作成が許容できる（インデックス再作成が少ない＝頻繁に値の更新がない）カラムであることを確認する
-### 親テーブルのレコードの更新に対して、子テーブルの更新が許容可能な時間内に操作が完了することを保証できる
+#### 親テーブルのレコードの更新に対して、子テーブルの更新が許容可能な時間内に操作が完了することを保証できる
 ON DELETE CASCADE、ON DELETE SET NULL、ON UPDATE CASCADE、ON UPDATE SET NULLは、親テーブルの対応するレコードが更新されると自動的に子テーブルの更新がかかる（アプリケーションでは制御できない）そのため、親テーブルのレコードに紐づく子テーブルのレコードが無数に存在する場合、子テーブルの更新処理に多大な時間が費やされる可能性がある
-### 親子テーブル間で、外部キーで常に整合性を保つ必要があるほど強力な制約が必要か再考する
+#### 親子テーブル間で、外部キーで常に整合性を保つ必要があるほど強力な制約が必要か再考する
 親テーブルのレコードが削除された場合を考える。子テーブルのレコードが、親テーブルを通してのみしかアクセスされない設計の場合、親テーブルのレコードが削除された時点で該当の子テーブルのレコードには既にアクセスできない。そのため、必ずしも同時に子テーブルのレコードを削除する必要はない。ここで説明するケースにおいては、バッチ処理で非同期的に子テーブルのレコードを削除すれば十分と考えられる
 
-## ユーザー情報を扱う際の注意事項
+### ユーザー情報を扱う際の注意事項
 ユーザーが利用する情報（ユーザー情報、職務経歴、相談料等々（※））は、user_accountテーブルを親として扱い、関連付けたテーブルを作成する。関連付ける際は、外部キーは使わない（参考：[外部キー採用時の検討事項](#外部キー採用時の検討事項)）user_accountテーブルからユーザーが削除された際、関連づいていた子テーブルのレコードは、非同期的にバッチ処理で削除する（削除の際はuser_accountテーブルからdeleted_user_accountテーブルへレコードを移動する。バッチ処理はdeleted_user_accountテーブルへレコードを読み取り、不要に成った子テーブルのレコード（※）を削除する）これの処理を考慮し、子テーブル -> user_accountテーブルの順序のデータの読み書きの流れを設計しないようにする。
 
 （※）関連するテーブルの中でもユーザーが利用する情報のみ削除し、管理者が記録のために必要とするテーブルのデータは削除対象外とする（例えば、利用規約に同意したことを記録するテーブルは削除しない）
 
-## トランザクション内におけるロックの取得順序
+### トランザクション内におけるロックの取得順序
 デッドロックとなる設計を避けるため、トランザクション内で複数ロックを取得する場合、取得するロックについてこのセクションに明記する。
 デッドロックにならないように、下記の点を避けるように留意して設計する。
 <ul>
@@ -57,25 +90,25 @@ ON DELETE CASCADE、ON DELETE SET NULL、ON UPDATE CASCADE、ON UPDATE SET NULL�
 <p>（※1）取得するロックの種類（排他ロックと共有ロックの組み合わせ）を適切にすれば、たすき掛けでもデッドロックは起こらないが、問題が見つかりにくくなるため、たすき掛けになるロックの取得順は一律で禁止とする</p>
 <p>（※2）外部キーを使う場合、子のレコードをINSERT、UPDATEするときに親レコードに暗黙的に共有ロックがかかる。このケースは見落としやすいので要注意する</p>
 
-### admin_service
-#### create_identity_request_approval.rs
+#### admin_service
+##### create_identity_request_approval.rs
 user_accountで共有ロックを取得 -> create_identity_reqで排他ロックを取得
-#### create_identity_request_rejection.rs
+##### create_identity_request_rejection.rs
 user_accountで共有ロックを取得 -> create_identity_reqで排他ロックを取得
-#### update_identity_request_approval.rs
+##### update_identity_request_approval.rs
 user_accountで共有ロックを取得 -> identityで排他ロックを取得 -> update_identity_reqで排他ロックを取得
-#### update_identity_request_rejection.rs
+##### update_identity_request_rejection.rs
 user_accountで共有ロックを取得 -> update_identity_reqで排他ロックを取得
-#### create_career_request_approval.rs
+##### create_career_request_approval.rs
 user_accountで共有ロックを取得 -> create_career_reqで排他ロックを取得 -> documentで共有ロックを取得
-#### create_career_request_rejection.rs
+##### create_career_request_rejection.rs
 user_accountで共有ロックを取得 -> create_career_reqで排他ロックを取得
 
-### user_service
-#### fee_per_hour_in_yen.rs
+#### user_service
+##### fee_per_hour_in_yen.rs
 consulting_feeで排他ロックを取得 -> documentで共有ロックを取得
-#### career/delete.rs
+##### career/delete.rs
 careerで排他ロックを取得 -> documentで共有ロックを取得
 
-# 検索用インデックスの設計について
+## 検索用インデックスの設計について
 検索用インデックスには、OpenSearchを利用する。検索用インデックスに投入するデータは、DBの値、もしくはその値を加工して生成できる値に限定する（検索用インデックスを一次データの保管場所として採用しない）
