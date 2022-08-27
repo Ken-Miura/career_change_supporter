@@ -23,6 +23,7 @@ import PrivacyPolicyPage from '../views/PrivacyPolicyPage.vue'
 import TransactionLawPage from '../views/TransactionLawPage.vue'
 import ConsultantListPage from '../views/personalized/ConsultantListPage.vue'
 import ConsultantDetailPage from '../views/personalized/ConsultantDetailPage.vue'
+import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -203,6 +204,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/consultant-detail/:consultant_id',
     name: 'ConsultantDetailPage',
     component: ConsultantDetailPage
+  },
+  {
+    path: '/request-consultation/:consultant_id',
+    name: 'RequestConsultationPage',
+    component: RequestConsultationPage
   }
 ]
 

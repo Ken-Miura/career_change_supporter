@@ -43,7 +43,7 @@
             </div>
           </div>
           <p v-else class="m-4 text-xl">コンサルタントの詳細を取得出来ませんでした。</p>
-          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談を申し込む</button>
+          <button v-on:click="moveToRequestConsultationPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談を申し込む</button>
         </div>
       </div>
     </main>
@@ -167,6 +167,10 @@ export default defineComponent({
       }
     }
 
+    const moveToRequestConsultationPage = async () => {
+      await router.push({ name: 'RequestConsultationPage', params: { consultant_id: consultantId } })
+    }
+
     return {
       error,
       consultantDetail,
@@ -176,7 +180,8 @@ export default defineComponent({
       convertEmployedValue,
       convertContractTypeValue,
       convertIsManagerValue,
-      convertIsNewGraduateValue
+      convertIsNewGraduateValue,
+      moveToRequestConsultationPage
     }
   }
 })
