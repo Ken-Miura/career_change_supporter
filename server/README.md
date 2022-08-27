@@ -39,6 +39,22 @@ curl -XPUT -H "Content-Type: application/json" --data "@files_for_compose/opense
 curl -XPUT -H "Content-Type: application/json" -d '{ "index": { "number_of_replicas": 0 } }' "http://opensearch:9200/users/_settings"
 ```
 
+## 管理者アカウントのセットアップ
+下記のコマンドを打ち、管理者向けサービスのアカウントを作成する
+```
+cargo run --bin admin_account create "管理者用Eメールアドレス" "パスワード"
+```
+
+## サービスの起動
+下記のコマンドを打ち、ユーザ向けサービスを起動する
+```
+cargo run --bin user_service
+```
+下記のコマンドを打ち、管理者向けサービスを起動する
+```
+cargo run --bin admin_service
+```
+
 # ローカルの開発環境の更新
 ## DBのテーブルの変更と反映
 開発中、DBのテーブル定義を更新したい場合、下記の項目を実施する。
