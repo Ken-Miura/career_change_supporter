@@ -15,9 +15,10 @@ use common::util::{Identity, Ymd};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
 use entity::prelude::Tenant as TenantEntity;
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect, Set, TransactionError,
-    TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect, Set,
+    TransactionError, TransactionTrait,
 };
+use entity::{career, consulting_fee};
 use once_cell::sync::Lazy;
 use opensearch::OpenSearch;
 use serde::Serialize;
@@ -91,6 +92,11 @@ async fn handle_bank_account_req(
         )
     })?;
 
+    let tenant_exists = op.check_if_tenant_exists(account_id).await?;
+    if !tenant_exists {
+        let _ = is_eligible_to_create_tenant(account_id, &op).await?;
+    }
+
     let zenkaku_space = "　";
     let full_name =
         identity.last_name_furigana + zenkaku_space + identity.first_name_furigana.as_str();
@@ -115,12 +121,49 @@ async fn handle_bank_account_req(
     Ok((StatusCode::OK, Json(BankAccountResult {})))
 }
 
+// 相談を受け付けるためには、(身分証明に加えて) 職務経歴、相談料、銀行口座の登録が必要となる。
+// 銀行口座の登録操作は、pay.jp上にアカウントを作成することになる。2022年8月時点で、pay.jpはアカウントごとに固定の月額手数料を取るような体系にはなっていない。
+// （類似サービスのstripe connectは存在するアカウントごとに固定の月額料金を取っている）
+// しかし、pay.jpがアカウントごとに固定の手数料を取るような体系になる場合に備えて、余計なアカウント作成を防ぐために他に必要な設定が完了していることを確認する。
+async fn is_eligible_to_create_tenant(
+    account_id: i64,
+    op: &impl SubmitBankAccountOperation,
+) -> Result<(), ErrResp> {
+    let career_exists = op.check_if_careers_exist(account_id).await?;
+    if !career_exists {
+        error!("no careers found (account id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoCareersFound as u32,
+            }),
+        ));
+    }
+    let fee_per_hour_in_yen_exists = op.check_if_fee_per_hour_in_yen_exists(account_id).await?;
+    if !fee_per_hour_in_yen_exists {
+        error!("no fee_per_hour_in_yen found (account id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoFeePerHourInYenFound as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
 #[async_trait]
 trait SubmitBankAccountOperation {
     async fn find_identity_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
+
+    async fn check_if_tenant_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+
+    async fn check_if_careers_exist(&self, account_id: i64) -> Result<bool, ErrResp>;
+
+    async fn check_if_fee_per_hour_in_yen_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
 
     async fn submit_bank_account(
         &self,
@@ -166,6 +209,46 @@ impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
             address_line2: m.address_line2,
             telephone_number: m.telephone_number,
         }))
+    }
+
+    async fn check_if_tenant_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+        let tenant_option = TenantEntity::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!("failed to find tenant (account_id: {}): {}", account_id, e);
+                unexpected_err_resp()
+            })?;
+        Ok(tenant_option.is_some())
+    }
+
+    async fn check_if_careers_exist(&self, account_id: i64) -> Result<bool, ErrResp> {
+        let models = career::Entity::find()
+            .filter(career::Column::UserAccountId.eq(account_id))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter career (user_account_id: {}): {}",
+                    account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(!models.is_empty())
+    }
+
+    async fn check_if_fee_per_hour_in_yen_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+        let fee_option = consulting_fee::Entity::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find consulting_fee (account_id: {}): {}",
+                    account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(fee_option.is_some())
     }
 
     async fn submit_bank_account(
@@ -521,6 +604,9 @@ mod tests {
     #[derive(Debug, Clone)]
     struct SubmitBankAccountOperationMock {
         identity: Option<Identity>,
+        tenant_exists: bool,
+        careers_exist: bool,
+        fee_per_hour_in_yen_exists: bool,
         submit_bank_account_err: Option<ErrResp>,
     }
 
@@ -531,6 +617,21 @@ mod tests {
             _account_id: i64,
         ) -> Result<Option<Identity>, ErrResp> {
             Ok(self.identity.clone())
+        }
+
+        async fn check_if_tenant_exists(&self, _account_id: i64) -> Result<bool, ErrResp> {
+            Ok(self.tenant_exists)
+        }
+
+        async fn check_if_careers_exist(&self, _account_id: i64) -> Result<bool, ErrResp> {
+            Ok(self.careers_exist)
+        }
+
+        async fn check_if_fee_per_hour_in_yen_exists(
+            &self,
+            _account_id: i64,
+        ) -> Result<bool, ErrResp> {
+            Ok(self.fee_per_hour_in_yen_exists)
         }
 
         async fn submit_bank_account(
@@ -633,6 +734,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -651,6 +755,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity2.clone()),
+                        tenant_exists: true,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -669,6 +776,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity2),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -687,6 +797,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -705,6 +818,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -725,6 +841,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: true,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -750,6 +869,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -775,6 +897,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: true,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -800,6 +925,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -823,6 +951,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: true,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -846,6 +977,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -869,6 +1003,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: None,
+                        tenant_exists: false,
+                        careers_exist: false,
+                        fee_per_hour_in_yen_exists: false,
                         submit_bank_account_err: None,
                     },
                 },
@@ -892,6 +1029,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: true,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -917,6 +1057,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
                     },
                 },
@@ -942,6 +1085,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: true,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: Some((
                             StatusCode::BAD_REQUEST,
                             Json(ApiError {
@@ -972,6 +1118,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: Some((
                             StatusCode::BAD_REQUEST,
                             Json(ApiError {
@@ -1002,6 +1151,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: Some((
                             StatusCode::BAD_REQUEST,
                             Json(ApiError {
@@ -1032,6 +1184,9 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
+                        tenant_exists: true,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: Some((
                             StatusCode::TOO_MANY_REQUESTS,
                             Json(ApiError {
@@ -1044,6 +1199,62 @@ mod tests {
                     StatusCode::TOO_MANY_REQUESTS,
                     Json(ApiError {
                         code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail no careers found".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: false,
+                        fee_per_hour_in_yen_exists: true,
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoCareersFound as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail no fee_per_hour_in_yen found".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account: BankAccount {
+                        bank_code: "0001".to_string(),
+                        branch_code: "001".to_string(),
+                        account_type: "普通".to_string(),
+                        account_number: "1234567".to_string(),
+                        account_holder_name: identity1.last_name_furigana.clone()
+                            + "　"
+                            + identity1.first_name_furigana.as_str(),
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: false,
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoFeePerHourInYenFound as u32,
                     }),
                 )),
             },

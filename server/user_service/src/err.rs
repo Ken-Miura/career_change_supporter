@@ -104,6 +104,8 @@ pub(crate) enum Code {
     NonPositiveConsultantId = 20092,
     ConsultantDoesNotExist = 20093,
     EqualOrMoreIsLessThanOrMoreYearsOfService = 20094,
+    NoCareersFound = 20095,
+    NoFeePerHourInYenFound = 20096,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
