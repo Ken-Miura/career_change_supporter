@@ -102,6 +102,8 @@ export namespace Code {
   export const INVALID_CONSULTANT_SEARCH_PARAM_FROM = 20090
   export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE = 20091
   export const EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE = 20094
+  export const NO_CAREERS_FOUND = 20095
+  export const NO_FEE_PER_HOUR_IN_YEN_FOUND = 20096
 }
 
 export function createErrorMessage (code: number): string {
@@ -293,6 +295,10 @@ export function createErrorMessage (code: number): string {
     return `${Message.INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE} (${code})`
   } else if (code === Code.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE) {
     return `${Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE} (${code})`
+  } else if (code === Code.NO_CAREERS_FOUND) {
+    return `${Message.NO_CAREERS_FOUND_MESSAGE} (${code})`
+  } else if (code === Code.NO_FEE_PER_HOUR_IN_YEN_FOUND) {
+    return `${Message.NO_FEE_PER_HOUR_IN_YEN_FOUND_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

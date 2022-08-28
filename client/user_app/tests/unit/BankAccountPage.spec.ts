@@ -676,6 +676,84 @@ describe('BankAccountPage.vue', () => {
     expect(resultMessage).toContain(Code.NO_IDENTITY_REGISTERED.toString())
   })
 
+  it(`displays ${Message.NO_CAREERS_FOUND_MESSAGE} if ${Code.NO_CAREERS_FOUND}) is returned`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_CAREERS_FOUND))
+    postBankAccountFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(BankAccountPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const bankCodeDiv = wrapper.find('[data-test="bank-code-div"]')
+    const bankCodeInput = bankCodeDiv.find('input')
+    await bankCodeInput.setValue('0001')
+    const branchCodeDiv = wrapper.find('[data-test="branch-code-div"]')
+    const branchCodeInput = branchCodeDiv.find('input')
+    await branchCodeInput.setValue('001')
+    const accountNumberDiv = wrapper.find('[data-test="account-number-div"]')
+    const accountNumberInput = accountNumberDiv.find('input')
+    await accountNumberInput.setValue('1234567')
+    const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
+    const accountHolderNameInput = accountHolderNameDiv.find('input')
+    await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const button = wrapper.find('[data-test="submit-button"]')
+    await button.trigger('submit')
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_CAREERS_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_CAREERS_FOUND.toString())
+  })
+
+  it(`displays ${Message.NO_FEE_PER_HOUR_IN_YEN_FOUND_MESSAGE} if ${Code.NO_FEE_PER_HOUR_IN_YEN_FOUND}) is returned`, async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_FEE_PER_HOUR_IN_YEN_FOUND))
+    postBankAccountFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(BankAccountPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const bankCodeDiv = wrapper.find('[data-test="bank-code-div"]')
+    const bankCodeInput = bankCodeDiv.find('input')
+    await bankCodeInput.setValue('0001')
+    const branchCodeDiv = wrapper.find('[data-test="branch-code-div"]')
+    const branchCodeInput = branchCodeDiv.find('input')
+    await branchCodeInput.setValue('001')
+    const accountNumberDiv = wrapper.find('[data-test="account-number-div"]')
+    const accountNumberInput = accountNumberDiv.find('input')
+    await accountNumberInput.setValue('1234567')
+    const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
+    const accountHolderNameInput = accountHolderNameDiv.find('input')
+    await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const button = wrapper.find('[data-test="submit-button"]')
+    await button.trigger('submit')
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_FEE_PER_HOUR_IN_YEN_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_FEE_PER_HOUR_IN_YEN_FOUND.toString())
+  })
+
   it('displays AlertMessage when error has happened on postBankAccount', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const errDetail = 'connection error'

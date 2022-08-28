@@ -120,4 +120,6 @@ export namespace Message {
     export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE = '不正なページサイズです'
     export const NO_CONSULTANT_SEARCH_PARAM_FOUND_MESSAGE = '相談申し込みから相談相手の検索を行って下さい'
     export const EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE = '在籍年数に関して、"年以上"または"年未満"の指定が不正です（"年以上"は"年未満"よりも小さい値である必要が有ります）'
+    export const NO_CAREERS_FOUND_MESSAGE = '職務経歴が登録されていません。報酬の入金口座の登録前に職務経歴を登録して下さい'
+    export const NO_FEE_PER_HOUR_IN_YEN_FOUND_MESSAGE = '相談一回（１時間）の相談料が登録されていません。報酬の入金口座の登録前に相談一回（１時間）の相談料を登録して下さい'
 }
