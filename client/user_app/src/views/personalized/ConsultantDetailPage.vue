@@ -65,6 +65,7 @@ import { Message } from '@/util/Message'
 import { useGetConsultantDetail } from '@/util/personalized/consultant-detail/useGetConsultantDetail'
 import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/GetConsultantDetailResp'
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
+import { FIFTEEN_YEARS_OR_MORE_LESS_THAN_TWENTY_YEARS, FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS, LESS_THAN_THREE_YEARS, TEN_YEARS_OR_MORE_LESS_THAN_FIFTEEN_YEARS, THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS, TWENTY_YEARS_OR_MORE } from '@/util/personalized/consultant-detail/YearsOfService'
 
 export default defineComponent({
   name: 'ConsultantDetailPage',
@@ -114,17 +115,17 @@ export default defineComponent({
     })
 
     const convertYearsOfServiceValue = (yearsOfService: string): string => {
-      if (yearsOfService === 'LESS_THAN_THREE_YEARS') {
+      if (yearsOfService === LESS_THAN_THREE_YEARS) {
         return '3年未満'
-      } else if (yearsOfService === 'THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS') {
+      } else if (yearsOfService === THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS) {
         return '3年以上5年未満'
-      } else if (yearsOfService === 'FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS') {
+      } else if (yearsOfService === FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS) {
         return '5年以上10年未満'
-      } else if (yearsOfService === 'TEN_YEARS_OR_MORE_LESS_THAN_FIFTEEN_YEARS') {
+      } else if (yearsOfService === TEN_YEARS_OR_MORE_LESS_THAN_FIFTEEN_YEARS) {
         return '10年以上15年未満'
-      } else if (yearsOfService === 'FIFTEEN_YEARS_OR_MORE_LESS_THAN_TWENTY_YEARS') {
+      } else if (yearsOfService === FIFTEEN_YEARS_OR_MORE_LESS_THAN_TWENTY_YEARS) {
         return '15年以上20年未満'
-      } else if (yearsOfService === 'TWENTY_YEARS_OR_MORE') {
+      } else if (yearsOfService === TWENTY_YEARS_OR_MORE) {
         return '20年以上'
       } else {
         return '不明'
