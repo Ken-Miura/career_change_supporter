@@ -9,6 +9,7 @@ import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/G
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { ConsultantCareerDetail } from '@/util/personalized/consultant-detail/ConsultantCareerDetail'
 import { LESS_THAN_THREE_YEARS } from '@/util/personalized/consultant-detail/YearsOfService'
+import { Message } from '@/util/Message'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -101,5 +102,26 @@ describe('ConsultantDetailPage.vue', () => {
     expect(waitingCircles.length).toBe(0)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(0)
+  })
+
+  it('displays AlertMessage when error has happened on opening ConsultantDetailPage', async () => {
+    const errDetail = 'connection error'
+    getConsultantDetailFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(ConsultantDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
