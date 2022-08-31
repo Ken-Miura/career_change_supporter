@@ -212,5 +212,9 @@ describe('ConsultantDetailPage.vue', () => {
 
     const careerLabel = wrapper.find('[data-test="career-label"]')
     expect(careerLabel.text()).toContain('職務経歴')
+
+    const career0 = wrapper.find('[data-test="career-detail-0"]')
+    const career0DetailLabel = career0.find('[data-test="career-detail-label"]')
+    expect(career0DetailLabel.text()).toContain('職務経歴1')
   })
 })
