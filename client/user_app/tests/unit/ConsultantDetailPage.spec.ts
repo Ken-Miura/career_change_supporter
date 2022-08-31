@@ -192,7 +192,25 @@ describe('ConsultantDetailPage.vue', () => {
     })
     await flushPromises()
 
-    // const totalDiv = wrapper.find('[data-test="total"]')
-    // expect(totalDiv.text()).toContain(`${result.total} 件`)
+    const consultantDetailLabel = wrapper.find('[data-test="consultant-detail-label"]')
+    expect(consultantDetailLabel.text()).toContain('コンサルタント詳細')
+
+    const consultantIdLabel = wrapper.find('[data-test="consultant-id-label"]')
+    expect(consultantIdLabel.text()).toContain('コンサルタントID')
+    const consultantIdValue = wrapper.find('[data-test="consultant-id-value"]')
+    expect(consultantIdValue.text()).toContain(`${consultant1.consultant_id}`)
+
+    const feePerHourInYenLabel = wrapper.find('[data-test="fee-per-hour-in-yen-label"]')
+    expect(feePerHourInYenLabel.text()).toContain('相談一回（１時間）の相談料')
+    const feePerHourInYenValue = wrapper.find('[data-test="fee-per-hour-in-yen-value"]')
+    expect(feePerHourInYenValue.text()).toContain(`${consultant1.fee_per_hour_in_yen}円`)
+
+    const ratingLabel = wrapper.find('[data-test="rating-label"]')
+    expect(ratingLabel.text()).toContain(`評価（評価件数：${consultant1.num_of_rated} 件）`)
+    const ratingValue = wrapper.find('[data-test="rating-value"]')
+    expect(ratingValue.text()).toContain('0')
+
+    const careerLabel = wrapper.find('[data-test="career-label"]')
+    expect(careerLabel.text()).toContain('職務経歴')
   })
 })

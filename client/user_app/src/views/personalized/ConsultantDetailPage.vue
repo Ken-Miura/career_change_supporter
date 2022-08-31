@@ -14,10 +14,10 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="consultant-detail-label" class="font-bold text-2xl">コンサルタント詳細</h3>
           <div v-if="consultantDetail !== null" class="m-4 text-2xl grid grid-cols-3">
-            <div class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantDetail.consultant_id }}</div>
-            <div class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ consultantDetail.fee_per_hour_in_yen }}円</div>
-            <div class="mt-2 justify-self-start col-span-2">評価（評価件数：{{ consultantDetail.num_of_rated }} 件）</div><div class="mt-2 justify-self-start col-span-1"><span v-if="consultantDetail.rating !== null">{{ consultantDetail.rating }}</span><span v-else>0</span>/5</div>
-            <div class="mt-5 justify-self-start col-span-3 font-bold text-2xl">職務経歴</div>
+            <div data-test="consultant-id-label" class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div data-test="consultant-id-value" class="mt-2 justify-self-start col-span-1">{{ consultantDetail.consultant_id }}</div>
+            <div data-test="fee-per-hour-in-yen-label" class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div data-test="fee-per-hour-in-yen-value" class="mt-2 justify-self-start col-span-1">{{ consultantDetail.fee_per_hour_in_yen }}円</div>
+            <div data-test="rating-label" class="mt-2 justify-self-start col-span-2">評価（評価件数：{{ consultantDetail.num_of_rated }} 件）</div><div data-test="rating-value" class="mt-2 justify-self-start col-span-1"><span v-if="consultantDetail.rating !== null">{{ consultantDetail.rating }}</span><span v-else>0</span>/5</div>
+            <div data-test="career-label" class="mt-5 justify-self-start col-span-3 font-bold text-2xl">職務経歴</div>
             <div class="mt-2 justify-self-start col-span-3 flex flex-col justify-center w-full">
               <ul>
                 <li v-for="(consultantCareerDetail, index) in consultantDetail.careers" v-bind:key="consultantCareerDetail.counsultant_career_detail_id">
