@@ -8,7 +8,7 @@ import ConsultantDetailPage from '@/views/personalized/ConsultantDetailPage.vue'
 import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/GetConsultantDetailResp'
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { ConsultantCareerDetail } from '@/util/personalized/consultant-detail/ConsultantCareerDetail'
-import { LESS_THAN_THREE_YEARS, THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS } from '@/util/personalized/consultant-detail/YearsOfService'
+import { FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS, LESS_THAN_THREE_YEARS, THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS } from '@/util/personalized/consultant-detail/YearsOfService'
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
@@ -82,6 +82,135 @@ const consultant2 = {
     改行３
     `
   } as ConsultantCareerDetail]
+} as ConsultantDetail
+
+const consultant3 = {
+  consultant_id: 3,
+  fee_per_hour_in_yen: 3000,
+  rating: null,
+  num_of_rated: 0,
+  careers: [
+    {
+      counsultant_career_detail_id: 1,
+      company_name: 'テスト１（株）',
+      department_name: null,
+      office: null,
+      years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+      employed: true,
+      contract_type: 'regular',
+      profession: null,
+      annual_income_in_man_yen: null,
+      is_manager: false,
+      position_name: null,
+      is_new_graduate: true,
+      note: null
+    } as ConsultantCareerDetail,
+  {
+    counsultant_career_detail_id: 2,
+    company_name: 'テスト２（株）',
+    department_name: null,
+    office: null,
+    years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+    employed: true,
+    contract_type: 'regular',
+    profession: null,
+    annual_income_in_man_yen: null,
+    is_manager: false,
+    position_name: null,
+    is_new_graduate: true,
+    note: null
+  } as ConsultantCareerDetail,
+  {
+    counsultant_career_detail_id: 3,
+    company_name: 'テスト３（株）',
+    department_name: null,
+    office: null,
+    years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+    employed: true,
+    contract_type: 'regular',
+    profession: null,
+    annual_income_in_man_yen: null,
+    is_manager: false,
+    position_name: null,
+    is_new_graduate: true,
+    note: null
+  } as ConsultantCareerDetail,
+  {
+    counsultant_career_detail_id: 4,
+    company_name: 'テスト４（株）',
+    department_name: null,
+    office: null,
+    years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+    employed: true,
+    contract_type: 'regular',
+    profession: null,
+    annual_income_in_man_yen: null,
+    is_manager: false,
+    position_name: null,
+    is_new_graduate: true,
+    note: null
+  } as ConsultantCareerDetail,
+  {
+    counsultant_career_detail_id: 5,
+    company_name: 'テスト５（株）',
+    department_name: null,
+    office: null,
+    years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+    employed: true,
+    contract_type: 'regular',
+    profession: null,
+    annual_income_in_man_yen: null,
+    is_manager: false,
+    position_name: null,
+    is_new_graduate: true,
+    note: null
+  } as ConsultantCareerDetail,
+  {
+    counsultant_career_detail_id: 6,
+    company_name: 'テスト６（株）',
+    department_name: null,
+    office: null,
+    years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+    employed: true,
+    contract_type: 'regular',
+    profession: null,
+    annual_income_in_man_yen: null,
+    is_manager: false,
+    position_name: null,
+    is_new_graduate: true,
+    note: null
+  } as ConsultantCareerDetail,
+  {
+    counsultant_career_detail_id: 7,
+    company_name: 'テスト７（株）',
+    department_name: null,
+    office: null,
+    years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+    employed: true,
+    contract_type: 'regular',
+    profession: null,
+    annual_income_in_man_yen: null,
+    is_manager: false,
+    position_name: null,
+    is_new_graduate: true,
+    note: null
+  } as ConsultantCareerDetail,
+  {
+    counsultant_career_detail_id: 8,
+    company_name: 'テスト８（株）',
+    department_name: null,
+    office: null,
+    years_of_service: FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
+    employed: true,
+    contract_type: 'regular',
+    profession: null,
+    annual_income_in_man_yen: null,
+    is_manager: false,
+    position_name: null,
+    is_new_graduate: true,
+    note: null
+  } as ConsultantCareerDetail
+  ]
 } as ConsultantDetail
 
 describe('ConsultantDetailPage.vue', () => {
@@ -407,5 +536,107 @@ describe('ConsultantDetailPage.vue', () => {
     改行１
     改行２
     改行３`)
+  })
+
+  it('displays consultant detail case 3', async () => {
+    routeParam = '3'
+    const resp = GetConsultantDetailResp.create(consultant3)
+    getConsultantDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const consultantDetailLabel = wrapper.find('[data-test="consultant-detail-label"]')
+    expect(consultantDetailLabel.text()).toContain('コンサルタント詳細')
+
+    const consultantIdLabel = wrapper.find('[data-test="consultant-id-label"]')
+    expect(consultantIdLabel.text()).toContain('コンサルタントID')
+    const consultantIdValue = wrapper.find('[data-test="consultant-id-value"]')
+    expect(consultantIdValue.text()).toContain(`${consultant3.consultant_id}`)
+
+    const feePerHourInYenLabel = wrapper.find('[data-test="fee-per-hour-in-yen-label"]')
+    expect(feePerHourInYenLabel.text()).toContain('相談一回（１時間）の相談料')
+    const feePerHourInYenValue = wrapper.find('[data-test="fee-per-hour-in-yen-value"]')
+    expect(feePerHourInYenValue.text()).toContain(`${consultant3.fee_per_hour_in_yen}円`)
+
+    const ratingLabel = wrapper.find('[data-test="rating-label"]')
+    expect(ratingLabel.text()).toContain(`評価（評価件数：${consultant3.num_of_rated} 件）`)
+    const ratingValue = wrapper.find('[data-test="rating-value"]')
+    expect(ratingValue.text()).toContain('0/5')
+
+    const careerLabel = wrapper.find('[data-test="career-label"]')
+    expect(careerLabel.text()).toContain('職務経歴')
+
+    for (let i = 0; i < consultant3.careers.length; i++) {
+      const career = wrapper.find(`[data-test="career-detail-${i}"]`)
+
+      const career0DetailLabel = career.find('[data-test="career-detail-label"]')
+      expect(career0DetailLabel.text()).toContain(`職務経歴${i + 1}`)
+
+      const companyNameLabel = career.find('[data-test="company-name-label"]')
+      expect(companyNameLabel.text()).toContain('勤務先名称')
+      const companyNameValue = career.find('[data-test="company-name-value"]')
+      expect(companyNameValue.text()).toContain(`${consultant3.careers[i].company_name}`)
+
+      const departmentNameLabel = career.find('[data-test="department-name-label"]')
+      expect(departmentNameLabel.exists()).toBe(false)
+      const departmentNameValue = career.find('[data-test="department-name-value"]')
+      expect(departmentNameValue.exists()).toBe(false)
+
+      const officeLabel = career.find('[data-test="office-label"]')
+      expect(officeLabel.exists()).toBe(false)
+      const officeValue = career.find('[data-test="office-value"]')
+      expect(officeValue.exists()).toBe(false)
+
+      const yearsOfServiceLabel = career.find('[data-test="years-of-service-label"]')
+      expect(yearsOfServiceLabel.text()).toContain('在籍年数')
+      const yearsOfServiceValue = career.find('[data-test="years-of-service-value"]')
+      expect(yearsOfServiceValue.text()).toContain('5年以上10年未満')
+
+      const employedLabel = career.find('[data-test="employed-label"]')
+      expect(employedLabel.text()).toContain('在籍の有無')
+      const employedValue = career.find('[data-test="employed-value"]')
+      expect(employedValue.text()).toContain('在籍中')
+
+      const contractTypeLabel = career.find('[data-test="contract-type-label"]')
+      expect(contractTypeLabel.text()).toContain('雇用形態')
+      const contractTypeValue = career.find('[data-test="contract-type-value"]')
+      expect(contractTypeValue.text()).toContain('正社員')
+
+      const professionLabel = career.find('[data-test="profession-label"]')
+      expect(professionLabel.exists()).toBe(false)
+      const professionValue = career.find('[data-test="profession-value"]')
+      expect(professionValue.exists()).toBe(false)
+
+      const annualIncomeInManYenLabel = career.find('[data-test="annual-income-in-man-yen-label"]')
+      expect(annualIncomeInManYenLabel.exists()).toBe(false)
+      const annualIncomeInManYenValue = career.find('[data-test="annual-income-in-man-yen-value"]')
+      expect(annualIncomeInManYenValue.exists()).toBe(false)
+
+      const isManagerLabel = career.find('[data-test="is-manager-label"]')
+      expect(isManagerLabel.text()).toContain('管理職区分')
+      const isManagerValue = career.find('[data-test="is-manager-value"]')
+      expect(isManagerValue.text()).toContain('非管理職')
+
+      const positionNameLabel = career.find('[data-test="position-name-label"]')
+      expect(positionNameLabel.exists()).toBe(false)
+      const positionNameValue = career.find('[data-test="position-name-value"]')
+      expect(positionNameValue.exists()).toBe(false)
+
+      const isNewGraduateLabel = career.find('[data-test="is-new-graduate-label"]')
+      expect(isNewGraduateLabel.text()).toContain('入社区分')
+      const isNewGraduateValue = career.find('[data-test="is-new-graduate-value"]')
+      expect(isNewGraduateValue.text()).toContain('新卒入社')
+
+      const noteLabel = career.find('[data-test="note-label"]')
+      expect(noteLabel.exists()).toBe(false)
+      const noteValue = career.find('[data-test="note-value"]')
+      expect(noteValue.exists()).toBe(false)
+    }
   })
 })
