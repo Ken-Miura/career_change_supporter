@@ -158,4 +158,41 @@ describe('ConsultantDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
+
+  it('moves to RequestConsultationPage with consultant id', async () => {
+    const resp = GetConsultantDetailResp.create(consultant1)
+    getConsultantDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="move-to-request-consultantion-page-button"]')
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = { name: 'RequestConsultationPage', params: { consultant_id: routeParam } }
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
+
+  it('displays consultant detail case 1', async () => {
+    const resp = GetConsultantDetailResp.create(consultant1)
+    getConsultantDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultantDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    // const totalDiv = wrapper.find('[data-test="total"]')
+    // expect(totalDiv.text()).toContain(`${result.total} 件`)
+  })
 })

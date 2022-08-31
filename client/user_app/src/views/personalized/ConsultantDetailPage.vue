@@ -12,7 +12,7 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">コンサルタント詳細</h3>
+          <h3 data-test="consultant-detail-label" class="font-bold text-2xl">コンサルタント詳細</h3>
           <div v-if="consultantDetail !== null" class="m-4 text-2xl grid grid-cols-3">
             <div class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantDetail.consultant_id }}</div>
             <div class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ consultantDetail.fee_per_hour_in_yen }}円</div>
@@ -43,7 +43,7 @@
             </div>
           </div>
           <p v-else class="m-4 text-xl">コンサルタントの詳細を取得出来ませんでした。</p>
-          <button v-on:click="moveToRequestConsultationPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談を申し込む</button>
+          <button data-test="move-to-request-consultantion-page-button" v-on:click="moveToRequestConsultationPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談を申し込む</button>
         </div>
       </div>
     </main>
