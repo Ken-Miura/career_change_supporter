@@ -214,7 +214,68 @@ describe('ConsultantDetailPage.vue', () => {
     expect(careerLabel.text()).toContain('職務経歴')
 
     const career0 = wrapper.find('[data-test="career-detail-0"]')
+
     const career0DetailLabel = career0.find('[data-test="career-detail-label"]')
     expect(career0DetailLabel.text()).toContain('職務経歴1')
+
+    const companyNameLabel = career0.find('[data-test="company-name-label"]')
+    expect(companyNameLabel.text()).toContain('勤務先名称')
+    const companyNameValue = career0.find('[data-test="company-name-value"]')
+    expect(companyNameValue.text()).toContain(`${consultant1.careers[0].company_name}`)
+
+    const departmentNameLabel = career0.find('[data-test="department-name-label"]')
+    expect(departmentNameLabel.exists()).toBe(false)
+    const departmentNameValue = career0.find('[data-test="department-name-value"]')
+    expect(departmentNameValue.exists()).toBe(false)
+
+    const officeLabel = career0.find('[data-test="office-label"]')
+    expect(officeLabel.exists()).toBe(false)
+    const officeValue = career0.find('[data-test="office-value"]')
+    expect(officeValue.exists()).toBe(false)
+
+    const yearsOfServiceLabel = career0.find('[data-test="years-of-service-label"]')
+    expect(yearsOfServiceLabel.text()).toContain('在籍年数')
+    const yearsOfServiceValue = career0.find('[data-test="years-of-service-value"]')
+    expect(yearsOfServiceValue.text()).toContain('3年未満')
+
+    const employedLabel = career0.find('[data-test="employed-label"]')
+    expect(employedLabel.text()).toContain('在籍の有無')
+    const employedValue = career0.find('[data-test="employed-value"]')
+    expect(employedValue.text()).toContain('在籍中')
+
+    const contractTypeLabel = career0.find('[data-test="contract-type-label"]')
+    expect(contractTypeLabel.text()).toContain('雇用形態')
+    const contractTypeValue = career0.find('[data-test="contract-type-value"]')
+    expect(contractTypeValue.text()).toContain('正社員')
+
+    const professionLabel = career0.find('[data-test="profession-label"]')
+    expect(professionLabel.exists()).toBe(false)
+    const professionValue = career0.find('[data-test="profession-value"]')
+    expect(professionValue.exists()).toBe(false)
+
+    const annualIncomeInManYenLabel = career0.find('[data-test="annual-income-in-man-yen-label"]')
+    expect(annualIncomeInManYenLabel.exists()).toBe(false)
+    const annualIncomeInManYenValue = career0.find('[data-test="annual-income-in-man-yen-value"]')
+    expect(annualIncomeInManYenValue.exists()).toBe(false)
+
+    const isManagerLabel = career0.find('[data-test="is-manager-label"]')
+    expect(isManagerLabel.text()).toContain('管理職区分')
+    const isManagerValue = career0.find('[data-test="is-manager-value"]')
+    expect(isManagerValue.text()).toContain('非管理職')
+
+    const positionNameLabel = career0.find('[data-test="position-name-label"]')
+    expect(positionNameLabel.exists()).toBe(false)
+    const positionNameValue = career0.find('[data-test="position-name-value"]')
+    expect(positionNameValue.exists()).toBe(false)
+
+    const isNewGraduateLabel = career0.find('[data-test="is-new-graduate-label"]')
+    expect(isNewGraduateLabel.text()).toContain('入社区分')
+    const isNewGraduateValue = career0.find('[data-test="is-new-graduate-value"]')
+    expect(isNewGraduateValue.text()).toContain('新卒入社')
+
+    const noteLabel = career0.find('[data-test="note-label"]')
+    expect(noteLabel.exists()).toBe(false)
+    const noteValue = career0.find('[data-test="note-value"]')
+    expect(noteValue.exists()).toBe(false)
   })
 })
