@@ -150,3 +150,128 @@ async fn handle_fee_per_hour_in_yen_for_application(
         }),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use common::{ApiError, ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::err::Code;
+
+    use super::{
+        handle_fee_per_hour_in_yen_for_application, FeePerHourInYenForApplication,
+        FeePerHourInYenForApplicationOperation,
+    };
+
+    #[derive(Clone, Debug)]
+    struct FeePerHourInYenForApplicationOperationMock {
+        account_id: i64,
+        consultant_id: i64,
+        fee_per_hour_in_yen: i32,
+    }
+
+    #[async_trait]
+    impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            if self.account_id != account_id {
+                return Ok(false);
+            };
+            Ok(true)
+        }
+
+        async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
+            if self.consultant_id != consultant_id {
+                return Ok(false);
+            };
+            Ok(true)
+        }
+
+        async fn find_fee_per_hour_in_yen_by_consultant_id(
+            &self,
+            _consultant_id: i64,
+        ) -> Result<Option<i32>, ErrResp> {
+            Ok(Some(self.fee_per_hour_in_yen))
+        }
+    }
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<FeePerHourInYenForApplication>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        consultant_id: i64,
+        op: FeePerHourInYenForApplicationOperationMock,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![
+            TestCase {
+                name: "consultant id is not positive".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 0,
+                    op: FeePerHourInYenForApplicationOperationMock {
+                        account_id: 1,
+                        consultant_id: 0,
+                        fee_per_hour_in_yen: 3000,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultantId as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "no identity found".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 3,
+                    op: FeePerHourInYenForApplicationOperationMock {
+                        account_id: 2,
+                        consultant_id: 3,
+                        fee_per_hour_in_yen: 3000,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
+                    }),
+                )),
+            },
+        ]
+    });
+
+    #[tokio::test]
+    async fn test_handle_fee_per_hour_in_yen_for_application() {
+        for test_case in TEST_CASE_SET.iter() {
+            let result = handle_fee_per_hour_in_yen_for_application(
+                test_case.input.account_id,
+                test_case.input.consultant_id,
+                test_case.input.op.clone(),
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if let Ok(actual) = result {
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(actual.0, expected.0, "{}", message);
+                assert_eq!(actual.1 .0, expected.1 .0, "{}", message);
+            } else {
+                let actual = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(actual.0, expected.0, "{}", message);
+                assert_eq!(actual.1 .0, expected.1 .0, "{}", message);
+            }
+        }
+    }
+}
