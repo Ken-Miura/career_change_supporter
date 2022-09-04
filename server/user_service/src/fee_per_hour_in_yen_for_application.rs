@@ -248,6 +248,24 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "no counsultant found".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 2,
+                    op: FeePerHourInYenForApplicationOperationMock {
+                        account_id: 1,
+                        consultant_id: 3,
+                        fee_per_hour_in_yen: 50000,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultantDoesNotExist as u32,
+                    }),
+                )),
+            },
         ]
     });
 
