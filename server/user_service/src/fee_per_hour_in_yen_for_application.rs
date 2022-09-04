@@ -266,6 +266,24 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "succeed in getting fee_per_hour_in_yen".to_string(),
+                input: Input {
+                    account_id: 1,
+                    consultant_id: 2,
+                    op: FeePerHourInYenForApplicationOperationMock {
+                        account_id: 1,
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: 25000,
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(FeePerHourInYenForApplication {
+                        fee_per_hour_in_yen: 25000,
+                    }),
+                )),
+            },
         ]
     });
 
