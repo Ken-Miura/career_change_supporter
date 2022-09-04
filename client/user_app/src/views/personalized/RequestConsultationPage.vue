@@ -1,8 +1,20 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <h3 class="font-bold text-lg">{{ message }}, {{ consultantId }}</h3>
+    <div v-if="!getFeePerHourInYenForApplicationDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else>
+      <div v-if="error.exists">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <AlertMessage class="mt-2" v-bind:message="error.message"/>
+        </div>
+      </div>
+      <div v-else>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-lg">コンサルタントID: {{ consultantId }}, 相談料: {{ feePerHourInYen }}円</h3>
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
@@ -11,31 +23,45 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import AlertMessage from '@/components/AlertMessage.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 import { ApiErrorResp } from '@/util/ApiError'
-import { Code } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
+import { useGetFeePerHourInYenForApplication } from '@/util/personalized/request-consultation/useGetFeePerHourInYenForApplication'
+import { GetFeePerHourInYenForApplicationResp } from '@/util/personalized/request-consultation/GetFeePerHourInYenForApplicationResp'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
   components: {
-    TheHeader
+    TheHeader,
+    WaitingCircle,
+    AlertMessage
   },
   setup () {
-    const message = ref('相談申込み用テストページ')
+    const error = reactive({
+      exists: false,
+      message: ''
+    })
     const router = useRouter()
     const route = useRoute()
     const consultantId = route.params.consultant_id as string
+    const {
+      getFeePerHourInYenForApplicationDone,
+      getFeePerHourInYenForApplicationFunc
+    } = useGetFeePerHourInYenForApplication()
+    const feePerHourInYen = ref(null as number | null)
+
     onMounted(async () => {
       try {
-        const resp = await refresh()
-        if (resp instanceof RefreshResp) {
-          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
-        } else if (resp instanceof ApiErrorResp) {
+        const resp = await getFeePerHourInYenForApplicationFunc(consultantId)
+        if (!(resp instanceof GetFeePerHourInYenForApplicationResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('/login')
@@ -44,14 +70,23 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          // TODO: エラー処理
+          error.exists = true
+          error.message = createErrorMessage(resp.getApiError().getCode())
+          return
         }
+        feePerHourInYen.value = resp.getFeePerHourInYenForApplication()
       } catch (e) {
-        // TODO: エラー処理
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      console.log('TODO: 実装後削除')
     })
-    return { message, consultantId }
+
+    return {
+      consultantId,
+      error,
+      getFeePerHourInYenForApplicationDone,
+      feePerHourInYen
+    }
   }
 })
 </script>

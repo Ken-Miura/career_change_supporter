@@ -196,7 +196,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/bank-account", post(post_bank_account))
                 .route("/consultants-search", post(post_consultants_search))
                 .route("/consultant-detail", get(get_consultant_detail))
-                .route("/fee_per_hour_in_yen_for_application", get(get_fee_per_hour_in_yen_for_application)),
+                .route("/fee-per-hour-in-yen-for-application", get(get_fee_per_hour_in_yen_for_application)),
         )
         .layer(
             ServiceBuilder::new()
