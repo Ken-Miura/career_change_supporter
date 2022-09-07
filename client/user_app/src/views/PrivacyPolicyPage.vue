@@ -7,6 +7,10 @@
     </header>
     <main class="bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <!-- TODO: プライバシーポリシーの更新 -->
+      <!-- TODO: 利用規約にプライバシーポリシーの同意も含めるように作成する -->
+      <!-- 参考: https://www.cloudsign.jp/media/20200212-privacypolicy-doui/ -->
+      <!-- TODO: クレジットのEV3Dセキュア利用時に個人情報を渡す旨の同意を取る文言をプライバシーポリシーに記載する -->
+      <!-- 参考: https://payjp-document.s3.ap-northeast-1.amazonaws.com/PAY.JP_3D%E3%82%BB%E3%82%AD%E3%83%A5%E3%82%A2_EMV3D%E3%82%BB%E3%82%AD%E3%83%A5%E3%82%A2%E7%A7%BB%E8%A1%8C%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.pdf -->
       <h1 class="font-bold text-2xl">プライバシーポリシー</h1>
       <p class="mt-2">このプライバシーポリシーは，＿＿＿＿＿（以下，「当社」といいます。）がこのウェブサイト上で提供するサービス（以下，「本サービス」といいます。）の利用条件を定めるものです。登録ユーザーの皆さま（以下，「ユーザー」といいます。）には，本規約に従って，本サービスをご利用いただきます。</p>
       <div class="mt-4">
