@@ -437,7 +437,7 @@ mod tests {
     use chrono::{TimeZone, Utc};
     use common::{
         payment_platform::{
-            charge::{Charge, ChargeOperation, Query as SearchChargesQuery},
+            charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
             customer::Card,
             tenant::{CreateTenant, ReviewedBrands, TenantOperation, UpdateTenant},
             tenant_transfer::{
@@ -540,6 +540,13 @@ mod tests {
             let result = self.lists[self.num_of_search_trial].clone();
             self.num_of_search_trial += 1;
             Ok(result)
+        }
+
+        async fn create_charge(
+            &self,
+            create_charge: &CreateCharge,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            todo!()
         }
     }
 

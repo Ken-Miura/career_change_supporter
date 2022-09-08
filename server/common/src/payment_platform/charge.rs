@@ -47,6 +47,9 @@ pub trait ChargeOperation {
     // NOTE: 単体テストのために&selfでなく、&mut selfとしている。単体テストでの利用時に&selfを利用可能な解決策が見つかった場合、&selfに変更
     /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)
     async fn search_charges(&mut self, query: &Query) -> Result<List<Charge>, Error>;
+
+    /// [支払いを作成](https://pay.jp/docs/api/#%E6%94%AF%E6%89%95%E3%81%84%E3%82%92%E4%BD%9C%E6%88%90)
+    async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, Error>;
 }
 
 /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
@@ -77,16 +80,16 @@ impl Query {
         customer: Option<String>,
         subscription: Option<String>,
         tenant: Option<String>,
-    ) -> Result<Self, InvalidParamError> {
+    ) -> Result<Self, InvalidQueryParamError> {
         if let Some(l) = limit {
             if !(1..=100).contains(&l) {
-                return Err(InvalidParamError::Limit(l));
+                return Err(InvalidQueryParamError::Limit(l));
             };
         };
         if let Some(s) = since {
             if let Some(u) = until {
                 if s > u {
-                    return Err(InvalidParamError::SinceExceedsUntil { since: s, until: u });
+                    return Err(InvalidQueryParamError::SinceExceedsUntil { since: s, until: u });
                 };
             };
         };
@@ -132,18 +135,18 @@ impl Query {
 
 /// [Query] 生成時に返却される可能性のあるエラー
 #[derive(Debug)]
-pub enum InvalidParamError {
+pub enum InvalidQueryParamError {
     Limit(u32),
     SinceExceedsUntil { since: i64, until: i64 },
 }
 
-impl Display for InvalidParamError {
+impl Display for InvalidQueryParamError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InvalidParamError::Limit(limit) => {
+            InvalidQueryParamError::Limit(limit) => {
                 write!(f, "limit must be 1 or more, or 100 or less: {}", limit)
             }
-            InvalidParamError::SinceExceedsUntil { since, until } => write!(
+            InvalidQueryParamError::SinceExceedsUntil { since, until } => write!(
                 f,
                 "since timestamp exeeds until timestamp (since: {}, until: {})",
                 since, until
@@ -152,7 +155,7 @@ impl Display for InvalidParamError {
     }
 }
 
-impl StdError for InvalidParamError {}
+impl StdError for InvalidQueryParamError {}
 
 /// [Query]を生成するためのヘルパー
 pub struct QueryBuilder {
@@ -222,9 +225,9 @@ impl QueryBuilder {
 
     /// [Query]を生成する
     /// # Errors
-    /// * `InvalidParamError::Limit` - [QueryBuilder]にセットしたリミットが0以下、もしくは101以上の場合
-    /// * `InvalidParamError::SinceExceedsUntil` - [QueryBuilder]にセットしたsinceがuntilより大きい場合
-    pub fn finish(self) -> Result<Query, InvalidParamError> {
+    /// * `InvalidQueryParamError::Limit` - [QueryBuilder]にセットしたリミットが0以下、もしくは101以上の場合
+    /// * `InvalidQueryParamError::SinceExceedsUntil` - [QueryBuilder]にセットしたsinceがuntilより大きい場合
+    pub fn finish(self) -> Result<Query, InvalidQueryParamError> {
         Query::new(
             self.limit,
             self.offset,
@@ -236,6 +239,10 @@ impl QueryBuilder {
         )
     }
 }
+
+/// [支払いを作成](https://pay.jp/docs/api/#%E6%94%AF%E6%89%95%E3%81%84%E3%82%92%E4%BD%9C%E6%88%90)の際に渡す構造体
+#[derive(Serialize, Debug)]
+pub struct CreateCharge {}
 
 pub struct ChargeOperationImpl<'a> {
     access_info: &'a AccessInfo,
@@ -276,13 +283,17 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
         return Ok(charge_list);
     }
+
+    async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, Error> {
+        todo!()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use chrono::TimeZone;
 
-    use crate::payment_platform::charge::InvalidParamError;
+    use crate::payment_platform::charge::InvalidQueryParamError;
 
     use super::Query;
 
@@ -338,20 +349,20 @@ mod tests {
         let result = Query::build().limit(0).finish();
         let err = result.expect_err("failed to get Err");
         match err {
-            InvalidParamError::Limit(l) => {
+            InvalidQueryParamError::Limit(l) => {
                 assert_eq!(0, l);
             }
-            InvalidParamError::SinceExceedsUntil { since, until } => {
+            InvalidQueryParamError::SinceExceedsUntil { since, until } => {
                 panic!("SinceExceedsUntil{{ since: {}, until: {} }}", since, until)
             }
         }
         let result = Query::build().limit(101).finish();
         let err = result.expect_err("failed to get Err");
         match err {
-            InvalidParamError::Limit(l) => {
+            InvalidQueryParamError::Limit(l) => {
                 assert_eq!(101, l);
             }
-            InvalidParamError::SinceExceedsUntil { since, until } => {
+            InvalidQueryParamError::SinceExceedsUntil { since, until } => {
                 panic!("SinceExceedsUntil{{ since: {}, until: {} }}", since, until)
             }
         }
@@ -375,8 +386,8 @@ mod tests {
             .finish();
         let err = result.expect_err("failed to get Ok");
         match err {
-            InvalidParamError::Limit(l) => panic!("Limit: {}", l),
-            InvalidParamError::SinceExceedsUntil { since, until } => {
+            InvalidQueryParamError::Limit(l) => panic!("Limit: {}", l),
+            InvalidQueryParamError::SinceExceedsUntil { since, until } => {
                 assert_eq!(since, since_timestamp);
                 assert_eq!(until, until_timestamp);
             }

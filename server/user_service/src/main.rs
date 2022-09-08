@@ -16,6 +16,7 @@ mod password_change_req;
 mod password_update;
 mod profile;
 mod refresh;
+mod request_consultation;
 mod rewards;
 mod temp_accounts;
 mod util;
