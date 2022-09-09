@@ -544,9 +544,10 @@ mod tests {
 
         async fn create_charge(
             &self,
-            create_charge: &CreateCharge,
+            _create_charge: &CreateCharge,
         ) -> Result<Charge, common::payment_platform::Error> {
-            todo!()
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
         }
     }
 
