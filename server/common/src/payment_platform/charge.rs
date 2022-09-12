@@ -243,18 +243,21 @@ impl QueryBuilder {
 /// [支払いを作成](https://pay.jp/docs/api/#%E6%94%AF%E6%89%95%E3%81%84%E3%82%92%E4%BD%9C%E6%88%90)の際に渡す構造体
 #[derive(Serialize, Debug)]
 pub struct CreateCharge {
-    pub amount_and_currency: Option<(i32, String)>,
+    pub amount: Option<i32>,
+    pub currency: Option<String>,
     pub product: Option<String>,
     pub customer: Option<String>,
     pub card: Option<String>,
     pub description: Option<String>,
     pub capture: Option<bool>,
-    pub expiry_days: Option<isize>,
+    pub expiry_days: Option<u32>,
     pub metadata: Option<Metadata>,
     pub platform_fee: Option<u32>,
     pub tenant: Option<String>,
     pub three_d_secure: Option<bool>,
 }
+
+impl CreateCharge {}
 
 pub struct ChargeOperationImpl<'a> {
     access_info: &'a AccessInfo,
