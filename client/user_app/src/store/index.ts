@@ -1,7 +1,7 @@
 import { Identity } from '@/util/personalized/profile/Identity'
 import { BankAccount } from '@/util/personalized/BankAccount'
 import { createStore } from 'vuex'
-import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY, SET_CONSULTANT_SEARCH_PARAM } from './mutationTypes'
+import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY, SET_CONSULTANT_SEARCH_PARAM, SET_PAY_JP } from './mutationTypes'
 import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
 
 export type State = {
@@ -9,7 +9,10 @@ export type State = {
   identity: Identity | null,
   feePerHourInYen: number | null,
   bankAccount: BankAccount | null,
-  consultantSearchParam: ConsultantSearchParam | null
+  consultantSearchParam: ConsultantSearchParam | null,
+  // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payJp: any
 };
 
 // 下記URLにVuexにてTypescriptの型推論を有効にするためにkeyが必要と記載されているが
@@ -23,7 +26,8 @@ export default createStore<State>({
     identity: null,
     feePerHourInYen: null,
     bankAccount: null,
-    consultantSearchParam: null
+    consultantSearchParam: null,
+    payJp: null
   },
   mutations: {
     [SET_PASSWORD_UPDATE_RESULT_MESSAGE] (state: State, message: string) {
@@ -40,6 +44,11 @@ export default createStore<State>({
     },
     [SET_CONSULTANT_SEARCH_PARAM] (state: State, consultantSearchParam: ConsultantSearchParam | null) {
       state.consultantSearchParam = consultantSearchParam
+    },
+    // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [SET_PAY_JP] (state: State, payJp: any) {
+      state.payJp = payJp
     }
   },
   actions: {

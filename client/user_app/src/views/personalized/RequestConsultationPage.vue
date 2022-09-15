@@ -13,6 +13,7 @@
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-lg">コンサルタントID: {{ consultantId }}, 相談料: {{ feePerHourInYen }}円</h3>
+          <div id="v2-demo"></div>
         </div>
       </div>
     </main>
@@ -23,8 +24,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, reactive, ref } from 'vue'
+import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useStore } from 'vuex'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -48,7 +50,11 @@ export default defineComponent({
     })
     const router = useRouter()
     const route = useRoute()
+    const store = useStore()
     const consultantId = route.params.consultant_id as string
+    // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let cardElement = null as any
     const {
       getFeePerHourInYenForApplicationDone,
       getFeePerHourInYenForApplicationFunc
@@ -75,10 +81,23 @@ export default defineComponent({
           return
         }
         feePerHourInYen.value = resp.getFeePerHourInYenForApplication()
+
+        const payjp = store.state.payJp
+        // elementsを取得します。ページ内に複数フォーム用意する場合は複数取得ください
+        const elements = payjp.elements()
+        // element(入力フォームの単位)を生成します
+        cardElement = elements.create('card')
+        // elementをDOM上に配置します
+        cardElement.mount('#v2-demo')
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
+    })
+
+    onUnmounted(async () => {
+      cardElement.unmount()
+      cardElement = null
     })
 
     return {
