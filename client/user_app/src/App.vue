@@ -12,6 +12,11 @@ export default defineComponent({
   setup () {
     const store = useStore()
     onMounted(() => {
+      if (store.state.payJp !== null) {
+        return
+      }
+      // index.htmlのhead内でasync/deferなしのpay.jp js v2のscriptタグを読み込んでいるため、
+      // window.Payjpは定義が存在することを前提にコードを書いても問題ない
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const payjp = window.Payjp('TODO: place public_key')
