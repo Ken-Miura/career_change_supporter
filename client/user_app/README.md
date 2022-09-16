@@ -36,5 +36,8 @@ npm run serve
 ```
 を実行後、VSCodeの実行とデバッグからデバッグ用のChromeを起動
 
+## 環境変数の用意
+sample.envファイルを.envへリネームし、環境にあった変数を設定する
+
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
