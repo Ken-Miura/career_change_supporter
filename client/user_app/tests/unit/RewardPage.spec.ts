@@ -1,5 +1,5 @@
 import { RouterLinkStub, mount, flushPromises } from '@vue/test-utils'
-import { ref } from '@vue/runtime-dom'
+import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { GetRewardsResp } from '@/util/personalized/reward/GetRewardsResp'

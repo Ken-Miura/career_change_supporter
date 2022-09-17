@@ -44,6 +44,6 @@ function convertResult (rawResult: RawConsultantsSearchResult): ConsultantsSearc
   }
   return {
     total: rawResult.total,
-    consultants: consultants
+    consultants
   } as ConsultantsSearchResult
 }

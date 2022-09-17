@@ -382,14 +382,14 @@ describe('ConsultantsSearchPage.vue', () => {
       career_param: {
         company_name: companyName,
         department_name: departmentName,
-        office: office,
+        office,
         years_of_service: {
           equal_or_more: parseInt(equalOrMoreYearsOfServiceSelect.element.value),
           less_than: parseInt(lessThanYearsOfServiceSelect.element.value)
         } as YearsOfServiceParam,
         employed: employed === 'true',
         contract_type: contractType,
-        profession: profession,
+        profession,
         annual_income_in_man_yen: {
           equal_or_more: annualIncomeInManYenEqualOrMore,
           equal_or_less: annualIncomeInManYenEqualOrLess
@@ -397,7 +397,7 @@ describe('ConsultantsSearchPage.vue', () => {
         is_manager: isManager === 'true',
         position_name: positionName,
         is_new_graduate: isNewGraduate === 'true',
-        note: note
+        note
       } as CareerParam,
       fee_per_hour_in_yen_param: {
         equal_or_more: feePerHourInYenEqualOrMore,
