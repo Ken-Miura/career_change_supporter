@@ -2265,9 +2265,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns1 = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns1.exists()).toBe(true)
-    const btnDiv1 = btns1.find('[data-test="to-next-button"]')
-    expect(btnDiv1.exists()).toBe(true)
-    await btnDiv1.get('button').trigger('click')
+    const toNextBtn = btns1.find('[data-test="to-next-button"]')
+    expect(toNextBtn.exists()).toBe(true)
+    await toNextBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')
@@ -2369,9 +2369,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns1 = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns1.exists()).toBe(true)
-    const btnDiv1 = btns1.find('[data-test="to-last-button"]')
-    expect(btnDiv1.exists()).toBe(true)
-    await btnDiv1.get('button').trigger('click')
+    const toLastBtn = btns1.find('[data-test="to-last-button"]')
+    expect(toLastBtn.exists()).toBe(true)
+    await toLastBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')
@@ -2473,9 +2473,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns1 = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns1.exists()).toBe(true)
-    const btnDiv1 = btns1.find('[data-test="to-last-button"]')
-    expect(btnDiv1.exists()).toBe(true)
-    await btnDiv1.get('button').trigger('click')
+    const toLastBtn = btns1.find('[data-test="to-last-button"]')
+    expect(toLastBtn.exists()).toBe(true)
+    await toLastBtn.trigger('click')
     await flushPromises()
 
     const result3 = {
@@ -2500,11 +2500,11 @@ describe('ConsultantListPage.vue', () => {
     const resp3 = PostConsultantsSearchResp.create(result3)
     postConsultantsSearchFuncMock.mockResolvedValue(resp3)
 
-    const btns2 = wrapper.find('[data-test="page-move-buttons"]')
-    expect(btns2.exists()).toBe(true)
-    const btnDiv2 = btns2.find('[data-test="to-prev-button"]')
-    expect(btnDiv2.exists()).toBe(true)
-    await btnDiv2.get('button').trigger('click')
+    const pageMoveButtonsDiv2 = wrapper.find('[data-test="page-move-buttons"]')
+    expect(pageMoveButtonsDiv2.exists()).toBe(true)
+    const toPrevBtn = pageMoveButtonsDiv2.find('[data-test="to-prev-button"]')
+    expect(toPrevBtn.exists()).toBe(true)
+    await toPrevBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')
@@ -2606,9 +2606,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns1 = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns1.exists()).toBe(true)
-    const btnDiv1 = btns1.find('[data-test="to-last-button"]')
-    expect(btnDiv1.exists()).toBe(true)
-    await btnDiv1.get('button').trigger('click')
+    const toLastBtn = btns1.find('[data-test="to-last-button"]')
+    expect(toLastBtn.exists()).toBe(true)
+    await toLastBtn.trigger('click')
     await flushPromises()
 
     const result3 = {
@@ -2635,9 +2635,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns2 = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns2.exists()).toBe(true)
-    const btnDiv2 = btns2.find('[data-test="to-first-button"]')
-    expect(btnDiv2.exists()).toBe(true)
-    await btnDiv2.get('button').trigger('click')
+    const toFirstBtn = btns2.find('[data-test="to-first-button"]')
+    expect(toFirstBtn.exists()).toBe(true)
+    await toFirstBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')
@@ -2739,9 +2739,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns1 = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns1.exists()).toBe(true)
-    const btnDiv1 = btns1.find('[data-test="to-last-button"]')
-    expect(btnDiv1.exists()).toBe(true)
-    await btnDiv1.get('button').trigger('click')
+    const toLastBtn = btns1.find('[data-test="to-last-button"]')
+    expect(toLastBtn.exists()).toBe(true)
+    await toLastBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')
@@ -2843,9 +2843,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns1 = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns1.exists()).toBe(true)
-    const btnDiv1 = btns1.find('[data-test="to-last-button"]')
-    expect(btnDiv1.exists()).toBe(true)
-    await btnDiv1.get('button').trigger('click')
+    const toLastBtn = btns1.find('[data-test="to-last-button"]')
+    expect(toLastBtn.exists()).toBe(true)
+    await toLastBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')
@@ -2947,9 +2947,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns.exists()).toBe(true)
-    const btnDiv = btns.find('[data-test="to-next-button"]')
-    expect(btnDiv.exists()).toBe(true)
-    await btnDiv.get('button').trigger('click')
+    const toNextBtn = btns.find('[data-test="to-next-button"]')
+    expect(toNextBtn.exists()).toBe(true)
+    await toNextBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')
@@ -3236,9 +3236,9 @@ describe('ConsultantListPage.vue', () => {
 
     const btns = wrapper.find('[data-test="page-move-buttons"]')
     expect(btns.exists()).toBe(true)
-    const btnDiv = btns.find('[data-test="to-last-button"]')
-    expect(btnDiv.exists()).toBe(true)
-    await btnDiv.get('button').trigger('click')
+    const toLastBtn = btns.find('[data-test="to-last-button"]')
+    expect(toLastBtn.exists()).toBe(true)
+    await toLastBtn.trigger('click')
     await flushPromises()
 
     const totalDiv = wrapper.find('[data-test="total"]')

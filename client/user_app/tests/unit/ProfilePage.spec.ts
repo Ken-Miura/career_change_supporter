@@ -1,6 +1,6 @@
 import { RouterLinkStub, mount, flushPromises } from '@vue/test-utils'
 import ProfilePage from '@/views/personalized/ProfilePage.vue'
-import { ref } from '@vue/runtime-dom'
+import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { GetProfileResp } from '@/util/personalized/profile/GetProfileResp'
@@ -271,7 +271,7 @@ describe('ProfilePage.vue', () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
-      identity: identity,
+      identity,
       career_descriptions: [],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
@@ -349,7 +349,7 @@ describe('ProfilePage.vue', () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
-      identity: identity,
+      identity,
       career_descriptions: [careerDescription],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
@@ -403,7 +403,7 @@ describe('ProfilePage.vue', () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
-      identity: identity,
+      identity,
       career_descriptions: careerDescriptions,
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
@@ -453,7 +453,7 @@ describe('ProfilePage.vue', () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
-      identity: identity,
+      identity,
       career_descriptions: [],
       fee_per_hour_in_yen: feePerHourInYen
     /* eslint-enable camelcase */
@@ -525,7 +525,7 @@ describe('ProfilePage.vue', () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
-      identity: identity,
+      identity,
       career_descriptions: [],
       fee_per_hour_in_yen: null
       /* eslint-enable camelcase */
@@ -588,7 +588,7 @@ describe('ProfilePage.vue', () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
-      identity: identity,
+      identity,
       career_descriptions: [careerDescription],
       fee_per_hour_in_yen: null
     /* eslint-enable camelcase */
@@ -635,7 +635,7 @@ describe('ProfilePage.vue', () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
-      identity: identity,
+      identity,
       career_descriptions: [],
       fee_per_hour_in_yen: null
       /* eslint-enable camelcase */
