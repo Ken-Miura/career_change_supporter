@@ -27,7 +27,7 @@ export default defineComponent({
         const payjp = window.Payjp(payJpPubKey)
         store.commit(SET_PAY_JP, payjp)
       } catch (e) {
-        console.error(`failed to load Javascript file from ${payJpJsUrl}`)
+        console.error(`failed to load Javascript file from ${payJpJsUrl}: ${e}`)
       }
     })
   }
