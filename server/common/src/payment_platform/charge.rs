@@ -259,8 +259,7 @@ pub struct CreateCharge {
 
 impl CreateCharge {
     fn new(
-        amount: Option<i32>,
-        currency: Option<String>,
+        price: Option<(i32, String)>, // amount, currency
         product: Option<String>,
         customer: Option<String>,
         card: Option<String>,
@@ -272,13 +271,66 @@ impl CreateCharge {
         tenant: Option<String>,
         three_d_secure: Option<bool>,
     ) -> Result<Self, InvalidCreateChargeParamError> {
-        todo!()
+        let price_exists = price.is_some();
+        let product_exists = product.is_some();
+        // priceとproductのどちらかは指定しなければならない
+        if !price_exists && !product_exists {
+            return Err(InvalidCreateChargeParamError::NeitherPriceNorProductIsSpecified);
+        }
+        // priceとproductの両方が指定された場合、
+        // どちらを使うべきか明確でないため、エラーとして扱う
+        if price_exists && product_exists {
+            return Err(InvalidCreateChargeParamError::BothPriceAndProductAreSpecified);
+        }
+        if let Some(p) = price.clone() {
+            let _ = CreateCharge::validate_price(p.0, p.1)?;
+        }
+
+        let customor_exists = customer.is_some();
+        let card_exists = card.is_some();
+        // TODO
+
+        let (amount, currency) = match price {
+            Some(p) => (Some(p.0), Some(p.1)),
+            None => (None, None),
+        };
+        Ok(CreateCharge {
+            amount,
+            currency,
+            product,
+            customer,
+            card,
+            description,
+            capture,
+            expiry_days,
+            metadata,
+            platform_fee,
+            tenant,
+            three_d_secure,
+        })
+    }
+
+    fn validate_price(amount: i32, currency: String) -> Result<(), InvalidCreateChargeParamError> {
+        if !(50..=9999999).contains(&amount) {
+            return Err(InvalidCreateChargeParamError::InvalidAmountInPrice(amount));
+        }
+        if currency != "jpy" {
+            return Err(InvalidCreateChargeParamError::InvalidCurrencyInPrice(
+                currency,
+            ));
+        }
+        Ok(())
     }
 }
 
 /// [CreateCharge] 生成時に返却される可能性のあるエラー
 #[derive(Debug)]
-pub enum InvalidCreateChargeParamError {}
+pub enum InvalidCreateChargeParamError {
+    NeitherPriceNorProductIsSpecified,
+    BothPriceAndProductAreSpecified,
+    InvalidAmountInPrice(i32),
+    InvalidCurrencyInPrice(String),
+}
 
 impl Display for InvalidCreateChargeParamError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
