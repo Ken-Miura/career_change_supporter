@@ -13,7 +13,9 @@
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-lg">コンサルタントID: {{ consultantId }}, 相談料: {{ feePerHourInYen }}円</h3>
+          <button v-on:click="createToken">テスト</button>
           <div id="v2-demo"></div>
+          <div>{{ token }}</div>
         </div>
       </div>
     </main>
@@ -55,6 +57,7 @@ export default defineComponent({
     // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let cardElement = null as any
+    const token = ref('')
     const {
       getFeePerHourInYenForApplicationDone,
       getFeePerHourInYenForApplicationFunc
@@ -83,10 +86,25 @@ export default defineComponent({
         feePerHourInYen.value = resp.getFeePerHourInYenForApplication()
 
         const payjp = store.state.payJp
+        if (payjp === null) {
+          error.exists = true
+          error.message = 'payjp is null'
+          return
+        }
         // elementsを取得します。ページ内に複数フォーム用意する場合は複数取得ください
-        const elements = payjp.elements()
+        const elements = await payjp.elements()
+        if (elements === null) {
+          error.exists = true
+          error.message = 'elements is null'
+          return
+        }
         // element(入力フォームの単位)を生成します
         cardElement = elements.create('card')
+        if (cardElement === null) {
+          error.exists = true
+          error.message = 'cardElement is null'
+          return
+        }
         // elementをDOM上に配置します
         cardElement.mount('#v2-demo')
       } catch (e) {
@@ -100,11 +118,24 @@ export default defineComponent({
       cardElement = null
     })
 
+    const createToken = async () => {
+      const payjp = store.state.payJp
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const r: any = payjp.createToken(cardElement)
+        token.value = r.error ? r.error.message : r.id
+      } catch (e) {
+        token.value = `failed to createToken: ${e}`
+      }
+    }
+
     return {
       consultantId,
       error,
       getFeePerHourInYenForApplicationDone,
-      feePerHourInYen
+      feePerHourInYen,
+      token,
+      createToken
     }
   }
 })
