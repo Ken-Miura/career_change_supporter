@@ -37,6 +37,8 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { useGetFeePerHourInYenForApplication } from '@/util/personalized/request-consultation/useGetFeePerHourInYenForApplication'
 import { GetFeePerHourInYenForApplicationResp } from '@/util/personalized/request-consultation/GetFeePerHourInYenForApplicationResp'
 import { Message } from '@/util/Message'
+import { SET_PAY_JP } from '@/store/mutationTypes'
+import { createPayJp } from '@/util/PayJp'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -85,11 +87,10 @@ export default defineComponent({
         }
         feePerHourInYen.value = resp.getFeePerHourInYenForApplication()
 
-        const payjp = store.state.payJp
+        let payjp = store.state.payJp
         if (payjp === null) {
-          error.exists = true
-          error.message = 'payjp is null'
-          return
+          payjp = await createPayJp()
+          store.commit(SET_PAY_JP, payjp)
         }
         // elementsを取得します。ページ内に複数フォーム用意する場合は複数取得ください
         const elements = await payjp.elements()
