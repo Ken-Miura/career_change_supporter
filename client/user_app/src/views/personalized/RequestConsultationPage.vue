@@ -123,7 +123,7 @@ export default defineComponent({
       const payjp = store.state.payJp
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const r: any = payjp.createToken(cardElement)
+        const r: any = await payjp.createToken(cardElement)
         token.value = r.error ? r.error.message : r.id
       } catch (e) {
         token.value = `failed to createToken: ${e}`
