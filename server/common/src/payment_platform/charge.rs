@@ -258,6 +258,13 @@ pub struct CreateCharge {
 }
 
 impl CreateCharge {
+    /// [CreateCharge]を生成するための[CreateChargeBuilder]を生成する
+    pub fn build() -> CreateChargeBuilder {
+        CreateChargeBuilder::new()
+    }
+
+    // NOTE: PAY.JPのクエリパラメータが多いことに起因する問題なので許容する
+    #[allow(clippy::too_many_arguments)]
     fn new(
         price: Option<(i32, String)>, // amount, currency
         product: Option<String>,
@@ -286,9 +293,12 @@ impl CreateCharge {
             let _ = CreateCharge::validate_price(p.0, p.1)?;
         }
 
-        let customor_exists = customer.is_some();
+        let customer_exists = customer.is_some();
         let card_exists = card.is_some();
-        // TODO
+        // 両方指定されていないケースのみエラー。他のケースは許容される。
+        if !customer_exists && !card_exists {
+            return Err(InvalidCreateChargeParamError::NeitherCustomerNorCardIsSpecified);
+        }
 
         let (amount, currency) = match price {
             Some(p) => (Some(p.0), Some(p.1)),
@@ -323,6 +333,54 @@ impl CreateCharge {
     }
 }
 
+pub struct CreateChargeBuilder {
+    price: Option<(i32, String)>, // amount, currency
+    product: Option<String>,
+    customer: Option<String>,
+    card: Option<String>,
+    description: Option<String>,
+    capture: Option<bool>,
+    expiry_days: Option<u32>,
+    metadata: Option<Metadata>,
+    platform_fee: Option<u32>,
+    tenant: Option<String>,
+    three_d_secure: Option<bool>,
+}
+
+impl CreateChargeBuilder {
+    fn new() -> Self {
+        CreateChargeBuilder {
+            price: None,
+            product: None,
+            customer: None,
+            card: None,
+            description: None,
+            capture: None,
+            expiry_days: None,
+            metadata: None,
+            platform_fee: None,
+            tenant: None,
+            three_d_secure: None,
+        }
+    }
+
+    pub fn finish(self) -> Result<CreateCharge, InvalidCreateChargeParamError> {
+        CreateCharge::new(
+            self.price,
+            self.product,
+            self.customer,
+            self.card,
+            self.description,
+            self.capture,
+            self.expiry_days,
+            self.metadata,
+            self.platform_fee,
+            self.tenant,
+            self.three_d_secure,
+        )
+    }
+}
+
 /// [CreateCharge] 生成時に返却される可能性のあるエラー
 #[derive(Debug)]
 pub enum InvalidCreateChargeParamError {
@@ -330,11 +388,32 @@ pub enum InvalidCreateChargeParamError {
     BothPriceAndProductAreSpecified,
     InvalidAmountInPrice(i32),
     InvalidCurrencyInPrice(String),
+    NeitherCustomerNorCardIsSpecified,
 }
 
 impl Display for InvalidCreateChargeParamError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match self {
+            InvalidCreateChargeParamError::NeitherPriceNorProductIsSpecified => {
+                write!(f, "neither price nor product is specified")
+            }
+            InvalidCreateChargeParamError::BothPriceAndProductAreSpecified => {
+                write!(f, "both price and product are specified")
+            }
+            InvalidCreateChargeParamError::InvalidAmountInPrice(amount) => write!(
+                f,
+                "amount must be 50 or more, 9,999,999 or less: amount {}",
+                amount
+            ),
+            InvalidCreateChargeParamError::InvalidCurrencyInPrice(currency) => write!(
+                f,
+                "supported currency is only \"jpy\" for now: currency {}",
+                currency
+            ),
+            InvalidCreateChargeParamError::NeitherCustomerNorCardIsSpecified => {
+                write!(f, "neither customer nor card is specified")
+            }
+        }
     }
 }
 
