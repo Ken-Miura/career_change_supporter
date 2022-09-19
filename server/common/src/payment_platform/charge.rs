@@ -300,6 +300,8 @@ impl CreateCharge {
             return Err(InvalidCreateChargeParamError::NeitherCustomerNorCardIsSpecified);
         }
 
+        // TODO: expiry days
+
         let (amount, currency) = match price {
             Some(p) => (Some(p.0), Some(p.1)),
             None => (None, None),
@@ -330,54 +332,6 @@ impl CreateCharge {
             ));
         }
         Ok(())
-    }
-}
-
-pub struct CreateChargeBuilder {
-    price: Option<(i32, String)>, // amount, currency
-    product: Option<String>,
-    customer: Option<String>,
-    card: Option<String>,
-    description: Option<String>,
-    capture: Option<bool>,
-    expiry_days: Option<u32>,
-    metadata: Option<Metadata>,
-    platform_fee: Option<u32>,
-    tenant: Option<String>,
-    three_d_secure: Option<bool>,
-}
-
-impl CreateChargeBuilder {
-    fn new() -> Self {
-        CreateChargeBuilder {
-            price: None,
-            product: None,
-            customer: None,
-            card: None,
-            description: None,
-            capture: None,
-            expiry_days: None,
-            metadata: None,
-            platform_fee: None,
-            tenant: None,
-            three_d_secure: None,
-        }
-    }
-
-    pub fn finish(self) -> Result<CreateCharge, InvalidCreateChargeParamError> {
-        CreateCharge::new(
-            self.price,
-            self.product,
-            self.customer,
-            self.card,
-            self.description,
-            self.capture,
-            self.expiry_days,
-            self.metadata,
-            self.platform_fee,
-            self.tenant,
-            self.three_d_secure,
-        )
     }
 }
 
@@ -418,6 +372,109 @@ impl Display for InvalidCreateChargeParamError {
 }
 
 impl StdError for InvalidCreateChargeParamError {}
+
+pub struct CreateChargeBuilder {
+    price: Option<(i32, String)>, // amount, currency
+    product: Option<String>,
+    customer: Option<String>,
+    card: Option<String>,
+    description: Option<String>,
+    capture: Option<bool>,
+    expiry_days: Option<u32>,
+    metadata: Option<Metadata>,
+    platform_fee: Option<u32>,
+    tenant: Option<String>,
+    three_d_secure: Option<bool>,
+}
+
+impl CreateChargeBuilder {
+    fn new() -> Self {
+        CreateChargeBuilder {
+            price: None,
+            product: None,
+            customer: None,
+            card: None,
+            description: None,
+            capture: None,
+            expiry_days: None,
+            metadata: None,
+            platform_fee: None,
+            tenant: None,
+            three_d_secure: None,
+        }
+    }
+
+    pub fn price(mut self, price: &(i32, String)) -> Self {
+        self.price = Some(price.clone());
+        self
+    }
+
+    pub fn product(mut self, product: &str) -> Self {
+        self.product = Some(product.to_string());
+        self
+    }
+
+    pub fn customer(mut self, customer: &str) -> Self {
+        self.customer = Some(customer.to_string());
+        self
+    }
+
+    pub fn card(mut self, card: &str) -> Self {
+        self.card = Some(card.to_string());
+        self
+    }
+
+    pub fn description(mut self, description: &str) -> Self {
+        self.description = Some(description.to_string());
+        self
+    }
+
+    pub fn capture(mut self, capture: bool) -> Self {
+        self.capture = Some(capture);
+        self
+    }
+
+    pub fn expiry_days(mut self, expiry_days: u32) -> Self {
+        self.expiry_days = Some(expiry_days);
+        self
+    }
+
+    pub fn metadata(mut self, metadata: &Metadata) -> Self {
+        self.metadata = Some(metadata.clone());
+        self
+    }
+
+    pub fn platform_fee(mut self, platform_fee: u32) -> Self {
+        self.platform_fee = Some(platform_fee);
+        self
+    }
+
+    pub fn tenant(mut self, tenant: &str) -> Self {
+        self.tenant = Some(tenant.to_string());
+        self
+    }
+
+    pub fn three_d_secure(mut self, three_d_secure: bool) -> Self {
+        self.three_d_secure = Some(three_d_secure);
+        self
+    }
+
+    pub fn finish(self) -> Result<CreateCharge, InvalidCreateChargeParamError> {
+        CreateCharge::new(
+            self.price,
+            self.product,
+            self.customer,
+            self.card,
+            self.description,
+            self.capture,
+            self.expiry_days,
+            self.metadata,
+            self.platform_fee,
+            self.tenant,
+            self.three_d_secure,
+        )
+    }
+}
 
 pub struct ChargeOperationImpl<'a> {
     access_info: &'a AccessInfo,
