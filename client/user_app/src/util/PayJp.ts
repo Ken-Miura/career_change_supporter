@@ -1,6 +1,6 @@
 import { loadScript } from 'vue-plugin-load-script'
 
-/// この関数は、アプリケーション中で一だけしか呼び出してはいけない
+/// この関数は、アプリケーション中で一回だけしか呼び出してはいけない
 // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createPayJp (): Promise<any> {
