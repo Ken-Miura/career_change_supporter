@@ -339,6 +339,60 @@ impl CreateCharge {
         }
         Ok(())
     }
+
+    /// Return amount and currency
+    pub fn price(&self) -> Option<(i32, String)> {
+        match self.currency.clone() {
+            Some(currency) => match self.amount {
+                Some(amount) => Some((amount, currency)),
+                None => panic!("currency exists, but amount does not exist"),
+            },
+            None => match self.amount {
+                Some(_) => panic!("amount exists, but currency does not exist"),
+                None => None,
+            },
+        }
+    }
+
+    pub fn product(&self) -> Option<String> {
+        self.product.clone()
+    }
+
+    pub fn customer(&self) -> Option<String> {
+        self.customer.clone()
+    }
+
+    pub fn card(&self) -> Option<String> {
+        self.card.clone()
+    }
+
+    pub fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    pub fn capture(&self) -> Option<bool> {
+        self.capture
+    }
+
+    pub fn expiry_days(&self) -> Option<u32> {
+        self.expiry_days
+    }
+
+    pub fn metadata(&self) -> Option<Metadata> {
+        self.metadata.clone()
+    }
+
+    pub fn platform_fee(&self) -> Option<u32> {
+        self.platform_fee
+    }
+
+    pub fn tenant(&self) -> Option<String> {
+        self.tenant.clone()
+    }
+
+    pub fn three_d_secure(&self) -> Option<bool> {
+        self.three_d_secure
+    }
 }
 
 /// [CreateCharge] 生成時に返却される可能性のあるエラー
