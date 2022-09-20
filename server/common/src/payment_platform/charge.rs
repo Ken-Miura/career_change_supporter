@@ -300,7 +300,13 @@ impl CreateCharge {
             return Err(InvalidCreateChargeParamError::NeitherCustomerNorCardIsSpecified);
         }
 
-        // TODO: expiry days
+        if let Some(expiry_days) = expiry_days {
+            if !(1..=60).contains(&expiry_days) {
+                return Err(InvalidCreateChargeParamError::IllegalExpiryDays(
+                    expiry_days,
+                ));
+            }
+        }
 
         let (amount, currency) = match price {
             Some(p) => (Some(p.0), Some(p.1)),
@@ -343,6 +349,7 @@ pub enum InvalidCreateChargeParamError {
     InvalidAmountInPrice(i32),
     InvalidCurrencyInPrice(String),
     NeitherCustomerNorCardIsSpecified,
+    IllegalExpiryDays(u32),
 }
 
 impl Display for InvalidCreateChargeParamError {
@@ -366,6 +373,9 @@ impl Display for InvalidCreateChargeParamError {
             ),
             InvalidCreateChargeParamError::NeitherCustomerNorCardIsSpecified => {
                 write!(f, "neither customer nor card is specified")
+            }
+            InvalidCreateChargeParamError::IllegalExpiryDays(expiry_days) => {
+                write!(f, "illegal expiry_days: {}", expiry_days)
             }
         }
     }
