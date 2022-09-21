@@ -581,7 +581,50 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
     }
 
     async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, Error> {
-        todo!()
+        ChargeOperationImpl::log_create_charge_except_secret_info(create_charge);
+        let operation_url = self.access_info.base_url() + CHARGES_OPERATION_PATH;
+        let username = self.access_info.username();
+        let password = self.access_info.password();
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(operation_url)
+            .basic_auth(username, Some(password))
+            .query(create_charge)
+            .send()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        let status_code = resp.status();
+        if status_code.is_client_error() || status_code.is_server_error() {
+            let err = resp
+                .json::<ErrorInfo>()
+                .await
+                .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+            return Err(Error::ApiError(err));
+        };
+        let charge = resp
+            .json::<Charge>()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        return Ok(charge);
+    }
+}
+
+impl<'a> ChargeOperationImpl<'a> {
+    // 決済に使うcustomerとcardは記録しない
+    fn log_create_charge_except_secret_info(create_charge: &CreateCharge) {
+        tracing::info!(
+            "create_charge (amount={:?}, currency={:?}, product={:?}, description={:?}, capture={:?}, expiry_days={:?}, metadata={:?}, platform_fee={:?}, tenant={:?}, three_d_secure={:?})",
+            create_charge.amount,
+            create_charge.currency,
+            create_charge.product,
+            create_charge.description,
+            create_charge.capture,
+            create_charge.expiry_days,
+            create_charge.metadata,
+            create_charge.platform_fee,
+            create_charge.tenant,
+            create_charge.three_d_secure
+        );
     }
 }
 
