@@ -549,6 +549,14 @@ mod tests {
             // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
             panic!("this method must not be called")
         }
+
+        async fn ge_charge_by_charge_id(
+            &self,
+            _charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
     }
 
     struct TenantTransferOperationMock {
