@@ -817,6 +817,58 @@ mod tests {
     }
 
     #[test]
+    fn create_charge_success_minimum_expiry_days() {
+        let price = (50, "jpy".to_string());
+        let cart_id = "tok_bdf884b520c6421d6df4b997c426";
+        let expiry_days = 1;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(cart_id)
+            .expiry_days(expiry_days)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(cart_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(Some(expiry_days), create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_maximum_expiry_days() {
+        let price = (50, "jpy".to_string());
+        let cart_id = "tok_bdf884b520c6421d6df4b997c426";
+        let expiry_days = 60;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(cart_id)
+            .expiry_days(expiry_days)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(cart_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(Some(expiry_days), create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
     fn create_charge_success_use_product_and_customer() {
         let product = "5b0925a69899480994a08af7678f7339";
         let customer = "f10c59b6278c4320987a2ac051f3d04b";
