@@ -1177,7 +1177,7 @@ mod tests {
     }
 
     #[test]
-    fn create_charge_fail_neither_price_nor_product_specified() {
+    fn create_charge_fail_neither_price_nor_product_is_specified() {
         let card_id = "tok_bdf884b520c6421d6df4b997c426";
 
         let result = CreateCharge::build().card(card_id).finish();
@@ -1185,6 +1185,25 @@ mod tests {
 
         assert_eq!(
             InvalidCreateChargeParamError::NeitherPriceNorProductIsSpecified,
+            err
+        );
+    }
+
+    #[test]
+    fn create_charge_fail_both_price_and_product_are_specified() {
+        let price = (50, "jpy".to_string());
+        let product = "5b0925a69899480994a08af7678f7339";
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .product(product)
+            .card(card_id)
+            .finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(
+            InvalidCreateChargeParamError::BothPriceAndProductAreSpecified,
             err
         );
     }
