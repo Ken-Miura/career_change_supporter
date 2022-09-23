@@ -1220,4 +1220,18 @@ mod tests {
             err
         );
     }
+
+    #[test]
+    fn create_charge_fail_invalid_currency_in_price() {
+        let price = (50, "usd".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+
+        let result = CreateCharge::build().price(&price).card(card_id).finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(
+            InvalidCreateChargeParamError::InvalidCurrencyInPrice("usd".to_string()),
+            err
+        );
+    }
 }
