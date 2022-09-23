@@ -673,7 +673,7 @@ impl<'a> ChargeOperationImpl<'a> {
 mod tests {
     use chrono::TimeZone;
 
-    use crate::payment_platform::charge::InvalidQueryParamError;
+    use crate::payment_platform::{charge::InvalidQueryParamError, Metadata};
 
     use super::{CreateCharge, Query};
 
@@ -841,58 +841,6 @@ mod tests {
     }
 
     #[test]
-    fn create_charge_success_minimum_expiry_days() {
-        let price = (50, "jpy".to_string());
-        let card_id = "tok_bdf884b520c6421d6df4b997c426";
-        let expiry_days = 1;
-
-        let result = CreateCharge::build()
-            .price(&price)
-            .card(card_id)
-            .expiry_days(expiry_days)
-            .finish();
-        let create_charge = result.expect("failed to get Ok");
-
-        assert_eq!(Some(price), create_charge.price());
-        assert_eq!(None, create_charge.product());
-        assert_eq!(None, create_charge.customer());
-        assert_eq!(Some(card_id.to_string()), create_charge.card());
-        assert_eq!(None, create_charge.description());
-        assert_eq!(None, create_charge.capture());
-        assert_eq!(Some(expiry_days), create_charge.expiry_days());
-        assert_eq!(None, create_charge.metadata());
-        assert_eq!(None, create_charge.platform_fee());
-        assert_eq!(None, create_charge.tenant());
-        assert_eq!(None, create_charge.three_d_secure());
-    }
-
-    #[test]
-    fn create_charge_success_maximum_expiry_days() {
-        let price = (50, "jpy".to_string());
-        let card_id = "tok_bdf884b520c6421d6df4b997c426";
-        let expiry_days = 60;
-
-        let result = CreateCharge::build()
-            .price(&price)
-            .card(card_id)
-            .expiry_days(expiry_days)
-            .finish();
-        let create_charge = result.expect("failed to get Ok");
-
-        assert_eq!(Some(price), create_charge.price());
-        assert_eq!(None, create_charge.product());
-        assert_eq!(None, create_charge.customer());
-        assert_eq!(Some(card_id.to_string()), create_charge.card());
-        assert_eq!(None, create_charge.description());
-        assert_eq!(None, create_charge.capture());
-        assert_eq!(Some(expiry_days), create_charge.expiry_days());
-        assert_eq!(None, create_charge.metadata());
-        assert_eq!(None, create_charge.platform_fee());
-        assert_eq!(None, create_charge.tenant());
-        assert_eq!(None, create_charge.three_d_secure());
-    }
-
-    #[test]
     fn create_charge_success_use_product_and_customer() {
         let product = "5b0925a69899480994a08af7678f7339";
         let customer = "f10c59b6278c4320987a2ac051f3d04b";
@@ -990,5 +938,241 @@ mod tests {
         assert_eq!(None, create_charge.platform_fee());
         assert_eq!(None, create_charge.tenant());
         assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_capture_true() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let capture = true;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .capture(capture)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(Some(capture), create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_capture_false() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let capture = false;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .capture(capture)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(Some(capture), create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_minimum_expiry_days() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let expiry_days = 1;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .expiry_days(expiry_days)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(Some(expiry_days), create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_maximum_expiry_days() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let expiry_days = 60;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .expiry_days(expiry_days)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(Some(expiry_days), create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_metadata() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let mut metadata = Metadata::with_capacity(1);
+        metadata.insert("key".to_string(), "value".to_string());
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .metadata(&metadata)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(Some(metadata), create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_use_platform_fee() {
+        let price = (1000, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        // amount (price.0) の5% ~ 100% (テナントのpayjp_fee_included=true) もしくは 0% ~ 95%(テナントのpayjp_fee_included=false) が正常値
+        let platform_fee = 500;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .platform_fee(platform_fee)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(Some(platform_fee), create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_tenant() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let tenant = "3cb9935adcd14a0294d49bf0eb0569ce";
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .tenant(tenant)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(Some(tenant.to_string()), create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_three_d_secure_false() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let three_d_secure = false;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .three_d_secure(three_d_secure)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(Some(three_d_secure), create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_three_d_secure_true() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let three_d_secure = true;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .three_d_secure(three_d_secure)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(Some(three_d_secure), create_charge.three_d_secure());
     }
 }
