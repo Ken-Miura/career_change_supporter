@@ -1259,4 +1259,36 @@ mod tests {
             err
         );
     }
+
+    #[test]
+    fn create_charge_fail_illegal_expiry_days_lower_limit_case() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let expiry_days = 0;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .expiry_days(expiry_days)
+            .finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(InvalidCreateChargeParamError::IllegalExpiryDays(0), err);
+    }
+
+    #[test]
+    fn create_charge_fail_illegal_expiry_days_upper_limit_case() {
+        let price = (50, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+        let expiry_days = 61;
+
+        let result = CreateCharge::build()
+            .price(&price)
+            .card(card_id)
+            .expiry_days(expiry_days)
+            .finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(InvalidCreateChargeParamError::IllegalExpiryDays(61), err);
+    }
 }
