@@ -675,7 +675,7 @@ mod tests {
 
     use crate::payment_platform::charge::InvalidQueryParamError;
 
-    use super::Query;
+    use super::{CreateCharge, Query};
 
     #[test]
     fn empty_query_allowed() {
@@ -772,5 +772,26 @@ mod tests {
                 assert_eq!(until, until_timestamp);
             }
         }
+    }
+
+    #[test]
+    fn create_charge_success_use_price_card() {
+        let price = (50, "jpy".to_string());
+        let cart_id = "tok_bdf884b520c6421d6df4b997c426";
+
+        let result = CreateCharge::build().price(&price).card(cart_id).finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(Some(price), create_charge.price());
+        assert_eq!(None, create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(cart_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
     }
 }
