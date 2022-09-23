@@ -1234,4 +1234,29 @@ mod tests {
             err
         );
     }
+
+    #[test]
+    fn create_charge_fail_invalid_amount_in_price_lower_limit_case() {
+        let price = (49, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+
+        let result = CreateCharge::build().price(&price).card(card_id).finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(InvalidCreateChargeParamError::InvalidAmountInPrice(49), err);
+    }
+
+    #[test]
+    fn create_charge_fail_invalid_amount_in_price_upper_limit_case() {
+        let price = (10000000, "jpy".to_string());
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+
+        let result = CreateCharge::build().price(&price).card(card_id).finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(
+            InvalidCreateChargeParamError::InvalidAmountInPrice(10000000),
+            err
+        );
+    }
 }
