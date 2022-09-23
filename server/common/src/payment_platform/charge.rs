@@ -410,7 +410,7 @@ impl CreateCharge {
 }
 
 /// [CreateCharge] 生成時に返却される可能性のあるエラー
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum InvalidCreateChargeParamError {
     NeitherPriceNorProductIsSpecified,
     BothPriceAndProductAreSpecified,
@@ -675,7 +675,7 @@ mod tests {
 
     use crate::payment_platform::{charge::InvalidQueryParamError, Metadata};
 
-    use super::{CreateCharge, Query};
+    use super::{CreateCharge, InvalidCreateChargeParamError, Query};
 
     #[test]
     fn empty_query_allowed() {
@@ -1174,5 +1174,18 @@ mod tests {
         assert_eq!(None, create_charge.platform_fee());
         assert_eq!(None, create_charge.tenant());
         assert_eq!(Some(three_d_secure), create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_fail_neither_price_nor_product_specified() {
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+
+        let result = CreateCharge::build().card(card_id).finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(
+            InvalidCreateChargeParamError::NeitherPriceNorProductIsSpecified,
+            err
+        );
     }
 }
