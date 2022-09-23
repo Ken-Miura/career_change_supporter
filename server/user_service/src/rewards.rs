@@ -557,6 +557,14 @@ mod tests {
             // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
             panic!("this method must not be called")
         }
+
+        async fn finish_three_d_secure_flow(
+            &self,
+            _charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
     }
 
     struct TenantTransferOperationMock {

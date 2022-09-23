@@ -64,6 +64,9 @@ pub trait ChargeOperation {
     ///   }
     /// }
     async fn ge_charge_by_charge_id(&self, charge_id: &str) -> Result<Charge, Error>;
+
+    /// [3Dセキュアフローを完了する](https://pay.jp/docs/api/#3d%E3%82%BB%E3%82%AD%E3%83%A5%E3%82%A2%E3%83%95%E3%83%AD%E3%83%BC%E3%82%92%E5%AE%8C%E4%BA%86%E3%81%99%E3%82%8B)
+    async fn finish_three_d_secure_flow(&self, charge_id: &str) -> Result<Charge, Error>;
 }
 
 /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
@@ -567,7 +570,7 @@ impl<'a> ChargeOperationImpl<'a> {
 #[async_trait]
 impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
     async fn search_charges(&mut self, query: &Query) -> Result<List<Charge>, Error> {
-        tracing::info!("search_charges: query = {:?}", query);
+        tracing::info!("search_charges: query={:?}", query);
         let operation_url = self.access_info.base_url() + CHARGES_OPERATION_PATH;
         let username = self.access_info.username();
         let password = self.access_info.password();
@@ -630,6 +633,34 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
         let client = reqwest::Client::new();
         let resp = client
             .get(operation_url)
+            .basic_auth(username, Some(password))
+            .send()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        let status_code = resp.status();
+        if status_code.is_client_error() || status_code.is_server_error() {
+            let err = resp
+                .json::<ErrorInfo>()
+                .await
+                .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+            return Err(Error::ApiError(err));
+        };
+        let charge = resp
+            .json::<Charge>()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        return Ok(charge);
+    }
+
+    async fn finish_three_d_secure_flow(&self, charge_id: &str) -> Result<Charge, Error> {
+        tracing::info!("finish_three_d_secure_flow: charge_id={}", charge_id);
+        let operation_url =
+            self.access_info.base_url() + CHARGES_OPERATION_PATH + "/" + charge_id + "/tds_finish";
+        let username = self.access_info.username();
+        let password = self.access_info.password();
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(operation_url)
             .basic_auth(username, Some(password))
             .send()
             .await
