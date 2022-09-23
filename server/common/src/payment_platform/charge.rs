@@ -1207,4 +1207,17 @@ mod tests {
             err
         );
     }
+
+    #[test]
+    fn create_charge_fail_neither_customer_nor_card_is_specified() {
+        let price = (50, "jpy".to_string());
+
+        let result = CreateCharge::build().price(&price).finish();
+        let err = result.expect_err("failed to get Err");
+
+        assert_eq!(
+            InvalidCreateChargeParamError::NeitherCustomerNorCardIsSpecified,
+            err
+        );
+    }
 }
