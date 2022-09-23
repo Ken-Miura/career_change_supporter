@@ -777,15 +777,15 @@ mod tests {
     #[test]
     fn create_charge_success_use_price_with_minimum_amount_and_card() {
         let price = (50, "jpy".to_string());
-        let cart_id = "tok_bdf884b520c6421d6df4b997c426";
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
 
-        let result = CreateCharge::build().price(&price).card(cart_id).finish();
+        let result = CreateCharge::build().price(&price).card(card_id).finish();
         let create_charge = result.expect("failed to get Ok");
 
         assert_eq!(Some(price), create_charge.price());
         assert_eq!(None, create_charge.product());
         assert_eq!(None, create_charge.customer());
-        assert_eq!(Some(cart_id.to_string()), create_charge.card());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
         assert_eq!(None, create_charge.description());
         assert_eq!(None, create_charge.capture());
         assert_eq!(None, create_charge.expiry_days());
@@ -798,15 +798,15 @@ mod tests {
     #[test]
     fn create_charge_success_use_price_with_maximum_amount_and_card() {
         let price = (9999999, "jpy".to_string());
-        let cart_id = "tok_bdf884b520c6421d6df4b997c426";
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
 
-        let result = CreateCharge::build().price(&price).card(cart_id).finish();
+        let result = CreateCharge::build().price(&price).card(card_id).finish();
         let create_charge = result.expect("failed to get Ok");
 
         assert_eq!(Some(price), create_charge.price());
         assert_eq!(None, create_charge.product());
         assert_eq!(None, create_charge.customer());
-        assert_eq!(Some(cart_id.to_string()), create_charge.card());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
         assert_eq!(None, create_charge.description());
         assert_eq!(None, create_charge.capture());
         assert_eq!(None, create_charge.expiry_days());
@@ -843,12 +843,12 @@ mod tests {
     #[test]
     fn create_charge_success_minimum_expiry_days() {
         let price = (50, "jpy".to_string());
-        let cart_id = "tok_bdf884b520c6421d6df4b997c426";
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
         let expiry_days = 1;
 
         let result = CreateCharge::build()
             .price(&price)
-            .card(cart_id)
+            .card(card_id)
             .expiry_days(expiry_days)
             .finish();
         let create_charge = result.expect("failed to get Ok");
@@ -856,7 +856,7 @@ mod tests {
         assert_eq!(Some(price), create_charge.price());
         assert_eq!(None, create_charge.product());
         assert_eq!(None, create_charge.customer());
-        assert_eq!(Some(cart_id.to_string()), create_charge.card());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
         assert_eq!(None, create_charge.description());
         assert_eq!(None, create_charge.capture());
         assert_eq!(Some(expiry_days), create_charge.expiry_days());
@@ -869,12 +869,12 @@ mod tests {
     #[test]
     fn create_charge_success_maximum_expiry_days() {
         let price = (50, "jpy".to_string());
-        let cart_id = "tok_bdf884b520c6421d6df4b997c426";
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
         let expiry_days = 60;
 
         let result = CreateCharge::build()
             .price(&price)
-            .card(cart_id)
+            .card(card_id)
             .expiry_days(expiry_days)
             .finish();
         let create_charge = result.expect("failed to get Ok");
@@ -882,7 +882,7 @@ mod tests {
         assert_eq!(Some(price), create_charge.price());
         assert_eq!(None, create_charge.product());
         assert_eq!(None, create_charge.customer());
-        assert_eq!(Some(cart_id.to_string()), create_charge.card());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
         assert_eq!(None, create_charge.description());
         assert_eq!(None, create_charge.capture());
         assert_eq!(Some(expiry_days), create_charge.expiry_days());
@@ -918,19 +918,45 @@ mod tests {
 
     #[test]
     fn create_charge_success_use_product_and_card() {
+        let product = "5b0925a69899480994a08af7678f7339";
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
+
+        let result = CreateCharge::build()
+            .product(product)
+            .card(card_id)
+            .finish();
+        let create_charge = result.expect("failed to get Ok");
+
+        assert_eq!(None, create_charge.price());
+        assert_eq!(Some(product.to_string()), create_charge.product());
+        assert_eq!(None, create_charge.customer());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
+        assert_eq!(None, create_charge.description());
+        assert_eq!(None, create_charge.capture());
+        assert_eq!(None, create_charge.expiry_days());
+        assert_eq!(None, create_charge.metadata());
+        assert_eq!(None, create_charge.platform_fee());
+        assert_eq!(None, create_charge.tenant());
+        assert_eq!(None, create_charge.three_d_secure());
+    }
+
+    #[test]
+    fn create_charge_success_use_product_and_customer_with_card() {
         let price = (50, "jpy".to_string());
         let customer = "f10c59b6278c4320987a2ac051f3d04b";
+        let card_id = "tok_bdf884b520c6421d6df4b997c426";
 
         let result = CreateCharge::build()
             .price(&price)
             .customer(customer)
+            .card(card_id)
             .finish();
         let create_charge = result.expect("failed to get Ok");
 
         assert_eq!(Some(price), create_charge.price());
         assert_eq!(None, create_charge.product());
         assert_eq!(Some(customer.to_string()), create_charge.customer());
-        assert_eq!(None, create_charge.card());
+        assert_eq!(Some(card_id.to_string()), create_charge.card());
         assert_eq!(None, create_charge.description());
         assert_eq!(None, create_charge.capture());
         assert_eq!(None, create_charge.expiry_days());
