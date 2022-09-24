@@ -1,7 +1,9 @@
 // Copyright 2022 Ken Miura
 
 use axum::async_trait;
+use axum::http::StatusCode;
 use axum::{Extension, Json};
+use common::ApiError;
 use common::{
     payment_platform::charge::{ChargeOperation, ChargeOperationImpl},
     ErrResp, RespResult,
@@ -13,6 +15,7 @@ use entity::{
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
+use crate::err::Code;
 use crate::{
     err::unexpected_err_resp,
     util::{self, session::User, ACCESS_INFO},
@@ -112,5 +115,52 @@ async fn handle_request_consultation(
     request_consultation_op: impl RequestConsultationOperation,
     charge_op: impl ChargeOperation,
 ) -> RespResult<RequestConsultationResult> {
+    let consultant_id = request_consultation_param.consultant_id;
+    if !consultant_id.is_positive() {
+        error!("consultant_id ({}) is not positive", consultant_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonPositiveConsultantId as u32,
+            }),
+        ));
+    }
+    let identity_exists = request_consultation_op
+        .check_if_identity_exists(account_id)
+        .await?;
+    if !identity_exists {
+        error!("identity is not registered (account_id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    let consultant_exists = request_consultation_op
+        .check_if_consultant_exists(consultant_id)
+        .await?;
+    if !consultant_exists {
+        error!(
+            "consultant does not exist (consultant_id: {})",
+            consultant_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantDoesNotExist as u32,
+            }),
+        ));
+    }
+    let fee_per_hour_in_yen = request_consultation_op
+        .find_fee_per_hour_in_yen_by_consultant_id(consultant_id)
+        .await?;
+    let fee_per_hour_in_yen = fee_per_hour_in_yen.ok_or_else(|| {
+        error!(
+            "fee_per_hour_in_yen does not exist (consultant_id: {})",
+            consultant_id
+        );
+        unexpected_err_resp()
+    })?;
     todo!()
 }

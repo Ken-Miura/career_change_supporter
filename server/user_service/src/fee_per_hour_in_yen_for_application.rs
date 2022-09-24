@@ -68,7 +68,7 @@ impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOpe
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find consulting_fee (user_account_id: {}): {}",
+                    "failed to find consulting_fee (consultant_id: {}): {}",
                     consultant_id, e
                 );
                 unexpected_err_resp()
@@ -115,7 +115,7 @@ async fn handle_fee_per_hour_in_yen_for_application(
         ));
     }
     let fee_per_hour_in_yen = op
-        .find_fee_per_hour_in_yen_by_consultant_id(account_id)
+        .find_fee_per_hour_in_yen_by_consultant_id(consultant_id)
         .await?;
     let fee_per_hour_in_yen = fee_per_hour_in_yen.ok_or_else(|| {
         error!(
