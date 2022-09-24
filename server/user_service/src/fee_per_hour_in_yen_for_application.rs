@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::util;
 use crate::util::session::User;
 
 pub(crate) async fn get_fee_per_hour_in_yen_for_application(
@@ -51,17 +52,7 @@ struct FeePerHourInYenForApplicationOperationImpl {
 #[async_trait]
 impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let model = entity::prelude::Identity::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_identity_exists(&self.pool, account_id).await
     }
 
     async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {

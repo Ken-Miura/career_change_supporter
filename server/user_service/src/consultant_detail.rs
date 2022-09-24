@@ -15,7 +15,7 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
+    self, VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
     VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
     VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
 };
@@ -89,17 +89,7 @@ struct ConsultantDetailOperationImpl {
 #[async_trait]
 impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let model = entity::prelude::Identity::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_identity_exists(&self.pool, account_id).await
     }
 
     async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {

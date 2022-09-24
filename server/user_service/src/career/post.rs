@@ -4,7 +4,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::util::validator::career_validator::{validate_career, CareerValidationError};
-use crate::util::{clone_file_name_if_exists, convert_jpeg_to_png, FileNameAndBinary};
+use crate::util::{self, clone_file_name_if_exists, convert_jpeg_to_png, FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
@@ -469,17 +469,7 @@ impl SubmitCareerOperationImpl {
 #[async_trait]
 impl SubmitCareerOperation for SubmitCareerOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let model = entity::prelude::Identity::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_identity_exists(&self.pool, account_id).await
     }
 
     async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp> {

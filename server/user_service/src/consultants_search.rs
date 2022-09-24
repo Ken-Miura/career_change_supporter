@@ -6,15 +6,16 @@ use axum::http::StatusCode;
 use axum::{Extension, Json};
 use common::opensearch::{search_documents, Sort, INDEX_NAME};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use entity::sea_orm::DatabaseConnection;
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
+use crate::util;
 use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
 use crate::{
-    err::{unexpected_err_resp, Code},
+    err::Code,
     util::{
         session::User,
         validator::consultant_search_param::{
@@ -204,17 +205,7 @@ struct ConsultantsSearchOperationImpl {
 #[async_trait]
 impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let model = entity::prelude::Identity::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_identity_exists(&self.pool, account_id).await
     }
 
     async fn search_documents(

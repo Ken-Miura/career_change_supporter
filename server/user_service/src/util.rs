@@ -18,7 +18,9 @@ use common::{
 };
 use entity::{
     document,
-    sea_orm::{ActiveModelTrait, DatabaseTransaction, EntityTrait, QuerySelect, Set},
+    sea_orm::{
+        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
+    },
 };
 use image::{ImageError, ImageFormat};
 use once_cell::sync::Lazy;
@@ -159,6 +161,26 @@ pub(crate) async fn insert_document(
         }
     })?;
     Ok(())
+}
+
+/// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
+///
+/// 個人情報の登録をしていないと使えないAPIに関して、処理を継続してよいか確認するために利用する。
+pub(crate) async fn check_if_identity_exists(
+    pool: &DatabaseConnection,
+    account_id: i64,
+) -> Result<bool, ErrResp> {
+    let model = entity::prelude::Identity::find_by_id(account_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find identity (user_account_id: {}): {}",
+                account_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model.is_some())
 }
 
 /// 通常のテストコードに加え、共通で使うモックをまとめる

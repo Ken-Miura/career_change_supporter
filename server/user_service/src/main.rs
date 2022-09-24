@@ -36,6 +36,7 @@ use crate::password_change_req::post_password_change_req;
 use crate::password_update::post_password_update;
 use crate::profile::get_profile;
 use crate::refresh::get_refresh;
+use crate::request_consultation::post_request_consultation;
 use crate::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
@@ -197,7 +198,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/bank-account", post(post_bank_account))
                 .route("/consultants-search", post(post_consultants_search))
                 .route("/consultant-detail", get(get_consultant_detail))
-                .route("/fee-per-hour-in-yen-for-application", get(get_fee_per_hour_in_yen_for_application)),
+                .route("/fee-per-hour-in-yen-for-application", get(get_fee_per_hour_in_yen_for_application))
+                .route("/request-consultation", post(post_request_consultation)),
         )
         .layer(
             ServiceBuilder::new()

@@ -18,7 +18,7 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    find_document_model_by_user_account_id_with_shared_lock, insert_document,
+    self, find_document_model_by_user_account_id_with_shared_lock, insert_document,
     MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
 };
 
@@ -93,17 +93,7 @@ struct SubmitFeePerHourInYenOperationImpl {
 #[async_trait]
 impl SubmitFeePerHourInYenOperation for SubmitFeePerHourInYenOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let model = entity::prelude::Identity::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_identity_exists(&self.pool, account_id).await
     }
 
     async fn submit_fee_per_hour_in_yen(
