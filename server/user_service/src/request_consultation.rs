@@ -1,6 +1,6 @@
 // Copyright 2022 Ken Miura
 
-use async_session::async_trait;
+use axum::async_trait;
 use axum::{Extension, Json};
 use common::{
     payment_platform::charge::{ChargeOperation, ChargeOperationImpl},

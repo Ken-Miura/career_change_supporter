@@ -201,24 +201,6 @@ pub(crate) async fn check_if_consultant_exists(
     Ok(model.is_some())
 }
 
-// /// accuont_idから対応するtenant_idを取得する
-// pub(crate) async fn find_tenant_id_by_account_id(
-//     pool: &DatabaseConnection,
-//     account_id: i64,
-// ) -> Result<Option<String>, ErrResp> {
-//     let model = entity::prelude::Tenant::find_by_id(account_id)
-//         .one(pool)
-//         .await
-//         .map_err(|e| {
-//             error!(
-//                 "failed to find tenant (user_account_id: {}): {}",
-//                 account_id, e
-//             );
-//             unexpected_err_resp()
-//         })?;
-//     Ok(model.map(|m| m.tenant_id))
-// }
-
 /// 通常のテストコードに加え、共通で使うモックをまとめる
 #[cfg(test)]
 pub(crate) mod tests {
