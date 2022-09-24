@@ -6,13 +6,12 @@ use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
 use common::opensearch::{search_documents, INDEX_NAME};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
-use entity::prelude::UserAccount;
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use entity::sea_orm::DatabaseConnection;
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::err::Code;
 use crate::util::session::User;
 use crate::util::{
     self, VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
@@ -93,17 +92,7 @@ impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
     }
 
     async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        let model = UserAccount::find_by_id(consultant_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_account (user_account_id): {}): {}",
-                    consultant_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_consultant_exists(&self.pool, consultant_id).await
     }
 
     async fn search_consultant(&self, index_name: &str, query: &Value) -> Result<Value, ErrResp> {

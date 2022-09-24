@@ -43,10 +43,8 @@ pub(crate) struct RequestConsultationResult {
 
 #[async_trait]
 trait RequestConsultationOperation {
-    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
 
-    /// コンサルタントのUserAccountが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
     async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp>;
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -71,17 +69,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
     }
 
     async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        let model = UserAccount::find_by_id(consultant_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_account (user_account_id): {}): {}",
-                    consultant_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_consultant_exists(&self.pool, consultant_id).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -105,7 +93,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         &self,
         consultant_id: i64,
     ) -> Result<Option<String>, ErrResp> {
-        todo!()
+        util::find_tenant_id_by_account_id(&self.pool, consultant_id).await
     }
 }
 

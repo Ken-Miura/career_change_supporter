@@ -183,6 +183,42 @@ pub(crate) async fn check_if_identity_exists(
     Ok(model.is_some())
 }
 
+/// accuont_idから対応するtenant_idを取得する
+pub(crate) async fn find_tenant_id_by_account_id(
+    pool: &DatabaseConnection,
+    account_id: i64,
+) -> Result<Option<String>, ErrResp> {
+    let model = entity::prelude::Tenant::find_by_id(account_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find tenant (user_account_id: {}): {}",
+                account_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model.map(|m| m.tenant_id))
+}
+
+/// コンサルタントのUserAccountが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
+pub(crate) async fn check_if_consultant_exists(
+    pool: &DatabaseConnection,
+    consultant_id: i64,
+) -> Result<bool, ErrResp> {
+    let model = entity::prelude::UserAccount::find_by_id(consultant_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id): {}): {}",
+                consultant_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model.is_some())
+}
+
 /// 通常のテストコードに加え、共通で使うモックをまとめる
 #[cfg(test)]
 pub(crate) mod tests {

@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
 use common::{ApiError, ErrResp, RespResult};
-use entity::prelude::{ConsultingFee, UserAccount};
+use entity::prelude::ConsultingFee;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::error;
@@ -56,17 +56,7 @@ impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOpe
     }
 
     async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        let model = UserAccount::find_by_id(consultant_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_account (user_account_id): {}): {}",
-                    consultant_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
+        util::check_if_consultant_exists(&self.pool, consultant_id).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
