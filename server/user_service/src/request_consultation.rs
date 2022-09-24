@@ -6,7 +6,6 @@ use common::{
     payment_platform::charge::{ChargeOperation, ChargeOperationImpl},
     ErrResp, RespResult,
 };
-use entity::prelude::UserAccount;
 use entity::{
     prelude::ConsultingFee,
     sea_orm::{DatabaseConnection, EntityTrait},
@@ -81,7 +80,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find consulting_fee (user_account_id: {}): {}",
+                    "failed to find consulting_fee (consultant_id: {}): {}",
                     consultant_id, e
                 );
                 unexpected_err_resp()
@@ -93,7 +92,17 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         &self,
         consultant_id: i64,
     ) -> Result<Option<String>, ErrResp> {
-        util::find_tenant_id_by_account_id(&self.pool, consultant_id).await
+        let model = entity::prelude::Tenant::find_by_id(consultant_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find tenant (consultant_id: {}): {}",
+                    consultant_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| m.tenant_id))
     }
 }
 

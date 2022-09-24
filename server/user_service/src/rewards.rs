@@ -18,12 +18,11 @@ use common::{
     },
     ApiError, ErrResp, RespResult,
 };
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use serde::Serialize;
 use tracing::{error, info};
 
-use crate::util;
 use crate::{
     err::{self, unexpected_err_resp},
     util::{session::User, BankAccount, ACCESS_INFO},
@@ -414,7 +413,14 @@ impl RewardOperation for RewardOperationImpl {
         &self,
         account_id: i64,
     ) -> Result<Option<String>, ErrResp> {
-        util::find_tenant_id_by_account_id(&self.pool, account_id).await
+        let model = entity::prelude::Tenant::find_by_id(account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!("failed to find tenant (account_id: {}): {}", account_id, e);
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| m.tenant_id))
     }
 }
 
