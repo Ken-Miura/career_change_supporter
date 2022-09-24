@@ -3,6 +3,7 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use common::payment_platform::charge::CreateCharge;
 use common::ApiError;
 use common::{
     payment_platform::charge::{ChargeOperation, ChargeOperationImpl},
@@ -20,6 +21,8 @@ use crate::{
     err::unexpected_err_resp,
     util::{self, session::User, ACCESS_INFO},
 };
+
+const EXPIRY_DAYS: u32 = 7;
 
 pub(crate) async fn post_request_consultation(
     User { account_id }: User,
@@ -125,6 +128,7 @@ async fn handle_request_consultation(
             }),
         ));
     }
+
     let identity_exists = request_consultation_op
         .check_if_identity_exists(account_id)
         .await?;
@@ -137,6 +141,7 @@ async fn handle_request_consultation(
             }),
         ));
     }
+
     let consultant_exists = request_consultation_op
         .check_if_consultant_exists(consultant_id)
         .await?;
@@ -152,6 +157,7 @@ async fn handle_request_consultation(
             }),
         ));
     }
+
     let fee_per_hour_in_yen = request_consultation_op
         .find_fee_per_hour_in_yen_by_consultant_id(consultant_id)
         .await?;
@@ -162,5 +168,53 @@ async fn handle_request_consultation(
         );
         unexpected_err_resp()
     })?;
-    todo!()
+    if fee_per_hour_in_yen != request_consultation_param.fee_per_hour_in_yen {
+        error!(
+            "fee_per_hour_in_yen was updated (user's request: {}, consultant's fee: {})",
+            request_consultation_param.fee_per_hour_in_yen, fee_per_hour_in_yen
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::FeePerHourInYenWasUpdated as u32,
+            }),
+        ));
+    }
+
+    let tenant_id = request_consultation_op
+        .find_tenant_id_by_consultant_id(consultant_id)
+        .await?;
+    let tenant_id = tenant_id.ok_or_else(|| {
+        error!(
+            "tenant_id does not exist (consultant_id: {})",
+            consultant_id
+        );
+        unexpected_err_resp()
+    })?;
+
+    let price = (fee_per_hour_in_yen, "jpy".to_string());
+    let card = request_consultation_param.card_token.as_str();
+    let create_charge = CreateCharge::build()
+        .price(&price)
+        .card(card)
+        .capture(false)
+        .expiry_days(EXPIRY_DAYS)
+        .tenant(tenant_id.as_str())
+        .three_d_secure(true)
+        .finish()
+        .map_err(|e| {
+            // TODO
+            unexpected_err_resp()
+        })?;
+    let charge = charge_op.create_charge(&create_charge).await.map_err(|e| {
+        // TODO
+        unexpected_err_resp()
+    })?;
+
+    Ok((
+        StatusCode::OK,
+        Json(RequestConsultationResult {
+            charge_id: charge.id,
+        }),
+    ))
 }

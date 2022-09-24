@@ -106,6 +106,7 @@ pub(crate) enum Code {
     EqualOrMoreIsLessThanOrMoreYearsOfService = 20094,
     NoCareersFound = 20095,
     NoFeePerHourInYenFound = 20096,
+    FeePerHourInYenWasUpdated = 20097,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
