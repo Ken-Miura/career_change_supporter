@@ -14,7 +14,7 @@ use entity::{
     sea_orm::{DatabaseConnection, EntityTrait},
 };
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::Code;
 use crate::{
@@ -151,7 +151,10 @@ async fn handle_request_consultation(
         .three_d_secure(true)
         .finish()
         .map_err(|e| {
-            // TODO
+            error!("failed to build CreateCharge: {}", e);
+            // finishで発生する可能性のあるエラーは与えられる引数では発生することはないのでunexpected_err_respとして処理する
+            // 補足: priceのamountの範囲も、fee_per_hour_yenを設定している箇所で、MIN_FEE_PER_HOUR_IN_YEN..=MAX_FEE_PER_HOUR_IN_YENの範囲内のため、
+            //       amountに関するエラーも発生しない
             unexpected_err_resp()
         })?;
     let charge = charge_op.create_charge(&create_charge).await.map_err(|e| {
@@ -159,6 +162,10 @@ async fn handle_request_consultation(
         unexpected_err_resp()
     })?;
 
+    info!(
+        "started 3D secure flow (account_id, {}, consultant_id{}, charge.id: {})",
+        account_id, consultant_id, charge.id
+    );
     Ok((
         StatusCode::OK,
         Json(RequestConsultationResult {
