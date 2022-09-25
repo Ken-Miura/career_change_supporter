@@ -158,7 +158,8 @@ async fn handle_request_consultation(
             unexpected_err_resp()
         })?;
     let charge = charge_op.create_charge(&create_charge).await.map_err(|e| {
-        // TODO
+        // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
+        error!("failed to create charge: {}", e);
         unexpected_err_resp()
     })?;
 
