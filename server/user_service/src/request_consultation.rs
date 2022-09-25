@@ -119,55 +119,12 @@ async fn handle_request_consultation(
     charge_op: impl ChargeOperation,
 ) -> RespResult<RequestConsultationResult> {
     let consultant_id = request_consultation_param.consultant_id;
-    if !consultant_id.is_positive() {
-        error!("consultant_id ({}) is not positive", consultant_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NonPositiveConsultantId as u32,
-            }),
-        ));
-    }
+    let _ = validate_consultant_id_is_positive(consultant_id)?;
+    let _ = validate_identity_exists(account_id, &request_consultation_op).await?;
+    let _ = validate_consultant_exists(consultant_id, &request_consultation_op).await?;
 
-    let identity_exists = request_consultation_op
-        .check_if_identity_exists(account_id)
-        .await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-
-    let consultant_exists = request_consultation_op
-        .check_if_consultant_exists(consultant_id)
-        .await?;
-    if !consultant_exists {
-        error!(
-            "consultant does not exist (consultant_id: {})",
-            consultant_id
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::ConsultantDoesNotExist as u32,
-            }),
-        ));
-    }
-
-    let fee_per_hour_in_yen = request_consultation_op
-        .find_fee_per_hour_in_yen_by_consultant_id(consultant_id)
-        .await?;
-    let fee_per_hour_in_yen = fee_per_hour_in_yen.ok_or_else(|| {
-        error!(
-            "fee_per_hour_in_yen does not exist (consultant_id: {})",
-            consultant_id
-        );
-        unexpected_err_resp()
-    })?;
+    let fee_per_hour_in_yen =
+        get_fee_per_hour_in_yen(consultant_id, &request_consultation_op).await?;
     if fee_per_hour_in_yen != request_consultation_param.fee_per_hour_in_yen {
         error!(
             "fee_per_hour_in_yen was updated (user's request: {}, consultant's fee: {})",
@@ -181,16 +138,7 @@ async fn handle_request_consultation(
         ));
     }
 
-    let tenant_id = request_consultation_op
-        .find_tenant_id_by_consultant_id(consultant_id)
-        .await?;
-    let tenant_id = tenant_id.ok_or_else(|| {
-        error!(
-            "tenant_id does not exist (consultant_id: {})",
-            consultant_id
-        );
-        unexpected_err_resp()
-    })?;
+    let tenant_id = get_tenant_id(consultant_id, &request_consultation_op).await?;
 
     let price = (fee_per_hour_in_yen, "jpy".to_string());
     let card = request_consultation_param.card_token.as_str();
@@ -217,4 +165,97 @@ async fn handle_request_consultation(
             charge_id: charge.id,
         }),
     ))
+}
+
+fn validate_consultant_id_is_positive(consultant_id: i64) -> Result<(), ErrResp> {
+    if !consultant_id.is_positive() {
+        error!("consultant_id ({}) is not positive", consultant_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonPositiveConsultantId as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+async fn validate_identity_exists(
+    account_id: i64,
+    request_consultation_op: &impl RequestConsultationOperation,
+) -> Result<(), ErrResp> {
+    let identity_exists = request_consultation_op
+        .check_if_identity_exists(account_id)
+        .await?;
+    if !identity_exists {
+        error!("identity is not registered (account_id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+async fn validate_consultant_exists(
+    consultant_id: i64,
+    request_consultation_op: &impl RequestConsultationOperation,
+) -> Result<(), ErrResp> {
+    let consultant_exists = request_consultation_op
+        .check_if_consultant_exists(consultant_id)
+        .await?;
+    if !consultant_exists {
+        error!(
+            "consultant does not exist (consultant_id: {})",
+            consultant_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantDoesNotExist as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+async fn get_fee_per_hour_in_yen(
+    consultant_id: i64,
+    request_consultation_op: &impl RequestConsultationOperation,
+) -> Result<i32, ErrResp> {
+    let fee_per_hour_in_yen = request_consultation_op
+        .find_fee_per_hour_in_yen_by_consultant_id(consultant_id)
+        .await?;
+    let fee_per_hour_in_yen = fee_per_hour_in_yen.ok_or_else(|| {
+        error!(
+            "fee_per_hour_in_yen does not exist (consultant_id: {})",
+            consultant_id
+        );
+        unexpected_err_resp()
+    })?;
+    Ok(fee_per_hour_in_yen)
+}
+
+async fn get_tenant_id(
+    consultant_id: i64,
+    request_consultation_op: &impl RequestConsultationOperation,
+) -> Result<String, ErrResp> {
+    let tenant_id = request_consultation_op
+        .find_tenant_id_by_consultant_id(consultant_id)
+        .await?;
+    let tenant_id = tenant_id.ok_or_else(|| {
+        error!(
+            "tenant_id does not exist (consultant_id: {})",
+            consultant_id
+        );
+        unexpected_err_resp()
+    })?;
+    Ok(tenant_id)
+}
+
+#[cfg(test)]
+mod tests {
+    // TODO
 }
