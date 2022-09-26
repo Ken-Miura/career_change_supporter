@@ -9,6 +9,7 @@ mod consultants_search;
 mod err;
 mod fee_per_hour_in_yen;
 mod fee_per_hour_in_yen_for_application;
+mod finish_request_consultation;
 mod identity;
 mod login;
 mod logout;
@@ -29,6 +30,7 @@ use crate::consultant_detail::get_consultant_detail;
 use crate::consultants_search::post_consultants_search;
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
+use crate::finish_request_consultation::post_finish_request_consultation;
 use crate::identity::post_identity;
 use crate::login::post_login;
 use crate::logout::post_logout;
@@ -199,7 +201,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultants-search", post(post_consultants_search))
                 .route("/consultant-detail", get(get_consultant_detail))
                 .route("/fee-per-hour-in-yen-for-application", get(get_fee_per_hour_in_yen_for_application))
-                .route("/request-consultation", post(post_request_consultation)),
+                .route("/request-consultation", post(post_request_consultation))
+                .route("/finish-request-consultation", post(post_finish_request_consultation)),
         )
         .layer(
             ServiceBuilder::new()
