@@ -153,6 +153,7 @@ async fn handle_request_consultation(
 
     let price = (fee_per_hour_in_yen, "jpy".to_string());
     let card = request_consultation_param.card_token.as_str();
+    // TODO: メタデータにコンサルタントIDと候補日時を保管する
     let create_charge = CreateCharge::build()
         .price(&price)
         .card(card)
