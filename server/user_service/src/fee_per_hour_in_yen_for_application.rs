@@ -35,10 +35,8 @@ pub(crate) struct FeePerHourInYenForApplication {
 
 #[async_trait]
 trait FeePerHourInYenForApplicationOperation {
-    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-    /// コンサルタントのUserAccountが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
-    async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp>;
+    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn find_fee_per_hour_in_yen_by_consultant_id(
         &self,
         consultant_id: i64,
@@ -55,8 +53,8 @@ impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOpe
         util::check_if_identity_exists(&self.pool, account_id).await
     }
 
-    async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_consultant_exists(&self.pool, consultant_id).await
+    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
+        util::check_if_consultant_is_available(&self.pool, consultant_id).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -101,16 +99,16 @@ async fn handle_fee_per_hour_in_yen_for_application(
             }),
         ));
     }
-    let consultant_exists = op.check_if_consultant_exists(consultant_id).await?;
-    if !consultant_exists {
+    let consultant_available = op.check_if_consultant_is_available(consultant_id).await?;
+    if !consultant_available {
         error!(
-            "consultant does not exist (consultant_id: {})",
+            "consultant is not available (consultant_id: {})",
             consultant_id
         );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::ConsultantDoesNotExist as u32,
+                code: Code::ConsultantIsNotAvailable as u32,
             }),
         ));
     }
@@ -162,7 +160,10 @@ mod tests {
             Ok(true)
         }
 
-        async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
+        async fn check_if_consultant_is_available(
+            &self,
+            consultant_id: i64,
+        ) -> Result<bool, ErrResp> {
             if self.consultant_id != consultant_id {
                 return Ok(false);
             };
@@ -243,7 +244,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::ConsultantDoesNotExist as u32,
+                        code: Code::ConsultantIsNotAvailable as u32,
                     }),
                 )),
             },

@@ -183,8 +183,9 @@ pub(crate) async fn check_if_identity_exists(
     Ok(model.is_some())
 }
 
-/// コンサルタントのUserAccountが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
-pub(crate) async fn check_if_consultant_exists(
+/// コンサルタントが利用可能か確認する。
+/// コンサルタントのUserAccountが存在し、かつdisabled_atがNULLである場合、trueを返す。そうでない場合、falseを返す。
+pub(crate) async fn check_if_consultant_is_available(
     pool: &DatabaseConnection,
     consultant_id: i64,
 ) -> Result<bool, ErrResp> {
@@ -198,7 +199,11 @@ pub(crate) async fn check_if_consultant_exists(
             );
             unexpected_err_resp()
         })?;
-    Ok(model.is_some())
+    let available = match model {
+        Some(user) => user.disabled_at.is_none(),
+        None => false,
+    };
+    Ok(available)
 }
 
 /// 通常のテストコードに加え、共通で使うモックをまとめる

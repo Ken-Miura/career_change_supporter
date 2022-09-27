@@ -61,7 +61,7 @@ pub(crate) struct RequestConsultationResult {
 trait RequestConsultationOperation {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
 
-    async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp>;
+    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
         &self,
@@ -84,8 +84,8 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         util::check_if_identity_exists(&self.pool, account_id).await
     }
 
-    async fn check_if_consultant_exists(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_consultant_exists(&self.pool, consultant_id).await
+    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
+        util::check_if_consultant_is_available(&self.pool, consultant_id).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -132,7 +132,7 @@ async fn handle_request_consultation(
     let consultant_id = request_consultation_param.consultant_id;
     let _ = validate_consultant_id_is_positive(consultant_id)?;
     let _ = validate_identity_exists(account_id, &request_consultation_op).await?;
-    let _ = validate_consultant_exists(consultant_id, &request_consultation_op).await?;
+    let _ = validate_consultant_is_available(consultant_id, &request_consultation_op).await?;
 
     let fee_per_hour_in_yen =
         get_fee_per_hour_in_yen(consultant_id, &request_consultation_op).await?;
@@ -219,22 +219,22 @@ async fn validate_identity_exists(
     Ok(())
 }
 
-async fn validate_consultant_exists(
+async fn validate_consultant_is_available(
     consultant_id: i64,
     request_consultation_op: &impl RequestConsultationOperation,
 ) -> Result<(), ErrResp> {
-    let consultant_exists = request_consultation_op
-        .check_if_consultant_exists(consultant_id)
+    let consultant_available = request_consultation_op
+        .check_if_consultant_is_available(consultant_id)
         .await?;
-    if !consultant_exists {
+    if !consultant_available {
         error!(
-            "consultant does not exist (consultant_id: {})",
+            "consultant is not available (consultant_id: {})",
             consultant_id
         );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::ConsultantDoesNotExist as u32,
+                code: Code::ConsultantIsNotAvailable as u32,
             }),
         ));
     }
