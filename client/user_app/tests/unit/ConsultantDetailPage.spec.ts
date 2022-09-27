@@ -283,6 +283,48 @@ describe('ConsultantDetailPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
+  it(`displays ${Message.NON_POSITIVE_CONSULTANT_ID_MESSAGE} if getConsultantDetail returns ${Code.NON_POSITIVE_CONSULTANT_ID}`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NON_POSITIVE_CONSULTANT_ID))
+    getConsultantDetailFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NON_POSITIVE_CONSULTANT_ID_MESSAGE)
+    expect(resultMessage).toContain(Code.NON_POSITIVE_CONSULTANT_ID.toString())
+  })
+
+  it(`displays ${Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE} if getConsultantDetail returns ${Code.CONSULTANT_IS_NOT_AVAILABLE}`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.CONSULTANT_IS_NOT_AVAILABLE))
+    getConsultantDetailFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultantDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE)
+    expect(resultMessage).toContain(Code.CONSULTANT_IS_NOT_AVAILABLE.toString())
+  })
+
   it(`moves to login if refresh returns ${Code.UNAUTHORIZED}`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     getConsultantDetailFuncMock.mockResolvedValue(apiErrResp)

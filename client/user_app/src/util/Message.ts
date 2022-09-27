@@ -122,4 +122,8 @@ export namespace Message {
     export const EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE = '在籍年数に関して、"年以上"または"年未満"の指定が不正です（"年以上"は"年未満"よりも小さい値である必要が有ります）'
     export const NO_CAREERS_FOUND_MESSAGE = '職務経歴が登録されていません。報酬の入金口座の登録前に職務経歴を登録して下さい'
     export const NO_FEE_PER_HOUR_IN_YEN_FOUND_MESSAGE = '相談一回（１時間）の相談料が登録されていません。報酬の入金口座の登録前に相談一回（１時間）の相談料を登録して下さい'
+    export const NON_POSITIVE_CONSULTANT_ID_MESSAGE = '不正なコンサルタントIDです'
+    export const CONSULTANT_DOES_NOT_EXIST_MESSAGE = 'コンサルタントが見つかりません'
+    export const FEE_PER_HOUR_IN_YEN_WAS_UPDATED_MESSAGE = 'コンサルタントの相談料が更新されています'
+    export const CONSULTANT_IS_NOT_AVAILABLE_MESSAGE = `${CONSULTANT_DOES_NOT_EXIST_MESSAGE}`
 }

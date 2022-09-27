@@ -101,9 +101,13 @@ export namespace Code {
   export const INVALID_SORT_ORDER = 20089
   export const INVALID_CONSULTANT_SEARCH_PARAM_FROM = 20090
   export const INVALID_CONSULTANT_SEARCH_PARAM_SIZE = 20091
+  export const NON_POSITIVE_CONSULTANT_ID = 20092
+  export const CONSULTANT_DOES_NOT_EXIST = 20093
   export const EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE = 20094
   export const NO_CAREERS_FOUND = 20095
   export const NO_FEE_PER_HOUR_IN_YEN_FOUND = 20096
+  export const FEE_PER_HOUR_IN_YEN_WAS_UPDATED = 20097
+  export const CONSULTANT_IS_NOT_AVAILABLE = 20098
 }
 
 export function createErrorMessage (code: number): string {
@@ -293,12 +297,20 @@ export function createErrorMessage (code: number): string {
     return `${Message.INVALID_CONSULTANT_SEARCH_PARAM_FROM_MESSAGE} (${code})`
   } else if (code === Code.INVALID_CONSULTANT_SEARCH_PARAM_SIZE) {
     return `${Message.INVALID_CONSULTANT_SEARCH_PARAM_SIZE_MESSAGE} (${code})`
+  } else if (code === Code.NON_POSITIVE_CONSULTANT_ID) {
+    return `${Message.NON_POSITIVE_CONSULTANT_ID_MESSAGE} (${code})`
+  } else if (code === Code.CONSULTANT_DOES_NOT_EXIST) {
+    return `${Message.CONSULTANT_DOES_NOT_EXIST_MESSAGE} (${code})`
   } else if (code === Code.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE) {
     return `${Message.EQUAL_OR_MORE_IS_LESS_THAN_OR_MORE_YEARS_OF_SERVICE_MESSAGE} (${code})`
   } else if (code === Code.NO_CAREERS_FOUND) {
     return `${Message.NO_CAREERS_FOUND_MESSAGE} (${code})`
   } else if (code === Code.NO_FEE_PER_HOUR_IN_YEN_FOUND) {
     return `${Message.NO_FEE_PER_HOUR_IN_YEN_FOUND_MESSAGE} (${code})`
+  } else if (code === Code.FEE_PER_HOUR_IN_YEN_WAS_UPDATED) {
+    return `${Message.FEE_PER_HOUR_IN_YEN_WAS_UPDATED_MESSAGE} (${code})`
+  } else if (code === Code.CONSULTANT_IS_NOT_AVAILABLE) {
+    return `${Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
