@@ -9,6 +9,9 @@ use crate::request_consultation::ConsultationDateTime;
 const MIN_DURATION_IN_DAYS: i64 = 3;
 const MAX_DURATION_IN_DAYS: i64 = 28;
 
+const START_HOUR: u32 = 7;
+const END_HOUR: u32 = 23;
+
 pub(crate) fn validate_consultation_date_time(
     consultation_date_time: &ConsultationDateTime,
     current_date_time: &DateTime<FixedOffset>,
@@ -40,6 +43,10 @@ pub(crate) fn validate_consultation_date_time(
         }
     };
 
+    if !(START_HOUR..=END_HOUR).contains(&hour) {
+        return Err(ConsultationDateTimeValidationError::IllegalConsultationHour { hour });
+    }
+
     let timezone = current_date_time.offset();
     let consultation_date_time = DateTime::<FixedOffset>::from_local(date_time, *timezone);
     let duration = consultation_date_time - *current_date_time;
@@ -63,6 +70,9 @@ pub(crate) enum ConsultationDateTimeValidationError {
         day: u32,
         hour: u32,
     },
+    IllegalConsultationHour {
+        hour: u32,
+    },
     IllegalConsultationDateTime {
         consultation_date_time: DateTime<FixedOffset>,
         current_date_time: DateTime<FixedOffset>,
@@ -82,6 +92,10 @@ impl Display for ConsultationDateTimeValidationError {
                 "illegal date time (year: {}, month: {}, day: {}, hour: {})",
                 year, month, day, hour
             ),
+            ConsultationDateTimeValidationError::IllegalConsultationHour { hour } => write!(
+              f,
+              "illegal consultation hour (hour: {}, START_HOUR: {}, END_HOUR: {}",
+              hour, START_HOUR, END_HOUR),
             ConsultationDateTimeValidationError::IllegalConsultationDateTime {
                 consultation_date_time,
                 current_date_time,
@@ -97,4 +111,57 @@ impl Display for ConsultationDateTimeValidationError {
 impl Error for ConsultationDateTimeValidationError {}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use chrono::{DateTime, FixedOffset, NaiveDate};
+    use common::JAPANESE_TIME_ZONE;
+    use once_cell::sync::Lazy;
+
+    use crate::{
+        request_consultation::ConsultationDateTime,
+        util::validator::consultation_date_time_validator::validate_consultation_date_time,
+    };
+
+    use super::ConsultationDateTimeValidationError;
+
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: Result<(), ConsultationDateTimeValidationError>,
+    }
+
+    struct Input {
+        consultation_date_time: ConsultationDateTime,
+        current_date_time: DateTime<FixedOffset>,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![TestCase {
+            name: "valid consultation date time 1".to_string(),
+            input: Input {
+                consultation_date_time: ConsultationDateTime {
+                    year: 2022,
+                    month: 9,
+                    day: 29,
+                    hour: 7,
+                },
+                current_date_time: DateTime::<FixedOffset>::from_local(
+                    NaiveDate::from_ymd(2022, 9, 26).and_hms(7, 0, 0),
+                    *JAPANESE_TIME_ZONE,
+                ),
+            },
+            expected: Ok(()),
+        }]
+    });
+
+    #[test]
+    fn test_validate_consultation_date_time() {
+        for test_case in TEST_CASE_SET.iter() {
+            let result = validate_consultation_date_time(
+                &test_case.input.consultation_date_time,
+                &test_case.input.current_date_time,
+            );
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(test_case.expected, result, "{}", message);
+        }
+    }
+}
