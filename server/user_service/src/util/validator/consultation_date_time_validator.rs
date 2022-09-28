@@ -87,8 +87,8 @@ impl Display for ConsultationDateTimeValidationError {
                 current_date_time,
             } => write!(
               f,
-              "illegal consultation date time (consultation_date_time: {}, current_date_time: {})",
-              consultation_date_time, current_date_time
+              "illegal consultation date time (consultation_date_time: {}, current_date_time: {}, MIN_DURATION_IN_DAYS: {}, MAX_DURATION_IN_DAYS: {})",
+              consultation_date_time, current_date_time, MIN_DURATION_IN_DAYS, MAX_DURATION_IN_DAYS
           ),
         }
     }
