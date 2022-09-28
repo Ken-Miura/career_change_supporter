@@ -6,6 +6,9 @@ use chrono::{DateTime, FixedOffset, NaiveDate};
 
 use crate::request_consultation::ConsultationDateTime;
 
+const MIN_DURATION_IN_DAYS: i64 = 3;
+const MAX_DURATION_IN_DAYS: i64 = 28;
+
 pub(crate) fn validate_consultation_date_time(
     consultation_date_time: &ConsultationDateTime,
     current_date_time: &DateTime<FixedOffset>,
@@ -39,7 +42,16 @@ pub(crate) fn validate_consultation_date_time(
 
     let timezone = current_date_time.offset();
     let consultation_date_time = DateTime::<FixedOffset>::from_local(date_time, *timezone);
-    todo!()
+    let duration = consultation_date_time - *current_date_time;
+    if !(MIN_DURATION_IN_DAYS..=MAX_DURATION_IN_DAYS).contains(&duration.num_days()) {
+        return Err(
+            ConsultationDateTimeValidationError::IllegalConsultationDateTime {
+                consultation_date_time,
+                current_date_time: *current_date_time,
+            },
+        );
+    }
+    Ok(())
 }
 
 /// Error related to [validate_consultation_date_time()]
@@ -50,6 +62,10 @@ pub(crate) enum ConsultationDateTimeValidationError {
         month: u32,
         day: u32,
         hour: u32,
+    },
+    IllegalConsultationDateTime {
+        consultation_date_time: DateTime<FixedOffset>,
+        current_date_time: DateTime<FixedOffset>,
     },
 }
 
@@ -66,6 +82,14 @@ impl Display for ConsultationDateTimeValidationError {
                 "illegal date time (year: {}, month: {}, day: {}, hour: {})",
                 year, month, day, hour
             ),
+            ConsultationDateTimeValidationError::IllegalConsultationDateTime {
+                consultation_date_time,
+                current_date_time,
+            } => write!(
+              f,
+              "illegal consultation date time (consultation_date_time: {}, current_date_time: {})",
+              consultation_date_time, current_date_time
+          ),
         }
     }
 }
