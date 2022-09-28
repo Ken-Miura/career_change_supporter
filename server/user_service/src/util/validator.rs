@@ -10,6 +10,7 @@ use once_cell::sync::Lazy;
 pub(crate) mod bank_account_validator;
 pub(crate) mod career_validator;
 pub(crate) mod consultant_search_param;
+pub(crate) mod consultation_date_time_validator;
 pub(crate) mod file_name_validator;
 pub(crate) mod identity_validator;
 

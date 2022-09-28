@@ -39,17 +39,17 @@ pub(crate) struct RequestConsultationParam {
     pub consultant_id: i64,
     pub fee_per_hour_in_yen: i32,
     pub card_token: String,
-    pub first_candidate: ConsultationDateTimeCandidateInJst,
-    pub second_candidate: ConsultationDateTimeCandidateInJst,
-    pub third_candidate: ConsultationDateTimeCandidateInJst,
+    pub first_candidate_in_jst: ConsultationDateTime,
+    pub second_candidate_in_jst: ConsultationDateTime,
+    pub third_candidate_in_jst: ConsultationDateTime,
 }
 
-#[derive(Deserialize)]
-pub(crate) struct ConsultationDateTimeCandidateInJst {
-    year: i32,
-    month: u32,
-    day: u32,
-    hour: u32,
+#[derive(Deserialize, PartialEq)]
+pub(crate) struct ConsultationDateTime {
+    pub(crate) year: i32,
+    pub(crate) month: u32,
+    pub(crate) day: u32,
+    pub(crate) hour: u32,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
