@@ -168,6 +168,84 @@ mod tests {
                 },
                 expected: Ok(()),
             },
+            TestCase {
+                name: "illegal date".to_string(),
+                input: Input {
+                    consultation_date_time: ConsultationDateTime {
+                        year: 2022,
+                        month: 9,
+                        day: 31,
+                        hour: 23,
+                    },
+                    current_date_time: DateTime::<FixedOffset>::from_local(
+                        NaiveDate::from_ymd(2022, 9, 19).and_hms(23, 0, 0),
+                        *JAPANESE_TIME_ZONE,
+                    ),
+                },
+                expected: Err(ConsultationDateTimeValidationError::IllegalDateTime {
+                    year: 2022,
+                    month: 9,
+                    day: 31,
+                    hour: 23,
+                }),
+            },
+            TestCase {
+                name: "illegal date time".to_string(),
+                input: Input {
+                    consultation_date_time: ConsultationDateTime {
+                        year: 2022,
+                        month: 9,
+                        day: 30,
+                        hour: 24,
+                    },
+                    current_date_time: DateTime::<FixedOffset>::from_local(
+                        NaiveDate::from_ymd(2022, 9, 19).and_hms(23, 0, 0),
+                        *JAPANESE_TIME_ZONE,
+                    ),
+                },
+                expected: Err(ConsultationDateTimeValidationError::IllegalDateTime {
+                    year: 2022,
+                    month: 9,
+                    day: 30,
+                    hour: 24,
+                }),
+            },
+            TestCase {
+                name: "illegal consultation hour 1".to_string(),
+                input: Input {
+                    consultation_date_time: ConsultationDateTime {
+                        year: 2022,
+                        month: 9,
+                        day: 30,
+                        hour: 6,
+                    },
+                    current_date_time: DateTime::<FixedOffset>::from_local(
+                        NaiveDate::from_ymd(2022, 9, 19).and_hms(23, 0, 0),
+                        *JAPANESE_TIME_ZONE,
+                    ),
+                },
+                expected: Err(
+                    ConsultationDateTimeValidationError::IllegalConsultationHour { hour: 6 },
+                ),
+            },
+            TestCase {
+                name: "illegal consultation hour 2".to_string(),
+                input: Input {
+                    consultation_date_time: ConsultationDateTime {
+                        year: 2022,
+                        month: 9,
+                        day: 30,
+                        hour: 0,
+                    },
+                    current_date_time: DateTime::<FixedOffset>::from_local(
+                        NaiveDate::from_ymd(2022, 9, 19).and_hms(23, 0, 0),
+                        *JAPANESE_TIME_ZONE,
+                    ),
+                },
+                expected: Err(
+                    ConsultationDateTimeValidationError::IllegalConsultationHour { hour: 0 },
+                ),
+            },
         ]
     });
 
