@@ -9,8 +9,8 @@ use crate::request_consultation::ConsultationDateTime;
 const MIN_DURATION_IN_DAYS: i64 = 3;
 const MAX_DURATION_IN_DAYS: i64 = 28;
 
-const START_HOUR: u32 = 7;
-const END_HOUR: u32 = 23;
+const FIRST_START_HOUR: u32 = 7;
+const LAST_START_HOUR: u32 = 23;
 
 pub(crate) fn validate_consultation_date_time(
     consultation_date_time: &ConsultationDateTime,
@@ -43,7 +43,7 @@ pub(crate) fn validate_consultation_date_time(
         }
     };
 
-    if !(START_HOUR..=END_HOUR).contains(&hour) {
+    if !(FIRST_START_HOUR..=LAST_START_HOUR).contains(&hour) {
         return Err(ConsultationDateTimeValidationError::IllegalConsultationHour { hour });
     }
 
@@ -94,8 +94,8 @@ impl Display for ConsultationDateTimeValidationError {
             ),
             ConsultationDateTimeValidationError::IllegalConsultationHour { hour } => write!(
               f,
-              "illegal consultation hour (hour: {}, START_HOUR: {}, END_HOUR: {}",
-              hour, START_HOUR, END_HOUR),
+              "illegal consultation hour (hour: {}, FIRST_START_HOUR: {}, LAST_START_HOUR: {}",
+              hour, FIRST_START_HOUR, LAST_START_HOUR),
             ConsultationDateTimeValidationError::IllegalConsultationDateTime {
                 consultation_date_time,
                 current_date_time,
