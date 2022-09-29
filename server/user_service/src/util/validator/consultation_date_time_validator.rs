@@ -135,22 +135,40 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        vec![TestCase {
-            name: "valid consultation date time 1".to_string(),
-            input: Input {
-                consultation_date_time: ConsultationDateTime {
-                    year: 2022,
-                    month: 9,
-                    day: 29,
-                    hour: 7,
+        vec![
+            TestCase {
+                name: "valid consultation date time 1".to_string(),
+                input: Input {
+                    consultation_date_time: ConsultationDateTime {
+                        year: 2022,
+                        month: 9,
+                        day: 29,
+                        hour: 7,
+                    },
+                    current_date_time: DateTime::<FixedOffset>::from_local(
+                        NaiveDate::from_ymd(2022, 9, 26).and_hms(7, 0, 0),
+                        *JAPANESE_TIME_ZONE,
+                    ),
                 },
-                current_date_time: DateTime::<FixedOffset>::from_local(
-                    NaiveDate::from_ymd(2022, 9, 26).and_hms(7, 0, 0),
-                    *JAPANESE_TIME_ZONE,
-                ),
+                expected: Ok(()),
             },
-            expected: Ok(()),
-        }]
+            TestCase {
+                name: "valid consultation date time 2".to_string(),
+                input: Input {
+                    consultation_date_time: ConsultationDateTime {
+                        year: 2022,
+                        month: 9,
+                        day: 29,
+                        hour: 23,
+                    },
+                    current_date_time: DateTime::<FixedOffset>::from_local(
+                        NaiveDate::from_ymd(2022, 9, 1).and_hms(23, 0, 0),
+                        *JAPANESE_TIME_ZONE,
+                    ),
+                },
+                expected: Ok(()),
+            },
+        ]
     });
 
     #[test]
