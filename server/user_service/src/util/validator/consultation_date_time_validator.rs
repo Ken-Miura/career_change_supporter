@@ -54,7 +54,7 @@ pub(crate) fn validate_consultation_date_time(
     let duration = consultation_date_time - *current_date_time;
     if !(MIN_DURATION_IN_SECONDS..=MAX_DURATION_IN_SECONDS).contains(&duration.num_seconds()) {
         return Err(
-            ConsultationDateTimeValidationError::IllegalConsultationDateTime {
+            ConsultationDateTimeValidationError::InvalidConsultationDateTime {
                 consultation_date_time,
                 current_date_time: *current_date_time,
             },
@@ -75,7 +75,7 @@ pub(crate) enum ConsultationDateTimeValidationError {
     IllegalConsultationHour {
         hour: u32,
     },
-    IllegalConsultationDateTime {
+    InvalidConsultationDateTime {
         consultation_date_time: DateTime<FixedOffset>,
         current_date_time: DateTime<FixedOffset>,
     },
@@ -98,7 +98,7 @@ impl Display for ConsultationDateTimeValidationError {
               f,
               "illegal consultation hour (hour: {}, FIRST_START_HOUR: {}, LAST_START_HOUR: {}",
               hour, FIRST_START_HOUR, LAST_START_HOUR),
-            ConsultationDateTimeValidationError::IllegalConsultationDateTime {
+            ConsultationDateTimeValidationError::InvalidConsultationDateTime {
                 consultation_date_time,
                 current_date_time,
             } => write!(
@@ -263,7 +263,7 @@ mod tests {
                     ),
                 },
                 expected: Err(
-                    ConsultationDateTimeValidationError::IllegalConsultationDateTime {
+                    ConsultationDateTimeValidationError::InvalidConsultationDateTime {
                         consultation_date_time: DateTime::<FixedOffset>::from_local(
                             NaiveDate::from_ymd(2022, 9, 29).and_hms(7, 0, 0),
                             *JAPANESE_TIME_ZONE,
@@ -290,7 +290,7 @@ mod tests {
                     ),
                 },
                 expected: Err(
-                    ConsultationDateTimeValidationError::IllegalConsultationDateTime {
+                    ConsultationDateTimeValidationError::InvalidConsultationDateTime {
                         consultation_date_time: DateTime::<FixedOffset>::from_local(
                             NaiveDate::from_ymd(2022, 9, 22).and_hms(23, 0, 0),
                             *JAPANESE_TIME_ZONE,

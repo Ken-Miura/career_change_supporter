@@ -3,12 +3,14 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::payment_platform::charge::CreateCharge;
-use common::ApiError;
+use common::payment_platform::Metadata;
 use common::{
     payment_platform::charge::{ChargeOperation, ChargeOperationImpl},
     ErrResp, RespResult,
 };
+use common::{ApiError, JAPANESE_TIME_ZONE};
 use entity::{
     prelude::ConsultingFee,
     sea_orm::{DatabaseConnection, EntityTrait},
@@ -17,6 +19,13 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
+use crate::util::validator::consultation_date_time_validator::{
+    validate_consultation_date_time, ConsultationDateTimeValidationError,
+};
+use crate::util::{
+    KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+};
 use crate::{
     err::unexpected_err_resp,
     util::{self, session::User, ACCESS_INFO},
@@ -29,9 +38,17 @@ pub(crate) async fn post_request_consultation(
     Json(param): Json<RequestConsultationParam>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<RequestConsultationResult> {
+    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let request_consultation_op = RequestConsultationOperationImpl { pool };
     let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-    handle_request_consultation(account_id, param, request_consultation_op, charge_op).await
+    handle_request_consultation(
+        account_id,
+        param,
+        &current_date_time,
+        request_consultation_op,
+        charge_op,
+    )
+    .await
 }
 
 #[derive(Deserialize)]
@@ -126,11 +143,18 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
 async fn handle_request_consultation(
     account_id: i64,
     request_consultation_param: RequestConsultationParam,
+    current_date_time: &DateTime<FixedOffset>,
     request_consultation_op: impl RequestConsultationOperation,
     charge_op: impl ChargeOperation,
 ) -> RespResult<RequestConsultationResult> {
     let consultant_id = request_consultation_param.consultant_id;
     let _ = validate_consultant_id_is_positive(consultant_id)?;
+    let _ = validate_candidates(
+        &request_consultation_param.first_candidate_in_jst,
+        &request_consultation_param.second_candidate_in_jst,
+        &request_consultation_param.third_candidate_in_jst,
+        current_date_time,
+    )?;
     let _ = validate_identity_exists(account_id, &request_consultation_op).await?;
     let _ = validate_consultant_is_available(consultant_id, &request_consultation_op).await?;
 
@@ -153,12 +177,18 @@ async fn handle_request_consultation(
 
     let price = (fee_per_hour_in_yen, "jpy".to_string());
     let card = request_consultation_param.card_token.as_str();
-    // TODO: メタデータにコンサルタントIDと候補日時を保管する
+    let metadata = generate_metadata(
+        consultant_id,
+        &request_consultation_param.first_candidate_in_jst,
+        &request_consultation_param.second_candidate_in_jst,
+        &request_consultation_param.third_candidate_in_jst,
+    );
     let create_charge = CreateCharge::build()
         .price(&price)
         .card(card)
         .capture(false)
         .expiry_days(EXPIRY_DAYS)
+        .metadata(&metadata)
         .tenant(tenant_id.as_str())
         .three_d_secure(true)
         .finish()
@@ -198,6 +228,79 @@ fn validate_consultant_id_is_positive(consultant_id: i64) -> Result<(), ErrResp>
         ));
     }
     Ok(())
+}
+
+fn validate_candidates(
+    first_candidate_in_jst: &ConsultationDateTime,
+    second_candidate_in_jst: &ConsultationDateTime,
+    third_candidate_in_jst: &ConsultationDateTime,
+    current_date_time: &DateTime<FixedOffset>,
+) -> Result<(), ErrResp> {
+    let _ = validate_consultation_date_time(first_candidate_in_jst, current_date_time).map_err(
+        |e| {
+            error!("invalid first_candidate_in_jst: {}", e);
+            convert_consultation_date_time_validation_err(&e)
+        },
+    )?;
+    let _ = validate_consultation_date_time(second_candidate_in_jst, current_date_time).map_err(
+        |e| {
+            error!("invalid second_candidate_in_jst: {}", e);
+            convert_consultation_date_time_validation_err(&e)
+        },
+    )?;
+    let _ = validate_consultation_date_time(third_candidate_in_jst, current_date_time).map_err(
+        |e| {
+            error!("invalid third_candidate_in_jst: {}", e);
+            convert_consultation_date_time_validation_err(&e)
+        },
+    )?;
+
+    if first_candidate_in_jst == second_candidate_in_jst
+        || second_candidate_in_jst == third_candidate_in_jst
+        || third_candidate_in_jst == first_candidate_in_jst
+    {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::DuplicateDateTimeCandidates as u32,
+            }),
+        ));
+    }
+
+    Ok(())
+}
+
+fn convert_consultation_date_time_validation_err(
+    e: &ConsultationDateTimeValidationError,
+) -> ErrResp {
+    match e {
+        ConsultationDateTimeValidationError::IllegalDateTime {
+            year: _,
+            month: _,
+            day: _,
+            hour: _,
+        } => (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::IllegalConsultationDateTime as u32,
+            }),
+        ),
+        ConsultationDateTimeValidationError::IllegalConsultationHour { hour: _ } => (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::IllegalConsultationHour as u32,
+            }),
+        ),
+        ConsultationDateTimeValidationError::InvalidConsultationDateTime {
+            consultation_date_time: _,
+            current_date_time: _,
+        } => (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidConsultationDateTime as u32,
+            }),
+        ),
+    }
 }
 
 async fn validate_identity_exists(
@@ -273,6 +376,64 @@ async fn get_tenant_id(
         unexpected_err_resp()
     })?;
     Ok(tenant_id)
+}
+
+fn generate_metadata(
+    consultant_id: i64,
+    first_candidate_in_jst: &ConsultationDateTime,
+    second_candidate_in_jst: &ConsultationDateTime,
+    third_candidate_in_jst: &ConsultationDateTime,
+) -> Metadata {
+    let mut metadata = Metadata::with_capacity(4);
+
+    let _ = metadata.insert(
+        KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ.to_string(),
+        consultant_id.to_string(),
+    );
+
+    let date_time = DateTime::<FixedOffset>::from_local(
+        NaiveDate::from_ymd(
+            first_candidate_in_jst.year,
+            first_candidate_in_jst.month,
+            first_candidate_in_jst.day,
+        )
+        .and_hms(first_candidate_in_jst.hour, 0, 0),
+        *JAPANESE_TIME_ZONE,
+    );
+    let _ = metadata.insert(
+        KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
+        date_time.to_rfc2822(),
+    );
+
+    let date_time = DateTime::<FixedOffset>::from_local(
+        NaiveDate::from_ymd(
+            second_candidate_in_jst.year,
+            second_candidate_in_jst.month,
+            second_candidate_in_jst.day,
+        )
+        .and_hms(second_candidate_in_jst.hour, 0, 0),
+        *JAPANESE_TIME_ZONE,
+    );
+    let _ = metadata.insert(
+        KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
+        date_time.to_rfc2822(),
+    );
+
+    let date_time = DateTime::<FixedOffset>::from_local(
+        NaiveDate::from_ymd(
+            third_candidate_in_jst.year,
+            third_candidate_in_jst.month,
+            third_candidate_in_jst.day,
+        )
+        .and_hms(third_candidate_in_jst.hour, 0, 0),
+        *JAPANESE_TIME_ZONE,
+    );
+    let _ = metadata.insert(
+        KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
+        date_time.to_rfc2822(),
+    );
+
+    metadata
 }
 
 #[cfg(test)]

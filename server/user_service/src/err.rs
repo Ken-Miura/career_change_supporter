@@ -108,6 +108,10 @@ pub(crate) enum Code {
     NoFeePerHourInYenFound = 20096,
     FeePerHourInYenWasUpdated = 20097,
     ConsultantIsNotAvailable = 20098,
+    IllegalConsultationDateTime = 20099,
+    IllegalConsultationHour = 20100,
+    InvalidConsultationDateTime = 20101,
+    DuplicateDateTimeCandidates = 20102,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
