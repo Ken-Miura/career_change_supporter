@@ -6,8 +6,10 @@ use chrono::{DateTime, FixedOffset, NaiveDate};
 
 use crate::request_consultation::ConsultationDateTime;
 
-const MIN_DURATION_IN_DAYS: i64 = 3;
-const MAX_DURATION_IN_DAYS: i64 = 28;
+// 3日間
+const MIN_DURATION_IN_SECONDS: i64 = 3 * 24 * 60 * 60;
+// 27日間
+const MAX_DURATION_IN_SECONDS: i64 = 27 * 24 * 60 * 60;
 
 const FIRST_START_HOUR: u32 = 7;
 const LAST_START_HOUR: u32 = 23;
@@ -50,7 +52,7 @@ pub(crate) fn validate_consultation_date_time(
     let timezone = current_date_time.offset();
     let consultation_date_time = DateTime::<FixedOffset>::from_local(date_time, *timezone);
     let duration = consultation_date_time - *current_date_time;
-    if !(MIN_DURATION_IN_DAYS..=MAX_DURATION_IN_DAYS).contains(&duration.num_days()) {
+    if !(MIN_DURATION_IN_SECONDS..=MAX_DURATION_IN_SECONDS).contains(&duration.num_seconds()) {
         return Err(
             ConsultationDateTimeValidationError::IllegalConsultationDateTime {
                 consultation_date_time,
@@ -101,8 +103,8 @@ impl Display for ConsultationDateTimeValidationError {
                 current_date_time,
             } => write!(
               f,
-              "illegal consultation date time (consultation_date_time: {}, current_date_time: {}, MIN_DURATION_IN_DAYS: {}, MAX_DURATION_IN_DAYS: {})",
-              consultation_date_time, current_date_time, MIN_DURATION_IN_DAYS, MAX_DURATION_IN_DAYS
+              "illegal consultation date time (consultation_date_time: {}, current_date_time: {}, MIN_DURATION_IN_SECONDS: {}, MAX_DURATION_IN_SECONDS: {})",
+              consultation_date_time, current_date_time, MIN_DURATION_IN_SECONDS, MAX_DURATION_IN_SECONDS
           ),
         }
     }
@@ -158,7 +160,7 @@ mod tests {
                     consultation_date_time: ConsultationDateTime {
                         year: 2022,
                         month: 9,
-                        day: 29,
+                        day: 28,
                         hour: 23,
                     },
                     current_date_time: DateTime::<FixedOffset>::from_local(
@@ -268,6 +270,33 @@ mod tests {
                         ),
                         current_date_time: DateTime::<FixedOffset>::from_local(
                             NaiveDate::from_ymd(2022, 9, 26).and_hms(7, 0, 1),
+                            *JAPANESE_TIME_ZONE,
+                        ),
+                    },
+                ),
+            },
+            TestCase {
+                name: "illegal consultation date time 2".to_string(),
+                input: Input {
+                    consultation_date_time: ConsultationDateTime {
+                        year: 2022,
+                        month: 9,
+                        day: 28,
+                        hour: 23,
+                    },
+                    current_date_time: DateTime::<FixedOffset>::from_local(
+                        NaiveDate::from_ymd(2022, 9, 1).and_hms(22, 59, 59),
+                        *JAPANESE_TIME_ZONE,
+                    ),
+                },
+                expected: Err(
+                    ConsultationDateTimeValidationError::IllegalConsultationDateTime {
+                        consultation_date_time: DateTime::<FixedOffset>::from_local(
+                            NaiveDate::from_ymd(2022, 9, 28).and_hms(23, 0, 0),
+                            *JAPANESE_TIME_ZONE,
+                        ),
+                        current_date_time: DateTime::<FixedOffset>::from_local(
+                            NaiveDate::from_ymd(2022, 9, 1).and_hms(22, 59, 59),
                             *JAPANESE_TIME_ZONE,
                         ),
                     },
