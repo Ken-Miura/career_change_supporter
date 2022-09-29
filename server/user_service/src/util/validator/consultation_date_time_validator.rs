@@ -8,8 +8,8 @@ use crate::request_consultation::ConsultationDateTime;
 
 // 3日間
 const MIN_DURATION_IN_SECONDS: i64 = 3 * 24 * 60 * 60;
-// 27日間
-const MAX_DURATION_IN_SECONDS: i64 = 27 * 24 * 60 * 60;
+// 21日間
+const MAX_DURATION_IN_SECONDS: i64 = 21 * 24 * 60 * 60;
 
 const FIRST_START_HOUR: u32 = 7;
 const LAST_START_HOUR: u32 = 23;
@@ -160,7 +160,7 @@ mod tests {
                     consultation_date_time: ConsultationDateTime {
                         year: 2022,
                         month: 9,
-                        day: 28,
+                        day: 22,
                         hour: 23,
                     },
                     current_date_time: DateTime::<FixedOffset>::from_local(
@@ -281,7 +281,7 @@ mod tests {
                     consultation_date_time: ConsultationDateTime {
                         year: 2022,
                         month: 9,
-                        day: 28,
+                        day: 22,
                         hour: 23,
                     },
                     current_date_time: DateTime::<FixedOffset>::from_local(
@@ -292,7 +292,7 @@ mod tests {
                 expected: Err(
                     ConsultationDateTimeValidationError::IllegalConsultationDateTime {
                         consultation_date_time: DateTime::<FixedOffset>::from_local(
-                            NaiveDate::from_ymd(2022, 9, 28).and_hms(23, 0, 0),
+                            NaiveDate::from_ymd(2022, 9, 22).and_hms(23, 0, 0),
                             *JAPANESE_TIME_ZONE,
                         ),
                         current_date_time: DateTime::<FixedOffset>::from_local(
