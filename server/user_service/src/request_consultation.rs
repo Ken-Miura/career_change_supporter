@@ -402,7 +402,7 @@ fn generate_metadata(
     );
     let _ = metadata.insert(
         KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
-        date_time.to_rfc2822(),
+        date_time.to_rfc3339(),
     );
 
     let date_time = DateTime::<FixedOffset>::from_local(
@@ -416,7 +416,7 @@ fn generate_metadata(
     );
     let _ = metadata.insert(
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
-        date_time.to_rfc2822(),
+        date_time.to_rfc3339(),
     );
 
     let date_time = DateTime::<FixedOffset>::from_local(
@@ -430,7 +430,7 @@ fn generate_metadata(
     );
     let _ = metadata.insert(
         KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
-        date_time.to_rfc2822(),
+        date_time.to_rfc3339(),
     );
 
     metadata
