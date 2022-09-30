@@ -57,7 +57,7 @@ trait FinishRequestConsultationOperation {
         account_id: i64,
         consultant_id: i64,
         charge_id: String,
-        expired_date_time: DateTime<FixedOffset>,
+        expiry_date_time: DateTime<FixedOffset>,
     ) -> Result<bool, ErrResp>;
 }
 
@@ -93,7 +93,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         account_id: i64,
         consultant_id: i64,
         charge_id: String,
-        expired_date_time: DateTime<FixedOffset>,
+        expiry_date_time: DateTime<FixedOffset>,
     ) -> Result<bool, ErrResp> {
         todo!()
     }
