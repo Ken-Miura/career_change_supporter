@@ -5,8 +5,11 @@ use axum::{Extension, Json};
 use chrono::{DateTime, FixedOffset};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
-use common::{ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use common::{ErrResp, ErrRespStruct, RespResult};
+use entity::sea_orm::ActiveValue::NotSet;
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, Set, TransactionError, TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -58,7 +61,7 @@ trait FinishRequestConsultationOperation {
         consultant_id: i64,
         charge_id: String,
         expiry_date_time: DateTime<FixedOffset>,
-    ) -> Result<bool, ErrResp>;
+    ) -> Result<Charge, ErrResp>;
 }
 
 struct FinishRequestConsultationOperationImpl {
@@ -94,8 +97,49 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         consultant_id: i64,
         charge_id: String,
         expiry_date_time: DateTime<FixedOffset>,
-    ) -> Result<bool, ErrResp> {
-        todo!()
+    ) -> Result<Charge, ErrResp> {
+        let charge = self.pool.transaction::<_, Charge, ErrRespStruct>(|txn| {
+            Box::pin(async move {
+                let active_model = entity::consultation_req::ActiveModel {
+                    consultation_req_id: NotSet,
+                    user_account_id: Set(account_id),
+                    consultant_id: Set(consultant_id),
+                    charge_id: Set(charge_id.clone()),
+                    expiry_date_time: Set(expiry_date_time),
+                };
+                active_model.insert(txn).await.map_err(|e| {
+                    error!(
+                        "failed to insert consultation_req (account_id: {}, consultant_id: {}, charge_id: {}, expiry_date_time: {}): {}",
+                        account_id, consultant_id, charge_id.clone(), expiry_date_time, e
+                    );
+                    ErrRespStruct {
+                        err_resp: unexpected_err_resp(),
+                    }
+                })?;
+
+                let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+                let charge = charge_op.finish_three_d_secure_flow(charge_id.as_str())
+                    .await.map_err(|e| {
+                        // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
+                        error!("failed to finish 3D secure flow (charge_id: {}): {}", charge_id, e);
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
+                Ok(charge)
+            })
+        }).await.map_err(|e| match e {
+            TransactionError::Connection(db_err) => {
+                error!("connection error: {}", db_err);
+                unexpected_err_resp()
+            }
+            TransactionError::Transaction(err_resp_struct) => {
+                error!("failed to create_request_consultation: {}", err_resp_struct);
+                err_resp_struct.err_resp
+            }
+        })?;
+        Ok(charge)
     }
 }
 
