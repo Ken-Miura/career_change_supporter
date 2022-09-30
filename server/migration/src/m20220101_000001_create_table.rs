@@ -56,11 +56,6 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         // その他（TABLE、INDEX等）の定義
         let _ = conn
-        /*
-         * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-         *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-         * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-         */
         /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
         .execute(sql.stmt(r"CREATE TABLE ccs_schema.user_account (
             user_account_id BIGSERIAL PRIMARY KEY,
@@ -92,6 +87,16 @@ impl MigrationTrait for Migration {
             .execute(
                 sql.stmt(r"GRANT UPDATE (disabled_at) ON ccs_schema.user_account To admin_app;"),
             )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            /*
+             * NOTE: 下記の参考によると、SERIALで暗黙的に作成されるSEQUENCEはtablename_colname_seqで定められる
+             * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
+             */
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.user_account_user_account_id_seq TO user_app;",
+            ))
             .await
             .map(|_| ())?;
 
@@ -246,11 +251,6 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             .execute(
-                /*
-                 * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-                 *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-                 * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-                 */
                 /* annual_income_in_man_yen => 万円単位での年収 */
                 sql.stmt(
                     r"CREATE TABLE ccs_schema.career (
@@ -287,6 +287,12 @@ impl MigrationTrait for Migration {
                 sql.stmt(
                     r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.career To admin_app;",
                 ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.career_career_id_seq TO admin_app;"),
             )
             .await
             .map(|_| ())?;
@@ -558,11 +564,6 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             /*
-             * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-             *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-             * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-             */
-            /*
              * 複数回拒否の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
              */
             /*
@@ -599,6 +600,12 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT SELECT, INSERT ON ccs_schema.rejected_create_identity_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.rejected_create_identity_req_rjd_cre_identity_id_seq TO admin_app;",
             ))
             .await
             .map(|_| ())?;
@@ -656,11 +663,6 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             /*
-             * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-             *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-             * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-             */
-            /*
              * 複数回更新の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
              */
             /*
@@ -695,13 +697,14 @@ impl MigrationTrait for Migration {
             ))
             .await
             .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.approved_update_identity_req_appr_upd_identity_req_id_seq TO admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
 
         let _ = conn
-            /*
-             * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-             *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-             * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-             */
             /*
              * 複数回拒否の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
              */
@@ -742,14 +745,15 @@ impl MigrationTrait for Migration {
             ))
             .await
             .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.rejected_update_identity_req_rjd_upd_identity_id_seq TO admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
 
         let _ = conn
             .execute(
-                /*
-                 * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-                 *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-                 * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-                 */
                 /*
                  * 最大MAX_NUM_OF_CAREER_PER_USER_ACCOUNT回のリクエストを受け付け可能にするため、
                  * user_accountのuser_account_idをUNIQUEとしては扱わない。
@@ -794,6 +798,12 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.create_career_req_create_career_req_id_seq TO user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
             .execute(sql.stmt(
                 r"CREATE INDEX create_career_req_requested_at_idx ON ccs_schema.create_career_req (requested_at);",
             ))
@@ -802,11 +812,6 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             .execute(
-                /*
-                 * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-                 *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-                 * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-                 */
                 /*
                  * user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
                  * 管理者の把握しないうちにレコードが消去される可能性がある。そのため、user_account_idは外部キーとしない
@@ -842,6 +847,12 @@ impl MigrationTrait for Migration {
             ))
             .await
             .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.approved_create_career_req_appr_cre_career_req_id_seq TO admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
 
         let _ = conn
             /* user_account一つに対して、document（検索用の情報）は0もしくは1の関係とする。 */
@@ -867,11 +878,6 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             .execute(
-                /*
-                 * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-                 *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-                 * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-                 */
                 /*
                  * user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
                  * 管理者の把握しないうちにレコードが消去される可能性がある。そのため、user_account_idは外部キーとしない
@@ -909,13 +915,14 @@ impl MigrationTrait for Migration {
             ))
             .await
             .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.rejected_create_career_req_rjd_cre_career_req_id_seq TO admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
 
         let _ = conn
-            /*
-             * NOTE: 下記の参考によると、SERIAL系は暗黙的にtablename_colname_seqとう形でSEQUENCEが作られる。
-             *       作られるSEQUENCE名が63バイトの識別子長制限に引っかからないことを確認しておく。
-             * 参考: https://www.postgresql.org/docs/13/datatype-numeric.html#DATATYPE-SERIAL
-             */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.admin_account (
                     admin_account_id BIGSERIAL PRIMARY KEY,
@@ -929,6 +936,12 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.admin_account To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.admin_account_admin_account_id_seq TO admin_app;",
             ))
             .await
             .map(|_| ())?;
