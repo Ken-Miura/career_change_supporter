@@ -1,10 +1,12 @@
 // Copyright 2022 Ken Miura
 
 use axum::async_trait;
+use axum::http::StatusCode;
 use axum::{Extension, Json};
 use chrono::{DateTime, FixedOffset};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
+use common::ApiError;
 use common::{ErrResp, ErrRespStruct, RespResult};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
@@ -13,9 +15,9 @@ use entity::sea_orm::{
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::unexpected_err_resp;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
-use crate::util::{self, ACCESS_INFO};
+use crate::util::{self, ACCESS_INFO, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ};
 
 pub(crate) async fn post_finish_request_consultation(
     User { account_id }: User,
@@ -47,14 +49,83 @@ async fn handle_finish_request_consultation(
     op: impl FinishRequestConsultationOperation,
     send_mail: impl SendMail,
 ) -> RespResult<FinishRequestConsultationResult> {
+    let _ = validate_identity_exists(account_id, &op).await?;
+    let charge = op.get_charge_by_charge_id(charge_id.clone()).await?;
+    let consultant_id = extract_consultant_id(&charge)?;
+    let _ = validate_consultant_is_available(consultant_id, &op).await?;
     todo!()
+}
+
+async fn validate_identity_exists(
+    account_id: i64,
+    op: &impl FinishRequestConsultationOperation,
+) -> Result<(), ErrResp> {
+    let identity_exists = op.check_if_identity_exists(account_id).await?;
+    if !identity_exists {
+        error!("identity is not registered (account_id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+fn extract_consultant_id(charge: &Charge) -> Result<i64, ErrResp> {
+    let metadata = match charge.metadata.clone() {
+        Some(metadata) => metadata,
+        None => {
+            error!("no metadata found on charge (id: {})", charge.id);
+            return Err(unexpected_err_resp());
+        }
+    };
+    let consultant_id = match metadata.get(KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ) {
+        Some(c_id) => c_id,
+        None => {
+            error!(
+                "no consultant_id found in metadata on charge (id: {})",
+                charge.id
+            );
+            return Err(unexpected_err_resp());
+        }
+    };
+    let consultant_id = match consultant_id.parse::<i64>() {
+        Ok(c_id) => c_id,
+        Err(e) => {
+            error!("failed to parse consultant_id in metadata on charge (id: {}, consultant_id: {}): {}", charge.id, consultant_id, e);
+            return Err(unexpected_err_resp());
+        }
+    };
+    Ok(consultant_id)
+}
+
+async fn validate_consultant_is_available(
+    consultant_id: i64,
+    op: &impl FinishRequestConsultationOperation,
+) -> Result<(), ErrResp> {
+    let consultant_available = op.check_if_consultant_is_available(consultant_id).await?;
+    if !consultant_available {
+        error!(
+            "consultant is not available (consultant_id: {})",
+            consultant_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantIsNotAvailable as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 #[async_trait]
 trait FinishRequestConsultationOperation {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp>;
+    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn create_request_consultation(
         &self,
         account_id: i64,
@@ -74,10 +145,6 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         util::check_if_identity_exists(&self.pool, account_id).await
     }
 
-    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_consultant_is_available(&self.pool, consultant_id).await
-    }
-
     async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp> {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
         let charge = charge_op
@@ -89,6 +156,10 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                 unexpected_err_resp()
             })?;
         Ok(charge)
+    }
+
+    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
+        util::check_if_consultant_is_available(&self.pool, consultant_id).await
     }
 
     async fn create_request_consultation(
