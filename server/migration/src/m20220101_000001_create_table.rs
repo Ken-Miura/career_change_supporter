@@ -344,6 +344,71 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.consultation_req (
+                  consultation_req_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  consultant_id BIGINT NOT NULL,
+                  charge_id TEXT NOT NULL,
+                  expiry_date_time TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, INSERT, DELETE ON ccs_schema.consultation_req To user_app;",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ =
+            conn.execute(sql.stmt(
+                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.consultation_req To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX consultation_req_expiry_date_time_idx ON ccs_schema.consultation_req (expiry_date_time);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.consultation_info (
+                  consultation_info_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  consultant_id BIGINT NOT NULL,
+                  charge_id TEXT NOT NULL,
+                  consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.consultation_info To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.consultation_info To admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX consultation_info_consultation_date_time_idx ON ccs_schema.consultation_info (consultation_date_time);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
             /*
              * user_account一つに対して、create_identity_req (本人確認依頼 (新規)) は0もしくは1の関係とする。従って、user_account_idをPRIMARY KEYに指定する
              * 画像ファイルの実体は、データベース外に保存している。user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
