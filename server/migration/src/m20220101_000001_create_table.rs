@@ -374,6 +374,12 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.consultation_req_consultation_req_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
                 r"CREATE INDEX consultation_req_expiry_date_time_idx ON ccs_schema.consultation_req (expiry_date_time);",
             ))
             .await
@@ -399,6 +405,12 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.consultation_info To admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.consultation_info_consultation_info_id_seq TO user_app;",
+            ))
             .await
             .map(|_| ())?;
         let _ = conn
@@ -436,6 +448,12 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.user_rating_user_rating_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
                 r"CREATE INDEX user_rating_user_account_id_idx ON ccs_schema.user_rating (user_account_id);",
             ))
             .await
@@ -464,6 +482,12 @@ impl MigrationTrait for Migration {
             // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
             .execute(sql.stmt(
                 r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.consultant_rating To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.consultant_rating_consultant_rating_id_seq TO user_app;",
             ))
             .await
             .map(|_| ())?;
