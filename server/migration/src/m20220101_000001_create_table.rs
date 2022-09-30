@@ -409,6 +409,72 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.user_rating (
+                  user_rating_id BIGSERIAL PRIMARY KEY,
+                  consultant_id BIGINT NOT NULL,
+                  user_account_id BIGINT NOT NULL,
+                  charge_id TEXT NOT NULL,
+                  rating SMALLINT NOT NULL,
+                  rated_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.user_rating To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+            .execute(
+                sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.user_rating To admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX user_rating_user_account_id_idx ON ccs_schema.user_rating (user_account_id);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.consultant_rating (
+                  consultant_rating_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  consultant_id BIGINT NOT NULL,
+                  charge_id TEXT NOT NULL,
+                  rating SMALLINT NOT NULL,
+                  rated_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.consultant_rating To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+            .execute(sql.stmt(
+                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.consultant_rating To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX consultant_rating_consultant_id_idx ON ccs_schema.consultant_rating (consultant_id);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
             /*
              * user_account一つに対して、create_identity_req (本人確認依頼 (新規)) は0もしくは1の関係とする。従って、user_account_idをPRIMARY KEYに指定する
              * 画像ファイルの実体は、データベース外に保存している。user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
