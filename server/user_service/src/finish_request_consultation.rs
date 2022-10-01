@@ -3,17 +3,17 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, FixedOffset, TimeZone};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
-use common::ApiError;
+use common::{ApiError, JAPANESE_TIME_ZONE};
 use common::{ErrResp, ErrRespStruct, RespResult};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, Set, TransactionError, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
@@ -53,11 +53,15 @@ async fn handle_finish_request_consultation(
     let charge = op.get_charge_by_charge_id(charge_id.clone()).await?;
     let consultant_id = extract_consultant_id(&charge)?;
     let _ = validate_consultant_is_available(consultant_id, &op).await?;
-    // chargeのステータスチェック
-    // chargeからexpireの時間を取得
-    // 3Dセキュアフロー完了
-    // メール送信
-    todo!()
+    let _ = confirm_three_d_secure_status_is_ok(&charge)?;
+
+    let expiry_date_time = extract_expiry_date_time(&charge)?;
+    let charge = op
+        .create_request_consultation(account_id, consultant_id, charge_id, expiry_date_time)
+        .await?;
+    info!("finished 3D Secure flow (charge.id: {})", charge.id);
+
+    todo!("メール送信")
 }
 
 async fn validate_identity_exists(
@@ -123,6 +127,54 @@ async fn validate_consultant_is_available(
         ));
     }
     Ok(())
+}
+
+fn confirm_three_d_secure_status_is_ok(charge: &Charge) -> Result<(), ErrResp> {
+    let three_d_secure_status = match charge.three_d_secure_status.clone() {
+        Some(s) => s,
+        None => {
+            error!(
+                "three_d_secure_status is None (charge.id: {})",
+                charge.id.clone()
+            );
+            return Err(unexpected_err_resp());
+        }
+    };
+    if !(three_d_secure_status == "attempted" || three_d_secure_status == "verified") {
+        error!(
+            "3D secure is not finished correctly (three_d_secure_status: {}, charge.id: {})",
+            three_d_secure_status,
+            charge.id.clone()
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ThreeDSecureError as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+fn extract_expiry_date_time(charge: &Charge) -> Result<DateTime<FixedOffset>, ErrResp> {
+    let expired_at = match charge.expired_at {
+        Some(expired_at) => expired_at,
+        None => {
+            error!("expired_at is None (charge.id: {})", charge.id.clone());
+            return Err(unexpected_err_resp());
+        }
+    };
+    let expiry_date_time = match (*JAPANESE_TIME_ZONE).timestamp_opt(expired_at, 0) {
+        chrono::LocalResult::Single(expiry_date_time) => expiry_date_time,
+        _ => {
+            error!(
+                "expired_at is not correct value (charge_id: {})",
+                charge.id.clone()
+            );
+            return Err(unexpected_err_resp());
+        }
+    };
+    Ok(expiry_date_time)
 }
 
 #[async_trait]
