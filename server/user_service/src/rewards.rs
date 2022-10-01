@@ -998,6 +998,7 @@ mod tests {
             tenant: Some(tenant_id.to_string()),
             platform_fee_rate: Some("10.15".to_string()),
             total_platform_fee: Some(214),
+            three_d_secure_status: Some("verified".to_string()),
         }
     }
 
@@ -1166,6 +1167,7 @@ mod tests {
             tenant: Some(tenant_id.to_string()),
             platform_fee_rate: Some("10.15".to_string()),
             total_platform_fee: Some(214),
+            three_d_secure_status: Some("verified".to_string()),
         }
     }
 
@@ -1295,6 +1297,7 @@ mod tests {
                 tenant: Some(tenant_id.to_string()),
                 platform_fee_rate: Some("10.15".to_string()),
                 total_platform_fee: Some(214),
+                three_d_secure_status: Some("verified".to_string()),
             };
             charges.push(charge);
         }

@@ -40,6 +40,7 @@ pub struct Charge {
     pub tenant: Option<String>,
     pub platform_fee_rate: Option<String>,
     pub total_platform_fee: Option<i32>,
+    pub three_d_secure_status: Option<String>,
 }
 
 #[async_trait]

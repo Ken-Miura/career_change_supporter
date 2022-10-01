@@ -53,6 +53,10 @@ async fn handle_finish_request_consultation(
     let charge = op.get_charge_by_charge_id(charge_id.clone()).await?;
     let consultant_id = extract_consultant_id(&charge)?;
     let _ = validate_consultant_is_available(consultant_id, &op).await?;
+    // chargeのステータスチェック
+    // chargeからexpireの時間を取得
+    // 3Dセキュアフロー完了
+    // メール送信
     todo!()
 }
 
