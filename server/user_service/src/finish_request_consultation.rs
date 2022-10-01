@@ -208,7 +208,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
             .await
             .map_err(|e| {
                 // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
-                error!("failed to get charge by charge id ({}): {}", charge_id, e);
+                error!("failed to get charge by charge_id ({}): {}", charge_id, e);
                 unexpected_err_resp()
             })?;
         Ok(charge)
