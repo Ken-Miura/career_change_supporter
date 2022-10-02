@@ -23,15 +23,13 @@ use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
 use crate::util::{
-    KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    EXPIRY_DAYS, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
 use crate::{
     err::unexpected_err_resp,
     util::{self, session::User, ACCESS_INFO},
 };
-
-const EXPIRY_DAYS: u32 = 7;
 
 pub(crate) async fn post_request_consultation(
     User { account_id }: User,

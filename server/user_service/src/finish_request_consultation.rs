@@ -3,7 +3,7 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use chrono::{DateTime, FixedOffset, TimeZone};
+use chrono::{DateTime, Duration, FixedOffset, Utc};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
 use common::{ApiError, JAPANESE_TIME_ZONE};
@@ -17,7 +17,7 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
-use crate::util::{self, ACCESS_INFO, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ};
+use crate::util::{self, ACCESS_INFO, EXPIRY_DAYS, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ};
 
 pub(crate) async fn post_finish_request_consultation(
     User { account_id }: User,
@@ -25,6 +25,7 @@ pub(crate) async fn post_finish_request_consultation(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<FinishRequestConsultationResult> {
     let charge_id = param.charge_id;
+    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = FinishRequestConsultationOperationImpl { pool };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -32,7 +33,8 @@ pub(crate) async fn post_finish_request_consultation(
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_finish_request_consultation(account_id, charge_id, op, smtp_client).await
+    handle_finish_request_consultation(account_id, charge_id, &current_date_time, op, smtp_client)
+        .await
 }
 
 #[derive(Deserialize)]
@@ -46,6 +48,7 @@ pub(crate) struct FinishRequestConsultationResult {}
 async fn handle_finish_request_consultation(
     account_id: i64,
     charge_id: String,
+    current_date_time: &DateTime<FixedOffset>,
     op: impl FinishRequestConsultationOperation,
     send_mail: impl SendMail,
 ) -> RespResult<FinishRequestConsultationResult> {
@@ -55,7 +58,7 @@ async fn handle_finish_request_consultation(
     let _ = validate_consultant_is_available(consultant_id, &op).await?;
     let _ = confirm_three_d_secure_status_is_ok(&charge)?;
 
-    let expiry_date_time = extract_expiry_date_time(&charge)?;
+    let expiry_date_time = *current_date_time + Duration::days(EXPIRY_DAYS as i64);
     let charge = op
         .create_request_consultation(account_id, consultant_id, charge_id, expiry_date_time)
         .await?;
@@ -154,27 +157,6 @@ fn confirm_three_d_secure_status_is_ok(charge: &Charge) -> Result<(), ErrResp> {
         ));
     }
     Ok(())
-}
-
-fn extract_expiry_date_time(charge: &Charge) -> Result<DateTime<FixedOffset>, ErrResp> {
-    let expired_at = match charge.expired_at {
-        Some(expired_at) => expired_at,
-        None => {
-            error!("expired_at is None (charge.id: {})", charge.id.clone());
-            return Err(unexpected_err_resp());
-        }
-    };
-    let expiry_date_time = match (*JAPANESE_TIME_ZONE).timestamp_opt(expired_at, 0) {
-        chrono::LocalResult::Single(expiry_date_time) => expiry_date_time,
-        _ => {
-            error!(
-                "expired_at is not correct value (charge_id: {})",
-                charge.id.clone()
-            );
-            return Err(unexpected_err_resp());
-        }
-    };
-    Ok(expiry_date_time)
 }
 
 #[async_trait]
