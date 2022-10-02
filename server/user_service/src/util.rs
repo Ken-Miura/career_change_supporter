@@ -47,6 +47,8 @@ pub(crate) const KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "first_cand
 pub(crate) const KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "second_candidate_in_jst";
 pub(crate) const KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "third_candidate_in_jst";
 
+pub(crate) const MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION: u32 = 6;
+
 pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 /// PAY.JPにアクセスするための情報を保持する変数
