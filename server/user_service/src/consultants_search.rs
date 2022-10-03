@@ -1040,7 +1040,7 @@ mod tests {
                         },
                         fee_per_hour_in_yen_param: FeePerHourInYenParam {
                             equal_or_more: Some(3000),
-                            equal_or_less: Some(50000),
+                            equal_or_less: Some(10000),
                         },
                         sort_param: Some(SortParam {
                             key: "rating".to_string(),

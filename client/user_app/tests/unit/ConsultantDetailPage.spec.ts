@@ -59,7 +59,7 @@ const consultant1 = {
 
 const consultant2 = {
   consultant_id: 2,
-  fee_per_hour_in_yen: 50000,
+  fee_per_hour_in_yen: 10000,
   rating: 4.5,
   num_of_rated: 10,
   careers: [{

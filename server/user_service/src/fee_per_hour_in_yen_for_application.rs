@@ -238,7 +238,7 @@ mod tests {
                     op: FeePerHourInYenForApplicationOperationMock {
                         account_id: 1,
                         consultant_id: 3,
-                        fee_per_hour_in_yen: 50000,
+                        fee_per_hour_in_yen: 10000,
                     },
                 },
                 expected: Err((
