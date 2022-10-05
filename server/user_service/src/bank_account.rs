@@ -21,7 +21,7 @@ use entity::sea_orm::{
 use entity::{career, consulting_fee};
 use once_cell::sync::Lazy;
 use opensearch::OpenSearch;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 use uuid::Uuid;
 
@@ -59,12 +59,20 @@ const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 
 pub(crate) async fn post_bank_account(
     User { account_id }: User,
-    Json(bank_account): Json<BankAccount>,
+    Json(bank_account_register_req): Json<BankAccountRegisterReq>,
     Extension(pool): Extension<DatabaseConnection>,
     Extension(index_client): Extension<OpenSearch>,
 ) -> RespResult<BankAccountResult> {
+    let bank_account = bank_account_register_req.bank_account;
+    let non_profit_objective = bank_account_register_req.non_profit_objective;
     let op = SubmitBankAccountOperationImpl { pool, index_client };
-    handle_bank_account_req(account_id, bank_account, op).await
+    handle_bank_account_req(account_id, bank_account, non_profit_objective, op).await
+}
+
+#[derive(Deserialize, Clone, Debug, PartialEq)]
+pub(crate) struct BankAccountRegisterReq {
+    pub bank_account: BankAccount,
+    pub non_profit_objective: bool,
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -73,8 +81,21 @@ pub(crate) struct BankAccountResult {}
 async fn handle_bank_account_req(
     account_id: i64,
     bank_account: BankAccount,
+    non_profit_objective: bool,
     op: impl SubmitBankAccountOperation,
 ) -> RespResult<BankAccountResult> {
+    if !non_profit_objective {
+        error!(
+            "did not agree non profit objective use (account id: {})",
+            account_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ProfitObjectiveUseIsNotAllowd as u32,
+            }),
+        ));
+    }
     let _ = validate_bank_account(&bank_account).map_err(|e| {
         error!("invalid bank account: {}", e);
         create_invalid_bank_account_err(&e)
@@ -599,7 +620,7 @@ mod tests {
     use crate::err::Code;
     use crate::util::BankAccount;
 
-    use super::{handle_bank_account_req, SubmitBankAccountOperation};
+    use super::{handle_bank_account_req, BankAccountRegisterReq, SubmitBankAccountOperation};
 
     #[derive(Debug, Clone)]
     struct SubmitBankAccountOperationMock {
@@ -662,7 +683,7 @@ mod tests {
     #[derive(Debug)]
     struct Input {
         account_id: i64,
-        bank_account: BankAccount,
+        bank_account_register_req: BankAccountRegisterReq,
         op: SubmitBankAccountOperationMock,
     }
 
@@ -723,14 +744,17 @@ mod tests {
                 name: "success case1".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -746,12 +770,15 @@ mod tests {
                 name: "success case2".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "ショウジ　ジロウ".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "ショウジ　ジロウ".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity2.clone()),
@@ -767,12 +794,15 @@ mod tests {
                 name: "success case3".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "シヨウジ　ジロウ".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "シヨウジ　ジロウ".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity2),
@@ -788,12 +818,15 @@ mod tests {
                 name: "success case4".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "ウィンストン　チャーチル".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "ウィンストン　チャーチル".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3.clone()),
@@ -809,12 +842,15 @@ mod tests {
                 name: "success case5".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "ウインストン　チヤーチル".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "ウインストン　チヤーチル".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3.clone()),
@@ -830,14 +866,17 @@ mod tests {
                 name: "fail invalid bank code".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "不当な形式の銀行コード".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "不当な形式の銀行コード".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -858,14 +897,17 @@ mod tests {
                 name: "fail invalid branch code".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "不当な形式の支店コード".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "不当な形式の支店コード".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -886,14 +928,17 @@ mod tests {
                 name: "fail invalid account type".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "当座".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "当座".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -914,14 +959,17 @@ mod tests {
                 name: "fail invalid account number".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "不当な形式の口座番号".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "不当な形式の口座番号".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -942,12 +990,15 @@ mod tests {
                 name: "fail invalid account holder name".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "田中　太郎".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "田中　太郎".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -968,12 +1019,15 @@ mod tests {
                 name: "fail invalid account holder name length".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "ア".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "ア".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -994,12 +1048,15 @@ mod tests {
                 name: "fail no identity registered".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "タナカ　タロウ".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "タナカ　タロウ".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: None,
@@ -1020,12 +1077,15 @@ mod tests {
                 name: "fail account holder name does not match full name1".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: "タナカ　ジロウ".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "タナカ　ジロウ".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -1046,14 +1106,15 @@ mod tests {
                 name: "fail account holder name does not match full name2".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        // 小さいカタカナはすべて小さいカタカナのまま、もしくはすべて大きいカタカナに変換されている必要がある。
-                        // 混在はNG
-                        account_holder_name: "ウィンストン　チヤーチル".to_string(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: "ウィンストン　チヤーチル".to_string(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3),
@@ -1074,14 +1135,17 @@ mod tests {
                 name: "fail illegal bank code".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0004".to_string(), // 存在しない銀行コード
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0004".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -1107,14 +1171,17 @@ mod tests {
                 name: "fail illegal branch code".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "002".to_string(), // 存在しない支店コード
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "002".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -1140,14 +1207,17 @@ mod tests {
                 name: "fail illegal account number".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(), // みずほ銀行（ゆうちょではない）
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "12345678".to_string(), // ゆうちょのみ8桁。それ以外は７桁
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "12345678".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -1173,14 +1243,17 @@ mod tests {
                 name: "fail too many requests".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -1206,14 +1279,17 @@ mod tests {
                 name: "fail no careers found".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -1234,14 +1310,17 @@ mod tests {
                 name: "fail no fee_per_hour_in_yen found".to_string(),
                 input: Input {
                     account_id: 514,
-                    bank_account: BankAccount {
-                        bank_code: "0001".to_string(),
-                        branch_code: "001".to_string(),
-                        account_type: "普通".to_string(),
-                        account_number: "1234567".to_string(),
-                        account_holder_name: identity1.last_name_furigana.clone()
-                            + "　"
-                            + identity1.first_name_furigana.as_str(),
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: true,
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
@@ -1258,18 +1337,56 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail profit objective use is not allowed".to_string(),
+                input: Input {
+                    account_id: 514,
+                    bank_account_register_req: BankAccountRegisterReq {
+                        bank_account: BankAccount {
+                            bank_code: "0001".to_string(),
+                            branch_code: "001".to_string(),
+                            account_type: "普通".to_string(),
+                            account_number: "1234567".to_string(),
+                            account_holder_name: identity1.last_name_furigana.clone()
+                                + "　"
+                                + identity1.first_name_furigana.as_str(),
+                        },
+                        non_profit_objective: false,
+                    },
+                    op: SubmitBankAccountOperationMock {
+                        identity: Some(identity1.clone()),
+                        tenant_exists: false,
+                        careers_exist: true,
+                        fee_per_hour_in_yen_exists: true,
+                        submit_bank_account_err: None,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ProfitObjectiveUseIsNotAllowd as u32,
+                    }),
+                )),
+            },
         ]
     });
 
     #[tokio::test]
     async fn handle_bank_account_req_tests() {
         for test_case in TEST_CASE_SET.iter() {
-            let resp = handle_bank_account_req(
-                test_case.input.account_id,
-                test_case.input.bank_account.clone(),
-                test_case.input.op.clone(),
-            )
-            .await;
+            let account_id = test_case.input.account_id;
+            let bank_account = test_case
+                .input
+                .bank_account_register_req
+                .bank_account
+                .clone();
+            let non_profit_objective = test_case
+                .input
+                .bank_account_register_req
+                .non_profit_objective;
+            let op = test_case.input.op.clone();
+            let resp =
+                handle_bank_account_req(account_id, bank_account, non_profit_objective, op).await;
 
             let message = format!("test case \"{}\" failed", test_case.name.clone());
             if test_case.expected.is_ok() {

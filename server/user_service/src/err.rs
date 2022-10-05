@@ -113,6 +113,7 @@ pub(crate) enum Code {
     InvalidConsultationDateTime = 20101,
     DuplicateDateTimeCandidates = 20102,
     ThreeDSecureError = 20103,
+    ProfitObjectiveUseIsNotAllowd = 20104,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
