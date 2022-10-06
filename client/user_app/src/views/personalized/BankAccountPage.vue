@@ -41,8 +41,18 @@
             <div data-test="account-holder-name-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="bankAccount.account_holder_name" v-on:input="setAccountHolderName" type="text" required minlength="3" maxlength="129" pattern="^[ァ-ヴー　]+$" title="全角カタカナと全角空白のみで、3文字以上129文字以内でご入力下さい。" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
+            <div class="mt-6 text-2xl justify-self-start col-span-6 pt-3">
+              <p>確認事項</p>
+              <p class="text-lg">入金口座を設定、変更するためには、下記に記載の内容が正しいことを確認し、チェックをつけて下さい</p>
+            </div>
+            <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+              <div class="m-4 text-xl grid grid-cols-6 justify-center items-center">
+                <div class="col-span-5">私は営利目的の事業者、または個人事業主ではありません</div>
+                <input data-test="no-profit-objective-check" v-model="noProfitObjective" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+              </div>
+            </div>
           </div>
-          <button data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">報酬の入金口座を設定する</button>
+          <button v-bind:disabled="!noProfitObjective" data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">報酬の入金口座を設定する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': !error.exists }]" v-bind:message="error.message"/>
         </form>
       </div>
@@ -68,6 +78,7 @@ import { useStore } from 'vuex'
 import { BankAccount } from '@/util/personalized/BankAccount'
 import { usePostBankAccount } from '@/util/personalized/bank-account/usePostBankAccount'
 import { PostBankAccountResp } from '@/util/personalized/bank-account/PostBankAccountResp'
+import { BankAccountRegisterReq } from '@/util/personalized/bank-account/BankAccountRegisterReq'
 
 export default defineComponent({
   name: 'BankAccountPage',
@@ -88,6 +99,7 @@ export default defineComponent({
       account_number: '',
       account_holder_name: ''
     } as BankAccount)
+    const noProfitObjective = ref(false)
     const {
       postBankAccountDone,
       postBankAccountFunc
@@ -125,7 +137,11 @@ export default defineComponent({
     })
     const submitBankAccount = async () => {
       try {
-        const response = await postBankAccountFunc(bankAccount.value)
+        const bankAccountRegisterReq = {
+          bank_account: bankAccount.value,
+          non_profit_objective: noProfitObjective.value
+        } as BankAccountRegisterReq
+        const response = await postBankAccountFunc(bankAccountRegisterReq)
         if (!(response instanceof PostBankAccountResp)) {
           if (!(response instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${response}`)
@@ -184,6 +200,7 @@ export default defineComponent({
     return {
       error,
       bankAccount,
+      noProfitObjective,
       postBankAccountDone,
       submitBankAccount,
       setBankCode,

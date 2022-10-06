@@ -126,4 +126,5 @@ export namespace Message {
     export const CONSULTANT_DOES_NOT_EXIST_MESSAGE = 'コンサルタントが見つかりません'
     export const FEE_PER_HOUR_IN_YEN_WAS_UPDATED_MESSAGE = 'コンサルタントの相談料が更新されています'
     export const CONSULTANT_IS_NOT_AVAILABLE_MESSAGE = `${CONSULTANT_DOES_NOT_EXIST_MESSAGE}`
+    export const PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED_MESSAGE = '事業者、個人事業主による営利目的の利用はできません'
 }

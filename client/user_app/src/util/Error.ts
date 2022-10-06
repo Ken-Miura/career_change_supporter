@@ -108,6 +108,7 @@ export namespace Code {
   export const NO_FEE_PER_HOUR_IN_YEN_FOUND = 20096
   export const FEE_PER_HOUR_IN_YEN_WAS_UPDATED = 20097
   export const CONSULTANT_IS_NOT_AVAILABLE = 20098
+  export const PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED = 20099
 }
 
 export function createErrorMessage (code: number): string {
@@ -311,6 +312,8 @@ export function createErrorMessage (code: number): string {
     return `${Message.FEE_PER_HOUR_IN_YEN_WAS_UPDATED_MESSAGE} (${code})`
   } else if (code === Code.CONSULTANT_IS_NOT_AVAILABLE) {
     return `${Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE} (${code})`
+  } else if (code === Code.PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED) {
+    return `${Message.PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }

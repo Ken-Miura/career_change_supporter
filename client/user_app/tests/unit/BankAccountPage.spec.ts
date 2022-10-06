@@ -171,6 +171,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     expect(accountHolderNameInput.element.value).toEqual(bankAccountMock.account_holder_name)
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -205,6 +208,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -238,6 +244,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -278,6 +287,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -311,6 +323,9 @@ describe('BankAccountPage.vue', () => {
       }
     })
     await flushPromises()
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -351,6 +366,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -389,6 +407,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('イ')
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -429,6 +450,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('イ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -467,6 +491,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -507,6 +534,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -545,6 +575,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -585,6 +618,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -623,6 +659,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -663,6 +702,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -701,6 +743,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -741,6 +786,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -779,6 +827,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
 
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
@@ -819,6 +870,9 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
@@ -853,11 +907,47 @@ describe('BankAccountPage.vue', () => {
     const accountHolderNameInput = accountHolderNameDiv.find('input')
     await accountHolderNameInput.setValue('タナカ　タロウ')
 
+    const noProfitObjectiveCheck = wrapper.find('[data-test="no-profit-objective-check"]')
+    await noProfitObjectiveCheck.setValue(true)
+
     const button = wrapper.find('[data-test="submit-button"]')
     await button.trigger('submit')
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it('has', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const resp = PostBankAccountResp.create()
+    postBankAccountFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(BankAccountPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const bankCodeDiv = wrapper.find('[data-test="bank-code-div"]')
+    const bankCodeInput = bankCodeDiv.find('input')
+    await bankCodeInput.setValue('0001')
+    const branchCodeDiv = wrapper.find('[data-test="branch-code-div"]')
+    const branchCodeInput = branchCodeDiv.find('input')
+    await branchCodeInput.setValue('001')
+    const accountNumberDiv = wrapper.find('[data-test="account-number-div"]')
+    const accountNumberInput = accountNumberDiv.find('input')
+    await accountNumberInput.setValue('1234567')
+    const accountHolderNameDiv = wrapper.find('[data-test="account-holder-name-div"]')
+    const accountHolderNameInput = accountHolderNameDiv.find('input')
+    await accountHolderNameInput.setValue('タナカ　タロウ')
+
+    const button = wrapper.find('[data-test="submit-button"]')
+    const buttonDisabledAttr = button.attributes('disabled')
+
+    expect(buttonDisabledAttr).toBeDefined()
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 })
