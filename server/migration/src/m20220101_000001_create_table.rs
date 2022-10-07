@@ -475,6 +475,46 @@ impl MigrationTrait for Migration {
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
             .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.auto_settlement (
+                  auto_settlement_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  consultant_id BIGINT NOT NULL,
+                  charge_id TEXT NOT NULL UNIQUE,
+                  consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                  need_auto_settlement BOOLEAN NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.auto_settlement To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ =
+            conn
+                // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+                .execute(sql.stmt(
+                    r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.auto_settlement To admin_app;",
+                ))
+                .await
+                .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.auto_settlement_auto_settlement_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX auto_settlement_consultation_date_time_idx ON ccs_schema.auto_settlement (consultation_date_time);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultant_rating (
                   consultant_rating_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
