@@ -3,17 +3,20 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(schema_name = "ccs_schema", table_name = "consultant_rating")]
+#[sea_orm(schema_name = "ccs_schema", table_name = "consultation")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub consultant_rating_id: i64,
+    pub consultation_id: i64,
     pub user_account_id: i64,
     pub consultant_id: i64,
     #[sea_orm(column_type = "Text")]
     pub charge_id: String,
     pub consultation_date_time: DateTimeWithTimeZone,
-    pub rating: Option<i16>,
-    pub rated_at: Option<DateTimeWithTimeZone>,
+    pub user_account_peer_id: Option<String>,
+    pub user_account_peer_opened_at: Option<DateTimeWithTimeZone>,
+    pub consultant_peer_id: Option<String>,
+    pub consultant_peer_opend_at: Option<DateTimeWithTimeZone>,
+    pub consultation_started_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

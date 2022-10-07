@@ -11,7 +11,7 @@ pub struct Model {
     pub consultant_id: i64,
     #[sea_orm(column_type = "Text")]
     pub charge_id: String,
-    pub expiry_date_time: DateTimeWithTimeZone,
+    pub latest_candidate_date_time: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

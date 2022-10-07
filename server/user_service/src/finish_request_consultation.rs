@@ -417,6 +417,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         account_id: i64,
         consultant_id: i64,
         charge_id: String,
+        // TODO: latest_candidate_date_timeに変更
         expiry_date_time: DateTime<FixedOffset>,
     ) -> Result<Charge, ErrResp> {
         let charge = self.pool.transaction::<_, Charge, ErrRespStruct>(|txn| {
@@ -426,7 +427,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                     user_account_id: Set(account_id),
                     consultant_id: Set(consultant_id),
                     charge_id: Set(charge_id.clone()),
-                    expiry_date_time: Set(expiry_date_time),
+                    latest_candidate_date_time: Set(expiry_date_time),
                 };
                 active_model.insert(txn).await.map_err(|e| {
                     error!(
