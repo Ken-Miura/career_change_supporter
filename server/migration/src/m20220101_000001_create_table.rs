@@ -389,33 +389,38 @@ impl MigrationTrait for Migration {
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.consultation_info (
-                  consultation_info_id BIGSERIAL PRIMARY KEY,
+                r"CREATE TABLE ccs_schema.consultation (
+                  consultation_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL,
-                  consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL
+                  charge_id TEXT NOT NULL UNIQUE,
+                  consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                  user_account_peer_id ccs_schema.uuid_simple_form,
+                  user_account_peer_opened_at TIMESTAMP WITH TIME ZONE,
+                  consultant_peer_id ccs_schema.uuid_simple_form,
+                  consultant_peer_opend_at TIMESTAMP WITH TIME ZONE,
+                  consultation_started_at TIMESTAMP WITH TIME ZONE
                 );",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.consultation_info To user_app;"))
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.consultation To user_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.consultation_info To admin_app;"))
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.consultation To admin_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"GRANT USAGE ON SEQUENCE ccs_schema.consultation_info_consultation_info_id_seq TO user_app;",
+                r"GRANT USAGE ON SEQUENCE ccs_schema.consultation_consultation_id_seq TO user_app;",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX consultation_info_consultation_date_time_idx ON ccs_schema.consultation_info (consultation_date_time);",
+                r"CREATE INDEX consultation_consultation_date_time_idx ON ccs_schema.consultation (consultation_date_time);",
             ))
             .await
             .map(|_| ())?;
@@ -426,11 +431,12 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.user_rating (
                   user_rating_id BIGSERIAL PRIMARY KEY,
-                  consultant_id BIGINT NOT NULL,
                   user_account_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL,
-                  rating SMALLINT NOT NULL,
-                  rated_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  consultant_id BIGINT NOT NULL,
+                  charge_id TEXT NOT NULL UNIQUE,
+                  consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                  rating SMALLINT,
+                  rated_at TIMESTAMP WITH TIME ZONE
                 );",
             ))
             .await
@@ -458,6 +464,12 @@ impl MigrationTrait for Migration {
             ))
             .await
             .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX user_rating_consultation_date_time_idx ON ccs_schema.user_rating (consultation_date_time);",
+            ))
+            .await
+            .map(|_| ())?;
 
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
@@ -467,9 +479,10 @@ impl MigrationTrait for Migration {
                   consultant_rating_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL,
-                  rating SMALLINT NOT NULL,
-                  rated_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  charge_id TEXT NOT NULL UNIQUE,
+                  consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                  rating SMALLINT,
+                  rated_at TIMESTAMP WITH TIME ZONE
                 );",
             ))
             .await
@@ -494,6 +507,12 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"CREATE INDEX consultant_rating_consultant_id_idx ON ccs_schema.consultant_rating (consultant_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX consultant_rating_consultation_date_time_idx ON ccs_schema.consultant_rating (consultation_date_time);",
             ))
             .await
             .map(|_| ())?;
