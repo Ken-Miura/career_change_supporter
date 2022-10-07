@@ -345,13 +345,15 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
-            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける。
+            // charge_idが一意であることはPAY.JPの責任範囲であり、余計なインデックス作成をさけるため、
+            // charge_idにはUNIQUEはつけない
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultation_req (
                   consultation_req_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL UNIQUE,
+                  charge_id TEXT NOT NULL,
                   latest_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
@@ -388,12 +390,14 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // charge_idが一意であることはPAY.JPの責任範囲であり、余計なインデックス作成をさけるため、
+            // charge_idにはUNIQUEはつけない
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultation (
                   consultation_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL UNIQUE,
+                  charge_id TEXT NOT NULL,
                   consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   user_account_peer_id ccs_schema.uuid_simple_form,
                   user_account_peer_opened_at TIMESTAMP WITH TIME ZONE,
@@ -428,12 +432,14 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // charge_idが一意であることはPAY.JPの責任範囲であり、余計なインデックス作成をさけるため、
+            // charge_idにはUNIQUEはつけない
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.user_rating (
                   user_rating_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL UNIQUE,
+                  charge_id TEXT NOT NULL,
                   consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   rating SMALLINT,
                   rated_at TIMESTAMP WITH TIME ZONE
@@ -474,12 +480,14 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // charge_idが一意であることはPAY.JPの責任範囲であり、余計なインデックス作成をさけるため、
+            // charge_idにはUNIQUEはつけない
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.auto_settlement (
                   auto_settlement_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL UNIQUE,
+                  charge_id TEXT NOT NULL,
                   consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   need_auto_settlement BOOLEAN NOT NULL
                 );",
@@ -514,12 +522,14 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // charge_idが一意であることはPAY.JPの責任範囲であり、余計なインデックス作成をさけるため、
+            // charge_idにはUNIQUEはつけない
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultant_rating (
                   consultant_rating_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL UNIQUE,
+                  charge_id TEXT NOT NULL,
                   consultation_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   rating SMALLINT,
                   rated_at TIMESTAMP WITH TIME ZONE
