@@ -351,8 +351,8 @@ impl MigrationTrait for Migration {
                   consultation_req_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  charge_id TEXT NOT NULL,
-                  expiry_date_time TIMESTAMP WITH TIME ZONE NOT NULL
+                  charge_id TEXT NOT NULL UNIQUE,
+                  latest_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
             .await
@@ -380,7 +380,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX consultation_req_expiry_date_time_idx ON ccs_schema.consultation_req (expiry_date_time);",
+                r"CREATE INDEX consultation_req_latest_candidate_date_time_idx ON ccs_schema.consultation_req (latest_candidate_date_time);",
             ))
             .await
             .map(|_| ())?;
