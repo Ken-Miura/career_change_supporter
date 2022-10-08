@@ -9,9 +9,9 @@ pub struct Model {
     pub consultant_rating_id: i64,
     pub user_account_id: i64,
     pub consultant_id: i64,
-    #[sea_orm(column_type = "Text")]
+    pub meeting_at: DateTimeWithTimeZone,
+    #[sea_orm(column_type = "Text", unique)]
     pub charge_id: String,
-    pub consultation_date_time: DateTimeWithTimeZone,
     pub rating: Option<i16>,
     pub rated_at: Option<DateTimeWithTimeZone>,
 }

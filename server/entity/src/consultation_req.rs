@@ -9,7 +9,7 @@ pub struct Model {
     pub consultation_req_id: i64,
     pub user_account_id: i64,
     pub consultant_id: i64,
-    #[sea_orm(column_type = "Text")]
+    #[sea_orm(column_type = "Text", unique)]
     pub charge_id: String,
     pub latest_candidate_date_time: DateTimeWithTimeZone,
 }
