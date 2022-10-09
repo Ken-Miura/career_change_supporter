@@ -3,14 +3,14 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, Timelike};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::payment_platform::Metadata;
 use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
     SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
 };
-use common::{ApiError, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use common::{ApiError, WEB_SITE_NAME};
 use common::{ErrResp, ErrRespStruct, RespResult};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
@@ -40,7 +40,6 @@ pub(crate) async fn post_finish_request_consultation(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<FinishRequestConsultationResult> {
     let charge_id = param.charge_id;
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let op = FinishRequestConsultationOperationImpl { pool };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -48,8 +47,7 @@ pub(crate) async fn post_finish_request_consultation(
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_finish_request_consultation(account_id, charge_id, &current_date_time, op, smtp_client)
-        .await
+    handle_finish_request_consultation(account_id, charge_id, op, smtp_client).await
 }
 
 #[derive(Deserialize)]
@@ -63,7 +61,6 @@ pub(crate) struct FinishRequestConsultationResult {}
 async fn handle_finish_request_consultation(
     account_id: i64,
     charge_id: String,
-    current_date_time: &DateTime<FixedOffset>,
     op: impl FinishRequestConsultationOperation,
     send_mail: impl SendMail,
 ) -> RespResult<FinishRequestConsultationResult> {
@@ -73,9 +70,14 @@ async fn handle_finish_request_consultation(
     let _ = validate_consultant_is_available(consultant_id, &op).await?;
     let _ = confirm_three_d_secure_status_is_ok(&charge)?;
 
-    let expiry_date_time = *current_date_time + Duration::days(EXPIRY_DAYS as i64);
+    let latest_candidate_date_time_in_jst = extract_latest_candidate_date_time_in_jst(&charge)?;
     let charge = op
-        .create_request_consultation(account_id, consultant_id, charge_id, expiry_date_time)
+        .create_request_consultation(
+            account_id,
+            consultant_id,
+            charge_id,
+            latest_candidate_date_time_in_jst,
+        )
         .await?;
     info!("finished 3D Secure flow (charge.id: {})", charge.id);
 
@@ -194,6 +196,72 @@ fn confirm_three_d_secure_status_is_ok(charge: &Charge) -> Result<(), ErrResp> {
         ));
     }
     Ok(())
+}
+
+fn extract_latest_candidate_date_time_in_jst(
+    charge: &Charge,
+) -> Result<DateTime<FixedOffset>, ErrResp> {
+    let metadata = match charge.metadata.clone() {
+        Some(m) => m,
+        None => {
+            error!("no metadata found (charge.id: {})", charge.id);
+            return Err(unexpected_err_resp());
+        }
+    };
+
+    let first_candidate_in_jst = extract_candidate_as_date_time(
+        &metadata,
+        KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        charge.id.as_str(),
+    )?;
+    let second_candidate_in_jst = extract_candidate_as_date_time(
+        &metadata,
+        KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        charge.id.as_str(),
+    )?;
+    let third_candidate_in_jst = extract_candidate_as_date_time(
+        &metadata,
+        KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        charge.id.as_str(),
+    )?;
+
+    let candidates_in_jst = vec![second_candidate_in_jst, third_candidate_in_jst];
+    let latest_candidate_in_jst =
+        select_latest_candidate_in_jst(first_candidate_in_jst, candidates_in_jst);
+    Ok(latest_candidate_in_jst)
+}
+
+fn extract_candidate_as_date_time(
+    metadata: &Metadata,
+    key: &str,
+    charge_id: &str,
+) -> Result<DateTime<FixedOffset>, ErrResp> {
+    let candidate_in_jst = match metadata.get(key) {
+        Some(date_time_str) => date_time_str,
+        None => {
+            error!("no {} found on metadata (charge_id: {})", key, charge_id);
+            return Err(unexpected_err_resp());
+        }
+    };
+    let candidate_in_jst = DateTime::<FixedOffset>::parse_from_rfc3339(candidate_in_jst.as_str())
+        .map_err(|e| {
+        error!("failed to parse {} as RFC3339: {}", candidate_in_jst, e);
+        unexpected_err_resp()
+    })?;
+    Ok(candidate_in_jst)
+}
+
+fn select_latest_candidate_in_jst(
+    first_candidate_in_jst: DateTime<FixedOffset>,
+    candidates_in_jst: Vec<DateTime<FixedOffset>>,
+) -> DateTime<FixedOffset> {
+    let mut latest_candidate_in_jst = first_candidate_in_jst;
+    for c in candidates_in_jst.iter() {
+        if c > &latest_candidate_in_jst {
+            latest_candidate_in_jst = *c
+        }
+    }
+    latest_candidate_in_jst
 }
 
 async fn send_mail_to_consultant(
@@ -373,7 +441,7 @@ trait FinishRequestConsultationOperation {
         account_id: i64,
         consultant_id: i64,
         charge_id: String,
-        expiry_date_time: DateTime<FixedOffset>,
+        latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
     ) -> Result<Charge, ErrResp>;
     async fn get_user_account_email_address_by_user_account_id(
         &self,
@@ -417,8 +485,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         account_id: i64,
         consultant_id: i64,
         charge_id: String,
-        // TODO: latest_candidate_date_timeに変更
-        expiry_date_time: DateTime<FixedOffset>,
+        latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
     ) -> Result<Charge, ErrResp> {
         let charge = self.pool.transaction::<_, Charge, ErrRespStruct>(|txn| {
             Box::pin(async move {
@@ -427,12 +494,12 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                     user_account_id: Set(account_id),
                     consultant_id: Set(consultant_id),
                     charge_id: Set(charge_id.clone()),
-                    latest_candidate_date_time: Set(expiry_date_time),
+                    latest_candidate_date_time: Set(latest_candidate_date_time_in_jst),
                 };
                 active_model.insert(txn).await.map_err(|e| {
                     error!(
-                        "failed to insert consultation_req (account_id: {}, consultant_id: {}, charge_id: {}, expiry_date_time: {}): {}",
-                        account_id, consultant_id, charge_id.clone(), expiry_date_time, e
+                        "failed to insert consultation_req (account_id: {}, consultant_id: {}, charge_id: {}, latest_candidate_date_time_in_jst: {}): {}",
+                        account_id, consultant_id, charge_id.clone(), latest_candidate_date_time_in_jst, e
                     );
                     ErrRespStruct {
                         err_resp: unexpected_err_resp(),

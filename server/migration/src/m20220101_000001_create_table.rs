@@ -593,9 +593,11 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX receipt_meeting_at_idx ON ccs_schema.receipt (meeting_at);",
-            ))
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX receipt_meeting_at_idx ON ccs_schema.receipt (meeting_at);",
+                ),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
@@ -639,9 +641,9 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX refund_meeting_at_idx ON ccs_schema.refund (meeting_at);",
-            ))
+            .execute(
+                sql.stmt(r"CREATE INDEX refund_meeting_at_idx ON ccs_schema.refund (meeting_at);"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
