@@ -24,7 +24,7 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, ACCESS_INFO, EXPIRY_DAYS, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
+    self, ACCESS_INFO, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
     KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION,
 };
@@ -340,7 +340,7 @@ fn create_text_for_user_mail(
 ) -> String {
     // TODO: 文面の調整
     format!(
-        r"下記の内容で相談申し込みを行いました。{}日後までに相談申し込みが了承されない場合、自動的に相談申し込みが拒否されたものとして扱われます。
+        r"下記の内容で相談申し込みを行いました。
 
 相談相手
   コンサルタントID: {}
@@ -361,7 +361,6 @@ fn create_text_for_user_mail(
 
 【お問い合わせ先】
 Email: {}",
-        EXPIRY_DAYS,
         consultant_id,
         amount,
         candidates.0,

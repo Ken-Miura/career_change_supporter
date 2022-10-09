@@ -40,7 +40,7 @@ pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TWENTY: i32 = 20;
 
 pub(crate) const ROOT_PATH: &str = "/api";
 
-pub(crate) const EXPIRY_DAYS: u32 = 7;
+pub(crate) const EXPIRY_DAYS: u32 = 59;
 
 pub(crate) const KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ: &str = "consultant_id";
 pub(crate) const KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "first_candidate_in_jst";
