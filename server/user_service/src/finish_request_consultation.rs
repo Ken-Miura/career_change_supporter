@@ -289,7 +289,7 @@ fn create_text_for_consultant_mail(
 ) -> String {
     // TODO: 文面の調整
     format!(
-        r"ユーザーID ({}) から相談申し込みの依頼（希望相談開始日時は下記に記載）が届きました。{}へログインし、相談受け付けのページから該当の申込みの詳細を確認し、了承する、または拒否するをご選択下さい。なお、{}日後までにどちらもご選択されていない場合、自動的に拒否するを選択されたものとして処理されます。
+        r"ユーザーID ({}) から相談申し込みの依頼（希望相談開始日時は下記に記載）が届きました。{}へログインし、相談受け付けのページから該当の申込みの詳細を確認し、了承する、または拒否するをご選択下さい。
 
 希望相談開始日時
   第一希望: {}
@@ -306,7 +306,6 @@ fn create_text_for_consultant_mail(
 Email: {}",
         user_account_id,
         WEB_SITE_NAME,
-        EXPIRY_DAYS,
         candidates.0,
         candidates.1,
         candidates.2,
