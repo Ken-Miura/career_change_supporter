@@ -1,7 +1,5 @@
 // Copyright 2021 Ken Miura
 
-use std::str::FromStr;
-
 use axum::async_trait;
 use axum::{extract::Extension, http::StatusCode, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, TimeZone, Utc};
@@ -9,7 +7,7 @@ use common::util::Ymd;
 use common::JAPANESE_TIME_ZONE;
 use common::{
     payment_platform::{
-        charge::{Charge, ChargeOperation, ChargeOperationImpl, Query as SearchChargesQuery},
+        charge::ChargeOperationImpl,
         tenant::{TenantOperation, TenantOperationImpl},
         tenant_transfer::{
             Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
@@ -19,16 +17,15 @@ use common::{
     ApiError, ErrResp, RespResult,
 };
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
-use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use serde::Serialize;
 use tracing::{error, info};
 
+use crate::util::create_start_and_end_timestamps_of_current_year;
 use crate::{
     err::{self, unexpected_err_resp},
     util::{session::User, BankAccount, ACCESS_INFO},
 };
 
-const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 32;
 const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
 
 pub(crate) async fn get_reward(
@@ -37,14 +34,12 @@ pub(crate) async fn get_reward(
 ) -> RespResult<RewardResult> {
     let reward_op = RewardOperationImpl::new(pool);
     let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
-    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-    let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
     let current_datetime = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
     handle_reward_req(
         account_id,
         reward_op,
         tenant_op,
-        charge_op,
         current_datetime,
         tenant_transfer_op,
     )
@@ -55,7 +50,6 @@ async fn handle_reward_req(
     account_id: i64,
     reward_op: impl RewardOperation,
     tenant_op: impl TenantOperation,
-    charge_op: impl ChargeOperation,
     current_time: DateTime<FixedOffset>,
     tenant_transfer_op: impl TenantTransferOperation,
 ) -> RespResult<RewardResult> {
@@ -63,6 +57,10 @@ async fn handle_reward_req(
     let payment_platform_results = if let Some(tenant_id) = tenant_id_option {
         info!("tenant found (tenant id: {})", tenant_id);
         let tenant_obj = get_tenant_obj_by_tenant_id(tenant_op, &tenant_id).await?;
+        if !tenant_obj.payjp_fee_included {
+            error!("payjp_fee_included is false (tenant id: {})", &tenant_id);
+            return Err(unexpected_err_resp());
+        }
         let bank_account = BankAccount {
             bank_code: tenant_obj.bank_code,
             branch_code: tenant_obj.bank_branch_code,
@@ -70,25 +68,50 @@ async fn handle_reward_req(
             account_number: tenant_obj.bank_account_number,
             account_holder_name: tenant_obj.bank_account_holder_name,
         };
-        if !tenant_obj.payjp_fee_included {
-            error!("payjp_fee_included is false (tenant id: {})", &tenant_id);
-            return Err(unexpected_err_resp());
-        }
-        let rewards_of_the_month =
-            get_rewards_of_current_month(charge_op, &tenant_id, current_time).await?;
+
+        let (current_month_since_timestamp, current_month_until_timestamp) =
+            create_start_and_end_timestamps_of_current_month(
+                current_time.year(),
+                current_time.month(),
+            );
+        let rewards_of_the_month = reward_op
+            .get_rewards_of_the_duration(
+                current_month_since_timestamp,
+                current_month_until_timestamp,
+                tenant_id.as_str(),
+            )
+            .await?;
+
+        let (current_year_since_timestamp, current_year_until_timestamp) =
+            create_start_and_end_timestamps_of_current_year(current_time.year());
+        let rewards_of_the_year = reward_op
+            .get_rewards_of_the_duration(
+                current_year_since_timestamp,
+                current_year_until_timestamp,
+                tenant_id.as_str(),
+            )
+            .await?;
+
         let transfers = get_latest_two_tenant_transfers(tenant_transfer_op, &tenant_id).await?;
-        (Some(bank_account), Some(rewards_of_the_month), transfers)
+        (
+            Some(bank_account),
+            Some(rewards_of_the_month),
+            Some(rewards_of_the_year),
+            transfers,
+        )
     } else {
         info!("no tenant found (account id: {})", account_id);
-        (None, None, vec![])
+        (None, None, None, vec![])
     };
+
     Ok((
         StatusCode::OK,
         Json(
             RewardResult::build()
                 .bank_account(payment_platform_results.0)
                 .rewards_of_the_month(payment_platform_results.1)
-                .latest_two_transfers(payment_platform_results.2)
+                .rewards_of_the_year(payment_platform_results.2)
+                .latest_two_transfers(payment_platform_results.3)
                 .finish(),
         ),
     ))
@@ -98,6 +121,7 @@ async fn handle_reward_req(
 pub(crate) struct RewardResult {
     pub bank_account: Option<BankAccount>,
     pub rewards_of_the_month: Option<i32>, // 一ヶ月の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
+    pub rewards_of_the_year: Option<i32>, // 1年間（1月-12月）の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
     pub latest_two_transfers: Vec<Transfer>,
 }
 
@@ -118,6 +142,7 @@ impl RewardResult {
         RewardResultBuilder {
             bank_account: None,
             rewards_of_the_month: None,
+            rewards_of_the_year: None,
             latest_two_transfers: vec![],
         }
     }
@@ -126,6 +151,7 @@ impl RewardResult {
 struct RewardResultBuilder {
     bank_account: Option<BankAccount>,
     rewards_of_the_month: Option<i32>,
+    rewards_of_the_year: Option<i32>,
     latest_two_transfers: Vec<Transfer>,
 }
 
@@ -140,6 +166,11 @@ impl RewardResultBuilder {
         self
     }
 
+    fn rewards_of_the_year(mut self, rewards_of_the_year: Option<i32>) -> RewardResultBuilder {
+        self.rewards_of_the_year = rewards_of_the_year;
+        self
+    }
+
     fn latest_two_transfers(mut self, latest_two_transfers: Vec<Transfer>) -> RewardResultBuilder {
         self.latest_two_transfers = latest_two_transfers;
         self
@@ -149,6 +180,7 @@ impl RewardResultBuilder {
         RewardResult {
             bank_account: self.bank_account,
             rewards_of_the_month: self.rewards_of_the_month,
+            rewards_of_the_year: self.rewards_of_the_year,
             latest_two_transfers: self.latest_two_transfers,
         }
     }
@@ -183,61 +215,6 @@ async fn get_tenant_obj_by_tenant_id(
     Ok(tenant)
 }
 
-async fn get_rewards_of_current_month(
-    mut charge_op: impl ChargeOperation,
-    tenant_id: &str,
-    current_time: DateTime<FixedOffset>,
-) -> Result<i32, ErrResp> {
-    let current_year = current_time.year();
-    let current_month = current_time.month();
-    let (since_timestamp, until_timestamp) =
-        create_start_and_end_timestamps_of_current_month(current_year, current_month);
-    let search_charges_query = SearchChargesQuery::build()
-        .limit(MAX_NUM_OF_CHARGES_PER_REQUEST)
-        .since(since_timestamp)
-        .until(until_timestamp)
-        .tenant(tenant_id)
-        .finish()
-        .map_err(|e| {
-            error!("failed to build search charges query: {}", e);
-            unexpected_err_resp()
-        })?;
-    let mut has_more_charges = true;
-    let mut rewards_of_the_month = 0;
-    while has_more_charges {
-        let charges = charge_op
-            .search_charges(&search_charges_query)
-            .await
-            .map_err(|err| match err {
-                common::payment_platform::Error::RequestProcessingError(err) => {
-                    error!("failed to process request on getting charges: {}", err);
-                    unexpected_err_resp()
-                }
-                common::payment_platform::Error::ApiError(err) => {
-                    error!("failed to request charge operation: {}", err);
-                    let status_code = err.error.status as u16;
-                    if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
-                        return (
-                            StatusCode::TOO_MANY_REQUESTS,
-                            Json(ApiError {
-                                code: err::Code::ReachPaymentPlatformRateLimit as u32,
-                            }),
-                        );
-                    }
-                    unexpected_err_resp()
-                }
-            })?;
-        let rewards = charges
-            .data
-            .into_iter()
-            .filter(|charge| charge.captured)
-            .try_fold(0, accumulate_rewards)?;
-        rewards_of_the_month += rewards;
-        has_more_charges = charges.has_more;
-    }
-    Ok(rewards_of_the_month)
-}
-
 fn create_start_and_end_timestamps_of_current_month(
     current_year: i32,
     current_month: u32,
@@ -259,50 +236,6 @@ fn create_start_and_end_timestamps_of_current_month(
     .timestamp();
 
     (start_timestamp, end_timestamp)
-}
-
-// [tenantオブジェクト](https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)のpayjp_fee_includedがtrueであるとことを前提として実装
-// payjp_fee_includedの値を設定できるのはテナント作成時のみ。そのためテナント作成時のコードで必ずtrueを設定することで、ここでtrueを前提として処理を行う
-fn accumulate_rewards(sum: i32, charge: Charge) -> Result<i32, ErrResp> {
-    let sales = charge.amount - charge.amount_refunded;
-    if let Some(platform_fee_rate) = charge.platform_fee_rate.clone() {
-        let fee = calculate_fee(sales, &platform_fee_rate)?;
-        let reward_of_the_charge = sales - fee;
-        if reward_of_the_charge < 0 {
-            error!("negative reward_of_the_charge: {:?}", charge);
-            return Err(unexpected_err_resp());
-        }
-        Ok(sum + reward_of_the_charge)
-    } else {
-        error!("no platform_fee_rate found in the charge: {:?}", charge);
-        Err(unexpected_err_resp())
-    }
-}
-
-// percentageはパーセンテージを示す少数の文字列。feeは、sales * (percentage/100) の結果の少数部分を切り捨てた値。
-fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
-    let percentage_decimal = Decimal::from_str(percentage).map_err(|e| {
-        error!("failed to parse percentage ({}): {}", percentage, e);
-        unexpected_err_resp()
-    })?;
-    let one_handred_decimal = Decimal::from_str("100").map_err(|e| {
-        error!("failed to parse str literal: {}", e);
-        unexpected_err_resp()
-    })?;
-    let sales_decimal = match Decimal::from_i32(sales) {
-        Some(s) => s,
-        None => {
-            error!("failed to parse sales value ({})", sales);
-            return Err(unexpected_err_resp());
-        }
-    };
-    let fee_decimal = (sales_decimal * (percentage_decimal / one_handred_decimal))
-        .round_dp_with_strategy(0, RoundingStrategy::ToZero);
-    let fee = fee_decimal.to_string().parse::<i32>().map_err(|e| {
-        error!("failed to parse fee_decimal ({}): {}", fee_decimal, e);
-        unexpected_err_resp()
-    })?;
-    Ok(fee)
 }
 
 async fn get_latest_two_tenant_transfers(
@@ -395,6 +328,13 @@ trait RewardOperation {
         &self,
         account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
+
+    async fn get_rewards_of_the_duration(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
+    ) -> Result<i32, ErrResp>;
 }
 
 struct RewardOperationImpl {
@@ -421,6 +361,22 @@ impl RewardOperation for RewardOperationImpl {
                 unexpected_err_resp()
             })?;
         Ok(model.map(|m| m.tenant_id))
+    }
+
+    async fn get_rewards_of_the_duration(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
+    ) -> Result<i32, ErrResp> {
+        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+        crate::util::rewards::get_rewards_of_the_duration(
+            charge_op,
+            since_timestamp,
+            until_timestamp,
+            tenant_id,
+        )
+        .await
     }
 }
 
@@ -461,6 +417,15 @@ mod tests {
             _account_id: i64,
         ) -> Result<Option<String>, ErrResp> {
             Ok(self.tenant_id_option.clone())
+        }
+
+        async fn get_rewards_of_the_duration(
+            &self,
+            since_timestamp: i64,
+            until_timestamp: i64,
+            tenant_id: &str,
+        ) -> Result<i32, ErrResp> {
+            todo!()
         }
     }
 
@@ -632,7 +597,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -738,7 +702,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -794,7 +757,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -850,7 +812,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -910,7 +871,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -1088,7 +1048,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -1216,7 +1175,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -1360,7 +1318,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )
@@ -1439,7 +1396,6 @@ mod tests {
             account_id,
             reward_op,
             tenant_op,
-            charge_op,
             current_datetime,
             tenant_transfer_op,
         )

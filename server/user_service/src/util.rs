@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 pub(crate) mod disabled_check;
+pub(crate) mod rewards;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
 pub(crate) mod validator;
@@ -9,6 +10,7 @@ use std::{env::var, io::Cursor};
 
 use axum::{http::StatusCode, Json};
 use bytes::Bytes;
+use chrono::TimeZone;
 use common::{
     payment_platform::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
@@ -213,6 +215,20 @@ pub(crate) async fn check_if_consultant_is_available(
         None => false,
     };
     Ok(available)
+}
+
+pub(crate) fn create_start_and_end_timestamps_of_current_year(current_year: i32) -> (i64, i64) {
+    let start_timestamp = chrono::Utc
+        .ymd(current_year, 1, 1)
+        .and_hms(0, 0, 0)
+        .timestamp();
+
+    let end_timestamp = chrono::Utc
+        .ymd(current_year, 12, 31)
+        .and_hms(23, 59, 59)
+        .timestamp();
+
+    (start_timestamp, end_timestamp)
 }
 
 /// 通常のテストコードに加え、共通で使うモックをまとめる
