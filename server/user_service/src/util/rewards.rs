@@ -109,3 +109,68 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
     })?;
     Ok(fee)
 }
+
+// TODO: Add test
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use common::payment_platform::{
+        charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
+        ErrorDetail, ErrorInfo, List,
+    };
+
+    struct ChargeOperationMock {
+        num_of_search_trial: usize,
+        lists: Vec<List<Charge>>,
+        too_many_requests: bool,
+    }
+
+    #[async_trait]
+    impl ChargeOperation for ChargeOperationMock {
+        async fn search_charges(
+            &mut self,
+            _query: &SearchChargesQuery,
+        ) -> Result<List<Charge>, common::payment_platform::Error> {
+            if self.too_many_requests {
+                let err_detail = ErrorDetail {
+                    message: "message".to_string(),
+                    status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
+                    r#type: "type".to_string(),
+                    code: None,
+                    param: None,
+                    charge: None,
+                };
+                let err_info = ErrorInfo { error: err_detail };
+                return Err(common::payment_platform::Error::ApiError(err_info));
+            }
+            let result = self.lists[self.num_of_search_trial].clone();
+            self.num_of_search_trial += 1;
+            Ok(result)
+        }
+
+        async fn create_charge(
+            &self,
+            _create_charge: &CreateCharge,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
+
+        async fn ge_charge_by_charge_id(
+            &self,
+            _charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
+
+        async fn finish_three_d_secure_flow(
+            &self,
+            _charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
+    }
+}
