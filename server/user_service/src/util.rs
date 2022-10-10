@@ -239,12 +239,16 @@ pub(crate) mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use bytes::Bytes;
+    use chrono::TimeZone;
     use common::{smtp::SendMail, ErrResp};
     use image::{ImageBuffer, ImageFormat, ImageOutputFormat, RgbImage};
 
     use crate::err::Code;
 
-    use super::{clone_file_name_if_exists, convert_jpeg_to_png};
+    use super::{
+        clone_file_name_if_exists, convert_jpeg_to_png,
+        create_start_and_end_timestamps_of_current_year,
+    };
 
     pub(crate) struct SendMailMock {
         to: String,
@@ -349,5 +353,39 @@ pub(crate) mod tests {
 
         assert_eq!(Some(file_name_and_binary), ret1);
         assert_eq!(Some(file_name.to_string()), ret2);
+    }
+
+    #[test]
+    fn test_case_normal_year_create_start_and_end_timestamps_of_current_year() {
+        let (since_timestamp, until_timestamp) =
+            create_start_and_end_timestamps_of_current_year(2022);
+        assert_eq!(
+            chrono::Utc.ymd(2022, 1, 1).and_hms(0, 0, 0).timestamp(),
+            since_timestamp
+        );
+        assert_eq!(
+            chrono::Utc
+                .ymd(2022, 12, 31)
+                .and_hms(23, 59, 59)
+                .timestamp(),
+            until_timestamp
+        );
+    }
+
+    #[test]
+    fn test_case_leap_year_create_start_and_end_timestamps_of_current_year() {
+        let (since_timestamp, until_timestamp) =
+            create_start_and_end_timestamps_of_current_year(2020);
+        assert_eq!(
+            chrono::Utc.ymd(2020, 1, 1).and_hms(0, 0, 0).timestamp(),
+            since_timestamp
+        );
+        assert_eq!(
+            chrono::Utc
+                .ymd(2020, 12, 31)
+                .and_hms(23, 59, 59)
+                .timestamp(),
+            until_timestamp
+        );
     }
 }
