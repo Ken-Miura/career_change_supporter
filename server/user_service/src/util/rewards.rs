@@ -12,16 +12,17 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 
-const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 100;
+pub(crate) const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 100;
 
 pub(crate) async fn get_rewards_of_the_duration(
     mut charge_op: impl ChargeOperation,
+    num_of_charges_per_req: u32,
     since_timestamp: i64,
     until_timestamp: i64,
     tenant_id: &str,
 ) -> Result<i32, ErrResp> {
     let search_charges_query = SearchChargesQuery::build()
-        .limit(MAX_NUM_OF_CHARGES_PER_REQUEST)
+        .limit(num_of_charges_per_req)
         .since(since_timestamp)
         .until(until_timestamp)
         .tenant(tenant_id)
@@ -173,4 +174,7 @@ mod tests {
             panic!("this method must not be called")
         }
     }
+
+    #[tokio::test]
+    async fn test_get_rewards_of_the_duration() {}
 }

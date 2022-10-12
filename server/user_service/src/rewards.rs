@@ -21,6 +21,7 @@ use serde::Serialize;
 use tracing::{error, info};
 
 use crate::util::create_start_and_end_timestamps_of_current_year;
+use crate::util::rewards::MAX_NUM_OF_CHARGES_PER_REQUEST;
 use crate::{
     err::{self, unexpected_err_resp},
     util::{session::User, BankAccount, ACCESS_INFO},
@@ -372,6 +373,7 @@ impl RewardOperation for RewardOperationImpl {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
         crate::util::rewards::get_rewards_of_the_duration(
             charge_op,
+            MAX_NUM_OF_CHARGES_PER_REQUEST,
             since_timestamp,
             until_timestamp,
             tenant_id,
