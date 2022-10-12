@@ -111,20 +111,23 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
     Ok(fee)
 }
 
-// TODO: Add test
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::{TimeZone, Utc};
     use common::{
         payment_platform::{
             charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
+            customer::Card,
             ErrorDetail, ErrorInfo, List,
         },
         ErrResp,
     };
     use once_cell::sync::Lazy;
+    use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 
     use super::get_rewards_of_the_duration;
 
@@ -220,32 +223,136 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        vec![TestCase {
-            name: "empty results".to_string(),
-            input: Input {
-                charge_op: ChargeOperationMock {
+        vec![
+            TestCase {
+                name: "empty results".to_string(),
+                input: Input {
+                    charge_op: ChargeOperationMock {
+                        num_of_charges_per_req: 1,
+                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                        num_of_search_trial: 0,
+                        lists: vec![List {
+                            object: "list".to_string(),
+                            has_more: false,
+                            url: "/v1/charges".to_string(),
+                            data: vec![],
+                            count: 0,
+                        }],
+                        too_many_requests: false,
+                    },
                     num_of_charges_per_req: 1,
                     since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
                     until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
-                    num_of_search_trial: 0,
-                    lists: vec![List {
-                        object: "list".to_string(),
-                        has_more: false,
-                        url: "/v1/charges".to_string(),
-                        data: vec![],
-                        count: 0,
-                    }],
-                    too_many_requests: false,
                 },
-                num_of_charges_per_req: 1,
-                since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
-                tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                expected: Ok(0),
             },
-            expected: Ok(0),
-        }]
+            TestCase {
+                name: "one result".to_string(),
+                input: Input {
+                    charge_op: ChargeOperationMock {
+                        num_of_charges_per_req: 1,
+                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                        num_of_search_trial: 0,
+                        lists: vec![List {
+                            object: "list".to_string(),
+                            has_more: false,
+                            url: "/v1/charges".to_string(),
+                            data: vec![create_dummy_charge(
+                                "ch_7fb5aea258910da9a756985cbe51f",
+                                "336e7d16726246b69636d58bec7a3a30",
+                                4000,
+                                0,
+                                "30.0",
+                            )],
+                            count: 1,
+                        }],
+                        too_many_requests: false,
+                    },
+                    num_of_charges_per_req: 1,
+                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                },
+                expected: Ok(2800),
+            },
+        ]
     });
+
+    fn create_dummy_charge(
+        charge_id: &str,
+        tenant_id: &str,
+        amount: i32,
+        amount_refunded: i32,
+        platform_fee_rate: &str,
+    ) -> Charge {
+        let refunded = amount_refunded > 0;
+        let fee_rate = 3;
+        let sale = amount - amount_refunded;
+        let fee = Decimal::from_i32(sale).unwrap()
+            * (Decimal::from_i32(fee_rate).unwrap() / Decimal::from_i32(100).unwrap());
+        let platform_fee = Decimal::from_i32(sale).unwrap()
+            * (Decimal::from_str(platform_fee_rate).unwrap() / Decimal::from_i32(100).unwrap());
+        // tenantオブジェクトのpayjp_fee_includedがtrueであることが前提のtotal_platform_fee
+        let total_platform_fee =
+            (platform_fee - fee).round_dp_with_strategy(0, RoundingStrategy::ToZero);
+        Charge {
+            id: charge_id.to_string(),
+            object: "charge".to_string(),
+            livemode: false,
+            created: 1639931415,
+            amount,
+            currency: "jpy".to_string(),
+            paid: true,
+            expired_at: None,
+            captured: true,
+            captured_at: Some(1639931415),
+            card: Some(Card {
+                object: "card".to_string(),
+                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
+                created: 1639931415,
+                name: None,
+                last4: "4242".to_string(),
+                exp_month: 12,
+                exp_year: 2022,
+                brand: "Visa".to_string(),
+                cvc_check: "passed".to_string(),
+                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
+                address_state: None,
+                address_city: None,
+                address_line1: None,
+                address_line2: None,
+                country: None,
+                address_zip: None,
+                address_zip_check: "unchecked".to_string(),
+                metadata: None,
+            }),
+            customer: None,
+            description: None,
+            failure_code: None,
+            failure_message: None,
+            fee_rate: Some(fee_rate.to_string()),
+            refunded,
+            amount_refunded,
+            refund_reason: Some("テスト".to_string()),
+            subscription: None,
+            metadata: None,
+            platform_fee: None,
+            tenant: Some(tenant_id.to_string()),
+            platform_fee_rate: Some(platform_fee_rate.to_string()),
+            total_platform_fee: Some(
+                total_platform_fee
+                    .to_string()
+                    .parse::<i32>()
+                    .expect("failed to parse number str"),
+            ),
+            three_d_secure_status: Some("verified".to_string()),
+        }
+    }
 
     #[tokio::test]
     async fn test_get_rewards_of_the_duration() {
