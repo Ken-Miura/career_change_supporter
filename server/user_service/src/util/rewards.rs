@@ -116,6 +116,7 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
 mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
+    use chrono::{TimeZone, Utc};
     use common::{
         payment_platform::{
             charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
@@ -218,7 +219,33 @@ mod tests {
         tenant_id: String,
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![TestCase {
+            name: "empty results".to_string(),
+            input: Input {
+                charge_op: ChargeOperationMock {
+                    num_of_charges_per_req: 1,
+                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                    num_of_search_trial: 0,
+                    lists: vec![List {
+                        object: "list".to_string(),
+                        has_more: false,
+                        url: "/v1/charges".to_string(),
+                        data: vec![],
+                        count: 0,
+                    }],
+                    too_many_requests: false,
+                },
+                num_of_charges_per_req: 1,
+                since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+            },
+            expected: Ok(0),
+        }]
+    });
 
     #[tokio::test]
     async fn test_get_rewards_of_the_duration() {
