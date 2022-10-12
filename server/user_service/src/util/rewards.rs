@@ -250,7 +250,7 @@ mod tests {
                 expected: Ok(0),
             },
             TestCase {
-                name: "one result".to_string(),
+                name: "one result one request".to_string(),
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 1,
@@ -279,6 +279,163 @@ mod tests {
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(2800),
+            },
+            TestCase {
+                name: "two results one request".to_string(),
+                input: Input {
+                    charge_op: ChargeOperationMock {
+                        num_of_charges_per_req: 2,
+                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                        num_of_search_trial: 0,
+                        lists: vec![List {
+                            object: "list".to_string(),
+                            has_more: false,
+                            url: "/v1/charges".to_string(),
+                            data: vec![
+                                create_dummy_charge(
+                                    "ch_7fb5aea258910da9a756985cbe51f",
+                                    "336e7d16726246b69636d58bec7a3a30",
+                                    4000,
+                                    0,
+                                    "30.0",
+                                ),
+                                create_dummy_charge(
+                                    "ch_7fb5aea258910da9a756985cbe511",
+                                    "336e7d16726246b69636d58bec7a3a30",
+                                    3000,
+                                    0,
+                                    "30.0",
+                                ),
+                            ],
+                            count: 2,
+                        }],
+                        too_many_requests: false,
+                    },
+                    num_of_charges_per_req: 2,
+                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                },
+                expected: Ok(4900),
+            },
+            TestCase {
+                name: "three results two requests".to_string(),
+                input: Input {
+                    charge_op: ChargeOperationMock {
+                        num_of_charges_per_req: 2,
+                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                        num_of_search_trial: 0,
+                        lists: vec![
+                            List {
+                                object: "list".to_string(),
+                                has_more: true,
+                                url: "/v1/charges".to_string(),
+                                data: vec![
+                                    create_dummy_charge(
+                                        "ch_7fb5aea258910da9a756985cbe51f",
+                                        "336e7d16726246b69636d58bec7a3a30",
+                                        4000,
+                                        0,
+                                        "30.0",
+                                    ),
+                                    create_dummy_charge(
+                                        "ch_7fb5aea258910da9a756985cbe511",
+                                        "336e7d16726246b69636d58bec7a3a30",
+                                        3000,
+                                        0,
+                                        "30.0",
+                                    ),
+                                ],
+                                count: 2,
+                            },
+                            List {
+                                object: "list".to_string(),
+                                has_more: false,
+                                url: "/v1/charges".to_string(),
+                                data: vec![create_dummy_charge(
+                                    "ch_7fb5aea258910da9a756985cbe512",
+                                    "336e7d16726246b69636d58bec7a3a30",
+                                    5000,
+                                    0,
+                                    "30.0",
+                                )],
+                                count: 1,
+                            },
+                        ],
+                        too_many_requests: false,
+                    },
+                    num_of_charges_per_req: 2,
+                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                },
+                expected: Ok(8400),
+            },
+            TestCase {
+                name: "refunded".to_string(),
+                input: Input {
+                    charge_op: ChargeOperationMock {
+                        num_of_charges_per_req: 1,
+                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                        num_of_search_trial: 0,
+                        lists: vec![List {
+                            object: "list".to_string(),
+                            has_more: false,
+                            url: "/v1/charges".to_string(),
+                            data: vec![create_dummy_charge(
+                                "ch_7fb5aea258910da9a756985cbe51f",
+                                "336e7d16726246b69636d58bec7a3a30",
+                                4000,
+                                4000,
+                                "30.0",
+                            )],
+                            count: 1,
+                        }],
+                        too_many_requests: false,
+                    },
+                    num_of_charges_per_req: 1,
+                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                },
+                expected: Ok(0),
+            },
+            TestCase {
+                name: "partially refunded".to_string(),
+                input: Input {
+                    charge_op: ChargeOperationMock {
+                        num_of_charges_per_req: 1,
+                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                        num_of_search_trial: 0,
+                        lists: vec![List {
+                            object: "list".to_string(),
+                            has_more: false,
+                            url: "/v1/charges".to_string(),
+                            data: vec![create_dummy_charge(
+                                "ch_7fb5aea258910da9a756985cbe51f",
+                                "336e7d16726246b69636d58bec7a3a30",
+                                4000,
+                                1000,
+                                "30.0",
+                            )],
+                            count: 1,
+                        }],
+                        too_many_requests: false,
+                    },
+                    num_of_charges_per_req: 1,
+                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                },
+                expected: Ok(2100),
             },
         ]
     });
