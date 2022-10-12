@@ -291,6 +291,11 @@ mod tests {
         platform_fee_rate: &str,
     ) -> Charge {
         let refunded = amount_refunded > 0;
+        let refund_reason = if refunded {
+            Some("テスト".to_string())
+        } else {
+            None
+        };
         let fee_rate = 3;
         let sale = amount - amount_refunded;
         let fee = Decimal::from_i32(sale).unwrap()
@@ -338,7 +343,7 @@ mod tests {
             fee_rate: Some(fee_rate.to_string()),
             refunded,
             amount_refunded,
-            refund_reason: Some("テスト".to_string()),
+            refund_reason,
             subscription: None,
             metadata: None,
             platform_fee: None,
