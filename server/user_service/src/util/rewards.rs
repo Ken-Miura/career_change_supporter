@@ -116,11 +116,18 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
 mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
-    use common::payment_platform::{
-        charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
-        ErrorDetail, ErrorInfo, List,
+    use common::{
+        payment_platform::{
+            charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
+            ErrorDetail, ErrorInfo, List,
+        },
+        ErrResp,
     };
+    use once_cell::sync::Lazy;
 
+    use super::get_rewards_of_the_duration;
+
+    #[derive(Debug, Clone)]
     struct ChargeOperationMock {
         num_of_charges_per_req: u32,
         since_timestamp: i64,
@@ -195,6 +202,53 @@ mod tests {
         }
     }
 
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: Result<i32, ErrResp>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        charge_op: ChargeOperationMock,
+        num_of_charges_per_req: u32,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: String,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
     #[tokio::test]
-    async fn test_get_rewards_of_the_duration() {}
+    async fn test_get_rewards_of_the_duration() {
+        for test_case in TEST_CASE_SET.iter() {
+            let charge_op = test_case.input.charge_op.clone();
+            let num_of_charges_per_req = test_case.input.num_of_charges_per_req;
+            let since_timestamp = test_case.input.since_timestamp;
+            let until_timestamp = test_case.input.until_timestamp;
+            let tenant_id = test_case.input.tenant_id.clone();
+
+            let result = get_rewards_of_the_duration(
+                charge_op,
+                num_of_charges_per_req,
+                since_timestamp,
+                until_timestamp,
+                tenant_id.as_str(),
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let result = result.expect("failed to get Ok");
+                let expected_result = *test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected_result, result, "{}", message);
+            } else {
+                let result = result.expect_err("failed to get Err");
+                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            }
+        }
+    }
 }
