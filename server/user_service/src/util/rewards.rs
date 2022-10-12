@@ -115,9 +115,10 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
 mod tests {
     use std::str::FromStr;
 
-    use axum::async_trait;
     use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use chrono::{TimeZone, Utc};
+    use common::ApiError;
     use common::{
         payment_platform::{
             charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
@@ -128,6 +129,8 @@ mod tests {
     };
     use once_cell::sync::Lazy;
     use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
+
+    use crate::err::Code;
 
     use super::get_rewards_of_the_duration;
 
@@ -436,6 +439,42 @@ mod tests {
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(2100),
+            },
+            TestCase {
+                name: "too many requests".to_string(),
+                input: Input {
+                    charge_op: ChargeOperationMock {
+                        num_of_charges_per_req: 1,
+                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                        num_of_search_trial: 0,
+                        lists: vec![List {
+                            object: "list".to_string(),
+                            has_more: false,
+                            url: "/v1/charges".to_string(),
+                            data: vec![create_dummy_charge(
+                                "ch_7fb5aea258910da9a756985cbe51f",
+                                "336e7d16726246b69636d58bec7a3a30",
+                                4000,
+                                0,
+                                "30.0",
+                            )],
+                            count: 1,
+                        }],
+                        too_many_requests: true,
+                    },
+                    num_of_charges_per_req: 1,
+                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
+                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
+                },
+                expected: Err((
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                )),
             },
         ]
     });
