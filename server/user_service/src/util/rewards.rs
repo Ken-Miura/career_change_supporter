@@ -122,6 +122,10 @@ mod tests {
     };
 
     struct ChargeOperationMock {
+        num_of_charges_per_req: u32,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: String,
         num_of_search_trial: usize,
         lists: Vec<List<Charge>>,
         too_many_requests: bool,
@@ -131,8 +135,24 @@ mod tests {
     impl ChargeOperation for ChargeOperationMock {
         async fn search_charges(
             &mut self,
-            _query: &SearchChargesQuery,
+            query: &SearchChargesQuery,
         ) -> Result<List<Charge>, common::payment_platform::Error> {
+            assert_eq!(
+                self.num_of_charges_per_req,
+                query.limit().expect("failed to get limit")
+            );
+            assert_eq!(
+                self.since_timestamp,
+                query.since().expect("failed to get since")
+            );
+            assert_eq!(
+                self.until_timestamp,
+                query.until().expect("failed to get until")
+            );
+            assert_eq!(
+                self.tenant_id,
+                query.tenant().expect("failed to get tenant")
+            );
             if self.too_many_requests {
                 let err_detail = ErrorDetail {
                     message: "message".to_string(),
