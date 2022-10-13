@@ -756,7 +756,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_reward_req_fail_charges_too_many_requests() {
+    async fn handle_reward_req_fail_rewards_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let current_datetime = Utc
