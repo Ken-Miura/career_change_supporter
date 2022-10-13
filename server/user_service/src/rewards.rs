@@ -1083,7 +1083,7 @@ mod tests {
                 .and_hms(23, 59, 59)
                 .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            rewards_of_the_month: 0,
+            rewards_of_the_month: 2696,
             year_since_timestamp: Utc
                 .ymd(2021, 1, 1)
                 .and_hms(0, 0, 0)
@@ -1094,7 +1094,7 @@ mod tests {
                 .and_hms(23, 59, 59)
                 .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            rewards_of_the_year: 6000,
+            rewards_of_the_year: 16000,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
@@ -1139,8 +1139,8 @@ mod tests {
             account_holder_name: tenant.bank_account_holder_name.to_string(),
         };
         assert_eq!(Some(bank_account), result.1 .0.bank_account);
-        assert_eq!(Some(0), result.1 .0.rewards_of_the_month);
-        assert_eq!(Some(6000), result.1 .0.rewards_of_the_year);
+        assert_eq!(Some(2696), result.1 .0.rewards_of_the_month);
+        assert_eq!(Some(16000), result.1 .0.rewards_of_the_year);
         let transfer1 = Transfer {
             status: "pending".to_string(),
             amount: 2696,
