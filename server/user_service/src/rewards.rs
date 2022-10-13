@@ -76,7 +76,7 @@ async fn handle_reward_req(
                 current_time.month(),
             );
         let rewards_of_the_month = reward_op
-            .get_rewards_of_the_duration(
+            .get_rewards_of_the_month(
                 current_month_since_timestamp,
                 current_month_until_timestamp,
                 tenant_id.as_str(),
@@ -86,7 +86,7 @@ async fn handle_reward_req(
         let (current_year_since_timestamp, current_year_until_timestamp) =
             create_start_and_end_timestamps_of_current_year(current_time.year());
         let rewards_of_the_year = reward_op
-            .get_rewards_of_the_duration(
+            .get_rewards_of_the_year(
                 current_year_since_timestamp,
                 current_year_until_timestamp,
                 tenant_id.as_str(),
@@ -330,7 +330,14 @@ trait RewardOperation {
         account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 
-    async fn get_rewards_of_the_duration(
+    async fn get_rewards_of_the_month(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
+    ) -> Result<i32, ErrResp>;
+
+    async fn get_rewards_of_the_year(
         &self,
         since_timestamp: i64,
         until_timestamp: i64,
@@ -364,7 +371,24 @@ impl RewardOperation for RewardOperationImpl {
         Ok(model.map(|m| m.tenant_id))
     }
 
-    async fn get_rewards_of_the_duration(
+    async fn get_rewards_of_the_month(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
+    ) -> Result<i32, ErrResp> {
+        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+        crate::util::rewards::get_rewards_of_the_duration(
+            charge_op,
+            MAX_NUM_OF_CHARGES_PER_REQUEST,
+            since_timestamp,
+            until_timestamp,
+            tenant_id,
+        )
+        .await
+    }
+
+    async fn get_rewards_of_the_year(
         &self,
         since_timestamp: i64,
         until_timestamp: i64,
@@ -382,17 +406,16 @@ impl RewardOperation for RewardOperationImpl {
     }
 }
 
-// TODO: Change test
 // TODO: 事前準備に用意するデータに関して、データの追加、編集でvalidatorを実装した後、それを使ってチェックを行うよう修正する
 #[cfg(test)]
 mod tests {
 
-    use axum::async_trait;
     use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use chrono::{TimeZone, Utc};
     use common::{
         payment_platform::{
-            charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
+            charge::Charge,
             customer::Card,
             tenant::{CreateTenant, ReviewedBrands, TenantOperation, UpdateTenant},
             tenant_transfer::{
@@ -402,15 +425,23 @@ mod tests {
             ErrorDetail, ErrorInfo, List,
         },
         util::Ymd,
-        ErrResp, JAPANESE_TIME_ZONE,
+        ApiError, ErrResp, JAPANESE_TIME_ZONE,
     };
 
+    use crate::err::Code;
     use crate::{err, rewards::Transfer, util::BankAccount};
 
     use super::{handle_reward_req, RewardOperation};
 
     struct RewardOperationMock {
         tenant_id_option: Option<String>,
+        too_many_requests: bool,
+        month_since_timestamp: i64,
+        month_until_timestamp: i64,
+        rewards_of_the_month: i32,
+        year_since_timestamp: i64,
+        year_until_timestamp: i64,
+        rewards_of_the_year: i32,
     }
 
     #[async_trait]
@@ -422,13 +453,48 @@ mod tests {
             Ok(self.tenant_id_option.clone())
         }
 
-        async fn get_rewards_of_the_duration(
+        async fn get_rewards_of_the_month(
             &self,
             since_timestamp: i64,
             until_timestamp: i64,
             tenant_id: &str,
         ) -> Result<i32, ErrResp> {
-            todo!()
+            assert_eq!(self.month_since_timestamp, since_timestamp);
+            assert_eq!(self.month_until_timestamp, until_timestamp);
+            if let Some(tenant) = self.tenant_id_option.clone() {
+                assert_eq!(tenant.as_str(), tenant_id);
+            };
+            if self.too_many_requests {
+                return Err((
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                ));
+            }
+            Ok(self.rewards_of_the_month)
+        }
+
+        async fn get_rewards_of_the_year(
+            &self,
+            since_timestamp: i64,
+            until_timestamp: i64,
+            tenant_id: &str,
+        ) -> Result<i32, ErrResp> {
+            assert_eq!(self.year_since_timestamp, since_timestamp);
+            assert_eq!(self.year_until_timestamp, until_timestamp);
+            if let Some(tenant) = self.tenant_id_option.clone() {
+                assert_eq!(tenant.as_str(), tenant_id);
+            };
+            if self.too_many_requests {
+                return Err((
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                ));
+            }
+            Ok(self.rewards_of_the_year)
         }
     }
 
@@ -477,60 +543,6 @@ mod tests {
         }
     }
 
-    struct ChargeOperationMock {
-        num_of_search_trial: usize,
-        lists: Vec<List<Charge>>,
-        too_many_requests: bool,
-    }
-
-    #[async_trait]
-    impl ChargeOperation for ChargeOperationMock {
-        async fn search_charges(
-            &mut self,
-            _query: &SearchChargesQuery,
-        ) -> Result<List<Charge>, common::payment_platform::Error> {
-            if self.too_many_requests {
-                let err_detail = ErrorDetail {
-                    message: "message".to_string(),
-                    status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
-                    r#type: "type".to_string(),
-                    code: None,
-                    param: None,
-                    charge: None,
-                };
-                let err_info = ErrorInfo { error: err_detail };
-                return Err(common::payment_platform::Error::ApiError(err_info));
-            }
-            let result = self.lists[self.num_of_search_trial].clone();
-            self.num_of_search_trial += 1;
-            Ok(result)
-        }
-
-        async fn create_charge(
-            &self,
-            _create_charge: &CreateCharge,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-            panic!("this method must not be called")
-        }
-
-        async fn ge_charge_by_charge_id(
-            &self,
-            _charge_id: &str,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-            panic!("this method must not be called")
-        }
-
-        async fn finish_three_d_secure_flow(
-            &self,
-            _charge_id: &str,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-            panic!("this method must not be called")
-        }
-    }
-
     struct TenantTransferOperationMock {
         tenant_transfers: List<TenantTransfer>,
         too_many_requests: bool,
@@ -562,23 +574,39 @@ mod tests {
     async fn handle_reward_req_returns_empty_rewards() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let reward_op = RewardOperationMock {
             tenant_id_option: None,
+            too_many_requests: false,
+            month_since_timestamp: Utc
+                .ymd(2021, 12, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            month_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_month: 0,
+            year_since_timestamp: Utc
+                .ymd(2021, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            year_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_year: 0,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
-            too_many_requests: false,
-        };
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: vec![],
-                count: 0,
-            }],
             too_many_requests: false,
         };
         let tenant_transfer_op = TenantTransferOperationMock {
@@ -591,10 +619,6 @@ mod tests {
             },
             too_many_requests: false,
         };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
         let result = handle_reward_req(
             account_id,
@@ -609,6 +633,7 @@ mod tests {
         assert_eq!(StatusCode::OK, result.0);
         assert_eq!(None, result.1 .0.bank_account);
         assert_eq!(None, result.1 .0.rewards_of_the_month);
+        assert_eq!(None, result.1 .0.rewards_of_the_year);
         let empty = Vec::<Transfer>::with_capacity(0);
         assert_eq!(empty, result.1 .0.latest_two_transfers);
     }
@@ -667,24 +692,40 @@ mod tests {
     async fn handle_reward_req_fail_tenant_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
+            too_many_requests: false,
+            month_since_timestamp: Utc
+                .ymd(2021, 12, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            month_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_month: 0,
+            year_since_timestamp: Utc
+                .ymd(2021, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            year_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_year: 0,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
             too_many_requests: true,
-        };
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: vec![],
-                count: 0,
-            }],
-            too_many_requests: false,
         };
         let tenant_transfer_op = TenantTransferOperationMock {
             tenant_transfers: List {
@@ -696,10 +737,6 @@ mod tests {
             },
             too_many_requests: false,
         };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
         let result = handle_reward_req(
             account_id,
@@ -722,24 +759,40 @@ mod tests {
     async fn handle_reward_req_fail_charges_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
+            too_many_requests: true,
+            month_since_timestamp: Utc
+                .ymd(2021, 12, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            month_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_month: 0,
+            year_since_timestamp: Utc
+                .ymd(2021, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            year_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_year: 0,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
             too_many_requests: false,
-        };
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: vec![],
-                count: 0,
-            }],
-            too_many_requests: true,
         };
         let tenant_transfer_op = TenantTransferOperationMock {
             tenant_transfers: List {
@@ -751,10 +804,6 @@ mod tests {
             },
             too_many_requests: false,
         };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
         let result = handle_reward_req(
             account_id,
@@ -777,23 +826,39 @@ mod tests {
     async fn handle_reward_req_fail_tenant_transfers_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
+            too_many_requests: false,
+            month_since_timestamp: Utc
+                .ymd(2021, 12, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            month_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_month: 0,
+            year_since_timestamp: Utc
+                .ymd(2021, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            year_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_year: 0,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant,
-            too_many_requests: false,
-        };
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: vec![],
-                count: 0,
-            }],
             too_many_requests: false,
         };
         let tenant_transfer_op = TenantTransferOperationMock {
@@ -806,10 +871,6 @@ mod tests {
             },
             too_many_requests: true,
         };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
         let result = handle_reward_req(
             account_id,
@@ -829,28 +890,42 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_reward_req_returns_reward_with_tenant_1charge_1tenant_transfer() {
+    async fn handle_reward_req_returns_reward_with_tenant_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_datetime = Utc
+            .ymd(2021, 12, 31)
+            .and_hms(14, 59, 59)
+            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
+            too_many_requests: false,
+            month_since_timestamp: Utc
+                .ymd(2021, 12, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            month_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_month: 2696,
+            year_since_timestamp: Utc
+                .ymd(2021, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            year_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_year: 2696,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant: tenant.clone(),
-            too_many_requests: false,
-        };
-        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
-        let charge = create_dummy_charge(charge_id, tenant_id);
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: vec![charge.clone()],
-                count: 1,
-            }],
             too_many_requests: false,
         };
         let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
@@ -865,10 +940,6 @@ mod tests {
             },
             too_many_requests: false,
         };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
 
         let result = handle_reward_req(
             account_id,
@@ -889,16 +960,8 @@ mod tests {
             account_holder_name: tenant.bank_account_holder_name.to_string(),
         };
         assert_eq!(Some(bank_account), result.1 .0.bank_account);
-        // create_dummy_chargeから計算される値。詳細は下記の通り。
-        // 売上 = amount - refunded_amount
-        // 手数料 = 売上 * platform_fee_rate/100 (小数点切り捨て)
-        // 結果 = 売上 - 手数料
-        // なので
-        // 売上 = 4000 - 1000 = 3000
-        // 手数料 = 3000 * 10.15/100 = 304
-        // 結果 = 3000 - 304 = 2696
-        // 本テストでは、chargeは一つなので2696で確定
         assert_eq!(Some(2696), result.1 .0.rewards_of_the_month);
+        assert_eq!(Some(2696), result.1 .0.rewards_of_the_year);
         // create_dummy_transfer1から導出される結果
         let transfer = Transfer {
             status: "pending".to_string(),
@@ -913,6 +976,44 @@ mod tests {
             carried_balance: Some(0),
         };
         assert_eq!(vec![transfer], result.1 .0.latest_two_transfers);
+    }
+
+    fn create_dummy_tenant_transfer(transfer_id: &str, tenant_id: &str) -> TenantTransfer {
+        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
+        TenantTransfer {
+            object: "tenant_transfer".to_string(),
+            id: transfer_id.to_string(),
+            livemode: false,
+            created: 1641055119,
+            amount: 2696,
+            currency: "jpy".to_string(),
+            status: "pending".to_string(),
+            charges: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: format!("/v1/tenant_transfers/{}/charges", transfer_id),
+                data: vec![create_dummy_charge(charge_id, tenant_id)],
+                count: 1,
+            },
+            scheduled_date: "2022-01-31".to_string(),
+            summary: Summary {
+                charge_count: 1,
+                charge_fee: 90,
+                charge_gross: 4000,
+                net: 3696,
+                refund_amount: 1000,
+                refund_count: 1,
+                dispute_amount: 0,
+                dispute_count: 0,
+                total_platform_fee: 214,
+            },
+            term_start: 1638284400,
+            term_end: 1640962800,
+            transfer_amount: None,
+            transfer_date: None,
+            carried_balance: Some(0),
+            tenant_id: tenant_id.to_string(),
+        }
     }
 
     fn create_dummy_charge(charge_id: &str, tenant_id: &str) -> Charge {
@@ -965,415 +1066,39 @@ mod tests {
         }
     }
 
-    fn create_dummy_tenant_transfer(transfer_id: &str, tenant_id: &str) -> TenantTransfer {
-        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
-        TenantTransfer {
-            object: "tenant_transfer".to_string(),
-            id: transfer_id.to_string(),
-            livemode: false,
-            created: 1641055119,
-            amount: 2696,
-            currency: "jpy".to_string(),
-            status: "pending".to_string(),
-            charges: List {
-                object: "list".to_string(),
-                has_more: false,
-                url: format!("/v1/tenant_transfers/{}/charges", transfer_id),
-                data: vec![create_dummy_charge(charge_id, tenant_id)],
-                count: 1,
-            },
-            scheduled_date: "2022-01-31".to_string(),
-            summary: Summary {
-                charge_count: 1,
-                charge_fee: 90,
-                charge_gross: 4000,
-                net: 3696,
-                refund_amount: 1000,
-                refund_count: 1,
-                dispute_amount: 0,
-                dispute_count: 0,
-                total_platform_fee: 214,
-            },
-            term_start: 1638284400,
-            term_end: 1640962800,
-            transfer_amount: None,
-            transfer_date: None,
-            carried_balance: Some(0),
-            tenant_id: tenant_id.to_string(),
-        }
-    }
-
-    #[tokio::test]
-    async fn handle_reward_req_checks_non_captured_charge_is_filterd() {
-        let account_id = 9853;
-        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let reward_op = RewardOperationMock {
-            tenant_id_option: Some(tenant_id.to_string()),
-        };
-        let tenant = create_dummy_tenant(tenant_id);
-        let tenant_op = TenantOperationMock {
-            tenant: tenant.clone(),
-            too_many_requests: false,
-        };
-        let charge1_id = "ch_7fb5aea258910da9a756985cbe51f";
-        let charge1 = create_dummy_charge(charge1_id, tenant_id);
-        let charge2_id = "ch_7fb5aea258910da9a756985cbe51g";
-        let charge2 = create_non_captured_dummy_charge(charge2_id, tenant_id);
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: vec![charge1.clone(), charge2.clone()],
-                count: 1,
-            }],
-            too_many_requests: false,
-        };
-        let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
-        let tenant_transfer = create_dummy_tenant_transfer(transfer_id, tenant_id);
-        let tenant_transfer_op = TenantTransferOperationMock {
-            tenant_transfers: List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/tenant_transfers".to_string(),
-                data: vec![tenant_transfer.clone()],
-                count: 1,
-            },
-            too_many_requests: false,
-        };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-
-        let result = handle_reward_req(
-            account_id,
-            reward_op,
-            tenant_op,
-            current_datetime,
-            tenant_transfer_op,
-        )
-        .await
-        .expect("failed to get Ok");
-
-        assert_eq!(StatusCode::OK, result.0);
-        let bank_account = BankAccount {
-            bank_code: tenant.bank_code.to_string(),
-            branch_code: tenant.bank_branch_code.to_string(),
-            account_type: tenant.bank_account_type.to_string(),
-            account_number: tenant.bank_account_number.to_string(),
-            account_holder_name: tenant.bank_account_holder_name.to_string(),
-        };
-        assert_eq!(Some(bank_account), result.1 .0.bank_account);
-        assert_eq!(Some(2696), result.1 .0.rewards_of_the_month);
-        // create_dummy_transfer1から導出される結果
-        let transfer = Transfer {
-            status: "pending".to_string(),
-            amount: 2696,
-            scheduled_date_in_jst: Ymd {
-                year: 2022,
-                month: 1,
-                day: 31,
-            },
-            transfer_amount: None,
-            transfer_date_in_jst: None,
-            carried_balance: Some(0),
-        };
-        assert_eq!(vec![transfer], result.1 .0.latest_two_transfers);
-    }
-
-    fn create_non_captured_dummy_charge(charge_id: &str, tenant_id: &str) -> Charge {
-        Charge {
-            id: charge_id.to_string(),
-            object: "charge".to_string(),
-            livemode: false,
-            created: 1639931415,
-            amount: 4000,
-            currency: "jpy".to_string(),
-            paid: true,
-            expired_at: None,
-            captured: false,
-            captured_at: Some(1639931415),
-            card: Some(Card {
-                object: "card".to_string(),
-                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
-                created: 1639931415,
-                name: None,
-                last4: "4242".to_string(),
-                exp_month: 12,
-                exp_year: 2022,
-                brand: "Visa".to_string(),
-                cvc_check: "passed".to_string(),
-                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
-                address_state: None,
-                address_city: None,
-                address_line1: None,
-                address_line2: None,
-                country: None,
-                address_zip: None,
-                address_zip_check: "unchecked".to_string(),
-                metadata: None,
-            }),
-            customer: None,
-            description: None,
-            failure_code: None,
-            failure_message: None,
-            fee_rate: Some("3.00".to_string()),
-            refunded: true,
-            amount_refunded: 1000,
-            refund_reason: Some("テスト".to_string()),
-            subscription: None,
-            metadata: None,
-            platform_fee: None,
-            tenant: Some(tenant_id.to_string()),
-            platform_fee_rate: Some("10.15".to_string()),
-            total_platform_fee: Some(214),
-            three_d_secure_status: Some("verified".to_string()),
-        }
-    }
-
-    #[tokio::test]
-    async fn handle_reward_req_returns_reward_with_tenant_32charge_1tenant_transfer() {
-        let account_id = 9853;
-        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let reward_op = RewardOperationMock {
-            tenant_id_option: Some(tenant_id.to_string()),
-        };
-        let tenant = create_dummy_tenant(tenant_id);
-        let tenant_op = TenantOperationMock {
-            tenant: tenant.clone(),
-            too_many_requests: false,
-        };
-        let charges = create_dummy_32charges(tenant_id);
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: charges,
-                count: 32,
-            }],
-            too_many_requests: false,
-        };
-        let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
-        let tenant_transfer = create_dummy_tenant_transfer(transfer_id, tenant_id);
-        let tenant_transfer_op = TenantTransferOperationMock {
-            tenant_transfers: List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/tenant_transfers".to_string(),
-                data: vec![tenant_transfer.clone()],
-                count: 1,
-            },
-            too_many_requests: false,
-        };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-
-        let result = handle_reward_req(
-            account_id,
-            reward_op,
-            tenant_op,
-            current_datetime,
-            tenant_transfer_op,
-        )
-        .await
-        .expect("failed to get Ok");
-
-        assert_eq!(StatusCode::OK, result.0);
-        let bank_account = BankAccount {
-            bank_code: tenant.bank_code.to_string(),
-            branch_code: tenant.bank_branch_code.to_string(),
-            account_type: tenant.bank_account_type.to_string(),
-            account_number: tenant.bank_account_number.to_string(),
-            account_holder_name: tenant.bank_account_holder_name.to_string(),
-        };
-        assert_eq!(Some(bank_account), result.1 .0.bank_account);
-        assert_eq!(Some(2696 * 32), result.1 .0.rewards_of_the_month);
-        // create_dummy_transfer1から導出される結果
-        let transfer = Transfer {
-            status: "pending".to_string(),
-            amount: 2696,
-            scheduled_date_in_jst: Ymd {
-                year: 2022,
-                month: 1,
-                day: 31,
-            },
-            transfer_amount: None,
-            transfer_date_in_jst: None,
-            carried_balance: Some(0),
-        };
-        assert_eq!(vec![transfer], result.1 .0.latest_two_transfers);
-    }
-
-    fn create_dummy_32charges(tenant_id: &str) -> Vec<Charge> {
-        let mut charges = Vec::with_capacity(32);
-        for i in 0..32 {
-            let charge = Charge {
-                id: format!("ch_7fb5aea258910da9a756985cbe5{:02}", i),
-                object: "charge".to_string(),
-                livemode: false,
-                created: 1639931415,
-                amount: 4000,
-                currency: "jpy".to_string(),
-                paid: true,
-                expired_at: None,
-                captured: true,
-                captured_at: Some(1639931415),
-                card: Some(Card {
-                    object: "card".to_string(),
-                    id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
-                    created: 1639931415,
-                    name: None,
-                    last4: "4242".to_string(),
-                    exp_month: 12,
-                    exp_year: 2022,
-                    brand: "Visa".to_string(),
-                    cvc_check: "passed".to_string(),
-                    fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
-                    address_state: None,
-                    address_city: None,
-                    address_line1: None,
-                    address_line2: None,
-                    country: None,
-                    address_zip: None,
-                    address_zip_check: "unchecked".to_string(),
-                    metadata: None,
-                }),
-                customer: None,
-                description: None,
-                failure_code: None,
-                failure_message: None,
-                fee_rate: Some("3.00".to_string()),
-                refunded: true,
-                amount_refunded: 1000,
-                refund_reason: Some("テスト".to_string()),
-                subscription: None,
-                metadata: None,
-                platform_fee: None,
-                tenant: Some(tenant_id.to_string()),
-                platform_fee_rate: Some("10.15".to_string()),
-                total_platform_fee: Some(214),
-                three_d_secure_status: Some("verified".to_string()),
-            };
-            charges.push(charge);
-        }
-        charges
-    }
-
-    #[tokio::test]
-    async fn handle_reward_req_returns_reward_with_tenant_33charge_1tenant_transfer() {
-        let account_id = 9853;
-        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let reward_op = RewardOperationMock {
-            tenant_id_option: Some(tenant_id.to_string()),
-        };
-        let tenant = create_dummy_tenant(tenant_id);
-        let tenant_op = TenantOperationMock {
-            tenant: tenant.clone(),
-            too_many_requests: false,
-        };
-        let charges = create_dummy_32charges(tenant_id);
-        let charge_id = "ch_7fb5aea258910da9a756985cbe51f";
-        let charge = create_dummy_charge(charge_id, tenant_id);
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![
-                List {
-                    object: "list".to_string(),
-                    has_more: true,
-                    url: "/v1/charges".to_string(),
-                    data: charges,
-                    count: 32,
-                },
-                List {
-                    object: "list".to_string(),
-                    has_more: false,
-                    url: "/v1/charges".to_string(),
-                    data: vec![charge],
-                    count: 1,
-                },
-            ],
-            too_many_requests: false,
-        };
-        let transfer_id = "ten_tr_920fdff2a571ace3441bd78b3";
-        let tenant_transfer = create_dummy_tenant_transfer(transfer_id, tenant_id);
-        let tenant_transfer_op = TenantTransferOperationMock {
-            tenant_transfers: List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/tenant_transfers".to_string(),
-                data: vec![tenant_transfer.clone()],
-                count: 1,
-            },
-            too_many_requests: false,
-        };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
-
-        let result = handle_reward_req(
-            account_id,
-            reward_op,
-            tenant_op,
-            current_datetime,
-            tenant_transfer_op,
-        )
-        .await
-        .expect("failed to get Ok");
-
-        assert_eq!(StatusCode::OK, result.0);
-        let bank_account = BankAccount {
-            bank_code: tenant.bank_code.to_string(),
-            branch_code: tenant.bank_branch_code.to_string(),
-            account_type: tenant.bank_account_type.to_string(),
-            account_number: tenant.bank_account_number.to_string(),
-            account_holder_name: tenant.bank_account_holder_name.to_string(),
-        };
-        assert_eq!(Some(bank_account), result.1 .0.bank_account);
-        assert_eq!(Some(2696 * 33), result.1 .0.rewards_of_the_month);
-        // create_dummy_transfer1から導出される結果
-        let transfer = Transfer {
-            status: "pending".to_string(),
-            amount: 2696,
-            scheduled_date_in_jst: Ymd {
-                year: 2022,
-                month: 1,
-                day: 31,
-            },
-            transfer_amount: None,
-            transfer_date_in_jst: None,
-            carried_balance: Some(0),
-        };
-        assert_eq!(vec![transfer], result.1 .0.latest_two_transfers);
-    }
-
     #[tokio::test]
     async fn handle_reward_req_returns_reward_with_tenant_2tenant_transfers() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
+            too_many_requests: false,
+            month_since_timestamp: Utc
+                .ymd(2021, 12, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            month_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_month: 0,
+            year_since_timestamp: Utc
+                .ymd(2021, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            year_until_timestamp: Utc
+                .ymd(2021, 12, 31)
+                .and_hms(23, 59, 59)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp(),
+            rewards_of_the_year: 6000,
         };
         let tenant = create_dummy_tenant(tenant_id);
         let tenant_op = TenantOperationMock {
             tenant: tenant.clone(),
-            too_many_requests: false,
-        };
-        let charge_op = ChargeOperationMock {
-            num_of_search_trial: 0,
-            lists: vec![List {
-                object: "list".to_string(),
-                has_more: false,
-                url: "/v1/charges".to_string(),
-                data: vec![],
-                count: 0,
-            }],
             too_many_requests: false,
         };
         let transfer_id1 = "ten_tr_920fdff2a571ace3441bd78b3";
@@ -1415,6 +1140,7 @@ mod tests {
         };
         assert_eq!(Some(bank_account), result.1 .0.bank_account);
         assert_eq!(Some(0), result.1 .0.rewards_of_the_month);
+        assert_eq!(Some(6000), result.1 .0.rewards_of_the_year);
         let transfer1 = Transfer {
             status: "pending".to_string(),
             amount: 2696,
