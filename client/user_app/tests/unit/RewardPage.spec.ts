@@ -51,6 +51,7 @@ describe('RewardPage.vue', () => {
       /* eslint-disable camelcase */
       bank_account: null,
       rewards_of_the_month: null,
+      rewards_of_the_year: null,
       latest_two_transfers: []
     /* eslint-enable camelcase */
     }
@@ -160,6 +161,7 @@ describe('RewardPage.vue', () => {
       /* eslint-disable camelcase */
       bank_account: null,
       rewards_of_the_month: null,
+      rewards_of_the_year: null,
       latest_two_transfers: []
     /* eslint-enable camelcase */
     }
@@ -184,6 +186,7 @@ describe('RewardPage.vue', () => {
       /* eslint-disable camelcase */
       bank_account: null,
       rewards_of_the_month: null,
+      rewards_of_the_year: null,
       latest_two_transfers: []
     /* eslint-enable camelcase */
     }
@@ -209,6 +212,11 @@ describe('RewardPage.vue', () => {
     const noRewardsOfTheMonthSetMessage = noRewardsOfTheMonthSetDiv.text()
     expect(noRewardsOfTheMonthSetMessage).toContain('まだ相談を受け付けていません。')
 
+    const noRewardsOfTheYearSetDiv = wrapper.find('[data-test="no-rewards-of-the-year-set"]')
+    expect(noRewardsOfTheYearSetDiv.exists()).toBe(true)
+    const noRewardsOfTheYearSetMessage = noRewardsOfTheYearSetDiv.text()
+    expect(noRewardsOfTheYearSetMessage).toContain('まだ相談を受け付けていません。')
+
     const noLatestTwoTransfersSetDiv = wrapper.find('[data-test="no-latest-two-transfers-set"]')
     expect(noLatestTwoTransfersSetDiv.exists()).toBe(true)
     const noLatestTwoTransfersSetMessage = noLatestTwoTransfersSetDiv.text()
@@ -220,6 +228,7 @@ describe('RewardPage.vue', () => {
       /* eslint-disable camelcase */
       bank_account: null,
       rewards_of_the_month: null,
+      rewards_of_the_year: null,
       latest_two_transfers: []
     /* eslint-enable camelcase */
     }
@@ -255,6 +264,7 @@ describe('RewardPage.vue', () => {
       /* eslint-disable camelcase */
       bank_account: bankAccount,
       rewards_of_the_month: null,
+      rewards_of_the_year: null,
       latest_two_transfers: []
     /* eslint-enable camelcase */
     }
@@ -300,6 +310,7 @@ describe('RewardPage.vue', () => {
       /* eslint-disable camelcase */
       bank_account: bankAccount,
       rewards_of_the_month: rewardsOfTheMonth,
+      rewards_of_the_year: rewardsOfTheMonth,
       latest_two_transfers: []
     /* eslint-enable camelcase */
     }
@@ -319,6 +330,43 @@ describe('RewardPage.vue', () => {
     expect(rewardsOfTheMonthSetDiv.exists()).toBe(true)
     const rewardsOfTheMonthSetMessage = rewardsOfTheMonthSetDiv.text()
     expect(rewardsOfTheMonthSetMessage).toContain(`${rewardsOfTheMonth}円`)
+  })
+
+  it('displays rewards of the year if it is set', async () => {
+    const bankAccount = {
+      /* eslint-disable camelcase */
+      bank_code: '0001',
+      branch_code: '001',
+      account_type: '普通',
+      account_number: '00010000',
+      account_holder_name: 'ヤマダ タロウ'
+    /* eslint-enable camelcase */
+    }
+    const rewardsOfTheYear = 200000
+    const reward = {
+      /* eslint-disable camelcase */
+      bank_account: bankAccount,
+      rewards_of_the_month: 0,
+      rewards_of_the_year: rewardsOfTheYear,
+      latest_two_transfers: []
+    /* eslint-enable camelcase */
+    }
+    const resp = GetRewardsResp.create(reward)
+    getRewardsFuncMock.mockResolvedValue(resp)
+    getRewardsDoneMock.value = true
+    const wrapper = mount(RewardPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rewardsOfTheYearSetDiv = wrapper.find('[data-test="rewards-of-the-year-set"]')
+    expect(rewardsOfTheYearSetDiv.exists()).toBe(true)
+    const rewardsOfTheYearSetMessage = rewardsOfTheYearSetDiv.text()
+    expect(rewardsOfTheYearSetMessage).toContain(`${rewardsOfTheYear}円`)
   })
 
   it('displays latest two transfers (pending and paid) if they are set', async () => {
@@ -647,6 +695,7 @@ describe('RewardPage.vue', () => {
       /* eslint-disable camelcase */
       bank_account: null,
       rewards_of_the_month: null,
+      rewards_of_the_year: null,
       latest_two_transfers: []
     /* eslint-enable camelcase */
     }

@@ -148,6 +148,7 @@ export default defineComponent({
           /* eslint-disable camelcase */
           bankAccount.value = rewards.bank_account
           rewardsOfTheMonth.value = rewards.rewards_of_the_month
+          rewardsOfTheYear.value = rewards.rewards_of_the_year
           latestTwoTransfers.value = rewards.latest_two_transfers
           /* eslint-enable camelcase */
           store.commit(SET_BANK_ACCOUNT, rewards.bank_account)
