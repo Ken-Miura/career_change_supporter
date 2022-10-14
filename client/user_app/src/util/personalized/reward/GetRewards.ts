@@ -36,6 +36,7 @@ function convertResult (rawRewards: RawRewards): Rewards {
   return {
     bank_account: rawRewards.bank_account,
     rewards_of_the_month: rawRewards.rewards_of_the_month,
+    rewards_of_the_year: rawRewards.rewards_of_the_year,
     latest_two_transfers: latestTwoTransfers
   } as Rewards
 }
