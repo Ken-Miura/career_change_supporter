@@ -33,6 +33,14 @@
           <p v-else data-test="no-rewards-of-the-month-set" class="m-4 text-xl">まだ相談を受け付けていません。</p>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">今年（1月〜12月）の報酬の合計</h3>
+          <p class="mt-2 text-lg">今年（1月〜12月）行った相談の報酬の合計です。他のユーザーに公開されることはありません。入金の際にかかった振込手数料は考慮されていないため、今年入金された額を正確に把握したい場合、設定した入金口座の明細をご確認下さい。今年の報酬の合計が{{ MAX_REWARDS_PER_YEAR_IN_MAN_YEN }}万円を超えるような新規の相談の受け付けはできません。次の年の１月１日に今年の報酬の合計はリセットされます。</p>
+          <div v-if="rewardsOfTheYear !== null" data-test="rewards-of-the-year-set" class="flex justify-end">
+            <p class="m-4 text-2xl">{{ rewardsOfTheYear }}円</p>
+          </div>
+          <p v-else data-test="no-rewards-of-the-year-set" class="m-4 text-xl">まだ相談を受け付けていません。</p>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">入金情報</h3>
           <p data-test="latest-two-transfers-set-description" class="mt-2 text-lg">報酬に関する直近二回分の入金情報です。毎月月末に、前月の報酬の合計から振込手数料（{{ TRANSFER_FEE_IN_YEN }}円）が差し引かれた金額が入金されます。他のユーザーに公開されることはありません。</p>
           <div v-if="latestTwoTransfers.length === 0" data-test="no-latest-two-transfers-set" class="mt-4 ml-4 text-xl">入金情報はありません。</div>
@@ -113,6 +121,7 @@ import { GetRewardsResp } from '@/util/personalized/reward/GetRewardsResp'
 import { useStore } from 'vuex'
 import { SET_BANK_ACCOUNT } from '@/store/mutationTypes'
 import { TRANSFER_FEE_IN_YEN } from '@/util/personalized/reward/TransferFee'
+import { MAX_REWARDS_PER_YEAR_IN_MAN_YEN } from '@/util/personalized/reward/MaxRewards'
 
 export default defineComponent({
   name: 'RewardPage',
@@ -125,6 +134,7 @@ export default defineComponent({
     const { getRewardsDone, getRewardsFunc } = useGetRewards()
     const bankAccount = ref(null as BankAccount | null)
     const rewardsOfTheMonth = ref(null as number | null)
+    const rewardsOfTheYear = ref(null as number | null)
     const latestTwoTransfers = ref([] as Transfer[])
     const router = useRouter()
     const store = useStore()
@@ -169,6 +179,8 @@ export default defineComponent({
       getRewardsDone,
       bankAccount,
       rewardsOfTheMonth,
+      rewardsOfTheYear,
+      MAX_REWARDS_PER_YEAR_IN_MAN_YEN,
       latestTwoTransfers,
       TRANSFER_FEE_IN_YEN,
       errorExists,
