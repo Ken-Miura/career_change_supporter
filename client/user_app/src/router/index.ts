@@ -24,6 +24,7 @@ import TransactionLawPage from '../views/TransactionLawPage.vue'
 import ConsultantListPage from '../views/personalized/ConsultantListPage.vue'
 import ConsultantDetailPage from '../views/personalized/ConsultantDetailPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
+import RatingWaitListPage from '../views/personalized/RatingWaitListPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -209,6 +210,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/request-consultation/:consultant_id',
     name: 'RequestConsultationPage',
     component: RequestConsultationPage
+  },
+  {
+    path: '/rating-wait-list',
+    name: 'RatingWaitListPage',
+    component: RatingWaitListPage
   }
 ]
 
