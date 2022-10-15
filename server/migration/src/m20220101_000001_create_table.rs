@@ -476,13 +476,15 @@ impl MigrationTrait for Migration {
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.auto_settlement (
-                  auto_settlement_id BIGSERIAL PRIMARY KEY,
+                r"CREATE TABLE ccs_schema.settlement (
+                  settlement_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
-                  need_auto_settlement BOOLEAN NOT NULL,
+                  settled BOOLEAN NOT NULL,
+                  stop_settlement BOOLEAN NOT NULL,
+                  expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   UNIQUE(user_account_id, consultant_id, meeting_at)
                 );",
             ))
@@ -490,25 +492,29 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(
-                    r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.auto_settlement To user_app;",
-                ),
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.settlement To user_app;"),
             )
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, UPDATE ON ccs_schema.auto_settlement To admin_app;"))
+            .execute(sql.stmt(r"GRANT SELECT, UPDATE ON ccs_schema.settlement To admin_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"GRANT USAGE ON SEQUENCE ccs_schema.auto_settlement_auto_settlement_id_seq TO user_app;",
+                r"GRANT USAGE ON SEQUENCE ccs_schema.settlement_settlement_id_seq TO user_app;",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX auto_settlement_meeting_at_idx ON ccs_schema.auto_settlement (meeting_at);",
+                r"CREATE INDEX settlement_meeting_at_idx ON ccs_schema.settlement (meeting_at);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX settlement_expired_at_idx ON ccs_schema.settlement (expired_at);",
             ))
             .await
             .map(|_| ())?;

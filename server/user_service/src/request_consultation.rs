@@ -87,6 +87,19 @@ trait RequestConsultationOperation {
         &self,
         consultant_id: i64,
     ) -> Result<Option<String>, ErrResp>;
+
+    async fn get_rewards_of_the_year(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
+    ) -> Result<i32, ErrResp>;
+
+    async fn get_expected_rewards(
+        &self,
+        consultant_id: i64,
+        current_date_time: &DateTime<FixedOffset>,
+    ) -> Result<i32, ErrResp>;
 }
 
 struct RequestConsultationOperationImpl {
@@ -136,6 +149,23 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
             })?;
         Ok(model.map(|m| m.tenant_id))
     }
+
+    async fn get_rewards_of_the_year(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
+    ) -> Result<i32, ErrResp> {
+        todo!()
+    }
+
+    async fn get_expected_rewards(
+        &self,
+        consultant_id: i64,
+        current_date_time: &DateTime<FixedOffset>,
+    ) -> Result<i32, ErrResp> {
+        todo!()
+    }
 }
 
 async fn handle_request_consultation(
@@ -172,6 +202,8 @@ async fn handle_request_consultation(
     }
 
     let tenant_id = get_tenant_id(consultant_id, &request_consultation_op).await?;
+
+    // TODO:
 
     let price = (fee_per_hour_in_yen, "jpy".to_string());
     let card = request_consultation_param.card_token.as_str();
