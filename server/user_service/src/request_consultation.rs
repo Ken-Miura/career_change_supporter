@@ -3,7 +3,7 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use chrono::{DateTime, Duration, FixedOffset, NaiveDate, Utc};
 use common::payment_platform::charge::CreateCharge;
 use common::payment_platform::Metadata;
 use common::{
@@ -11,6 +11,10 @@ use common::{
     ErrResp, RespResult,
 };
 use common::{ApiError, JAPANESE_TIME_ZONE};
+use entity::prelude::ConsultationReq;
+use entity::prelude::Settlement;
+use entity::sea_orm::{ColumnTrait, QueryFilter};
+use entity::{consultation_req, settlement};
 use entity::{
     prelude::ConsultingFee,
     sea_orm::{DatabaseConnection, EntityTrait},
@@ -19,12 +23,14 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
+use crate::util::rewards::MAX_NUM_OF_CHARGES_PER_REQUEST;
 use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
 use crate::util::{
     EXPIRY_DAYS, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION,
 };
 use crate::{
     err::unexpected_err_resp,
@@ -88,17 +94,23 @@ trait RequestConsultationOperation {
         consultant_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 
-    async fn get_rewards_of_the_year(
+    async fn get_amount_of_consultation_req(
         &self,
-        since_timestamp: i64,
-        until_timestamp: i64,
-        tenant_id: &str,
+        consultant_id: i64,
+        current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp>;
 
     async fn get_expected_rewards(
         &self,
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
+    ) -> Result<i32, ErrResp>;
+
+    async fn get_rewards_of_the_year(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
     ) -> Result<i32, ErrResp>;
 }
 
@@ -150,13 +162,28 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         Ok(model.map(|m| m.tenant_id))
     }
 
-    async fn get_rewards_of_the_year(
+    async fn get_amount_of_consultation_req(
         &self,
-        since_timestamp: i64,
-        until_timestamp: i64,
-        tenant_id: &str,
+        consultant_id: i64,
+        current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp> {
-        todo!()
+        let criteria =
+            *current_date_time + Duration::hours(MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION as i64);
+        let reqs = ConsultationReq::find()
+            .filter(consultation_req::Column::ConsultantId.eq(consultant_id))
+            .filter(consultation_req::Column::LatestCandidateDateTime.gt(criteria))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter consultation_req (consultant_id: {}, current_date_time: {}, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION: {}): {}",
+                    consultant_id, current_date_time, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION, e
+                );
+                unexpected_err_resp()
+            })?;
+        let charge_ids = reqs.into_iter().map(|r| r.charge_id).collect();
+        let amount = get_sum_of_amount(charge_ids).await?;
+        Ok(amount)
     }
 
     async fn get_expected_rewards(
@@ -164,8 +191,70 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp> {
-        todo!()
+        let settlements = Settlement::find()
+            .filter(settlement::Column::ConsultantId.eq(consultant_id))
+            .filter(settlement::Column::ExpiredAt.gt(*current_date_time))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter settlement (consultant_id: {}, current_date_time: {}): {}",
+                    consultant_id, current_date_time, e
+                );
+                unexpected_err_resp()
+            })?;
+        let charge_ids = settlements.into_iter().map(|s| s.charge_id).collect();
+        let amount = get_sum_of_amount(charge_ids).await?;
+        Ok(amount)
     }
+
+    async fn get_rewards_of_the_year(
+        &self,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: &str,
+    ) -> Result<i32, ErrResp> {
+        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+        crate::util::rewards::get_rewards_of_the_duration(
+            charge_op,
+            MAX_NUM_OF_CHARGES_PER_REQUEST,
+            since_timestamp,
+            until_timestamp,
+            tenant_id,
+        )
+        .await
+    }
+}
+
+async fn get_sum_of_amount(charge_ids: Vec<String>) -> Result<i32, ErrResp> {
+    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+    let mut amount = 0;
+    for charge_id in charge_ids {
+        let charge = charge_op
+            .ge_charge_by_charge_id(charge_id.as_str())
+            .await
+            .map_err(|err| match err {
+                common::payment_platform::Error::RequestProcessingError(err) => {
+                    error!("failed to process request on getting charges: {}", err);
+                    unexpected_err_resp()
+                }
+                common::payment_platform::Error::ApiError(err) => {
+                    error!("failed to request charge operation: {}", err);
+                    let status_code = err.error.status as u16;
+                    if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
+                        return (
+                            StatusCode::TOO_MANY_REQUESTS,
+                            Json(ApiError {
+                                code: Code::ReachPaymentPlatformRateLimit as u32,
+                            }),
+                        );
+                    }
+                    unexpected_err_resp()
+                }
+            })?;
+        amount += charge.amount;
+    }
+    Ok(amount)
 }
 
 async fn handle_request_consultation(
