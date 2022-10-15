@@ -94,18 +94,21 @@ trait RequestConsultationOperation {
         consultant_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 
+    /// 相談依頼があり、まだ相談を受け付けるか決めていないものの相談料の合計
     async fn get_amount_of_consultation_req(
         &self,
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp>;
 
+    /// 相談を受け付けたが、まだ未決済（相談者がまだ評価を実施していない、または自動決済が走っていない状態）となっているものの相談料の合計
     async fn get_expected_rewards(
         &self,
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp>;
 
+    /// 決済が済んでいるものの相談料の合計
     async fn get_rewards_of_the_year(
         &self,
         since_timestamp: i64,
