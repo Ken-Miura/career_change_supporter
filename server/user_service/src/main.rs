@@ -77,10 +77,7 @@ use tower_cookies::CookieManagerLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tower_http::LatencyUnit;
 use tracing::{Level, Span};
-use util::{
-    KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN, KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
-    KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
-};
+use util::KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN;
 use uuid::Uuid;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_USER_APP";
@@ -111,8 +108,6 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_OPENSEARCH_USERNAME.to_string(),
         KEY_TO_OPENSEARCH_PASSWORD.to_string(),
         KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN.to_string(),
-        KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS.to_string(),
-        KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS.to_string(),
     ]
 });
 

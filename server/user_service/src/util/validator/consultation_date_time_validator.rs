@@ -117,7 +117,6 @@ impl Error for ConsultationDateTimeValidationError {}
 
 #[cfg(test)]
 mod tests {
-    use std::env;
 
     use chrono::{DateTime, FixedOffset, NaiveDate};
     use common::JAPANESE_TIME_ZONE;
@@ -125,11 +124,7 @@ mod tests {
 
     use crate::{
         request_consultation::ConsultationDateTime,
-        util::{
-            validator::consultation_date_time_validator::validate_consultation_date_time,
-            KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
-            KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
-        },
+        util::validator::consultation_date_time_validator::validate_consultation_date_time,
     };
 
     use super::ConsultationDateTimeValidationError;
@@ -316,11 +311,6 @@ mod tests {
 
     #[test]
     fn test_validate_consultation_date_time() {
-        env::set_var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS, "259200"); // 3 days
-        env::set_var(
-            KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
-            "1814400", // 21 days
-        );
         for test_case in TEST_CASE_SET.iter() {
             let result = validate_consultation_date_time(
                 &test_case.input.consultation_date_time,
