@@ -94,7 +94,7 @@ pub(crate) const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
     "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
 /// 現在日時を起点とし、相談開始日時までの秒単位での最小期間
 ///
-/// テストや動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
+/// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
 pub(crate) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
     let min_duration_in_seconds = var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
         .unwrap_or_else(|_| {
@@ -116,7 +116,7 @@ pub(crate) const KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
     "MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
 /// 現在日時を起点とし、相談開始日時までの秒単位での最大期間
 ///
-/// テストや動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
+/// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
 pub(crate) static MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
     let max_duration_in_seconds = var(KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
         .unwrap_or_else(|_| {
