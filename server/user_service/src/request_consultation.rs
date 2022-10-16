@@ -536,9 +536,9 @@ async fn ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
 
     let expected_annual_rewards =
         fee_per_hour_in_yen + amount_of_consultation_req + expected_rewards + rewards_of_the_year;
-    if expected_annual_rewards > MAX_ANNUAL_REWARDS_IN_YEN {
+    if expected_annual_rewards > *MAX_ANNUAL_REWARDS_IN_YEN {
         error!("exceed max annual rewards (expected_annual_rewards ({} = fee_per_hour_in_yen ({}) + amount_of_consultation_req ({}) + expected_rewards ({}) + rewards_of_the_year({})) > MAX_ANNUAL_REWARDS_IN_YEN ({}))", 
-            expected_annual_rewards, fee_per_hour_in_yen, amount_of_consultation_req, expected_rewards, rewards_of_the_year, MAX_ANNUAL_REWARDS_IN_YEN);
+            expected_annual_rewards, fee_per_hour_in_yen, amount_of_consultation_req, expected_rewards, rewards_of_the_year, *MAX_ANNUAL_REWARDS_IN_YEN);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {

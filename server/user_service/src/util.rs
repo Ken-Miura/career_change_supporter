@@ -51,8 +51,6 @@ pub(crate) const KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "third_cand
 
 pub(crate) const MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION: u32 = 6;
 
-pub(crate) const MAX_ANNUAL_REWARDS_IN_YEN: i32 = 470000;
-
 pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 /// PAY.JPにアクセスするための情報を保持する変数
@@ -77,6 +75,19 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     });
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
+});
+
+pub(crate) const KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN: &str = "MAX_ANNUAL_REWARDS_IN_YEN";
+pub(crate) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
+    let max_annual_rewards = var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN
+        )
+    });
+    max_annual_rewards
+        .parse()
+        .expect("failed to parse MAX_ANNUAL_REWARDS_IN_YEN")
 });
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
