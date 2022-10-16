@@ -165,7 +165,7 @@ pub(crate) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
 
 pub(crate) const KEY_TO_MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: &str =
     "MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE";
-/// 相談を受け付ける際、相談開始日時までに空いていなければならない最小期間（単位：時間）
+/// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：時間）
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
 pub(crate) static MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
