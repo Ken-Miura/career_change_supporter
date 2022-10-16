@@ -3,7 +3,7 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use chrono::{DateTime, Duration, FixedOffset, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, Utc};
 use common::payment_platform::charge::CreateCharge;
 use common::payment_platform::Metadata;
 use common::{
@@ -28,9 +28,10 @@ use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
 use crate::util::{
-    EXPIRY_DAYS, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    create_start_and_end_timestamps_of_current_year, EXPIRY_DAYS,
+    KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION,
+    MAX_ANNUAL_REWARDS_IN_YEN, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION,
 };
 use crate::{
     err::unexpected_err_resp,
@@ -296,7 +297,14 @@ async fn handle_request_consultation(
 
     let tenant_id = get_tenant_id(consultant_id, &request_consultation_op).await?;
 
-    // TODO:
+    let _ = ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
+        consultant_id,
+        tenant_id.as_str(),
+        current_date_time,
+        fee_per_hour_in_yen,
+        &request_consultation_op,
+    )
+    .await?;
 
     let price = (fee_per_hour_in_yen, "jpy".to_string());
     let card = request_consultation_param.card_token.as_str();
@@ -499,6 +507,46 @@ async fn get_tenant_id(
         unexpected_err_resp()
     })?;
     Ok(tenant_id)
+}
+
+async fn ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
+    consultant_id: i64,
+    tenant_id: &str,
+    current_date_time: &DateTime<FixedOffset>,
+    fee_per_hour_in_yen: i32,
+    request_consultation_op: &impl RequestConsultationOperation,
+) -> Result<(), ErrResp> {
+    let amount_of_consultation_req = request_consultation_op
+        .get_amount_of_consultation_req(consultant_id, current_date_time)
+        .await?;
+
+    let expected_rewards = request_consultation_op
+        .get_expected_rewards(consultant_id, current_date_time)
+        .await?;
+
+    let (current_year_since_timestamp, current_year_until_timestamp) =
+        create_start_and_end_timestamps_of_current_year(current_date_time.year());
+    let rewards_of_the_year = request_consultation_op
+        .get_rewards_of_the_year(
+            current_year_since_timestamp,
+            current_year_until_timestamp,
+            tenant_id,
+        )
+        .await?;
+
+    let expected_annual_rewards =
+        fee_per_hour_in_yen + amount_of_consultation_req + expected_rewards + rewards_of_the_year;
+    if expected_annual_rewards > MAX_ANNUAL_REWARDS_IN_YEN {
+        // TODO: error message
+        error!("exceed max annual rewards (expected_annual_rewards () = fee_per_hour_in_yen)");
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ExceedMaxAnnualRewards as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 fn generate_metadata(

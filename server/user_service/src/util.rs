@@ -51,6 +51,8 @@ pub(crate) const KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "third_cand
 
 pub(crate) const MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION: u32 = 6;
 
+pub(crate) const MAX_ANNUAL_REWARDS_IN_YEN: i32 = 470000;
+
 pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 /// PAY.JPにアクセスするための情報を保持する変数
