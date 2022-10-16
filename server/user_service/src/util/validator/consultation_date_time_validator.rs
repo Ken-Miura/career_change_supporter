@@ -4,12 +4,12 @@ use std::{error::Error, fmt::Display};
 
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
-use crate::request_consultation::ConsultationDateTime;
-
-// 3日間
-const MIN_DURATION_IN_SECONDS: i64 = 3 * 24 * 60 * 60;
-// 21日間
-const MAX_DURATION_IN_SECONDS: i64 = 21 * 24 * 60 * 60;
+use crate::{
+    request_consultation::ConsultationDateTime,
+    util::{
+        MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
+    },
+};
 
 const FIRST_START_HOUR: u32 = 7;
 const LAST_START_HOUR: u32 = 23;
@@ -52,7 +52,10 @@ pub(crate) fn validate_consultation_date_time(
     let timezone = current_date_time.offset();
     let consultation_date_time = DateTime::<FixedOffset>::from_local(date_time, *timezone);
     let duration = consultation_date_time - *current_date_time;
-    if !(MIN_DURATION_IN_SECONDS..=MAX_DURATION_IN_SECONDS).contains(&duration.num_seconds()) {
+    if !(*MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS
+        ..=*MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
+        .contains(&duration.num_seconds())
+    {
         return Err(
             ConsultationDateTimeValidationError::InvalidConsultationDateTime {
                 consultation_date_time,
@@ -103,8 +106,8 @@ impl Display for ConsultationDateTimeValidationError {
                 current_date_time,
             } => write!(
               f,
-              "illegal consultation date time (consultation_date_time: {}, current_date_time: {}, MIN_DURATION_IN_SECONDS: {}, MAX_DURATION_IN_SECONDS: {})",
-              consultation_date_time, current_date_time, MIN_DURATION_IN_SECONDS, MAX_DURATION_IN_SECONDS
+              "illegal consultation date time (consultation_date_time: {}, current_date_time: {}, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: {}, MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: {})",
+              consultation_date_time, current_date_time, *MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS, *MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS
           ),
         }
     }
@@ -114,13 +117,19 @@ impl Error for ConsultationDateTimeValidationError {}
 
 #[cfg(test)]
 mod tests {
+    use std::env;
+
     use chrono::{DateTime, FixedOffset, NaiveDate};
     use common::JAPANESE_TIME_ZONE;
     use once_cell::sync::Lazy;
 
     use crate::{
         request_consultation::ConsultationDateTime,
-        util::validator::consultation_date_time_validator::validate_consultation_date_time,
+        util::{
+            validator::consultation_date_time_validator::validate_consultation_date_time,
+            KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
+            KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
+        },
     };
 
     use super::ConsultationDateTimeValidationError;
@@ -307,6 +316,11 @@ mod tests {
 
     #[test]
     fn test_validate_consultation_date_time() {
+        env::set_var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS, "259200"); // 3 days
+        env::set_var(
+            KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
+            "1814400", // 21 days
+        );
         for test_case in TEST_CASE_SET.iter() {
             let result = validate_consultation_date_time(
                 &test_case.input.consultation_date_time,

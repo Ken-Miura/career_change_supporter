@@ -90,6 +90,48 @@ pub(crate) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
         .expect("failed to parse MAX_ANNUAL_REWARDS_IN_YEN")
 });
 
+pub(crate) const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
+    "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
+pub(crate) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
+    let min_duration_in_seconds = var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
+        .unwrap_or_else(|_| {
+            panic!(
+                "Not environment variable found: environment variable \"{}\" must be set",
+                KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS
+            )
+        });
+    let min_duration_in_seconds = min_duration_in_seconds
+        .parse()
+        .expect("failed to parse MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS");
+    if min_duration_in_seconds < 0 {
+        panic!(
+            "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS must be 0 or positive ({})",
+            min_duration_in_seconds
+        );
+    };
+    min_duration_in_seconds
+});
+
+pub(crate) const KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
+    "MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
+pub(crate) static MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
+    let max_duration_in_seconds = var(KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
+        .unwrap_or_else(|_| {
+            panic!(
+                "Not environment variable found: environment variable \"{}\" must be set",
+                KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS
+            )
+        });
+    let max_duration_in_seconds = max_duration_in_seconds
+        .parse()
+        .expect("failed to parse MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS");
+    if max_duration_in_seconds <= *MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS {
+        panic!("MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS ({}) must be more than MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS ({})", 
+            max_duration_in_seconds, *MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS);
+    };
+    max_duration_in_seconds
+});
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {
     pub bank_code: String,
