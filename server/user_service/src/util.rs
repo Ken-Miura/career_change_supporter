@@ -47,8 +47,6 @@ pub(crate) const KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "first_cand
 pub(crate) const KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "second_candidate_in_jst";
 pub(crate) const KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "third_candidate_in_jst";
 
-pub(crate) const MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION: u32 = 6;
-
 pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 /// PAY.JPにアクセスするための情報を保持する変数
@@ -164,6 +162,20 @@ pub(crate) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
     };
     expiry_days_of_charge
 });
+
+pub(crate) const KEY_TO_MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: &str =
+    "MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE";
+/// 相談を受け付ける際、相談開始日時までに空いていなければならない最小期間（単位：時間）
+///
+/// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
+pub(crate) static MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
+    Lazy::new(|| {
+        let min_duration_in_hour = var(KEY_TO_MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE)
+            .unwrap_or_else(|_| "6".to_string());
+        min_duration_in_hour
+            .parse()
+            .expect("failed to parse MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE")
+    });
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {

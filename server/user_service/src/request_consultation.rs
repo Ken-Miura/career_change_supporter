@@ -31,7 +31,7 @@ use crate::util::{
     create_start_and_end_timestamps_of_current_year, EXPIRY_DAYS_OF_CHARGE,
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    MAX_ANNUAL_REWARDS_IN_YEN, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION,
+    MAX_ANNUAL_REWARDS_IN_YEN, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
 };
 use crate::{
     err::unexpected_err_resp,
@@ -171,8 +171,8 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp> {
-        let criteria =
-            *current_date_time + Duration::hours(MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION as i64);
+        let criteria = *current_date_time
+            + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64);
         let reqs = ConsultationReq::find()
             .filter(consultation_req::Column::ConsultantId.eq(consultant_id))
             .filter(consultation_req::Column::LatestCandidateDateTime.gt(criteria))
@@ -180,8 +180,8 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter consultation_req (consultant_id: {}, current_date_time: {}, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION: {}): {}",
-                    consultant_id, current_date_time, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION, e
+                    "failed to filter consultation_req (consultant_id: {}, current_date_time: {}, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: {}): {}",
+                    consultant_id, current_date_time, *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE, e
                 );
                 unexpected_err_resp()
             })?;
