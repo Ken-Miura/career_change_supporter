@@ -42,8 +42,6 @@ pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TWENTY: i32 = 20;
 
 pub(crate) const ROOT_PATH: &str = "/api";
 
-pub(crate) const EXPIRY_DAYS: u32 = 59;
-
 pub(crate) const KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ: &str = "consultant_id";
 pub(crate) const KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "first_candidate_in_jst";
 pub(crate) const KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ: &str = "second_candidate_in_jst";
@@ -98,7 +96,7 @@ pub(crate) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
 
 pub(crate) const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
     "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
-/// 現在日時を起点とし、相談開始日時までの秒単位での最小期間
+/// 相談者が相談依頼を行った日時を起点とし、相談開始日時までの秒単位での最小期間
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
 pub(crate) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
@@ -120,7 +118,7 @@ pub(crate) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy:
 
 pub(crate) const KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
     "MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
-/// 現在日時を起点とし、相談開始日時までの秒単位での最大期間
+/// 相談者が相談依頼を行った日時を起点とし、相談開始日時までの秒単位での最大期間
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
 pub(crate) static MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
@@ -136,6 +134,35 @@ pub(crate) static MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy:
             max_duration_in_seconds, *MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS);
     };
     max_duration_in_seconds
+});
+
+pub(crate) const KEY_TO_EXPIRY_DAYS_OF_CHARGE: &str = "EXPIRY_DAYS_OF_CHARGE";
+/// 相談者が相談依頼を行った日時を起点とし、決済の認証が切れるまでの有効期限（単位：日）
+///
+/// 動作確認時の利便性のために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
+pub(crate) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
+    let expiry_days_of_charge =
+        var(KEY_TO_EXPIRY_DAYS_OF_CHARGE).unwrap_or_else(|_| "59".to_string());
+    let expiry_days_of_charge = expiry_days_of_charge
+        .parse()
+        .expect("failed to parse EXPIRY_DAYS_OF_CHARGE");
+    // https://pay.jp/docs/api/#%E6%94%AF%E6%89%95%E3%81%84%E3%82%92%E4%BD%9C%E6%88%90
+    // APIドキュメントでは60まで許容されているが、60を指定したときの挙動が奇妙なので59までしか使わないようにする
+    if !(1..=59).contains(&expiry_days_of_charge) {
+        panic!(
+            "EXPIRY_DAYS_OF_CHARGE ({}) must be between 1 and 59",
+            expiry_days_of_charge
+        );
+    };
+    let expiry_days_of_charge_in_seconds = expiry_days_of_charge as i64 * 24 * 60 * 60;
+    // TODO: 相談終了後、相談者が相談相手の評価をせず、自動決済の対象となる期間も考慮した制約として書き直す。
+    if expiry_days_of_charge_in_seconds < *MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS {
+        panic!(
+            "EXPIRY_DAYS_OF_CHARGE in seconds ({}) must be MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS ({}) or more",
+            expiry_days_of_charge, *MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS
+        );
+    };
+    expiry_days_of_charge
 });
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
