@@ -197,6 +197,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         let settlements = Settlement::find()
             .filter(settlement::Column::ConsultantId.eq(consultant_id))
             .filter(settlement::Column::ExpiredAt.gt(*current_date_time))
+            .filter(settlement::Column::Settled.eq(false))
             .all(&self.pool)
             .await
             .map_err(|e| {
