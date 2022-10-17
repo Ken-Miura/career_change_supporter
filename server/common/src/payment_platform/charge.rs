@@ -607,7 +607,7 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
         let resp = client
             .post(operation_url)
             .basic_auth(username, Some(password))
-            .query(create_charge)
+            .form(create_charge)
             .send()
             .await
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
