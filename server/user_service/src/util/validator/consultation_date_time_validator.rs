@@ -7,12 +7,10 @@ use chrono::{DateTime, FixedOffset, NaiveDate};
 use crate::{
     request_consultation::ConsultationDateTime,
     util::{
+        FIRST_START_HOUR_OF_CONSULTATION, LAST_START_HOUR_OF_CONSULTATION,
         MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
     },
 };
-
-const FIRST_START_HOUR: u32 = 7;
-const LAST_START_HOUR: u32 = 23;
 
 pub(crate) fn validate_consultation_date_time(
     consultation_date_time: &ConsultationDateTime,
@@ -45,7 +43,7 @@ pub(crate) fn validate_consultation_date_time(
         }
     };
 
-    if !(FIRST_START_HOUR..=LAST_START_HOUR).contains(&hour) {
+    if !(*FIRST_START_HOUR_OF_CONSULTATION..=*LAST_START_HOUR_OF_CONSULTATION).contains(&hour) {
         return Err(ConsultationDateTimeValidationError::IllegalConsultationHour { hour });
     }
 
@@ -99,8 +97,8 @@ impl Display for ConsultationDateTimeValidationError {
             ),
             ConsultationDateTimeValidationError::IllegalConsultationHour { hour } => write!(
               f,
-              "illegal consultation hour (hour: {}, FIRST_START_HOUR: {}, LAST_START_HOUR: {}",
-              hour, FIRST_START_HOUR, LAST_START_HOUR),
+              "illegal consultation hour (hour: {}, FIRST_START_HOUR_OF_CONSULTATION: {}, LAST_START_HOUR_OF_CONSULTATION: {}",
+              hour, *FIRST_START_HOUR_OF_CONSULTATION, *LAST_START_HOUR_OF_CONSULTATION),
             ConsultationDateTimeValidationError::InvalidConsultationDateTime {
                 consultation_date_time,
                 current_date_time,

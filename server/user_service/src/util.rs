@@ -177,6 +177,47 @@ pub(crate) static MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32>
             .expect("failed to parse MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE")
     });
 
+pub(crate) const KEY_TO_FIRST_START_HOUR_OF_CONSULTATION: &str = "FIRST_START_HOUR_OF_CONSULTATION";
+/// 1日の内、最も早い相談開始時刻
+///
+/// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
+pub(crate) static FIRST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
+    let first_start_hour =
+        var(KEY_TO_FIRST_START_HOUR_OF_CONSULTATION).unwrap_or_else(|_| "7".to_string());
+    let first_start_hour = first_start_hour
+        .parse()
+        .expect("failed to parse FIRST_START_HOUR_OF_CONSULTATION");
+    if !(0..=23).contains(&first_start_hour) {
+        panic!(
+            "FIRST_START_HOUR_OF_CONSULTATION must be between 0 to 23: {}",
+            first_start_hour
+        );
+    };
+    first_start_hour
+});
+
+pub(crate) const KEY_TO_LAST_START_HOUR_OF_CONSULTATION: &str = "LAST_START_HOUR_OF_CONSULTATION";
+/// 1日の内、最も遅い相談開始時刻
+///
+/// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
+pub(crate) static LAST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
+    let last_start_hour =
+        var(KEY_TO_LAST_START_HOUR_OF_CONSULTATION).unwrap_or_else(|_| "23".to_string());
+    let last_start_hour = last_start_hour
+        .parse()
+        .expect("failed to parse LAST_START_HOUR_OF_CONSULTATION");
+    if !(0..=23).contains(&last_start_hour) {
+        panic!(
+            "LAST_START_HOUR_OF_CONSULTATION must be between 0 to 23: {}",
+            last_start_hour
+        );
+    };
+    if last_start_hour <= *FIRST_START_HOUR_OF_CONSULTATION {
+        panic!("LAST_START_HOUR_OF_CONSULTATION ({}) must be more than FIRST_START_HOUR_OF_CONSULTATION ({})", last_start_hour, *FIRST_START_HOUR_OF_CONSULTATION);
+    };
+    last_start_hour
+});
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {
     pub bank_code: String,
