@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    AccessInfo, Metadata, {Error, ErrorInfo},
+    with_querystring, AccessInfo, Metadata, {Error, ErrorInfo},
 };
 
 use axum::async_trait;
@@ -130,10 +130,9 @@ impl<'a> TenantOperation for TenantOperationImpl<'a> {
         let username = self.access_info.username();
         let password = self.access_info.password();
         let client = reqwest::Client::new();
+        let client = with_querystring(client.post(operation_url), create_tenant)?;
         let resp = client
-            .post(operation_url)
             .basic_auth(username, Some(password))
-            .form(create_tenant)
             .send()
             .await
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
@@ -161,10 +160,9 @@ impl<'a> TenantOperation for TenantOperationImpl<'a> {
         let username = self.access_info.username();
         let password = self.access_info.password();
         let client = reqwest::Client::new();
+        let client = with_querystring(client.post(operation_url), update_tenant)?;
         let resp = client
-            .post(operation_url)
             .basic_auth(username, Some(password))
-            .form(update_tenant)
             .send()
             .await
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
