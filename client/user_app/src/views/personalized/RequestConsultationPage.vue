@@ -124,9 +124,58 @@ export default defineComponent({
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const r: any = await payjp.createToken(cardElement)
-        token.value = r.error ? r.error.message : r.id
+        if (r.error) {
+          token.value = r.error.message
+          return
+        }
+        token.value = r.id
       } catch (e) {
         token.value = `failed to createToken: ${e}`
+        return
+      }
+      const data = {
+        consultant_id: parseInt(consultantId),
+        fee_per_hour_in_yen: 3000,
+        card_token: token.value,
+        first_candidate_in_jst: {
+          year: 2022,
+          month: 10,
+          day: 22,
+          hour: 8
+        },
+        second_candidate_in_jst: {
+          year: 2022,
+          month: 10,
+          day: 22,
+          hour: 12
+        },
+        third_candidate_in_jst: {
+          year: 2022,
+          month: 10,
+          day: 22,
+          hour: 15
+        }
+      }
+      const response = await fetch('/api/request-consultation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(data)
+      })
+      if (!response.ok) {
+        const apiErr = await response.json() as { code: number }
+        console.error(response.status + ', ' + apiErr.code)
+        return
+      }
+      const result = await response.json() as { charge_id: string }
+      await payjp.openThreeDSecureDialog(result.charge_id)
+      const resp = await fetch('/api/finish-request-consultation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(result)
+      })
+      if (!resp.ok) {
+        const apiErr = await resp.json() as { code: number }
+        console.error(resp.status + ', ' + apiErr.code)
       }
     }
 
