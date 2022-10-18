@@ -224,8 +224,12 @@ fn with_querystring<T: serde::Serialize>(
 
 #[cfg(test)]
 mod tests {
+    use serde::Serialize;
+    use std::collections::HashMap;
+
     use super::InvalidParamError;
 
+    use super::with_querystring;
     use super::AccessInfo;
 
     #[test]
@@ -320,5 +324,43 @@ mod tests {
             InvalidParamError::Username(_) => panic!("Username"),
             InvalidParamError::Password(_) => { /* pass test */ }
         }
+    }
+
+    #[derive(Serialize, Debug)]
+    struct FormParams {
+        id: i64,
+        name: String,
+        email: Option<String>,
+        description: Option<String>,
+        metadata: Option<HashMap<String, String>>,
+    }
+
+    #[test]
+    fn test_with_query_strings() {
+        let mut metadata = HashMap::with_capacity(1);
+        metadata.insert("any".to_string(), "thing".to_string());
+        let form = FormParams {
+            id: 1,
+            name: "John Doe".to_string(),
+            email: Some("jdoe@example.org".to_string()),
+            description: None,
+            metadata: Some(metadata),
+        };
+        let client = reqwest::Client::new();
+
+        let result = with_querystring(client.post("http://localhost/index.html"), &form);
+
+        let req_builder = result.expect("failed to get Ok");
+        let req = req_builder.build().expect("failed to get Ok");
+        let binary = req
+            .body()
+            .expect("failed to get Ok")
+            .as_bytes()
+            .expect("failed to get Ok");
+        let body = String::from_utf8(binary.to_vec()).expect("failed to get Ok");
+        assert_eq!(
+            body,
+            "id=1&name=John+Doe&email=jdoe%40example.org&metadata[any]=thing"
+        );
     }
 }
