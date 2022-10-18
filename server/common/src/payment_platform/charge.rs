@@ -5,7 +5,7 @@ use std::{error::Error as StdError, fmt::Display};
 
 use super::{
     customer::Card,
-    AccessInfo, List, Metadata, {Error, ErrorInfo},
+    with_querystring, AccessInfo, List, Metadata, {Error, ErrorInfo},
 };
 
 use axum::async_trait;
@@ -604,10 +604,9 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
         let username = self.access_info.username();
         let password = self.access_info.password();
         let client = reqwest::Client::new();
+        let client = with_querystring(client.post(operation_url), create_charge)?;
         let resp = client
-            .post(operation_url)
             .basic_auth(username, Some(password))
-            .form(create_charge)
             .send()
             .await
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;

@@ -9,6 +9,7 @@ pub mod customer;
 pub mod tenant;
 pub mod tenant_transfer;
 
+use reqwest::RequestBuilder;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error as StdError;
@@ -204,6 +205,22 @@ impl Display for ErrorDetail {
 ///
 /// 一つのオブジェクトには最大20キーまで保存でき、キーは40文字まで、バリューは500文字までの文字列が設定可能
 pub type Metadata = HashMap<String, String>;
+
+/// フォームをリクエストのボディにセットする。
+///
+/// 下記のissueの通り、reqwestでは、ネストしたフォームのボディはそのままでは機能しない。<br>
+/// https://github.com/seanmonstar/reqwest/issues/274<br>
+/// そのため、下記のURLを参考にネストしたフォームの文字列を作成可能な、serde_qsを用いてフォームのボディをセットする。<br>
+/// https://github.com/wyyerd/stripe-rs/issues/22
+fn with_querystring<T: serde::Serialize>(
+    request: RequestBuilder,
+    form: &T,
+) -> Result<RequestBuilder, Error> {
+    let key = reqwest::header::CONTENT_TYPE;
+    let value = reqwest::header::HeaderValue::from_static("application/x-www-form-urlencoded");
+    let body = serde_qs::to_string(form).map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+    Ok(request.header(key, value).body(body))
+}
 
 #[cfg(test)]
 mod tests {
