@@ -32,8 +32,7 @@
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option>1</option>
-                <option>2</option>
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
@@ -41,8 +40,7 @@
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option>7</option>
-                <option>8</option>
+                <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
@@ -75,6 +73,8 @@ import { GetFeePerHourInYenForApplicationResp } from '@/util/personalized/reques
 import { Message } from '@/util/Message'
 import { SET_PAY_JP } from '@/store/mutationTypes'
 import { createPayJp } from '@/util/PayJp'
+import { createDayList } from '@/util/personalized/request-consultation/DayList'
+import { createHourList } from '@/util/personalized/request-consultation/HourList'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -92,6 +92,8 @@ export default defineComponent({
     const route = useRoute()
     const store = useStore()
     const consultantId = route.params.consultant_id as string
+    const dayList = ref(createDayList())
+    const hourList = ref(createHourList())
     // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let cardElement = null as any
@@ -220,6 +222,8 @@ export default defineComponent({
       error,
       getFeePerHourInYenForApplicationDone,
       feePerHourInYen,
+      dayList,
+      hourList,
       token,
       createToken
     }
