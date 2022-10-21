@@ -19,7 +19,7 @@
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <p class="text-2xl">相談開始日時の第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談日は、申し込み日から3日後以降、21日後までとなります。また、申し込み可能な相談開始時刻は、7時から23時までとなります。</p>
+          <p class="text-2xl">相談開始日時に関して、第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談日時は、申し込み日から72時間（3日）以降、504時間（21日）以前までとなります。</p>
           <h3 class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
