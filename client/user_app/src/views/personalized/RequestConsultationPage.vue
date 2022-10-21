@@ -19,12 +19,20 @@
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談開始日時（第一希望）</h3>
+          <p class="text-2xl">相談開始日時の第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談日は、申し込み日から3日後以降、21日後までとなります。また、申し込み可能な相談開始時刻は、7時から23時までとなります。</p>
+          <h3 class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
-                <option>10</option>
-                <option>11</option>
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              年
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
             <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
@@ -75,6 +83,8 @@ import { SET_PAY_JP } from '@/store/mutationTypes'
 import { createPayJp } from '@/util/PayJp'
 import { createDayList } from '@/util/personalized/request-consultation/DayList'
 import { createHourList } from '@/util/personalized/request-consultation/HourList'
+import { createMonthList, getCurrentMonth } from '@/util/personalized/request-consultation/MonthList'
+import { createYearList, getCurrentYear } from '@/util/personalized/request-consultation/YearList'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -92,6 +102,10 @@ export default defineComponent({
     const route = useRoute()
     const store = useStore()
     const consultantId = route.params.consultant_id as string
+    const currentYear = getCurrentYear()
+    const yearList = ref(createYearList(currentYear))
+    const currentMonth = getCurrentMonth()
+    const monthList = ref(createMonthList(currentMonth))
     const dayList = ref(createDayList())
     const hourList = ref(createHourList())
     // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
@@ -222,6 +236,8 @@ export default defineComponent({
       error,
       getFeePerHourInYenForApplicationDone,
       feePerHourInYen,
+      yearList,
+      monthList,
       dayList,
       hourList,
       token,
