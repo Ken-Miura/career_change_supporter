@@ -1,5 +1,5 @@
-export const FIRST_START_HOUR_OF_CONSULTATION = 7
-export const LAST_START_HOUR_OF_CONSULTATION = 23
+const FIRST_START_HOUR_OF_CONSULTATION = 7
+const LAST_START_HOUR_OF_CONSULTATION = 23
 
 export function createHourList (): string[] {
   const list = []

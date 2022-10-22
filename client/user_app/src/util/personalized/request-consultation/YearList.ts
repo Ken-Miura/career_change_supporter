@@ -3,10 +3,12 @@ export function getCurrentYear (): number {
   return d.getFullYear()
 }
 
-export function createYearList (currentYear: number): string[] {
+export function createYearList (currentMonth: number, currentYear: number): string[] {
   const list = []
   list.push('')
   list.push(currentYear.toString())
-  list.push((currentYear + 1).toString())
+  if (currentMonth === 12) {
+    list.push((currentYear + 1).toString())
+  }
   return list
 }
