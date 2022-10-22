@@ -225,7 +225,23 @@ export default defineComponent({
           return
         }
         // element(入力フォームの単位)を生成します
-        cardElement = elements.create('card')
+        // 書きを参考にremをpxに変換し、fontSizeに設定する
+        // https://developer.mozilla.org/ja/docs/Web/CSS/font-size
+        // https://tailwindcss.com/docs/font-size
+        // https://jajaaan.co.jp/css/font-size-rem/
+        // https://pisuke-code.com/javascript-convert-rem-to-px/
+        // https://developer.mozilla.org/ja/docs/Web/API/Window/getComputedStyle
+        cardElement = elements.create('card', {
+          style: {
+            base: {
+              color: 'black',
+              fontSize: '24px'
+            },
+            invalid: {
+              color: 'red'
+            }
+          }
+        })
         if (cardElement === null) {
           error.exists = true
           error.message = 'cardElement is null'
