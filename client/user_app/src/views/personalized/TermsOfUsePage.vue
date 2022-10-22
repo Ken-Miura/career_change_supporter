@@ -7,8 +7,9 @@
     </header>
     <main class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <TermsOfUse/>
-      <div class="flex justify-center mt-6">
-        <button v-on:click="agreeTermsOfUseHandler" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意する</button>
+      <div data-test="terms-of-use-agreement-area" class="flex justify-center mt-6">
+        <router-link to="/" class="mr-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意しない</router-link>
+        <button v-on:click="agreeTermsOfUseHandler" class="ml-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意する</button>
       </div>
       <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
     </main>

@@ -62,11 +62,29 @@ describe('TermsOfUsePage.vue', () => {
         }
       }
     })
-    const button = wrapper.find('button')
+    const area = wrapper.find('[data-test="terms-of-use-agreement-area"]')
+    const button = area.find('button')
+    expect(button.text()).toContain('利用規約に同意する')
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/profile')
+  })
+
+  it('moves to home after user rejects terms of use', async () => {
+    agreeTermsOfUseMock.mockResolvedValue(AgreeTermsOfUseResp.create())
+
+    const wrapper = mount(TermsOfUsePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    const area = wrapper.find('[data-test="terms-of-use-agreement-area"]')
+    const link = area.findComponent(RouterLinkStub)
+    expect(link.text()).toContain('利用規約に同意しない')
+    expect(link.props().to).toBe('/')
   })
 
   it('moves to profile when user has already agreed terms of use', async () => {
