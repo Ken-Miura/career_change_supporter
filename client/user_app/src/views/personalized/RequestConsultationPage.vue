@@ -55,6 +55,76 @@
               時
             </div>
           </div>
+          <h3 class="mt-4 font-bold text-2xl">相談開始日時（第二希望）</h3>
+          <div class="m-4 text-2xl grid grid-cols-6">
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              年
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              月
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              日
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              時
+            </div>
+          </div>
+          <h3 class="mt-4 font-bold text-2xl">相談開始日時（第三希望）</h3>
+          <div class="m-4 text-2xl grid grid-cols-6">
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              年
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              月
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              日
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              時
+            </div>
+          </div>
           <div class="mt-3" id="v2-demo"></div>
           <button class="mt-3" v-on:click="createToken">テスト</button>
           <div>{{ token }}</div>
