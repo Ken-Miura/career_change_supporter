@@ -127,10 +127,10 @@
           </div>
           <h3 class="mt-4 font-bold text-2xl">クレジットカード</h3>
           <div class="m-4 text-2xl flex flex-col">
-            <div class="mt-2 w-5/6" id="v2-demo"></div>
+            <div class="mt-2 w-5/6" id="payjp-card-area"></div>
             <div class="mt-2 w-5/6">{{ token }}</div>
           </div>
-          <button class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="createToken">テスト</button>
+          <button class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="requestConsultation">相談を申し込む</button>
         </div>
       </div>
     </main>
@@ -221,14 +221,12 @@ export default defineComponent({
           payjp = await createPayJp()
           store.commit(SET_PAY_JP, payjp)
         }
-        // elementsを取得します。ページ内に複数フォーム用意する場合は複数取得ください
         const elements = await payjp.elements()
         if (elements === null) {
           error.exists = true
-          error.message = 'elements is null'
+          error.message = `${Message.UNEXPECTED_ERR}: elements is null`
           return
         }
-        // element(入力フォームの単位)を生成します
         const px = convertRemToPx(1.5)
         cardElement = elements.create('card', {
           style: {
@@ -243,11 +241,10 @@ export default defineComponent({
         })
         if (cardElement === null) {
           error.exists = true
-          error.message = 'cardElement is null'
+          error.message = `${Message.UNEXPECTED_ERR}: cardElement is null`
           return
         }
-        // elementをDOM上に配置します
-        cardElement.mount('#v2-demo')
+        cardElement.mount('#payjp-card-area')
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -259,8 +256,13 @@ export default defineComponent({
       cardElement = null
     })
 
-    const createToken = async () => {
+    const requestConsultation = async () => {
       const payjp = store.state.payJp
+      if (payjp === null) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: payjp is null`
+        return
+      }
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const r: any = await payjp.createToken(cardElement)
@@ -331,7 +333,7 @@ export default defineComponent({
       minDurationInDays,
       maxDurationInDays,
       token,
-      createToken
+      requestConsultation
     }
   }
 })
