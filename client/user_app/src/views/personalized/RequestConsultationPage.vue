@@ -12,13 +12,6 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談申し込み詳細</h3>
-          <div class="m-4 text-2xl grid grid-cols-3">
-            <div class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
-            <div class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
-          </div>
-        </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <p class="text-2xl">相談開始日時に関して、第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談開始日時は、申し込み日時から{{ minDurationInDays*24 }}時間（{{ minDurationInDays }}日）以降、{{ maxDurationInDays*24 }}時間（{{ maxDurationInDays }}日）以前までとなります。</p>
           <h3 class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
@@ -125,9 +118,19 @@
               時
             </div>
           </div>
-          <div class="mt-3" id="v2-demo"></div>
-          <button class="mt-3" v-on:click="createToken">テスト</button>
-          <div>{{ token }}</div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">相談申し込み詳細</h3>
+          <div class="m-4 text-2xl grid grid-cols-3">
+            <div class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
+            <div class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
+          </div>
+          <h3 class="mt-4 font-bold text-2xl">クレジットカード</h3>
+          <div class="m-4 text-2xl flex flex-col">
+            <div class="mt-2 w-5/6" id="v2-demo"></div>
+            <div class="mt-2 w-5/6">{{ token }}</div>
+          </div>
+          <button class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="createToken">テスト</button>
         </div>
       </div>
     </main>
@@ -156,6 +159,7 @@ import { createHourList } from '@/util/personalized/request-consultation/HourLis
 import { createMonthList, getCurrentMonth } from '@/util/personalized/request-consultation/MonthList'
 import { createYearList, getCurrentYear } from '@/util/personalized/request-consultation/YearList'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
+import { convertRemToPx } from '@/util/personalized/request-consultation/FontSizeConverter'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -225,17 +229,12 @@ export default defineComponent({
           return
         }
         // element(入力フォームの単位)を生成します
-        // 書きを参考にremをpxに変換し、fontSizeに設定する
-        // https://developer.mozilla.org/ja/docs/Web/CSS/font-size
-        // https://tailwindcss.com/docs/font-size
-        // https://jajaaan.co.jp/css/font-size-rem/
-        // https://pisuke-code.com/javascript-convert-rem-to-px/
-        // https://developer.mozilla.org/ja/docs/Web/API/Window/getComputedStyle
+        const px = convertRemToPx(1.5)
         cardElement = elements.create('card', {
           style: {
             base: {
               color: 'black',
-              fontSize: '24px'
+              fontSize: px.toString() + 'px'
             },
             invalid: {
               color: 'red'
