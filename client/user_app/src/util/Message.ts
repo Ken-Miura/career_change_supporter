@@ -127,4 +127,6 @@ export namespace Message {
     export const FEE_PER_HOUR_IN_YEN_WAS_UPDATED_MESSAGE = 'コンサルタントの相談料が更新されています'
     export const CONSULTANT_IS_NOT_AVAILABLE_MESSAGE = `${CONSULTANT_DOES_NOT_EXIST_MESSAGE}`
     export const PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED_MESSAGE = '事業者、個人事業主による営利目的の利用はできません'
+    export const UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE = 'ログインが必要です。決済処理は行われていないため、再度ログインし、相談の申し込みを行って下さい'
+    export const NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE = '利用規約への同意が必要です。決済処理は行われていないため、再度ログインし、利用規約への同意後、相談の申し込みを行って下さい'
 }

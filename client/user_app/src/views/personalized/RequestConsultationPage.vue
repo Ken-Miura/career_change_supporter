@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getFeePerHourInYenForApplicationDone" class="m-6">
+    <div v-if="!getFeePerHourInYenForApplicationDone || !postFinishRequestConsultationDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -160,6 +160,9 @@ import { createMonthList, getCurrentMonth } from '@/util/personalized/request-co
 import { createYearList, getCurrentYear } from '@/util/personalized/request-consultation/YearList'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
 import { convertRemToPx } from '@/util/personalized/request-consultation/FontSizeConverter'
+import { usePostFinishRequestConsultation } from '@/util/personalized/request-consultation/usePostFinishRequestConsultation'
+import { FinishRequestConsultation } from '@/util/personalized/request-consultation/FinishRequestConsultation'
+import { PostFinishRequestConsultationResp } from '@/util/personalized/request-consultation/PostFinishRequestConsultationResp'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -194,6 +197,10 @@ export default defineComponent({
       getFeePerHourInYenForApplicationFunc
     } = useGetFeePerHourInYenForApplication()
     const feePerHourInYen = ref(null as number | null)
+    const {
+      postFinishRequestConsultationDone,
+      postFinishRequestConsultationFunc
+    } = usePostFinishRequestConsultation()
 
     onMounted(async () => {
       try {
@@ -310,15 +317,40 @@ export default defineComponent({
         return
       }
       const result = await response.json() as { charge_id: string }
-      await payjp.openThreeDSecureDialog(result.charge_id)
-      const resp = await fetch('/api/finish-request-consultation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify(result)
-      })
-      if (!resp.ok) {
-        const apiErr = await resp.json() as { code: number }
-        console.error(resp.status + ', ' + apiErr.code)
+      const finishRequestConsultation = {
+        charge_id: result.charge_id
+      } as FinishRequestConsultation
+
+      try {
+        await payjp.openThreeDSecureDialog(finishRequestConsultation.charge_id)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+
+      try {
+        const resp = await postFinishRequestConsultationFunc(finishRequestConsultation)
+        if (!(resp instanceof PostFinishRequestConsultationResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            error.exists = true
+            error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            error.exists = true
+            error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(resp.getApiError().getCode())
+          return
+        }
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -327,6 +359,7 @@ export default defineComponent({
       error,
       getFeePerHourInYenForApplicationDone,
       feePerHourInYen,
+      postFinishRequestConsultationDone,
       yearList,
       monthList,
       dayList,
