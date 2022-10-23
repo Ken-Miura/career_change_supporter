@@ -326,6 +326,7 @@ export default defineComponent({
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        return
       }
 
       try {
