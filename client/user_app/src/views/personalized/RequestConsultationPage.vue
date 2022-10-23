@@ -128,7 +128,7 @@
           <h3 class="mt-4 font-bold text-2xl">クレジットカード</h3>
           <div class="m-4 text-2xl flex flex-col">
             <div class="mt-2 w-5/6" id="payjp-card-area"></div>
-            <div class="mt-2 w-5/6">{{ token }}</div>
+            <div v-if="cardErrorMessage !== ''" class="mt-2 w-5/6 text-red-500">{{ cardErrorMessage }}</div>
           </div>
           <button class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="requestConsultation">相談を申し込む</button>
         </div>
@@ -188,7 +188,7 @@ export default defineComponent({
     // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let cardElement = null as any
-    const token = ref('')
+    const cardErrorMessage = ref('')
     const {
       getFeePerHourInYenForApplicationDone,
       getFeePerHourInYenForApplicationFunc
@@ -263,22 +263,23 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: payjp is null`
         return
       }
+      let token: string
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const r: any = await payjp.createToken(cardElement)
-        if (r.error) {
-          token.value = r.error.message
+        const createTokenResp: any = await payjp.createToken(cardElement)
+        if (createTokenResp.error) {
+          cardErrorMessage.value = createTokenResp.error.message
           return
         }
-        token.value = r.id
+        token = createTokenResp.id
       } catch (e) {
-        token.value = `failed to createToken: ${e}`
+        cardErrorMessage.value = `failed to create token: ${e}`
         return
       }
       const data = {
         consultant_id: parseInt(consultantId),
         fee_per_hour_in_yen: 3000,
-        card_token: token.value,
+        card_token: token,
         first_candidate_in_jst: {
           year: 2022,
           month: 10,
@@ -332,7 +333,7 @@ export default defineComponent({
       hourList,
       minDurationInDays,
       maxDurationInDays,
-      token,
+      cardErrorMessage,
       requestConsultation
     }
   }
