@@ -128,9 +128,11 @@
           <h3 class="mt-4 font-bold text-2xl">クレジットカード</h3>
           <div class="m-4 text-2xl flex flex-col">
             <div class="mt-2 w-5/6" id="payjp-card-area"></div>
-            <div v-if="cardErrorMessage !== ''" class="mt-2 w-5/6 text-red-500">{{ cardErrorMessage }}</div>
           </div>
           <button class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="requestConsultation">相談を申し込む</button>
+          <div v-if="errorOnReq.exists">
+            <AlertMessage class="mt-4" v-bind:message="errorOnReq.message"/>
+          </div>
         </div>
       </div>
     </main>
@@ -160,7 +162,6 @@ import { createMonthList, getCurrentMonth } from '@/util/personalized/request-co
 import { createYearList, getCurrentYear } from '@/util/personalized/request-consultation/YearList'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
 import { convertRemToPx } from '@/util/personalized/request-consultation/FontSizeConverter'
-import { usePostFinishRequestConsultation } from '@/util/personalized/request-consultation/usePostFinishRequestConsultation'
 import { FinishRequestConsultation } from '@/util/personalized/request-consultation/FinishRequestConsultation'
 import { PostFinishRequestConsultationResp } from '@/util/personalized/request-consultation/PostFinishRequestConsultationResp'
 import { useRequestConsultationDone } from '@/util/personalized/request-consultation/useRequestConsultationDone'
@@ -193,7 +194,6 @@ export default defineComponent({
     // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let cardElement = null as any
-    const cardErrorMessage = ref('')
     const {
       getFeePerHourInYenForApplicationDone,
       getFeePerHourInYenForApplicationFunc
@@ -204,6 +204,10 @@ export default defineComponent({
       startRequestConsultation,
       finishRequestConsultation
     } = useRequestConsultationDone()
+    const errorOnReq = reactive({
+      exists: false,
+      message: ''
+    })
 
     onMounted(async () => {
       try {
@@ -274,21 +278,23 @@ export default defineComponent({
         return
       }
 
+      let token: string
       try {
-        startRequestConsultation()
-        let token: string
-        try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const createTokenResp: any = await payjp.createToken(cardElement)
-          if (createTokenResp.error) {
-            cardErrorMessage.value = createTokenResp.error.message
-            return
-          }
-          token = createTokenResp.id
-        } catch (e) {
-          cardErrorMessage.value = `failed to create token: ${e}`
+        const createTokenResp: any = await payjp.createToken(cardElement)
+        if (createTokenResp.error) {
+          errorOnReq.exists = true
+          errorOnReq.message = createTokenResp.error.message
           return
         }
+        token = createTokenResp.id
+      } catch (e) {
+        errorOnReq.exists = true
+        errorOnReq.message = `failed to create token: ${e}`
+        return
+      }
+      try {
+        startRequestConsultation()
         const data = {
           consultant_id: parseInt(consultantId),
           fee_per_hour_in_yen: 3000,
@@ -343,21 +349,21 @@ export default defineComponent({
             }
             const code = resp.getApiError().getCode()
             if (code === Code.UNAUTHORIZED) {
-              error.exists = true
-              error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+              errorOnReq.exists = true
+              errorOnReq.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
               return
             } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-              error.exists = true
-              error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+              errorOnReq.exists = true
+              errorOnReq.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
               return
             }
-            error.exists = true
-            error.message = createErrorMessage(resp.getApiError().getCode())
+            errorOnReq.exists = true
+            errorOnReq.message = createErrorMessage(resp.getApiError().getCode())
             return
           }
         } catch (e) {
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+          errorOnReq.exists = true
+          errorOnReq.message = `${Message.UNEXPECTED_ERR}: ${e}`
         }
       } finally {
         finishRequestConsultation()
@@ -376,8 +382,8 @@ export default defineComponent({
       hourList,
       minDurationInDays,
       maxDurationInDays,
-      cardErrorMessage,
-      requestConsultation
+      requestConsultation,
+      errorOnReq
     }
   }
 })
