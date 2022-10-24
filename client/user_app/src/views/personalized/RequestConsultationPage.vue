@@ -129,6 +129,7 @@
           <div class="m-4 text-2xl flex flex-col">
             <div class="mt-2 w-5/6" id="payjp-card-area"></div>
           </div>
+          <h3 class="mt-6 ml-2 text-red-500 text-xl">相談申し込み後にキャンセルや相談開始日時変更は出来ませんので、申し込み内容についてよくご確認の上、相談をお申し込み下さい。</h3>
           <button v-bind:disabled="disabled" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" v-on:click="requestConsultation">相談を申し込む</button>
           <div v-if="errorBelowBtn.exists">
             <AlertMessage class="mt-4" v-bind:message="errorBelowBtn.message"/>
