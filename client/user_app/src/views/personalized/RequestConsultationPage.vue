@@ -200,7 +200,9 @@ export default defineComponent({
     } = useGetFeePerHourInYenForApplication()
     const feePerHourInYen = ref(null as number | null)
     const {
-      requestConsultationDone
+      requestConsultationDone,
+      startRequestConsultation,
+      finishRequestConsultation
     } = useRequestConsultationDone()
 
     onMounted(async () => {
@@ -273,7 +275,7 @@ export default defineComponent({
       }
 
       try {
-        requestConsultationDone.value = false
+        startRequestConsultation()
         let token: string
         try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -358,7 +360,7 @@ export default defineComponent({
           error.message = `${Message.UNEXPECTED_ERR}: ${e}`
         }
       } finally {
-        requestConsultationDone.value = true
+        finishRequestConsultation()
       }
     }
 
