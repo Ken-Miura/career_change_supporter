@@ -10,7 +10,7 @@ async-redis-session = "0.2.2"
 async-session = "3.0.0"
 axum = { version = "0.5.17", features = ["headers", "json", "multipart"] }
 bytes = "1.1.0"
-chrono = "0.4.19"
+chrono = "0.4.22"
 common = { path = "../common" }
 dotenv = "0.15.0"
 entity = { path = "../entity" }
