@@ -130,8 +130,8 @@
             <div class="mt-2 w-5/6" id="payjp-card-area"></div>
           </div>
           <button class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="requestConsultation">相談を申し込む</button>
-          <div v-if="errorOnReq.exists">
-            <AlertMessage class="mt-4" v-bind:message="errorOnReq.message"/>
+          <div v-if="errorBelowBtn.exists">
+            <AlertMessage class="mt-4" v-bind:message="errorBelowBtn.message"/>
           </div>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default defineComponent({
       startRequestConsultation,
       finishRequestConsultation
     } = useRequestConsultationDone()
-    const errorOnReq = reactive({
+    const errorBelowBtn = reactive({
       exists: false,
       message: ''
     })
@@ -283,14 +283,14 @@ export default defineComponent({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const createTokenResp: any = await payjp.createToken(cardElement)
         if (createTokenResp.error) {
-          errorOnReq.exists = true
-          errorOnReq.message = createTokenResp.error.message
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = createTokenResp.error.message
           return
         }
         token = createTokenResp.id
       } catch (e) {
-        errorOnReq.exists = true
-        errorOnReq.message = `failed to create token: ${e}`
+        errorBelowBtn.exists = true
+        errorBelowBtn.message = `failed to create token: ${e}`
         return
       }
       try {
@@ -302,19 +302,19 @@ export default defineComponent({
           first_candidate_in_jst: {
             year: 2022,
             month: 10,
-            day: 22,
+            day: 28,
             hour: 8
           },
           second_candidate_in_jst: {
             year: 2022,
             month: 10,
-            day: 22,
+            day: 28,
             hour: 12
           },
           third_candidate_in_jst: {
             year: 2022,
             month: 10,
-            day: 22,
+            day: 28,
             hour: 15
           }
         }
@@ -349,21 +349,21 @@ export default defineComponent({
             }
             const code = resp.getApiError().getCode()
             if (code === Code.UNAUTHORIZED) {
-              errorOnReq.exists = true
-              errorOnReq.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+              error.exists = true
+              error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
               return
             } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-              errorOnReq.exists = true
-              errorOnReq.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+              error.exists = true
+              error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
               return
             }
-            errorOnReq.exists = true
-            errorOnReq.message = createErrorMessage(resp.getApiError().getCode())
+            error.exists = true
+            error.message = createErrorMessage(resp.getApiError().getCode())
             return
           }
         } catch (e) {
-          errorOnReq.exists = true
-          errorOnReq.message = `${Message.UNEXPECTED_ERR}: ${e}`
+          error.exists = true
+          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
         }
       } finally {
         finishRequestConsultation()
@@ -383,7 +383,7 @@ export default defineComponent({
       minDurationInDays,
       maxDurationInDays,
       requestConsultation,
-      errorOnReq
+      errorBelowBtn
     }
   }
 })
