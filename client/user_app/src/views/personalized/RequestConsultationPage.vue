@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getFeePerHourInYenForApplicationDone || !postFinishRequestConsultationDone" class="m-6">
+    <div v-if="!getFeePerHourInYenForApplicationDone || !requestConsultationDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -163,6 +163,8 @@ import { convertRemToPx } from '@/util/personalized/request-consultation/FontSiz
 import { usePostFinishRequestConsultation } from '@/util/personalized/request-consultation/usePostFinishRequestConsultation'
 import { FinishRequestConsultation } from '@/util/personalized/request-consultation/FinishRequestConsultation'
 import { PostFinishRequestConsultationResp } from '@/util/personalized/request-consultation/PostFinishRequestConsultationResp'
+import { useRequestConsultationDone } from '@/util/personalized/request-consultation/useRequestConsultationDone'
+import { postFinishRequestConsultation } from '@/util/personalized/request-consultation/PostFinishRequestConsultation'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -198,9 +200,8 @@ export default defineComponent({
     } = useGetFeePerHourInYenForApplication()
     const feePerHourInYen = ref(null as number | null)
     const {
-      postFinishRequestConsultationDone,
-      postFinishRequestConsultationFunc
-    } = usePostFinishRequestConsultation()
+      requestConsultationDone
+    } = useRequestConsultationDone()
 
     onMounted(async () => {
       try {
@@ -270,88 +271,94 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: payjp is null`
         return
       }
-      let token: string
+
       try {
+        requestConsultationDone.value = false
+        let token: string
+        try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const createTokenResp: any = await payjp.createToken(cardElement)
-        if (createTokenResp.error) {
-          cardErrorMessage.value = createTokenResp.error.message
+          const createTokenResp: any = await payjp.createToken(cardElement)
+          if (createTokenResp.error) {
+            cardErrorMessage.value = createTokenResp.error.message
+            return
+          }
+          token = createTokenResp.id
+        } catch (e) {
+          cardErrorMessage.value = `failed to create token: ${e}`
           return
         }
-        token = createTokenResp.id
-      } catch (e) {
-        cardErrorMessage.value = `failed to create token: ${e}`
-        return
-      }
-      const data = {
-        consultant_id: parseInt(consultantId),
-        fee_per_hour_in_yen: 3000,
-        card_token: token,
-        first_candidate_in_jst: {
-          year: 2022,
-          month: 10,
-          day: 22,
-          hour: 8
-        },
-        second_candidate_in_jst: {
-          year: 2022,
-          month: 10,
-          day: 22,
-          hour: 12
-        },
-        third_candidate_in_jst: {
-          year: 2022,
-          month: 10,
-          day: 22,
-          hour: 15
+        const data = {
+          consultant_id: parseInt(consultantId),
+          fee_per_hour_in_yen: 3000,
+          card_token: token,
+          first_candidate_in_jst: {
+            year: 2022,
+            month: 10,
+            day: 22,
+            hour: 8
+          },
+          second_candidate_in_jst: {
+            year: 2022,
+            month: 10,
+            day: 22,
+            hour: 12
+          },
+          third_candidate_in_jst: {
+            year: 2022,
+            month: 10,
+            day: 22,
+            hour: 15
+          }
         }
-      }
-      const response = await fetch('/api/request-consultation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify(data)
-      })
-      if (!response.ok) {
-        const apiErr = await response.json() as { code: number }
-        console.error(response.status + ', ' + apiErr.code)
-        return
-      }
-      const result = await response.json() as { charge_id: string }
-      const finishRequestConsultation = {
-        charge_id: result.charge_id
-      } as FinishRequestConsultation
+        const response = await fetch('/api/request-consultation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(data)
+        })
+        if (!response.ok) {
+          const apiErr = await response.json() as { code: number }
+          console.error(response.status + ', ' + apiErr.code)
+          return
+        }
+        const result = await response.json() as { charge_id: string }
+        const finishRequestConsultation = {
+          charge_id: result.charge_id
+        } as FinishRequestConsultation
 
-      try {
-        await payjp.openThreeDSecureDialog(finishRequestConsultation.charge_id)
-      } catch (e) {
-        error.exists = true
-        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-        return
-      }
-
-      try {
-        const resp = await postFinishRequestConsultationFunc(finishRequestConsultation)
-        if (!(resp instanceof PostFinishRequestConsultationResp)) {
-          if (!(resp instanceof ApiErrorResp)) {
-            throw new Error(`unexpected result on getting request detail: ${resp}`)
-          }
-          const code = resp.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            error.exists = true
-            error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
-            return
-          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            error.exists = true
-            error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
-            return
-          }
+        try {
+          await payjp.openThreeDSecureDialog(finishRequestConsultation.charge_id)
+        } catch (e) {
           error.exists = true
-          error.message = createErrorMessage(resp.getApiError().getCode())
+          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
           return
         }
-      } catch (e) {
-        error.exists = true
-        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+
+        try {
+          const resp = await postFinishRequestConsultation(finishRequestConsultation)
+          if (!(resp instanceof PostFinishRequestConsultationResp)) {
+            if (!(resp instanceof ApiErrorResp)) {
+              throw new Error(`unexpected result on getting request detail: ${resp}`)
+            }
+            const code = resp.getApiError().getCode()
+            if (code === Code.UNAUTHORIZED) {
+              error.exists = true
+              error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+              return
+            } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+              error.exists = true
+              error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+              return
+            }
+            error.exists = true
+            error.message = createErrorMessage(resp.getApiError().getCode())
+            return
+          }
+        } catch (e) {
+          error.exists = true
+          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        }
+      } finally {
+        requestConsultationDone.value = true
       }
     }
 
@@ -360,7 +367,7 @@ export default defineComponent({
       error,
       getFeePerHourInYenForApplicationDone,
       feePerHourInYen,
-      postFinishRequestConsultationDone,
+      requestConsultationDone,
       yearList,
       monthList,
       dayList,
