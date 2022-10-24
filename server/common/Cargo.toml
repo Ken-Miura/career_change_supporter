@@ -17,7 +17,7 @@ http-body = "0.4.5"
 lettre = { version = "0.10.1", default-features = false, features = ["smtp-transport", "pool", "rustls-tls", "hostname", "builder", "tokio1", "tokio1-rustls-tls"] }
 once_cell = "1.15.0"
 opensearch = "2.0.0"
-regex = "1.5.5"
+regex = "1.6.0"
 reqwest = { version = "0.11.10", features = ["json"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.81"
