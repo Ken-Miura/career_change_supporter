@@ -9,9 +9,19 @@ export function useRequestConsultationDone () {
   const finishRequestConsultation = () => {
     requestConsultationDone.value = true
   }
+  const disabled = ref(false)
+  const disableBtn = () => {
+    disabled.value = true
+  }
+  const enableBtn = () => {
+    disabled.value = false
+  }
   return {
     requestConsultationDone,
     startRequestConsultation,
-    finishRequestConsultation
+    finishRequestConsultation,
+    disabled,
+    disableBtn,
+    enableBtn
   }
 }

@@ -129,7 +129,7 @@
           <div class="m-4 text-2xl flex flex-col">
             <div class="mt-2 w-5/6" id="payjp-card-area"></div>
           </div>
-          <button class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="requestConsultation">相談を申し込む</button>
+          <button v-bind:disabled="disabled" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" v-on:click="requestConsultation">相談を申し込む</button>
           <div v-if="errorBelowBtn.exists">
             <AlertMessage class="mt-4" v-bind:message="errorBelowBtn.message"/>
           </div>
@@ -202,7 +202,10 @@ export default defineComponent({
     const {
       requestConsultationDone,
       startRequestConsultation,
-      finishRequestConsultation
+      finishRequestConsultation,
+      disabled,
+      disableBtn,
+      enableBtn
     } = useRequestConsultationDone()
     const errorBelowBtn = reactive({
       exists: false,
@@ -271,102 +274,108 @@ export default defineComponent({
     })
 
     const requestConsultation = async () => {
-      const payjp = store.state.payJp
-      if (payjp === null) {
-        error.exists = true
-        error.message = `${Message.UNEXPECTED_ERR}: payjp is null`
-        return
-      }
-
-      let token: string
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const createTokenResp: any = await payjp.createToken(cardElement)
-        if (createTokenResp.error) {
-          errorBelowBtn.exists = true
-          errorBelowBtn.message = createTokenResp.error.message
-          return
-        }
-        token = createTokenResp.id
-      } catch (e) {
-        errorBelowBtn.exists = true
-        errorBelowBtn.message = `failed to create token: ${e}`
-        return
-      }
-      try {
-        startRequestConsultation()
-        const data = {
-          consultant_id: parseInt(consultantId),
-          fee_per_hour_in_yen: 3000,
-          card_token: token,
-          first_candidate_in_jst: {
-            year: 2022,
-            month: 10,
-            day: 28,
-            hour: 8
-          },
-          second_candidate_in_jst: {
-            year: 2022,
-            month: 10,
-            day: 28,
-            hour: 12
-          },
-          third_candidate_in_jst: {
-            year: 2022,
-            month: 10,
-            day: 28,
-            hour: 15
-          }
-        }
-        const response = await fetch('/api/request-consultation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify(data)
-        })
-        if (!response.ok) {
-          const apiErr = await response.json() as { code: number }
-          console.error(response.status + ', ' + apiErr.code)
-          return
-        }
-        const result = await response.json() as { charge_id: string }
-        const finishRequestConsultation = {
-          charge_id: result.charge_id
-        } as FinishRequestConsultation
-
-        try {
-          await payjp.openThreeDSecureDialog(finishRequestConsultation.charge_id)
-        } catch (e) {
+        disableBtn()
+        const payjp = store.state.payJp
+        if (payjp === null) {
           error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+          error.message = `${Message.UNEXPECTED_ERR}: payjp is null`
           return
         }
 
+        let token: string
         try {
-          const resp = await postFinishRequestConsultation(finishRequestConsultation)
-          if (!(resp instanceof PostFinishRequestConsultationResp)) {
-            if (!(resp instanceof ApiErrorResp)) {
-              throw new Error(`unexpected result on getting request detail: ${resp}`)
-            }
-            const code = resp.getApiError().getCode()
-            if (code === Code.UNAUTHORIZED) {
-              error.exists = true
-              error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
-              return
-            } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-              error.exists = true
-              error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
-              return
-            }
-            error.exists = true
-            error.message = createErrorMessage(resp.getApiError().getCode())
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const createTokenResp: any = await payjp.createToken(cardElement)
+          if (createTokenResp.error) {
+            errorBelowBtn.exists = true
+            errorBelowBtn.message = createTokenResp.error.message
             return
           }
+          token = createTokenResp.id
         } catch (e) {
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = `failed to create token: ${e}`
+          return
+        }
+        try {
+          startRequestConsultation()
+          const data = {
+            consultant_id: parseInt(consultantId),
+            fee_per_hour_in_yen: 3000,
+            card_token: token,
+            first_candidate_in_jst: {
+              year: 2022,
+              month: 10,
+              day: 28,
+              hour: 8
+            },
+            second_candidate_in_jst: {
+              year: 2022,
+              month: 10,
+              day: 28,
+              hour: 12
+            },
+            third_candidate_in_jst: {
+              year: 2022,
+              month: 10,
+              day: 28,
+              hour: 15
+            }
+          }
+          const response = await fetch('/api/request-consultation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            body: JSON.stringify(data)
+          })
+          if (!response.ok) {
+            const apiErr = await response.json() as { code: number }
+            console.error(response.status + ', ' + apiErr.code)
+            return
+          }
+          const result = await response.json() as { charge_id: string }
+          const finishRequestConsultation = {
+            charge_id: result.charge_id
+          } as FinishRequestConsultation
+
+          try {
+            await payjp.openThreeDSecureDialog(finishRequestConsultation.charge_id)
+          } catch (e) {
+            error.exists = true
+            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+            return
+          }
+
+          try {
+            const resp = await postFinishRequestConsultation(finishRequestConsultation)
+            if (!(resp instanceof PostFinishRequestConsultationResp)) {
+              if (!(resp instanceof ApiErrorResp)) {
+                throw new Error(`unexpected result on getting request detail: ${resp}`)
+              }
+              const code = resp.getApiError().getCode()
+              if (code === Code.UNAUTHORIZED) {
+                error.exists = true
+                error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+                return
+              } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+                error.exists = true
+                error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+                return
+              }
+              error.exists = true
+              error.message = createErrorMessage(resp.getApiError().getCode())
+              return
+            }
+            // await router.push('/')
+          } catch (e) {
+            error.exists = true
+            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+          }
+        } finally {
+          finishRequestConsultation()
         }
       } finally {
-        finishRequestConsultation()
+        enableBtn()
       }
     }
 
@@ -376,6 +385,7 @@ export default defineComponent({
       getFeePerHourInYenForApplicationDone,
       feePerHourInYen,
       requestConsultationDone,
+      disabled,
       yearList,
       monthList,
       dayList,
