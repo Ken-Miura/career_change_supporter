@@ -32,7 +32,7 @@ use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachPasswordChangeReqLimit;
 
 // TODO: 運用しながら上限を調整する
-const MAX_NUM_OF_PWD_CHANGE_REQ: usize = 8;
+const MAX_NUM_OF_PWD_CHANGE_REQ: u64 = 8;
 
 static SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] パスワード変更用URLのお知らせ", WEB_SITE_NAME));
@@ -159,7 +159,7 @@ Email: {}",
 trait PasswordChangeReqOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<usize, ErrResp>;
+    async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<u64, ErrResp>;
     async fn create_new_pwd_change_req(
         &self,
         new_password_change_req: PasswordChangeReq,
@@ -178,7 +178,7 @@ impl PasswordChangeReqOperationImpl {
 
 #[async_trait]
 impl PasswordChangeReqOperation for PasswordChangeReqOperationImpl {
-    async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<usize, ErrResp> {
+    async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<u64, ErrResp> {
         let num = PwdChangeReq::find()
             .filter(pwd_change_req::Column::EmailAddress.eq(email_addr))
             .count(&self.pool)
@@ -240,7 +240,7 @@ mod tests {
     use super::{PasswordChangeReq, PasswordChangeReqOperation};
 
     struct PasswordChangeReqOperationMock<'a> {
-        cnt: usize,
+        cnt: u64,
         uuid: &'a str,
         email_address: &'a str,
         requested_time: &'a DateTime<FixedOffset>,
@@ -248,7 +248,7 @@ mod tests {
 
     impl<'a> PasswordChangeReqOperationMock<'a> {
         fn new(
-            cnt: usize,
+            cnt: u64,
             uuid: &'a str,
             email_address: &'a str,
             requested_time: &'a DateTime<FixedOffset>,
@@ -264,7 +264,7 @@ mod tests {
 
     #[async_trait]
     impl<'a> PasswordChangeReqOperation for PasswordChangeReqOperationMock<'a> {
-        async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<usize, ErrResp> {
+        async fn num_of_pwd_change_req(&self, email_addr: &str) -> Result<u64, ErrResp> {
             assert_eq!(self.email_address, email_addr);
             Ok(self.cnt)
         }

@@ -411,7 +411,7 @@ async fn add_new_document_with_career(
     index_name: &str,
     document_id: &str,
     career_model: career::Model,
-    num_of_careers: usize,
+    num_of_careers: u64,
     current_time: DateTime<FixedOffset>,
     client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
@@ -462,7 +462,7 @@ async fn insert_new_career_into_document(
     index_name: &str,
     document_id: &str,
     career_model: career::Model,
-    num_of_careers: usize,
+    num_of_careers: u64,
     current_time: DateTime<FixedOffset>,
     client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {

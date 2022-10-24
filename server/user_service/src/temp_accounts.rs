@@ -30,7 +30,7 @@ use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachTempAccountsLimit;
 
 // TODO: 運用しながら上限を調整する
-const MAX_NUM_OF_TEMP_ACCOUNTS: usize = 5;
+const MAX_NUM_OF_TEMP_ACCOUNTS: u64 = 5;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLのお知らせ", WEB_SITE_NAME));
 
@@ -139,7 +139,7 @@ Email: {}",
 trait TempAccountsOperation {
     // DBの分離レベルにはREAD COMITTEDを想定。
     // その想定の上でトランザクションが必要かどうかを検討し、操作を分離して実装
-    async fn num_of_temp_accounts(&self, email_addr: &str) -> Result<usize, ErrResp>;
+    async fn num_of_temp_accounts(&self, email_addr: &str) -> Result<u64, ErrResp>;
     async fn create_temp_account(&self, temp_account: &TempAccount) -> Result<(), ErrResp>;
 }
 
@@ -155,7 +155,7 @@ impl TempAccountsOperationImpl {
 
 #[async_trait]
 impl TempAccountsOperation for TempAccountsOperationImpl {
-    async fn num_of_temp_accounts(&self, email_addr: &str) -> Result<usize, ErrResp> {
+    async fn num_of_temp_accounts(&self, email_addr: &str) -> Result<u64, ErrResp> {
         let num = UserTempAccount::find()
             .filter(user_temp_account::Column::EmailAddress.eq(email_addr))
             .count(&self.pool)
@@ -213,7 +213,7 @@ mod tests {
     use super::*;
 
     struct TempAccountsOperationMock<'a> {
-        cnt: usize,
+        cnt: u64,
         uuid: &'a str,
         email_address: &'a str,
         password: &'a str,
@@ -222,7 +222,7 @@ mod tests {
 
     impl<'a> TempAccountsOperationMock<'a> {
         fn new(
-            cnt: usize,
+            cnt: u64,
             uuid: &'a str,
             email_address: &'a str,
             password: &'a str,
@@ -240,7 +240,7 @@ mod tests {
 
     #[async_trait]
     impl<'a> TempAccountsOperation for TempAccountsOperationMock<'a> {
-        async fn num_of_temp_accounts(&self, email_addr: &str) -> Result<usize, ErrResp> {
+        async fn num_of_temp_accounts(&self, email_addr: &str) -> Result<u64, ErrResp> {
             assert_eq!(self.email_address, email_addr);
             Ok(self.cnt)
         }

@@ -18,13 +18,13 @@ pub(crate) const ROOT_PATH: &str = "/admin/api";
 
 #[derive(Deserialize)]
 pub(crate) struct Pagination {
-    pub(crate) page: usize,
-    pub(crate) per_page: usize,
+    pub(crate) page: u64,
+    pub(crate) per_page: u64,
 }
 
-const MAX_PAGE_SIZE: usize = 50;
+const MAX_PAGE_SIZE: u64 = 50;
 
-pub(crate) fn validate_page_size(page_size: usize) -> Result<(), ErrResp> {
+pub(crate) fn validate_page_size(page_size: u64) -> Result<(), ErrResp> {
     if page_size > MAX_PAGE_SIZE {
         return Err((
             StatusCode::BAD_REQUEST,

@@ -382,7 +382,7 @@ async fn handle_career_req(
     }
 
     let num = op.count_career(account_id).await?;
-    if num >= MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize {
+    if num >= MAX_NUM_OF_CAREER_PER_USER_ACCOUNT {
         error!(
             "already reach max num of career per user account (num: {}, max num: {})",
             num, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT
@@ -396,7 +396,7 @@ async fn handle_career_req(
     }
     let num = op.count_create_career_req(account_id).await?;
     // create_career_reqの最大もMAX_NUM_OF_CAREER_PER_USER_ACCOUNTとする
-    if num >= MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize {
+    if num >= MAX_NUM_OF_CAREER_PER_USER_ACCOUNT {
         error!(
             "already reach max num of create career request per user account (num: {}, max num: {})",
             num, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT
@@ -447,8 +447,8 @@ fn create_text(id: i64) -> String {
 trait SubmitCareerOperation {
     /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-    async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp>;
-    async fn count_create_career_req(&self, account_id: i64) -> Result<usize, ErrResp>;
+    async fn count_career(&self, account_id: i64) -> Result<u64, ErrResp>;
+    async fn count_create_career_req(&self, account_id: i64) -> Result<u64, ErrResp>;
     async fn request_create_career(
         &self,
         submitted_career: SubmittedCareer,
@@ -472,7 +472,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
         util::check_if_identity_exists(&self.pool, account_id).await
     }
 
-    async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp> {
+    async fn count_career(&self, account_id: i64) -> Result<u64, ErrResp> {
         let num = entity::prelude::Career::find()
             .filter(career::Column::UserAccountId.eq(account_id))
             .count(&self.pool)
@@ -487,7 +487,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
         Ok(num)
     }
 
-    async fn count_create_career_req(&self, account_id: i64) -> Result<usize, ErrResp> {
+    async fn count_create_career_req(&self, account_id: i64) -> Result<u64, ErrResp> {
         let num = entity::prelude::CreateCareerReq::find()
             .filter(create_career_req::Column::UserAccountId.eq(account_id))
             .count(&self.pool)
@@ -2098,8 +2098,8 @@ mod tests {
         account_id: i64,
         submitted_career: SubmittedCareer,
         current_date_time: DateTime<FixedOffset>,
-        num_of_career: usize,
-        num_of_create_career_req: usize,
+        num_of_career: u64,
+        num_of_create_career_req: u64,
         identity_exists: bool,
     }
 
@@ -2110,12 +2110,12 @@ mod tests {
             Ok(self.identity_exists)
         }
 
-        async fn count_career(&self, account_id: i64) -> Result<usize, ErrResp> {
+        async fn count_career(&self, account_id: i64) -> Result<u64, ErrResp> {
             assert_eq!(self.account_id, account_id);
             Ok(self.num_of_career)
         }
 
-        async fn count_create_career_req(&self, account_id: i64) -> Result<usize, ErrResp> {
+        async fn count_create_career_req(&self, account_id: i64) -> Result<u64, ErrResp> {
             assert_eq!(self.account_id, account_id);
             Ok(self.num_of_create_career_req)
         }
@@ -2146,8 +2146,8 @@ mod tests {
             account_id,
             submitted_career: submitted_career.clone(),
             current_date_time,
-            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
-            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
+            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2213,8 +2213,8 @@ mod tests {
             account_id,
             submitted_career: submitted_career.clone(),
             current_date_time,
-            num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize,
-            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT,
+            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2248,8 +2248,8 @@ mod tests {
             account_id,
             submitted_career: submitted_career.clone(),
             current_date_time,
-            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT + 1) as usize,
-            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT + 1,
+            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2281,8 +2281,8 @@ mod tests {
             account_id,
             submitted_career: submitted_career.clone(),
             current_date_time,
-            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
-            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
+            num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
+            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
             identity_exists: false,
         };
         let smtp_client = SendMailMock::new(
@@ -2314,8 +2314,8 @@ mod tests {
             account_id,
             submitted_career: submitted_career.clone(),
             current_date_time,
-            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
-            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize,
+            num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
+            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(
@@ -2349,8 +2349,8 @@ mod tests {
             account_id,
             submitted_career: submitted_career.clone(),
             current_date_time,
-            num_of_career: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1) as usize,
-            num_of_create_career_req: (MAX_NUM_OF_CAREER_PER_USER_ACCOUNT + 1) as usize,
+            num_of_career: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT - 1,
+            num_of_create_career_req: MAX_NUM_OF_CAREER_PER_USER_ACCOUNT + 1,
             identity_exists: true,
         };
         let smtp_client = SendMailMock::new(

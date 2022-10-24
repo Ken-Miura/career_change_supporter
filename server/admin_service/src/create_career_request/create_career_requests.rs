@@ -46,8 +46,8 @@ async fn get_create_career_request_items(
 trait CreateCareerRequestItemsOperation {
     async fn get_items(
         &self,
-        page: usize,
-        page_size: usize,
+        page: u64,
+        page_size: u64,
     ) -> Result<Vec<CreateCareerReqItem>, ErrResp>;
 }
 
@@ -59,8 +59,8 @@ struct CreateCareerRequestItemsOperationImpl {
 impl CreateCareerRequestItemsOperation for CreateCareerRequestItemsOperationImpl {
     async fn get_items(
         &self,
-        page: usize,
-        page_size: usize,
+        page: u64,
+        page_size: u64,
     ) -> Result<Vec<CreateCareerReqItem>, ErrResp> {
         let items = create_career_req::Entity::find()
             .order_by_asc(create_career_req::Column::RequestedAt)
@@ -108,11 +108,11 @@ mod tests {
     impl CreateCareerRequestItemsOperation for CreateCareerRequestItemsOperationMock {
         async fn get_items(
             &self,
-            page: usize,
-            page_size: usize,
+            page: u64,
+            page_size: u64,
         ) -> Result<Vec<CreateCareerReqItem>, ErrResp> {
             let items = self.items.clone();
-            let length = items.len();
+            let length = items.len() as u64;
             let start = page * page_size;
             if start >= length {
                 return Ok(vec![]);
@@ -122,7 +122,12 @@ mod tests {
             } else {
                 start + page_size
             };
-            let items = items.get(start..end).expect("failed to get value");
+            let items = items
+                .get(
+                    start.try_into().expect("failed to get Ok")
+                        ..end.try_into().expect("failed to get Ok"),
+                )
+                .expect("failed to get value");
             Ok(items.to_vec())
         }
     }

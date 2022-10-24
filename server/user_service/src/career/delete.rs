@@ -171,7 +171,7 @@ async fn remove_career_from_document(
     index_name: &str,
     document_id: &str,
     career_id: i64,
-    num_of_careers: usize,
+    num_of_careers: u64,
     index_client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
     let source = format!("ctx._source.careers.removeIf(career -> career.career_id == params.career_id); ctx._source.num_of_careers = {}", num_of_careers);
