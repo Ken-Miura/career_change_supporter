@@ -171,6 +171,7 @@ import { useCandidate } from '@/util/personalized/request-consultation/useCandid
 import { ConsultationRequest } from '@/util/personalized/request-consultation/ConsultationRequest'
 import { postRequestConsultation } from '@/util/personalized/request-consultation/PostRequestConsultation'
 import { PostRequestConsultationResp } from '@/util/personalized/request-consultation/PostRequestConsultationResp'
+import { checkIfCandidateIsInValidRange } from '@/util/personalized/request-consultation/CheckIfCandidateIsInValidRange'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -298,6 +299,13 @@ export default defineComponent({
         if (sameCandidatesExist.value) {
           errorBelowBtn.exists = true
           errorBelowBtn.message = `${Message.DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE}`
+          return
+        }
+        if (!checkIfCandidateIsInValidRange(candidates.firstCandidateYearInJst, candidates.firstCandidateMonthInJst, candidates.firstCandidateDayInJst, candidates.firstCandidateHourInJst) ||
+          !checkIfCandidateIsInValidRange(candidates.secondCandidateYearInJst, candidates.secondCandidateMonthInJst, candidates.secondCandidateDayInJst, candidates.secondCandidateHourInJst) ||
+          !checkIfCandidateIsInValidRange(candidates.thirdCandidateYearInJst, candidates.thirdCandidateMonthInJst, candidates.thirdCandidateDayInJst, candidates.thirdCandidateHourInJst)) {
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = `${Message.INVALID_CONSULTATION_DATE_TIME_MESSAGE}`
           return
         }
 
