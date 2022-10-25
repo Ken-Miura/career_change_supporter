@@ -196,7 +196,7 @@ export default defineComponent({
     const hourList = ref(createHourList())
     const minDurationInDays = getMinDurationBeforeConsultationInDays()
     const maxDurationInDays = getMaxDurationBeforeConsultationInDays()
-    const { candidates } = useCandidate()
+    const { candidates, allCandidatesAreNotEmpty, sameCandidatesExist } = useCandidate()
     // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let cardElement = null as any
@@ -287,6 +287,17 @@ export default defineComponent({
         if (payjp === null) {
           error.exists = true
           error.message = `${Message.UNEXPECTED_ERR}: payjp is null`
+          return
+        }
+
+        if (!allCandidatesAreNotEmpty.value) {
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = `${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE}`
+          return
+        }
+        if (sameCandidatesExist.value) {
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = `${Message.DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE}`
           return
         }
 
