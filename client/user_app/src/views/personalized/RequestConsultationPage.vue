@@ -402,7 +402,7 @@ export default defineComponent({
                 error.message = createErrorMessage(resp.getApiError().getCode())
                 return
               }
-            // await router.push('/')
+              await router.push('/request-consultation-success')
             } catch (e) {
               error.exists = true
               error.message = `${Message.UNEXPECTED_ERR}: ${e}`
