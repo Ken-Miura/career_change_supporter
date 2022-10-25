@@ -16,7 +16,7 @@
           <h3 class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.firstCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
@@ -24,7 +24,7 @@
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.firstCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
@@ -32,7 +32,7 @@
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.firstCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
@@ -40,7 +40,7 @@
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.firstCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
@@ -51,7 +51,7 @@
           <h3 class="mt-4 font-bold text-2xl">相談開始日時（第二希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.secondCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
@@ -59,7 +59,7 @@
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.secondCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
@@ -67,7 +67,7 @@
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.secondCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
@@ -75,7 +75,7 @@
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.secondCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
@@ -86,7 +86,7 @@
           <h3 class="mt-4 font-bold text-2xl">相談開始日時（第三希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.thirdCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
@@ -94,7 +94,7 @@
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.thirdCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
@@ -102,7 +102,7 @@
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.thirdCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
@@ -110,7 +110,7 @@
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select v-model="candidates.thirdCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
@@ -167,6 +167,10 @@ import { FinishRequestConsultation } from '@/util/personalized/request-consultat
 import { PostFinishRequestConsultationResp } from '@/util/personalized/request-consultation/PostFinishRequestConsultationResp'
 import { useRequestConsultationDone } from '@/util/personalized/request-consultation/useRequestConsultationDone'
 import { postFinishRequestConsultation } from '@/util/personalized/request-consultation/PostFinishRequestConsultation'
+import { useCandidate } from '@/util/personalized/request-consultation/useCandidate'
+import { ConsultationRequest } from '@/util/personalized/request-consultation/ConsultationRequest'
+import { postRequestConsultation } from '@/util/personalized/request-consultation/PostRequestConsultation'
+import { PostRequestConsultationResp } from '@/util/personalized/request-consultation/PostRequestConsultationResp'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -192,6 +196,7 @@ export default defineComponent({
     const hourList = ref(createHourList())
     const minDurationInDays = getMinDurationBeforeConsultationInDays()
     const maxDurationInDays = getMaxDurationBeforeConsultationInDays()
+    const { candidates } = useCandidate()
     // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let cardElement = null as any
@@ -199,7 +204,7 @@ export default defineComponent({
       getFeePerHourInYenForApplicationDone,
       getFeePerHourInYenForApplicationFunc
     } = useGetFeePerHourInYenForApplication()
-    const feePerHourInYen = ref(null as number | null)
+    const feePerHourInYen = ref(0 as number)
     const {
       requestConsultationDone,
       startRequestConsultation,
@@ -277,6 +282,7 @@ export default defineComponent({
     const requestConsultation = async () => {
       try {
         disableBtn()
+
         const payjp = store.state.payJp
         if (payjp === null) {
           error.exists = true
@@ -299,61 +305,39 @@ export default defineComponent({
           errorBelowBtn.message = `failed to create token: ${e}`
           return
         }
+
         try {
           startRequestConsultation()
-          const data = {
+          const req = {
             consultant_id: parseInt(consultantId),
-            fee_per_hour_in_yen: 3000,
+            fee_per_hour_in_yen: feePerHourInYen.value,
             card_token: token,
             first_candidate_in_jst: {
-              year: 2022,
-              month: 10,
-              day: 28,
-              hour: 8
+              year: parseInt(candidates.firstCandidateYearInJst),
+              month: parseInt(candidates.firstCandidateMonthInJst),
+              day: parseInt(candidates.firstCandidateDayInJst),
+              hour: parseInt(candidates.firstCandidateHourInJst)
             },
             second_candidate_in_jst: {
-              year: 2022,
-              month: 10,
-              day: 28,
-              hour: 12
+              year: parseInt(candidates.secondCandidateYearInJst),
+              month: parseInt(candidates.secondCandidateMonthInJst),
+              day: parseInt(candidates.secondCandidateDayInJst),
+              hour: parseInt(candidates.secondCandidateHourInJst)
             },
             third_candidate_in_jst: {
-              year: 2022,
-              month: 10,
-              day: 28,
-              hour: 15
+              year: parseInt(candidates.thirdCandidateYearInJst),
+              month: parseInt(candidates.thirdCandidateMonthInJst),
+              day: parseInt(candidates.thirdCandidateDayInJst),
+              hour: parseInt(candidates.thirdCandidateHourInJst)
             }
-          }
-          const response = await fetch('/api/request-consultation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json; charset=utf-8' },
-            body: JSON.stringify(data)
-          })
-          if (!response.ok) {
-            const apiErr = await response.json() as { code: number }
-            console.error(response.status + ', ' + apiErr.code)
-            return
-          }
-          const result = await response.json() as { charge_id: string }
-          const finishRequestConsultation = {
-            charge_id: result.charge_id
-          } as FinishRequestConsultation
-
+          } as ConsultationRequest
           try {
-            await payjp.openThreeDSecureDialog(finishRequestConsultation.charge_id)
-          } catch (e) {
-            error.exists = true
-            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-            return
-          }
-
-          try {
-            const resp = await postFinishRequestConsultation(finishRequestConsultation)
-            if (!(resp instanceof PostFinishRequestConsultationResp)) {
-              if (!(resp instanceof ApiErrorResp)) {
-                throw new Error(`unexpected result on getting request detail: ${resp}`)
+            const response = await postRequestConsultation(req)
+            if (!(response instanceof PostRequestConsultationResp)) {
+              if (!(response instanceof ApiErrorResp)) {
+                throw new Error(`unexpected result on getting request detail: ${response}`)
               }
-              const code = resp.getApiError().getCode()
+              const code = response.getApiError().getCode()
               if (code === Code.UNAUTHORIZED) {
                 error.exists = true
                 error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
@@ -364,10 +348,46 @@ export default defineComponent({
                 return
               }
               error.exists = true
-              error.message = createErrorMessage(resp.getApiError().getCode())
+              error.message = createErrorMessage(response.getApiError().getCode())
               return
             }
+
+            try {
+              await payjp.openThreeDSecureDialog(response.getChargeId())
+            } catch (e) {
+              error.exists = true
+              error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+              return
+            }
+
+            try {
+              const finishRequestConsultation = {
+                charge_id: response.getChargeId()
+              } as FinishRequestConsultation
+              const resp = await postFinishRequestConsultation(finishRequestConsultation)
+              if (!(resp instanceof PostFinishRequestConsultationResp)) {
+                if (!(resp instanceof ApiErrorResp)) {
+                  throw new Error(`unexpected result on getting request detail: ${resp}`)
+                }
+                const code = resp.getApiError().getCode()
+                if (code === Code.UNAUTHORIZED) {
+                  error.exists = true
+                  error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+                  return
+                } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+                  error.exists = true
+                  error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+                  return
+                }
+                error.exists = true
+                error.message = createErrorMessage(resp.getApiError().getCode())
+                return
+              }
             // await router.push('/')
+            } catch (e) {
+              error.exists = true
+              error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+            }
           } catch (e) {
             error.exists = true
             error.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -393,6 +413,7 @@ export default defineComponent({
       hourList,
       minDurationInDays,
       maxDurationInDays,
+      candidates,
       requestConsultation,
       errorBelowBtn
     }
