@@ -129,4 +129,11 @@ export namespace Message {
     export const PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED_MESSAGE = '事業者、個人事業主による営利目的の利用はできません'
     export const UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE = 'ログインが必要です。決済処理は行われていないため、再度ログインし、相談の申し込みを行って下さい'
     export const NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE = '利用規約への同意が必要です。決済処理は行われていないため、再度ログインし、利用規約への同意後、相談の申し込みを行って下さい'
+    export const ILLEGAL_CONSULTATION_DATE_TIME_MESSAGE = '不正な相談開始日時です'
+    export const ILLEGAL_CONSULTATION_HOUR_MESSAGE = '不正な相談開始時間です'
+    export const INVALID_CONSULTATION_DATE_TIME_MESSAGE = '申し込み可能な相談開始日時の範囲外です'
+    export const DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE = '相談開始日時が重複しています'
+    export const THREE_D_SECURE_ERROR_MESSAGE = 'クレジットカードの処理時にエラーが発生しました。アカウントのメールアドレス、エラー発生時刻を記載し、問い合わせ先にご連絡下さい（決済処理は行われていません）'
+    export const EXCEED_MAX_ANNUAL_REWARDS_MESSAGE = '来年の１月１日までこのコンサルタントIDに対して相談を申し込むことは出来ません'
+    export const NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE = '第一希望、第二希望、第三希望の相談開始日時すべてを指定した上でお申し込み下さい'
 }

@@ -109,6 +109,12 @@ export namespace Code {
   export const FEE_PER_HOUR_IN_YEN_WAS_UPDATED = 20097
   export const CONSULTANT_IS_NOT_AVAILABLE = 20098
   export const PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED = 20099
+  export const ILLEGAL_CONSULTATION_DATE_TIME = 20100
+  export const ILLEGAL_CONSULTATION_HOUR = 20101
+  export const INVALID_CONSULTATION_DATE_TIME = 20102
+  export const DUPLICATE_DATE_TIME_CANDIDATES = 20103
+  export const THREE_D_SECURE_ERROR = 20104
+  export const EXCEED_MAX_ANNUAL_REWARDS = 20105
 }
 
 export function createErrorMessage (code: number): string {
@@ -314,6 +320,18 @@ export function createErrorMessage (code: number): string {
     return `${Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE} (${code})`
   } else if (code === Code.PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED) {
     return `${Message.PROFIT_OBJECTIVE_USE_IS_NOT_ALLOWED_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CONSULTATION_DATE_TIME) {
+    return `${Message.ILLEGAL_CONSULTATION_DATE_TIME_MESSAGE} (${code})`
+  } else if (code === Code.ILLEGAL_CONSULTATION_HOUR) {
+    return `${Message.ILLEGAL_CONSULTATION_HOUR_MESSAGE} (${code})`
+  } else if (code === Code.INVALID_CONSULTATION_DATE_TIME) {
+    return `${Message.INVALID_CONSULTATION_DATE_TIME_MESSAGE} (${code})`
+  } else if (code === Code.DUPLICATE_DATE_TIME_CANDIDATES) {
+    return `${Message.DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE} (${code})`
+  } else if (code === Code.THREE_D_SECURE_ERROR) {
+    return `${Message.THREE_D_SECURE_ERROR_MESSAGE} (${code})`
+  } else if (code === Code.EXCEED_MAX_ANNUAL_REWARDS) {
+    return `${Message.EXCEED_MAX_ANNUAL_REWARDS_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
