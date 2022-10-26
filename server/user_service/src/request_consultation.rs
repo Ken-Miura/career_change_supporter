@@ -4,7 +4,7 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, Utc};
-use common::payment_platform::charge::CreateCharge;
+use common::payment_platform::charge::{Charge, CreateCharge};
 use common::payment_platform::Metadata;
 use common::{
     payment_platform::charge::{ChargeOperation, ChargeOperationImpl},
@@ -45,13 +45,11 @@ pub(crate) async fn post_request_consultation(
 ) -> RespResult<RequestConsultationResult> {
     let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
     let request_consultation_op = RequestConsultationOperationImpl { pool };
-    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
     handle_request_consultation(
         account_id,
         param,
         &current_date_time,
         request_consultation_op,
-        charge_op,
     )
     .await
 }
@@ -94,6 +92,8 @@ trait RequestConsultationOperation {
         &self,
         consultant_id: i64,
     ) -> Result<Option<String>, ErrResp>;
+
+    async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp>;
 
     /// 相談依頼があり、まだ相談を受け付けるか決めていないものの相談料の合計
     async fn get_amount_of_consultation_req(
@@ -164,6 +164,16 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
                 unexpected_err_resp()
             })?;
         Ok(model.map(|m| m.tenant_id))
+    }
+
+    async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp> {
+        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+        let charge = charge_op.create_charge(create_charge).await.map_err(|e| {
+            // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
+            error!("failed to create charge: {}", e);
+            unexpected_err_resp()
+        })?;
+        Ok(charge)
     }
 
     async fn get_amount_of_consultation_req(
@@ -267,7 +277,6 @@ async fn handle_request_consultation(
     request_consultation_param: RequestConsultationParam,
     current_date_time: &DateTime<FixedOffset>,
     request_consultation_op: impl RequestConsultationOperation,
-    charge_op: impl ChargeOperation,
 ) -> RespResult<RequestConsultationResult> {
     let consultant_id = request_consultation_param.consultant_id;
     let _ = validate_consultant_id_is_positive(consultant_id)?;
@@ -330,11 +339,9 @@ async fn handle_request_consultation(
             //       amountに関するエラーも発生しない
             unexpected_err_resp()
         })?;
-    let charge = charge_op.create_charge(&create_charge).await.map_err(|e| {
-        // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
-        error!("failed to create charge: {}", e);
-        unexpected_err_resp()
-    })?;
+    let charge = request_consultation_op
+        .create_charge(&create_charge)
+        .await?;
 
     info!(
         "started 3D secure flow (account_id, {}, consultant_id{}, charge.id: {})",
@@ -612,10 +619,7 @@ mod tests {
     use axum::async_trait;
     use chrono::{DateTime, FixedOffset};
     use common::{
-        payment_platform::{
-            charge::{Charge, ChargeOperation, CreateCharge, Query},
-            List,
-        },
+        payment_platform::charge::{Charge, CreateCharge},
         ErrResp, RespResult,
     };
     use once_cell::sync::Lazy;
@@ -638,7 +642,6 @@ mod tests {
         param: RequestConsultationParam,
         current_date_time: DateTime<FixedOffset>,
         req_op: RequestConsultationOperationMock,
-        charge_op: ChargeOperationMock,
     }
 
     #[derive(Clone, Debug)]
@@ -671,6 +674,10 @@ mod tests {
             todo!()
         }
 
+        async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp> {
+            todo!()
+        }
+
         async fn get_amount_of_consultation_req(
             &self,
             consultant_id: i64,
@@ -697,72 +704,31 @@ mod tests {
         }
     }
 
-    #[derive(Clone, Debug)]
-    struct ChargeOperationMock {}
-
-    #[async_trait]
-    impl ChargeOperation for ChargeOperationMock {
-        async fn search_charges(
-            &mut self,
-            query: &Query,
-        ) -> Result<List<Charge>, common::payment_platform::Error> {
-            todo!()
-        }
-
-        async fn create_charge(
-            &self,
-            create_charge: &CreateCharge,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            todo!()
-        }
-
-        async fn ge_charge_by_charge_id(
-            &self,
-            charge_id: &str,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            todo!()
-        }
-
-        async fn finish_three_d_secure_flow(
-            &self,
-            charge_id: &str,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            todo!()
-        }
-    }
-
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
 
     #[tokio::test]
     async fn handle_request_consultation_tests() {
-        for test_case in TEST_CASE_SET.iter() {
-            let account_id = test_case.input.account_id;
-            let param = test_case.input.param.clone();
-            let current_date_time = test_case.input.current_date_time;
-            let req_op = test_case.input.req_op.clone();
-            let charge_op = test_case.input.charge_op.clone();
+        // for test_case in TEST_CASE_SET.iter() {
+        //     let account_id = test_case.input.account_id;
+        //     let param = test_case.input.param.clone();
+        //     let current_date_time = test_case.input.current_date_time;
+        //     let req_op = test_case.input.req_op.clone();
 
-            let resp = handle_request_consultation(
-                account_id,
-                param,
-                &current_date_time,
-                req_op,
-                charge_op,
-            )
-            .await;
+        //     let resp =
+        //         handle_request_consultation(account_id, param, &current_date_time, req_op).await;
 
-            let message = format!("test case \"{}\" failed", test_case.name.clone());
-            if test_case.expected.is_ok() {
-                let result = resp.expect("failed to get Ok");
-                let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
-                assert_eq!(expected_result.0, result.0, "{}", message);
-                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
-            } else {
-                let result = resp.expect_err("failed to get Err");
-                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
-                assert_eq!(expected_result.0, result.0, "{}", message);
-                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
-            }
-        }
+        //     let message = format!("test case \"{}\" failed", test_case.name.clone());
+        //     if test_case.expected.is_ok() {
+        //         let result = resp.expect("failed to get Ok");
+        //         let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
+        //         assert_eq!(expected_result.0, result.0, "{}", message);
+        //         assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+        //     } else {
+        //         let result = resp.expect_err("failed to get Err");
+        //         let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+        //         assert_eq!(expected_result.0, result.0, "{}", message);
+        //         assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+        //     }
+        // }
     }
 }
