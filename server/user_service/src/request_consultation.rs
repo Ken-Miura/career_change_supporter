@@ -56,7 +56,7 @@ pub(crate) async fn post_request_consultation(
     .await
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Debug)]
 pub(crate) struct RequestConsultationParam {
     pub consultant_id: i64,
     pub fee_per_hour_in_yen: i32,
@@ -66,7 +66,7 @@ pub(crate) struct RequestConsultationParam {
     pub third_candidate_in_jst: ConsultationDateTime,
 }
 
-#[derive(Deserialize, PartialEq)]
+#[derive(Clone, Deserialize, Debug, PartialEq)]
 pub(crate) struct ConsultationDateTime {
     pub(crate) year: i32,
     pub(crate) month: u32,
@@ -609,5 +609,160 @@ fn generate_metadata(
 
 #[cfg(test)]
 mod tests {
-    // TODO
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{
+        payment_platform::{
+            charge::{Charge, ChargeOperation, CreateCharge, Query},
+            List,
+        },
+        ErrResp, RespResult,
+    };
+    use once_cell::sync::Lazy;
+
+    use super::{
+        handle_request_consultation, RequestConsultationOperation, RequestConsultationParam,
+        RequestConsultationResult,
+    };
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<RequestConsultationResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        param: RequestConsultationParam,
+        current_date_time: DateTime<FixedOffset>,
+        req_op: RequestConsultationOperationMock,
+        charge_op: ChargeOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct RequestConsultationOperationMock {}
+
+    #[async_trait]
+    impl RequestConsultationOperation for RequestConsultationOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn check_if_consultant_is_available(
+            &self,
+            consultant_id: i64,
+        ) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn find_fee_per_hour_in_yen_by_consultant_id(
+            &self,
+            consultant_id: i64,
+        ) -> Result<Option<i32>, ErrResp> {
+            todo!()
+        }
+
+        async fn find_tenant_id_by_consultant_id(
+            &self,
+            consultant_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            todo!()
+        }
+
+        async fn get_amount_of_consultation_req(
+            &self,
+            consultant_id: i64,
+            current_date_time: &DateTime<FixedOffset>,
+        ) -> Result<i32, ErrResp> {
+            todo!()
+        }
+
+        async fn get_expected_rewards(
+            &self,
+            consultant_id: i64,
+            current_date_time: &DateTime<FixedOffset>,
+        ) -> Result<i32, ErrResp> {
+            todo!()
+        }
+
+        async fn get_rewards_of_the_year(
+            &self,
+            since_timestamp: i64,
+            until_timestamp: i64,
+            tenant_id: &str,
+        ) -> Result<i32, ErrResp> {
+            todo!()
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct ChargeOperationMock {}
+
+    #[async_trait]
+    impl ChargeOperation for ChargeOperationMock {
+        async fn search_charges(
+            &mut self,
+            query: &Query,
+        ) -> Result<List<Charge>, common::payment_platform::Error> {
+            todo!()
+        }
+
+        async fn create_charge(
+            &self,
+            create_charge: &CreateCharge,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            todo!()
+        }
+
+        async fn ge_charge_by_charge_id(
+            &self,
+            charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            todo!()
+        }
+
+        async fn finish_three_d_secure_flow(
+            &self,
+            charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_request_consultation_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let param = test_case.input.param.clone();
+            let current_date_time = test_case.input.current_date_time;
+            let req_op = test_case.input.req_op.clone();
+            let charge_op = test_case.input.charge_op.clone();
+
+            let resp = handle_request_consultation(
+                account_id,
+                param,
+                &current_date_time,
+                req_op,
+                charge_op,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let result = resp.expect("failed to get Ok");
+                let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            } else {
+                let result = resp.expect_err("failed to get Err");
+                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            }
+        }
+    }
 }
