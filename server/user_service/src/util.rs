@@ -379,28 +379,38 @@ pub(crate) fn convert_payment_err_to_err_resp(e: common::payment_platform::Error
             let err_detail = err_info.error;
             // https://pay.jp/docs/api/#error
             // status、typeとcodeがエラーハンドリングに使用可能に見える。
-            // typeはどのような場合に発生するエラーか説明が抽象的すぎてわからず、codeはそもそもプロパティに含まれていないケースがある。
-            // そのため、エラーハンドリングにはstatusを用いる。
-            // サービスを運用していく過程で、必要に応じてより詳細なハンドリングとなるように改善していく。
-            let status = err_detail.status;
-            if status == 402 {
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::CardAuthPaymentError as u32,
-                    }),
-                )
-            } else if status == 429 {
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::ReachPaymentPlatformRateLimit as u32,
-                    }),
-                )
+            // そのうち、typeはどのような場合に発生するエラーなのか説明が抽象的すぎてわからない。そのため、エラーハンドリングにはcodeとstatusを用いる。
+            // codeの方がより詳細なエラーを示している。そのため、まずはcodeがあるか確認し、存在する場合はそちらをもとにエラーハンドリングし、なければstatusを用いる。
+            if let Some(code) = err_detail.code {
+                create_err_resp_from_code(code.as_str())
             } else {
-                unexpected_err_resp()
+                create_err_resp_from_status(err_detail.status)
             }
         }
+    }
+}
+
+fn create_err_resp_from_code(code: &str) -> ErrResp {
+    todo!()
+}
+
+fn create_err_resp_from_status(status: u32) -> ErrResp {
+    if status == 402 {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::CardAuthPaymentError as u32,
+            }),
+        )
+    } else if status == 429 {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ReachPaymentPlatformRateLimit as u32,
+            }),
+        )
+    } else {
+        unexpected_err_resp()
     }
 }
 
