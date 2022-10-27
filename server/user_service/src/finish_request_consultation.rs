@@ -24,7 +24,7 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, ACCESS_INFO, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
+    self, convert_payment_err_to_err_resp, ACCESS_INFO, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
     KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
@@ -468,9 +468,8 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
             .ge_charge_by_charge_id(charge_id.as_str())
             .await
             .map_err(|e| {
-                // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
                 error!("failed to get charge by charge_id ({}): {}", charge_id, e);
-                unexpected_err_resp()
+                convert_payment_err_to_err_resp(e)
             })?;
         Ok(charge)
     }
@@ -508,10 +507,9 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                 let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
                 let charge = charge_op.finish_three_d_secure_flow(charge_id.as_str())
                     .await.map_err(|e| {
-                        // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
                         error!("failed to finish 3D secure flow (charge_id: {}): {}", charge_id, e);
                         ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
+                            err_resp: convert_payment_err_to_err_resp(e),
                         }
                     })?;
 

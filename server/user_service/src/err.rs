@@ -115,6 +115,7 @@ pub(crate) enum Code {
     DuplicateDateTimeCandidates = 20103,
     ThreeDSecureError = 20104,
     ExceedMaxAnnualRewards = 20105,
+    CardAuthPaymentError = 20106,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

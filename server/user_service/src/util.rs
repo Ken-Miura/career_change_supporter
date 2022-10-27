@@ -372,6 +372,38 @@ pub(crate) fn create_start_and_end_timestamps_of_current_year(current_year: i32)
     (start_timestamp, end_timestamp)
 }
 
+pub(crate) fn convert_payment_err_to_err_resp(e: common::payment_platform::Error) -> ErrResp {
+    match e {
+        common::payment_platform::Error::RequestProcessingError(_) => unexpected_err_resp(),
+        common::payment_platform::Error::ApiError(err_info) => {
+            let err_detail = err_info.error;
+            // https://pay.jp/docs/api/#error
+            // status、typeとcodeがエラーハンドリングに使用可能に見える。
+            // typeはどのような場合に発生するエラーか説明が抽象的すぎてわからず、codeはそもそもプロパティに含まれていないケースがある。
+            // そのため、エラーハンドリングにはstatusを用いる。
+            // サービスを運用していく過程で、必要に応じてより詳細なハンドリングとなるように改善していく。
+            let status = err_detail.status;
+            if status == 402 {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::CardAuthPaymentError as u32,
+                    }),
+                )
+            } else if status == 429 {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                )
+            } else {
+                unexpected_err_resp()
+            }
+        }
+    }
+}
+
 /// 通常のテストコードに加え、共通で使うモックをまとめる
 #[cfg(test)]
 pub(crate) mod tests {

@@ -28,10 +28,11 @@ use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
 use crate::util::{
-    create_start_and_end_timestamps_of_current_year, EXPIRY_DAYS_OF_CHARGE,
-    KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    MAX_ANNUAL_REWARDS_IN_YEN, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    convert_payment_err_to_err_resp, create_start_and_end_timestamps_of_current_year,
+    EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
+    KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ, MAX_ANNUAL_REWARDS_IN_YEN,
+    MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
 };
 use crate::{
     err::unexpected_err_resp,
@@ -169,9 +170,8 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
     async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp> {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
         let charge = charge_op.create_charge(create_charge).await.map_err(|e| {
-            // TODO: https://pay.jp/docs/api/#error に基づいてハンドリングする
             error!("failed to create charge: {}", e);
-            unexpected_err_resp()
+            convert_payment_err_to_err_resp(e)
         })?;
         Ok(charge)
     }
