@@ -171,7 +171,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
         let charge = charge_op.create_charge(create_charge).await.map_err(|e| {
             error!("failed to create charge: {}", e);
-            convert_payment_err_to_err_resp(e)
+            convert_payment_err_to_err_resp(&e)
         })?;
         Ok(charge)
     }

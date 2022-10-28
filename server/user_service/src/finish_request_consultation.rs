@@ -469,7 +469,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
             .await
             .map_err(|e| {
                 error!("failed to get charge by charge_id ({}): {}", charge_id, e);
-                convert_payment_err_to_err_resp(e)
+                convert_payment_err_to_err_resp(&e)
             })?;
         Ok(charge)
     }
@@ -509,7 +509,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                     .await.map_err(|e| {
                         error!("failed to finish 3D secure flow (charge_id: {}): {}", charge_id, e);
                         ErrRespStruct {
-                            err_resp: convert_payment_err_to_err_resp(e),
+                            err_resp: convert_payment_err_to_err_resp(&e),
                         }
                     })?;
 

@@ -372,16 +372,16 @@ pub(crate) fn create_start_and_end_timestamps_of_current_year(current_year: i32)
     (start_timestamp, end_timestamp)
 }
 
-pub(crate) fn convert_payment_err_to_err_resp(e: common::payment_platform::Error) -> ErrResp {
+pub(crate) fn convert_payment_err_to_err_resp(e: &common::payment_platform::Error) -> ErrResp {
     match e {
         common::payment_platform::Error::RequestProcessingError(_) => unexpected_err_resp(),
         common::payment_platform::Error::ApiError(err_info) => {
-            let err_detail = err_info.error;
+            let err_detail = &err_info.error;
             // https://pay.jp/docs/api/#error
             // status、typeとcodeがエラーハンドリングに使用可能に見える。
             // そのうち、typeはどのような場合に発生するエラーなのか説明が抽象的すぎてわからない。そのため、エラーハンドリングにはcodeとstatusを用いる。
             // codeの方がより詳細なエラーを示している。そのため、まずはcodeがあるか確認し、存在する場合はそちらをもとにエラーハンドリングし、なければstatusを用いる。
-            if let Some(code) = err_detail.code {
+            if let Some(code) = err_detail.code.clone() {
                 create_err_resp_from_code(code.as_str())
             } else {
                 create_err_resp_from_status(err_detail.status)
@@ -478,17 +478,22 @@ fn create_err_resp_from_status(status: u32) -> ErrResp {
 pub(crate) mod tests {
     use std::io::Cursor;
 
-    use axum::async_trait;
     use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use bytes::Bytes;
     use chrono::TimeZone;
-    use common::{smtp::SendMail, ErrResp};
+    use common::{
+        payment_platform::{ErrorDetail, ErrorInfo},
+        smtp::SendMail,
+        ApiError, ErrResp,
+    };
     use image::{ImageBuffer, ImageFormat, ImageOutputFormat, RgbImage};
+    use once_cell::sync::Lazy;
 
     use crate::err::Code;
 
     use super::{
-        clone_file_name_if_exists, convert_jpeg_to_png,
+        clone_file_name_if_exists, convert_jpeg_to_png, convert_payment_err_to_err_resp,
         create_start_and_end_timestamps_of_current_year,
     };
 
@@ -629,5 +634,76 @@ pub(crate) mod tests {
                 .timestamp(),
             until_timestamp
         );
+    }
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: ErrResp,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        err: common::payment_platform::Error,
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        // ErrorDetailのメンバーは、実際に返ってくる値が不明なため使う値のみ正確に埋める。
+        // pay.jpを使う中で実際に正確な値がわかった場合、随時更新していく。
+        vec![
+            TestCase {
+                name: "status 402".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 402,
+                            r#type: "type".to_string(),
+                            code: None,
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::CardAuthPaymentError as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "status 429".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 429,
+                            r#type: "type".to_string(),
+                            code: None,
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                ),
+            },
+        ]
+    });
+
+    #[test]
+    fn test_convert_payment_err_to_err_resp() {
+        for test_case in TEST_CASE_SET.iter() {
+            let err_resp = convert_payment_err_to_err_resp(&test_case.input.err);
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(test_case.expected.0, err_resp.0, "{}", message);
+            assert_eq!(test_case.expected.1 .0, err_resp.1 .0, "{}", message);
+        }
     }
 }
