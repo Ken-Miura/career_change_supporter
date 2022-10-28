@@ -116,6 +116,13 @@ pub(crate) enum Code {
     ThreeDSecureError = 20104,
     ExceedMaxAnnualRewards = 20105,
     CardAuthPaymentError = 20106,
+    PayJpCodeIncorrectCardData = 20107,
+    PayJpCodeCardDeclined = 20108,
+    PayJpCodeCardFlagged = 20109,
+    PayJpCodeUnacceptableBrand = 20110,
+    PayJpCodeThreeDSecureIncompleted = 20111,
+    PayJpCodeThreeDSecureFailed = 20112,
+    PayJpCodeNotInThreeDSecureFlow = 20113,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

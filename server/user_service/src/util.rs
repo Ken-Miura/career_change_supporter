@@ -391,7 +391,66 @@ pub(crate) fn convert_payment_err_to_err_resp(e: common::payment_platform::Error
 }
 
 fn create_err_resp_from_code(code: &str) -> ErrResp {
-    todo!()
+    if code == "incorrect_card_data" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PayJpCodeIncorrectCardData as u32,
+            }),
+        )
+    } else if code == "card_declined" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PayJpCodeCardDeclined as u32,
+            }),
+        )
+    } else if code == "card_flagged" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PayJpCodeCardFlagged as u32,
+            }),
+        )
+    } else if code == "unacceptable_brand" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PayJpCodeUnacceptableBrand as u32,
+            }),
+        )
+    } else if code == "over_capacity" {
+        (
+            StatusCode::TOO_MANY_REQUESTS,
+            Json(ApiError {
+                code: Code::ReachPaymentPlatformRateLimit as u32,
+            }),
+        )
+    } else if code == "three_d_secure_incompleted" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PayJpCodeThreeDSecureIncompleted as u32,
+            }),
+        )
+    } else if code == "three_d_secure_failed" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PayJpCodeThreeDSecureFailed as u32,
+            }),
+        )
+    } else if code == "not_in_three_d_secure_flow" {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PayJpCodeNotInThreeDSecureFlow as u32,
+            }),
+        )
+    } else {
+        // 上記で記載のcode以外は、ユーザーが利用するサービスでは想定していないもののため、unexpected_err_resp() で丸めて返却する
+        unexpected_err_resp()
+    }
 }
 
 fn create_err_resp_from_status(status: u32) -> ErrResp {
@@ -404,7 +463,7 @@ fn create_err_resp_from_status(status: u32) -> ErrResp {
         )
     } else if status == 429 {
         (
-            StatusCode::BAD_REQUEST,
+            StatusCode::TOO_MANY_REQUESTS,
             Json(ApiError {
                 code: Code::ReachPaymentPlatformRateLimit as u32,
             }),
