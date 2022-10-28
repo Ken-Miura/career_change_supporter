@@ -694,6 +694,174 @@ pub(crate) mod tests {
                     }),
                 ),
             },
+            TestCase {
+                name: "code incorrect_card_data".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("incorrect_card_data".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PayJpCodeIncorrectCardData as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "code card_declined".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("card_declined".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PayJpCodeCardDeclined as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "code card_flagged".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("card_flagged".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PayJpCodeCardFlagged as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "code unacceptable_brand".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("unacceptable_brand".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PayJpCodeUnacceptableBrand as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "code over_capacity".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("over_capacity".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "code three_d_secure_incompleted".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("three_d_secure_incompleted".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PayJpCodeThreeDSecureIncompleted as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "code three_d_secure_failed".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("three_d_secure_failed".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PayJpCodeThreeDSecureFailed as u32,
+                    }),
+                ),
+            },
+            TestCase {
+                name: "code not_in_three_d_secure_flow".to_string(),
+                input: Input {
+                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                        error: ErrorDetail {
+                            message: "message".to_string(),
+                            status: 400,
+                            r#type: "type".to_string(),
+                            code: Some("not_in_three_d_secure_flow".to_string()),
+                            param: None,
+                            charge: None,
+                        },
+                    }),
+                },
+                expected: (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PayJpCodeNotInThreeDSecureFlow as u32,
+                    }),
+                ),
+            },
         ]
     });
 
