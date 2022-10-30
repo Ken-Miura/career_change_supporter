@@ -617,12 +617,17 @@ fn generate_metadata(
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
+    use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
     use common::{
         payment_platform::charge::{Charge, CreateCharge},
-        ErrResp, RespResult,
+        ErrResp, RespResult, JAPANESE_TIME_ZONE,
     };
     use once_cell::sync::Lazy;
+
+    use crate::util::{
+        KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    };
 
     use super::{
         handle_request_consultation, RequestConsultationOperation, RequestConsultationParam,
@@ -645,37 +650,93 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct RequestConsultationOperationMock {}
+    struct RequestConsultationOperationMock {
+        account_id: i64,
+        consultant_id: i64,
+        fee_per_hour_in_yen: Option<i32>,
+        tenant_id: Option<String>,
+        card_token: String,
+        charge: Charge,
+        current_date_time: DateTime<FixedOffset>,
+        amount: i32,
+        expected_rewards: i32,
+        first_candidate_in_jst: DateTime<FixedOffset>,
+        second_candidate_in_jst: DateTime<FixedOffset>,
+        third_candidate_in_jst: DateTime<FixedOffset>,
+        rewards_of_the_year: i32,
+    }
 
     #[async_trait]
     impl RequestConsultationOperation for RequestConsultationOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            };
+            Ok(true)
         }
 
         async fn check_if_consultant_is_available(
             &self,
             consultant_id: i64,
         ) -> Result<bool, ErrResp> {
-            todo!()
+            if self.consultant_id != consultant_id {
+                return Ok(false);
+            };
+            Ok(true)
         }
 
         async fn find_fee_per_hour_in_yen_by_consultant_id(
             &self,
             consultant_id: i64,
         ) -> Result<Option<i32>, ErrResp> {
-            todo!()
+            assert_eq!(self.consultant_id, consultant_id);
+            Ok(self.fee_per_hour_in_yen)
         }
 
         async fn find_tenant_id_by_consultant_id(
             &self,
             consultant_id: i64,
         ) -> Result<Option<String>, ErrResp> {
-            todo!()
+            assert_eq!(self.consultant_id, consultant_id);
+            Ok(self.tenant_id.clone())
         }
 
         async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp> {
-            todo!()
+            assert_eq!(
+                self.fee_per_hour_in_yen.expect("failed to get Ok"),
+                create_charge.price().expect("failed to get Ok").0
+            );
+            assert_eq!(
+                self.card_token,
+                create_charge.card().expect("failed to get Ok")
+            );
+            assert_eq!(self.tenant_id, create_charge.tenant());
+            let metadata = create_charge.metadata().expect("failed to get Ok");
+            let consultant_id = metadata
+                .get(KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ)
+                .expect("failed to get Ok")
+                .parse::<i64>()
+                .expect("failed to get Ok");
+            assert_eq!(self.consultant_id, consultant_id);
+            let first_candidate = metadata
+                .get(KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
+                .expect("failed to get Ok");
+            let first_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(first_candidate)
+                .expect("failed to get Ok");
+            assert_eq!(self.first_candidate_in_jst, first_candidate);
+            let second_candidate = metadata
+                .get(KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
+                .expect("failed to get Ok");
+            let second_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(second_candidate)
+                .expect("failed to get Ok");
+            assert_eq!(self.second_candidate_in_jst, second_candidate);
+            let third_candidate = metadata
+                .get(KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
+                .expect("failed to get Ok");
+            let third_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(third_candidate)
+                .expect("failed to get Ok");
+            assert_eq!(self.third_candidate_in_jst, third_candidate);
+            Ok(self.charge.clone())
         }
 
         async fn get_amount_of_consultation_req(
@@ -683,7 +744,9 @@ mod tests {
             consultant_id: i64,
             current_date_time: &DateTime<FixedOffset>,
         ) -> Result<i32, ErrResp> {
-            todo!()
+            assert_eq!(self.consultant_id, consultant_id);
+            assert_eq!(self.current_date_time, *current_date_time);
+            Ok(self.amount)
         }
 
         async fn get_expected_rewards(
@@ -691,7 +754,9 @@ mod tests {
             consultant_id: i64,
             current_date_time: &DateTime<FixedOffset>,
         ) -> Result<i32, ErrResp> {
-            todo!()
+            assert_eq!(self.consultant_id, consultant_id);
+            assert_eq!(self.current_date_time, *current_date_time);
+            Ok(self.expected_rewards)
         }
 
         async fn get_rewards_of_the_year(
@@ -700,7 +765,21 @@ mod tests {
             until_timestamp: i64,
             tenant_id: &str,
         ) -> Result<i32, ErrResp> {
-            todo!()
+            assert_eq!(self.tenant_id.clone().expect("failed to get Ok"), tenant_id);
+            let year = self.current_date_time.year();
+            let since = Utc
+                .ymd(year, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp();
+            assert_eq!(since, since_timestamp);
+            let until = Utc
+                .ymd(year, 1, 1)
+                .and_hms(0, 0, 0)
+                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+                .timestamp();
+            assert_eq!(until, until_timestamp);
+            Ok(self.rewards_of_the_year)
         }
     }
 
@@ -708,27 +787,27 @@ mod tests {
 
     #[tokio::test]
     async fn handle_request_consultation_tests() {
-        // for test_case in TEST_CASE_SET.iter() {
-        //     let account_id = test_case.input.account_id;
-        //     let param = test_case.input.param.clone();
-        //     let current_date_time = test_case.input.current_date_time;
-        //     let req_op = test_case.input.req_op.clone();
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let param = test_case.input.param.clone();
+            let current_date_time = test_case.input.current_date_time;
+            let req_op = test_case.input.req_op.clone();
 
-        //     let resp =
-        //         handle_request_consultation(account_id, param, &current_date_time, req_op).await;
+            let resp =
+                handle_request_consultation(account_id, param, &current_date_time, req_op).await;
 
-        //     let message = format!("test case \"{}\" failed", test_case.name.clone());
-        //     if test_case.expected.is_ok() {
-        //         let result = resp.expect("failed to get Ok");
-        //         let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
-        //         assert_eq!(expected_result.0, result.0, "{}", message);
-        //         assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
-        //     } else {
-        //         let result = resp.expect_err("failed to get Err");
-        //         let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
-        //         assert_eq!(expected_result.0, result.0, "{}", message);
-        //         assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
-        //     }
-        // }
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let result = resp.expect("failed to get Ok");
+                let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            } else {
+                let result = resp.expect_err("failed to get Err");
+                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            }
+        }
     }
 }
