@@ -137,4 +137,12 @@ export namespace Message {
     export const EXCEED_MAX_ANNUAL_REWARDS_MESSAGE = '来年の１月１日までこのコンサルタントIDに対して相談を申し込むことは出来ません'
     export const NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE = '第一希望、第二希望、第三希望の相談開始日時すべてを指定した上でお申し込み下さい'
     export const REQUEST_CONSULTATION_SUCCESS_MESSAGE = '相談の申し込みを行いました。お申し込みされた内容を記載したメールを送りましたので、メールが届いているかご確認下さい'
+    export const CARD_AUTH_PAYMENT_ERROR_MESSAGE = '相談申し込みに失敗しました。再度初めから相談申し込みを行って下さい'
+    export const PAY_JP_CODE_INCORRECT_CARD_DATA_MESSAGE = 'カード情報に誤りがあります'
+    export const PAY_JP_CODE_CARD_DECLINED_MESSAGE = 'ご利用のカードはカード会社に拒否されています。詳細はカード会社にご確認ください'
+    export const PAY_JP_CODE_CARD_FLAGGED_MESSAGE = '該当カードの弊サービスにおける利用を一時的にロックしました。最後のエラーから24時間後に再度お試し下さい'
+    export const PAY_JP_CODE_UNACCEPTABLE_BRAND_MESSAGE = 'ご利用のカードブランドはサポートされておりません'
+    export const PAY_JP_CODE_THREE_D_SECURE_INCOMPLETED_MESSAGE = '相談申し込み中に別の操作が行われたため、処理に失敗しました。再度初めから相談申し込みを行って下さい'
+    export const PAY_JP_CODE_THREE_D_SECURE_FAILED_MESSAGE = 'カードの認証処理（3Dセキュア認証）に失敗しました。理再度初めから相談申し込みを行って下さい'
+    export const PAY_JP_CODE_NOT_IN_THREE_D_SECURE_FLOW_MESSAGE = 'カードの認証処理（3Dセキュア認証）がタイムアウトしました。再度初めから相談申し込みを行って下さい'
 }

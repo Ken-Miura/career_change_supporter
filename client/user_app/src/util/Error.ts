@@ -115,6 +115,14 @@ export namespace Code {
   export const DUPLICATE_DATE_TIME_CANDIDATES = 20103
   export const THREE_D_SECURE_ERROR = 20104
   export const EXCEED_MAX_ANNUAL_REWARDS = 20105
+  export const CARD_AUTH_PAYMENT_ERROR = 20106
+  export const PAY_JP_CODE_INCORRECT_CARD_DATA = 20107
+  export const PAY_JP_CODE_CARD_DECLINED = 20108
+  export const PAY_JP_CODE_CARD_FLAGGED = 20109
+  export const PAY_JP_CODE_UNACCEPTABLE_BRAND = 20110
+  export const PAY_JP_CODE_THREE_D_SECURE_INCOMPLETED = 20111
+  export const PAY_JP_CODE_THREE_D_SECURE_FAILED = 20112
+  export const PAY_JP_CODE_NOT_IN_THREE_D_SECURE_FLOW = 20113
 }
 
 export function createErrorMessage (code: number): string {
@@ -332,6 +340,22 @@ export function createErrorMessage (code: number): string {
     return `${Message.THREE_D_SECURE_ERROR_MESSAGE} (${code})`
   } else if (code === Code.EXCEED_MAX_ANNUAL_REWARDS) {
     return `${Message.EXCEED_MAX_ANNUAL_REWARDS_MESSAGE} (${code})`
+  } else if (code === Code.CARD_AUTH_PAYMENT_ERROR) {
+    return `${Message.CARD_AUTH_PAYMENT_ERROR_MESSAGE} (${code})`
+  } else if (code === Code.PAY_JP_CODE_INCORRECT_CARD_DATA) {
+    return `${Message.PAY_JP_CODE_INCORRECT_CARD_DATA_MESSAGE} (${code})`
+  } else if (code === Code.PAY_JP_CODE_CARD_DECLINED) {
+    return `${Message.PAY_JP_CODE_CARD_DECLINED_MESSAGE} (${code})`
+  } else if (code === Code.PAY_JP_CODE_CARD_FLAGGED) {
+    return `${Message.PAY_JP_CODE_CARD_FLAGGED_MESSAGE} (${code})`
+  } else if (code === Code.PAY_JP_CODE_UNACCEPTABLE_BRAND) {
+    return `${Message.PAY_JP_CODE_UNACCEPTABLE_BRAND_MESSAGE} (${code})`
+  } else if (code === Code.PAY_JP_CODE_THREE_D_SECURE_INCOMPLETED) {
+    return `${Message.PAY_JP_CODE_THREE_D_SECURE_INCOMPLETED_MESSAGE} (${code})`
+  } else if (code === Code.PAY_JP_CODE_THREE_D_SECURE_FAILED) {
+    return `${Message.PAY_JP_CODE_THREE_D_SECURE_FAILED_MESSAGE} (${code})`
+  } else if (code === Code.PAY_JP_CODE_NOT_IN_THREE_D_SECURE_FLOW) {
+    return `${Message.PAY_JP_CODE_NOT_IN_THREE_D_SECURE_FLOW_MESSAGE} (${code})`
   } else {
     throw new Error(`unexpected code: ${code}`)
   }
