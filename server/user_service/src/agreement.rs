@@ -274,10 +274,7 @@ mod tests {
         let id = 51235;
         let email_address = "test@example.com";
         let version = 1;
-        let agreed_at = chrono::Utc
-            .ymd(2021, 11, 7)
-            .and_hms(11, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let agreed_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 7).and_hms(11, 00, 40);
         let agreed_at_before = agreed_at - chrono::Duration::days(1);
         let op = AgreementOperationMock::new(
             false,
@@ -300,10 +297,7 @@ mod tests {
         let id = 82546;
         let email_address = "test1234@example.com";
         let version = 1;
-        let agreed_at = chrono::Utc
-            .ymd(2021, 11, 7)
-            .and_hms(11, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let agreed_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 7).and_hms(11, 00, 40);
         let agreed_at_before = agreed_at - chrono::Duration::days(1);
         let op = AgreementOperationMock::new(
             true,
