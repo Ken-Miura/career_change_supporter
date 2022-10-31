@@ -239,7 +239,6 @@ mod tests {
     use chrono::DateTime;
     use chrono::FixedOffset;
     use chrono::TimeZone;
-    use chrono::Utc;
     use common::util::hash_password;
     use common::util::validator::email_address_validator::validate_email_address;
     use common::util::validator::password_validator::validate_password;
@@ -309,10 +308,7 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-        let creation_time = Utc
-            .ymd(2021, 9, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
@@ -347,10 +343,7 @@ mod tests {
         let _ = validate_email_address(email_addr2).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-        let creation_time = Utc
-            .ymd(2021, 9, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
@@ -380,10 +373,7 @@ mod tests {
         let _ = validate_password(pwd1).expect("failed to get Ok");
         let _ = validate_password(pwd2).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd1).expect("failed to hash pwd");
-        let creation_time = Utc
-            .ymd(2021, 9, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
@@ -411,10 +401,7 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-        let creation_time = Utc
-            .ymd(2021, 9, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             user_account_id: id,
