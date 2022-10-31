@@ -91,7 +91,7 @@ impl UpdateIdentityRequestItemsOperation for UpdateIdentityRequestItemsOperation
 mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
-    use chrono::{Duration, TimeZone, Utc};
+    use chrono::{Duration, TimeZone};
     use common::{ErrResp, JAPANESE_TIME_ZONE};
 
     use crate::util::Pagination;
@@ -208,10 +208,7 @@ mod tests {
 
     fn create_3_dummy_items() -> Vec<UpdateIdentityReqItem> {
         let mut items = Vec::with_capacity(3);
-        let requested_at_1 = Utc
-            .ymd(2021, 9, 11)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let requested_at_1 = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let item1 = UpdateIdentityReqItem {
             user_account_id: 1,
             requested_at: requested_at_1,

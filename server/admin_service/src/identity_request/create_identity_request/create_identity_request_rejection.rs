@@ -356,10 +356,7 @@ mod tests {
             email_address: user_email_address.clone(),
         });
         let rejection_reason = "画像が不鮮明なため";
-        let rejected_time = chrono::Utc
-            .ymd(2022, 4, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let rejected_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 5).and_hms(21, 00, 40);
         let op_mock = CreateIdentityReqRejectionOperationMock {
             admin,
             user_option,
@@ -402,10 +399,7 @@ mod tests {
             email_address: user_email_address.clone(),
         });
         let rejection_reason = "<script>alert('test');<script>";
-        let rejected_time = chrono::Utc
-            .ymd(2022, 4, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let rejected_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 5).and_hms(21, 00, 40);
         let op_mock = CreateIdentityReqRejectionOperationMock {
             admin,
             user_option,
@@ -444,10 +438,7 @@ mod tests {
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
         let rejection_reason = "画像が不鮮明なため";
-        let rejected_time = chrono::Utc
-            .ymd(2022, 4, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let rejected_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 5).and_hms(21, 00, 40);
         let op_mock = CreateIdentityReqRejectionOperationMock {
             admin,
             user_option: None,

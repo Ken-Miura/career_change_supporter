@@ -642,10 +642,7 @@ mod tests {
             create_career_req_id,
             user_account_id,
         };
-        let approval_time = chrono::Utc
-            .ymd(2022, 4, 1)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let approval_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 1).and_hms(21, 00, 40);
         let op_mock = CreateCareerReqApprovalOperationMock {
             admin,
             user_option,
@@ -687,10 +684,7 @@ mod tests {
             create_career_req_id,
             user_account_id,
         };
-        let approval_time = chrono::Utc
-            .ymd(2022, 4, 1)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let approval_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 1).and_hms(21, 00, 40);
         let op_mock = CreateCareerReqApprovalOperationMock {
             admin,
             user_option: None,

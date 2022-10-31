@@ -129,8 +129,8 @@ mod tests {
     use crate::err::Code::IllegalDate;
     use axum::async_trait;
     use axum::http::StatusCode;
-    use chrono::{Datelike, NaiveDate, TimeZone, Utc};
-    use common::{util::Ymd, ErrResp};
+    use chrono::{Datelike, NaiveDate, TimeZone};
+    use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
 
     use super::{get_users_by_date_of_birth_internal, User, UsersByDateOfBirthOperation};
 
@@ -161,7 +161,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_one_user_found() {
-        let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
+        let date_of_birth = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
         let user = create_dummy_user1(date_of_birth);
         let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user.clone()],
@@ -182,7 +182,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_no_user_found() {
-        let date_of_birth = Utc.ymd(1991, 4, 1).naive_local();
+        let date_of_birth = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
         let user = create_dummy_user1(date_of_birth);
         let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user.clone()],
@@ -203,9 +203,11 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_one_user_found_one_user_not_found() {
-        let date_of_birth1 = Utc.ymd(1991, 4, 1).naive_local();
+        let date_of_birth1 = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
         let user1 = create_dummy_user1(date_of_birth1);
-        let date_of_birth2 = Utc.ymd(1991, date_of_birth1.month() + 1, 1).naive_local();
+        let date_of_birth2 = JAPANESE_TIME_ZONE
+            .ymd(1991, date_of_birth1.month() + 1, 1)
+            .naive_local();
         let user2 = create_dummy_user2(date_of_birth2);
         let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user1.clone(), user2],
@@ -226,11 +228,13 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_multiple_users_found() {
-        let date_of_birth1 = Utc.ymd(1991, 4, 1).naive_local();
+        let date_of_birth1 = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
         let user1 = create_dummy_user1(date_of_birth1);
-        let date_of_birth2 = Utc.ymd(1991, date_of_birth1.month() + 1, 1).naive_local();
+        let date_of_birth2 = JAPANESE_TIME_ZONE
+            .ymd(1991, date_of_birth1.month() + 1, 1)
+            .naive_local();
         let user2 = create_dummy_user2(date_of_birth2);
-        let date_of_birth3 = Utc
+        let date_of_birth3 = JAPANESE_TIME_ZONE
             .ymd(
                 date_of_birth1.year(),
                 date_of_birth1.month(),
