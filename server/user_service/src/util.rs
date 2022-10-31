@@ -16,7 +16,7 @@ use common::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
-    ApiError, ErrResp, ErrRespStruct,
+    ApiError, ErrResp, ErrRespStruct, JAPANESE_TIME_ZONE,
 };
 use entity::{
     document,
@@ -358,13 +358,14 @@ pub(crate) async fn check_if_consultant_is_available(
     Ok(available)
 }
 
+/// 渡された西暦に対して、その年の日本時間における1月1日0時0分0秒と12月31日23時59分59秒のタイムスタンプを返す
 pub(crate) fn create_start_and_end_timestamps_of_current_year(current_year: i32) -> (i64, i64) {
-    let start_timestamp = chrono::Utc
+    let start_timestamp = JAPANESE_TIME_ZONE
         .ymd(current_year, 1, 1)
         .and_hms(0, 0, 0)
         .timestamp();
 
-    let end_timestamp = chrono::Utc
+    let end_timestamp = JAPANESE_TIME_ZONE
         .ymd(current_year, 12, 31)
         .and_hms(23, 59, 59)
         .timestamp();
@@ -482,6 +483,7 @@ pub(crate) mod tests {
     use axum::{async_trait, Json};
     use bytes::Bytes;
     use chrono::TimeZone;
+    use common::JAPANESE_TIME_ZONE;
     use common::{
         payment_platform::{ErrorDetail, ErrorInfo},
         smtp::SendMail,
@@ -607,11 +609,14 @@ pub(crate) mod tests {
         let (since_timestamp, until_timestamp) =
             create_start_and_end_timestamps_of_current_year(2022);
         assert_eq!(
-            chrono::Utc.ymd(2022, 1, 1).and_hms(0, 0, 0).timestamp(),
+            JAPANESE_TIME_ZONE
+                .ymd(2022, 1, 1)
+                .and_hms(0, 0, 0)
+                .timestamp(),
             since_timestamp
         );
         assert_eq!(
-            chrono::Utc
+            JAPANESE_TIME_ZONE
                 .ymd(2022, 12, 31)
                 .and_hms(23, 59, 59)
                 .timestamp(),
@@ -624,11 +629,14 @@ pub(crate) mod tests {
         let (since_timestamp, until_timestamp) =
             create_start_and_end_timestamps_of_current_year(2020);
         assert_eq!(
-            chrono::Utc.ymd(2020, 1, 1).and_hms(0, 0, 0).timestamp(),
+            JAPANESE_TIME_ZONE
+                .ymd(2020, 1, 1)
+                .and_hms(0, 0, 0)
+                .timestamp(),
             since_timestamp
         );
         assert_eq!(
-            chrono::Utc
+            JAPANESE_TIME_ZONE
                 .ymd(2020, 12, 31)
                 .and_hms(23, 59, 59)
                 .timestamp(),

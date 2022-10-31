@@ -618,7 +618,7 @@ fn generate_metadata(
 mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
+    use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
     use common::payment_platform::customer::Card;
     use common::{
         payment_platform::charge::{Charge, CreateCharge},
@@ -769,16 +769,14 @@ mod tests {
         ) -> Result<i32, ErrResp> {
             assert_eq!(self.tenant_id.clone().expect("failed to get Ok"), tenant_id);
             let year = self.current_date_time.year();
-            let since = Utc
+            let since = JAPANESE_TIME_ZONE
                 .ymd(year, 1, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp();
             assert_eq!(since, since_timestamp);
-            let until = Utc
+            let until = JAPANESE_TIME_ZONE
                 .ymd(year, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp();
             assert_eq!(until, until_timestamp);
             Ok(self.rewards_of_the_year)

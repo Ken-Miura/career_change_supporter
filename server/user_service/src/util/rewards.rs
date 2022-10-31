@@ -117,8 +117,7 @@ mod tests {
 
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{TimeZone, Utc};
-    use common::ApiError;
+    use chrono::TimeZone;
     use common::{
         payment_platform::{
             charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
@@ -127,6 +126,7 @@ mod tests {
         },
         ErrResp,
     };
+    use common::{ApiError, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
     use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 
@@ -232,8 +232,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 1,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![List {
@@ -246,8 +252,14 @@ mod tests {
                         too_many_requests: false,
                     },
                     num_of_charges_per_req: 1,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(0),
@@ -257,8 +269,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 1,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![List {
@@ -278,8 +296,14 @@ mod tests {
                         too_many_requests: false,
                     },
                     num_of_charges_per_req: 1,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(2800),
@@ -289,8 +313,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 2,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![List {
@@ -320,8 +350,14 @@ mod tests {
                         too_many_requests: false,
                     },
                     num_of_charges_per_req: 2,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(4900),
@@ -331,8 +367,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 2,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![
@@ -378,8 +420,14 @@ mod tests {
                         too_many_requests: false,
                     },
                     num_of_charges_per_req: 2,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(8400),
@@ -389,8 +437,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 1,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![List {
@@ -410,8 +464,14 @@ mod tests {
                         too_many_requests: false,
                     },
                     num_of_charges_per_req: 1,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(0),
@@ -421,8 +481,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 1,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![List {
@@ -442,8 +508,14 @@ mod tests {
                         too_many_requests: false,
                     },
                     num_of_charges_per_req: 1,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(2100),
@@ -453,8 +525,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 1,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![List {
@@ -474,8 +552,14 @@ mod tests {
                         too_many_requests: false,
                     },
                     num_of_charges_per_req: 1,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Ok(0),
@@ -485,8 +569,14 @@ mod tests {
                 input: Input {
                     charge_op: ChargeOperationMock {
                         num_of_charges_per_req: 1,
-                        since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                        until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                        since_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 1)
+                            .and_hms(0, 0, 0)
+                            .timestamp(),
+                        until_timestamp: JAPANESE_TIME_ZONE
+                            .ymd(2022, 9, 30)
+                            .and_hms(23, 59, 59)
+                            .timestamp(),
                         tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                         num_of_search_trial: 0,
                         lists: vec![List {
@@ -506,8 +596,14 @@ mod tests {
                         too_many_requests: true,
                     },
                     num_of_charges_per_req: 1,
-                    since_timestamp: Utc.ymd(2022, 9, 1).and_hms(0, 0, 0).timestamp(),
-                    until_timestamp: Utc.ymd(2022, 9, 30).and_hms(23, 59, 59).timestamp(),
+                    since_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 1)
+                        .and_hms(0, 0, 0)
+                        .timestamp(),
+                    until_timestamp: JAPANESE_TIME_ZONE
+                        .ymd(2022, 9, 30)
+                        .and_hms(23, 59, 59)
+                        .timestamp(),
                     tenant_id: "336e7d16726246b69636d58bec7a3a30".to_string(),
                 },
                 expected: Err((

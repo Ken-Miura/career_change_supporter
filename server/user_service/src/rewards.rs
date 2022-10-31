@@ -220,7 +220,7 @@ fn create_start_and_end_timestamps_of_current_month(
     current_year: i32,
     current_month: u32,
 ) -> (i64, i64) {
-    let start_timestamp = chrono::Utc
+    let start_timestamp = JAPANESE_TIME_ZONE
         .ymd(current_year, current_month, 1)
         .and_hms(0, 0, 0)
         .timestamp();
@@ -230,7 +230,7 @@ fn create_start_and_end_timestamps_of_current_month(
     } else {
         (current_year, current_month + 1)
     };
-    let end_timestamp = (chrono::Utc
+    let end_timestamp = (JAPANESE_TIME_ZONE
         .ymd(year_for_until, month_for_until, 1)
         .and_hms(23, 59, 59)
         - Duration::days(1))
@@ -412,7 +412,7 @@ mod tests {
 
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{TimeZone, Utc};
+    use chrono::TimeZone;
     use common::{
         payment_platform::{
             charge::Charge,
@@ -574,33 +574,26 @@ mod tests {
     async fn handle_reward_req_returns_empty_rewards() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
         let reward_op = RewardOperationMock {
             tenant_id_option: None,
             too_many_requests: false,
-            month_since_timestamp: Utc
+            month_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            month_until_timestamp: Utc
+            month_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_month: 0,
-            year_since_timestamp: Utc
+            year_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 1, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            year_until_timestamp: Utc
+            year_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_year: 0,
         };
@@ -692,33 +685,26 @@ mod tests {
     async fn handle_reward_req_fail_tenant_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
             too_many_requests: false,
-            month_since_timestamp: Utc
+            month_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            month_until_timestamp: Utc
+            month_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_month: 0,
-            year_since_timestamp: Utc
+            year_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 1, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            year_until_timestamp: Utc
+            year_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_year: 0,
         };
@@ -759,33 +745,26 @@ mod tests {
     async fn handle_reward_req_fail_rewards_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
             too_many_requests: true,
-            month_since_timestamp: Utc
+            month_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            month_until_timestamp: Utc
+            month_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_month: 0,
-            year_since_timestamp: Utc
+            year_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 1, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            year_until_timestamp: Utc
+            year_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_year: 0,
         };
@@ -826,33 +805,26 @@ mod tests {
     async fn handle_reward_req_fail_tenant_transfers_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
             too_many_requests: false,
-            month_since_timestamp: Utc
+            month_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            month_until_timestamp: Utc
+            month_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_month: 0,
-            year_since_timestamp: Utc
+            year_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 1, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            year_until_timestamp: Utc
+            year_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_year: 0,
         };
@@ -893,33 +865,26 @@ mod tests {
     async fn handle_reward_req_returns_reward_with_tenant_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
             too_many_requests: false,
-            month_since_timestamp: Utc
+            month_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            month_until_timestamp: Utc
+            month_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_month: 2696,
-            year_since_timestamp: Utc
+            year_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 1, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            year_until_timestamp: Utc
+            year_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_year: 2696,
         };
@@ -1073,26 +1038,22 @@ mod tests {
         let reward_op = RewardOperationMock {
             tenant_id_option: Some(tenant_id.to_string()),
             too_many_requests: false,
-            month_since_timestamp: Utc
+            month_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            month_until_timestamp: Utc
+            month_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_month: 2696,
-            year_since_timestamp: Utc
+            year_since_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 1, 1)
                 .and_hms(0, 0, 0)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
-            year_until_timestamp: Utc
+            year_until_timestamp: JAPANESE_TIME_ZONE
                 .ymd(2021, 12, 31)
                 .and_hms(23, 59, 59)
-                .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp(),
             rewards_of_the_year: 16000,
         };
@@ -1115,10 +1076,7 @@ mod tests {
             },
             too_many_requests: false,
         };
-        let current_datetime = Utc
-            .ymd(2021, 12, 31)
-            .and_hms(14, 59, 59)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
 
         let result = handle_reward_req(
             account_id,
