@@ -910,7 +910,7 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use bytes::Bytes;
-    use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
+    use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone};
     use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
     use common::util::{Identity, Ymd};
     use common::{ApiError, ErrResp, JAPANESE_TIME_ZONE};
@@ -991,10 +991,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_success() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1098,10 +1097,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_success_without_identity_image2() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1134,10 +1132,9 @@ mod tests {
         let image1_size_in_bytes = Bytes::from(create_dummy_identity_image1().into_inner()).len();
         let image2_size_in_bytes = Bytes::from(create_dummy_identity_image2().into_inner()).len();
         let max_image_size_in_bytes = max(image1_size_in_bytes, image2_size_in_bytes);
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1181,10 +1178,9 @@ mod tests {
         let image1_size_in_bytes = Bytes::from(create_dummy_identity_image1().into_inner()).len();
         let image2_size_in_bytes = Bytes::from(create_dummy_identity_image2().into_inner()).len();
         let max_image_size_in_bytes = max(image1_size_in_bytes, image2_size_in_bytes);
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1217,10 +1213,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_no_name_found() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1254,10 +1249,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_data_parse() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let mock = MultipartWrapperErrMock {};
@@ -1271,10 +1265,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_name_in_field() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1307,10 +1300,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_no_identity_found() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity_image1 = create_dummy_identity_image1();
@@ -1341,10 +1333,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_no_identity_image1_found() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1371,10 +1362,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_no_file_name_found() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1407,10 +1397,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_not_jpeg_extension() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1443,10 +1432,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_identity_json() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let err_identity = create_dummy_err_identity();
@@ -1506,10 +1494,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_utf8_sequence() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity_field = create_invalid_utf8_identity_field(Some(String::from("identity")));
@@ -1552,10 +1539,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_jpeg_image() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1612,10 +1598,9 @@ mod tests {
         let image2_size_in_bytes = Bytes::from(create_dummy_identity_image2().into_inner()).len();
         // 最大値は、実際のバイト数 - 1 を指定
         let max_image_size_in_bytes = max(image1_size_in_bytes, image2_size_in_bytes) - 1;
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = create_dummy_identity(&current_date);
@@ -1648,10 +1633,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_last_name_length() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -1693,10 +1677,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_char_in_last_name() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -1738,10 +1721,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_first_name_length() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -1783,10 +1765,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_char_in_first_name() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -1828,10 +1809,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_last_name_furigana_length() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -1873,10 +1853,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_char_in_last_name_furigana() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -1918,10 +1897,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_first_name_furigana_length() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -1963,10 +1941,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_char_in_first_name_furigana() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2008,10 +1985,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_date() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2053,10 +2029,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_age() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2098,10 +2073,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_prefecture() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2143,10 +2117,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_city_length() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2188,10 +2161,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_char_in_city() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2233,10 +2205,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_address_line1_length() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2278,10 +2249,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_char_in_address_line1() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2323,10 +2293,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_address_line2_length() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2368,10 +2337,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_illegal_char_in_address_line2() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2413,10 +2381,9 @@ mod tests {
 
     #[tokio::test]
     async fn handle_multipart_fail_invalid_tel_num_format() {
-        let current_date = Utc
+        let current_date = JAPANESE_TIME_ZONE
             .ymd(2022, 3, 7)
             .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
             .naive_local()
             .date();
         let identity = Identity {
@@ -2516,10 +2483,7 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_success_create_identity_req() {
         let account_id = 1234;
-        let current_date_time = Utc
-            .ymd(2022, 3, 7)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 3, 7).and_hms(15, 30, 45);
         let current_date = current_date_time.naive_local().date();
         let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
@@ -2554,10 +2518,7 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_success_update_identity_req() {
         let account_id = 1234;
-        let current_date_time = Utc
-            .ymd(2022, 3, 7)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 3, 7).and_hms(15, 30, 45);
         let current_date = current_date_time.naive_local().date();
         let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
@@ -2598,10 +2559,7 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_fail_create_identity_req_already_exists() {
         let account_id = 1234;
-        let current_date_time = Utc
-            .ymd(2022, 3, 7)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 3, 7).and_hms(15, 30, 45);
         let current_date = current_date_time.naive_local().date();
         let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
@@ -2636,10 +2594,7 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_fail_update_identity_req_already_exists() {
         let account_id = 1234;
-        let current_date_time = Utc
-            .ymd(2022, 3, 7)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 3, 7).and_hms(15, 30, 45);
         let current_date = current_date_time.naive_local().date();
         let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
@@ -2680,10 +2635,7 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_fail_date_of_birth_is_not_match() {
         let account_id = 1234;
-        let current_date_time = Utc
-            .ymd(2022, 3, 7)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 3, 7).and_hms(15, 30, 45);
         let current_date = current_date_time.naive_local().date();
         let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
@@ -2733,10 +2685,7 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_fail_first_name_is_not_match() {
         let account_id = 1234;
-        let current_date_time = Utc
-            .ymd(2022, 3, 7)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 3, 7).and_hms(15, 30, 45);
         let current_date = current_date_time.naive_local().date();
         let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
@@ -2779,10 +2728,7 @@ mod tests {
     #[tokio::test]
     async fn handle_identity_req_fail_no_identity_updated() {
         let account_id = 1234;
-        let current_date_time = Utc
-            .ymd(2022, 3, 7)
-            .and_hms(15, 30, 45)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 3, 7).and_hms(15, 30, 45);
         let current_date = current_date_time.naive_local().date();
         let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
         let submitted_identity = SubmittedIdentity {
