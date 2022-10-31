@@ -335,10 +335,7 @@ mod tests {
         let uuid = Uuid::new_v4().simple().to_string();
         let email_addr = "test@test.com";
         let hashed_pwd = hash_password("aaaaaaaaaA").expect("failed to hash password");
-        let register_date_time = chrono::Utc
-            .ymd(2021, 9, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let register_date_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -371,10 +368,7 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash password");
-        let register_date_time = chrono::Utc
-            .ymd(2021, 9, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let register_date_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -408,10 +402,7 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash password");
-        let register_date_time = chrono::Utc
-            .ymd(2021, 9, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let register_date_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -444,10 +435,7 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash password");
-        let register_date_time = chrono::Utc
-            .ymd(2021, 9, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let register_date_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
@@ -479,10 +467,7 @@ mod tests {
         let _ = validate_email_address(email_addr).expect("failed to get Ok");
         let _ = validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash password");
-        let register_date_time = chrono::Utc
-            .ymd(2021, 9, 5)
-            .and_hms(21, 00, 40)
-            .with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let register_date_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 5).and_hms(21, 00, 40);
         let temp_account = TempAccount {
             user_temp_account_id: uuid.clone(),
             email_address: email_addr.to_string(),
