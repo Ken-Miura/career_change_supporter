@@ -616,8 +616,10 @@ fn generate_metadata(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
+    use common::payment_platform::customer::Card;
     use common::{
         payment_platform::charge::{Charge, CreateCharge},
         ErrResp, RespResult, JAPANESE_TIME_ZONE,
@@ -630,8 +632,8 @@ mod tests {
     };
 
     use super::{
-        handle_request_consultation, RequestConsultationOperation, RequestConsultationParam,
-        RequestConsultationResult,
+        handle_request_consultation, ConsultationDateTime, RequestConsultationOperation,
+        RequestConsultationParam, RequestConsultationResult,
     };
 
     #[derive(Debug)]
@@ -774,8 +776,8 @@ mod tests {
                 .timestamp();
             assert_eq!(since, since_timestamp);
             let until = Utc
-                .ymd(year, 1, 1)
-                .and_hms(0, 0, 0)
+                .ymd(year, 12, 31)
+                .and_hms(23, 59, 59)
                 .with_timezone(&JAPANESE_TIME_ZONE.to_owned())
                 .timestamp();
             assert_eq!(until, until_timestamp);
@@ -783,7 +785,111 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![TestCase {
+            name: "success case 1".to_string(),
+            input: Input {
+                account_id: 1,
+                param: RequestConsultationParam {
+                    consultant_id: 2,
+                    fee_per_hour_in_yen: 5000,
+                    card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                    first_candidate_in_jst: ConsultationDateTime {
+                        year: 2022,
+                        month: 11,
+                        day: 4,
+                        hour: 7,
+                    },
+                    second_candidate_in_jst: ConsultationDateTime {
+                        year: 2022,
+                        month: 11,
+                        day: 4,
+                        hour: 23,
+                    },
+                    third_candidate_in_jst: ConsultationDateTime {
+                        year: 2022,
+                        month: 11,
+                        day: 22,
+                        hour: 7,
+                    },
+                },
+                current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                req_op: RequestConsultationOperationMock {
+                    account_id: 1,
+                    consultant_id: 2,
+                    fee_per_hour_in_yen: Some(5000),
+                    tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                    card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                    charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    amount: 5000,
+                    expected_rewards: 15000,
+                    first_candidate_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                    second_candidate_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                    third_candidate_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                    rewards_of_the_year: 20000,
+                },
+            },
+            expected: Ok((
+                StatusCode::OK,
+                Json(RequestConsultationResult {
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                }),
+            )),
+        }]
+    });
+
+    // create_dummy_chargeでAPI呼び出しの結果返却されるChargeを作成する
+    // 返却されたChargeはidだけ利用し、他を参照することはないのでid以外はダミーで関係ない値で埋めてある
+    fn create_dummy_charge(charge_id: &str) -> Charge {
+        Charge {
+            id: charge_id.to_string(),
+            object: "charge".to_string(),
+            livemode: false,
+            created: 1639931415,
+            amount: 5000,
+            currency: "jpy".to_string(),
+            paid: true,
+            expired_at: None,
+            captured: false,
+            captured_at: Some(1639931415),
+            card: Some(Card {
+                object: "card".to_string(),
+                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
+                created: 1639931415,
+                name: None,
+                last4: "4242".to_string(),
+                exp_month: 12,
+                exp_year: 2022,
+                brand: "Visa".to_string(),
+                cvc_check: "passed".to_string(),
+                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
+                address_state: None,
+                address_city: None,
+                address_line1: None,
+                address_line2: None,
+                country: None,
+                address_zip: None,
+                address_zip_check: "unchecked".to_string(),
+                metadata: None,
+            }),
+            customer: None,
+            description: None,
+            failure_code: None,
+            failure_message: None,
+            fee_rate: Some("3.00".to_string()),
+            refunded: false,
+            amount_refunded: 0,
+            refund_reason: None,
+            subscription: None,
+            metadata: None,
+            platform_fee: None,
+            tenant: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            platform_fee_rate: Some("30.0".to_string()),
+            total_platform_fee: Some(1350),
+            three_d_secure_status: Some("unverified".to_string()),
+        }
+    }
 
     #[tokio::test]
     async fn handle_request_consultation_tests() {
