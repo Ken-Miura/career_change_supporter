@@ -704,7 +704,10 @@ impl<'a> ChargeOperationImpl<'a> {
 mod tests {
     use chrono::TimeZone;
 
-    use crate::payment_platform::{charge::InvalidQueryParamError, Metadata};
+    use crate::{
+        payment_platform::{charge::InvalidQueryParamError, Metadata},
+        JAPANESE_TIME_ZONE,
+    };
 
     use super::{CreateCharge, InvalidCreateChargeParamError, Query};
 
@@ -723,8 +726,14 @@ mod tests {
 
     #[test]
     fn query_has_value_that_is_passed_on_query_builder() {
-        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
-        let until = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 41).timestamp();
+        let since = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 40)
+            .timestamp();
+        let until = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 41)
+            .timestamp();
         let customer = "cus_4df4b5ed720933f4fb9e28857517";
         let subscription = "sub_567a1e44562932ec1a7682d746e0";
         let tenant = "ten_121673955bd7aa144de5a8f6c262";
@@ -781,7 +790,10 @@ mod tests {
 
     #[test]
     fn query_accepts_same_since_and_until() {
-        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let since = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 40)
+            .timestamp();
         let until = since;
         let result = Query::build().since(since).until(until).finish();
         result.expect("failed to get Ok");
@@ -789,8 +801,14 @@ mod tests {
 
     #[test]
     fn query_fail_to_create_query_when_since_exceeds_until() {
-        let since_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
-        let until_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 39).timestamp();
+        let since_timestamp = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 40)
+            .timestamp();
+        let until_timestamp = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 39)
+            .timestamp();
         let result = Query::build()
             .since(since_timestamp)
             .until(until_timestamp)

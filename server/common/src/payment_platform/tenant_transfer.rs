@@ -344,6 +344,8 @@ impl<'a> TenantTransferOperation for TenantTransferOperationImpl<'a> {
 mod tests {
     use chrono::TimeZone;
 
+    use crate::JAPANESE_TIME_ZONE;
+
     use super::{InvalidParamError, Query};
 
     #[test]
@@ -363,13 +365,19 @@ mod tests {
 
     #[test]
     fn query_has_value_that_is_passed_on_query_builder() {
-        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
-        let until = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 41).timestamp();
-        let since_scheduled_date = chrono::Utc
+        let since = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 40)
+            .timestamp();
+        let until = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 41)
+            .timestamp();
+        let since_scheduled_date = JAPANESE_TIME_ZONE
             .ymd(2021, 12, 11)
             .and_hms(23, 00, 40)
             .timestamp();
-        let until_scheduled_date = chrono::Utc
+        let until_scheduled_date = JAPANESE_TIME_ZONE
             .ymd(2021, 12, 11)
             .and_hms(23, 00, 41)
             .timestamp();
@@ -447,7 +455,10 @@ mod tests {
 
     #[test]
     fn query_accepts_same_since_and_until() {
-        let since = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
+        let since = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 40)
+            .timestamp();
         let until = since;
         let result = Query::build().since(since).until(until).finish();
         result.expect("failed to get Ok");
@@ -455,8 +466,14 @@ mod tests {
 
     #[test]
     fn query_fail_to_create_query_when_since_exceeds_until() {
-        let since_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 40).timestamp();
-        let until_timestamp = chrono::Utc.ymd(2021, 12, 9).and_hms(23, 00, 39).timestamp();
+        let since_timestamp = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 40)
+            .timestamp();
+        let until_timestamp = JAPANESE_TIME_ZONE
+            .ymd(2021, 12, 9)
+            .and_hms(23, 00, 39)
+            .timestamp();
         let result = Query::build()
             .since(since_timestamp)
             .until(until_timestamp)
@@ -480,7 +497,7 @@ mod tests {
 
     #[test]
     fn query_accepts_same_since_scheduled_date_and_until_scheduled_date() {
-        let since_scheduled_date = chrono::Utc
+        let since_scheduled_date = JAPANESE_TIME_ZONE
             .ymd(2021, 12, 11)
             .and_hms(23, 00, 40)
             .timestamp();
@@ -494,11 +511,11 @@ mod tests {
 
     #[test]
     fn query_fail_to_create_query_when_since_scheduled_date_exceeds_until_scheduled_date() {
-        let since_scheduled_date_timestamp = chrono::Utc
+        let since_scheduled_date_timestamp = JAPANESE_TIME_ZONE
             .ymd(2021, 12, 11)
             .and_hms(23, 00, 40)
             .timestamp();
-        let until_scheduled_date_timestamp = chrono::Utc
+        let until_scheduled_date_timestamp = JAPANESE_TIME_ZONE
             .ymd(2021, 12, 11)
             .and_hms(23, 00, 39)
             .timestamp();
