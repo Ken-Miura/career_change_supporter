@@ -620,12 +620,14 @@ mod tests {
     use axum::{async_trait, Json};
     use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
     use common::payment_platform::customer::Card;
+    use common::ApiError;
     use common::{
         payment_platform::charge::{Charge, CreateCharge},
         ErrResp, RespResult, JAPANESE_TIME_ZONE,
     };
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::util::{
         KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
@@ -784,57 +786,122 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        vec![TestCase {
-            name: "success case 1".to_string(),
-            input: Input {
-                account_id: 1,
-                param: RequestConsultationParam {
-                    consultant_id: 2,
-                    fee_per_hour_in_yen: 5000,
-                    card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-                    first_candidate_in_jst: ConsultationDateTime {
-                        year: 2022,
-                        month: 11,
-                        day: 4,
-                        hour: 7,
-                    },
-                    second_candidate_in_jst: ConsultationDateTime {
-                        year: 2022,
-                        month: 11,
-                        day: 4,
-                        hour: 23,
-                    },
-                    third_candidate_in_jst: ConsultationDateTime {
-                        year: 2022,
-                        month: 11,
-                        day: 22,
-                        hour: 7,
-                    },
-                },
-                current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-                req_op: RequestConsultationOperationMock {
+        vec![
+            TestCase {
+                name: "success case 1".to_string(),
+                input: Input {
                     account_id: 1,
-                    consultant_id: 2,
-                    fee_per_hour_in_yen: Some(5000),
-                    tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-                    card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-                    charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                    param: RequestConsultationParam {
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: 5000,
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 22,
+                            hour: 7,
+                        },
+                    },
                     current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-                    amount: 5000,
-                    expected_rewards: 15000,
-                    first_candidate_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                    second_candidate_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                    third_candidate_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
-                    rewards_of_the_year: 20000,
+                    req_op: RequestConsultationOperationMock {
+                        account_id: 1,
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: Some(5000),
+                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        amount: 5000,
+                        expected_rewards: 15000,
+                        first_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(7, 0, 0),
+                        second_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(23, 0, 0),
+                        third_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        rewards_of_the_year: 20000,
+                    },
                 },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(RequestConsultationResult {
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    }),
+                )),
             },
-            expected: Ok((
-                StatusCode::OK,
-                Json(RequestConsultationResult {
-                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                }),
-            )),
-        }]
+            TestCase {
+                name: "consultant is negative".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: RequestConsultationParam {
+                        consultant_id: -1,
+                        fee_per_hour_in_yen: 5000,
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 22,
+                            hour: 7,
+                        },
+                    },
+                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    req_op: RequestConsultationOperationMock {
+                        account_id: 1,
+                        consultant_id: -1,
+                        fee_per_hour_in_yen: Some(5000),
+                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        amount: 5000,
+                        expected_rewards: 15000,
+                        first_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(7, 0, 0),
+                        second_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(23, 0, 0),
+                        third_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        rewards_of_the_year: 20000,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultantId as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     // create_dummy_chargeでAPI呼び出しの結果返却されるChargeを作成する
