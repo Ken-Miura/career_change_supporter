@@ -438,7 +438,7 @@ async fn add_new_document_with_career(
             "annual_income_in_man_yen": career_model.annual_income_in_man_yen,
             "is_manager": career_model.is_manager,
             "position_name": career_model.position_name,
-            "is_new_graduate": career_model.is_manager,
+            "is_new_graduate": career_model.is_new_graduate,
             "note": career_model.note,
         }],
         "num_of_careers": num_of_careers,
