@@ -580,11 +580,11 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{payment_platform::charge::Charge, ErrResp, RespResult};
+    use chrono::{DateTime, Duration, FixedOffset, Utc};
+    use common::{payment_platform::charge::Charge, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::util::tests::SendMailMock;
+    use crate::util::{tests::SendMailMock, EXPIRY_DAYS_OF_CHARGE};
 
     use super::{
         handle_finish_request_consultation, FinishRequestConsultationOperation,
@@ -607,23 +607,38 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct FinishRequestConsultationOperationMock {}
+    struct FinishRequestConsultationOperationMock {
+        account_id: i64,
+        charge_id: String,
+        charge: Charge,
+        consultant_id: i64,
+        latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
+        user_account_email_address: String,
+        consultant_email_address: String,
+    }
 
     #[async_trait]
     impl FinishRequestConsultationOperation for FinishRequestConsultationOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            };
+            Ok(true)
         }
 
         async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp> {
-            todo!()
+            assert_eq!(self.charge_id, charge_id);
+            Ok(self.charge.clone())
         }
 
         async fn check_if_consultant_is_available(
             &self,
             consultant_id: i64,
         ) -> Result<bool, ErrResp> {
-            todo!()
+            if self.consultant_id != consultant_id {
+                return Ok(false);
+            };
+            Ok(true)
         }
 
         async fn create_request_consultation(
@@ -633,21 +648,37 @@ mod tests {
             charge_id: String,
             latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
         ) -> Result<Charge, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.consultant_id, consultant_id);
+            assert_eq!(self.charge_id, charge_id);
+            assert_eq!(
+                self.latest_candidate_date_time_in_jst,
+                latest_candidate_date_time_in_jst
+            );
+            // captured_at、expired_atは使わかないので用意する必要はないが、
+            // 本番環境ではセットされてくるので、それに合わせたデータを用意してく
+            let mut charge = self.charge.clone();
+            let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+            charge.captured_at = Some(current_date_time.timestamp());
+            let expired_at = current_date_time + Duration::days((*EXPIRY_DAYS_OF_CHARGE) as i64);
+            charge.expired_at = Some(expired_at.timestamp());
+            Ok(charge)
         }
 
         async fn get_user_account_email_address_by_user_account_id(
             &self,
             user_account_id: i64,
         ) -> Result<String, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, user_account_id);
+            Ok(self.user_account_email_address.clone())
         }
 
         async fn get_consultant_email_address_by_consultant_id(
             &self,
             consultant_id: i64,
         ) -> Result<String, ErrResp> {
-            todo!()
+            assert_eq!(self.consultant_id, consultant_id);
+            Ok(self.consultant_email_address.clone())
         }
     }
 
