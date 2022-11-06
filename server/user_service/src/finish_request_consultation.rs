@@ -579,5 +579,103 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
 
 #[cfg(test)]
 mod tests {
-    // TODO
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{payment_platform::charge::Charge, ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::util::tests::SendMailMock;
+
+    use super::{
+        handle_finish_request_consultation, FinishRequestConsultationOperation,
+        FinishRequestConsultationResult,
+    };
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<FinishRequestConsultationResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        charge_id: String,
+        op: FinishRequestConsultationOperationMock,
+        smtp_client: SendMailMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct FinishRequestConsultationOperationMock {}
+
+    #[async_trait]
+    impl FinishRequestConsultationOperation for FinishRequestConsultationOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp> {
+            todo!()
+        }
+
+        async fn check_if_consultant_is_available(
+            &self,
+            consultant_id: i64,
+        ) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn create_request_consultation(
+            &self,
+            account_id: i64,
+            consultant_id: i64,
+            charge_id: String,
+            latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
+        ) -> Result<Charge, ErrResp> {
+            todo!()
+        }
+
+        async fn get_user_account_email_address_by_user_account_id(
+            &self,
+            user_account_id: i64,
+        ) -> Result<String, ErrResp> {
+            todo!()
+        }
+
+        async fn get_consultant_email_address_by_consultant_id(
+            &self,
+            consultant_id: i64,
+        ) -> Result<String, ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_finish_request_consultation_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let charge_id = test_case.input.charge_id.clone();
+            let op = test_case.input.op.clone();
+            let smtp_client = test_case.input.smtp_client.clone();
+
+            let result =
+                handle_finish_request_consultation(account_id, charge_id, op, smtp_client).await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
 }

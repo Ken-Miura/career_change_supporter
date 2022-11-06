@@ -499,6 +499,7 @@ pub(crate) mod tests {
         create_start_and_end_timestamps_of_current_year,
     };
 
+    #[derive(Clone, Debug)]
     pub(crate) struct SendMailMock {
         to: String,
         from: String,
