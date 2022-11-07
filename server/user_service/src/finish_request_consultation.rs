@@ -579,12 +579,20 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, Duration, FixedOffset, Utc};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
+    use common::payment_platform::customer::Card;
+    use common::payment_platform::Metadata;
+    use common::smtp::SendMail;
     use common::{payment_platform::charge::Charge, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::util::{tests::SendMailMock, EXPIRY_DAYS_OF_CHARGE};
+    use crate::util::{
+        EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
+        KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    };
 
     use super::{
         handle_finish_request_consultation, FinishRequestConsultationOperation,
@@ -682,7 +690,142 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    #[derive(Clone, Debug)]
+    struct SendMailMock {}
+
+    #[async_trait]
+    impl SendMail for SendMailMock {
+        async fn send_mail(
+            &self,
+            _to: &str,
+            _from: &str,
+            _subject: &str,
+            _text: &str,
+        ) -> Result<(), ErrResp> {
+            Ok(())
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![TestCase {
+            name: "success case".to_string(),
+            input: Input {
+                account_id: 1,
+                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                op: FinishRequestConsultationOperationMock {
+                    account_id: 1,
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    charge: create_dummy_charge(
+                        "ch_fa990a4c10672a93053a774730b0a",
+                        5000,
+                        "verified",
+                        create_metadata(
+                            2,
+                            JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                            JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                            JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                        ),
+                    ),
+                    consultant_id: 2,
+                    latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                        .ymd(2022, 11, 22)
+                        .and_hms(7, 0, 0),
+                    user_account_email_address: "test0@test.com".to_string(),
+                    consultant_email_address: "test1@test.com".to_string(),
+                },
+                smtp_client: SendMailMock {},
+            },
+            expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
+        }]
+    });
+
+    // create_dummy_chargeでAPI呼び出しの結果返却されるChargeを作成する
+    // 返却されたChargeはパラメータで指定した値だけ利用し、他を参照することはないのでパラメータの値以外はダミーの関係ない値で埋めてある
+    fn create_dummy_charge(
+        id: &str,
+        amount: i32,
+        three_d_secure_status: &str,
+        metadata: Metadata,
+    ) -> Charge {
+        Charge {
+            id: id.to_string(),
+            object: "charge".to_string(),
+            livemode: false,
+            created: 1639931415,
+            amount,
+            currency: "jpy".to_string(),
+            paid: true,
+            expired_at: None,
+            captured: false,
+            captured_at: Some(1639931415),
+            card: Some(Card {
+                object: "card".to_string(),
+                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
+                created: 1639931415,
+                name: None,
+                last4: "4242".to_string(),
+                exp_month: 12,
+                exp_year: 2022,
+                brand: "Visa".to_string(),
+                cvc_check: "passed".to_string(),
+                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
+                address_state: None,
+                address_city: None,
+                address_line1: None,
+                address_line2: None,
+                country: None,
+                address_zip: None,
+                address_zip_check: "unchecked".to_string(),
+                metadata: None,
+            }),
+            customer: None,
+            description: None,
+            failure_code: None,
+            failure_message: None,
+            fee_rate: Some("3.00".to_string()),
+            refunded: false,
+            amount_refunded: 0,
+            refund_reason: None,
+            subscription: None,
+            metadata: Some(metadata),
+            platform_fee: None,
+            tenant: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            platform_fee_rate: Some("30.0".to_string()),
+            total_platform_fee: Some(1350),
+            three_d_secure_status: Some(three_d_secure_status.to_string()),
+        }
+    }
+
+    fn create_metadata(
+        consultant_id: i64,
+        first_candidate_in_jst: DateTime<FixedOffset>,
+        second_candidate_in_jst: DateTime<FixedOffset>,
+        third_candidate_in_jst: DateTime<FixedOffset>,
+    ) -> Metadata {
+        let mut metadata = Metadata::with_capacity(4);
+
+        let _ = metadata.insert(
+            KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ.to_string(),
+            consultant_id.to_string(),
+        );
+
+        let _ = metadata.insert(
+            KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
+            first_candidate_in_jst.to_rfc3339(),
+        );
+
+        let _ = metadata.insert(
+            KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
+            second_candidate_in_jst.to_rfc3339(),
+        );
+
+        let _ = metadata.insert(
+            KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
+            third_candidate_in_jst.to_rfc3339(),
+        );
+
+        metadata
+    }
 
     #[tokio::test]
     async fn handle_finish_request_consultation_tests() {
