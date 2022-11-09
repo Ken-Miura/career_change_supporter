@@ -139,11 +139,11 @@
 				"cwd": "${workspaceFolder}/server"
 			},
 			{
-				"type": "pwa-chrome",
+				"type": "chrome",
 				"request": "launch",
 				"name": "Launch Chrome against localhost",
 				"url": "https://localhost:8080",
-				"webRoot": "${workspaceFolder}/client/app",
+				"webRoot": "${workspaceFolder}/client/user_app",
 				"sourceMapPathOverrides": {
 					"meteor://💻app/*": "${workspaceFolder}/*",
 					"webpack:///./~/*": "${workspaceFolder}/node_modules/*",
