@@ -31,13 +31,13 @@
 
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
-		"vadimcn.vscode-lldb",
-		"mutantdino.resourcemonitor",
-		"rust-lang.rust-analyzer",
-		"tamasfe.even-better-toml",
-		"serayuzgur.crates",
-		"octref.vetur",
-		"bradlc.vscode-tailwindcss"
+		"vadimcn.vscode-lldb@1.8.1",
+		"mutantdino.resourcemonitor@1.0.7",
+		"rust-lang.rust-analyzer@0.3.1277",
+		"tamasfe.even-better-toml@0.19.0",
+		"serayuzgur.crates@0.5.10",
+		"octref.vetur@0.36.1",
+		"bradlc.vscode-tailwindcss@0.9.1"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
