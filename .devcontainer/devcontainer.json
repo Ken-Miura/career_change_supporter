@@ -17,7 +17,7 @@
 
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/compose.yml
-	"workspaceFolder": "/workspace",
+	"workspaceFolder": "/home/developer/workspace",
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
@@ -50,11 +50,9 @@
 	// "shutdownAction": "none",
 
 	// Uncomment the next line to run commands after the container is created - for example installing curl.
-	// "postCreateCommand": "rustc --version",
+	"postCreateCommand": "cargo install --locked ripgrep && cargo install --locked fd-find && cargo install --locked cargo-sort",
 
 	// Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
-	"remoteUser": "vscode",
-	"features": {
-		"node": "16"
-	}
+	"remoteUser": "developer",
+	"updateRemoteUserUID": true
 }

@@ -1,22 +1,40 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.217.4/containers/rust/.devcontainer/base.Dockerfile
+FROM ubuntu:22.04
 
-# [Choice] Debian OS version (use bullseye on local arm64/Apple Silicon): buster, bullseye
-ARG VARIANT="bullseye"
-FROM mcr.microsoft.com/vscode/devcontainers/rust:0-${VARIANT}
+RUN apt-get update && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y \
+        build-essential \
+        curl \
+        git \
+        libssl-dev \
+        lldb \
+        pkg-config \
+        vim
 
-# [Optional] Add packages to this section to install additional packages.
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-     && apt-get -y install --no-install-recommends vim dnsutils tcpdump
+ARG USERNAME=developer
+ARG GROUPNAME=developer
+ARG UID=1000
+ARG GID=1000
 
-# cargoを用いて開発に有用なツールをインストールする。
-# cargoを実行した際、registry以下にcrateがダウンロードされ、ディレクトリとファイルが生成される。
-# USER切り替えをしないと、それらがrootとして生成されるので、開発時に実際に利用するユーザーのvscodeに切り替え
-USER vscode
-RUN cargo install --locked ripgrep \
-    && cargo install --locked fd-find \
-    && cargo install --locked bat \
-    && cargo install --locked git-delta \
-    && cargo install --locked cargo-sort
+RUN groupadd -g ${GID} ${GROUPNAME} && \
+    useradd -m -s /bin/bash -u ${UID} -g ${GID} ${USERNAME}
 
-# バックエンドの開発に必要なツールをインストール
-RUN cargo install --locked sea-orm-cli
+USER ${USERNAME}
+ENV HOME=/home/${USERNAME}
+
+RUN mkdir ${HOME}/workspace
+WORKDIR ${HOME}/workspace
+
+ARG RUST_VERSION=1.65.0
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
+ENV PATH=${PATH}:${HOME}/.cargo/bin
+ARG SEA_ORM_CLI_VERSION=0.10.2
+RUN cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
+
+ARG NVM_VERSION=0.37.2
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash
+ENV NVM_DIR=${HOME}/.nvm
+ARG NODE_JS_VERSION=18.12.1
+RUN . ${NVM_DIR}/nvm.sh && \
+    nvm install ${NODE_JS_VERSION} && \
+    nvm use ${NODE_JS_VERSION}
