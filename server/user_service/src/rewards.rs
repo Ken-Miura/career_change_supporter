@@ -520,7 +520,9 @@ mod tests {
                     charge: None,
                 };
                 let err_info = ErrorInfo { error: err_detail };
-                return Err(common::payment_platform::Error::ApiError(err_info));
+                return Err(common::payment_platform::Error::ApiError(Box::new(
+                    err_info,
+                )));
             }
             return Ok(self.tenant.clone());
         }
@@ -564,7 +566,9 @@ mod tests {
                     charge: None,
                 };
                 let err_info = ErrorInfo { error: err_detail };
-                return Err(common::payment_platform::Error::ApiError(err_info));
+                return Err(common::payment_platform::Error::ApiError(Box::new(
+                    err_info,
+                )));
             }
             Ok(self.tenant_transfers.clone())
         }

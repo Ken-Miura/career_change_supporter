@@ -116,7 +116,7 @@ impl<'a> TenantOperation for TenantOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let tenant = resp
             .json::<Tenant>()
@@ -142,7 +142,7 @@ impl<'a> TenantOperation for TenantOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let tenant = resp
             .json::<Tenant>()
@@ -172,7 +172,7 @@ impl<'a> TenantOperation for TenantOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let tenant = resp
             .json::<Tenant>()

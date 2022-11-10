@@ -44,7 +44,7 @@ pub fn validate_password(password: &str) -> Result<(), PasswordValidationError> 
     if !PWD_RE.is_match(password) {
         return Err(PasswordValidationError::InvalidCharacter);
     }
-    let _ = validate_password_constraints(password)?;
+    validate_password_constraints(password)?;
     Ok(())
 }
 

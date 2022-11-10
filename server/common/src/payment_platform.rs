@@ -140,7 +140,7 @@ pub enum Error {
     /// リクエストとレスポンスを処理する際に発生するエラー
     RequestProcessingError(Box<dyn StdError + Send + Sync>),
     /// [PAY.JP API](https://pay.jp/docs/api/) の呼び出しの結果として返却されるエラー
-    ApiError(ErrorInfo),
+    ApiError(Box<ErrorInfo>),
 }
 
 impl Display for Error {

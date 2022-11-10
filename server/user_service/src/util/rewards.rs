@@ -177,7 +177,9 @@ mod tests {
                     charge: None,
                 };
                 let err_info = ErrorInfo { error: err_detail };
-                return Err(common::payment_platform::Error::ApiError(err_info));
+                return Err(common::payment_platform::Error::ApiError(Box::new(
+                    err_info,
+                )));
             }
             let result = self.lists[self.num_of_search_trial].clone();
             self.num_of_search_trial += 1;

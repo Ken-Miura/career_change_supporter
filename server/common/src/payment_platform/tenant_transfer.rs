@@ -330,7 +330,7 @@ impl<'a> TenantTransferOperation for TenantTransferOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let tenant_transfer_list = resp
             .json::<List<TenantTransfer>>()

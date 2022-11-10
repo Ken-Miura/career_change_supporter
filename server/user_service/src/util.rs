@@ -664,7 +664,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "status 402".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 402,
@@ -673,7 +673,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,
@@ -685,7 +685,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "status 429".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 429,
@@ -694,7 +694,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::TOO_MANY_REQUESTS,
@@ -706,7 +706,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code incorrect_card_data".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -715,7 +715,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,
@@ -727,7 +727,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code card_declined".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -736,7 +736,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,
@@ -748,7 +748,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code card_flagged".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -757,7 +757,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,
@@ -769,7 +769,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code unacceptable_brand".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -778,7 +778,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,
@@ -790,7 +790,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code over_capacity".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -799,7 +799,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::TOO_MANY_REQUESTS,
@@ -811,7 +811,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code three_d_secure_incompleted".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -820,7 +820,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,
@@ -832,7 +832,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code three_d_secure_failed".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -841,7 +841,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,
@@ -853,7 +853,7 @@ pub(crate) mod tests {
             TestCase {
                 name: "code not_in_three_d_secure_flow".to_string(),
                 input: Input {
-                    err: common::payment_platform::Error::ApiError(ErrorInfo {
+                    err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
                             status: 400,
@@ -862,7 +862,7 @@ pub(crate) mod tests {
                             param: None,
                             charge: None,
                         },
-                    }),
+                    })),
                 },
                 expected: (
                     StatusCode::BAD_REQUEST,

@@ -308,7 +308,7 @@ impl CreateCharge {
             return Err(InvalidCreateChargeParamError::BothPriceAndProductAreSpecified);
         }
         if let Some(p) = price.clone() {
-            let _ = CreateCharge::validate_price(p.0, p.1)?;
+            CreateCharge::validate_price(p.0, p.1)?;
         }
 
         let customer_exists = customer.is_some();
@@ -414,7 +414,7 @@ impl CreateCharge {
 }
 
 /// [CreateCharge] 生成時に返却される可能性のあるエラー
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum InvalidCreateChargeParamError {
     NeitherPriceNorProductIsSpecified,
     BothPriceAndProductAreSpecified,
@@ -589,7 +589,7 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let charge_list = resp
             .json::<List<Charge>>()
@@ -616,7 +616,7 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let charge = resp
             .json::<Charge>()
@@ -643,7 +643,7 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let charge = resp
             .json::<Charge>()
@@ -671,7 +671,7 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
                 .json::<ErrorInfo>()
                 .await
                 .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
-            return Err(Error::ApiError(err));
+            return Err(Error::ApiError(Box::new(err)));
         };
         let charge = resp
             .json::<Charge>()
