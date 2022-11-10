@@ -135,8 +135,8 @@ struct AccountOperationClient {
 
 impl AccountOperationClient {
     fn create_account(&self, email_addr: &str, password: &str) -> Result<(), Box<dyn Error>> {
-        let _ = validate_email_address(email_addr)?;
-        let _ = validate_password(password)?;
+        validate_email_address(email_addr)?;
+        validate_password(password)?;
         let hashed_pwd = hash_password(password)?;
         let account = admin_account::ActiveModel {
             email_address: Set(email_addr.to_string()),
@@ -161,8 +161,8 @@ impl AccountOperationClient {
     }
 
     fn update_account(&self, email_addr: &str, password: &str) -> Result<(), Box<dyn Error>> {
-        let _ = validate_email_address(email_addr)?;
-        let _ = validate_password(password)?;
+        validate_email_address(email_addr)?;
+        validate_password(password)?;
         let hashed_pwd = hash_password(password)?;
         let result = self.rt.block_on(async {
             admin_account::Entity::update_many()
@@ -188,7 +188,7 @@ impl AccountOperationClient {
     }
 
     fn delete_account(&self, email_addr: &str) -> Result<(), Box<dyn Error>> {
-        let _ = validate_email_address(email_addr)?;
+        validate_email_address(email_addr)?;
         let result = self.rt.block_on(async {
             admin_account::Entity::delete_many()
                 .filter(admin_account::Column::EmailAddress.eq(email_addr))
