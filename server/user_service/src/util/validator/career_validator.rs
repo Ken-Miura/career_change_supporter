@@ -6,39 +6,39 @@ use chrono::NaiveDate;
 use common::util::{Career, Ymd};
 
 pub(crate) fn validate_career(career: &Career) -> Result<(), CareerValidationError> {
-    let _ = validate_company_name(&career.company_name)?;
+    validate_company_name(&career.company_name)?;
     if let Some(department_name) = career.department_name.clone() {
-        let _ = validate_department_name(department_name.as_str())?;
+        validate_department_name(department_name.as_str())?;
     }
     if let Some(office) = career.office.clone() {
-        let _ = validate_office(office.as_str())?;
+        validate_office(office.as_str())?;
     }
-    let _ = validate_career_start_date(&career.career_start_date)?;
+    validate_career_start_date(&career.career_start_date)?;
     if let Some(career_end_date) = career.career_end_date.clone() {
-        let _ = validate_career_end_date(&career_end_date)?;
-        let _ = ensure_career_start_date_does_not_exceed_career_end_date(
+        validate_career_end_date(&career_end_date)?;
+        ensure_career_start_date_does_not_exceed_career_end_date(
             &career.career_start_date,
             &career_end_date,
         )?;
     }
-    let _ = validate_contract_type(&career.contract_type)?;
+    validate_contract_type(&career.contract_type)?;
     if let Some(profession) = career.profession.clone() {
-        let _ = validate_profession(profession.as_str())?;
+        validate_profession(profession.as_str())?;
     }
     if let Some(annual_income_in_man_yen) = career.annual_income_in_man_yen {
-        let _ = validate_annual_income_in_man_yen(annual_income_in_man_yen)?;
+        validate_annual_income_in_man_yen(annual_income_in_man_yen)?;
     }
     if let Some(position_name) = career.position_name.clone() {
-        let _ = validate_position_name(position_name.as_str())?;
+        validate_position_name(position_name.as_str())?;
     }
     if let Some(note) = career.note.clone() {
-        let _ = validate_note(note.as_str())?;
+        validate_note(note.as_str())?;
     }
     Ok(())
 }
 
 fn validate_company_name(company_name: &str) -> Result<(), CareerValidationError> {
-    let _ = crate::util::validator::validate_company_name(company_name).map_err(|e| match e {
+    crate::util::validator::validate_company_name(company_name).map_err(|e| match e {
         crate::util::validator::CompanyNameValidationError::InvalidCompanyNameLength {
             length,
             min_length,
@@ -56,20 +56,25 @@ fn validate_company_name(company_name: &str) -> Result<(), CareerValidationError
 }
 
 fn validate_department_name(department_name: &str) -> Result<(), CareerValidationError> {
-    let _ =
-        crate::util::validator::validate_department_name(department_name).map_err(|e| match e {
-            crate::util::validator::DepartmentNameValidationError::InvalidDepartmentNameLength {
-                length,
-                min_length,
-                max_length,
-            } => CareerValidationError::InvalidDepartmentNameLength { length, min_length, max_length },
-            crate::util::validator::DepartmentNameValidationError::IllegalCharInDepartmentName(department_name) => CareerValidationError::IllegalCharInDepartmentName(department_name),
-        })?;
+    crate::util::validator::validate_department_name(department_name).map_err(|e| match e {
+        crate::util::validator::DepartmentNameValidationError::InvalidDepartmentNameLength {
+            length,
+            min_length,
+            max_length,
+        } => CareerValidationError::InvalidDepartmentNameLength {
+            length,
+            min_length,
+            max_length,
+        },
+        crate::util::validator::DepartmentNameValidationError::IllegalCharInDepartmentName(
+            department_name,
+        ) => CareerValidationError::IllegalCharInDepartmentName(department_name),
+    })?;
     Ok(())
 }
 
 fn validate_office(office: &str) -> Result<(), CareerValidationError> {
-    let _ = crate::util::validator::validate_office(office).map_err(|e| match e {
+    crate::util::validator::validate_office(office).map_err(|e| match e {
         crate::util::validator::OfficeValidationError::InvalidOfficeLength {
             length,
             min_length,
@@ -141,7 +146,7 @@ fn ensure_career_start_date_does_not_exceed_career_end_date(
 }
 
 fn validate_contract_type(contract_type: &str) -> Result<(), CareerValidationError> {
-    let _ = crate::util::validator::validate_contract_type(contract_type).map_err(|e| match e {
+    crate::util::validator::validate_contract_type(contract_type).map_err(|e| match e {
         crate::util::validator::ContractTypeValidationError::IllegalContractType(contract_type) => {
             CareerValidationError::IllegalContractType(contract_type)
         }
@@ -150,7 +155,7 @@ fn validate_contract_type(contract_type: &str) -> Result<(), CareerValidationErr
 }
 
 fn validate_profession(profession: &str) -> Result<(), CareerValidationError> {
-    let _ = crate::util::validator::validate_profession(profession).map_err(|e| match e {
+    crate::util::validator::validate_profession(profession).map_err(|e| match e {
         crate::util::validator::ProfessionValidationError::InvalidProfessionLength {
             length,
             min_length,
@@ -170,14 +175,14 @@ fn validate_profession(profession: &str) -> Result<(), CareerValidationError> {
 fn validate_annual_income_in_man_yen(
     annual_income_in_man_yen: i32,
 ) -> Result<(), CareerValidationError> {
-    let _ = crate::util::validator::validate_annual_income_in_man_yen(annual_income_in_man_yen).map_err(|e| match e {
+    crate::util::validator::validate_annual_income_in_man_yen(annual_income_in_man_yen).map_err(|e| match e {
         crate::util::validator::AnnualIncomInManYenValidationError::IllegalAnnualIncomeInManYen(annual_income_in_man_yen) => CareerValidationError::IllegalAnnualIncomeInManYen(annual_income_in_man_yen),
     })?;
     Ok(())
 }
 
 fn validate_position_name(position_name: &str) -> Result<(), CareerValidationError> {
-    let _ = crate::util::validator::validate_position_name(position_name).map_err(|e| match e {
+    crate::util::validator::validate_position_name(position_name).map_err(|e| match e {
         crate::util::validator::PositionNameValidationError::InvalidPositionNameLength {
             length,
             min_length,
@@ -195,7 +200,7 @@ fn validate_position_name(position_name: &str) -> Result<(), CareerValidationErr
 }
 
 fn validate_note(note: &str) -> Result<(), CareerValidationError> {
-    let _ = crate::util::validator::validate_note(note).map_err(|e| match e {
+    crate::util::validator::validate_note(note).map_err(|e| match e {
         crate::util::validator::NoteValidationError::InvalidNoteLength {
             length,
             min_length,
@@ -458,7 +463,7 @@ mod tests {
             ・田中自動車での組み込みエンジニアの仕事について")),
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -482,7 +487,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -506,7 +511,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -530,7 +535,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -884,7 +889,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -908,7 +913,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -1302,7 +1307,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -1326,7 +1331,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -1913,7 +1918,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -1981,7 +1986,7 @@ mod tests {
             career_list.push(career);
         }
         for career in career_list {
-            let _ = validate_career(&career).expect("failed to get Ok");
+            validate_career(&career).expect("failed to get Ok");
         }
     }
 
@@ -2033,7 +2038,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -2057,7 +2062,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -2573,7 +2578,7 @@ mod tests {
             is_new_graduate: false,
             note: None,
         };
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -2596,7 +2601,7 @@ mod tests {
             is_new_graduate: false,
             note: None,
         };
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -2719,7 +2724,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -2743,7 +2748,7 @@ mod tests {
             note: None,
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -3261,7 +3266,7 @@ mod tests {
             note: Some("あ".to_string()),
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -3285,7 +3290,7 @@ mod tests {
             note: Some("ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string()),
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]
@@ -3513,7 +3518,7 @@ mod tests {
             career_list.push(career);
         }
         for career in career_list {
-            let _ = validate_career(&career).expect("failed to get Ok");
+            validate_career(&career).expect("failed to get Ok");
         }
     }
 
@@ -3542,7 +3547,7 @@ mod tests {
             career_list.push(career);
         }
         for career in career_list {
-            let _ = validate_career(&career).expect("failed to get Ok");
+            validate_career(&career).expect("failed to get Ok");
         }
     }
 
@@ -3575,7 +3580,7 @@ mod tests {
             )),
         };
 
-        let _ = validate_career(&career).expect("failed to get Ok");
+        validate_career(&career).expect("failed to get Ok");
     }
 
     #[test]

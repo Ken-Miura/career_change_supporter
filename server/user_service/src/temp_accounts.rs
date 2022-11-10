@@ -46,7 +46,7 @@ pub(crate) async fn post_temp_accounts(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<TempAccountsResult> {
     let uuid = Uuid::new_v4().simple();
-    let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = TempAccountsOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -100,13 +100,13 @@ async fn handle_temp_accounts_req(
         hashed_password: hashed_pwd,
         created_at: *register_time,
     };
-    let _ = op.create_temp_account(&temp_account).await?;
+    op.create_temp_account(&temp_account).await?;
     info!(
         "{} created temporary account with temp account id: {} at {}",
         email_addr, simple_uuid, register_time
     );
     let text = create_text(url, &uuid_for_url);
-    let _ = send_mail
+    send_mail
         .send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text)
         .await?;
     Ok((StatusCode::OK, Json(TempAccountsResult {})))
@@ -260,12 +260,12 @@ mod tests {
     async fn handle_temp_accounts_req_success() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
-        let _ = validate_email_address(email_address).expect("failed to get Ok");
-        let _ = validate_password(password).expect("failed to get Ok");
+        validate_email_address(email_address).expect("failed to get Ok");
+        validate_password(password).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op_mock = TempAccountsOperationMock::new(
             MAX_NUM_OF_TEMP_ACCOUNTS - 1,
             &uuid_str,
@@ -299,12 +299,12 @@ mod tests {
     async fn handle_temp_accounts_req_fail_reach_max_num_of_temp_accounts_limit() {
         let email_address = "test@example.com";
         let password: &str = "aaaaaaaaaB";
-        let _ = validate_email_address(email_address).expect("failed to get Ok");
-        let _ = validate_password(password).expect("failed to get Ok");
+        validate_email_address(email_address).expect("failed to get Ok");
+        validate_password(password).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op_mock = TempAccountsOperationMock::new(
             MAX_NUM_OF_TEMP_ACCOUNTS,
             &uuid_str,

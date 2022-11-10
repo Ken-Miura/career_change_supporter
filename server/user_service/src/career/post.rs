@@ -74,7 +74,7 @@ pub(crate) async fn career(
         career_image1: (image1_file_name_without_ext, career_image1),
         career_image2: career_image2_option.map(|image| (image2_file_name_without_ext, image)),
     };
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let result = handle_career_req(submitted_career, current_date_time, op, smtp_client).await?;
     Ok(result)
 }
@@ -154,19 +154,19 @@ async fn handle_multipart(
         })?;
         if name == "career" {
             let career = extract_career(data)?;
-            let _ = validate_career(&career).map_err(|e| {
+            validate_career(&career).map_err(|e| {
                 error!("invalid career: {}", e);
                 create_invalid_career_err(&e)
             })?;
             career_option = Some(trim_space_from_career(career));
         } else if name == "career-image1" {
-            let _ = validate_career_image_file_name(file_name_option)?;
-            let _ = validate_career_image_size(data.len(), max_image_size_in_bytes)?;
+            validate_career_image_file_name(file_name_option)?;
+            validate_career_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             career_image1_option = Some(png_binary);
         } else if name == "career-image2" {
-            let _ = validate_career_image_file_name(file_name_option)?;
-            let _ = validate_career_image_size(data.len(), max_image_size_in_bytes)?;
+            validate_career_image_file_name(file_name_option)?;
+            validate_career_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             career_image2_option = Some(png_binary);
         } else {
@@ -219,7 +219,7 @@ fn validate_career_image_file_name(file_name_option: Option<String>) -> Result<(
             ));
         }
     };
-    let _ = validate_extension_is_jpeg(&file_name).map_err(|e| {
+    validate_extension_is_jpeg(&file_name).map_err(|e| {
         error!("invalid file name ({}): {}", file_name, e);
         (
             StatusCode::BAD_REQUEST,
@@ -409,13 +409,12 @@ async fn handle_career_req(
         ));
     }
 
-    let _ = op
-        .request_create_career(submitted_career, current_date_time)
+    op.request_create_career(submitted_career, current_date_time)
         .await?;
 
     let subject = create_subject(account_id);
     let text = create_text(account_id);
-    let _ = send_mail
+    send_mail
         .send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text)
         .await?;
     Ok((StatusCode::OK, Json(CareerResult {})))
@@ -602,7 +601,7 @@ impl SubmitCareerOperationImpl {
     ) -> Result<(), ErrRespStruct> {
         let image1_key = format!("{}/{}.png", account_id, career_image1.0);
         let image1_obj = career_image1.1.into_inner();
-        let _ = upload_object(CAREER_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
+        upload_object(CAREER_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
             .await
             .map_err(|e| {
                 error!(
@@ -616,7 +615,7 @@ impl SubmitCareerOperationImpl {
         if let Some(career_image2) = career_image2_option {
             let image2_key = format!("{}/{}.png", account_id, career_image2.0);
             let image2_obj = career_image2.1.into_inner();
-            let _ = upload_object(CAREER_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
+            upload_object(CAREER_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
                 .await
                 .map_err(|e| {
                     error!(
@@ -796,8 +795,7 @@ mod tests {
     fn create_dummy_career_image1() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(128, 128);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
             .expect("failed to get Ok");
         bytes
     }
@@ -805,8 +803,7 @@ mod tests {
     fn create_dummy_career_image2() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(64, 64);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Jpeg(90))
+        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(90))
             .expect("failed to get Ok");
         bytes
     }
@@ -1234,8 +1231,7 @@ mod tests {
     fn create_dummy_career_image1_png() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(128, 128);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Png)
+        img.write_to(&mut bytes, ImageOutputFormat::Png)
             .expect("failed to get Ok");
         bytes
     }
@@ -1243,8 +1239,7 @@ mod tests {
     fn create_dummy_career_image2_bmp() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(64, 64);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Bmp)
+        img.write_to(&mut bytes, ImageOutputFormat::Bmp)
             .expect("failed to get Ok");
         bytes
     }
@@ -2141,7 +2136,7 @@ mod tests {
             career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
             career_image2: None,
         };
-        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op = SubmitCareerOperationMock {
             account_id,
             submitted_career: submitted_career.clone(),
@@ -2175,7 +2170,7 @@ mod tests {
             career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
             career_image2: Some((image2_file_name_without_ext, create_dummy_career_image2())),
         };
-        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op = SubmitCareerOperationMock {
             account_id,
             submitted_career: submitted_career.clone(),
@@ -2208,7 +2203,7 @@ mod tests {
             career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
             career_image2: None,
         };
-        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op = SubmitCareerOperationMock {
             account_id,
             submitted_career: submitted_career.clone(),
@@ -2243,7 +2238,7 @@ mod tests {
             career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
             career_image2: None,
         };
-        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op = SubmitCareerOperationMock {
             account_id,
             submitted_career: submitted_career.clone(),
@@ -2276,7 +2271,7 @@ mod tests {
             career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
             career_image2: None,
         };
-        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op = SubmitCareerOperationMock {
             account_id,
             submitted_career: submitted_career.clone(),
@@ -2309,7 +2304,7 @@ mod tests {
             career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
             career_image2: None,
         };
-        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op = SubmitCareerOperationMock {
             account_id,
             submitted_career: submitted_career.clone(),
@@ -2344,7 +2339,7 @@ mod tests {
             career_image1: (image1_file_name_without_ext, create_dummy_career_image1()),
             career_image2: None,
         };
-        let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op = SubmitCareerOperationMock {
             account_id,
             submitted_career: submitted_career.clone(),

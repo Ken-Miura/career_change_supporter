@@ -44,7 +44,7 @@ pub(crate) async fn post_request_consultation(
     Json(param): Json<RequestConsultationParam>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<RequestConsultationResult> {
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let request_consultation_op = RequestConsultationOperationImpl { pool };
     handle_request_consultation(
         account_id,
@@ -279,15 +279,15 @@ async fn handle_request_consultation(
     request_consultation_op: impl RequestConsultationOperation,
 ) -> RespResult<RequestConsultationResult> {
     let consultant_id = request_consultation_param.consultant_id;
-    let _ = validate_consultant_id_is_positive(consultant_id)?;
-    let _ = validate_candidates(
+    validate_consultant_id_is_positive(consultant_id)?;
+    validate_candidates(
         &request_consultation_param.first_candidate_in_jst,
         &request_consultation_param.second_candidate_in_jst,
         &request_consultation_param.third_candidate_in_jst,
         current_date_time,
     )?;
-    let _ = validate_identity_exists(account_id, &request_consultation_op).await?;
-    let _ = validate_consultant_is_available(consultant_id, &request_consultation_op).await?;
+    validate_identity_exists(account_id, &request_consultation_op).await?;
+    validate_consultant_is_available(consultant_id, &request_consultation_op).await?;
 
     let fee_per_hour_in_yen =
         get_fee_per_hour_in_yen(consultant_id, &request_consultation_op).await?;
@@ -306,7 +306,7 @@ async fn handle_request_consultation(
 
     let tenant_id = get_tenant_id(consultant_id, &request_consultation_op).await?;
 
-    let _ = ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
+    ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
         consultant_id,
         tenant_id.as_str(),
         current_date_time,
@@ -374,24 +374,18 @@ fn validate_candidates(
     third_candidate_in_jst: &ConsultationDateTime,
     current_date_time: &DateTime<FixedOffset>,
 ) -> Result<(), ErrResp> {
-    let _ = validate_consultation_date_time(first_candidate_in_jst, current_date_time).map_err(
-        |e| {
-            error!("invalid first_candidate_in_jst: {}", e);
-            convert_consultation_date_time_validation_err(&e)
-        },
-    )?;
-    let _ = validate_consultation_date_time(second_candidate_in_jst, current_date_time).map_err(
-        |e| {
-            error!("invalid second_candidate_in_jst: {}", e);
-            convert_consultation_date_time_validation_err(&e)
-        },
-    )?;
-    let _ = validate_consultation_date_time(third_candidate_in_jst, current_date_time).map_err(
-        |e| {
-            error!("invalid third_candidate_in_jst: {}", e);
-            convert_consultation_date_time_validation_err(&e)
-        },
-    )?;
+    validate_consultation_date_time(first_candidate_in_jst, current_date_time).map_err(|e| {
+        error!("invalid first_candidate_in_jst: {}", e);
+        convert_consultation_date_time_validation_err(&e)
+    })?;
+    validate_consultation_date_time(second_candidate_in_jst, current_date_time).map_err(|e| {
+        error!("invalid second_candidate_in_jst: {}", e);
+        convert_consultation_date_time_validation_err(&e)
+    })?;
+    validate_consultation_date_time(third_candidate_in_jst, current_date_time).map_err(|e| {
+        error!("invalid third_candidate_in_jst: {}", e);
+        convert_consultation_date_time_validation_err(&e)
+    })?;
 
     if first_candidate_in_jst == second_candidate_in_jst
         || second_candidate_in_jst == third_candidate_in_jst

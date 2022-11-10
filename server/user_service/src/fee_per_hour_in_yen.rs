@@ -68,8 +68,7 @@ async fn handle_fee_per_hour_in_yen_req(
             }),
         ));
     }
-    let _ = op
-        .submit_fee_per_hour_in_yen(account_id, fee_per_hour_in_yen)
+    op.submit_fee_per_hour_in_yen(account_id, fee_per_hour_in_yen)
         .await?;
     Ok((StatusCode::OK, Json(FeePerHourInYenResult {})))
 }
@@ -204,7 +203,7 @@ async fn update_new_fee_per_hour_in_yen_on_document(
             "source": value
         }
     });
-    let _ = update_document(index_name, document_id, &script, &index_client)
+    update_document(index_name, document_id, &script, &index_client)
         .await
         .map_err(|e| {
             error!(
@@ -230,7 +229,7 @@ async fn add_new_fee_per_hour_in_yen_into_document(
         "rating": null,
         "is_bank_account_registered": null
     });
-    let _ = index_document(index_name, document_id, &new_document, &index_client)
+    index_document(index_name, document_id, &new_document, &index_client)
         .await
         .map_err(|e| {
             error!(

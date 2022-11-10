@@ -436,7 +436,7 @@ mod tests {
             day: current_date.day(),
         };
         let identity = create_dummy_identity(date_of_birth);
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
 
         let career_description = create_dummy_career_description();
         let career_descriptions = vec![career_description];
@@ -477,7 +477,7 @@ mod tests {
             day: current_date.day(),
         };
         let identity = create_dummy_identity(date_of_birth);
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
 
         let career_descriptions = create_max_num_of_dummy_career_descriptions();
 
@@ -517,7 +517,7 @@ mod tests {
             day: current_date.day(),
         };
         let identity = create_dummy_identity(date_of_birth);
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
 
         let profile_op = ProfileOperationMock {
             email_address_option,

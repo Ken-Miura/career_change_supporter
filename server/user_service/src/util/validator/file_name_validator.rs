@@ -94,7 +94,7 @@ mod tests {
     fn validate_extension_is_jpeg_returns_ok_if_file_name_ends_with_supported_ext() {
         for ext in JPEG_EXTENTSION_SET.iter() {
             let file_name = "test".to_string() + ext;
-            let _ = validate_extension_is_jpeg(&file_name).expect("failed to get Ok");
+            validate_extension_is_jpeg(&file_name).expect("failed to get Ok");
         }
     }
 
@@ -113,7 +113,7 @@ mod tests {
     fn validate_extension_is_jpeg_returns_ok_if_hidden_file_name_ends_with_supported_ext() {
         for ext in JPEG_EXTENTSION_SET.iter() {
             let file_name = ".test".to_string() + ext;
-            let _ = validate_extension_is_jpeg(&file_name).expect("failed to get Ok");
+            validate_extension_is_jpeg(&file_name).expect("failed to get Ok");
         }
     }
 

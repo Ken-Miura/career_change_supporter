@@ -65,11 +65,11 @@ async fn handle_finish_request_consultation(
     op: impl FinishRequestConsultationOperation,
     send_mail: impl SendMail,
 ) -> RespResult<FinishRequestConsultationResult> {
-    let _ = validate_identity_exists(account_id, &op).await?;
+    validate_identity_exists(account_id, &op).await?;
     let charge = op.get_charge_by_charge_id(charge_id.clone()).await?;
     let consultant_id = extract_consultant_id(&charge)?;
-    let _ = validate_consultant_is_available(consultant_id, &op).await?;
-    let _ = confirm_three_d_secure_status_is_ok(&charge)?;
+    validate_consultant_is_available(consultant_id, &op).await?;
+    confirm_three_d_secure_status_is_ok(&charge)?;
 
     let latest_candidate_date_time_in_jst = extract_latest_candidate_date_time_in_jst(&charge)?;
     let charge = op
@@ -85,7 +85,7 @@ async fn handle_finish_request_consultation(
     let consultant_email_address = op
         .get_consultant_email_address_by_consultant_id(consultant_id)
         .await?;
-    let _ = send_mail_to_consultant(
+    send_mail_to_consultant(
         consultant_email_address.as_str(),
         account_id,
         &charge,
@@ -96,7 +96,7 @@ async fn handle_finish_request_consultation(
     let user_email_address = op
         .get_user_account_email_address_by_user_account_id(account_id)
         .await?;
-    let _ = send_mail_to_user(
+    send_mail_to_user(
         user_email_address.as_str(),
         consultant_id,
         &charge,
@@ -273,7 +273,7 @@ async fn send_mail_to_consultant(
 ) -> Result<(), ErrResp> {
     let candidates = extract_candidates(charge)?;
     let text = create_text_for_consultant_mail(user_account_id, &candidates);
-    let _ = send_mail
+    send_mail
         .send_mail(
             consultant_email_address,
             SYSTEM_EMAIL_ADDRESS,
@@ -323,7 +323,7 @@ async fn send_mail_to_user(
 ) -> Result<(), ErrResp> {
     let candidates = extract_candidates(charge)?;
     let text = create_text_for_user_mail(consultant_id, charge.amount, &candidates);
-    let _ = send_mail
+    send_mail
         .send_mail(
             user_account_email_address,
             SYSTEM_EMAIL_ADDRESS,
@@ -666,7 +666,7 @@ mod tests {
             // captured_at、expired_atは使わかないので用意する必要はないが、
             // 本番環境ではセットされてくるので、それに合わせたデータを用意してく
             let mut charge = self.charge.clone();
-            let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+            let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
             charge.captured_at = Some(current_date_time.timestamp());
             let expired_at = current_date_time + Duration::days((*EXPIRY_DAYS_OF_CHARGE) as i64);
             charge.expired_at = Some(expired_at.timestamp());

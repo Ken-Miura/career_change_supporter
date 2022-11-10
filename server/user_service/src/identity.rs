@@ -59,7 +59,7 @@ pub(crate) async fn post_identity(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<IdentityResult> {
     let multipart_wrapper = MultipartWrapperImpl { multipart };
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let current_date = current_date_time.naive_local().date();
     let (identity, identity_image1, identity_image2_option) = handle_multipart(
         multipart_wrapper,
@@ -164,19 +164,19 @@ async fn handle_multipart(
         })?;
         if name == "identity" {
             let identity = extract_identity(data)?;
-            let _ = validate_identity(&identity, &current_date).map_err(|e| {
+            validate_identity(&identity, &current_date).map_err(|e| {
                 error!("invalid identity: {}", e);
                 create_invalid_identity_err(&e)
             })?;
             identity_option = Some(trim_space_from_identity(identity));
         } else if name == "identity-image1" {
-            let _ = validate_identity_image_file_name(file_name_option)?;
-            let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
+            validate_identity_image_file_name(file_name_option)?;
+            validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             identity_image1_option = Some(png_binary);
         } else if name == "identity-image2" {
-            let _ = validate_identity_image_file_name(file_name_option)?;
-            let _ = validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
+            validate_identity_image_file_name(file_name_option)?;
+            validate_identity_image_size(data.len(), max_image_size_in_bytes)?;
             let png_binary = convert_jpeg_to_png(data)?;
             identity_image2_option = Some(png_binary);
         } else {
@@ -229,7 +229,7 @@ fn validate_identity_image_file_name(file_name_option: Option<String>) -> Result
             ));
         }
     };
-    let _ = validate_extension_is_jpeg(&file_name).map_err(|e| {
+    validate_extension_is_jpeg(&file_name).map_err(|e| {
         error!("invalid file name ({}): {}", file_name, e);
         (
             StatusCode::BAD_REQUEST,
@@ -399,22 +399,22 @@ async fn handle_identity_req(
             "request to update identity from account id ({})",
             account_id
         );
-        let _ = check_update_identity_requirement(&identity, &submitted_identity.identity)?;
-        let _ =
-            handle_update_identity_request(account_id, submitted_identity, current_date_time, op)
-                .await?;
+        check_update_identity_requirement(&identity, &submitted_identity.identity)?;
+
+        handle_update_identity_request(account_id, submitted_identity, current_date_time, op)
+            .await?;
     } else {
         info!(
             "request to create identity from account id ({})",
             account_id
         );
-        let _ =
-            handle_create_identity_request(account_id, submitted_identity, current_date_time, op)
-                .await?;
+
+        handle_create_identity_request(account_id, submitted_identity, current_date_time, op)
+            .await?;
     };
     let subject = create_subject(account_id, identity_exists);
     let text = create_text(account_id, identity_exists);
-    let _ = send_mail
+    send_mail
         .send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text)
         .await?;
     Ok((StatusCode::OK, Json(IdentityResult {})))
@@ -481,8 +481,7 @@ async fn handle_update_identity_request(
             }),
         ));
     }
-    let _ = op
-        .request_update_identity(submitted_identity, current_date_time)
+    op.request_update_identity(submitted_identity, current_date_time)
         .await
         .map_err(|e| {
             error!(
@@ -515,8 +514,7 @@ async fn handle_create_identity_request(
             }),
         ));
     }
-    let _ = op
-        .request_create_identity(submitted_identity, current_date_time)
+    op.request_create_identity(submitted_identity, current_date_time)
         .await
         .map_err(|e| {
             error!(
@@ -835,7 +833,7 @@ impl SubmitIdentityOperationImpl {
     ) -> Result<(), ErrRespStruct> {
         let image1_key = format!("{}/{}.png", account_id, identity_image1.0);
         let image1_obj = identity_image1.1.into_inner();
-        let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
+        upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
             .await
             .map_err(|e| {
                 error!(
@@ -849,7 +847,7 @@ impl SubmitIdentityOperationImpl {
         if let Some(identity_image2) = identity_image2_option {
             let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
             let image2_obj = identity_image2.1.into_inner();
-            let _ = upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
+            upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
                 .await
                 .map_err(|e| {
                     error!(
@@ -1067,8 +1065,7 @@ mod tests {
     fn create_dummy_identity_image1() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(128, 128);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
             .expect("failed to get Ok");
         bytes
     }
@@ -1076,8 +1073,7 @@ mod tests {
     fn create_dummy_identity_image2() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(64, 64);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Jpeg(90))
+        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(90))
             .expect("failed to get Ok");
         bytes
     }
@@ -1577,8 +1573,7 @@ mod tests {
     fn create_dummy_identity_image1_png() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(128, 128);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Png)
+        img.write_to(&mut bytes, ImageOutputFormat::Png)
             .expect("failed to get Ok");
         bytes
     }
@@ -1586,8 +1581,7 @@ mod tests {
     fn create_dummy_identity_image2_bmp() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(64, 64);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Bmp)
+        img.write_to(&mut bytes, ImageOutputFormat::Bmp)
             .expect("failed to get Ok");
         bytes
     }

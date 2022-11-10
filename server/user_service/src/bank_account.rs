@@ -96,7 +96,7 @@ async fn handle_bank_account_req(
             }),
         ));
     }
-    let _ = validate_bank_account(&bank_account).map_err(|e| {
+    validate_bank_account(&bank_account).map_err(|e| {
         error!("invalid bank account: {}", e);
         create_invalid_bank_account_err(&e)
     })?;
@@ -115,7 +115,7 @@ async fn handle_bank_account_req(
 
     let tenant_exists = op.check_if_tenant_exists(account_id).await?;
     if !tenant_exists {
-        let _ = is_eligible_to_create_tenant(account_id, &op).await?;
+        is_eligible_to_create_tenant(account_id, &op).await?;
     }
 
     let zenkaku_space = "　";
@@ -137,7 +137,7 @@ async fn handle_bank_account_req(
         ));
     }
 
-    let _ = op.submit_bank_account(account_id, bank_account).await?;
+    op.submit_bank_account(account_id, bank_account).await?;
 
     Ok((StatusCode::OK, Json(BankAccountResult {})))
 }
@@ -294,8 +294,7 @@ impl SubmitBankAccountOperationImpl {
         account_id: i64,
         bank_account: BankAccount,
     ) -> Result<(), ErrResp> {
-        let _ = self
-            .pool
+        self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let tenant_option = TenantEntity::find_by_id(account_id)
@@ -400,7 +399,7 @@ impl SubmitBankAccountOperationImpl {
 
     async fn set_bank_account_registered_on_index(&self, account_id: i64) -> Result<(), ErrResp> {
         let index_client = self.index_client.clone();
-        let _ = self
+        self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
@@ -409,7 +408,7 @@ impl SubmitBankAccountOperationImpl {
                     if let Some(document) = document_option {
                         let document_id = document.document_id;
                         info!("update document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
-                        let _ = update_is_bank_account_registered_on_document(
+                        update_is_bank_account_registered_on_document(
                             INDEX_NAME,
                             document_id.to_string().as_str(),
                             index_client
@@ -419,8 +418,8 @@ impl SubmitBankAccountOperationImpl {
                         // document_idとしてuser_account_idを利用
                         let document_id = account_id;
                         info!("create document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
-                        let _ = insert_document(txn, account_id, document_id).await?;
-                        let _ = add_new_document_with_is_bank_account_registered(
+                        insert_document(txn, account_id, document_id).await?;
+                        add_new_document_with_is_bank_account_registered(
                             INDEX_NAME,
                             document_id.to_string().as_str(),
                             account_id,
@@ -461,7 +460,7 @@ async fn update_is_bank_account_registered_on_document(
             "source": value
         }
     });
-    let _ = update_document(index_name, document_id, &script, &index_client)
+    update_document(index_name, document_id, &script, &index_client)
         .await
         .map_err(|e| {
             error!(
@@ -486,7 +485,7 @@ async fn add_new_document_with_is_bank_account_registered(
         "rating": null,
         "is_bank_account_registered": true
     });
-    let _ = index_document(index_name, document_id, &new_document, &index_client)
+    index_document(index_name, document_id, &new_document, &index_client)
         .await
         .map_err(|e| {
             error!(

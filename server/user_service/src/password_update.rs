@@ -57,10 +57,10 @@ pub(crate) async fn post_password_update(
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
     let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
     if let Some(session_id) = option_cookie {
-        let _ = destroy_session_if_exists(session_id.value(), &store).await?;
+        destroy_session_if_exists(session_id.value(), &store).await?;
     }
 
-    let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = PasswordUpdateOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -95,7 +95,7 @@ async fn handle_password_update_req(
     op: impl PasswordUpdateOperation,
     send_mail: impl SendMail,
 ) -> RespResult<PasswordUpdateResult> {
-    let _ = validate_uuid(pwd_change_req_id).map_err(|e| {
+    validate_uuid(pwd_change_req_id).map_err(|e| {
         error!(
             "failed to validate pwd-change-req-id ({}): {}",
             pwd_change_req_id, e
@@ -107,7 +107,7 @@ async fn handle_password_update_req(
             }),
         )
     })?;
-    let _ = validate_password(password).map_err(|e| {
+    validate_password(password).map_err(|e| {
         error!("failed to validate password: {}", e);
         (
             StatusCode::BAD_REQUEST,
@@ -153,7 +153,7 @@ async fn handle_password_update_req(
         );
         return Err(unexpected_err_resp());
     }
-    let account_id = account_ids.get(0).cloned().ok_or_else(|| {
+    let account_id = account_ids.first().cloned().ok_or_else(|| {
         error!(
             "account (email address: {}) does not exist",
             &pwd_change_req.email_address
@@ -169,14 +169,14 @@ async fn handle_password_update_req(
         error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
-    let _ = op.update_password(account_id, &hashed_pwd).await?;
+    op.update_password(account_id, &hashed_pwd).await?;
     info!(
         "{} updated password at {}",
         &pwd_change_req.email_address, current_date_time
     );
 
     let text = create_text();
-    let _ = send_mail
+    send_mail
         .send_mail(
             &pwd_change_req.email_address,
             SYSTEM_EMAIL_ADDRESS,
@@ -205,7 +205,7 @@ async fn destroy_session_if_exists(
             return Ok(());
         }
     };
-    let _ = store.destroy_session(session).await.map_err(|e| {
+    store.destroy_session(session).await.map_err(|e| {
         error!("failed to destroy session: {}", e);
         unexpected_err_resp()
     })?;
@@ -418,7 +418,7 @@ mod tests {
     #[tokio::test]
     async fn handle_password_update_req_success() {
         let email_addr = "test@test.com";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
         let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
@@ -426,9 +426,9 @@ mod tests {
         };
 
         let uuid = Uuid::new_v4().simple().to_string();
-        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
-        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        validate_password(new_pwd).expect("failed to get Ok");
         let password_update_req = PasswordUpdateReq {
             pwd_change_req_id: uuid.clone(),
             password: new_pwd.to_string(),
@@ -464,7 +464,7 @@ mod tests {
     #[tokio::test]
     async fn handle_password_update_req_fail_no_account_found() {
         let email_addr = "test@test.com";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
         let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
@@ -472,9 +472,9 @@ mod tests {
         };
 
         let uuid = Uuid::new_v4().simple().to_string();
-        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
-        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        validate_password(new_pwd).expect("failed to get Ok");
         let password_update_req = PasswordUpdateReq {
             pwd_change_req_id: uuid.clone(),
             password: new_pwd.to_string(),
@@ -510,7 +510,7 @@ mod tests {
     #[tokio::test]
     async fn handle_password_update_req_fail_no_password_change_req_found() {
         let email_addr = "test@test.com";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
         let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
@@ -518,9 +518,9 @@ mod tests {
         };
 
         let uuid = Uuid::new_v4().simple().to_string();
-        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
-        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        validate_password(new_pwd).expect("failed to get Ok");
         let password_update_req = PasswordUpdateReq {
             pwd_change_req_id: uuid.clone(),
             password: new_pwd.to_string(),
@@ -556,7 +556,7 @@ mod tests {
     #[tokio::test]
     async fn handle_password_update_req_fail_password_change_req_expired() {
         let email_addr = "test@test.com";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
         let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
@@ -564,9 +564,9 @@ mod tests {
         };
 
         let uuid = Uuid::new_v4().simple().to_string();
-        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        validate_uuid(&uuid).expect("failed to get Ok");
         let new_pwd = "aaaaaaaaaA";
-        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        validate_password(new_pwd).expect("failed to get Ok");
         let password_update_req = PasswordUpdateReq {
             pwd_change_req_id: uuid.clone(),
             password: new_pwd.to_string(),
@@ -603,7 +603,7 @@ mod tests {
     #[tokio::test]
     async fn handle_password_update_req_fail_invalid_password() {
         let email_addr = "test@test.com";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
         let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
@@ -611,7 +611,7 @@ mod tests {
         };
 
         let uuid = Uuid::new_v4().simple().to_string();
-        let _ = validate_uuid(&uuid).expect("failed to get Ok");
+        validate_uuid(&uuid).expect("failed to get Ok");
         let invalid_pwd = "あいうえお";
         let password_update_req = PasswordUpdateReq {
             pwd_change_req_id: uuid.clone(),
@@ -653,7 +653,7 @@ mod tests {
     #[tokio::test]
     async fn handle_password_update_req_fail_invalid_uuid() {
         let email_addr = "test@test.com";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
         let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
@@ -662,7 +662,7 @@ mod tests {
 
         let uuid = "1' or '1' = '1';--".to_string();
         let new_pwd = "aaaaaaaaaA";
-        let _ = validate_password(new_pwd).expect("failed to get Ok");
+        validate_password(new_pwd).expect("failed to get Ok");
         let password_update_req = PasswordUpdateReq {
             pwd_change_req_id: uuid.clone(),
             password: new_pwd.to_string(),
@@ -702,7 +702,7 @@ mod tests {
         let session_id = prepare_session(user_account_id, &store).await;
         assert_eq!(1, store.count().await);
 
-        let _ = destroy_session_if_exists(&session_id, &store)
+        destroy_session_if_exists(&session_id, &store)
             .await
             .expect("failed to get Ok");
 
@@ -716,7 +716,7 @@ mod tests {
         let session_id = "KBvGQJJVyQquK5yuEcwlbfJfjNHBMAXIKRnHbVO/0QzBMHLak1xmqhaTbDuscJSeEPL2qwZfTP5BalDDMmR8eA==";
         assert_eq!(0, store.count().await);
 
-        let _ = destroy_session_if_exists(session_id, &store)
+        destroy_session_if_exists(session_id, &store)
             .await
             .expect("failed to get Ok");
 

@@ -41,7 +41,7 @@ pub(crate) async fn post_login(
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
     let email_addr = cred.email_address;
     let password = cred.password;
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = LoginOperationImpl::new(pool, LOGIN_SESSION_EXPIRY);
     let session_id =
         handle_login_req(&email_addr, &password, &current_date_time, op, store).await?;
@@ -112,7 +112,7 @@ async fn handle_login_req(
 
     let user_account_id = account.user_account_id;
     let mut session = Session::new();
-    let _ = session
+    session
         .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
         .map_err(|e| {
             error!(
@@ -139,7 +139,7 @@ async fn handle_login_req(
             return Err(unexpected_err_resp());
         }
     };
-    let _ = op.update_last_login(user_account_id, login_time).await?;
+    op.update_last_login(user_account_id, login_time).await?;
     info!(
         "{} (account id: {}) logged-in at {}",
         email_addr, user_account_id, login_time
@@ -305,8 +305,8 @@ mod tests {
         let id = 1102;
         let email_addr = "test@example.com";
         let pwd = "1234567890abcdABCD";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
-        let _ = validate_password(pwd).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
         let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);
@@ -339,9 +339,9 @@ mod tests {
         let email_addr1 = "test1@example.com";
         let email_addr2 = "test2@example.com";
         let pwd = "1234567890abcdABCD";
-        let _ = validate_email_address(email_addr1).expect("failed to get Ok");
-        let _ = validate_email_address(email_addr2).expect("failed to get Ok");
-        let _ = validate_password(pwd).expect("failed to get Ok");
+        validate_email_address(email_addr1).expect("failed to get Ok");
+        validate_email_address(email_addr2).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
         let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);
@@ -369,9 +369,9 @@ mod tests {
         let email_addr = "test1@example.com";
         let pwd1 = "1234567890abcdABCD";
         let pwd2 = "bbbbbbbbbC";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
-        let _ = validate_password(pwd1).expect("failed to get Ok");
-        let _ = validate_password(pwd2).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd1).expect("failed to get Ok");
+        validate_password(pwd2).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd1).expect("failed to hash pwd");
         let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);
@@ -398,8 +398,8 @@ mod tests {
         let id = 1102;
         let email_addr = "test1@example.com";
         let pwd = "1234567890abcdABCD";
-        let _ = validate_email_address(email_addr).expect("failed to get Ok");
-        let _ = validate_password(pwd).expect("failed to get Ok");
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
         let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
         let last_login = creation_time + chrono::Duration::days(1);

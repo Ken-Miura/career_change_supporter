@@ -58,7 +58,7 @@ async fn handle_career_req(
             }),
         ));
     }
-    let _ = op.delete_career(account_id, career_id).await?;
+    op.delete_career(account_id, career_id).await?;
     Ok((StatusCode::OK, Json(DeleteCareerResult {})))
 }
 
@@ -183,7 +183,7 @@ async fn remove_career_from_document(
             }
         }
     });
-    let _ = update_document(index_name, document_id, &script, &index_client)
+    update_document(index_name, document_id, &script, &index_client)
         .await
         .map_err(|e| {
             error!(

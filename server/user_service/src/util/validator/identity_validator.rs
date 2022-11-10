@@ -107,18 +107,18 @@ pub(crate) fn validate_identity(
     identity: &Identity,
     current_date: &NaiveDate,
 ) -> Result<(), IdentityValidationError> {
-    let _ = validate_last_name(&identity.last_name)?;
-    let _ = validate_first_name(&identity.first_name)?;
-    let _ = validate_last_name_furigana(&identity.last_name_furigana)?;
-    let _ = validate_first_name_furigana(&identity.first_name_furigana)?;
-    let _ = validate_date_of_birth(&identity.date_of_birth, current_date)?;
-    let _ = validate_prefecture(&identity.prefecture)?;
-    let _ = validate_city(&identity.city)?;
-    let _ = validate_address_line1(&identity.address_line1)?;
+    validate_last_name(&identity.last_name)?;
+    validate_first_name(&identity.first_name)?;
+    validate_last_name_furigana(&identity.last_name_furigana)?;
+    validate_first_name_furigana(&identity.first_name_furigana)?;
+    validate_date_of_birth(&identity.date_of_birth, current_date)?;
+    validate_prefecture(&identity.prefecture)?;
+    validate_city(&identity.city)?;
+    validate_address_line1(&identity.address_line1)?;
     if let Some(address_line2) = identity.address_line2.clone() {
-        let _ = validate_address_line2(&address_line2)?;
+        validate_address_line2(&address_line2)?;
     }
-    let _ = validate_telephone_number(&identity.telephone_number)?;
+    validate_telephone_number(&identity.telephone_number)?;
     Ok(())
 }
 
@@ -216,7 +216,7 @@ fn validate_date_of_birth(
 ) -> Result<(), IdentityValidationError> {
     match NaiveDate::from_ymd_opt(date_of_birth.year, date_of_birth.month, date_of_birth.day) {
         Some(ymd) => {
-            let _ = validate_age_satisfies_min_age_requirement(&ymd, current_date)?;
+            validate_age_satisfies_min_age_requirement(&ymd, current_date)?;
         }
         None => {
             return Err(IdentityValidationError::IllegalDate {
@@ -828,7 +828,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -852,7 +852,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -875,7 +875,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -898,7 +898,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -1497,7 +1497,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -1520,7 +1520,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -2123,7 +2123,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -2181,7 +2181,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -2204,7 +2204,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -2839,7 +2839,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -2897,7 +2897,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -2920,7 +2920,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -3551,7 +3551,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -3574,7 +3574,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 2, 1);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -3597,7 +3597,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 2);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -3620,7 +3620,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 2);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -3817,7 +3817,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -4353,7 +4353,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -4376,7 +4376,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -4975,7 +4975,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -4998,7 +4998,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -5089,7 +5089,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -5117,7 +5117,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -5145,7 +5145,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -5425,7 +5425,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -5448,7 +5448,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -5471,7 +5471,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -5570,7 +5570,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -5598,7 +5598,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -5626,7 +5626,7 @@ mod tests {
         }
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
         for id in identity_list {
-            let _ = validate_identity(&id, &current_date).expect("failed to get Ok");
+            validate_identity(&id, &current_date).expect("failed to get Ok");
         }
     }
 
@@ -5922,7 +5922,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]
@@ -5945,7 +5945,7 @@ mod tests {
         };
         let current_date = NaiveDate::from_ymd(2022, 1, 30);
 
-        let _ = validate_identity(&identity, &current_date).expect("failed to get Ok");
+        validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
 
     #[test]

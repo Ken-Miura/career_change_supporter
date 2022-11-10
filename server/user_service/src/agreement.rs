@@ -49,7 +49,7 @@ pub(crate) async fn post_agreement(
     let op = RefreshOperationImpl {};
     let user = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
     let op = AgreementOperationImpl::new(pool);
-    let agreed_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let agreed_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let result =
         handle_agreement_req(user.account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
     Ok(result)
@@ -76,7 +76,7 @@ async fn handle_agreement_req(
             &account.email_address,
             account_id,
             version,
-            agreement_date.with_timezone(&JAPANESE_TIME_ZONE.to_owned())
+            agreement_date.with_timezone(&(*JAPANESE_TIME_ZONE))
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -86,8 +86,7 @@ async fn handle_agreement_req(
         ));
     }
     // ACID特性が重要な箇所ではないので、op.check_if_already_agreedとまとめてトランザクションにしていない
-    let _ = op
-        .agree_terms_of_use(account_id, version, &account.email_address, agreed_at)
+    op.agree_terms_of_use(account_id, version, &account.email_address, agreed_at)
         .await?;
     info!(
         "{} (account id: {}) agreed terms of use (version {}) at {}",

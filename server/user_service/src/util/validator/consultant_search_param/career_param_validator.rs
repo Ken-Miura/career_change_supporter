@@ -27,34 +27,34 @@ pub(crate) fn validate_career_param(
     career_param: &CareerParam,
 ) -> Result<(), CareerParamValidationError> {
     if let Some(company_name) = &career_param.company_name {
-        let _ = validate_company(company_name.as_str())?;
+        validate_company(company_name.as_str())?;
     };
     if let Some(department_name) = &career_param.department_name {
-        let _ = validate_department_name(department_name.as_str())?;
+        validate_department_name(department_name.as_str())?;
     };
     if let Some(office) = &career_param.office {
-        let _ = validate_office(office.as_str())?;
+        validate_office(office.as_str())?;
     };
-    let _ = validate_years_of_service(&career_param.years_of_service)?;
+    validate_years_of_service(&career_param.years_of_service)?;
     if let Some(contract_type) = &career_param.contract_type {
-        let _ = validate_contract_type(contract_type.as_str())?;
+        validate_contract_type(contract_type.as_str())?;
     };
     if let Some(profession) = &career_param.profession {
-        let _ = validate_profession(profession.as_str())?;
+        validate_profession(profession.as_str())?;
     };
-    let _ = validate_annual_income_in_man_yen_param(&career_param.annual_income_in_man_yen)?;
+    validate_annual_income_in_man_yen_param(&career_param.annual_income_in_man_yen)?;
 
     if let Some(position_name) = &career_param.position_name {
-        let _ = validate_position_name(position_name.as_str())?;
+        validate_position_name(position_name.as_str())?;
     };
     if let Some(note) = &career_param.note {
-        let _ = validate_note(note.as_str())?;
+        validate_note(note.as_str())?;
     };
     Ok(())
 }
 
 fn validate_company(company_name: &str) -> Result<(), CareerParamValidationError> {
-    let _ = crate::util::validator::validate_company_name(company_name).map_err(|e| match e {
+    crate::util::validator::validate_company_name(company_name).map_err(|e| match e {
         crate::util::validator::CompanyNameValidationError::InvalidCompanyNameLength {
             length,
             min_length,
@@ -72,20 +72,25 @@ fn validate_company(company_name: &str) -> Result<(), CareerParamValidationError
 }
 
 fn validate_department_name(department_name: &str) -> Result<(), CareerParamValidationError> {
-    let _ =
-        crate::util::validator::validate_department_name(department_name).map_err(|e| match e {
-            crate::util::validator::DepartmentNameValidationError::InvalidDepartmentNameLength {
-                length,
-                min_length,
-                max_length,
-            } => CareerParamValidationError::InvalidDepartmentNameLength { length, min_length, max_length },
-            crate::util::validator::DepartmentNameValidationError::IllegalCharInDepartmentName(department_name) => CareerParamValidationError::IllegalCharInDepartmentName(department_name),
-        })?;
+    crate::util::validator::validate_department_name(department_name).map_err(|e| match e {
+        crate::util::validator::DepartmentNameValidationError::InvalidDepartmentNameLength {
+            length,
+            min_length,
+            max_length,
+        } => CareerParamValidationError::InvalidDepartmentNameLength {
+            length,
+            min_length,
+            max_length,
+        },
+        crate::util::validator::DepartmentNameValidationError::IllegalCharInDepartmentName(
+            department_name,
+        ) => CareerParamValidationError::IllegalCharInDepartmentName(department_name),
+    })?;
     Ok(())
 }
 
 fn validate_office(office: &str) -> Result<(), CareerParamValidationError> {
-    let _ = crate::util::validator::validate_office(office).map_err(|e| match e {
+    crate::util::validator::validate_office(office).map_err(|e| match e {
         crate::util::validator::OfficeValidationError::InvalidOfficeLength {
             length,
             min_length,
@@ -106,10 +111,10 @@ fn validate_years_of_service(
     param: &YearsOfServiceParam,
 ) -> Result<(), CareerParamValidationError> {
     if let Some(equal_or_more) = param.equal_or_more {
-        let _ = validate_years_of_service_equal_or_more(equal_or_more)?;
+        validate_years_of_service_equal_or_more(equal_or_more)?;
     }
     if let Some(less_than) = param.less_than {
-        let _ = validate_years_of_service_less_than(less_than)?;
+        validate_years_of_service_less_than(less_than)?;
     }
     if let Some(equal_or_more) = param.equal_or_more {
         if let Some(less_than) = param.less_than {
@@ -149,7 +154,7 @@ fn validate_years_of_service_less_than(
 }
 
 fn validate_contract_type(contract_type: &str) -> Result<(), CareerParamValidationError> {
-    let _ = crate::util::validator::validate_contract_type(contract_type).map_err(|e| match e {
+    crate::util::validator::validate_contract_type(contract_type).map_err(|e| match e {
         crate::util::validator::ContractTypeValidationError::IllegalContractType(contract_type) => {
             CareerParamValidationError::IllegalContractType(contract_type)
         }
@@ -158,7 +163,7 @@ fn validate_contract_type(contract_type: &str) -> Result<(), CareerParamValidati
 }
 
 fn validate_profession(profession: &str) -> Result<(), CareerParamValidationError> {
-    let _ = crate::util::validator::validate_profession(profession).map_err(|e| match e {
+    crate::util::validator::validate_profession(profession).map_err(|e| match e {
         crate::util::validator::ProfessionValidationError::InvalidProfessionLength {
             length,
             min_length,
@@ -211,7 +216,7 @@ fn validate_annual_income_in_man_yen_param(
 }
 
 fn validate_position_name(position_name: &str) -> Result<(), CareerParamValidationError> {
-    let _ = crate::util::validator::validate_position_name(position_name).map_err(|e| match e {
+    crate::util::validator::validate_position_name(position_name).map_err(|e| match e {
         crate::util::validator::PositionNameValidationError::InvalidPositionNameLength {
             length,
             min_length,
@@ -229,7 +234,7 @@ fn validate_position_name(position_name: &str) -> Result<(), CareerParamValidati
 }
 
 fn validate_note(note: &str) -> Result<(), CareerParamValidationError> {
-    let _ = crate::util::validator::validate_note(note).map_err(|e| match e {
+    crate::util::validator::validate_note(note).map_err(|e| match e {
         crate::util::validator::NoteValidationError::InvalidNoteLength {
             length,
             min_length,

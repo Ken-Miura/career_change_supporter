@@ -251,7 +251,7 @@ async fn main_internal(num_of_cpus: u32) {
         .parse()
         .unwrap_or_else(|_| panic!("failed to parse socket: {}", socket));
     tracing::info!("listening on {}", addr);
-    let _ = axum::Server::bind(&addr)
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");

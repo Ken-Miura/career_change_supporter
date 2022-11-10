@@ -66,11 +66,11 @@ static ZENKAKU_KATAKANA_ZENKAKU_SPACE_RE: Lazy<Regex> = Lazy::new(|| {
 pub(crate) fn validate_bank_account(
     bank_account: &BankAccount,
 ) -> Result<(), BankAccountValidationError> {
-    let _ = validate_bank_code(bank_account.bank_code.as_str())?;
-    let _ = validate_branch_code(bank_account.branch_code.as_str())?;
-    let _ = validate_account_type(bank_account.account_type.as_str())?;
-    let _ = validate_account_number(bank_account.account_number.as_str())?;
-    let _ = validate_account_holder_name(bank_account.account_holder_name.as_str())?;
+    validate_bank_code(bank_account.bank_code.as_str())?;
+    validate_branch_code(bank_account.branch_code.as_str())?;
+    validate_account_type(bank_account.account_type.as_str())?;
+    validate_account_number(bank_account.account_number.as_str())?;
+    validate_account_holder_name(bank_account.account_holder_name.as_str())?;
     Ok(())
 }
 
@@ -217,7 +217,7 @@ mod tests {
             account_number: "1234567".to_string(),
             account_holder_name: "タナカ　タロウ".to_string(),
         };
-        let _ = validate_bank_account(&bank_account).expect("failed to get Ok");
+        validate_bank_account(&bank_account).expect("failed to get Ok");
     }
 
     #[test]
@@ -229,7 +229,7 @@ mod tests {
             account_number: "12345678".to_string(),
             account_holder_name: "タナカ　タロウ".to_string(),
         };
-        let _ = validate_bank_account(&bank_account).expect("failed to get Ok");
+        validate_bank_account(&bank_account).expect("failed to get Ok");
     }
 
     #[test]
@@ -1660,7 +1660,7 @@ mod tests {
             account_holder_name: "アアア".to_string(),
         };
 
-        let _ = validate_bank_account(&bank_account).expect("failed to get Ok");
+        validate_bank_account(&bank_account).expect("failed to get Ok");
     }
 
     #[test]
@@ -1673,7 +1673,7 @@ mod tests {
             account_holder_name: "アアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアアア".to_string(),
         };
 
-        let _ = validate_bank_account(&bank_account).expect("failed to get Ok");
+        validate_bank_account(&bank_account).expect("failed to get Ok");
     }
 
     #[test]

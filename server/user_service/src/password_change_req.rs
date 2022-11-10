@@ -50,7 +50,7 @@ pub(crate) async fn post_password_change_req(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<PasswordChangeReqResult> {
     let uuid = Uuid::new_v4().simple();
-    let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = PasswordChangeReqOperationImpl::new(pool);
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -85,7 +85,7 @@ async fn handle_password_change_req(
     op: impl PasswordChangeReqOperation,
     send_mail: impl SendMail,
 ) -> RespResult<PasswordChangeReqResult> {
-    let _ = validate_email_address(email_addr).map_err(|e| {
+    validate_email_address(email_addr).map_err(|e| {
         error!("failed to validate email address ({}): {}", email_addr, e,);
         (
             StatusCode::BAD_REQUEST,
@@ -115,13 +115,13 @@ async fn handle_password_change_req(
         email_address: email_addr.to_string(),
         requested_at: *requested_time,
     };
-    let _ = op.create_new_pwd_change_req(new_pwd_change_req).await?;
+    op.create_new_pwd_change_req(new_pwd_change_req).await?;
     info!(
         "{} created new password change request with request id: {} at {}",
         email_addr, simple_uuid, requested_time
     );
     let text = create_text(url, &uuid_for_url);
-    let _ = send_mail
+    send_mail
         .send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text)
         .await?;
     Ok((StatusCode::OK, Json(PasswordChangeReqResult {})))
@@ -283,11 +283,11 @@ mod tests {
     #[tokio::test]
     async fn handle_password_change_req_success() {
         let email_address = "test@example.com";
-        let _ = validate_email_address(email_address).expect("failed to get Ok");
+        validate_email_address(email_address).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op_mock = PasswordChangeReqOperationMock::new(
             MAX_NUM_OF_PWD_CHANGE_REQ - 1,
             &uuid_str,
@@ -318,11 +318,11 @@ mod tests {
     #[tokio::test]
     async fn handle_password_change_req_fail_reach_max_num_of_pwd_change_req_limit() {
         let email_address = "test@example.com";
-        let _ = validate_email_address(email_address).expect("failed to get Ok");
+        validate_email_address(email_address).expect("failed to get Ok");
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op_mock = PasswordChangeReqOperationMock::new(
             MAX_NUM_OF_PWD_CHANGE_REQ,
             &uuid_str,
@@ -357,7 +357,7 @@ mod tests {
         let url: &str = "https://localhost:8080";
         let uuid = Uuid::new_v4().simple();
         let uuid_str = uuid.to_string();
-        let current_date_time = chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+        let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
         let op_mock = PasswordChangeReqOperationMock::new(
             MAX_NUM_OF_PWD_CHANGE_REQ - 1,
             &uuid_str,

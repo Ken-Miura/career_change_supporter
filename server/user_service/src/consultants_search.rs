@@ -114,11 +114,11 @@ async fn handle_consultants_search(
     param: ConsultantSearchParam,
     op: impl ConsultantsSearchOperation,
 ) -> RespResult<ConsultantsSearchResult> {
-    let _ = validate_career_param(&param.career_param).map_err(|e| {
+    validate_career_param(&param.career_param).map_err(|e| {
         error!("invalid career_param: {} (account id: {})", e, account_id);
         create_invalid_career_param_err(&e)
     })?;
-    let _ = validate_fee_per_hour_in_yen_param(&param.fee_per_hour_in_yen_param).map_err(|e| {
+    validate_fee_per_hour_in_yen_param(&param.fee_per_hour_in_yen_param).map_err(|e| {
         error!(
             "invalid fee_per_hour_in_yen_param: {} (account id: {})",
             e, account_id
@@ -126,7 +126,7 @@ async fn handle_consultants_search(
         create_invalid_fee_per_hour_in_yen_param_err(&e)
     })?;
     if let Some(sort_param) = param.sort_param.clone() {
-        let _ = validate_sort_param(&sort_param).map_err(|e| {
+        validate_sort_param(&sort_param).map_err(|e| {
             error!("invalid sort_param: {} (account id: {})", e, account_id);
             create_invalid_sort_param_err(&e)
         })?;

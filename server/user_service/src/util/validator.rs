@@ -521,13 +521,13 @@ mod tests {
     #[test]
     fn validate_company_name_returns_ok_if_1_char_company_name_is_passed() {
         let company_name = "あ";
-        let _ = validate_company_name(company_name).expect("failed to get Ok");
+        validate_company_name(company_name).expect("failed to get Ok");
     }
 
     #[test]
     fn validate_company_name_returns_ok_if_256_char_company_name_is_passed() {
         let company_name = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
-        let _ = validate_company_name(company_name).expect("failed to get Ok");
+        validate_company_name(company_name).expect("failed to get Ok");
     }
 
     #[test]
@@ -685,13 +685,13 @@ mod tests {
     #[test]
     fn validate_department_name_returns_ok_if_1_char_department_name_is_passed() {
         let department_name = "あ";
-        let _ = validate_department_name(department_name).expect("failed to get Ok");
+        validate_department_name(department_name).expect("failed to get Ok");
     }
 
     #[test]
     fn validate_department_name_returns_ok_if_256_char_department_name_is_passed() {
         let department_name = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
-        let _ = validate_department_name(department_name).expect("failed to get Ok");
+        validate_department_name(department_name).expect("failed to get Ok");
     }
 
     #[test]
@@ -865,13 +865,13 @@ mod tests {
     #[test]
     fn validate_office_returns_ok_if_1_char_office_is_passed() {
         let office = "あ";
-        let _ = validate_office(office).expect("failed to get Ok");
+        validate_office(office).expect("failed to get Ok");
     }
 
     #[test]
     fn validate_office_returns_ok_if_256_char_office_is_passed() {
         let office = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
-        let _ = validate_office(office).expect("failed to get Ok");
+        validate_office(office).expect("failed to get Ok");
     }
 
     #[test]
@@ -1070,7 +1070,7 @@ mod tests {
             contract_types.push(contract_type);
         }
         for contract_type in contract_types {
-            let _ = validate_contract_type(contract_type.as_str()).expect("failed to get Ok");
+            validate_contract_type(contract_type.as_str()).expect("failed to get Ok");
         }
     }
 
@@ -1087,13 +1087,13 @@ mod tests {
     #[test]
     fn validate_profession_returns_ok_if_1_char_profession_is_passed() {
         let profession = "あ";
-        let _ = validate_profession(profession).expect("failed to get Ok");
+        validate_profession(profession).expect("failed to get Ok");
     }
 
     #[test]
     fn validate_profession_returns_ok_if_128_char_profession_is_passed() {
         let profession = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
-        let _ = validate_profession(profession).expect("failed to get Ok");
+        validate_profession(profession).expect("failed to get Ok");
     }
 
     #[test]
@@ -1323,15 +1323,15 @@ mod tests {
     #[test]
     fn validate_annual_income_in_man_yen_returns_ok_if_annual_imcom_in_man_yen_0_is_passed() {
         let annual_income_in_man_yen = 0;
-        let _ =
-            validate_annual_income_in_man_yen(annual_income_in_man_yen).expect("failed to get Ok");
+
+        validate_annual_income_in_man_yen(annual_income_in_man_yen).expect("failed to get Ok");
     }
 
     #[test]
     fn validate_annual_income_in_man_yen_returns_ok_if_max_annual_imcom_in_man_yen_is_passed() {
         let annual_income_in_man_yen = MAX_ANNUAL_INCOME_IN_MAN_YEN;
-        let _ =
-            validate_annual_income_in_man_yen(annual_income_in_man_yen).expect("failed to get Ok");
+
+        validate_annual_income_in_man_yen(annual_income_in_man_yen).expect("failed to get Ok");
     }
 
     #[test]
@@ -1385,13 +1385,13 @@ mod tests {
     #[test]
     fn validate_position_name_returns_ok_if_1_char_position_name_is_passed() {
         let position_name = "あ";
-        let _ = validate_position_name(position_name).expect("failed to get Ok");
+        validate_position_name(position_name).expect("failed to get Ok");
     }
 
     #[test]
     fn validate_position_name_returns_ok_if_128_char_position_name_is_passed() {
         let position_name = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
-        let _ = validate_position_name(position_name).expect("failed to get Ok");
+        validate_position_name(position_name).expect("failed to get Ok");
     }
 
     #[test]
@@ -1633,13 +1633,13 @@ mod tests {
     #[test]
     fn validate_note_returns_ok_if_1_char_note_is_passed() {
         let note = "あ";
-        let _ = validate_note(note).expect("failed to get Ok");
+        validate_note(note).expect("failed to get Ok");
     }
 
     #[test]
     fn validate_note_returns_ok_if_2048_char_note_is_passed() {
         let note = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
-        let _ = validate_note(note).expect("failed to get Ok");
+        validate_note(note).expect("failed to get Ok");
     }
 
     #[test]
@@ -1734,7 +1734,7 @@ mod tests {
             note_list.push(note);
         }
         for note in note_list {
-            let _ = validate_note(note.as_str()).expect("failed to get Ok");
+            validate_note(note.as_str()).expect("failed to get Ok");
         }
     }
 
@@ -1746,7 +1746,7 @@ mod tests {
             note_list.push(note);
         }
         for note in note_list {
-            let _ = validate_note(note.as_str()).expect("failed to get Ok");
+            validate_note(note.as_str()).expect("failed to get Ok");
         }
     }
 
@@ -1759,7 +1759,7 @@ mod tests {
          受け入れます。\r\n
          
          ";
-        let _ = validate_note(note).expect("failed to get Ok");
+        validate_note(note).expect("failed to get Ok");
     }
 
     #[test]

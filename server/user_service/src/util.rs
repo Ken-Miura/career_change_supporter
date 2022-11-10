@@ -560,8 +560,7 @@ pub(crate) mod tests {
     fn create_dummy_jpeg_image() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(128, 128);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
             .expect("failed to get Ok");
         bytes
     }
@@ -569,8 +568,7 @@ pub(crate) mod tests {
     fn create_dummy_png_image() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(128, 128);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Png)
+        img.write_to(&mut bytes, ImageOutputFormat::Png)
             .expect("failed to get Ok");
         bytes
     }
@@ -580,8 +578,7 @@ pub(crate) mod tests {
             .decode()
             .expect("failed to get Ok");
         let mut png_img = Cursor::new(vec![]);
-        let _ = img
-            .write_to(&mut png_img, image::ImageOutputFormat::Png)
+        img.write_to(&mut png_img, image::ImageOutputFormat::Png)
             .expect("failed to get Ok");
         png_img
     }

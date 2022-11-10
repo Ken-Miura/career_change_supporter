@@ -281,7 +281,7 @@ pub(crate) mod tests {
     pub(crate) async fn prepare_session(user_account_id: i64, store: &impl SessionStore) -> String {
         let mut session = Session::new();
         // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
-        let _ = session
+        session
             .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
             .expect("failed to get Ok");
         store
@@ -297,7 +297,7 @@ pub(crate) mod tests {
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");
-        let _ = store
+        store
             .destroy_session(loaded_session)
             .await
             .expect("failed to get Ok");
@@ -346,7 +346,7 @@ pub(crate) mod tests {
         let store = MemoryStore::new();
         let session_id = prepare_session(user_account_id, &store).await;
         // リクエストのプリプロセス前ににセッションを削除
-        let _ = remove_session_from_store(&session_id, &store).await;
+        remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);
 
         let op = RefreshOperationMock {
@@ -443,7 +443,7 @@ pub(crate) mod tests {
 
         let result = ensure_account_is_not_disabled(account_id, op_mock).await;
 
-        let _ = result.expect("failed to get Ok");
+        result.expect("failed to get Ok");
     }
 
     #[tokio::test]
