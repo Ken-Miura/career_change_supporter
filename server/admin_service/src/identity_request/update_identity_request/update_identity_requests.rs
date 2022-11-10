@@ -22,7 +22,7 @@ pub(crate) async fn get_update_identity_requests(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<Vec<UpdateIdentityReqItem>> {
     let pagination = pagination.0;
-    let _ = validate_page_size(pagination.per_page)?;
+    validate_page_size(pagination.per_page)?;
     let op = UpdateIdentityRequestItemsOperationImpl { pool };
     get_update_identity_request_items(pagination, op).await
 }

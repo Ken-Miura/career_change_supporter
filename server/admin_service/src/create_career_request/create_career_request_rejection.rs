@@ -41,7 +41,7 @@ pub(crate) async fn post_create_career_request_rejection(
     Json(create_career_req_rejection): Json<CreateCareerReqRejection>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<CreateCareerReqRejectionResult> {
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateCareerReqRejectionOperationImpl { pool };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -77,7 +77,7 @@ async fn handle_create_career_request_rejection(
     op: impl CreateCareerReqRejectionOperation,
     send_mail: impl SendMail,
 ) -> RespResult<CreateCareerReqRejectionResult> {
-    let _ = validate_reason(rejection_reason.as_str()).map_err(|e| {
+    validate_reason(rejection_reason.as_str()).map_err(|e| {
         error!("invalid format reason ({}): {}", rejection_reason, e);
         (
             StatusCode::BAD_REQUEST,
@@ -132,7 +132,7 @@ async fn handle_create_career_request_rejection(
         )
     })?;
 
-    let _ = send_mail
+    send_mail
         .send_mail(
             &user_email_address,
             SYSTEM_EMAIL_ADDRESS,
@@ -321,7 +321,7 @@ async fn delete_career_images(
     image2_file_name_without_ext: Option<String>,
 ) -> Result<(), ErrRespStruct> {
     let image1_key = format!("{}/{}.png", user_account_id, image1_file_name_without_ext);
-    let _ = storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image1_key.as_str())
+    storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image1_key.as_str())
         .await
         .map_err(|e| {
             error!(
@@ -335,7 +335,7 @@ async fn delete_career_images(
 
     if let Some(image2_file_name_without_ext) = image2_file_name_without_ext {
         let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
-        let _ = storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image2_key.as_str())
+        storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image2_key.as_str())
             .await
             .map_err(|e| {
                 error!(

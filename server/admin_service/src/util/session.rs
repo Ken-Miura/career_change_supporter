@@ -179,7 +179,7 @@ pub(crate) mod tests {
     ) -> String {
         let mut session = Session::new();
         // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
-        let _ = session
+        session
             .insert(KEY_TO_ADMIN_ACCOUNT_ID, admin_account_id)
             .expect("failed to get Ok");
         store
@@ -195,7 +195,7 @@ pub(crate) mod tests {
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");
-        let _ = store
+        store
             .destroy_session(loaded_session)
             .await
             .expect("failed to get Ok");
@@ -244,7 +244,7 @@ pub(crate) mod tests {
         let store = MemoryStore::new();
         let session_id = prepare_session(admin_account_id, &store).await;
         // リクエストのプリプロセス前ににセッションを削除
-        let _ = remove_session_from_store(&session_id, &store).await;
+        remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);
 
         let op = RefreshOperationMock {

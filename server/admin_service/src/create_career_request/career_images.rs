@@ -27,7 +27,7 @@ async fn get_career_images_internal(
     image_name: String,
     op: impl DownloadCareerImageOperation,
 ) -> Result<(HeaderMap, Vec<u8>), ErrResp> {
-    let _ = validate_uuid(&image_name).map_err(|e| {
+    validate_uuid(&image_name).map_err(|e| {
         error!("failed to validate image name ({}): {}", image_name, e);
         (
             StatusCode::BAD_REQUEST,
@@ -95,8 +95,7 @@ mod tests {
     fn create_dummy_career_image() -> Vec<u8> {
         let img: RgbImage = ImageBuffer::new(64, 64);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        let _ = img
-            .write_to(&mut bytes, ImageOutputFormat::Png)
+        img.write_to(&mut bytes, ImageOutputFormat::Png)
             .expect("failed to get Ok");
         bytes.into_inner()
     }

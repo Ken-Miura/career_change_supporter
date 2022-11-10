@@ -22,7 +22,7 @@ pub(crate) async fn get_create_career_requests(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<Vec<CreateCareerReqItem>> {
     let pagination = pagination.0;
-    let _ = validate_page_size(pagination.per_page)?;
+    validate_page_size(pagination.per_page)?;
     let op = CreateCareerRequestItemsOperationImpl { pool };
     get_create_career_request_items(pagination, op).await
 }

@@ -38,7 +38,7 @@ pub(crate) async fn post_update_identity_request_approval(
     Json(update_identity_req_approval): Json<UpdateIdentityReqApproval>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<UpdateIdentityReqApprovalResult> {
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = UpdateIdentityReqApprovalOperationImpl { pool };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -101,7 +101,7 @@ async fn handle_update_identity_request_approval(
         )
     })?;
 
-    let _ = send_mail
+    send_mail
         .send_mail(
             &user_email_address,
             SYSTEM_EMAIL_ADDRESS,

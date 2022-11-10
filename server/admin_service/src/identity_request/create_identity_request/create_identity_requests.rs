@@ -24,7 +24,7 @@ pub(crate) async fn get_create_identity_requests(
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<Vec<CreateIdentityReqItem>> {
     let pagination = pagination.0;
-    let _ = validate_page_size(pagination.per_page)?;
+    validate_page_size(pagination.per_page)?;
     let op = CreateIdentityRequestItemsOperationImpl { pool };
     get_create_identity_request_items(pagination, op).await
 }

@@ -43,7 +43,7 @@ pub(crate) async fn post_update_identity_request_rejection(
     Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<UpdateIdentityReqRejectionResult> {
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = UpdateIdentityReqRejectionOperationImpl { pool };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -79,7 +79,7 @@ async fn handle_update_identity_request_rejection(
     op: impl UpdateIdentityReqRejectionOperation,
     send_mail: impl SendMail,
 ) -> RespResult<UpdateIdentityReqRejectionResult> {
-    let _ = validate_reason(rejection_reason.as_str()).map_err(|e| {
+    validate_reason(rejection_reason.as_str()).map_err(|e| {
         error!("invalid format reason ({}): {}", rejection_reason, e);
         (
             StatusCode::BAD_REQUEST,
@@ -123,7 +123,7 @@ async fn handle_update_identity_request_rejection(
         )
     })?;
 
-    let _ = send_mail
+    send_mail
         .send_mail(
             &user_email_address,
             SYSTEM_EMAIL_ADDRESS,

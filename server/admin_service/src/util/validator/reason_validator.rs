@@ -201,7 +201,7 @@ mod tests {
     fn validate_reason_returns_ok_if_valid_str_is_passed() {
         let reason = "画像が不鮮明なため";
         let result = validate_reason(reason);
-        let _ = result.expect("failed to get Ok");
+        result.expect("failed to get Ok");
     }
 
     #[test]

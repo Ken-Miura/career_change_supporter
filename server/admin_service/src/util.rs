@@ -70,7 +70,7 @@ pub(crate) mod tests {
 
     #[test]
     fn validate_page_size_sucees() {
-        let _ = validate_page_size(MAX_PAGE_SIZE).expect("failed to get Ok");
+        validate_page_size(MAX_PAGE_SIZE).expect("failed to get Ok");
     }
 
     #[test]

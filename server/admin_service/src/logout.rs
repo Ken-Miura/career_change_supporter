@@ -33,9 +33,9 @@ pub(crate) async fn post_logout(
             return Ok(StatusCode::OK);
         }
     };
-    let _ = handle_logout_req(session_id, &store).await?;
+    handle_logout_req(session_id, &store).await?;
     // removeというメソッド名がわかりづらいが、Set-Cookieにmax-ageが0のCookieをセットしている。
-    let _ = signed_cookies.remove(Cookie::new(ADMIN_SESSION_ID_COOKIE_NAME, ""));
+    signed_cookies.remove(Cookie::new(ADMIN_SESSION_ID_COOKIE_NAME, ""));
     Ok(StatusCode::OK)
 }
 
@@ -67,7 +67,7 @@ async fn handle_logout_req<'a>(
             None
         }
     };
-    let _ = store.destroy_session(session).await.map_err(|e| {
+    store.destroy_session(session).await.map_err(|e| {
         error!(
             "failed to destroy session (admin accountid: {:?}): {}",
             account_id, e
@@ -93,7 +93,7 @@ mod tests {
         let session_id = prepare_session(admin_account_id, &store).await;
         assert_eq!(1, store.count().await);
 
-        let _ = handle_logout_req(session_id, &store)
+        handle_logout_req(session_id, &store)
             .await
             .expect("failed to get Ok");
 
@@ -106,10 +106,10 @@ mod tests {
         let admin_account_id = 203;
         let session_id = prepare_session(admin_account_id, &store).await;
         // ログアウト前にセッションを削除
-        let _ = remove_session_from_store(&session_id, &store).await;
+        remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);
 
-        let _ = handle_logout_req(session_id, &store)
+        handle_logout_req(session_id, &store)
             .await
             .expect("failed to get Ok");
 

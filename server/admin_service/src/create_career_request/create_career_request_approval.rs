@@ -42,7 +42,7 @@ pub(crate) async fn post_create_career_request_approval(
     Extension(pool): Extension<DatabaseConnection>,
     Extension(index_client): Extension<OpenSearch>,
 ) -> RespResult<CreateCareerReqApprovalResult> {
-    let current_date_time = Utc::now().with_timezone(&JAPANESE_TIME_ZONE.to_owned());
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateCareerReqApprovalOperationImpl { pool, index_client };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
@@ -121,7 +121,7 @@ async fn handle_create_career_request_approval(
         )
     })?;
 
-    let _ = send_mail
+    send_mail
         .send_mail(
             &user_email_address,
             SYSTEM_EMAIL_ADDRESS,
@@ -446,7 +446,7 @@ async fn add_new_document_with_career(
         "is_bank_account_registered": null,
         "rating": null
     });
-    let _ = index_document(index_name, document_id, &new_document, &client)
+    index_document(index_name, document_id, &new_document, &client)
         .await
         .map_err(|e| {
             error!(
@@ -501,7 +501,7 @@ async fn insert_new_career_into_document(
             }
         }
     });
-    let _ = update_document(index_name, document_id, &script, &client)
+    update_document(index_name, document_id, &script, &client)
         .await
         .map_err(|e| {
             error!(
