@@ -840,6 +840,111 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail ThreeDSecureError unverified".to_string(),
+                input: Input {
+                    account_id: 1,
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    op: FinishRequestConsultationOperationMock {
+                        account_id: 1,
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        charge: create_dummy_charge(
+                            "ch_fa990a4c10672a93053a774730b0a",
+                            5000,
+                            "unverified",
+                            create_metadata(
+                                2,
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                            ),
+                        ),
+                        consultant_id: 2,
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_email_address: "test0@test.com".to_string(),
+                        consultant_email_address: "test1@test.com".to_string(),
+                    },
+                    smtp_client: SendMailMock {},
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ThreeDSecureError as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail ThreeDSecureError failed".to_string(),
+                input: Input {
+                    account_id: 1,
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    op: FinishRequestConsultationOperationMock {
+                        account_id: 1,
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        charge: create_dummy_charge(
+                            "ch_fa990a4c10672a93053a774730b0a",
+                            5000,
+                            "failed",
+                            create_metadata(
+                                2,
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                            ),
+                        ),
+                        consultant_id: 2,
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_email_address: "test0@test.com".to_string(),
+                        consultant_email_address: "test1@test.com".to_string(),
+                    },
+                    smtp_client: SendMailMock {},
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ThreeDSecureError as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail ThreeDSecureError error".to_string(),
+                input: Input {
+                    account_id: 1,
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    op: FinishRequestConsultationOperationMock {
+                        account_id: 1,
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        charge: create_dummy_charge(
+                            "ch_fa990a4c10672a93053a774730b0a",
+                            5000,
+                            "error",
+                            create_metadata(
+                                2,
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                            ),
+                        ),
+                        consultant_id: 2,
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_email_address: "test0@test.com".to_string(),
+                        consultant_email_address: "test1@test.com".to_string(),
+                    },
+                    smtp_client: SendMailMock {},
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ThreeDSecureError as u32,
+                    }),
+                )),
+            },
         ]
     });
 
