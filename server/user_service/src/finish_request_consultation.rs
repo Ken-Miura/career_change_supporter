@@ -711,7 +711,7 @@ mod tests {
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         vec![
             TestCase {
-                name: "success case".to_string(),
+                name: "success case 1 (3D secure status verified)".to_string(),
                 input: Input {
                     account_id: 1,
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
@@ -722,6 +722,36 @@ mod tests {
                             "ch_fa990a4c10672a93053a774730b0a",
                             5000,
                             "verified",
+                            create_metadata(
+                                2,
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                            ),
+                        ),
+                        consultant_id: 2,
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_email_address: "test0@test.com".to_string(),
+                        consultant_email_address: "test1@test.com".to_string(),
+                    },
+                    smtp_client: SendMailMock {},
+                },
+                expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
+            },
+            TestCase {
+                name: "success case 2 (3D secure status attempted)".to_string(),
+                input: Input {
+                    account_id: 1,
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    op: FinishRequestConsultationOperationMock {
+                        account_id: 1,
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        charge: create_dummy_charge(
+                            "ch_fa990a4c10672a93053a774730b0a",
+                            5000,
+                            "attempted",
                             create_metadata(
                                 2,
                                 JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
