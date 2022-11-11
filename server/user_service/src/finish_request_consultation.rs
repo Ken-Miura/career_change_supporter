@@ -585,9 +585,11 @@ mod tests {
     use common::payment_platform::customer::Card;
     use common::payment_platform::Metadata;
     use common::smtp::SendMail;
+    use common::ApiError;
     use common::{payment_platform::charge::Charge, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::util::{
         EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
         KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
@@ -707,36 +709,73 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-        vec![TestCase {
-            name: "success case".to_string(),
-            input: Input {
-                account_id: 1,
-                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                op: FinishRequestConsultationOperationMock {
+        vec![
+            TestCase {
+                name: "success case".to_string(),
+                input: Input {
                     account_id: 1,
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                    charge: create_dummy_charge(
-                        "ch_fa990a4c10672a93053a774730b0a",
-                        5000,
-                        "verified",
-                        create_metadata(
-                            2,
-                            JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                            JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                            JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                    op: FinishRequestConsultationOperationMock {
+                        account_id: 1,
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        charge: create_dummy_charge(
+                            "ch_fa990a4c10672a93053a774730b0a",
+                            5000,
+                            "verified",
+                            create_metadata(
+                                2,
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                            ),
                         ),
-                    ),
-                    consultant_id: 2,
-                    latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                        .ymd(2022, 11, 22)
-                        .and_hms(7, 0, 0),
-                    user_account_email_address: "test0@test.com".to_string(),
-                    consultant_email_address: "test1@test.com".to_string(),
+                        consultant_id: 2,
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_email_address: "test0@test.com".to_string(),
+                        consultant_email_address: "test1@test.com".to_string(),
+                    },
+                    smtp_client: SendMailMock {},
                 },
-                smtp_client: SendMailMock {},
+                expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
             },
-            expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
-        }]
+            TestCase {
+                name: "fail NoIdentityRegistered".to_string(),
+                input: Input {
+                    account_id: 1,
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    op: FinishRequestConsultationOperationMock {
+                        account_id: 3,
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        charge: create_dummy_charge(
+                            "ch_fa990a4c10672a93053a774730b0a",
+                            5000,
+                            "verified",
+                            create_metadata(
+                                2,
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                            ),
+                        ),
+                        consultant_id: 2,
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_email_address: "test0@test.com".to_string(),
+                        consultant_email_address: "test1@test.com".to_string(),
+                    },
+                    smtp_client: SendMailMock {},
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     // create_dummy_chargeでAPI呼び出しの結果返却されるChargeを作成する
