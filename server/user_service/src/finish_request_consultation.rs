@@ -584,9 +584,9 @@ mod tests {
     use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
     use common::payment_platform::customer::Card;
     use common::payment_platform::Metadata;
-    use common::smtp::SendMail;
-    use common::ApiError;
+    use common::smtp::{SendMail, INQUIRY_EMAIL_ADDRESS};
     use common::{payment_platform::charge::Charge, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+    use common::{ApiError, WEB_SITE_NAME};
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
@@ -594,11 +594,12 @@ mod tests {
         EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
         KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
         KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     };
 
     use super::{
-        handle_finish_request_consultation, FinishRequestConsultationOperation,
-        FinishRequestConsultationResult,
+        create_text_for_consultant_mail, handle_finish_request_consultation,
+        FinishRequestConsultationOperation, FinishRequestConsultationResult,
     };
 
     #[derive(Debug)]
@@ -1062,5 +1063,50 @@ mod tests {
         }
     }
 
-    // TODO: メールの内容を確認するテストを追加する
+    #[test]
+    fn test_create_text_for_consultant_mail() {
+        let user_account_id = 1;
+        let first_candidate = "2022年 11月 12日 7時00分";
+        let second_candidate = "2022年 11月 12日 23時00分";
+        let third_candidate = "2022年 11月 22日 7時00分";
+
+        let result = create_text_for_consultant_mail(
+            user_account_id,
+            &(
+                first_candidate.to_string(),
+                second_candidate.to_string(),
+                third_candidate.to_string(),
+            ),
+        );
+
+        let expected = format!(
+            r"ユーザーID ({}) から相談申し込みの依頼（希望相談開始日時は下記に記載）が届きました。{}へログインし、相談受け付けのページから該当の申込みの詳細を確認し、了承する、または拒否するをご選択下さい。
+
+希望相談開始日時
+  第一希望: {}
+  第二希望: {}
+  第三希望: {}
+
+各希望相談開始日時について、その日時の{}時間前となると、その日時を選択して了承することができなくなりますのでご注意下さい。
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+            user_account_id,
+            WEB_SITE_NAME,
+            first_candidate,
+            second_candidate,
+            third_candidate,
+            *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+            INQUIRY_EMAIL_ADDRESS
+        );
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_create_text_for_user_mail() {}
 }
