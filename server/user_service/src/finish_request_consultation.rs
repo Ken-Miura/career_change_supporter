@@ -598,8 +598,9 @@ mod tests {
     };
 
     use super::{
-        create_text_for_consultant_mail, handle_finish_request_consultation,
-        FinishRequestConsultationOperation, FinishRequestConsultationResult,
+        create_text_for_consultant_mail, create_text_for_user_mail,
+        handle_finish_request_consultation, FinishRequestConsultationOperation,
+        FinishRequestConsultationResult,
     };
 
     #[derive(Debug)]
@@ -1108,5 +1109,56 @@ Email: {}",
     }
 
     #[test]
-    fn test_create_text_for_user_mail() {}
+    fn test_create_text_for_user_mail() {
+        let consultant_id = 2;
+        let amount = 5000;
+        let first_candidate = "2022年 11月 12日 7時00分";
+        let second_candidate = "2022年 11月 12日 23時00分";
+        let third_candidate = "2022年 11月 22日 7時00分";
+
+        let result = create_text_for_user_mail(
+            consultant_id,
+            amount,
+            &(
+                first_candidate.to_string(),
+                second_candidate.to_string(),
+                third_candidate.to_string(),
+            ),
+        );
+
+        let expected = format!(
+            r"下記の内容で相談申し込みを行いました。
+
+相談相手
+  コンサルタントID: {}
+
+相談料金
+  {} 円
+
+希望相談開始日時
+  第一希望: {}
+  第二希望: {}
+  第三希望: {}
+
+相談申し込みが拒否されていない限り、希望相談開始日時の{}時間前までは、コンサルタントの相談申し込みに対する了承の可能性があります。相談申し込みが了承されたことを見逃さないために、各希望相談開始日時の{}時間前には{}にログイン後、スケジュールのページをご確認下さい。
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+            consultant_id,
+            amount,
+            first_candidate,
+            second_candidate,
+            third_candidate,
+            *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+            *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+            WEB_SITE_NAME,
+            INQUIRY_EMAIL_ADDRESS
+        );
+
+        assert_eq!(result, expected);
+    }
 }
