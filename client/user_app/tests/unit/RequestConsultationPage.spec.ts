@@ -56,6 +56,15 @@ jest.mock('vuex', () => ({
   })
 }))
 
+// ルートフォントサイズ（環境に依存する値）は、テストでは固定値として扱う
+const fontSize = 16
+jest.mock('@/util/personalized/request-consultation/FontSizeConverter', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  convertRemToPx: (rem: number): number => {
+    return rem * parseFloat(fontSize.toString() + 'px')
+  }
+}))
+
 // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createPayJpMockObject = {
@@ -64,10 +73,21 @@ const createPayJpMockObject = {
     return {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       create: (type: string, options?: object): any => {
-        console.log(`${type}, ${options}`)
+        expect(type).toBe('card')
+        expect(options).toStrictEqual({
+          style: {
+            base: {
+              color: 'black',
+              fontSize: (fontSize * 1.5) + 'px'
+            },
+            invalid: {
+              color: 'red'
+            }
+          }
+        })
         return {
           mount: (domElement: string) => {
-            console.log(`${domElement}`)
+            expect(domElement).toBe('#payjp-card-area')
           }
         }
       }
