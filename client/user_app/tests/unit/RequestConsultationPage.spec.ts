@@ -6,6 +6,7 @@ import { GetFeePerHourInYenForApplicationResp } from '@/util/personalized/reques
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
+import { Message } from '@/util/Message'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -156,5 +157,24 @@ describe('RequestConsultationPage.vue', () => {
 
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(0)
+  })
+
+  it('displays AlertMessage when error has happened', async () => {
+    const errDetail = 'connection error'
+    getFeePerHourInYenForApplicationFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessage = wrapper.find('[data-test="outer-alert-message"]').findComponent(AlertMessage)
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
