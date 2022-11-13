@@ -7,6 +7,8 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -176,5 +178,37 @@ describe('RequestConsultationPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it(`moves to login if ${Code.UNAUTHORIZED} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`moves to terms-of-use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 })
