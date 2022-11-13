@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { GetFeePerHourInYenForApplicationResp } from '@/util/personalized/request-consultation/GetFeePerHourInYenForApplicationResp'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -139,5 +140,21 @@ describe('RequestConsultationPage.vue', () => {
     expect(waitingCircles.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('does not display AlertMessage when error does not occur', async () => {
+    const resp = GetFeePerHourInYenForApplicationResp.create(5000)
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
   })
 })
