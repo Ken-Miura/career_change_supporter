@@ -9,6 +9,7 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -210,5 +211,22 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it('displays information for application (payJp object is not stored)', async () => {
+    const resp = GetFeePerHourInYenForApplicationResp.create(5000)
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const description = wrapper.find('[data-test="description"]')
+    const descpritionMessage = `相談開始日時に関して、第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談開始日時は、申し込み日時から${getMinDurationBeforeConsultationInDays() * 24}時間（${getMinDurationBeforeConsultationInDays()}日）以降、${getMaxDurationBeforeConsultationInDays() * 24}時間（${getMaxDurationBeforeConsultationInDays()}日）以前までとなります。`
+    expect(description.text()).toContain(descpritionMessage)
   })
 })

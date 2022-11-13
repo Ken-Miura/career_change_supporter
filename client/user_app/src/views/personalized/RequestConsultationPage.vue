@@ -12,15 +12,15 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <p class="text-2xl">相談開始日時に関して、第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談開始日時は、申し込み日時から{{ minDurationInDays*24 }}時間（{{ minDurationInDays }}日）以降、{{ maxDurationInDays*24 }}時間（{{ maxDurationInDays }}日）以前までとなります。</p>
-          <h3 class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
+          <p data-test="description" class="text-2xl">相談開始日時に関して、第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談開始日時は、申し込み日時から{{ minDurationInDays*24 }}時間（{{ minDurationInDays }}日）以降、{{ maxDurationInDays*24 }}時間（{{ maxDurationInDays }}日）以前までとなります。</p>
+          <h3 data-test="first-candidate-lablel" class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="candidates.firstCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="first-candidate-year-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -28,7 +28,7 @@
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="first-candidate-month-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -36,7 +36,7 @@
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="first-candidate-day-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -44,18 +44,18 @@
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="first-candidate-hour-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               時
             </div>
           </div>
-          <h3 class="mt-4 font-bold text-2xl">相談開始日時（第二希望）</h3>
+          <h3 data-test="second-candidate-lablel" class="mt-4 font-bold text-2xl">相談開始日時（第二希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="candidates.secondCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="second-candidate-year-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -63,7 +63,7 @@
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="second-candidate-month-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -71,7 +71,7 @@
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="second-candidate-day-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -79,18 +79,18 @@
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="second-candidate-hour-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               時
             </div>
           </div>
-          <h3 class="mt-4 font-bold text-2xl">相談開始日時（第三希望）</h3>
+          <h3 data-test="third-candidate-lablel" class="mt-4 font-bold text-2xl">相談開始日時（第三希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
               <select v-model="candidates.thirdCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="third-candidate-year-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -98,7 +98,7 @@
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="third-candidate-month-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -106,7 +106,7 @@
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="third-candidate-day-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
@@ -114,24 +114,24 @@
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+            <div data-test="third-candidate-hour-lablel" class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
               時
             </div>
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談申し込み詳細</h3>
+          <h3 data-test="consultation-detail" class="font-bold text-2xl">相談申し込み詳細</h3>
           <div class="m-4 text-2xl grid grid-cols-3">
-            <div class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
-            <div class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
+            <div data-test="consultant-id" class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
+            <div data-test="fee-per-hour-in-yen" class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
           </div>
-          <h3 class="mt-4 font-bold text-2xl">クレジットカード</h3>
-          <div class="m-4 text-2xl flex flex-col">
+          <h3 data-test="card-label" class="mt-4 font-bold text-2xl">クレジットカード</h3>
+          <div data-test="card-area" class="m-4 text-2xl flex flex-col">
             <div class="mt-2 w-5/6" id="payjp-card-area"></div>
           </div>
-          <h3 class="mt-6 ml-2 text-red-500 text-xl">相談申し込み後にキャンセルや相談開始日時変更は出来ませんので、申し込み内容についてよくご確認の上、相談をお申し込み下さい。</h3>
-          <button v-bind:disabled="disabled" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" v-on:click="requestConsultation">相談を申し込む</button>
-          <div v-if="errorBelowBtn.exists">
+          <h3 data-test="notice" class="mt-6 ml-2 text-red-500 text-xl">相談申し込み後にキャンセルや相談開始日時変更は出来ませんので、申し込み内容についてよくご確認の上、相談をお申し込み下さい。</h3>
+          <button data-test="apply-for-consultation-btn" v-bind:disabled="disabled" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" v-on:click="requestConsultation">相談を申し込む</button>
+          <div data-test="inner-alert-message" v-if="errorBelowBtn.exists">
             <AlertMessage class="mt-4" v-bind:message="errorBelowBtn.message"/>
           </div>
         </div>
