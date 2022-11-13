@@ -3,6 +3,8 @@ import flushPromises from 'flush-promises'
 import RequestConsultationPage from '@/views/personalized/RequestConsultationPage.vue'
 import { ref } from 'vue'
 import { GetFeePerHourInYenForApplicationResp } from '@/util/personalized/request-consultation/GetFeePerHourInYenForApplicationResp'
+import WaitingCircle from '@/components/WaitingCircle.vue'
+import TheHeader from '@/components/TheHeader.vue'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -119,6 +121,7 @@ describe('RequestConsultationPage.vue', () => {
   })
 
   it('has WaitingCircle and TheHeader while waiting response of fee per hour in yen', async () => {
+    getFeePerHourInYenForApplicationDoneMock.value = false
     const resp = GetFeePerHourInYenForApplicationResp.create(5000)
     getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
     const wrapper = mount(RequestConsultationPage, {
@@ -129,5 +132,12 @@ describe('RequestConsultationPage.vue', () => {
       }
     })
     await flushPromises()
+
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
   })
 })
