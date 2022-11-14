@@ -228,5 +228,16 @@ describe('RequestConsultationPage.vue', () => {
     const description = wrapper.find('[data-test="description"]')
     const descpritionMessage = `相談開始日時に関して、第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談開始日時は、申し込み日時から${getMinDurationBeforeConsultationInDays() * 24}時間（${getMinDurationBeforeConsultationInDays()}日）以降、${getMaxDurationBeforeConsultationInDays() * 24}時間（${getMaxDurationBeforeConsultationInDays()}日）以前までとなります。`
     expect(description.text()).toContain(descpritionMessage)
+
+    const firstCandidateLabel = wrapper.find('[data-test="first-candidate-lablel"]')
+    expect(firstCandidateLabel.text()).toContain('相談開始日時（第一希望）')
+    const firstCandidateYearLabel = wrapper.find('[data-test="first-candidate-year-lablel"]')
+    expect(firstCandidateYearLabel.text()).toContain('年')
+    const firstCandidateMonthLabel = wrapper.find('[data-test="first-candidate-month-lablel"]')
+    expect(firstCandidateMonthLabel.text()).toContain('月')
+    const firstCandidateDayLabel = wrapper.find('[data-test="first-candidate-day-lablel"]')
+    expect(firstCandidateDayLabel.text()).toContain('日')
+    const firstCandidateHourLabel = wrapper.find('[data-test="first-candidate-hour-lablel"]')
+    expect(firstCandidateHourLabel.text()).toContain('時')
   })
 })
