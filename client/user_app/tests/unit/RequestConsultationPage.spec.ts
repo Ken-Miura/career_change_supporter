@@ -72,6 +72,9 @@ jest.mock('@/util/personalized/request-consultation/FontSizeConverter', () => ({
   }
 }))
 
+let createTokenErr = false
+const createTokenErrMessage = 'createToken Error'
+const dummyChargeId = 'ch_fa990a4c10672a93053a774730b0a'
 // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createPayJpMockObject = {
@@ -99,6 +102,29 @@ const createPayJpMockObject = {
         }
       }
     }
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createToken: async (cardElement: any): Promise<any> => {
+    expect(cardElement).not.toBeNull()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let obj: any
+    if (createTokenErr) {
+      obj = {
+        error: {
+          message: createTokenErrMessage
+        }
+      }
+    } else {
+      obj = {
+        id: 'tok_76e202b409f3da51a0706605ac81'
+      }
+    }
+    return new Promise((resolve) => {
+      resolve(obj)
+    })
+  },
+  openThreeDSecureDialog: async (chargeId: string) => {
+    expect(chargeId).toBe(dummyChargeId)
   }
 }
 jest.mock('@/util/PayJp', () => ({
@@ -123,6 +149,7 @@ describe('RequestConsultationPage.vue', () => {
     disableBtnMock.mockReset()
     enableBtnMock.mockReset()
     payJpMock = null
+    createTokenErr = false
   })
 
   it('has WaitingCircle and TheHeader while waiting response of fee per hour in yen', async () => {
