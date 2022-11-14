@@ -122,8 +122,8 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="consultation-detail" class="font-bold text-2xl">相談申し込み詳細</h3>
           <div class="m-4 text-2xl grid grid-cols-3">
-            <div data-test="consultant-id" class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
-            <div data-test="fee-per-hour-in-yen" class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
+            <div data-test="consultant-id" class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div data-test="consultant-id-value" class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
+            <div data-test="fee-per-hour-in-yen" class="mt-2 justify-self-start col-span-2">相談一回（１時間）の相談料</div><div data-test="fee-per-hour-in-yen-value" class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
           </div>
           <h3 data-test="card-label" class="mt-4 font-bold text-2xl">クレジットカード</h3>
           <div data-test="card-area" class="m-4 text-2xl flex flex-col">

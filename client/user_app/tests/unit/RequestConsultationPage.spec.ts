@@ -214,7 +214,8 @@ describe('RequestConsultationPage.vue', () => {
   })
 
   it('displays information for application (payJp object is not stored)', async () => {
-    const resp = GetFeePerHourInYenForApplicationResp.create(5000)
+    const fee = 5000
+    const resp = GetFeePerHourInYenForApplicationResp.create(fee)
     getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
     const wrapper = mount(RequestConsultationPage, {
       global: {
@@ -261,5 +262,23 @@ describe('RequestConsultationPage.vue', () => {
     expect(thirdCandidateDayLabel.text()).toContain('日')
     const thirdCandidateHourLabel = wrapper.find('[data-test="third-candidate-hour-lablel"]')
     expect(thirdCandidateHourLabel.text()).toContain('時')
+
+    const consultationDetail = wrapper.find('[data-test="consultation-detail"]')
+    expect(consultationDetail.text()).toContain('相談申し込み詳細')
+
+    const consultantId = wrapper.find('[data-test="consultant-id"]')
+    expect(consultantId.text()).toContain('コンサルタントID')
+    const consultantIdValue = wrapper.find('[data-test="consultant-id-value"]')
+    expect(consultantIdValue.text()).toContain(`${routeParam}`)
+
+    const feePerHourInYen = wrapper.find('[data-test="fee-per-hour-in-yen"]')
+    expect(feePerHourInYen.text()).toContain('相談一回（１時間）の相談料')
+    const feePerHourInYenValue = wrapper.find('[data-test="fee-per-hour-in-yen-value"]')
+    expect(feePerHourInYenValue.text()).toContain(`${fee}円`)
+
+    const cardLabel = wrapper.find('[data-test="card-label"]')
+    expect(cardLabel.text()).toContain('クレジットカード')
+    const cardArea = wrapper.find('[data-test="card-area"]')
+    expect(cardArea.exists()).toBe(true)
   })
 })
