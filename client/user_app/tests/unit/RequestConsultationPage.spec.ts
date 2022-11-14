@@ -286,9 +286,11 @@ describe('RequestConsultationPage.vue', () => {
 
     const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
     expect(btn.exists()).toBe(true)
+    // ページが表示されたタイミングでは必須項目がないため、disabledとなっている
+    expect(btn.attributes('disabled')).toBeDefined()
 
-    // ページが表示されたタイミングではエラーはない
     const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
+    // ページが表示されたタイミングではエラーはない
     expect(innerAlert.exists()).toBe(false)
   })
 })
