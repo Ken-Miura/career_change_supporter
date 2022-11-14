@@ -280,5 +280,15 @@ describe('RequestConsultationPage.vue', () => {
     expect(cardLabel.text()).toContain('クレジットカード')
     const cardArea = wrapper.find('[data-test="card-area"]')
     expect(cardArea.exists()).toBe(true)
+
+    const notice = wrapper.find('[data-test="notice"]')
+    expect(notice.text()).toContain('相談申し込み後にキャンセルや相談開始日時変更は出来ませんので、申し込み内容についてよくご確認の上、相談をお申し込み下さい。')
+
+    const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
+    expect(btn.exists()).toBe(true)
+
+    // ページが表示されたタイミングではエラーはない
+    const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
+    expect(innerAlert.exists()).toBe(false)
   })
 })
