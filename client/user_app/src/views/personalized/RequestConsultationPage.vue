@@ -286,8 +286,8 @@ export default defineComponent({
 
         const payjp = store.state.payJp
         if (payjp === null) {
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: payjp is null`
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = `${Message.UNEXPECTED_ERR}: payjp is null`
           return
         }
 

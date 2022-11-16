@@ -36,7 +36,7 @@ jest.mock('@/util/personalized/request-consultation/useGetFeePerHourInYenForAppl
 const requestConsultationDoneMock = ref(true)
 const startRequestConsultationMock = jest.fn()
 const finishRequestConsultationMock = jest.fn()
-const disabledMock = ref(true)
+const disabledMock = ref(false)
 const disableBtnMock = jest.fn()
 const enableBtnMock = jest.fn()
 jest.mock('@/util/personalized/request-consultation/useRequestConsultationDone', () => ({
@@ -145,7 +145,7 @@ describe('RequestConsultationPage.vue', () => {
     requestConsultationDoneMock.value = true
     startRequestConsultationMock.mockReset()
     finishRequestConsultationMock.mockReset()
-    disabledMock.value = true
+    disabledMock.value = false
     disableBtnMock.mockReset()
     enableBtnMock.mockReset()
     payJpMock = null
@@ -399,7 +399,8 @@ describe('RequestConsultationPage.vue', () => {
     expect(innerAlert.exists()).toBe(false)
   })
 
-  it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when user does not set all the necessary input`, async () => {
+  it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when necessary input is lack`, async () => {
+    payJpMock = createPayJpMockObject
     const fee = 5000
     const resp = GetFeePerHourInYenForApplicationResp.create(fee)
     getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
@@ -412,6 +413,17 @@ describe('RequestConsultationPage.vue', () => {
     })
     await flushPromises()
 
-    // TODO
+    const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    await flushPromises()
+
+    const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
+    expect(innerAlert.exists()).toBe(true)
+    expect(innerAlert.text()).toContain(Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE)
+
+    expect(disableBtnMock).toHaveBeenCalledTimes(1)
+    expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 })
