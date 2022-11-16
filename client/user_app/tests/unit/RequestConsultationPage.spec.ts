@@ -313,8 +313,6 @@ describe('RequestConsultationPage.vue', () => {
 
     const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
     expect(btn.exists()).toBe(true)
-    // ページが表示されたタイミングでは必須項目がないため、disabledとなっている
-    expect(btn.attributes('disabled')).toBeDefined()
 
     const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
     // ページが表示されたタイミングではエラーはない
@@ -395,11 +393,25 @@ describe('RequestConsultationPage.vue', () => {
 
     const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
     expect(btn.exists()).toBe(true)
-    // ページが表示されたタイミングでは必須項目がないため、disabledとなっている
-    expect(btn.attributes('disabled')).toBeDefined()
 
     const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
     // ページが表示されたタイミングではエラーはない
     expect(innerAlert.exists()).toBe(false)
+  })
+
+  it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when user does not set all the necessary input`, async () => {
+    const fee = 5000
+    const resp = GetFeePerHourInYenForApplicationResp.create(fee)
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    // TODO
   })
 })
