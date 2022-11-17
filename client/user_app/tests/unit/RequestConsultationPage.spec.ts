@@ -141,9 +141,9 @@ jest.mock('@/util/PayJp', () => ({
 const currentYear = 2022
 const currentMonth = 11
 const currentDay = 1
-const currentHour = 7
-const currentMinute = 0
-const currentSecond = 0
+const currentHour = 6
+const currentMinute = 59
+const currentSecond = 59
 jest.mock('@/util/personalized/request-consultation/CurrentDateTime', () => ({
   getCurrentYear: (): number => {
     return currentYear
@@ -488,10 +488,28 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('25')
+    await firstCandidateDay.setValue('21')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
-    // TODO
+
+    const secondCandidateYear = wrapper.find('[data-test="second-candidate-year"]')
+    await secondCandidateYear.setValue('2022')
+    const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
+    await secondCandidateMonth.setValue('11')
+    const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
+    await secondCandidateDay.setValue('4')
+    const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
+    await secondCandidateHour.setValue('7')
+
+    const thirdCandidateYear = wrapper.find('[data-test="third-candidate-year"]')
+    await thirdCandidateYear.setValue('2022')
+    const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
+    await thirdCandidateMonth.setValue('11')
+    const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
+    await thirdCandidateDay.setValue('4')
+    // 必須入力項目の内、一つだけ空のままとする
+    const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
+    await thirdCandidateHour.setValue('')
 
     const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
     expect(btn.exists()).toBe(true)
