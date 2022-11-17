@@ -11,6 +11,7 @@ import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
 import { createYearList } from '@/util/personalized/request-consultation/YearList'
+import { createMonthList } from '@/util/personalized/request-consultation/MonthList'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -419,6 +420,16 @@ describe('RequestConsultationPage.vue', () => {
   it('uses createYearList (case 2)', () => {
     const yearList = createYearList(12, 2022)
     expect(yearList).toStrictEqual(['', '2022', '2023'])
+  })
+
+  it('uses createMonthList (case 1)', () => {
+    const monthList = createMonthList(11)
+    expect(monthList).toStrictEqual(['', '11', '12'])
+  })
+
+  it('uses createMonthList (case 2)', () => {
+    const monthList = createMonthList(12)
+    expect(monthList).toStrictEqual(['', '12', '1'])
   })
 
   it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when necessary input is lack`, async () => {
