@@ -136,6 +136,17 @@ jest.mock('@/util/PayJp', () => ({
   }
 }))
 
+const currentYear = 2022
+const currentMonth = 11
+jest.mock('@/util/personalized/request-consultation/CurrentDateTime', () => ({
+  getCurrentYear: (): number => {
+    return currentYear
+  },
+  getCurrentMonth: (): number => {
+    return currentMonth
+  }
+}))
+
 describe('RequestConsultationPage.vue', () => {
   beforeEach(() => {
     routeParam = '1'
