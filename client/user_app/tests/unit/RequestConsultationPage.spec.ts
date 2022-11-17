@@ -10,6 +10,7 @@ import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
+import { createYearList } from '@/util/personalized/request-consultation/YearList'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -408,6 +409,16 @@ describe('RequestConsultationPage.vue', () => {
     const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
     // ページが表示されたタイミングではエラーはない
     expect(innerAlert.exists()).toBe(false)
+  })
+
+  it('uses createYearList (case 1)', () => {
+    const yearList = createYearList(11, 2022)
+    expect(yearList).toStrictEqual(['', '2022'])
+  })
+
+  it('uses createYearList (case 2)', () => {
+    const yearList = createYearList(12, 2022)
+    expect(yearList).toStrictEqual(['', '2022', '2023'])
   })
 
   it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when necessary input is lack`, async () => {
