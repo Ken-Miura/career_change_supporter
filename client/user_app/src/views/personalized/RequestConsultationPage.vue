@@ -16,7 +16,7 @@
           <h3 data-test="first-candidate-lablel" class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.firstCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="first-candidate-year" v-model="candidates.firstCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
@@ -24,7 +24,7 @@
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.firstCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="first-candidate-month" v-model="candidates.firstCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
@@ -32,7 +32,7 @@
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.firstCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="first-candidate-day" v-model="candidates.firstCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
@@ -40,7 +40,7 @@
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.firstCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="first-candidate-hour" v-model="candidates.firstCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
@@ -51,7 +51,7 @@
           <h3 data-test="second-candidate-lablel" class="mt-4 font-bold text-2xl">相談開始日時（第二希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.secondCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="second-candidate-year" v-model="candidates.secondCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
@@ -59,7 +59,7 @@
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.secondCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="second-candidate-month" v-model="candidates.secondCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
@@ -67,7 +67,7 @@
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.secondCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="second-candidate-day" v-model="candidates.secondCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
@@ -75,7 +75,7 @@
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.secondCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="second-candidate-hour" v-model="candidates.secondCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>
@@ -86,7 +86,7 @@
           <h3 data-test="third-candidate-lablel" class="mt-4 font-bold text-2xl">相談開始日時（第三希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.thirdCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="third-candidate-year" v-model="candidates.thirdCandidateYearInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
               </select>
             </div>
@@ -94,7 +94,7 @@
               年
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.thirdCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="third-candidate-month" v-model="candidates.thirdCandidateMonthInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
               </select>
             </div>
@@ -102,7 +102,7 @@
               月
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.thirdCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="third-candidate-day" v-model="candidates.thirdCandidateDayInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
               </select>
             </div>
@@ -110,7 +110,7 @@
               日
             </div>
             <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
-              <select v-model="candidates.thirdCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+              <select data-test="third-candidate-hour" v-model="candidates.thirdCandidateHourInJst" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
               </select>
             </div>

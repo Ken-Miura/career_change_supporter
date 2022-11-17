@@ -140,12 +140,21 @@ jest.mock('@/util/PayJp', () => ({
 
 const currentYear = 2022
 const currentMonth = 11
+const currentDay = 1
+const currentHour = 7
+const currentMinute = 0
+const currentSecond = 0
 jest.mock('@/util/personalized/request-consultation/CurrentDateTime', () => ({
   getCurrentYear: (): number => {
     return currentYear
   },
   getCurrentMonth: (): number => {
     return currentMonth
+  },
+  getCurrentDate: (): Date => {
+    const zeroIndexedCurrentMonth = currentMonth - 1
+    const date = new Date(currentYear, zeroIndexedCurrentMonth, currentDay, currentHour, currentMinute, currentSecond)
+    return date
   }
 }))
 
@@ -432,7 +441,7 @@ describe('RequestConsultationPage.vue', () => {
     expect(monthList).toStrictEqual(['', '12', '1'])
   })
 
-  it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when necessary input is lack`, async () => {
+  it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when necessary input is lack (case 1)`, async () => {
     payJpMock = createPayJpMockObject
     const fee = 5000
     const resp = GetFeePerHourInYenForApplicationResp.create(fee)
@@ -445,6 +454,44 @@ describe('RequestConsultationPage.vue', () => {
       }
     })
     await flushPromises()
+
+    const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    await flushPromises()
+
+    const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
+    expect(innerAlert.exists()).toBe(true)
+    expect(innerAlert.text()).toContain(Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE)
+
+    expect(disableBtnMock).toHaveBeenCalledTimes(1)
+    expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+  })
+
+  it(`displays ${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE} when necessary input is lack (case 2)`, async () => {
+    payJpMock = createPayJpMockObject
+    const fee = 5000
+    const resp = GetFeePerHourInYenForApplicationResp.create(fee)
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidateYear = wrapper.find('[data-test="first-candidate-year"]')
+    await firstCandidateYear.setValue('2022')
+    const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
+    await firstCandidateMonth.setValue('11')
+    const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
+    await firstCandidateDay.setValue('25')
+    const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
+    await firstCandidateHour.setValue('7')
+    // TODO
 
     const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
     expect(btn.exists()).toBe(true)
