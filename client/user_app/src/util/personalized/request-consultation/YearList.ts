@@ -1,8 +1,3 @@
-export function getCurrentYear (): number {
-  const d = new Date()
-  return d.getFullYear()
-}
-
 export function createYearList (currentMonth: number, currentYear: number): string[] {
   const list = []
   list.push('')
