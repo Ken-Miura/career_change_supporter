@@ -13,6 +13,7 @@ import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultatio
 import { createYearList } from '@/util/personalized/request-consultation/YearList'
 import { createMonthList } from '@/util/personalized/request-consultation/MonthList'
 import { postRequestConsultation } from '@/util/personalized/request-consultation/PostRequestConsultation'
+import { postFinishRequestConsultation } from '@/util/personalized/request-consultation/PostFinishRequestConsultation'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -162,6 +163,9 @@ jest.mock('@/util/personalized/request-consultation/CurrentDateTime', () => ({
 jest.mock('@/util/personalized/request-consultation/PostRequestConsultation')
 const postRequestConsultationMock = postRequestConsultation as jest.MockedFunction<typeof postRequestConsultation>
 
+jest.mock('@/util/personalized/request-consultation/PostFinishRequestConsultation')
+const postFinishRequestConsultationMock = postFinishRequestConsultation as jest.MockedFunction<typeof postFinishRequestConsultation>
+
 describe('RequestConsultationPage.vue', () => {
   beforeEach(() => {
     routeParam = '1'
@@ -183,6 +187,7 @@ describe('RequestConsultationPage.vue', () => {
     currentMinute = 0
     currentSecond = 0
     postRequestConsultationMock.mockReset()
+    postFinishRequestConsultationMock.mockReset()
   })
 
   it('has WaitingCircle and TheHeader while waiting response of fee per hour in yen', async () => {
