@@ -12,6 +12,7 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
 import { createYearList } from '@/util/personalized/request-consultation/YearList'
 import { createMonthList } from '@/util/personalized/request-consultation/MonthList'
+import { postRequestConsultation } from '@/util/personalized/request-consultation/PostRequestConsultation'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -158,6 +159,9 @@ jest.mock('@/util/personalized/request-consultation/CurrentDateTime', () => ({
   }
 }))
 
+jest.mock('@/util/personalized/request-consultation/PostRequestConsultation')
+const postRequestConsultationMock = postRequestConsultation as jest.MockedFunction<typeof postRequestConsultation>
+
 describe('RequestConsultationPage.vue', () => {
   beforeEach(() => {
     routeParam = '1'
@@ -178,6 +182,7 @@ describe('RequestConsultationPage.vue', () => {
     currentHour = 7
     currentMinute = 0
     currentSecond = 0
+    postRequestConsultationMock.mockReset()
   })
 
   it('has WaitingCircle and TheHeader while waiting response of fee per hour in yen', async () => {
@@ -1049,6 +1054,63 @@ describe('RequestConsultationPage.vue', () => {
     const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
     expect(innerAlert.exists()).toBe(true)
     expect(innerAlert.text()).toContain(createTokenErrMessage)
+
+    expect(disableBtnMock).toHaveBeenCalledTimes(1)
+    expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+  })
+
+  it(`displays ${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} when ${Code.UNAUTHORIZED} is returned on postRequestConsultation`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postRequestConsultationMock.mockResolvedValue(apiErrResp)
+    payJpMock = createPayJpMockObject
+    const fee = 5000
+    const resp = GetFeePerHourInYenForApplicationResp.create(fee)
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidateYear = wrapper.find('[data-test="first-candidate-year"]')
+    await firstCandidateYear.setValue('2022')
+    const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
+    await firstCandidateMonth.setValue('11')
+    const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
+    await firstCandidateDay.setValue('4')
+    const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
+    await firstCandidateHour.setValue('7')
+
+    const secondCandidateYear = wrapper.find('[data-test="second-candidate-year"]')
+    await secondCandidateYear.setValue('2022')
+    const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
+    await secondCandidateMonth.setValue('11')
+    const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
+    await secondCandidateDay.setValue('21')
+    const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
+    await secondCandidateHour.setValue('7')
+
+    const thirdCandidateYear = wrapper.find('[data-test="third-candidate-year"]')
+    await thirdCandidateYear.setValue('2022')
+    const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
+    await thirdCandidateMonth.setValue('11')
+    const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
+    await thirdCandidateDay.setValue('21')
+    const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
+    await thirdCandidateHour.setValue('23')
+
+    const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    await flushPromises()
+
+    const outerAlert = wrapper.find('[data-test="outer-alert-message"]')
+    expect(outerAlert.exists()).toBe(true)
+    expect(outerAlert.text()).toContain(`${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`)
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
