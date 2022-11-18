@@ -360,11 +360,11 @@ export default defineComponent({
               const code = response.getApiError().getCode()
               if (code === Code.UNAUTHORIZED) {
                 error.exists = true
-                error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+                error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} (${Code.UNAUTHORIZED})`
                 return
               } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
                 error.exists = true
-                error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+                error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE} (${Code.NOT_TERMS_OF_USE_AGREED_YET})`
                 return
               }
               error.exists = true
@@ -392,11 +392,11 @@ export default defineComponent({
                 const code = resp.getApiError().getCode()
                 if (code === Code.UNAUTHORIZED) {
                   error.exists = true
-                  error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE}`
+                  error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} (${Code.UNAUTHORIZED})`
                   return
                 } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
                   error.exists = true
-                  error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE}`
+                  error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE} (${Code.NOT_TERMS_OF_USE_AGREED_YET})`
                   return
                 }
                 error.exists = true
