@@ -998,4 +998,60 @@ describe('RequestConsultationPage.vue', () => {
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
+
+  it('displays error message when payjp.createToken has error', async () => {
+    createTokenErr = true
+    payJpMock = createPayJpMockObject
+    const fee = 5000
+    const resp = GetFeePerHourInYenForApplicationResp.create(fee)
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidateYear = wrapper.find('[data-test="first-candidate-year"]')
+    await firstCandidateYear.setValue('2022')
+    const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
+    await firstCandidateMonth.setValue('11')
+    const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
+    await firstCandidateDay.setValue('4')
+    const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
+    await firstCandidateHour.setValue('7')
+
+    const secondCandidateYear = wrapper.find('[data-test="second-candidate-year"]')
+    await secondCandidateYear.setValue('2022')
+    const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
+    await secondCandidateMonth.setValue('11')
+    const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
+    await secondCandidateDay.setValue('21')
+    const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
+    await secondCandidateHour.setValue('7')
+
+    const thirdCandidateYear = wrapper.find('[data-test="third-candidate-year"]')
+    await thirdCandidateYear.setValue('2022')
+    const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
+    await thirdCandidateMonth.setValue('11')
+    const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
+    await thirdCandidateDay.setValue('21')
+    const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
+    await thirdCandidateHour.setValue('23')
+
+    const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    await flushPromises()
+
+    const innerAlert = wrapper.find('[data-test="inner-alert-message"]')
+    expect(innerAlert.exists()).toBe(true)
+    expect(innerAlert.text()).toContain(createTokenErrMessage)
+
+    expect(disableBtnMock).toHaveBeenCalledTimes(1)
+    expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+  })
 })
