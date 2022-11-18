@@ -482,6 +482,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -538,6 +540,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -593,6 +597,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -648,6 +654,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -703,6 +711,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -758,6 +768,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -820,6 +832,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -882,6 +896,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -944,6 +960,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -1006,6 +1024,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -1062,6 +1082,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -1119,6 +1141,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
@@ -1176,6 +1200,8 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 })
