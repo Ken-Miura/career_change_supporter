@@ -14,6 +14,7 @@ import { createYearList } from '@/util/personalized/request-consultation/YearLis
 import { createMonthList } from '@/util/personalized/request-consultation/MonthList'
 import { postRequestConsultation } from '@/util/personalized/request-consultation/PostRequestConsultation'
 import { postFinishRequestConsultation } from '@/util/personalized/request-consultation/PostFinishRequestConsultation'
+import { PostRequestConsultationResp } from '@/util/personalized/request-consultation/PostRequestConsultationResp'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -1805,6 +1806,68 @@ describe('RequestConsultationPage.vue', () => {
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
     expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+  })
+
+  it(`displays ${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} when ${Code.UNAUTHORIZED} is returned on postFinishRequestConsultation`, async () => {
+    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    postRequestConsultationMock.mockResolvedValue(rcResp)
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postFinishRequestConsultationMock.mockResolvedValue(apiErrResp)
+    payJpMock = createPayJpMockObject
+    const fee = 5000
+    const resp = GetFeePerHourInYenForApplicationResp.create(fee)
+    getFeePerHourInYenForApplicationFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RequestConsultationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidateYear = wrapper.find('[data-test="first-candidate-year"]')
+    await firstCandidateYear.setValue('2022')
+    const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
+    await firstCandidateMonth.setValue('11')
+    const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
+    await firstCandidateDay.setValue('4')
+    const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
+    await firstCandidateHour.setValue('7')
+
+    const secondCandidateYear = wrapper.find('[data-test="second-candidate-year"]')
+    await secondCandidateYear.setValue('2022')
+    const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
+    await secondCandidateMonth.setValue('11')
+    const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
+    await secondCandidateDay.setValue('21')
+    const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
+    await secondCandidateHour.setValue('7')
+
+    const thirdCandidateYear = wrapper.find('[data-test="third-candidate-year"]')
+    await thirdCandidateYear.setValue('2022')
+    const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
+    await thirdCandidateMonth.setValue('11')
+    const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
+    await thirdCandidateDay.setValue('21')
+    const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
+    await thirdCandidateHour.setValue('23')
+
+    const btn = wrapper.find('[data-test="apply-for-consultation-btn"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    await flushPromises()
+
+    const outerAlert = wrapper.find('[data-test="outer-alert-message"]')
+    expect(outerAlert.exists()).toBe(true)
+    expect(outerAlert.text()).toContain(`${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} (${Code.UNAUTHORIZED})`)
+
+    expect(disableBtnMock).toHaveBeenCalledTimes(1)
+    expect(enableBtnMock).toHaveBeenCalledTimes(1)
+    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
