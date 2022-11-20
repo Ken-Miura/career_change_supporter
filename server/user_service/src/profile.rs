@@ -79,10 +79,10 @@ pub(crate) struct CareerDescription {
 
 #[derive(Serialize, Debug)]
 pub(crate) struct ProfileResult {
-    pub email_address: String,
-    pub identity: Option<Identity>,
-    pub career_descriptions: Vec<CareerDescription>,
-    pub fee_per_hour_in_yen: Option<i32>,
+    pub(crate) email_address: String,
+    pub(crate) identity: Option<Identity>,
+    pub(crate) career_descriptions: Vec<CareerDescription>,
+    pub(crate) fee_per_hour_in_yen: Option<i32>,
 }
 
 impl ProfileResult {

@@ -57,12 +57,12 @@ pub(crate) async fn post_request_consultation(
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct RequestConsultationParam {
-    pub consultant_id: i64,
-    pub fee_per_hour_in_yen: i32,
-    pub card_token: String,
-    pub first_candidate_in_jst: ConsultationDateTime,
-    pub second_candidate_in_jst: ConsultationDateTime,
-    pub third_candidate_in_jst: ConsultationDateTime,
+    pub(crate) consultant_id: i64,
+    pub(crate) fee_per_hour_in_yen: i32,
+    pub(crate) card_token: String,
+    pub(crate) first_candidate_in_jst: ConsultationDateTime,
+    pub(crate) second_candidate_in_jst: ConsultationDateTime,
+    pub(crate) third_candidate_in_jst: ConsultationDateTime,
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq)]
@@ -75,7 +75,7 @@ pub(crate) struct ConsultationDateTime {
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct RequestConsultationResult {
-    pub charge_id: String,
+    pub(crate) charge_id: String,
 }
 
 #[async_trait]

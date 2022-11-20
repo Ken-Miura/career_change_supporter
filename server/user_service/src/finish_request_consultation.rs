@@ -53,7 +53,7 @@ pub(crate) async fn post_finish_request_consultation(
 
 #[derive(Deserialize)]
 pub(crate) struct FinishRequestConsultationParam {
-    pub charge_id: String,
+    pub(crate) charge_id: String,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

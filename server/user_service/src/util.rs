@@ -220,11 +220,11 @@ pub(crate) static LAST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {
-    pub bank_code: String,
-    pub branch_code: String,
-    pub account_type: String,
-    pub account_number: String,
-    pub account_holder_name: String,
+    pub(crate) bank_code: String,
+    pub(crate) branch_code: String,
+    pub(crate) account_type: String,
+    pub(crate) account_number: String,
+    pub(crate) account_holder_name: String,
 }
 
 /// jpeg画像をpng画像に変換する<br>

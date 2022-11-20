@@ -81,8 +81,8 @@ pub(crate) async fn post_password_update(
 #[derive(Deserialize)]
 pub(crate) struct PasswordUpdateReq {
     #[serde(rename = "pwd-change-req-id")]
-    pwd_change_req_id: String,
-    password: String,
+    pub(crate) pwd_change_req_id: String,
+    pub(crate) password: String,
 }
 
 #[derive(Serialize, Debug, PartialEq)]

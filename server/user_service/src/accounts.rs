@@ -147,7 +147,7 @@ struct NewAccount {
 #[derive(Deserialize)]
 pub(crate) struct TempAccountId {
     #[serde(rename = "temp-account-id")]
-    temp_account_id: String,
+    pub(crate) temp_account_id: String,
 }
 
 fn create_text() -> String {

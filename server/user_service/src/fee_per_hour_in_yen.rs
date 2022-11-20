@@ -35,7 +35,7 @@ pub(crate) async fn post_fee_per_hour_in_yen(
 #[derive(Deserialize)]
 pub(crate) struct Fee {
     #[serde(rename = "fee-per-hour-in-yen")]
-    fee_per_hour_in_yen: i32,
+    pub(crate) fee_per_hour_in_yen: i32,
 }
 
 #[derive(Serialize, Debug, PartialEq)]

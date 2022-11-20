@@ -120,22 +120,22 @@ async fn handle_reward_req(
 
 #[derive(Serialize, Debug)]
 pub(crate) struct RewardResult {
-    pub bank_account: Option<BankAccount>,
-    pub rewards_of_the_month: Option<i32>, // 一ヶ月の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
-    pub rewards_of_the_year: Option<i32>, // 1年間（1月-12月）の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
-    pub latest_two_transfers: Vec<Transfer>,
+    pub(crate) bank_account: Option<BankAccount>,
+    pub(crate) rewards_of_the_month: Option<i32>, // 一ヶ月の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
+    pub(crate) rewards_of_the_year: Option<i32>, // 1年間（1月-12月）の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
+    pub(crate) latest_two_transfers: Vec<Transfer>,
 }
 
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct Transfer {
-    pub status: String,
-    pub amount: i32,
-    pub scheduled_date_in_jst: Ymd,
+    pub(crate) status: String,
+    pub(crate) amount: i32,
+    pub(crate) scheduled_date_in_jst: Ymd,
     // status == "paid"のときのみ存在
-    pub transfer_amount: Option<i32>,
-    pub transfer_date_in_jst: Option<Ymd>,
+    pub(crate) transfer_amount: Option<i32>,
+    pub(crate) transfer_date_in_jst: Option<Ymd>,
     // status == "carried_over"のときのみ存在
-    pub carried_balance: Option<i32>,
+    pub(crate) carried_balance: Option<i32>,
 }
 
 impl RewardResult {

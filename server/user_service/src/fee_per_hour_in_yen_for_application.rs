@@ -25,12 +25,12 @@ pub(crate) async fn get_fee_per_hour_in_yen_for_application(
 
 #[derive(Deserialize)]
 pub(crate) struct FeePerHourInYenForApplicationQuery {
-    pub consultant_id: i64,
+    pub(crate) consultant_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct FeePerHourInYenForApplication {
-    pub fee_per_hour_in_yen: i32,
+    pub(crate) fee_per_hour_in_yen: i32,
 }
 
 #[async_trait]

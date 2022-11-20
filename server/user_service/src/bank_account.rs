@@ -71,8 +71,8 @@ pub(crate) async fn post_bank_account(
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccountRegisterReq {
-    pub bank_account: BankAccount,
-    pub non_profit_objective: bool,
+    pub(crate) bank_account: BankAccount,
+    pub(crate) non_profit_objective: bool,
 }
 
 #[derive(Serialize, Debug, PartialEq)]

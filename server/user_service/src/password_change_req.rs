@@ -71,7 +71,7 @@ pub(crate) async fn post_password_change_req(
 
 #[derive(Deserialize)]
 pub(crate) struct Account {
-    email_address: String,
+    pub(crate) email_address: String,
 }
 
 #[derive(Serialize, Debug)]

@@ -43,32 +43,32 @@ pub(crate) async fn get_consultant_detail(
 
 #[derive(Deserialize)]
 pub(crate) struct ConsultantDetailQuery {
-    pub consultant_id: i64,
+    pub(crate) consultant_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct ConsultantDetail {
-    pub consultant_id: i64,
-    pub fee_per_hour_in_yen: i32,
-    pub rating: Option<f64>,
-    pub num_of_rated: i32,
-    pub careers: Vec<ConsultantCareerDetail>,
+    pub(crate) consultant_id: i64,
+    pub(crate) fee_per_hour_in_yen: i32,
+    pub(crate) rating: Option<f64>,
+    pub(crate) num_of_rated: i32,
+    pub(crate) careers: Vec<ConsultantCareerDetail>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultantCareerDetail {
-    pub company_name: String,
-    pub department_name: Option<String>,
-    pub office: Option<String>,
-    pub years_of_service: String,
-    pub employed: bool,
-    pub contract_type: String,
-    pub profession: Option<String>,
-    pub annual_income_in_man_yen: Option<i32>,
-    pub is_manager: bool,
-    pub position_name: Option<String>,
-    pub is_new_graduate: bool,
-    pub note: Option<String>,
+    pub(crate) company_name: String,
+    pub(crate) department_name: Option<String>,
+    pub(crate) office: Option<String>,
+    pub(crate) years_of_service: String,
+    pub(crate) employed: bool,
+    pub(crate) contract_type: String,
+    pub(crate) profession: Option<String>,
+    pub(crate) annual_income_in_man_yen: Option<i32>,
+    pub(crate) is_manager: bool,
+    pub(crate) position_name: Option<String>,
+    pub(crate) is_new_graduate: bool,
+    pub(crate) note: Option<String>,
 }
 
 #[async_trait]
