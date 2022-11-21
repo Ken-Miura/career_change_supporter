@@ -186,6 +186,7 @@ mod tests {
                 criteria
             );
             assert_eq!(NUM_OF_CONSULTATION_REQUESTS, size);
+            assert!(self.consultant_requests.len() <= size as usize);
             Ok(self.consultant_requests.clone())
         }
     }
@@ -224,8 +225,55 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "success case (1 result)".to_string(),
+                input: Input::new(
+                    account_id,
+                    current_date_time,
+                    vec![ConsultationRequestDescription {
+                        consultation_req_id: 1,
+                        user_account_id: 2,
+                    }],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestsResult {
+                        consultation_requests: vec![ConsultationRequestDescription {
+                            consultation_req_id: 1,
+                            user_account_id: 2,
+                        }],
+                    }),
+                )),
+            },
+            TestCase {
+                // 実際にいくつのデータまで返すかの責任を追っているのは実装（SQLを発行するORM）だが、仕様を表現するためにテストとして記載
+                name: "success case (20 results)".to_string(),
+                input: Input::new(
+                    account_id,
+                    current_date_time,
+                    create_dummy_consultation_requests(),
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestsResult {
+                        consultation_requests: create_dummy_consultation_requests(),
+                    }),
+                )),
+            },
         ]
     });
+
+    fn create_dummy_consultation_requests() -> Vec<ConsultationRequestDescription> {
+        let mut data = Vec::with_capacity(20);
+        // 値は適当。意味はない。要素数が使用上許容する最大値であることに意味がある
+        for i in 0..20 {
+            data.push(ConsultationRequestDescription {
+                consultation_req_id: i + 20,
+                user_account_id: i + 20,
+            })
+        }
+        data
+    }
 
     #[tokio::test]
     async fn test_handle_consultation_requests() {
