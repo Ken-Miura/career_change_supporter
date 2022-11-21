@@ -146,6 +146,24 @@ mod tests {
         op: ConsultationRequestsOperationMock,
     }
 
+    impl Input {
+        fn new(
+            account_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+            consultant_requests: Vec<ConsultationRequestDescription>,
+        ) -> Self {
+            Input {
+                account_id,
+                current_date_time,
+                op: ConsultationRequestsOperationMock {
+                    consultant_id: account_id,
+                    current_date_time,
+                    consultant_requests,
+                },
+            }
+        }
+    }
+
     #[derive(Clone, Debug)]
     struct ConsultationRequestsOperationMock {
         consultant_id: i64,
@@ -173,18 +191,11 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = 1;
         let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0);
         vec![TestCase {
             name: "success case (empty result)".to_string(),
-            input: Input {
-                account_id: 1,
-                current_date_time,
-                op: ConsultationRequestsOperationMock {
-                    consultant_id: 1,
-                    current_date_time,
-                    consultant_requests: vec![],
-                },
-            },
+            input: Input::new(account_id, current_date_time, vec![]),
             expected: Ok((
                 StatusCode::OK,
                 Json(ConsultationRequestsResult {
