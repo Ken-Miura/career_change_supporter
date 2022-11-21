@@ -117,9 +117,14 @@ impl ConsultationRequestsOperation for ConsultationRequestsOperationImpl {
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
+    use chrono::{DateTime, Duration, FixedOffset};
     use common::{ErrResp, RespResult};
     use once_cell::sync::Lazy;
+
+    use crate::{
+        consultation_requests::NUM_OF_CONSULTATION_REQUESTS,
+        util::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    };
 
     use super::{
         handle_consultation_requests, ConsultationRequestDescription,
@@ -141,7 +146,11 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct ConsultationRequestsOperationMock {}
+    struct ConsultationRequestsOperationMock {
+        consultant_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+        consultant_requests: Vec<ConsultationRequestDescription>,
+    }
 
     #[async_trait]
     impl ConsultationRequestsOperation for ConsultationRequestsOperationMock {
@@ -151,7 +160,14 @@ mod tests {
             criteria: DateTime<FixedOffset>,
             size: u64,
         ) -> Result<Vec<ConsultationRequestDescription>, ErrResp> {
-            todo!()
+            assert_eq!(self.consultant_id, consultant_id);
+            assert_eq!(
+                self.current_date_time
+                    + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64),
+                criteria
+            );
+            assert_eq!(NUM_OF_CONSULTATION_REQUESTS, size);
+            Ok(self.consultant_requests.clone())
         }
     }
 
