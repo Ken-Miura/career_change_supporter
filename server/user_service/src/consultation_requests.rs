@@ -193,16 +193,38 @@ mod tests {
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         let account_id = 1;
         let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0);
-        vec![TestCase {
-            name: "success case (empty result)".to_string(),
-            input: Input::new(account_id, current_date_time, vec![]),
-            expected: Ok((
-                StatusCode::OK,
-                Json(ConsultationRequestsResult {
-                    consultation_requests: vec![],
-                }),
-            )),
-        }]
+        vec![
+            TestCase {
+                name: "success case (empty result)".to_string(),
+                input: Input::new(account_id, current_date_time, vec![]),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestsResult {
+                        consultation_requests: vec![],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case (1 result)".to_string(),
+                input: Input::new(
+                    account_id,
+                    current_date_time,
+                    vec![ConsultationRequestDescription {
+                        consultation_req_id: 1,
+                        user_account_id: 2,
+                    }],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestsResult {
+                        consultation_requests: vec![ConsultationRequestDescription {
+                            consultation_req_id: 1,
+                            user_account_id: 2,
+                        }],
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
