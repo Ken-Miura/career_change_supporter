@@ -116,9 +116,10 @@ impl ConsultationRequestsOperation for ConsultationRequestsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, Duration, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
+    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::{
@@ -171,7 +172,27 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0);
+        vec![TestCase {
+            name: "success case (empty result)".to_string(),
+            input: Input {
+                account_id: 1,
+                current_date_time,
+                op: ConsultationRequestsOperationMock {
+                    consultant_id: 1,
+                    current_date_time,
+                    consultant_requests: vec![],
+                },
+            },
+            expected: Ok((
+                StatusCode::OK,
+                Json(ConsultationRequestsResult {
+                    consultation_requests: vec![],
+                }),
+            )),
+        }]
+    });
 
     #[tokio::test]
     async fn test_handle_consultation_requests() {
