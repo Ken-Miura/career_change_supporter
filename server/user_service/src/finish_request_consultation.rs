@@ -72,7 +72,7 @@ async fn handle_finish_request_consultation(
     confirm_three_d_secure_status_is_ok(&charge)?;
 
     let latest_candidate_date_time_in_jst = extract_latest_candidate_date_time_in_jst(&charge)?;
-    let charge = op
+    let id_and_charge = op
         .create_request_consultation(
             account_id,
             consultant_id,
@@ -80,7 +80,12 @@ async fn handle_finish_request_consultation(
             latest_candidate_date_time_in_jst,
         )
         .await?;
-    info!("finished 3D Secure flow (charge.id: {})", charge.id);
+    let consultation_req_id = id_and_charge.0;
+    let charge = id_and_charge.1;
+    info!(
+        "finished 3D Secure flow (consultation_req_id: {}, charge.id: {})",
+        consultation_req_id, charge.id
+    );
 
     let consultant_email_address = op
         .get_consultant_email_address_by_consultant_id(consultant_id)
@@ -88,6 +93,7 @@ async fn handle_finish_request_consultation(
     send_mail_to_consultant(
         consultant_email_address.as_str(),
         account_id,
+        consultation_req_id,
         &charge,
         &send_mail,
     )
@@ -268,11 +274,12 @@ fn select_latest_candidate_in_jst(
 async fn send_mail_to_consultant(
     consultant_email_address: &str,
     user_account_id: i64,
+    consultation_req_id: i64,
     charge: &Charge,
     send_mail: &impl SendMail,
 ) -> Result<(), ErrResp> {
     let candidates = extract_candidates(charge)?;
-    let text = create_text_for_consultant_mail(user_account_id, &candidates);
+    let text = create_text_for_consultant_mail(user_account_id, consultation_req_id, &candidates);
     send_mail
         .send_mail(
             consultant_email_address,
@@ -286,11 +293,12 @@ async fn send_mail_to_consultant(
 
 fn create_text_for_consultant_mail(
     user_account_id: i64,
+    consultation_req_id: i64,
     candidates: &(String, String, String),
 ) -> String {
     // TODO: 文面の調整
     format!(
-        r"ユーザーID ({}) から相談申し込みの依頼（希望相談開始日時は下記に記載）が届きました。{}へログインし、相談受け付けのページから該当の申込みの詳細を確認し、了承する、または拒否するをご選択下さい。
+        r"ユーザーID ({}) から相談申し込み（相談申し込み番号: {}）が届きました（希望相談開始日時は下記に記載）。{}へログインし、相談受け付けのページから該当の申し込みの詳細を確認し、了承する、または拒否するをご選択下さい。
 
 希望相談開始日時
   第一希望: {}
@@ -306,6 +314,7 @@ fn create_text_for_consultant_mail(
 【お問い合わせ先】
 Email: {}",
         user_account_id,
+        consultation_req_id,
         WEB_SITE_NAME,
         candidates.0,
         candidates.1,
@@ -441,7 +450,7 @@ trait FinishRequestConsultationOperation {
         consultant_id: i64,
         charge_id: String,
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    ) -> Result<Charge, ErrResp>;
+    ) -> Result<(i64, Charge), ErrResp>;
     async fn get_user_account_email_address_by_user_account_id(
         &self,
         user_account_id: i64,
@@ -484,8 +493,8 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         consultant_id: i64,
         charge_id: String,
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    ) -> Result<Charge, ErrResp> {
-        let charge = self.pool.transaction::<_, Charge, ErrRespStruct>(|txn| {
+    ) -> Result<(i64, Charge), ErrResp> {
+        let id_and_charge = self.pool.transaction::<_, (i64, Charge), ErrRespStruct>(|txn| {
             Box::pin(async move {
                 let active_model = entity::consultation_req::ActiveModel {
                     consultation_req_id: NotSet,
@@ -494,7 +503,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                     charge_id: Set(charge_id.clone()),
                     latest_candidate_date_time: Set(latest_candidate_date_time_in_jst),
                 };
-                active_model.insert(txn).await.map_err(|e| {
+                let result = active_model.insert(txn).await.map_err(|e| {
                     error!(
                         "failed to insert consultation_req (account_id: {}, consultant_id: {}, charge_id: {}, latest_candidate_date_time_in_jst: {}): {}",
                         account_id, consultant_id, charge_id.clone(), latest_candidate_date_time_in_jst, e
@@ -513,7 +522,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                         }
                     })?;
 
-                Ok(charge)
+                Ok((result.consultation_req_id, charge))
             })
         }).await.map_err(|e| match e {
             TransactionError::Connection(db_err) => {
@@ -525,7 +534,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                 err_resp_struct.err_resp
             }
         })?;
-        Ok(charge)
+        Ok((id_and_charge.0, id_and_charge.1))
     }
 
     async fn get_user_account_email_address_by_user_account_id(
@@ -659,7 +668,7 @@ mod tests {
             consultant_id: i64,
             charge_id: String,
             latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-        ) -> Result<Charge, ErrResp> {
+        ) -> Result<(i64, Charge), ErrResp> {
             assert_eq!(self.account_id, account_id);
             assert_eq!(self.consultant_id, consultant_id);
             assert_eq!(self.charge_id, charge_id);
@@ -674,7 +683,7 @@ mod tests {
             charge.captured_at = Some(current_date_time.timestamp());
             let expired_at = current_date_time + Duration::days((*EXPIRY_DAYS_OF_CHARGE) as i64);
             charge.expired_at = Some(expired_at.timestamp());
-            Ok(charge)
+            Ok((1, charge))
         }
 
         async fn get_user_account_email_address_by_user_account_id(
@@ -1067,12 +1076,14 @@ mod tests {
     #[test]
     fn test_create_text_for_consultant_mail() {
         let user_account_id = 1;
+        let consultation_req_id = 1;
         let first_candidate = "2022年 11月 12日 7時00分";
         let second_candidate = "2022年 11月 12日 23時00分";
         let third_candidate = "2022年 11月 22日 7時00分";
 
         let result = create_text_for_consultant_mail(
             user_account_id,
+            consultation_req_id,
             &(
                 first_candidate.to_string(),
                 second_candidate.to_string(),
@@ -1081,7 +1092,7 @@ mod tests {
         );
 
         let expected = format!(
-            r"ユーザーID ({}) から相談申し込みの依頼（希望相談開始日時は下記に記載）が届きました。{}へログインし、相談受け付けのページから該当の申込みの詳細を確認し、了承する、または拒否するをご選択下さい。
+            r"ユーザーID ({}) から相談申し込み（相談申し込み番号: {}）が届きました（希望相談開始日時は下記に記載）。{}へログインし、相談受け付けのページから該当の申し込みの詳細を確認し、了承する、または拒否するをご選択下さい。
 
 希望相談開始日時
   第一希望: {}
@@ -1097,6 +1108,7 @@ mod tests {
 【お問い合わせ先】
 Email: {}",
             user_account_id,
+            consultation_req_id,
             WEB_SITE_NAME,
             first_candidate,
             second_candidate,
