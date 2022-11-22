@@ -24,7 +24,7 @@
             <router-link class="inline-block text-white no-underline py-2 px-4" to="/consultants-search">相談申し込み</router-link>
           </li>
           <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/accept-consultation">相談受け付け</router-link>
+            <router-link class="inline-block text-white no-underline py-2 px-4" to="/consultation-request-list">相談受け付け</router-link>
           </li>
           <li class="mr-3">
             <router-link class="inline-block text-white no-underline py-2 px-4" to="/schedule">スケジュール</router-link>

@@ -20,7 +20,7 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 
 export default defineComponent({
-  name: 'AcceptConsultionPage',
+  name: 'ConsultationRequestListPage',
   components: {
     TheHeader
   },
