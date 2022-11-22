@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="false" class="m-6">
+    <div v-if="!getConsultationRequestsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -11,8 +11,15 @@
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          相談受け付け用テストページ
+        <div v-if="consultationRequests.length === 0" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          Empty
+        </div>
+        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <ul>
+            <li v-for="(consultationReqId, index) in consultationRequests" v-bind:key="consultationReqId">
+              consultationReq: {{ consultationReqId }}, index: {{ index }}
+            </li>
+          </ul>
         </div>
       </div>
     </main>
@@ -28,10 +35,12 @@ import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
-import { Code } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
+import { useGetConsultationRequests } from '@/util/personalized/consultation-request-list/useGetConsultationRequests'
+import { Message } from '@/util/Message'
+import { GetConsultationRequestsResp } from '@/util/personalized/consultation-request-list/GetConsultationRequestsResp'
+import { ConsultationRequestDescription } from '@/util/personalized/consultation-request-list/ConsultationRequestsResult'
 
 export default defineComponent({
   name: 'ConsultationRequestListPage',
@@ -41,18 +50,23 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
+    const {
+      getConsultationRequestsDone,
+      getConsultationRequestsFunc
+    } = useGetConsultationRequests()
     const error = reactive({
       exists: false,
       message: ''
     })
+    const consultationRequests = ref([] as ConsultationRequestDescription[])
     const router = useRouter()
     onMounted(async () => {
       try {
-        const resp = await refresh()
-        if (resp instanceof RefreshResp) {
-          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
-        } else if (resp instanceof ApiErrorResp) {
+        const resp = await getConsultationRequestsFunc()
+        if (!(resp instanceof GetConsultationRequestsResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('/login')
@@ -61,14 +75,21 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          // TODO: エラー処理
+          error.exists = true
+          error.message = createErrorMessage(resp.getApiError().getCode())
+          return
         }
+        consultationRequests.value = resp.getConsultationRequestsResult().consultation_requests
       } catch (e) {
-        // TODO: エラー処理
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      console.log('TODO: 実装後削除')
     })
-    return { error }
+    return {
+      getConsultationRequestsDone,
+      error,
+      consultationRequests
+    }
   }
 })
 </script>
