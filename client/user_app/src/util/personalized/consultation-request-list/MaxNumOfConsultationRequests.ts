@@ -1,0 +1,1 @@
+export const MAX_NUM_OF_CONSULTATION_REQUESTS = 20

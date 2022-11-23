@@ -11,15 +11,21 @@
         </div>
       </div>
       <div v-else>
-        <div v-if="consultationRequests.length === 0" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          Empty
-        </div>
-        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <ul>
-            <li v-for="(consultationReqId, index) in consultationRequests" v-bind:key="consultationReqId">
-              consultationReq: {{ consultationReqId }}, index: {{ index }}
-            </li>
-          </ul>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">相談申し込み一覧</h3>
+          <p class="mt-2 text-lg">詳細を押し、相談申し込みの内容を確認して下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
+          <div class="mt-4 ml-4">
+            <div v-if="consultationRequests.length === 0">
+              Empty
+            </div>
+            <div v-else>
+              <ul>
+                <li v-for="(consultationReq, index) in consultationRequests" v-bind:key="consultationReq.consultation_req_id">
+                  consultationReq: {{ consultationReq }}, index: {{ index }}
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -41,6 +47,7 @@ import { useGetConsultationRequests } from '@/util/personalized/consultation-req
 import { Message } from '@/util/Message'
 import { GetConsultationRequestsResp } from '@/util/personalized/consultation-request-list/GetConsultationRequestsResp'
 import { ConsultationRequestDescription } from '@/util/personalized/consultation-request-list/ConsultationRequestsResult'
+import { MAX_NUM_OF_CONSULTATION_REQUESTS } from '@/util/personalized/consultation-request-list/MaxNumOfConsultationRequests'
 
 export default defineComponent({
   name: 'ConsultationRequestListPage',
@@ -88,7 +95,8 @@ export default defineComponent({
     return {
       getConsultationRequestsDone,
       error,
-      consultationRequests
+      consultationRequests,
+      MAX_NUM_OF_CONSULTATION_REQUESTS
     }
   }
 })
