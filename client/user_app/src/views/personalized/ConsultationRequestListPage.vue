@@ -16,7 +16,7 @@
           <p class="mt-2 text-lg">相談申し込みの内容を確認し、申し込みの了承または拒否をして下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
           <div class="mt-4 ml-4">
             <div v-if="consultationRequests.length === 0">
-              Empty
+              <p class="mt-2 text-lg">相談申し込みはありません。</p>
             </div>
             <div v-else>
               <ul>
