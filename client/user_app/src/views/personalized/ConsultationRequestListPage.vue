@@ -13,15 +13,21 @@
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">相談申し込み一覧</h3>
-          <p class="mt-2 text-lg">詳細を押し、相談申し込みの内容を確認して下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
+          <p class="mt-2 text-lg">相談申し込みの内容を確認し、申し込みの了承または拒否をして下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
           <div class="mt-4 ml-4">
             <div v-if="consultationRequests.length === 0">
               Empty
             </div>
             <div v-else>
               <ul>
-                <li v-for="(consultationReq, index) in consultationRequests" v-bind:key="consultationReq.consultation_req_id">
-                  consultationReq: {{ consultationReq }}, index: {{ index }}
+                <li v-for="consultationReq in consultationRequests" v-bind:key="consultationReq.consultation_req_id">
+                  <div class="mt-4">
+                    <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談申し込み番号: {{ consultationReq.consultation_req_id }}</div>
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                      <div class="mt-4 justify-self-start col-span-2">ユーザーID（{{ consultationReq.user_account_id }}）からの相談申し込み</div>
+                      <button v-on:click="moveToConsultationRequestDetailPage(consultationReq.consultation_req_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
+                    </div>
+                  </div>
                 </li>
               </ul>
             </div>
@@ -67,6 +73,7 @@ export default defineComponent({
     })
     const consultationRequests = ref([] as ConsultationRequestDescription[])
     const router = useRouter()
+
     onMounted(async () => {
       try {
         const resp = await getConsultationRequestsFunc()
@@ -92,11 +99,17 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
+    const moveToConsultationRequestDetailPage = async (consultationReqId: number) => {
+      await router.push({ name: 'ConsultationRequestDetailPage', params: { consultation_req_id: consultationReqId } })
+    }
+
     return {
       getConsultationRequestsDone,
       error,
       consultationRequests,
-      MAX_NUM_OF_CONSULTATION_REQUESTS
+      MAX_NUM_OF_CONSULTATION_REQUESTS,
+      moveToConsultationRequestDetailPage
     }
   }
 })
