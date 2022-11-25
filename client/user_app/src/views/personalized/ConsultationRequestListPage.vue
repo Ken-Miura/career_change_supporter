@@ -21,11 +21,11 @@
             <div v-else>
               <ul>
                 <li v-for="consultationReq in consultationRequests" v-bind:key="consultationReq.consultation_req_id">
-                  <div class="mt-4">
-                    <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談申し込み番号: {{ consultationReq.consultation_req_id }}</div>
+                  <div v-bind:data-test="'consultation-req-id-' + consultationReq.consultation_req_id" class="mt-4">
+                    <div data-test="consultation-req-id" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談申し込み番号: {{ consultationReq.consultation_req_id }}</div>
                     <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                      <div class="mt-4 justify-self-start col-span-2">ユーザーID（{{ consultationReq.user_account_id }}）からの相談申し込み</div>
-                      <button v-on:click="moveToConsultationRequestDetailPage(consultationReq.consultation_req_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
+                      <div data-test="user-id" class="mt-4 justify-self-start col-span-2">ユーザーID（{{ consultationReq.user_account_id }}）からの相談申し込み</div>
+                      <button data-test="move-to-consultation-req-detail-page-btn" v-on:click="moveToConsultationRequestDetailPage(consultationReq.consultation_req_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
                     </div>
                   </div>
                 </li>

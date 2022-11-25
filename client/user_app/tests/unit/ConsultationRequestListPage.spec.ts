@@ -156,4 +156,33 @@ describe('ConsultantListPage.vue', () => {
     const noConsultationReqFound = wrapper.find('[data-test="no-consultation-request-found"]')
     expect(noConsultationReqFound.text()).toContain('相談申し込みはありません。')
   })
+
+  it('displays 1 consultation req when there is one consultation request', async () => {
+    const consultationReqId = 432
+    const userId = 5321
+    const result = {
+      consultation_requests: [
+        {
+          consultation_req_id: consultationReqId,
+          user_account_id: userId
+        } as ConsultationRequestDescription
+      ] as ConsultationRequestDescription[]
+    } as ConsultationRequestsResult
+    const resp = GetConsultationRequestsResp.create(result)
+    getConsultationRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const consultationReqDesc = wrapper.find(`[data-test="consultation-req-id-${consultationReqId}"]`)
+    const consultationReqIdLabel = consultationReqDesc.find('[data-test="consultation-req-id"]')
+    expect(consultationReqIdLabel.text()).toContain(`相談申し込み番号: ${consultationReqId}`)
+    const userIdLabel = consultationReqDesc.find('[data-test="user-id"]')
+    expect(userIdLabel.text()).toContain(`ユーザーID（${userId}）からの相談申し込み`)
+  })
 })
