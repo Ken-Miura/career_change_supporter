@@ -185,4 +185,41 @@ describe('ConsultantListPage.vue', () => {
     const userIdLabel = consultationReqDesc.find('[data-test="user-id"]')
     expect(userIdLabel.text()).toContain(`ユーザーID（${userId}）からの相談申し込み`)
   })
+
+  it('moves to ConsultationRequestDetailPage with consultation_request_id when button is pushed', async () => {
+    const consultationReqId = 432
+    const userId = 5321
+    const result = {
+      consultation_requests: [
+        {
+          consultation_req_id: consultationReqId,
+          user_account_id: userId
+        } as ConsultationRequestDescription
+      ] as ConsultationRequestDescription[]
+    } as ConsultationRequestsResult
+    const resp = GetConsultationRequestsResp.create(result)
+    getConsultationRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const consultationReqDesc = wrapper.find(`[data-test="consultation-req-id-${consultationReqId}"]`)
+    const consultationReqIdLabel = consultationReqDesc.find('[data-test="consultation-req-id"]')
+    expect(consultationReqIdLabel.text()).toContain(`相談申し込み番号: ${consultationReqId}`)
+    const userIdLabel = consultationReqDesc.find('[data-test="user-id"]')
+    expect(userIdLabel.text()).toContain(`ユーザーID（${userId}）からの相談申し込み`)
+
+    const btn = consultationReqDesc.find('[data-test="move-to-consultation-req-detail-page-btn"]')
+    await btn.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = { name: 'ConsultationRequestDetailPage', params: { consultation_req_id: consultationReqId } }
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
 })
