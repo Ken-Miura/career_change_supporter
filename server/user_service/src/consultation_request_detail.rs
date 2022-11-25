@@ -1,7 +1,5 @@
 // Copyright 2022 Ken Miura
 
-use std::sync::{Arc, Mutex};
-
 use axum::async_trait;
 use axum::{extract::Query, Extension};
 use common::{ErrResp, RespResult};
