@@ -27,6 +27,7 @@ pub(crate) struct ConsultationRequestDetail {
     pub(crate) consultation_req_id: i64,
     pub(crate) user_account_id: i64,
     pub(crate) user_rating: String, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
+    pub(crate) num_of_rated_of_user: i32,
     pub(crate) fee_per_hour_in_yen: i32,
     pub(crate) first_candidate_in_jst: ConsultationDateTime,
     pub(crate) second_candidate_in_jst: ConsultationDateTime,
