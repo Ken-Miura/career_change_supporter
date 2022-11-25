@@ -29,7 +29,7 @@ use crate::util::validator::consultation_date_time_validator::{
 };
 use crate::util::{
     convert_payment_err_to_err_resp, create_start_and_end_timestamps_of_current_year,
-    EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
+    ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
     KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ, MAX_ANNUAL_REWARDS_IN_YEN,
     MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
@@ -63,14 +63,6 @@ pub(crate) struct RequestConsultationParam {
     pub(crate) first_candidate_in_jst: ConsultationDateTime,
     pub(crate) second_candidate_in_jst: ConsultationDateTime,
     pub(crate) third_candidate_in_jst: ConsultationDateTime,
-}
-
-#[derive(Clone, Deserialize, Debug, PartialEq)]
-pub(crate) struct ConsultationDateTime {
-    pub(crate) year: i32,
-    pub(crate) month: u32,
-    pub(crate) day: u32,
-    pub(crate) hour: u32,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

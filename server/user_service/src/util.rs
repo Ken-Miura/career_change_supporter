@@ -227,6 +227,14 @@ pub(crate) struct BankAccount {
     pub(crate) account_holder_name: String,
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub(crate) struct ConsultationDateTime {
+    pub(crate) year: i32,
+    pub(crate) month: u32,
+    pub(crate) day: u32,
+    pub(crate) hour: u32,
+}
+
 /// jpeg画像をpng画像に変換する<br>
 /// <br>
 /// 画像ファイルの中のメタデータに悪意ある内容が含まれている場合が考えられるので、画像情報以外のメタデータを取り除く必要がある。
