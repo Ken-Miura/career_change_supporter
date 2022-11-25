@@ -222,4 +222,36 @@ describe('ConsultantListPage.vue', () => {
     const data = { name: 'ConsultationRequestDetailPage', params: { consultation_req_id: consultationReqId } }
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
+
+  it('displays 20 consultation reqs when there are 20 consultation requests', async () => {
+    const result = {
+      consultation_requests: createDummy20ConsultationReqs()
+    } as ConsultationRequestsResult
+    const resp = GetConsultationRequestsResp.create(result)
+    getConsultationRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    for (let i = 0; i < 20; i++) {
+      const consultationReqDesc = wrapper.find(`[data-test="consultation-req-id-${i + 1}"]`)
+      expect(consultationReqDesc.exists()).toBe(true)
+    }
+  })
 })
+
+function createDummy20ConsultationReqs (): ConsultationRequestDescription[] {
+  const result = []
+  for (let i = 0; i < 20; i++) {
+    result.push({
+      consultation_req_id: i + 1,
+      user_account_id: i + 1
+    } as ConsultationRequestDescription)
+  }
+  return result
+}
