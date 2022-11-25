@@ -12,11 +12,11 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談申し込み一覧</h3>
-          <p class="mt-2 text-lg">相談申し込みの内容を確認し、申し込みの了承または拒否をして下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
+          <h3 data-test="consultation-request-list-label" class="font-bold text-2xl">相談申し込み一覧</h3>
+          <p data-test="consultation-request-list-description" class="mt-2 text-lg">相談申し込みの内容を確認し、申し込みの了承または拒否をして下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
           <div class="mt-4 ml-4">
             <div v-if="consultationRequests.length === 0">
-              <p class="mt-2 text-lg">相談申し込みはありません。</p>
+              <p data-test="no-consultation-request-found" class="mt-2 text-lg">相談申し込みはありません。</p>
             </div>
             <div v-else>
               <ul>

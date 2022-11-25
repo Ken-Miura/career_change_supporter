@@ -10,6 +10,7 @@ import { ConsultationRequestDescription, ConsultationRequestsResult } from '@/ut
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { MAX_NUM_OF_CONSULTATION_REQUESTS } from '@/util/personalized/consultation-request-list/MaxNumOfConsultationRequests'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -131,5 +132,28 @@ describe('ConsultantListPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it('displays "相談申し込みはありません。" when there are no consultation requests', async () => {
+    const result = {
+      consultation_requests: [] as ConsultationRequestDescription[]
+    } as ConsultationRequestsResult
+    const resp = GetConsultationRequestsResp.create(result)
+    getConsultationRequestsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const consultationReqListLabel = wrapper.find('[data-test="consultation-request-list-label"]')
+    expect(consultationReqListLabel.text()).toContain('相談申し込み一覧')
+    const consultationReqListDescription = wrapper.find('[data-test="consultation-request-list-description"]')
+    expect(consultationReqListDescription.text()).toContain(`相談申し込みの内容を確認し、申し込みの了承または拒否をして下さい。相談申し込みは、最大で${MAX_NUM_OF_CONSULTATION_REQUESTS}件表示されます。`)
+    const noConsultationReqFound = wrapper.find('[data-test="no-consultation-request-found"]')
+    expect(noConsultationReqFound.text()).toContain('相談申し込みはありません。')
   })
 })
