@@ -59,6 +59,13 @@ pub(crate) struct FinishRequestConsultationParam {
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct FinishRequestConsultationResult {}
 
+#[derive(Debug, PartialEq)]
+struct Candidates {
+    first_candidate_in_jst: DateTime<FixedOffset>,
+    second_candidate_in_jst: DateTime<FixedOffset>,
+    third_candidate_in_jst: DateTime<FixedOffset>,
+}
+
 async fn handle_finish_request_consultation(
     account_id: i64,
     charge_id: String,
@@ -71,11 +78,15 @@ async fn handle_finish_request_consultation(
     validate_consultant_is_available(consultant_id, &op).await?;
     confirm_three_d_secure_status_is_ok(&charge)?;
 
-    let latest_candidate_date_time_in_jst = extract_latest_candidate_date_time_in_jst(&charge)?;
+    let candidates_date_time_in_jst = extract_candidates_date_time_in_jst(&charge)?;
+    let latest_candidate_date_time_in_jst =
+        extract_latest_candidate_date_time_in_jst(&candidates_date_time_in_jst)?;
     let id_and_charge = op
         .create_request_consultation(
             account_id,
             consultant_id,
+            charge.amount, // 3Dセキュアフロー内の一連の流れであり、途中に返金処理が発生していることはない。従ってcharge.amount_refundedを考慮する必要はない
+            candidates_date_time_in_jst,
             charge_id,
             latest_candidate_date_time_in_jst,
         )
@@ -205,9 +216,7 @@ fn confirm_three_d_secure_status_is_ok(charge: &Charge) -> Result<(), ErrResp> {
     Ok(())
 }
 
-fn extract_latest_candidate_date_time_in_jst(
-    charge: &Charge,
-) -> Result<DateTime<FixedOffset>, ErrResp> {
+fn extract_candidates_date_time_in_jst(charge: &Charge) -> Result<Candidates, ErrResp> {
     let metadata = match charge.metadata.clone() {
         Some(m) => m,
         None => {
@@ -232,10 +241,11 @@ fn extract_latest_candidate_date_time_in_jst(
         charge.id.as_str(),
     )?;
 
-    let candidates_in_jst = vec![second_candidate_in_jst, third_candidate_in_jst];
-    let latest_candidate_in_jst =
-        select_latest_candidate_in_jst(first_candidate_in_jst, candidates_in_jst);
-    Ok(latest_candidate_in_jst)
+    Ok(Candidates {
+        first_candidate_in_jst,
+        second_candidate_in_jst,
+        third_candidate_in_jst,
+    })
 }
 
 fn extract_candidate_as_date_time(
@@ -256,6 +266,18 @@ fn extract_candidate_as_date_time(
         unexpected_err_resp()
     })?;
     Ok(candidate_in_jst)
+}
+
+fn extract_latest_candidate_date_time_in_jst(
+    candidates: &Candidates,
+) -> Result<DateTime<FixedOffset>, ErrResp> {
+    let candidates_in_jst = vec![
+        candidates.second_candidate_in_jst,
+        candidates.third_candidate_in_jst,
+    ];
+    let latest_candidate_in_jst =
+        select_latest_candidate_in_jst(candidates.first_candidate_in_jst, candidates_in_jst);
+    Ok(latest_candidate_in_jst)
 }
 
 fn select_latest_candidate_in_jst(
@@ -448,6 +470,8 @@ trait FinishRequestConsultationOperation {
         &self,
         account_id: i64,
         consultant_id: i64,
+        fee_per_hour_in_yen: i32,
+        candidates: Candidates,
         charge_id: String,
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
     ) -> Result<(i64, Charge), ErrResp>;
@@ -491,6 +515,8 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         &self,
         account_id: i64,
         consultant_id: i64,
+        fee_per_hour_in_yen: i32,
+        candidates: Candidates,
         charge_id: String,
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
     ) -> Result<(i64, Charge), ErrResp> {
@@ -500,6 +526,10 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                     consultation_req_id: NotSet,
                     user_account_id: Set(account_id),
                     consultant_id: Set(consultant_id),
+                    fee_per_hour_in_yen: Set(fee_per_hour_in_yen),
+                    first_candidate_date_time: Set(candidates.first_candidate_in_jst),
+                    second_candidate_date_time: Set(candidates.second_candidate_in_jst),
+                    third_candidate_date_time: Set(candidates.third_candidate_in_jst),
                     charge_id: Set(charge_id.clone()),
                     latest_candidate_date_time: Set(latest_candidate_date_time_in_jst),
                 };
@@ -599,6 +629,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
+    use crate::finish_request_consultation::extract_candidates_date_time_in_jst;
     use crate::util::{
         EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
         KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
@@ -608,7 +639,7 @@ mod tests {
 
     use super::{
         create_text_for_consultant_mail, create_text_for_user_mail,
-        handle_finish_request_consultation, FinishRequestConsultationOperation,
+        handle_finish_request_consultation, Candidates, FinishRequestConsultationOperation,
         FinishRequestConsultationResult,
     };
 
@@ -666,11 +697,16 @@ mod tests {
             &self,
             account_id: i64,
             consultant_id: i64,
+            fee_per_hour_in_yen: i32,
+            candidates: Candidates,
             charge_id: String,
             latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
         ) -> Result<(i64, Charge), ErrResp> {
             assert_eq!(self.account_id, account_id);
             assert_eq!(self.consultant_id, consultant_id);
+            assert_eq!(self.charge.amount, fee_per_hour_in_yen);
+            let c = extract_candidates_date_time_in_jst(&self.charge).expect("failed to get Ok");
+            assert_eq!(c, candidates);
             assert_eq!(self.charge_id, charge_id);
             assert_eq!(
                 self.latest_candidate_date_time_in_jst,

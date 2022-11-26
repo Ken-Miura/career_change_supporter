@@ -351,6 +351,10 @@ impl MigrationTrait for Migration {
                   consultation_req_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  first_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                  second_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                  third_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
                   latest_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
