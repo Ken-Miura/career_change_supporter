@@ -1,12 +1,15 @@
 // Copyright 2022 Ken Miura
 
-use axum::async_trait;
+use axum::http::StatusCode;
+use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
+use crate::err::Code;
 use crate::util::session::User;
 use crate::util::{self, ConsultationDateTime};
 
@@ -45,6 +48,8 @@ async fn handle_consultation_request_detail(
     current_date_time: &DateTime<FixedOffset>,
     op: impl ConsultationRequestDetailOperation,
 ) -> RespResult<ConsultationRequestDetail> {
+    validate_consultation_req_id_is_positive(consultation_req_id)?;
+    validate_identity_exists(user_account_id, &op).await?;
     todo!()
 }
 
@@ -62,4 +67,37 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
         util::check_if_identity_exists(&self.pool, account_id).await
     }
+}
+
+fn validate_consultation_req_id_is_positive(consultation_req_id: i64) -> Result<(), ErrResp> {
+    if !consultation_req_id.is_positive() {
+        error!(
+            "consultation_req_id ({}) is not positive",
+            consultation_req_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonPositiveConsultationReqId as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+async fn validate_identity_exists(
+    account_id: i64,
+    op: &impl ConsultationRequestDetailOperation,
+) -> Result<(), ErrResp> {
+    let identity_exists = op.check_if_identity_exists(account_id).await?;
+    if !identity_exists {
+        error!("identity is not registered (account_id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    Ok(())
 }

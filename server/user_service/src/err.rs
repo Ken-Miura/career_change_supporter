@@ -123,6 +123,7 @@ pub(crate) enum Code {
     PayJpCodeThreeDSecureIncompleted = 20111,
     PayJpCodeThreeDSecureFailed = 20112,
     PayJpCodeNotInThreeDSecureFlow = 20113,
+    NonPositiveConsultationReqId = 20114,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
