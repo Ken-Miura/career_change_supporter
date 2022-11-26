@@ -2,7 +2,8 @@
 
 use axum::async_trait;
 use axum::{extract::Query, Extension};
-use common::{ErrResp, RespResult};
+use chrono::{DateTime, FixedOffset, Utc};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +15,11 @@ pub(crate) async fn get_consultation_request_detail(
     query: Query<ConsultationRequestDetailQuery>,
     Extension(pool): Extension<DatabaseConnection>,
 ) -> RespResult<ConsultationRequestDetail> {
-    todo!()
+    let consultation_req_id = query.consultation_req_id;
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    let op = ConsultationRequestDetailOperationImpl { pool };
+    handle_consultation_request_detail(account_id, consultation_req_id, &current_date_time, op)
+        .await
 }
 
 #[derive(Deserialize)]
@@ -32,6 +37,15 @@ pub(crate) struct ConsultationRequestDetail {
     pub(crate) first_candidate_in_jst: ConsultationDateTime,
     pub(crate) second_candidate_in_jst: ConsultationDateTime,
     pub(crate) third_candidate_in_jst: ConsultationDateTime,
+}
+
+async fn handle_consultation_request_detail(
+    user_account_id: i64,
+    consultation_req_id: i64,
+    current_date_time: &DateTime<FixedOffset>,
+    op: impl ConsultationRequestDetailOperation,
+) -> RespResult<ConsultationRequestDetail> {
+    todo!()
 }
 
 #[async_trait]
