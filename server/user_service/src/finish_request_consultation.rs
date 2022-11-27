@@ -72,6 +72,7 @@ async fn handle_finish_request_consultation(
     op: impl FinishRequestConsultationOperation,
     send_mail: impl SendMail,
 ) -> RespResult<FinishRequestConsultationResult> {
+    validate_user_account_is_available(account_id, &op).await?;
     validate_identity_exists(account_id, &op).await?;
     let charge = op.get_charge_by_charge_id(charge_id.clone()).await?;
     let consultant_id = extract_consultant_id(&charge)?;
@@ -122,6 +123,28 @@ async fn handle_finish_request_consultation(
     .await?;
 
     Ok((StatusCode::OK, Json(FinishRequestConsultationResult {})))
+}
+
+async fn validate_user_account_is_available(
+    user_account_id: i64,
+    op: &impl FinishRequestConsultationOperation,
+) -> Result<(), ErrResp> {
+    let user_account_available = op
+        .check_if_user_account_is_available(user_account_id)
+        .await?;
+    if !user_account_available {
+        error!(
+            "user account is not available (user_account_id: {})",
+            user_account_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::AccountDisabled as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 async fn validate_identity_exists(
@@ -465,6 +488,10 @@ fn extract_candidate_expression_in_japanese(
 trait FinishRequestConsultationOperation {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp>;
+    async fn check_if_user_account_is_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<bool, ErrResp>;
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn create_request_consultation(
         &self,
@@ -507,8 +534,15 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         Ok(charge)
     }
 
+    async fn check_if_user_account_is_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<bool, ErrResp> {
+        util::check_if_user_account_is_available(&self.pool, user_account_id).await
+    }
+
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_consultant_is_available(&self.pool, consultant_id).await
+        util::check_if_user_account_is_available(&self.pool, consultant_id).await
     }
 
     async fn create_request_consultation(
@@ -667,6 +701,7 @@ mod tests {
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
         user_account_email_address: String,
         consultant_email_address: String,
+        user_account_is_available: bool,
     }
 
     #[async_trait]
@@ -681,6 +716,13 @@ mod tests {
         async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp> {
             assert_eq!(self.charge_id, charge_id);
             Ok(self.charge.clone())
+        }
+
+        async fn check_if_user_account_is_available(
+            &self,
+            _user_account_id: i64,
+        ) -> Result<bool, ErrResp> {
+            Ok(self.user_account_is_available)
         }
 
         async fn check_if_consultant_is_available(
@@ -782,6 +824,7 @@ mod tests {
                             .and_hms(7, 0, 0),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: true,
                     },
                     smtp_client: SendMailMock {},
                 },
@@ -812,10 +855,47 @@ mod tests {
                             .and_hms(7, 0, 0),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: true,
                     },
                     smtp_client: SendMailMock {},
                 },
                 expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
+            },
+            TestCase {
+                name: "fail AccountDisabled".to_string(),
+                input: Input {
+                    account_id: 1,
+                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    op: FinishRequestConsultationOperationMock {
+                        account_id: 1,
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        charge: create_dummy_charge(
+                            "ch_fa990a4c10672a93053a774730b0a",
+                            5000,
+                            "verified",
+                            create_metadata(
+                                2,
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
+                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                            ),
+                        ),
+                        consultant_id: 2,
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_email_address: "test0@test.com".to_string(),
+                        consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: false,
+                    },
+                    smtp_client: SendMailMock {},
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::AccountDisabled as u32,
+                    }),
+                )),
             },
             TestCase {
                 name: "fail NoIdentityRegistered".to_string(),
@@ -842,6 +922,7 @@ mod tests {
                             .and_hms(7, 0, 0),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: true,
                     },
                     smtp_client: SendMailMock {},
                 },
@@ -877,6 +958,7 @@ mod tests {
                             .and_hms(7, 0, 0),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: true,
                     },
                     smtp_client: SendMailMock {},
                 },
@@ -912,6 +994,7 @@ mod tests {
                             .and_hms(7, 0, 0),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: true,
                     },
                     smtp_client: SendMailMock {},
                 },
@@ -947,6 +1030,7 @@ mod tests {
                             .and_hms(7, 0, 0),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: true,
                     },
                     smtp_client: SendMailMock {},
                 },
@@ -982,6 +1066,7 @@ mod tests {
                             .and_hms(7, 0, 0),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
+                        user_account_is_available: true,
                     },
                     smtp_client: SendMailMock {},
                 },

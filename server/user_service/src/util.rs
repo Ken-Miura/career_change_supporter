@@ -343,19 +343,19 @@ pub(crate) async fn check_if_identity_exists(
     Ok(model.is_some())
 }
 
-/// コンサルタントが利用可能か確認する。
-/// コンサルタントのUserAccountが存在し、かつdisabled_atがNULLである場合、trueを返す。そうでない場合、falseを返す。
-pub(crate) async fn check_if_consultant_is_available(
+/// ユーザーが利用可能か確認する。
+/// UserAccountが存在し、かつdisabled_atがNULLである場合、trueを返す。そうでない場合、falseを返す。
+pub(crate) async fn check_if_user_account_is_available(
     pool: &DatabaseConnection,
-    consultant_id: i64,
+    user_account_id: i64,
 ) -> Result<bool, ErrResp> {
-    let model = entity::prelude::UserAccount::find_by_id(consultant_id)
+    let model = entity::prelude::UserAccount::find_by_id(user_account_id)
         .one(pool)
         .await
         .map_err(|e| {
             error!(
                 "failed to find user_account (user_account_id): {}): {}",
-                consultant_id, e
+                user_account_id, e
             );
             unexpected_err_resp()
         })?;

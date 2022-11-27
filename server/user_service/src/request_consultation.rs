@@ -74,6 +74,11 @@ pub(crate) struct RequestConsultationResult {
 trait RequestConsultationOperation {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
 
+    async fn check_if_user_account_is_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<bool, ErrResp>;
+
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -121,8 +126,15 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         util::check_if_identity_exists(&self.pool, account_id).await
     }
 
+    async fn check_if_user_account_is_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<bool, ErrResp> {
+        util::check_if_user_account_is_available(&self.pool, user_account_id).await
+    }
+
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_consultant_is_available(&self.pool, consultant_id).await
+        util::check_if_user_account_is_available(&self.pool, consultant_id).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -278,6 +290,7 @@ async fn handle_request_consultation(
         &request_consultation_param.third_candidate_in_jst,
         current_date_time,
     )?;
+    validate_user_account_is_available(account_id, &request_consultation_op).await?;
     validate_identity_exists(account_id, &request_consultation_op).await?;
     validate_consultant_is_available(consultant_id, &request_consultation_op).await?;
 
@@ -425,6 +438,28 @@ fn convert_consultation_date_time_validation_err(
             }),
         ),
     }
+}
+
+async fn validate_user_account_is_available(
+    user_account_id: i64,
+    request_consultation_op: &impl RequestConsultationOperation,
+) -> Result<(), ErrResp> {
+    let user_account_available = request_consultation_op
+        .check_if_user_account_is_available(user_account_id)
+        .await?;
+    if !user_account_available {
+        error!(
+            "user account is not available (user_account_id: {})",
+            user_account_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::AccountDisabled as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 async fn validate_identity_exists(
@@ -655,6 +690,7 @@ mod tests {
         second_candidate_in_jst: DateTime<FixedOffset>,
         third_candidate_in_jst: DateTime<FixedOffset>,
         rewards_of_the_year: i32,
+        user_account_is_available: bool,
     }
 
     #[async_trait]
@@ -664,6 +700,13 @@ mod tests {
                 return Ok(false);
             };
             Ok(true)
+        }
+
+        async fn check_if_user_account_is_available(
+            &self,
+            _user_account_id: i64,
+        ) -> Result<bool, ErrResp> {
+            Ok(self.user_account_is_available)
         }
 
         async fn check_if_consultant_is_available(
@@ -822,6 +865,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: *MAX_ANNUAL_REWARDS_IN_YEN - (5000 + 15000 + 4000),
+                        user_account_is_available: true,
                     },
                 },
                 expected: Ok((
@@ -879,6 +923,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -936,6 +981,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -993,6 +1039,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1050,6 +1097,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1107,6 +1155,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1164,6 +1213,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1221,6 +1271,7 @@ mod tests {
                             .ymd(2022, 11, 12)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1278,6 +1329,7 @@ mod tests {
                             .ymd(2022, 11, 21)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1335,6 +1387,7 @@ mod tests {
                             .ymd(2022, 11, 22)
                             .and_hms(6, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1392,6 +1445,7 @@ mod tests {
                             .ymd(2022, 11, 4)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1449,6 +1503,7 @@ mod tests {
                             .ymd(2022, 11, 4)
                             .and_hms(7, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1506,6 +1561,7 @@ mod tests {
                             .ymd(2022, 11, 4)
                             .and_hms(18, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1563,12 +1619,71 @@ mod tests {
                             .ymd(2022, 11, 20)
                             .and_hms(21, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::DuplicateDateTimeCandidates as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail AccountDisabled".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: RequestConsultationParam {
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: 5000,
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 14,
+                            hour: 21,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 18,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 20,
+                            hour: 21,
+                        },
+                    },
+                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    req_op: RequestConsultationOperationMock {
+                        account_id: 1,
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: Some(5000),
+                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        amount: 5000,
+                        expected_rewards: 15000,
+                        first_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 14)
+                            .and_hms(21, 0, 0),
+                        second_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(18, 0, 0),
+                        third_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 20)
+                            .and_hms(21, 0, 0),
+                        rewards_of_the_year: 20000,
+                        user_account_is_available: false,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::AccountDisabled as u32,
                     }),
                 )),
             },
@@ -1620,6 +1735,7 @@ mod tests {
                             .ymd(2022, 11, 20)
                             .and_hms(21, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1677,6 +1793,7 @@ mod tests {
                             .ymd(2022, 11, 20)
                             .and_hms(21, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1734,6 +1851,7 @@ mod tests {
                             .ymd(2022, 11, 20)
                             .and_hms(21, 0, 0),
                         rewards_of_the_year: 20000,
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((
@@ -1791,6 +1909,7 @@ mod tests {
                             .ymd(2022, 11, 20)
                             .and_hms(21, 0, 0),
                         rewards_of_the_year: *MAX_ANNUAL_REWARDS_IN_YEN - (3000 + 4000 + 5000 - 1),
+                        user_account_is_available: true,
                     },
                 },
                 expected: Err((

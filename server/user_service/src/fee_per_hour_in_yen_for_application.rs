@@ -54,7 +54,7 @@ impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOpe
     }
 
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_consultant_is_available(&self.pool, consultant_id).await
+        util::check_if_user_account_is_available(&self.pool, consultant_id).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
