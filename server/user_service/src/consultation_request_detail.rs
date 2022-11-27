@@ -15,7 +15,8 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, ConsultationDateTime, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    self, round_to_one_decimal_places, ConsultationDateTime,
+    MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
 };
 
 pub(crate) async fn get_consultation_request_detail(
@@ -276,5 +277,6 @@ fn calculate_rating_and_count(user_ratings: Vec<Option<i16>>) -> Result<(String,
         }
     }
     let rating = sum as f64 / count as f64;
-    todo!()
+    let rating_str = round_to_one_decimal_places(rating);
+    Ok((rating_str, count as i32))
 }

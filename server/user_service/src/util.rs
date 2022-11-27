@@ -482,6 +482,15 @@ fn create_err_resp_from_status(status: u32) -> ErrResp {
     }
 }
 
+/// 小数点以下2桁目を四捨五入し、小数点以下1桁目までを示す少数を文字列表現として返す。
+pub(crate) fn round_to_one_decimal_places(rating: f64) -> String {
+    let result = (rating * 10.0).round() / 10.0;
+    // format!("{:.1}", rating) のみで少数点以下2桁目を四捨五入し、小数点以下1桁まで求める動作となる。
+    // しかし、下記のドキュメントに、その動作（四捨五入）に関して正式な仕様として記載がないため、四捨五入の箇所は自身で実装する。
+    // https://doc.rust-lang.org/std/fmt/
+    format!("{:.1}", result)
+}
+
 /// 通常のテストコードに加え、共通で使うモックをまとめる
 #[cfg(test)]
 pub(crate) mod tests {
