@@ -3,10 +3,12 @@
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum::{extract::Query, Extension};
-use chrono::{DateTime, Duration, FixedOffset, Utc};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::ConsultationReq;
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use entity::prelude::UserRating;
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use entity::user_rating;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -53,7 +55,6 @@ struct ConsultationRequest {
     first_candidate_date_time_in_jst: DateTime<FixedOffset>,
     second_candidate_date_time_in_jst: DateTime<FixedOffset>,
     third_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    charge_id: String,
     latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
 }
 
@@ -71,8 +72,39 @@ async fn handle_consultation_request_detail(
         .await?;
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req(&req, user_account_id, current_date_time)?;
-    // TODO: userが存在するかどうか＋無効化されているかどうかチェック
-    todo!()
+
+    let user_ratings = op
+        .filter_user_rating_by_user_account_id(req.user_account_id)
+        .await?;
+    let (rating, count) = calculate_rating_and_count(user_ratings)?;
+    Ok((
+        StatusCode::OK,
+        Json(ConsultationRequestDetail {
+            consultation_req_id: req.consultation_req_id,
+            user_account_id: req.user_account_id,
+            user_rating: rating,
+            num_of_rated_of_user: count,
+            fee_per_hour_in_yen: req.fee_per_hour_in_yen,
+            first_candidate_in_jst: ConsultationDateTime {
+                year: req.first_candidate_date_time_in_jst.year(),
+                month: req.first_candidate_date_time_in_jst.month(),
+                day: req.first_candidate_date_time_in_jst.day(),
+                hour: req.first_candidate_date_time_in_jst.hour(),
+            },
+            second_candidate_in_jst: ConsultationDateTime {
+                year: req.second_candidate_date_time_in_jst.year(),
+                month: req.second_candidate_date_time_in_jst.month(),
+                day: req.second_candidate_date_time_in_jst.day(),
+                hour: req.second_candidate_date_time_in_jst.hour(),
+            },
+            third_candidate_in_jst: ConsultationDateTime {
+                year: req.third_candidate_date_time_in_jst.year(),
+                month: req.third_candidate_date_time_in_jst.month(),
+                day: req.third_candidate_date_time_in_jst.day(),
+                hour: req.third_candidate_date_time_in_jst.hour(),
+            },
+        }),
+    ))
 }
 
 #[async_trait]
@@ -82,6 +114,10 @@ trait ConsultationRequestDetailOperation {
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
+    async fn filter_user_rating_by_user_account_id(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Vec<Option<i16>>, ErrResp>;
 }
 
 struct ConsultationRequestDetailOperationImpl {
@@ -122,9 +158,26 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
             third_candidate_date_time_in_jst: m
                 .third_candidate_date_time
                 .with_timezone(&(*JAPANESE_TIME_ZONE)),
-            charge_id: m.charge_id,
             latest_candidate_date_time_in_jst: m.latest_candidate_date_time,
         }))
+    }
+
+    async fn filter_user_rating_by_user_account_id(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Vec<Option<i16>>, ErrResp> {
+        let models = UserRating::find()
+            .filter(user_rating::Column::UserAccountId.eq(user_account_id))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter user_rating (user_account_id: {}): {}",
+                    user_account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(models.into_iter().map(|m| m.rating).collect())
     }
 }
 
@@ -204,4 +257,24 @@ fn validate_consultation_req(
         ));
     }
     Ok(())
+}
+
+fn calculate_rating_and_count(user_ratings: Vec<Option<i16>>) -> Result<(String, i32), ErrResp> {
+    let filled_user_ratings = user_ratings
+        .into_iter()
+        .filter(|u| u.is_some())
+        .collect::<Vec<Option<i16>>>();
+    let count = filled_user_ratings.len();
+    let mut sum = 0_i32;
+    for u in filled_user_ratings {
+        match u {
+            Some(u) => sum += u as i32,
+            None => {
+                error!("");
+                return Err(unexpected_err_resp());
+            }
+        }
+    }
+    let rating = sum as f64 / count as f64;
+    todo!()
 }
