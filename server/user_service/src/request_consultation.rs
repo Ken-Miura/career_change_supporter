@@ -97,7 +97,7 @@ trait RequestConsultationOperation {
     async fn get_amount_of_consultation_req(
         &self,
         consultant_id: i64,
-        current_date_time: &DateTime<FixedOffset>,
+        criteria: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp>;
 
     /// 相談を受け付けたが、まだ未決済（相談者がまだ評価を実施していない、または自動決済が走っていない状態）となっているものの相談料の合計
@@ -183,19 +183,17 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
     async fn get_amount_of_consultation_req(
         &self,
         consultant_id: i64,
-        current_date_time: &DateTime<FixedOffset>,
+        criteria: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp> {
-        let criteria = *current_date_time
-            + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64);
         let reqs = ConsultationReq::find()
             .filter(consultation_req::Column::ConsultantId.eq(consultant_id))
-            .filter(consultation_req::Column::LatestCandidateDateTime.gt(criteria))
+            .filter(consultation_req::Column::LatestCandidateDateTime.gt(*criteria))
             .all(&self.pool)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter consultation_req (consultant_id: {}, current_date_time: {}, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: {}): {}",
-                    consultant_id, current_date_time, *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE, e
+                    "failed to filter consultation_req (consultant_id: {}, criteria: {}, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: {}): {}",
+                    consultant_id, criteria, *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE, e
                 );
                 unexpected_err_resp()
             })?;
@@ -544,8 +542,10 @@ async fn ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
     fee_per_hour_in_yen: i32,
     request_consultation_op: &impl RequestConsultationOperation,
 ) -> Result<(), ErrResp> {
+    let criteria = *current_date_time
+        + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64);
     let amount_of_consultation_req = request_consultation_op
-        .get_amount_of_consultation_req(consultant_id, current_date_time)
+        .get_amount_of_consultation_req(consultant_id, &criteria)
         .await?;
 
     let expected_rewards = request_consultation_op
@@ -639,7 +639,7 @@ fn generate_metadata(
 mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
+    use chrono::{DateTime, Datelike, Duration, FixedOffset, TimeZone};
     use common::payment_platform::customer::Card;
     use common::ApiError;
     use common::{
@@ -652,7 +652,7 @@ mod tests {
     use crate::util::{
         KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-        MAX_ANNUAL_REWARDS_IN_YEN,
+        MAX_ANNUAL_REWARDS_IN_YEN, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     };
 
     use super::{
@@ -776,10 +776,14 @@ mod tests {
         async fn get_amount_of_consultation_req(
             &self,
             consultant_id: i64,
-            current_date_time: &DateTime<FixedOffset>,
+            criteria: &DateTime<FixedOffset>,
         ) -> Result<i32, ErrResp> {
             assert_eq!(self.consultant_id, consultant_id);
-            assert_eq!(self.current_date_time, *current_date_time);
+            assert_eq!(
+                self.current_date_time
+                    + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64),
+                *criteria
+            );
             Ok(self.amount)
         }
 
