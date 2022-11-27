@@ -270,7 +270,7 @@ fn calculate_rating_and_count(user_ratings: Vec<Option<i16>>) -> Result<(String,
         match u {
             Some(u) => sum += u as i32,
             None => {
-                error!("");
+                error!("failed to calculate sum of user rating");
                 return Err(unexpected_err_resp());
             }
         }
