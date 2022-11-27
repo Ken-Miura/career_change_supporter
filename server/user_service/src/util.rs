@@ -513,7 +513,7 @@ pub(crate) mod tests {
 
     use super::{
         clone_file_name_if_exists, convert_jpeg_to_png, convert_payment_err_to_err_resp,
-        create_start_and_end_timestamps_of_current_year,
+        create_start_and_end_timestamps_of_current_year, round_to_one_decimal_places,
     };
 
     #[derive(Clone, Debug)]
@@ -660,24 +660,26 @@ pub(crate) mod tests {
     }
 
     #[derive(Debug)]
-    struct TestCase {
+    struct ConvertPaymentErrToErrRespTestCase {
         name: String,
-        input: Input,
+        input: ConvertPaymentErrToErrRespInput,
         expected: ErrResp,
     }
 
     #[derive(Debug)]
-    struct Input {
+    struct ConvertPaymentErrToErrRespInput {
         err: common::payment_platform::Error,
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+    static CONVERT_PAYMENT_ERR_TO_ERR_RESP_TEST_CASE_SET: Lazy<
+        Vec<ConvertPaymentErrToErrRespTestCase>,
+    > = Lazy::new(|| {
         // ErrorDetailのメンバーは、実際に返ってくる値が不明なため使う値のみ正確に埋める。
         // pay.jpを使う中で実際に正確な値がわかった場合、随時更新していく。
         vec![
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "status 402".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -696,9 +698,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "status 429".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -717,9 +719,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code incorrect_card_data".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -738,9 +740,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code card_declined".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -759,9 +761,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code card_flagged".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -780,9 +782,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code unacceptable_brand".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -801,9 +803,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code over_capacity".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -822,9 +824,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code three_d_secure_incompleted".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -843,9 +845,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code three_d_secure_failed".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -864,9 +866,9 @@ pub(crate) mod tests {
                     }),
                 ),
             },
-            TestCase {
+            ConvertPaymentErrToErrRespTestCase {
                 name: "code not_in_three_d_secure_flow".to_string(),
-                input: Input {
+                input: ConvertPaymentErrToErrRespInput {
                     err: common::payment_platform::Error::ApiError(Box::new(ErrorInfo {
                         error: ErrorDetail {
                             message: "message".to_string(),
@@ -890,11 +892,58 @@ pub(crate) mod tests {
 
     #[test]
     fn test_convert_payment_err_to_err_resp() {
-        for test_case in TEST_CASE_SET.iter() {
+        for test_case in CONVERT_PAYMENT_ERR_TO_ERR_RESP_TEST_CASE_SET.iter() {
             let err_resp = convert_payment_err_to_err_resp(&test_case.input.err);
             let message = format!("test case \"{}\" failed", test_case.name.clone());
             assert_eq!(test_case.expected.0, err_resp.0, "{}", message);
             assert_eq!(test_case.expected.1 .0, err_resp.1 .0, "{}", message);
+        }
+    }
+
+    #[derive(Debug)]
+    struct RoundToOneDecimalPlacesTestCase {
+        name: String,
+        input: f64,
+        expected: String,
+    }
+
+    static ROUNT_TO_ONE_DECIMAL_PLACES_TEST_CASE_SET: Lazy<Vec<RoundToOneDecimalPlacesTestCase>> =
+        Lazy::new(|| {
+            vec![
+                RoundToOneDecimalPlacesTestCase {
+                    name: "x.x4 -> round down".to_string(),
+                    input: 3.64,
+                    expected: "3.6".to_string(),
+                },
+                RoundToOneDecimalPlacesTestCase {
+                    name: "x.x5 -> round up".to_string(),
+                    input: 3.65,
+                    expected: "3.7".to_string(),
+                },
+                RoundToOneDecimalPlacesTestCase {
+                    name: "x.95 -> round up".to_string(),
+                    input: 3.95,
+                    expected: "4.0".to_string(),
+                },
+                RoundToOneDecimalPlacesTestCase {
+                    name: "x.x0 -> round down".to_string(),
+                    input: 4.10,
+                    expected: "4.1".to_string(),
+                },
+                RoundToOneDecimalPlacesTestCase {
+                    name: "x.x9 -> round up".to_string(),
+                    input: 2.19,
+                    expected: "2.2".to_string(),
+                },
+            ]
+        });
+
+    #[test]
+    fn test_round_to_one_decimal_places() {
+        for test_case in ROUNT_TO_ONE_DECIMAL_PLACES_TEST_CASE_SET.iter() {
+            let result = round_to_one_decimal_places(test_case.input);
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(test_case.expected, result, "{}", message);
         }
     }
 }
