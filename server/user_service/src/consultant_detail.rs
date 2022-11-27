@@ -14,9 +14,9 @@ use tracing::{error, info};
 use crate::err::Code;
 use crate::util::session::User;
 use crate::util::{
-    self, VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
-    VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
-    VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
+    self, round_to_one_decimal_places, VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN,
+    VALID_YEARS_OF_SERVICE_PERIOD_FIVE, VALID_YEARS_OF_SERVICE_PERIOD_TEN,
+    VALID_YEARS_OF_SERVICE_PERIOD_THREE, VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
 };
 
 const YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS: &str = "LESS_THAN_THREE_YEARS";
@@ -46,11 +46,11 @@ pub(crate) struct ConsultantDetailQuery {
     pub(crate) consultant_id: i64,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultantDetail {
     pub(crate) consultant_id: i64,
     pub(crate) fee_per_hour_in_yen: i32,
-    pub(crate) rating: Option<f64>,
+    pub(crate) rating: Option<String>, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
     pub(crate) num_of_rated: i32,
     pub(crate) careers: Vec<ConsultantCareerDetail>,
 }
@@ -291,7 +291,7 @@ fn create_consultant_detail(hit: &Value) -> Result<ConsultantDetail, ErrResp> {
     Ok(ConsultantDetail {
         consultant_id: account_id,
         fee_per_hour_in_yen: fee_per_hour_in_yen as i32,
-        rating,
+        rating: rating.map(round_to_one_decimal_places),
         num_of_rated: num_of_rated as i32,
         careers: consultant_career_details,
     })
@@ -715,7 +715,7 @@ mod tests {
                     Json(ConsultantDetail {
                         consultant_id: 3,
                         fee_per_hour_in_yen: 3000,
-                        rating: Some(4.2),
+                        rating: Some("4.2".to_string()),
                         num_of_rated: 43,
                         careers: vec![ConsultantCareerDetail {
                             company_name: "テスト５（株）".to_string(),
@@ -1284,29 +1284,7 @@ mod tests {
                 let result = resp.expect("failed to get Ok");
                 let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
                 assert_eq!(expected_result.0, result.0, "{}", message);
-                assert_eq!(
-                    expected_result.1.consultant_id, result.1.consultant_id,
-                    "{}",
-                    message
-                );
-                assert_eq!(
-                    expected_result.1.fee_per_hour_in_yen, result.1.fee_per_hour_in_yen,
-                    "{}",
-                    message
-                );
-                if let Some(expected_rating) = expected_result.1.rating {
-                    let result_rating = result.1.rating.unwrap();
-                    let diff = (expected_rating - result_rating).abs();
-                    assert!(diff < f64::EPSILON, "{}", message);
-                } else {
-                    assert_eq!(None, result.1.rating, "{}", message);
-                }
-                assert_eq!(
-                    expected_result.1.num_of_rated, result.1.num_of_rated,
-                    "{}",
-                    message
-                );
-                assert_eq!(expected_result.1.careers, result.1.careers, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
             } else {
                 let result = resp.expect_err("failed to get Err");
                 let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");

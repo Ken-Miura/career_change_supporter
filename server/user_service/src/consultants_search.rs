@@ -11,9 +11,9 @@ use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::util;
 use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
+use crate::util::{self, round_to_one_decimal_places};
 use crate::{
     err::Code,
     util::{
@@ -87,17 +87,17 @@ pub(crate) struct SortParam {
     pub order: String,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct ConsultantsSearchResult {
     total: i64,
     consultants: Vec<ConsultantDescription>,
 }
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Debug, PartialEq)]
 pub(crate) struct ConsultantDescription {
     consultant_id: i64,
     fee_per_hour_in_yen: i32,
-    rating: Option<f64>,
+    rating: Option<String>, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
     num_of_rated: i32,
     careers: Vec<ConsultantCareerDescription>,
 }
@@ -925,7 +925,7 @@ fn create_consultant_description(hit: &Value) -> Result<ConsultantDescription, E
     Ok(ConsultantDescription {
         consultant_id: account_id,
         fee_per_hour_in_yen: fee_per_hour_in_yen as i32,
-        rating,
+        rating: rating.map(round_to_one_decimal_places),
         num_of_rated: num_of_rated as i32,
         careers: consultant_career_descriptions,
     })
@@ -2392,32 +2392,7 @@ mod tests {
                 let result = resp.expect("failed to get Ok");
                 let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
                 assert_eq!(expected_result.0, result.0, "{}", message);
-                assert_eq!(expected_result.1 .0.total, result.1 .0.total, "{}", message);
-                assert_eq!(
-                    expected_result.1 .0.consultants.len(),
-                    result.1 .0.consultants.len(),
-                    "{}",
-                    message
-                );
-                for n in 0..expected_result.1 .0.consultants.len() {
-                    let expected = expected_result.1 .0.consultants[n].clone();
-                    let result = result.1 .0.consultants[n].clone();
-                    assert_eq!(expected.consultant_id, result.consultant_id, "{}", message);
-                    assert_eq!(
-                        expected.fee_per_hour_in_yen, result.fee_per_hour_in_yen,
-                        "{}",
-                        message
-                    );
-                    if let Some(expected_rating) = expected.rating {
-                        let result_rating = result.rating.unwrap();
-                        let diff = (expected_rating - result_rating).abs();
-                        assert!(diff < f64::EPSILON, "{}", message);
-                    } else {
-                        assert_eq!(None, result.rating, "{}", message);
-                    }
-                    assert_eq!(expected.num_of_rated, result.num_of_rated, "{}", message);
-                    assert_eq!(expected.careers, result.careers, "{}", message);
-                }
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
             } else {
                 let result = resp.expect_err("failed to get Err");
                 let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");

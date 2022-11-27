@@ -1016,7 +1016,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: 5000,
-          rating: 4.5,
+          rating: '4.5',
           num_of_rated: 325,
           careers: [
             {
@@ -1081,7 +1081,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: 5000,
-          rating: 4.5,
+          rating: '4.5',
           num_of_rated: 325,
           careers: [
             {
@@ -1196,7 +1196,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: 5000,
-          rating: 4.5,
+          rating: '4.5',
           num_of_rated: 325,
           careers: [
             {
@@ -1298,7 +1298,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: 5000,
-          rating: 4.5,
+          rating: '4.5',
           num_of_rated: 325,
           careers: [
             {
@@ -3622,7 +3622,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 4.9,
+          rating: '4.9',
           num_of_rated: 10,
           careers: [
             {
@@ -3635,7 +3635,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 2,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 5.0,
+          rating: '5.0',
           num_of_rated: 10,
           careers: [
             {
@@ -3719,7 +3719,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 2,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 5.0,
+          rating: '5.0',
           num_of_rated: 10,
           careers: [
             {
@@ -3732,7 +3732,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 4.9,
+          rating: '4.9',
           num_of_rated: 10,
           careers: [
             {
@@ -3790,7 +3790,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 2,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 5.0,
+          rating: '5.0',
           num_of_rated: 10,
           careers: [
             {
@@ -3803,7 +3803,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 4.9,
+          rating: '4.9',
           num_of_rated: 10,
           careers: [
             {
@@ -3887,7 +3887,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 1,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 4.9,
+          rating: '4.9',
           num_of_rated: 10,
           careers: [
             {
@@ -3900,7 +3900,7 @@ describe('ConsultantListPage.vue', () => {
         {
           consultant_id: 2,
           fee_per_hour_in_yen: MIN_FEE_PER_HOUR_IN_YEN,
-          rating: 5.0,
+          rating: '5.0',
           num_of_rated: 10,
           careers: [
             {

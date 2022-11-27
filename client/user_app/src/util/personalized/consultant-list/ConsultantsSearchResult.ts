@@ -11,7 +11,7 @@ export type ConsultantDescription = {
   /* eslint-disable camelcase */
   consultant_id: number,
   fee_per_hour_in_yen: number,
-  rating: number | null,
+  rating: string | null,
   num_of_rated: number,
   careers: ConsultantCareerDescription[],
   /* eslint-enable camelcase */
