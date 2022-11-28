@@ -280,3 +280,88 @@ fn calculate_rating_and_count(user_ratings: Vec<Option<i16>>) -> Result<(String,
     let rating_str = round_to_one_decimal_places(rating);
     Ok((rating_str, count as i32))
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use super::{
+        handle_consultation_request_detail, ConsultationRequest, ConsultationRequestDetail,
+        ConsultationRequestDetailOperation,
+    };
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<ConsultationRequestDetail>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        user_account_id: i64,
+        consultation_req_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+        op: ConsultationRequestDetailOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct ConsultationRequestDetailOperationMock {}
+
+    #[async_trait]
+    impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn find_consultation_req_by_consultation_req_id(
+            &self,
+            consultation_req_id: i64,
+        ) -> Result<Option<ConsultationRequest>, ErrResp> {
+            todo!()
+        }
+
+        async fn filter_user_rating_by_user_account_id(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Vec<Option<i16>>, ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn test_handle_consultation_request_detail() {
+        for test_case in TEST_CASE_SET.iter() {
+            let user_account_id = test_case.input.user_account_id;
+            let consultation_req_id = test_case.input.consultation_req_id;
+            let current_date_time = test_case.input.current_date_time;
+            let op = test_case.input.op.clone();
+
+            let result = handle_consultation_request_detail(
+                user_account_id,
+                consultation_req_id,
+                &current_date_time,
+                op,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
