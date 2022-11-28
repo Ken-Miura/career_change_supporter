@@ -40,7 +40,7 @@ pub(crate) struct ConsultationRequestDetailQuery {
 pub(crate) struct ConsultationRequestDetail {
     pub(crate) consultation_req_id: i64,
     pub(crate) user_account_id: i64,
-    pub(crate) user_rating: String, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
+    pub(crate) user_rating: Option<String>, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
     pub(crate) num_of_rated_of_user: i32,
     pub(crate) fee_per_hour_in_yen: i32,
     pub(crate) first_candidate_in_jst: ConsultationDateTime,
@@ -48,6 +48,7 @@ pub(crate) struct ConsultationRequestDetail {
     pub(crate) third_candidate_in_jst: ConsultationDateTime,
 }
 
+#[derive(Clone, Debug)]
 struct ConsultationRequest {
     consultation_req_id: i64,
     user_account_id: i64,
@@ -260,12 +261,17 @@ fn validate_consultation_req(
     Ok(())
 }
 
-fn calculate_rating_and_count(user_ratings: Vec<Option<i16>>) -> Result<(String, i32), ErrResp> {
+fn calculate_rating_and_count(
+    user_ratings: Vec<Option<i16>>,
+) -> Result<(Option<String>, i32), ErrResp> {
     let filled_user_ratings = user_ratings
         .into_iter()
         .filter(|u| u.is_some())
         .collect::<Vec<Option<i16>>>();
     let count = filled_user_ratings.len();
+    if count == 0 {
+        return Ok((None, 0));
+    }
     let mut sum = 0_i32;
     for u in filled_user_ratings {
         match u {
@@ -278,15 +284,18 @@ fn calculate_rating_and_count(user_ratings: Vec<Option<i16>>) -> Result<(String,
     }
     let rating = sum as f64 / count as f64;
     let rating_str = round_to_one_decimal_places(rating);
-    Ok((rating_str, count as i32))
+    Ok((Some(rating_str), count as i32))
 }
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
+
+    use crate::util::ConsultationDateTime;
 
     use super::{
         handle_consultation_request_detail, ConsultationRequest, ConsultationRequestDetail,
@@ -308,31 +317,130 @@ mod tests {
         op: ConsultationRequestDetailOperationMock,
     }
 
+    impl Input {
+        fn new(
+            account_id_of_consultant: i64,
+            account_id_of_user: i64,
+            consultation_req_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+            identity_exists: bool,
+            req: Option<ConsultationRequest>,
+            user_ratings: Vec<Option<i16>>,
+        ) -> Self {
+            Input {
+                user_account_id: account_id_of_consultant,
+                consultation_req_id,
+                current_date_time,
+                op: ConsultationRequestDetailOperationMock {
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    identity_exists,
+                    req,
+                    user_ratings,
+                },
+            }
+        }
+    }
+
     #[derive(Clone, Debug)]
-    struct ConsultationRequestDetailOperationMock {}
+    struct ConsultationRequestDetailOperationMock {
+        account_id_of_consultant: i64,
+        account_id_of_user: i64,
+        consultation_req_id: i64,
+        identity_exists: bool,
+        req: Option<ConsultationRequest>,
+        user_ratings: Vec<Option<i16>>,
+    }
 
     #[async_trait]
     impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id_of_consultant, account_id);
+            Ok(self.identity_exists)
         }
 
         async fn find_consultation_req_by_consultation_req_id(
             &self,
             consultation_req_id: i64,
         ) -> Result<Option<ConsultationRequest>, ErrResp> {
-            todo!()
+            assert_eq!(self.consultation_req_id, consultation_req_id);
+            Ok(self.req.clone())
         }
 
         async fn filter_user_rating_by_user_account_id(
             &self,
             user_account_id: i64,
         ) -> Result<Vec<Option<i16>>, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id_of_user, user_account_id);
+            Ok(self.user_ratings.clone())
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id_of_consultant = 1;
+        let account_id_of_user = 2;
+        let consultation_req_id = 1;
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 12, 1).and_hms(7, 31, 54);
+        let fee_per_hour_in_yen = 6000;
+        vec![TestCase {
+            name: "success case 1 (no user rating found)".to_string(),
+            input: Input::new(
+                account_id_of_consultant,
+                account_id_of_user,
+                consultation_req_id,
+                current_date_time,
+                true,
+                Some(ConsultationRequest {
+                    consultation_req_id,
+                    user_account_id: account_id_of_user,
+                    consultant_id: account_id_of_consultant,
+                    fee_per_hour_in_yen,
+                    first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                        .ymd(2022, 12, 5)
+                        .and_hms(7, 0, 0),
+                    second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                        .ymd(2022, 12, 5)
+                        .and_hms(23, 0, 0),
+                    third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                        .ymd(2022, 12, 11)
+                        .and_hms(7, 0, 0),
+                    latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                        .ymd(2022, 12, 11)
+                        .and_hms(7, 0, 0),
+                }),
+                vec![],
+            ),
+            expected: Ok((
+                StatusCode::OK,
+                Json(ConsultationRequestDetail {
+                    consultation_req_id,
+                    user_account_id: account_id_of_user,
+                    user_rating: None,
+                    num_of_rated_of_user: 0,
+                    fee_per_hour_in_yen,
+                    first_candidate_in_jst: ConsultationDateTime {
+                        year: 2022,
+                        month: 12,
+                        day: 5,
+                        hour: 7,
+                    },
+                    second_candidate_in_jst: ConsultationDateTime {
+                        year: 2022,
+                        month: 12,
+                        day: 5,
+                        hour: 23,
+                    },
+                    third_candidate_in_jst: ConsultationDateTime {
+                        year: 2022,
+                        month: 12,
+                        day: 11,
+                        hour: 7,
+                    },
+                }),
+            )),
+        }]
+    });
 
     #[tokio::test]
     async fn test_handle_consultation_request_detail() {
