@@ -705,6 +705,41 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail NoIdentityRegistered".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    false,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
+                    }),
+                )),
+            },
         ]
     });
 
