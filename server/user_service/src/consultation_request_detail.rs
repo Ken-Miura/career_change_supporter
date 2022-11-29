@@ -793,6 +793,98 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail NonConsultationReqFound (current date time is within 6 hours of latest candidate date time)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    JAPANESE_TIME_ZONE.ymd(2022, 12, 11).and_hms(1, 0, 0),
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonConsultationReqFound as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case 5 (current date time is more than 6 hours before latest candidate date time)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    JAPANESE_TIME_ZONE.ymd(2022, 12, 11).and_hms(0, 59, 59),
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: Some("3.3".to_string()),
+                        num_of_rated_of_user: 3,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
         ]
     });
 
