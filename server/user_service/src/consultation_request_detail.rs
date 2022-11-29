@@ -292,9 +292,10 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::util::ConsultationDateTime;
 
     use super::{
@@ -666,6 +667,41 @@ mod tests {
                             day: 11,
                             hour: 7,
                         },
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NonPositiveConsultationReqId".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    -1,
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id: -1,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultationReqId as u32,
                     }),
                 )),
             },
