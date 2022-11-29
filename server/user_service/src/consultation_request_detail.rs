@@ -383,63 +383,293 @@ mod tests {
         let consultation_req_id = 1;
         let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 12, 1).and_hms(7, 31, 54);
         let fee_per_hour_in_yen = 6000;
-        vec![TestCase {
-            name: "success case 1 (no user rating found)".to_string(),
-            input: Input::new(
-                account_id_of_consultant,
-                account_id_of_user,
-                consultation_req_id,
-                current_date_time,
-                true,
-                Some(ConsultationRequest {
+        vec![
+            TestCase {
+                name: "success case 1 (no user rating found)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
                     consultation_req_id,
-                    user_account_id: account_id_of_user,
-                    consultant_id: account_id_of_consultant,
-                    fee_per_hour_in_yen,
-                    first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                        .ymd(2022, 12, 5)
-                        .and_hms(7, 0, 0),
-                    second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                        .ymd(2022, 12, 5)
-                        .and_hms(23, 0, 0),
-                    third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                        .ymd(2022, 12, 11)
-                        .and_hms(7, 0, 0),
-                    latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                        .ymd(2022, 12, 11)
-                        .and_hms(7, 0, 0),
-                }),
-                vec![],
-            ),
-            expected: Ok((
-                StatusCode::OK,
-                Json(ConsultationRequestDetail {
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: None,
+                        num_of_rated_of_user: 0,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case 2 (user rating found)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
                     consultation_req_id,
-                    user_account_id: account_id_of_user,
-                    user_rating: None,
-                    num_of_rated_of_user: 0,
-                    fee_per_hour_in_yen,
-                    first_candidate_in_jst: ConsultationDateTime {
-                        year: 2022,
-                        month: 12,
-                        day: 5,
-                        hour: 7,
-                    },
-                    second_candidate_in_jst: ConsultationDateTime {
-                        year: 2022,
-                        month: 12,
-                        day: 5,
-                        hour: 23,
-                    },
-                    third_candidate_in_jst: ConsultationDateTime {
-                        year: 2022,
-                        month: 12,
-                        day: 11,
-                        hour: 7,
-                    },
-                }),
-            )),
-        }]
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5)],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: Some("5.0".to_string()),
+                        num_of_rated_of_user: 1,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case 3 (2 user ratings found)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2)],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: Some("3.5".to_string()),
+                        num_of_rated_of_user: 2,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case 3 (3 user ratings found)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2), Some(3)],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: Some("3.3".to_string()),
+                        num_of_rated_of_user: 3,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case 4 (3 user ratings and empty rating found)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: Some("3.3".to_string()),
+                        num_of_rated_of_user: 3,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
