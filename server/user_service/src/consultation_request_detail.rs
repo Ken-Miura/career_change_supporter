@@ -741,7 +741,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NonConsultationReqFound".to_string(),
+                name: "fail NonConsultationReqFound (no consultation request found)".to_string(),
                 input: Input::new(
                     account_id_of_consultant,
                     account_id_of_user,
@@ -749,6 +749,41 @@ mod tests {
                     current_date_time,
                     true,
                     None,
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonConsultationReqFound as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NonConsultationReqFound (consultant id does not match)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant + 1,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),
                 expected: Err((
