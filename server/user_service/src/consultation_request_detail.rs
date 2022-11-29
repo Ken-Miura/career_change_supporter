@@ -740,6 +740,24 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail NonConsultationReqFound".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    true,
+                    None,
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonConsultationReqFound as u32,
+                    }),
+                )),
+            },
         ]
     });
 
