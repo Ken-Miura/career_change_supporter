@@ -59,9 +59,9 @@ const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 
 pub(crate) async fn post_bank_account(
     User { account_id }: User,
-    Json(bank_account_register_req): Json<BankAccountRegisterReq>,
     Extension(pool): Extension<DatabaseConnection>,
     Extension(index_client): Extension<OpenSearch>,
+    Json(bank_account_register_req): Json<BankAccountRegisterReq>,
 ) -> RespResult<BankAccountResult> {
     let bank_account = bank_account_register_req.bank_account;
     let non_profit_objective = bank_account_register_req.non_profit_objective;

@@ -38,8 +38,8 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴登録拒�
 
 pub(crate) async fn post_create_career_request_rejection(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Json(create_career_req_rejection): Json<CreateCareerReqRejection>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(create_career_req_rejection): Json<CreateCareerReqRejection>,
 ) -> RespResult<CreateCareerReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateCareerReqRejectionOperationImpl { pool };

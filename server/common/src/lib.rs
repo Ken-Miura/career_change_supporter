@@ -16,8 +16,8 @@ use std::{
 
 use axum::{
     async_trait, extract,
-    extract::{FromRequest, RequestParts},
-    http::StatusCode,
+    extract::FromRequest,
+    http::{Request, StatusCode},
     BoxError, Json,
 };
 use chrono::FixedOffset;
@@ -86,16 +86,17 @@ pub struct Credential {
 pub struct ValidCred(pub Credential);
 
 #[async_trait]
-impl<B> FromRequest<B> for ValidCred
+impl<S, B> FromRequest<S, B> for ValidCred
 where
-    B: http_body::Body + Send,
+    S: Send + Sync,
+    B: http_body::Body + Send + 'static,
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
     type Rejection = ErrResp;
 
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let payload = extract::Json::<Credential>::from_request(req)
+    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        let payload = extract::Json::<Credential>::from_request(req, state)
             .await
             .map_err(|e| {
                 error!("failed to extract credential from req: {}", e);

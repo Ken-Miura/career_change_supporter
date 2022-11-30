@@ -40,8 +40,8 @@ static SUBJECT: Lazy<String> =
 
 pub(crate) async fn post_update_identity_request_rejection(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
 ) -> RespResult<UpdateIdentityReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = UpdateIdentityReqRejectionOperationImpl { pool };

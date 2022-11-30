@@ -38,9 +38,9 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴確認完�
 
 pub(crate) async fn post_create_career_request_approval(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Json(create_career_req_approval): Json<CreateCareerReqApproval>,
     Extension(pool): Extension<DatabaseConnection>,
     Extension(index_client): Extension<OpenSearch>,
+    Json(create_career_req_approval): Json<CreateCareerReqApproval>,
 ) -> RespResult<CreateCareerReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateCareerReqApprovalOperationImpl { pool, index_client };

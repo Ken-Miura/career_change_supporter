@@ -42,8 +42,8 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLの�
 /// # Errors
 /// MAX_NUM_OF_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[ReachTempAccountsLimit]を返す
 pub(crate) async fn post_temp_accounts(
-    ValidCred(cred): ValidCred,
     Extension(pool): Extension<DatabaseConnection>,
+    ValidCred(cred): ValidCred,
 ) -> RespResult<TempAccountsResult> {
     let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));

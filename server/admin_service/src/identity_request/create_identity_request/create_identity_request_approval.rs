@@ -33,8 +33,8 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通�
 
 pub(crate) async fn post_create_identity_request_approval(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Json(create_identity_req_approval): Json<CreateIdentityReqApproval>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(create_identity_req_approval): Json<CreateIdentityReqApproval>,
 ) -> RespResult<CreateIdentityReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateIdentityReqApprovalOperationImpl { pool };

@@ -27,6 +27,7 @@ mod util;
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
 use crate::bank_account::post_bank_account;
+use crate::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
 use crate::career::{delete, get, post};
 use crate::consultant_detail::get_consultant_detail;
 use crate::consultants_search::post_consultants_search;
@@ -35,7 +36,7 @@ use crate::consultation_requests::get_consultation_requests;
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::finish_request_consultation::post_finish_request_consultation;
-use crate::identity::post_identity;
+use crate::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::password_change_req::post_password_change_req;
@@ -49,7 +50,7 @@ use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
-use axum::extract::Extension;
+use axum::extract::{DefaultBodyLimit, Extension};
 use axum::routing::{get, post};
 use axum::Router;
 use common::opensearch::{
@@ -198,8 +199,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/password-update", post(post_password_update))
                 .route("/profile", get(get_profile))
                 .route("/rewards", get(get_reward))
-                .route("/identity", post(post_identity))
-                .route("/career", post(post::career).get(get::career).delete(delete::career))
+                .merge(Router::new().route("/identity", post(post_identity).layer(DefaultBodyLimit::max(MAX_IDENTITY_IMAGE_SIZE_IN_BYTES * 2 + 1024 * 1024))))
+                .merge(Router::new().route("/career", post(post::career).get(get::career).delete(delete::career)).layer(DefaultBodyLimit::max(MAX_CAREER_IMAGE_SIZE_IN_BYTES * 2 + 1024 * 1024)))
                 .route("/fee-per-hour-in-yen", post(post_fee_per_hour_in_yen))
                 .route("/bank-account", post(post_bank_account))
                 .route("/consultants-search", post(post_consultants_search))

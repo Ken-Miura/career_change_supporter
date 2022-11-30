@@ -30,9 +30,9 @@ pub(crate) const VALID_SIZE: i64 = 20;
 
 pub(crate) async fn post_consultants_search(
     User { account_id }: User,
-    Json(req): Json<ConsultantSearchParam>,
     Extension(pool): Extension<DatabaseConnection>,
     Extension(index_client): Extension<OpenSearch>,
+    Json(req): Json<ConsultantSearchParam>,
 ) -> RespResult<ConsultantsSearchResult> {
     let op = ConsultantsSearchOperationImpl { pool, index_client };
     handle_consultants_search(account_id, req, op).await

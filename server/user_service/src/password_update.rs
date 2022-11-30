@@ -51,8 +51,8 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 pub(crate) async fn post_password_update(
     cookies: Cookies,
     Extension(store): Extension<RedisSessionStore>,
-    Json(pwd_update_req): Json<PasswordUpdateReq>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(pwd_update_req): Json<PasswordUpdateReq>,
 ) -> RespResult<PasswordUpdateResult> {
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
     let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);

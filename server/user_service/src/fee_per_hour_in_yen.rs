@@ -24,9 +24,9 @@ use crate::util::{
 
 pub(crate) async fn post_fee_per_hour_in_yen(
     User { account_id }: User,
-    Json(fee): Json<Fee>,
     Extension(pool): Extension<DatabaseConnection>,
     Extension(index_client): Extension<OpenSearch>,
+    Json(fee): Json<Fee>,
 ) -> RespResult<FeePerHourInYenResult> {
     let op = SubmitFeePerHourInYenOperationImpl { pool, index_client };
     handle_fee_per_hour_in_yen_req(account_id, fee.fee_per_hour_in_yen, op).await

@@ -41,8 +41,8 @@ use crate::{
 
 pub(crate) async fn post_request_consultation(
     User { account_id }: User,
-    Json(param): Json<RequestConsultationParam>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(param): Json<RequestConsultationParam>,
 ) -> RespResult<RequestConsultationResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let request_consultation_op = RequestConsultationOperationImpl { pool };

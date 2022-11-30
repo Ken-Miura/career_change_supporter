@@ -32,10 +32,10 @@ use crate::util::ROOT_PATH;
 /// # Errors
 /// - email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
 pub(crate) async fn post_login(
-    ValidCred(cred): ValidCred,
     cookies: Cookies,
     Extension(pool): Extension<DatabaseConnection>,
     Extension(store): Extension<RedisSessionStore>,
+    ValidCred(cred): ValidCred,
 ) -> Result<StatusCode, ErrResp> {
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP);
     let email_addr = cred.email_address;

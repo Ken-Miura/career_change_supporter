@@ -37,8 +37,8 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通�
 /// 一時アカウントが見つからない場合、ステータスコード400、エラーコード[NoTempAccountFound]を返す<br>
 /// 一時アカウントが期限切れの場合、ステータスコード400、エラーコード[TempAccountExpired]を返す<br>
 pub(crate) async fn post_accounts(
-    Json(temp_account): Json<TempAccountId>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(temp_account): Json<TempAccountId>,
 ) -> RespResult<AccountsResult> {
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = AccountsOperationImpl::new(pool);

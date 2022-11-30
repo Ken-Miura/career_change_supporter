@@ -46,8 +46,8 @@ static SUBJECT: Lazy<String> =
 /// メールアドレスが不正な形式の場合、ステータスコード400、エラーコード[common::err::Code::InvalidEmailAddressFormat]を返す
 /// MAX_NUM_OF_PWD_CHANGE_REQ以上新規パスワードがある場合、ステータスコード400、エラーコード[ReachPasswordChangeReqLimit]を返す
 pub(crate) async fn post_password_change_req(
-    Json(account): Json<Account>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(account): Json<Account>,
 ) -> RespResult<PasswordChangeReqResult> {
     let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));

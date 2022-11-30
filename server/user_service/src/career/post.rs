@@ -8,11 +8,7 @@ use crate::util::{self, clone_file_name_if_exists, convert_jpeg_to_png, FileName
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::Extension;
-use axum::{
-    extract::{ContentLengthLimit, Multipart},
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::Multipart, http::StatusCode, Json};
 use bytes::Bytes;
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{
@@ -43,17 +39,12 @@ use crate::{
 };
 
 /// 身分証の画像ファイルのバイト単位での最大値（4MB）
-const MAX_CAREER_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
+pub(crate) const MAX_CAREER_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 
 pub(crate) async fn career(
     User { account_id }: User,
-    ContentLengthLimit(multipart): ContentLengthLimit<
-        Multipart,
-        {
-            9 * 1024 * 1024 /* 9mb */ /* サイズをオーバーした場合、ContentLengthLimitはステータスコード413を返却する */
-        },
-    >,
     Extension(pool): Extension<DatabaseConnection>,
+    multipart: Multipart,
 ) -> RespResult<CareerResult> {
     let multipart_wrapper = MultipartWrapperImpl { multipart };
     let (career, career_image1, career_image2_option) =

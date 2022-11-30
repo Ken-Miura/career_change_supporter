@@ -39,8 +39,8 @@ static SUBJECT: Lazy<String> =
 
 pub(crate) async fn post_create_identity_request_rejection(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Json(create_identity_req_rejection): Json<CreateIdentityReqRejection>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(create_identity_req_rejection): Json<CreateIdentityReqRejection>,
 ) -> RespResult<CreateIdentityReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateIdentityReqRejectionOperationImpl { pool };

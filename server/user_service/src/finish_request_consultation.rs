@@ -37,8 +37,8 @@ static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
 
 pub(crate) async fn post_finish_request_consultation(
     User { account_id }: User,
-    Json(param): Json<FinishRequestConsultationParam>,
     Extension(pool): Extension<DatabaseConnection>,
+    Json(param): Json<FinishRequestConsultationParam>,
 ) -> RespResult<FinishRequestConsultationResult> {
     let charge_id = param.charge_id;
     let op = FinishRequestConsultationOperationImpl { pool };
