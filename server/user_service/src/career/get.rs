@@ -1,8 +1,8 @@
 // Copyright 2022 Ken Miura
 
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use axum::{extract::Query, Extension};
 use chrono::Datelike;
 use common::util::Ymd;
 use common::{util::Career, RespResult};
@@ -18,7 +18,7 @@ use crate::util::session::User;
 pub(crate) async fn career(
     User { account_id }: User,
     param: Query<GetCareerQueryParam>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<Career> {
     let param = param.0;
     let op = GetCareerOperationImpl::new(pool);

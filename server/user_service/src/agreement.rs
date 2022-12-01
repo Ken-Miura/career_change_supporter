@@ -2,7 +2,7 @@
 
 use async_redis_session::RedisSessionStore;
 use axum::async_trait;
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, FixedOffset, Utc};
@@ -30,8 +30,8 @@ use crate::util::{session::get_user_by_session_id, terms_of_use::TERMS_OF_USE_VE
 /// ユーザーが利用規約に同意したことを記録する
 pub(crate) async fn post_agreement(
     cookies: Cookies,
-    Extension(store): Extension<RedisSessionStore>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(store): State<RedisSessionStore>,
+    State(pool): State<DatabaseConnection>,
 ) -> Result<StatusCode, ErrResp> {
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
     let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);

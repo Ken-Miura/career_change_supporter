@@ -1,8 +1,8 @@
 // Copyright 2022 Ken Miura
 
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use axum::{extract::Query, Extension};
 use common::{ApiError, ErrResp, RespResult};
 use entity::prelude::ConsultingFee;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
@@ -16,7 +16,7 @@ use crate::util::session::User;
 pub(crate) async fn get_fee_per_hour_in_yen_for_application(
     User { account_id }: User,
     query: Query<FeePerHourInYenForApplicationQuery>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<FeePerHourInYenForApplication> {
     let query = query.0;
     let op = FeePerHourInYenForApplicationOperationImpl { pool };

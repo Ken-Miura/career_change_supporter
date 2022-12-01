@@ -3,7 +3,7 @@
 use async_session::serde_json::json;
 use axum::async_trait;
 use axum::http::StatusCode;
-use axum::{Extension, Json};
+use axum::{extract::State, Json};
 use common::opensearch::{index_document, update_document, INDEX_NAME};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
 use entity::consulting_fee;
@@ -24,8 +24,8 @@ use crate::util::{
 
 pub(crate) async fn post_fee_per_hour_in_yen(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
-    Extension(index_client): Extension<OpenSearch>,
+    State(pool): State<DatabaseConnection>,
+    State(index_client): State<OpenSearch>,
     Json(fee): Json<Fee>,
 ) -> RespResult<FeePerHourInYenResult> {
     let op = SubmitFeePerHourInYenOperationImpl { pool, index_client };

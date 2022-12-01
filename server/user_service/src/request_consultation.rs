@@ -1,8 +1,9 @@
 // Copyright 2022 Ken Miura
 
 use axum::async_trait;
+use axum::extract::State;
 use axum::http::StatusCode;
-use axum::{Extension, Json};
+use axum::Json;
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, Utc};
 use common::payment_platform::charge::{Charge, CreateCharge};
 use common::payment_platform::Metadata;
@@ -41,7 +42,7 @@ use crate::{
 
 pub(crate) async fn post_request_consultation(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
     Json(param): Json<RequestConsultationParam>,
 ) -> RespResult<RequestConsultationResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));

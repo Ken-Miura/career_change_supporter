@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use axum::async_trait;
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
 use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
@@ -42,7 +42,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLの�
 /// # Errors
 /// MAX_NUM_OF_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[ReachTempAccountsLimit]を返す
 pub(crate) async fn post_temp_accounts(
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
     ValidCred(cred): ValidCred,
 ) -> RespResult<TempAccountsResult> {
     let uuid = Uuid::new_v4().simple();

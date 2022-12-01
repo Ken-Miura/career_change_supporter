@@ -1,9 +1,9 @@
 // Copyright 2022 Ken Miura
 
 use async_session::serde_json::{json, Value};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use axum::{extract::Query, Extension};
 use common::opensearch::{search_documents, INDEX_NAME};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use entity::sea_orm::DatabaseConnection;
@@ -33,8 +33,8 @@ const YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE: &str = "TWENTY_YEARS_OR_MORE";
 pub(crate) async fn get_consultant_detail(
     User { account_id }: User,
     query: Query<ConsultantDetailQuery>,
-    Extension(pool): Extension<DatabaseConnection>,
-    Extension(index_client): Extension<OpenSearch>,
+    State(pool): State<DatabaseConnection>,
+    State(index_client): State<OpenSearch>,
 ) -> RespResult<ConsultantDetail> {
     let query = query.0;
     let op = ConsultantDetailOperationImpl { pool, index_client };

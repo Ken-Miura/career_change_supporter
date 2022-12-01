@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use axum::async_trait;
-use axum::{extract::Extension, http::StatusCode, Json};
+use axum::{extract::State, http::StatusCode, Json};
 use chrono::Datelike;
 use common::util::{Identity, Ymd};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
@@ -18,7 +18,7 @@ use crate::{
 
 pub(crate) async fn get_profile(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<ProfileResult> {
     let profile_op = ProfileOperationImpl::new(pool);
     handle_profile_req(account_id, profile_op).await

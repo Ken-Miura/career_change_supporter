@@ -7,7 +7,7 @@ use crate::util::validator::career_validator::{validate_career, CareerValidation
 use crate::util::{self, clone_file_name_if_exists, convert_jpeg_to_png, FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::{extract::Multipart, http::StatusCode, Json};
 use bytes::Bytes;
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
@@ -43,7 +43,7 @@ pub(crate) const MAX_CAREER_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 
 pub(crate) async fn career(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
     multipart: Multipart,
 ) -> RespResult<CareerResult> {
     let multipart_wrapper = MultipartWrapperImpl { multipart };

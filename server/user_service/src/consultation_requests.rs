@@ -1,8 +1,8 @@
 // Copyright 2022 Ken Miura
 
 use axum::async_trait;
+use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Extension;
 use axum::Json;
 use chrono::DateTime;
 use chrono::Duration;
@@ -30,7 +30,7 @@ const NUM_OF_CONSULTATION_REQUESTS: u64 = 20;
 
 pub(crate) async fn get_consultation_requests(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultationRequestsResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = ConsultationRequestsOperationImpl { pool };

@@ -3,7 +3,7 @@
 use async_session::async_trait;
 use async_session::serde_json::{json, Value};
 use axum::http::StatusCode;
-use axum::{Extension, Json};
+use axum::{extract::State, Json};
 use common::opensearch::{search_documents, Sort, INDEX_NAME};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use entity::sea_orm::DatabaseConnection;
@@ -30,8 +30,8 @@ pub(crate) const VALID_SIZE: i64 = 20;
 
 pub(crate) async fn post_consultants_search(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
-    Extension(index_client): Extension<OpenSearch>,
+    State(pool): State<DatabaseConnection>,
+    State(index_client): State<OpenSearch>,
     Json(req): Json<ConsultantSearchParam>,
 ) -> RespResult<ConsultantsSearchResult> {
     let op = ConsultantsSearchOperationImpl { pool, index_client };

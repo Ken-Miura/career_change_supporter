@@ -2,7 +2,7 @@
 
 use axum::async_trait;
 use axum::http::StatusCode;
-use axum::{Extension, Json};
+use axum::{extract::State, Json};
 use chrono::{DateTime, Datelike, FixedOffset, Timelike};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::payment_platform::Metadata;
@@ -37,7 +37,7 @@ static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
 
 pub(crate) async fn post_finish_request_consultation(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
     Json(param): Json<FinishRequestConsultationParam>,
 ) -> RespResult<FinishRequestConsultationResult> {
     let charge_id = param.charge_id;

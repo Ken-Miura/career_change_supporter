@@ -1,13 +1,11 @@
 // Copyright 2021 Ken Miura
 
-use async_redis_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::async_trait;
-use axum::extract::FromRequestParts;
+use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
-use axum::{extract::Extension, http::StatusCode, Json};
+use axum::{http::StatusCode, Json};
 use common::{ApiError, ErrResp};
-use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::env::var;
@@ -24,6 +22,7 @@ use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
+use super::AppState;
 
 pub(crate) const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP: &str =
     "KEY_OF_SIGNED_COOKIE_FOR_USER_APP";
@@ -71,15 +70,16 @@ pub(crate) struct User {
 #[async_trait]
 impl<S> FromRequestParts<S> for User
 where
+    AppState: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ErrResp;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Extension(cookies) = Extension::<Cookies>::from_request_parts(parts, state)
+        let cookies = Cookies::from_request_parts(parts, state)
             .await
             .map_err(|e| {
-                error!("failed to get cookies: {}", e);
+                error!("failed to get cookies: {:?}", e);
                 unexpected_err_resp()
             })?;
         let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
@@ -96,22 +96,14 @@ where
                 ));
             }
         };
-        let Extension(store) = Extension::<RedisSessionStore>::from_request_parts(parts, state)
-            .await
-            .map_err(|e| {
-                error!("failed to get session store: {}", e);
-                unexpected_err_resp()
-            })?;
+
+        let app_state = AppState::from_ref(state);
+
+        let store = app_state.store;
         let op = RefreshOperationImpl {};
         let user = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
 
-        let Extension(pool) = Extension::<DatabaseConnection>::from_request_parts(parts, state)
-            .await
-            .map_err(|e| {
-                error!("failed to extract connection pool from parts: {}", e);
-                unexpected_err_resp()
-            })?;
-
+        let pool = app_state.pool;
         let disabled_check_op = DisabledCheckOperationImpl::new(pool.clone());
         let _ = ensure_account_is_not_disabled(user.account_id, disabled_check_op).await?;
 

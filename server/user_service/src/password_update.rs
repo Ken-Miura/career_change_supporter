@@ -3,7 +3,7 @@
 use async_redis_session::RedisSessionStore;
 use async_session::SessionStore;
 use axum::async_trait;
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use chrono::DateTime;
@@ -50,8 +50,8 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 /// パスワード変更要求が期限切れの場合、ステータスコード400、エラーコード[PwdChnageReqExpired]を返す<br>
 pub(crate) async fn post_password_update(
     cookies: Cookies,
-    Extension(store): Extension<RedisSessionStore>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(store): State<RedisSessionStore>,
+    State(pool): State<DatabaseConnection>,
     Json(pwd_update_req): Json<PasswordUpdateReq>,
 ) -> RespResult<PasswordUpdateResult> {
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);

@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use axum::async_trait;
-use axum::{extract::Extension, http::StatusCode, Json};
+use axum::{extract::State, http::StatusCode, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, TimeZone, Utc};
 use common::util::Ymd;
 use common::JAPANESE_TIME_ZONE;
@@ -31,7 +31,7 @@ const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
 
 pub(crate) async fn get_reward(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<RewardResult> {
     let reward_op = RewardOperationImpl::new(pool);
     let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);

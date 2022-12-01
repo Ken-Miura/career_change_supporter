@@ -5,7 +5,7 @@ use std::time::Duration;
 use async_redis_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::async_trait;
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, FixedOffset, Utc};
@@ -34,8 +34,8 @@ use crate::util::ROOT_PATH;
 /// - email addressとpasswordが正しく、かつアカウントが無効化されている場合、ステータスコード400、エラーコード[AccountDisabled]を返す<br>
 pub(crate) async fn post_login(
     cookies: Cookies,
-    Extension(pool): Extension<DatabaseConnection>,
-    Extension(store): Extension<RedisSessionStore>,
+    State(pool): State<DatabaseConnection>,
+    State(store): State<RedisSessionStore>,
     ValidCred(cred): ValidCred,
 ) -> Result<StatusCode, ErrResp> {
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);

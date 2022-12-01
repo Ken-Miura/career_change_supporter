@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use async_session::serde_json::json;
 use axum::async_trait;
 use axum::http::StatusCode;
-use axum::{Extension, Json};
+use axum::{extract::State, Json};
 use chrono::Datelike;
 use common::opensearch::{index_document, update_document, INDEX_NAME};
 use common::payment_platform::tenant::{
@@ -59,8 +59,8 @@ const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 
 pub(crate) async fn post_bank_account(
     User { account_id }: User,
-    Extension(pool): Extension<DatabaseConnection>,
-    Extension(index_client): Extension<OpenSearch>,
+    State(pool): State<DatabaseConnection>,
+    State(index_client): State<OpenSearch>,
     Json(bank_account_register_req): Json<BankAccountRegisterReq>,
 ) -> RespResult<BankAccountResult> {
     let bank_account = bank_account_register_req.bank_account;

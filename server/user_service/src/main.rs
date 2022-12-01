@@ -48,9 +48,9 @@ use crate::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
-use crate::util::ROOT_PATH;
+use crate::util::{AppState, ROOT_PATH};
 use async_redis_session::RedisSessionStore;
-use axum::extract::{DefaultBodyLimit, Extension};
+use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
 use common::opensearch::{
@@ -185,6 +185,12 @@ async fn main_internal(num_of_cpus: u32) {
     )
     .expect("failed to create OpenSearch client");
 
+    let state = AppState {
+        store,
+        index_client,
+        pool,
+    };
+
     let app = Router::new()
         .nest(
             ROOT_PATH,
@@ -209,7 +215,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/request-consultation", post(post_request_consultation))
                 .route("/finish-request-consultation", post(post_finish_request_consultation))
                 .route("/consultation-requests", get(get_consultation_requests))
-                .route("/consultation-request-detail", get(get_consultation_request_detail)),
+                .route("/consultation-request-detail", get(get_consultation_request_detail))
+                .with_state(state),
         )
         .layer(
             ServiceBuilder::new()
@@ -243,9 +250,6 @@ async fn main_internal(num_of_cpus: u32) {
                         ),
                 )
                 .layer(CookieManagerLayer::new())
-                .layer(Extension(store))
-                .layer(Extension(index_client))
-                .layer(Extension(pool)),
         );
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {

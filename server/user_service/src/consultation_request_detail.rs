@@ -1,8 +1,8 @@
 // Copyright 2022 Ken Miura
 
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use axum::{extract::Query, Extension};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::ConsultationReq;
@@ -22,7 +22,7 @@ use crate::util::{
 pub(crate) async fn get_consultation_request_detail(
     User { account_id }: User,
     query: Query<ConsultationRequestDetailQuery>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultationRequestDetail> {
     let consultation_req_id = query.consultation_req_id;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));

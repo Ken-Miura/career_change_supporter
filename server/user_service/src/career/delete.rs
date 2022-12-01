@@ -1,9 +1,9 @@
 // Copyright 2022 Ken Miura
 
 use async_session::serde_json::json;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use axum::{extract::Query, Extension};
 use common::opensearch::{update_document, INDEX_NAME};
 use common::{ApiError, ErrResp};
 use common::{ErrRespStruct, RespResult};
@@ -23,8 +23,8 @@ use crate::util::session::User;
 pub(crate) async fn career(
     User { account_id }: User,
     param: Query<DeleteCareerQueryParam>,
-    Extension(pool): Extension<DatabaseConnection>,
-    Extension(index_client): Extension<OpenSearch>,
+    State(pool): State<DatabaseConnection>,
+    State(index_client): State<OpenSearch>,
 ) -> RespResult<DeleteCareerResult> {
     let param = param.0;
     let op = DeleteCareerOperationImpl::new(pool, index_client);

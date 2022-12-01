@@ -2,7 +2,7 @@
 
 use async_redis_session::RedisSessionStore;
 use async_session::SessionStore;
-use axum::{extract::Extension, http::StatusCode};
+use axum::{extract::State, http::StatusCode};
 use common::ErrResp;
 use tower_cookies::{Cookie, Cookies};
 use tracing::{error, info};
@@ -22,7 +22,7 @@ use crate::{
 /// （期限切れのCookieを返すのは、ブラウザ上のCookieをブラウザ自体に削除してもらうため）<br>
 pub(crate) async fn post_logout(
     cookies: Cookies,
-    Extension(store): Extension<RedisSessionStore>,
+    State(store): State<RedisSessionStore>,
 ) -> Result<StatusCode, ErrResp> {
     let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
     let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
