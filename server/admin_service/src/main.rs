@@ -264,6 +264,8 @@ async fn main_internal(num_of_cpus: u32) {
                     ),
             )
                 .layer(CookieManagerLayer::new())
+                // TODO: Stateを使うように修正
+                // https://github.com/tokio-rs/axum/releases/tag/axum-v0.6.0
                 .layer(Extension(store))
                 .layer(Extension(index_client))
                 .layer(Extension(pool)),
