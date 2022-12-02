@@ -1,12 +1,11 @@
 // Copyright 2021 Ken Miura
 
-use async_redis_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::async_trait;
-use axum::extract::FromRequestParts;
+use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
-use axum::{extract::Extension, http::StatusCode, Json};
-use common::{ApiError, ErrResp};
+use axum::{http::StatusCode, Json};
+use common::{ApiError, AppState, ErrResp};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::env::var;
@@ -58,15 +57,16 @@ pub(crate) struct Admin {
 #[async_trait]
 impl<S> FromRequestParts<S> for Admin
 where
+    AppState: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ErrResp;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Extension(cookies) = Extension::<Cookies>::from_request_parts(parts, state)
+        let cookies = Cookies::from_request_parts(parts, state)
             .await
             .map_err(|e| {
-                error!("failed to get cookies: {}", e);
+                error!("failed to get cookies: {:?}", e);
                 unexpected_err_resp()
             })?;
         let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP);
@@ -83,12 +83,8 @@ where
                 ));
             }
         };
-        let Extension(store) = Extension::<RedisSessionStore>::from_request_parts(parts, state)
-            .await
-            .map_err(|e| {
-                error!("failed to get session store: {}", e);
-                unexpected_err_resp()
-            })?;
+        let app_state = AppState::from_ref(state);
+        let store = app_state.store;
         let op = RefreshOperationImpl {};
         let admin = get_admin_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
 

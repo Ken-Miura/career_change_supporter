@@ -4,7 +4,7 @@ use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset};
 use common::{ErrResp, RespResult};
 
-use axum::extract::{Extension, Query};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use entity::{
     create_identity_req,
@@ -21,7 +21,7 @@ use crate::{
 pub(crate) async fn get_create_identity_requests(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     pagination: Query<Pagination>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<Vec<CreateIdentityReqItem>> {
     let pagination = pagination.0;
     validate_page_size(pagination.per_page)?;

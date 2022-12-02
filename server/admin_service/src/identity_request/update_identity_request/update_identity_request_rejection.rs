@@ -10,7 +10,7 @@ use common::{
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
     admin_account, rejected_update_identity_req,
@@ -40,7 +40,7 @@ static SUBJECT: Lazy<String> =
 
 pub(crate) async fn post_update_identity_request_rejection(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
     Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
 ) -> RespResult<UpdateIdentityReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));

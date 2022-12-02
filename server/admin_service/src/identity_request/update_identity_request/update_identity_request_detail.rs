@@ -2,7 +2,7 @@
 
 use axum::async_trait;
 use axum::{
-    extract::{Extension, Query},
+    extract::{Query, State},
     http::StatusCode,
     Json,
 };
@@ -21,7 +21,7 @@ use crate::util::session::Admin;
 pub(crate) async fn get_update_identity_request_detail(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<UpdateIdentityReqDetailQuery>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<UpdateIdentityReqDetail> {
     let query = query.0;
     let op = UpdateIdentityReqDetailOperationImpl { pool };

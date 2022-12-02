@@ -10,7 +10,7 @@ use common::{
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
     admin_account, approved_create_identity_req, create_identity_req, identity,
@@ -33,7 +33,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通�
 
 pub(crate) async fn post_create_identity_request_approval(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
     Json(create_identity_req_approval): Json<CreateIdentityReqApproval>,
 ) -> RespResult<CreateIdentityReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));

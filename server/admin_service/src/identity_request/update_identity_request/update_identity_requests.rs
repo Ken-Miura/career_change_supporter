@@ -4,7 +4,7 @@ use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset};
 use common::{ErrResp, RespResult};
 
-use axum::extract::{Extension, Query};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use entity::sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
 use entity::update_identity_req;
@@ -19,7 +19,7 @@ use crate::{
 pub(crate) async fn get_update_identity_requests(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     pagination: Query<Pagination>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<Vec<UpdateIdentityReqItem>> {
     let pagination = pagination.0;
     validate_page_size(pagination.per_page)?;

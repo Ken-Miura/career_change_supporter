@@ -2,7 +2,7 @@
 
 use axum::async_trait;
 use axum::{
-    extract::{Extension, Query},
+    extract::{Query, State},
     http::StatusCode,
     Json,
 };
@@ -22,7 +22,7 @@ use crate::util::session::Admin;
 pub(crate) async fn get_users_by_date_of_birth(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<DateOfBirth>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<Vec<User>> {
     let query = query.0;
     let op = UsersByDateOfBirthOperationImpl { pool };

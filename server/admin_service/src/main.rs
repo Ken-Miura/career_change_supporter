@@ -32,7 +32,6 @@ use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::body::Body;
-use axum::extract::Extension;
 use axum::http::Request;
 use axum::routing::{get, post};
 use axum::Router;
@@ -53,6 +52,7 @@ use common::storage::{
     KEY_TO_AWS_SECRET_ACCESS_KEY,
 };
 use common::util::check_env_vars;
+use common::AppState;
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use once_cell::sync::Lazy;
@@ -164,6 +164,12 @@ async fn main_internal(num_of_cpus: u32) {
     )
     .expect("failed to create OpenSearch client");
 
+    let state = AppState {
+        store,
+        index_client,
+        pool,
+    };
+
     let app = Router::new()
         .nest(
             ROOT_PATH,
@@ -230,7 +236,8 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/create-career-request-rejection",
                     post(post_create_career_request_rejection),
-                ),
+                )
+                .with_state(state),
         )
         .layer(
             ServiceBuilder::new()
@@ -264,11 +271,6 @@ async fn main_internal(num_of_cpus: u32) {
                     ),
             )
                 .layer(CookieManagerLayer::new())
-                // TODO: Stateを使うように修正
-                // https://github.com/tokio-rs/axum/releases/tag/axum-v0.6.0
-                .layer(Extension(store))
-                .layer(Extension(index_client))
-                .layer(Extension(pool)),
         );
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {

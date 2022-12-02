@@ -1,6 +1,6 @@
 // Copyright 2022 Ken Miura
 
-use axum::extract::{Extension, Query};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::Datelike;
@@ -17,7 +17,7 @@ use crate::util::session::Admin;
 pub(crate) async fn get_identity_by_user_account_id(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<GetIdentityQuery>,
-    Extension(pool): Extension<DatabaseConnection>,
+    State(pool): State<DatabaseConnection>,
 ) -> RespResult<Identity> {
     let query = query.0;
     let op = IdentityOperationImpl { pool };

@@ -12,7 +12,7 @@ use common::{
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
-use axum::extract::Extension;
+use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
     admin_account, approved_create_career_req, career, create_career_req, document,
@@ -38,8 +38,8 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴確認完�
 
 pub(crate) async fn post_create_career_request_approval(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
-    Extension(pool): Extension<DatabaseConnection>,
-    Extension(index_client): Extension<OpenSearch>,
+    State(pool): State<DatabaseConnection>,
+    State(index_client): State<OpenSearch>,
     Json(create_career_req_approval): Json<CreateCareerReqApproval>,
 ) -> RespResult<CreateCareerReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
