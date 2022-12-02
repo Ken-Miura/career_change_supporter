@@ -5,7 +5,7 @@ use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::{http::StatusCode, Json};
-use common::{ApiError, ErrResp};
+use common::{ApiError, AppState, ErrResp};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::env::var;
@@ -22,7 +22,6 @@ use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
-use super::AppState;
 
 pub(crate) const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP: &str =
     "KEY_OF_SIGNED_COOKIE_FOR_USER_APP";

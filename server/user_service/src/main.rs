@@ -48,7 +48,7 @@ use crate::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
-use crate::util::{AppState, ROOT_PATH};
+use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
@@ -70,7 +70,7 @@ use common::storage::{
     KEY_TO_AWS_SECRET_ACCESS_KEY,
 };
 use common::util::check_env_vars;
-use common::KEY_TO_URL_FOR_FRONT_END;
+use common::{AppState, KEY_TO_URL_FOR_FRONT_END};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};

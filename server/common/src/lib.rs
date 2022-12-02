@@ -14,13 +14,17 @@ use std::{
     fmt::{Debug, Display},
 };
 
+use ::opensearch::OpenSearch;
+use async_redis_session::RedisSessionStore;
 use axum::{
-    async_trait, extract,
+    async_trait,
     extract::FromRequest,
+    extract::{self, FromRef},
     http::{Request, StatusCode},
     BoxError, Json,
 };
 use chrono::FixedOffset;
+use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
@@ -158,3 +162,14 @@ pub const VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE: i64 = 10;
 
 /// 1アカウント当たりに登録可能な職務経歴情報の最大数
 pub const MAX_NUM_OF_CAREER_PER_USER_ACCOUNT: u64 = 8;
+
+/// アプリケーションサーバが保持可能な状態
+///
+/// アプリケーションサーバの起動時にインスタンスを作成、セットする。
+/// そうすることで、ハンドラ関数やハンドラにたどり着く前に処理される関数にパラメータとして渡され、使用可能となる
+#[derive(Clone, FromRef)]
+pub struct AppState {
+    pub store: RedisSessionStore,
+    pub index_client: OpenSearch,
+    pub pool: DatabaseConnection,
+}

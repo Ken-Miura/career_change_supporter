@@ -8,8 +8,7 @@ pub(crate) mod validator;
 
 use std::{env::var, io::Cursor};
 
-use async_redis_session::RedisSessionStore;
-use axum::{extract::FromRef, http::StatusCode, Json};
+use axum::{http::StatusCode, Json};
 use bytes::Bytes;
 use chrono::TimeZone;
 use common::{
@@ -27,7 +26,6 @@ use entity::{
 };
 use image::{ImageError, ImageFormat};
 use once_cell::sync::Lazy;
-use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -219,13 +217,6 @@ pub(crate) static LAST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
     };
     last_start_hour
 });
-
-#[derive(Clone, FromRef)]
-pub(crate) struct AppState {
-    pub(crate) store: RedisSessionStore,
-    pub(crate) index_client: OpenSearch,
-    pub(crate) pool: DatabaseConnection,
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccount {

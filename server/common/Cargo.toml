@@ -6,12 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-redis-session = "0.2.2"
 aws-config = "0.51.0"
 aws-sdk-s3 = "0.21.0"
-axum = "0.6.1"
+axum = { version = "0.6.1", features = ["macros"] }
 bcrypt = "0.13.0"
 chrono = "0.4.22"
 cookie = "0.16.1"
+entity = { path = "../entity" }
 http = "0.2.8"
 http-body = "0.4.5"
 lettre = { version = "0.10.1", default-features = false, features = ["smtp-transport", "pool", "rustls-tls", "hostname", "builder", "tokio1", "tokio1-rustls-tls"] }
