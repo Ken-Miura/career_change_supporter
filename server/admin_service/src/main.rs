@@ -52,7 +52,7 @@ use common::storage::{
     KEY_TO_AWS_SECRET_ACCESS_KEY,
 };
 use common::util::check_env_vars;
-use common::AppState;
+use common::{AppState, RequestLogElements};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use once_cell::sync::Lazy;
@@ -252,16 +252,16 @@ async fn main_internal(num_of_cpus: u32) {
                         )
                     })
                     .on_request(|request: &Request<Body>, _span: &Span| {
-                        let req_log = RequestLog::new(request);
+                        let req = RequestLogElements::new(request);
                         tracing::info!(
-                            "started processing request (method={}, uri={}, version={:?}, headers={{x-forwarded-for: {}, x-real-ip: {}, forwarded: {}, user-agent: {}}})",
-                            req_log.method,
-                            req_log.uri,
-                            req_log.version,
-                            req_log.x_forwarded_for,
-                            req_log.x_real_ip,
-                            req_log.forwarded,
-                            req_log.user_agent
+                            "started processing request (method={}, uri={}, version={}, headers={{x-forwarded-for: {}, x-real-ip: {}, forwarded: {}, user-agent: {}}})",
+                            req.method(),
+                            req.uri(),
+                            req.version(),
+                            req.x_forwarded_for(),
+                            req.x_real_ip(),
+                            req.forwarded(),
+                            req.user_agent()
                         );
                     })
                     .on_response(
@@ -287,61 +287,4 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
-}
-
-struct RequestLog {
-    method: String,
-    uri: String,
-    version: String,
-    x_forwarded_for: String,
-    x_real_ip: String,
-    forwarded: String,
-    user_agent: String,
-}
-
-impl RequestLog {
-    fn new(request: &Request<Body>) -> Self {
-        let method = request.method();
-        let uri = request.uri();
-        let version = request.version();
-        let headers = request.headers();
-        let x_forwarded_for = headers
-            .get("x-forwarded-for")
-            .map(|hv| match hv.to_str() {
-                Ok(s) => s.to_string(),
-                Err(e) => format!("{}", e),
-            })
-            .unwrap_or_else(|| "None".to_string());
-        let x_real_ip = headers
-            .get("x-real-ip")
-            .map(|hv| match hv.to_str() {
-                Ok(s) => s.to_string(),
-                Err(e) => format!("{}", e),
-            })
-            .unwrap_or_else(|| "None".to_string());
-        let forwarded = headers
-            .get("forwarded")
-            .map(|hv| match hv.to_str() {
-                Ok(s) => s.to_string(),
-                Err(e) => format!("{}", e),
-            })
-            .unwrap_or_else(|| "None".to_string());
-        let user_agent = request
-            .headers()
-            .get("user-agent")
-            .map(|hv| match hv.to_str() {
-                Ok(s) => s.to_string(),
-                Err(e) => format!("{}", e),
-            })
-            .unwrap_or_else(|| "None".to_string());
-        RequestLog {
-            method: format!("{}", method),
-            uri: format!("{}", uri),
-            version: format!("{:?}", version),
-            x_forwarded_for,
-            x_real_ip,
-            forwarded,
-            user_agent,
-        }
-    }
 }

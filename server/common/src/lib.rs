@@ -18,6 +18,7 @@ use ::opensearch::OpenSearch;
 use async_redis_session::RedisSessionStore;
 use axum::{
     async_trait,
+    body::Body,
     extract::FromRequest,
     extract::{self, FromRef},
     http::{Request, StatusCode},
@@ -172,4 +173,90 @@ pub struct AppState {
     pub store: RedisSessionStore,
     pub index_client: OpenSearch,
     pub pool: DatabaseConnection,
+}
+
+/// HTTPリクエストにおいてログに残す要素を集めた構造体
+pub struct RequestLogElements {
+    method: String,
+    uri: String,
+    version: String,
+    x_forwarded_for: String,
+    x_real_ip: String,
+    forwarded: String,
+    user_agent: String,
+}
+
+impl RequestLogElements {
+    pub fn new(request: &Request<Body>) -> Self {
+        let method = request.method();
+        let uri = request.uri();
+        let version = request.version();
+        let headers = request.headers();
+        let x_forwarded_for = headers
+            .get("x-forwarded-for")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        let x_real_ip = headers
+            .get("x-real-ip")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        let forwarded = headers
+            .get("forwarded")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        let user_agent = request
+            .headers()
+            .get("user-agent")
+            .map(|hv| match hv.to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => format!("{}", e),
+            })
+            .unwrap_or_else(|| "None".to_string());
+        RequestLogElements {
+            method: format!("{}", method),
+            uri: format!("{}", uri),
+            version: format!("{:?}", version),
+            x_forwarded_for,
+            x_real_ip,
+            forwarded,
+            user_agent,
+        }
+    }
+
+    pub fn method(&self) -> &str {
+        self.method.as_str()
+    }
+
+    pub fn uri(&self) -> &str {
+        self.uri.as_str()
+    }
+
+    pub fn version(&self) -> &str {
+        self.version.as_str()
+    }
+
+    pub fn x_forwarded_for(&self) -> &str {
+        self.x_forwarded_for.as_str()
+    }
+
+    pub fn x_real_ip(&self) -> &str {
+        self.x_real_ip.as_str()
+    }
+
+    pub fn forwarded(&self) -> &str {
+        self.forwarded.as_str()
+    }
+
+    pub fn user_agent(&self) -> &str {
+        self.user_agent.as_str()
+    }
 }
