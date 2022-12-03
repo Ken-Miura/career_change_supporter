@@ -19,6 +19,40 @@
             <div class="mt-3 justify-self-start col-span-1 text-xl">評価</div><div class="mt-3 justify-self-start col-span-1 text-xl"><span v-if="true"> 4.5</span><span v-else>0</span>/5（評価件数：21 件）</div>
             <p class="mt-3 justify-self-start col-span-1 text-xl">支払われる相談料</p><p class="mt-3 justify-self-start col-span-1 text-xl">5000 円</p>
           </div>
+          <div class="flex flex-col justify-center mt-6 ml-4">
+            <p class="font-bold text-xl">希望相談開始日時候補一覧</p>
+            <p class="mt-2 ml-2 text-xl">下記の候補一覧の内、一つを選択して下さい</p>
+            <div class="mt-4 ml-2">
+              <div class="flex items-center mb-4">
+                <input id="default-radio-1" type="radio" value="" name="default-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label for="default-radio-1" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Default radio</label>
+              </div>
+              <div class="flex items-center">
+                <input checked id="default-radio-2" type="radio" value="" name="default-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label for="default-radio-2" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Checked state</label>
+              </div>
+              <!-- <ul class="w-48 text-sm font-medium text-gray-900 bg-white rounded-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <li class="w-full rounded-t-lg border-b border-gray-200 dark:border-gray-600">
+                  <div class="flex items-center pl-3">
+                    <input id="list-radio-license" type="radio" value="" name="list-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                    <label for="list-radio-license" class="py-3 ml-2 w-full text-sm font-medium text-gray-900 dark:text-gray-300">Driver License </label>
+                  </div>
+                </li>
+                <li class="w-full rounded-t-lg border-b border-gray-200 dark:border-gray-600">
+                  <div class="flex items-center pl-3">
+                    <input id="list-radio-id" type="radio" value="" name="list-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                    <label for="list-radio-id" class="py-3 ml-2 w-full text-sm font-medium text-gray-900 dark:text-gray-300">State ID</label>
+                  </div>
+                </li>
+                <li class="w-full rounded-t-lg border-b border-gray-200 dark:border-gray-600">
+                  <div class="flex items-center pl-3">
+                    <input id="list-radio-millitary" type="radio" value="" name="list-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                    <label for="list-radio-millitary" class="py-3 ml-2 w-full text-sm font-medium text-gray-900 dark:text-gray-300">US Millitary</label>
+                  </div>
+                </li>
+              </ul> -->
+            </div>
+          </div>
         </div>
       </div>
     </main>
