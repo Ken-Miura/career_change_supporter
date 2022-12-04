@@ -19,9 +19,9 @@
             <h3 class="font-bold text-2xl">相談申し込み詳細</h3>
             <p class="mt-2 text-lg">詳細を確認し、相談申し込みを受けるかどうか選択して下さい。</p>
             <div class="grid grid-cols-2 mt-4 ml-4">
-              <h3 class="text-xl justify-self-start col-span-1">ユーザーID</h3><h3 class="text-xl justify-self-start col-span-1">2</h3>
-              <div class="mt-3 justify-self-start col-span-1 text-xl">評価</div><div class="mt-3 justify-self-start col-span-1 text-xl"><span v-if="true"> 4.5</span><span v-else>0</span>/5（評価件数：21 件）</div>
-              <p class="mt-3 justify-self-start col-span-1 text-xl">支払われる相談料</p><p class="mt-3 justify-self-start col-span-1 text-xl">5000 円</p>
+              <h3 class="text-xl justify-self-start col-span-1">ユーザーID</h3><h3 class="text-xl justify-self-start col-span-1">{{ consultationReqDetail.user_account_id }}</h3>
+              <div class="mt-3 justify-self-start col-span-1 text-xl">評価</div><div class="mt-3 justify-self-start col-span-1 text-xl"><span v-if="consultationReqDetail.user_rating !== null">{{ consultationReqDetail.user_rating }}</span><span v-else>0</span>/5（評価件数：{{ consultationReqDetail.num_of_rated_of_user }} 件）</div>
+              <p class="mt-3 justify-self-start col-span-1 text-xl">支払われる相談料</p><p class="mt-3 justify-self-start col-span-1 text-xl">{{ consultationReqDetail.fee_per_hour_in_yen }} 円</p>
             </div>
             <div class="flex flex-col justify-center mt-6 ml-4">
               <p class="font-bold text-xl">希望相談開始日時候補一覧</p>
@@ -29,15 +29,15 @@
               <div class="mt-4 ml-4">
                 <div class="flex items-center mb-4">
                   <input type="radio" value="" name="default-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                  <label class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第一希望: 2022年12月10日19時</label>
+                  <label class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第一希望: {{ consultationReqDetail.first_candidate_in_jst.year }}年{{ consultationReqDetail.first_candidate_in_jst.month }}月{{ consultationReqDetail.first_candidate_in_jst.day }}日{{ consultationReqDetail.first_candidate_in_jst.hour }}時</label>
                 </div>
                 <div class="flex items-center mb-4">
                   <input type="radio" value="" name="default-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                  <label class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第二希望: 2022年12月11日7時</label>
+                  <label class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第二希望: {{ consultationReqDetail.second_candidate_in_jst.year }}年{{ consultationReqDetail.second_candidate_in_jst.month }}月{{ consultationReqDetail.second_candidate_in_jst.day }}日{{ consultationReqDetail.second_candidate_in_jst.hour }}時</label>
                 </div>
                 <div class="flex items-center mb-4">
                   <input type="radio" value="" name="default-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                  <label class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第三希望: 2022年12月12日23時</label>
+                  <label class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第三希望: {{ consultationReqDetail.third_candidate_in_jst.year }}年{{ consultationReqDetail.third_candidate_in_jst.month }}月{{ consultationReqDetail.third_candidate_in_jst.day }}日{{ consultationReqDetail.third_candidate_in_jst.hour }}時</label>
                 </div>
               </div>
             </div>
