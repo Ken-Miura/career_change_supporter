@@ -140,7 +140,6 @@ export default defineComponent({
     }
 
     const takeConsultationReq = async () => {
-      // TODO: ラジオボタンの扱いの確認
       console.log(`相談申し込みを受ける consultationReqId: ${consultationReqId}, keepSecret: ${keepSecret.value}, picked: ${picked.value}`)
     }
 
