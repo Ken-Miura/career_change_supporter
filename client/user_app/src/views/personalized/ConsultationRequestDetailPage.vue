@@ -52,7 +52,7 @@
               </div>
             </div>
             <div class="flex justify-center mt-8">
-              <button class="mr-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談申し込みを拒否する</button>
+              <button v-on:click="rejectConsultationReq" class="mr-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談申し込みを拒否する</button>
               <button v-bind:disabled="!keepSecret" class="ml-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談申し込みを受ける</button>
             </div>
             <div v-if="errorBelowBtn.exists">
@@ -107,6 +107,7 @@ export default defineComponent({
       exists: false,
       message: ''
     })
+
     onMounted(async () => {
       try {
         const resp = await getConsultationRequestDetailFunc(consultationReqId)
@@ -132,12 +133,18 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
+    const rejectConsultationReq = async () => {
+      console.log(`相談申し込みを拒否する ${consultationReqId}`)
+    }
+
     return {
       getConsultationRequestDetailDone,
       error,
       consultationReqDetail,
       unexpectedErrMsg,
       keepSecret,
+      rejectConsultationReq,
       errorBelowBtn
     }
   }
