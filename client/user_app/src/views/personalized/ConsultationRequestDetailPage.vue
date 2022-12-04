@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="false" class="m-6">
+    <div v-if="!getConsultationRequestDetailDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -69,10 +69,12 @@ import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
-import { Code } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
+import { useGetConsultationRequestDetail } from '@/util/personalized/consultation-request-detail/useGetConsultationRequestDetail'
+import { Message } from '@/util/Message'
+import { GetConsultationRequestDetailResp } from '@/util/personalized/consultation-request-detail/GetConsultationRequestDetailResp'
+import { ConsultationRequestDetail } from '@/util/personalized/consultation-request-detail/ConsultationRequestDetail'
 
 export default defineComponent({
   name: 'ConsultationRequestDetailPage',
@@ -82,6 +84,10 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
+    const {
+      getConsultationRequestDetailDone,
+      getConsultationRequestDetailFunc
+    } = useGetConsultationRequestDetail()
     const error = reactive({
       exists: false,
       message: ''
@@ -89,17 +95,18 @@ export default defineComponent({
     const router = useRouter()
     const route = useRoute()
     const consultationReqId = route.params.consultation_req_id as string
+    const consultationReqDetail = ref(null as ConsultationRequestDetail | null)
     const errorBelowBtn = reactive({
       exists: false,
       message: ''
     })
     onMounted(async () => {
       try {
-        const resp = await refresh()
-        if (resp instanceof RefreshResp) {
-          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
-        } else if (resp instanceof ApiErrorResp) {
+        const resp = await getConsultationRequestDetailFunc(consultationReqId)
+        if (!(resp instanceof GetConsultationRequestDetailResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
             await router.push('/login')
@@ -108,14 +115,22 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          // TODO: エラー処理
+          error.exists = true
+          error.message = createErrorMessage(resp.getApiError().getCode())
+          return
         }
+        consultationReqDetail.value = resp.getConsultationRequestDetail()
       } catch (e) {
-        // TODO: エラー処理
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      console.log('TODO: 実装後削除')
     })
-    return { error, errorBelowBtn }
+    return {
+      getConsultationRequestDetailDone,
+      error,
+      consultationReqDetail,
+      errorBelowBtn
+    }
   }
 })
 </script>
