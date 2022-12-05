@@ -3,10 +3,11 @@
 use axum::async_trait;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{RespResult, JAPANESE_TIME_ZONE};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
+use crate::util;
 use crate::util::session::User;
 
 pub(crate) async fn post_consultation_request_rejection(
@@ -39,16 +40,27 @@ async fn handle_consultation_request_rejection(
 }
 
 #[async_trait]
-trait ConsultationRequestRejection {}
+trait ConsultationRequestRejection {
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+    //   async fn find_consultation_req_by_consultation_req_id(
+    //     &self,
+    //     consultation_req_id: i64,
+    // ) -> Result<Option<ConsultationRequest>, ErrResp>;
+}
 
 struct ConsultationRequestRejectionImpl {
     pool: DatabaseConnection,
 }
 
-impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {}
+#[async_trait]
+impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+        util::check_if_identity_exists(&self.pool, account_id).await
+    }
+}
 
 #[derive(Clone, Debug)]
-struct DeletedConsultationRequest {
+struct ConsultationRequest {
     consultation_req_id: i64,
     user_account_id: i64,
     consultant_id: i64,

@@ -153,7 +153,7 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
             fee_per_hour_in_yen: m.fee_per_hour_in_yen,
             first_candidate_date_time_in_jst: m
                 .first_candidate_date_time
-                .with_timezone(&(*JAPANESE_TIME_ZONE)), // TODO: with_timezoneが必要か確認する
+                .with_timezone(&(*JAPANESE_TIME_ZONE)),
             second_candidate_date_time_in_jst: m
                 .second_candidate_date_time
                 .with_timezone(&(*JAPANESE_TIME_ZONE)),
