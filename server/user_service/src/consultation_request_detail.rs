@@ -350,6 +350,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -407,6 +408,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -464,6 +466,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -521,6 +524,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -578,6 +582,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -635,6 +640,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -670,6 +676,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -723,6 +730,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -758,6 +766,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
@@ -793,6 +802,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .ymd(2022, 12, 11)
                             .and_hms(7, 0, 0),

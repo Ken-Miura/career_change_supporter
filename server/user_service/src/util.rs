@@ -377,6 +377,7 @@ pub(crate) struct ConsultationRequest {
     pub(crate) first_candidate_date_time_in_jst: DateTime<FixedOffset>,
     pub(crate) second_candidate_date_time_in_jst: DateTime<FixedOffset>,
     pub(crate) third_candidate_date_time_in_jst: DateTime<FixedOffset>,
+    pub(crate) charge_id: String,
     pub(crate) latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
 }
 
@@ -411,7 +412,10 @@ pub(crate) async fn find_consultation_req_by_consultation_req_id(
         third_candidate_date_time_in_jst: m
             .third_candidate_date_time
             .with_timezone(&(*JAPANESE_TIME_ZONE)),
-        latest_candidate_date_time_in_jst: m.latest_candidate_date_time,
+        charge_id: m.charge_id,
+        latest_candidate_date_time_in_jst: m
+            .latest_candidate_date_time
+            .with_timezone(&(*JAPANESE_TIME_ZONE)),
     }))
 }
 
