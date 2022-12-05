@@ -1,7 +1,9 @@
 // Copyright 2022 Ken Miura
 
+use axum::async_trait;
 use axum::{extract::State, Json};
-use common::RespResult;
+use chrono::{DateTime, FixedOffset, Utc};
+use common::{RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +14,11 @@ pub(crate) async fn post_consultation_request_rejection(
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestRejectionParam>,
 ) -> RespResult<ConsultationRequestRejectionResult> {
-    todo!()
+    let consultation_req_id = param.consultation_req_id;
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    let op = ConsultationRequestRejectionImpl { pool };
+    handle_consultation_request_rejection(account_id, consultation_req_id, &current_date_time, op)
+        .await
 }
 
 #[derive(Deserialize)]
@@ -22,3 +28,33 @@ pub(crate) struct ConsultationRequestRejectionParam {
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultationRequestRejectionResult {}
+
+async fn handle_consultation_request_rejection(
+    account_id: i64,
+    consultation_req_id: i64,
+    current_date_time: &DateTime<FixedOffset>,
+    op: impl ConsultationRequestRejection,
+) -> RespResult<ConsultationRequestRejectionResult> {
+    todo!()
+}
+
+#[async_trait]
+trait ConsultationRequestRejection {}
+
+struct ConsultationRequestRejectionImpl {
+    pool: DatabaseConnection,
+}
+
+impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {}
+
+#[derive(Clone, Debug)]
+struct DeletedConsultationRequest {
+    consultation_req_id: i64,
+    user_account_id: i64,
+    consultant_id: i64,
+    fee_per_hour_in_yen: i32,
+    first_candidate_date_time_in_jst: DateTime<FixedOffset>,
+    second_candidate_date_time_in_jst: DateTime<FixedOffset>,
+    third_candidate_date_time_in_jst: DateTime<FixedOffset>,
+    latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
+}
