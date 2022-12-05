@@ -14,8 +14,8 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, round_to_one_decimal_places, ConsultationDateTime, ConsultationRequest,
-    MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    self, consultation_req_exists, round_to_one_decimal_places, ConsultationDateTime,
+    ConsultationRequest, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
 };
 
 pub(crate) async fn get_consultation_request_detail(
@@ -60,7 +60,7 @@ async fn handle_consultation_request_detail(
         .find_consultation_req_by_consultation_req_id(consultation_req_id)
         .await?;
     let req = consultation_req_exists(req, consultation_req_id)?;
-    validate_consultation_req(&req, user_account_id, current_date_time)?;
+    validate_consultation_req_for_reference(&req, user_account_id, current_date_time)?;
 
     let user_ratings = op
         .filter_user_rating_by_user_account_id(req.user_account_id)
@@ -178,26 +178,7 @@ async fn validate_identity_exists(
     Ok(())
 }
 
-fn consultation_req_exists(
-    consultation_request: Option<ConsultationRequest>,
-    consultation_req_id: i64,
-) -> Result<ConsultationRequest, ErrResp> {
-    let req = consultation_request.ok_or_else(|| {
-        error!(
-            "no consultation_req (consultation_req_id: {}) found",
-            consultation_req_id
-        );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NonConsultationReqFound as u32,
-            }),
-        )
-    })?;
-    Ok(req)
-}
-
-fn validate_consultation_req(
+fn validate_consultation_req_for_reference(
     consultation_req: &ConsultationRequest,
     consultant_id: i64,
     current_date_time: &DateTime<FixedOffset>,

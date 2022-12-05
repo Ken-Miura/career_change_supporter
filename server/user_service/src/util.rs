@@ -415,6 +415,26 @@ pub(crate) async fn find_consultation_req_by_consultation_req_id(
     }))
 }
 
+/// 取得した相談申し込みの存在確認をする
+pub(crate) fn consultation_req_exists(
+    consultation_request: Option<ConsultationRequest>,
+    consultation_req_id: i64,
+) -> Result<ConsultationRequest, ErrResp> {
+    let req = consultation_request.ok_or_else(|| {
+        error!(
+            "no consultation_req (consultation_req_id: {}) found",
+            consultation_req_id
+        );
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonConsultationReqFound as u32,
+            }),
+        )
+    })?;
+    Ok(req)
+}
+
 /// 渡された西暦に対して、その年の日本時間における1月1日0時0分0秒と12月31日23時59分59秒のタイムスタンプを返す
 pub(crate) fn create_start_and_end_timestamps_of_current_year(current_year: i32) -> (i64, i64) {
     let start_timestamp = JAPANESE_TIME_ZONE
