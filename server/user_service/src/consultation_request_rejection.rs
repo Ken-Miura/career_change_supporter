@@ -50,6 +50,7 @@ async fn handle_consultation_request_rejection(
 
     // TODO: Add log
     let result = op.delete_consultation_req(consultation_req_id).await?;
+    // TODO: Errの場合でも大きな問題にはならないので、先に進めるように修正
     op.invalidate_charge(result.charge_id.as_str()).await?;
 
     Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
