@@ -47,7 +47,12 @@ async fn handle_consultation_request_rejection(
         .await?;
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_delete(&req, user_account_id)?;
-    todo!()
+
+    // TODO: Add log
+    let result = op.delete_consultation_req(consultation_req_id).await?;
+    op.invalidate_charge(result.charge_id.as_str()).await?;
+
+    Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
 }
 
 #[async_trait]
@@ -57,6 +62,11 @@ trait ConsultationRequestRejection {
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
+    async fn delete_consultation_req(
+        &self,
+        consultation_req_id: i64,
+    ) -> Result<ConsultationRequest, ErrResp>;
+    async fn invalidate_charge(&self, charge_id: &str) -> Result<(), ErrResp>;
 }
 
 struct ConsultationRequestRejectionImpl {
@@ -74,6 +84,17 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
         util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
+    }
+
+    async fn delete_consultation_req(
+        &self,
+        consultation_req_id: i64,
+    ) -> Result<ConsultationRequest, ErrResp> {
+        todo!()
+    }
+
+    async fn invalidate_charge(&self, charge_id: &str) -> Result<(), ErrResp> {
+        todo!()
     }
 }
 
