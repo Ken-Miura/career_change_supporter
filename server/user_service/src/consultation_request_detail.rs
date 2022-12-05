@@ -5,7 +5,6 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::prelude::ConsultationReq;
 use entity::prelude::UserRating;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use entity::user_rating;
@@ -15,7 +14,7 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, round_to_one_decimal_places, ConsultationDateTime,
+    self, round_to_one_decimal_places, ConsultationDateTime, ConsultationRequest,
     MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
 };
 
@@ -46,18 +45,6 @@ pub(crate) struct ConsultationRequestDetail {
     pub(crate) first_candidate_in_jst: ConsultationDateTime,
     pub(crate) second_candidate_in_jst: ConsultationDateTime,
     pub(crate) third_candidate_in_jst: ConsultationDateTime,
-}
-
-#[derive(Clone, Debug)]
-struct ConsultationRequest {
-    consultation_req_id: i64,
-    user_account_id: i64,
-    consultant_id: i64,
-    fee_per_hour_in_yen: i32,
-    first_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    second_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    third_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
 }
 
 async fn handle_consultation_request_detail(
@@ -136,32 +123,7 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
-        let model = ConsultationReq::find_by_id(consultation_req_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find consultation_req (consultation_req_id: {}): {}",
-                    consultation_req_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| ConsultationRequest {
-            consultation_req_id: m.consultation_req_id,
-            user_account_id: m.user_account_id,
-            consultant_id: m.consultant_id,
-            fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-            first_candidate_date_time_in_jst: m
-                .first_candidate_date_time
-                .with_timezone(&(*JAPANESE_TIME_ZONE)),
-            second_candidate_date_time_in_jst: m
-                .second_candidate_date_time
-                .with_timezone(&(*JAPANESE_TIME_ZONE)),
-            third_candidate_date_time_in_jst: m
-                .third_candidate_date_time
-                .with_timezone(&(*JAPANESE_TIME_ZONE)),
-            latest_candidate_date_time_in_jst: m.latest_candidate_date_time,
-        }))
+        util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
     }
 
     async fn filter_user_rating_by_user_account_id(

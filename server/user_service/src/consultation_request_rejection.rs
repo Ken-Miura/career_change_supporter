@@ -7,8 +7,8 @@ use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
-use crate::util;
 use crate::util::session::User;
+use crate::util::{self, ConsultationRequest};
 
 pub(crate) async fn post_consultation_request_rejection(
     User { account_id }: User,
@@ -42,10 +42,10 @@ async fn handle_consultation_request_rejection(
 #[async_trait]
 trait ConsultationRequestRejection {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-    //   async fn find_consultation_req_by_consultation_req_id(
-    //     &self,
-    //     consultation_req_id: i64,
-    // ) -> Result<Option<ConsultationRequest>, ErrResp>;
+    async fn find_consultation_req_by_consultation_req_id(
+        &self,
+        consultation_req_id: i64,
+    ) -> Result<Option<ConsultationRequest>, ErrResp>;
 }
 
 struct ConsultationRequestRejectionImpl {
@@ -57,16 +57,11 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
         util::check_if_identity_exists(&self.pool, account_id).await
     }
-}
 
-#[derive(Clone, Debug)]
-struct ConsultationRequest {
-    consultation_req_id: i64,
-    user_account_id: i64,
-    consultant_id: i64,
-    fee_per_hour_in_yen: i32,
-    first_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    second_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    third_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
+    async fn find_consultation_req_by_consultation_req_id(
+        &self,
+        consultation_req_id: i64,
+    ) -> Result<Option<ConsultationRequest>, ErrResp> {
+        util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
+    }
 }
