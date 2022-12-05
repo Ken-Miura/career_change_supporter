@@ -10,13 +10,13 @@ use crate::util::session::User;
 pub(crate) async fn post_consultation_request_rejection(
     User { account_id }: User,
     State(pool): State<DatabaseConnection>,
-    Json(param): Json<ConsultationRequestRejectioParam>,
+    Json(param): Json<ConsultationRequestRejectionParam>,
 ) -> RespResult<ConsultationRequestRejectionResult> {
     todo!()
 }
 
 #[derive(Deserialize)]
-pub(crate) struct ConsultationRequestRejectioParam {
+pub(crate) struct ConsultationRequestRejectionParam {
     pub(crate) consultation_req_id: i64,
 }
 
