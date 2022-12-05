@@ -7,6 +7,7 @@ mod career;
 mod consultant_detail;
 mod consultants_search;
 mod consultation_request_detail;
+mod consultation_request_rejection;
 mod consultation_requests;
 mod err;
 mod fee_per_hour_in_yen;
@@ -32,6 +33,7 @@ use crate::career::{delete, get, post};
 use crate::consultant_detail::get_consultant_detail;
 use crate::consultants_search::post_consultants_search;
 use crate::consultation_request_detail::get_consultation_request_detail;
+use crate::consultation_request_rejection::post_consultation_request_rejection;
 use crate::consultation_requests::get_consultation_requests;
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
@@ -216,6 +218,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/finish-request-consultation", post(post_finish_request_consultation))
                 .route("/consultation-requests", get(get_consultation_requests))
                 .route("/consultation-request-detail", get(get_consultation_request_detail))
+                .route("/consultation-request-rejection", post(post_consultation_request_rejection))
                 .with_state(state),
         )
         .layer(
