@@ -4,11 +4,12 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use common::{ApiError, ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use entity::consultation_req;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{self, consultation_req_exists, ConsultationRequest};
 
@@ -44,9 +45,9 @@ async fn handle_consultation_request_rejection(
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_delete(&req, user_account_id)?;
 
-    let result = op.delete_consultation_req(consultation_req_id).await?;
+    op.delete_consultation_req(req.consultation_req_id).await?;
     // TODO: Errの場合でも大きな問題にはならないので、先に進めるように修正
-    op.invalidate_charge(result.charge_id.as_str()).await?;
+    op.invalidate_charge(req.charge_id.as_str()).await?;
 
     info!("rejected consultation request ({:?})", req);
     Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
@@ -59,10 +60,7 @@ trait ConsultationRequestRejection {
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
-    async fn delete_consultation_req(
-        &self,
-        consultation_req_id: i64,
-    ) -> Result<ConsultationRequest, ErrResp>;
+    async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp>;
     async fn invalidate_charge(&self, charge_id: &str) -> Result<(), ErrResp>;
 }
 
@@ -83,11 +81,18 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
     }
 
-    async fn delete_consultation_req(
-        &self,
-        consultation_req_id: i64,
-    ) -> Result<ConsultationRequest, ErrResp> {
-        todo!()
+    async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp> {
+        consultation_req::Entity::delete_by_id(consultation_req_id)
+            .exec(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to delete consultation_req (consultation_req_id: {}): {}",
+                    consultation_req_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(())
     }
 
     async fn invalidate_charge(&self, charge_id: &str) -> Result<(), ErrResp> {
