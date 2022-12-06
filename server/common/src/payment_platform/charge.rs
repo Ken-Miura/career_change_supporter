@@ -68,6 +68,13 @@ pub trait ChargeOperation {
 
     /// [3Dセキュアフローを完了する](https://pay.jp/docs/api/#3d%E3%82%BB%E3%82%AD%E3%83%A5%E3%82%A2%E3%83%95%E3%83%AD%E3%83%BC%E3%82%92%E5%AE%8C%E4%BA%86%E3%81%99%E3%82%8B)
     async fn finish_three_d_secure_flow(&self, charge_id: &str) -> Result<Charge, Error>;
+
+    /// [返金する](https://pay.jp/docs/api/#%E8%BF%94%E9%87%91%E3%81%99%E3%82%8B)
+    async fn refund_the_full_amount(
+        &self,
+        charge_id: &str,
+        refund_reason: Option<&str>,
+    ) -> Result<Charge, Error>;
 }
 
 /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
@@ -678,6 +685,14 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
             .await
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
         return Ok(charge);
+    }
+
+    async fn refund_the_full_amount(
+        &self,
+        charge_id: &str,
+        refund_reason: Option<&str>,
+    ) -> Result<Charge, Error> {
+        todo!()
     }
 }
 

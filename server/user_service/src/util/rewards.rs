@@ -209,6 +209,15 @@ mod tests {
             // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
             panic!("this method must not be called")
         }
+
+        async fn refund_the_full_amount(
+            &self,
+            _charge_id: &str,
+            _refund_reason: Option<&str>,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
     }
 
     #[derive(Debug)]
