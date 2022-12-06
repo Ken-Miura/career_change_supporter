@@ -3,11 +3,10 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use common::{ApiError, ErrResp, RespResult};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::Code;
 use crate::util::session::User;
@@ -19,10 +18,8 @@ pub(crate) async fn post_consultation_request_rejection(
     Json(param): Json<ConsultationRequestRejectionParam>,
 ) -> RespResult<ConsultationRequestRejectionResult> {
     let consultation_req_id = param.consultation_req_id;
-    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = ConsultationRequestRejectionImpl { pool };
-    handle_consultation_request_rejection(account_id, consultation_req_id, &current_date_time, op)
-        .await
+    handle_consultation_request_rejection(account_id, consultation_req_id, op).await
 }
 
 #[derive(Deserialize)]
@@ -36,7 +33,6 @@ pub(crate) struct ConsultationRequestRejectionResult {}
 async fn handle_consultation_request_rejection(
     user_account_id: i64,
     consultation_req_id: i64,
-    current_date_time: &DateTime<FixedOffset>,
     op: impl ConsultationRequestRejection,
 ) -> RespResult<ConsultationRequestRejectionResult> {
     validate_consultation_req_id_is_positive(consultation_req_id)?;
@@ -48,11 +44,11 @@ async fn handle_consultation_request_rejection(
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_delete(&req, user_account_id)?;
 
-    // TODO: Add log
     let result = op.delete_consultation_req(consultation_req_id).await?;
     // TODO: Errの場合でも大きな問題にはならないので、先に進めるように修正
     op.invalidate_charge(result.charge_id.as_str()).await?;
 
+    info!("rejected consultation request ({:?})", req);
     Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
 }
 
