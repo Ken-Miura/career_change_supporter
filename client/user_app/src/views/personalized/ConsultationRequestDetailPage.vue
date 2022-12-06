@@ -47,13 +47,18 @@
             </div>
             <div class="mt-2 ml-4 justify-self-start col-span-6 py-1 rounded bg-gray-200">
               <div class="m-4 text-xl grid grid-cols-6 justify-center items-center">
-                <div class="col-span-5">私は社外秘が何かを理解しおり、それを口外することはありません。</div>
-                <input v-model="keepSecret" type="checkbox" class="ml-5 col-span-1 justify-self-center bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                <div class="col-span-5">
+                  <ul class="ml-4 space-y-2 list-disc">
+                    <li>私は社外秘とは何かを理解しており、それを口外することはありません。</li>
+                    <li>私は相談申し込みを受けた後、それをキャンセルできないことを理解しています。</li>
+                  </ul>
+                </div>
+                <input v-model="userChecked" type="checkbox" class="ml-5 col-span-1 justify-self-center bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
               </div>
             </div>
             <div class="flex justify-center mt-8">
               <button v-on:click="rejectConsultationReq" class="mr-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談申し込みを拒否する</button>
-              <button v-on:click="takeConsultationReq" v-bind:disabled="!keepSecret" class="ml-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談申し込みを受ける</button>
+              <button v-on:click="takeConsultationReq" v-bind:disabled="!userChecked" class="ml-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談申し込みを受ける</button>
             </div>
             <div v-if="errorBelowBtn.exists">
               <AlertMessage class="mt-6" v-bind:message="errorBelowBtn.message"/>
@@ -103,7 +108,7 @@ export default defineComponent({
     const consultationReqDetail = ref(null as ConsultationRequestDetail | null)
     const picked = ref('')
     const unexpectedErrMsg = Message.UNEXPECTED_ERR
-    const keepSecret = ref(false)
+    const userChecked = ref(false)
     const errorBelowBtn = reactive({
       exists: false,
       message: ''
@@ -140,7 +145,7 @@ export default defineComponent({
     }
 
     const takeConsultationReq = async () => {
-      console.log(`相談申し込みを受ける consultationReqId: ${consultationReqId}, keepSecret: ${keepSecret.value}, picked: ${picked.value}`)
+      console.log(`相談申し込みを受ける consultationReqId: ${consultationReqId}, userChecked: ${userChecked.value}, picked: ${picked.value}`)
     }
 
     return {
@@ -149,7 +154,7 @@ export default defineComponent({
       consultationReqDetail,
       picked,
       unexpectedErrMsg,
-      keepSecret,
+      userChecked,
       rejectConsultationReq,
       takeConsultationReq,
       errorBelowBtn
