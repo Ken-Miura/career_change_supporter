@@ -118,6 +118,7 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::TimeZone;
+    use common::payment_platform::charge::RefundQuery;
     use common::{
         payment_platform::{
             charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
@@ -210,10 +211,10 @@ mod tests {
             panic!("this method must not be called")
         }
 
-        async fn refund_the_full_amount(
+        async fn refund(
             &self,
             _charge_id: &str,
-            _refund_reason: Option<&str>,
+            _query: RefundQuery,
         ) -> Result<Charge, common::payment_platform::Error> {
             // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
             panic!("this method must not be called")

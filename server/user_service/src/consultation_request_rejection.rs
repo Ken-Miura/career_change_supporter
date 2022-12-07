@@ -49,6 +49,8 @@ async fn handle_consultation_request_rejection(
     // TODO: Errの場合でも大きな問題にはならないので、先に進めるように修正
     op.invalidate_charge(req.charge_id.as_str()).await?;
 
+    // TODO: メール送信
+
     info!("rejected consultation request ({:?})", req);
     Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
 }

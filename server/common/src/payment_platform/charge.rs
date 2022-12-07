@@ -70,11 +70,7 @@ pub trait ChargeOperation {
     async fn finish_three_d_secure_flow(&self, charge_id: &str) -> Result<Charge, Error>;
 
     /// [返金する](https://pay.jp/docs/api/#%E8%BF%94%E9%87%91%E3%81%99%E3%82%8B)
-    async fn refund_the_full_amount(
-        &self,
-        charge_id: &str,
-        refund_reason: Option<&str>,
-    ) -> Result<Charge, Error>;
+    async fn refund(&self, charge_id: &str, query: RefundQuery) -> Result<Charge, Error>;
 }
 
 /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
@@ -565,6 +561,52 @@ impl CreateChargeBuilder {
     }
 }
 
+/// [返金する](https://pay.jp/docs/api/#%E8%BF%94%E9%87%91%E3%81%99%E3%82%8B) の際に渡す構造体
+// 補足:
+// 部分返金を行う予定はないため、amountは構造体に含めない
+// 後から見返して、どのような理由で返金が発生したかわかるように、refund_reasonは必須とする
+#[derive(Serialize, Debug, PartialEq, Eq)]
+pub struct RefundQuery {
+    refund_reason: String,
+}
+
+impl RefundQuery {
+    /// [RefundQuery]を生成する
+    ///
+    /// # Arguments
+    /// * `refund_reason` - 返金理由。1文字以上255文字以内
+    // 補足:
+    // PAYJPの提供するAPIドキュメントによると、refund_reasonとして空文字（0文字）を許容しているように読める
+    // しかし、空文字を指定して使う意味はないため、1文字以上を必須とするように制限を厳しく変更している
+    pub fn new(refund_reason: String) -> Result<Self, InvalidRefundQueryParamError> {
+        let length = refund_reason.chars().count();
+        if !(1..=255).contains(&length) {
+            return Err(InvalidRefundQueryParamError::RefundReasonLength(length));
+        }
+        Ok(RefundQuery { refund_reason })
+    }
+}
+
+/// [RefundQuery] 生成時に返却される可能性のあるエラー
+#[derive(Debug, PartialEq, Eq)]
+pub enum InvalidRefundQueryParamError {
+    RefundReasonLength(usize),
+}
+
+impl Display for InvalidRefundQueryParamError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InvalidRefundQueryParamError::RefundReasonLength(length) => write!(
+                f,
+                "refund_reson length must be 255 or less: length {}",
+                length
+            ),
+        }
+    }
+}
+
+impl StdError for InvalidRefundQueryParamError {}
+
 pub struct ChargeOperationImpl<'a> {
     access_info: &'a AccessInfo,
 }
@@ -687,12 +729,32 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
         return Ok(charge);
     }
 
-    async fn refund_the_full_amount(
-        &self,
-        charge_id: &str,
-        refund_reason: Option<&str>,
-    ) -> Result<Charge, Error> {
-        todo!()
+    async fn refund(&self, charge_id: &str, query: RefundQuery) -> Result<Charge, Error> {
+        tracing::info!("refund: charge_id={}, query={:?}", charge_id, query);
+        let operation_url =
+            self.access_info.base_url() + CHARGES_OPERATION_PATH + "/" + charge_id + "/refund";
+        let username = self.access_info.username();
+        let password = self.access_info.password();
+        let client = reqwest::Client::new();
+        let client = with_querystring(client.post(operation_url), &query)?;
+        let resp = client
+            .basic_auth(username, Some(password))
+            .send()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        let status_code = resp.status();
+        if status_code.is_client_error() || status_code.is_server_error() {
+            let err = resp
+                .json::<ErrorInfo>()
+                .await
+                .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+            return Err(Error::ApiError(Box::new(err)));
+        };
+        let charge = resp
+            .json::<Charge>()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        return Ok(charge);
     }
 }
 
@@ -720,11 +782,14 @@ mod tests {
     use chrono::TimeZone;
 
     use crate::{
-        payment_platform::{charge::InvalidQueryParamError, Metadata},
+        payment_platform::{
+            charge::{InvalidQueryParamError, InvalidRefundQueryParamError},
+            Metadata,
+        },
         JAPANESE_TIME_ZONE,
     };
 
-    use super::{CreateCharge, InvalidCreateChargeParamError, Query};
+    use super::{CreateCharge, InvalidCreateChargeParamError, Query, RefundQuery};
 
     #[test]
     fn empty_query_allowed() {
@@ -1354,5 +1419,56 @@ mod tests {
         let err = result.expect_err("failed to get Err");
 
         assert_eq!(InvalidCreateChargeParamError::IllegalExpiryDays(61), err);
+    }
+
+    #[test]
+    fn refund_query_success_refund_reason_length_1() {
+        let refund_reason = "a";
+        let result = RefundQuery::new(refund_reason.to_string());
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn refund_query_err_refund_reason_length_0() {
+        let refund_reason = "";
+        let result = RefundQuery::new(refund_reason.to_string());
+        assert_eq!(
+            result,
+            Err(InvalidRefundQueryParamError::RefundReasonLength(0))
+        );
+    }
+
+    #[test]
+    fn refund_query_success_refund_reason_length_255_in_alphabet() {
+        let refund_reason = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let result = RefundQuery::new(refund_reason.to_string());
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn refund_query_err_refund_reason_length_256_in_alphabet() {
+        let refund_reason = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let result = RefundQuery::new(refund_reason.to_string());
+        assert_eq!(
+            result,
+            Err(InvalidRefundQueryParamError::RefundReasonLength(256))
+        );
+    }
+
+    #[test]
+    fn refund_query_success_refund_reason_length_255_in_japanese() {
+        let refund_reason = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+        let result = RefundQuery::new(refund_reason.to_string());
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn refund_query_err_refund_reason_length_256_in_japanese() {
+        let refund_reason = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ";
+        let result = RefundQuery::new(refund_reason.to_string());
+        assert_eq!(
+            result,
+            Err(InvalidRefundQueryParamError::RefundReasonLength(256))
+        );
     }
 }
