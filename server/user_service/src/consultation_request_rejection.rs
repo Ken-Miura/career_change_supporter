@@ -55,12 +55,20 @@ async fn handle_consultation_request_rejection(
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_delete(&req, user_account_id)?;
 
-    // ビルドエラー回避のため、この位置で相談を申し込んだユーザーのメールアドレスを取得
+    op.delete_consultation_req(req.consultation_req_id).await?;
+
     let user_email_address = op
         .find_user_email_address_by_user_account_id(req.user_account_id)
         .await?;
+    // メールアドレスが取得出来ない = アカウント削除済みを意味するのでそのケースは通知の必要なし
+    if let Some(user_email_address) = user_email_address {
+        info!(
+            "send consultation request rejection mail (consultation_req_id: {}) to {}",
+            req.consultation_req_id, user_email_address
+        );
+        send_mail.send_mail("to", "from", "subject", "text").await?;
+    }
 
-    op.delete_consultation_req(req.consultation_req_id).await?;
     let result = op.release_credit_facility(req.charge_id.as_str()).await;
     // 与信枠は59日後に自動的に開放されるので、失敗しても大きな問題にはならない
     // 従って失敗した場合でもログに記録するだけで処理は先に進める
@@ -71,15 +79,6 @@ async fn handle_consultation_request_rejection(
             result
         );
     };
-
-    // メールアドレスを取得出来ている場合のみ拒否された通知を行う
-    // メールアドレスが取得出来ない = アカウント削除済みを意味するのでそのケースは通知の必要なし
-    if let Some(user_email_address) = user_email_address {
-        info!(
-            "send consultation request rejection mail (consultation_req_id: {}) to {}",
-            req.consultation_req_id, user_email_address
-        );
-    }
 
     info!("rejected consultation request ({:?})", req);
     Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
