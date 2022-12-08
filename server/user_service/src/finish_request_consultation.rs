@@ -117,6 +117,7 @@ async fn handle_finish_request_consultation(
     send_mail_to_user(
         user_email_address.as_str(),
         consultant_id,
+        consultation_req_id,
         &charge,
         &send_mail,
     )
@@ -372,11 +373,17 @@ Email: {}",
 async fn send_mail_to_user(
     user_account_email_address: &str,
     consultant_id: i64,
+    consultation_req_id: i64,
     charge: &Charge,
     send_mail: &impl SendMail,
 ) -> Result<(), ErrResp> {
     let candidates = extract_candidates(charge)?;
-    let text = create_text_for_user_mail(consultant_id, charge.amount, &candidates);
+    let text = create_text_for_user_mail(
+        consultant_id,
+        consultation_req_id,
+        charge.amount,
+        &candidates,
+    );
     send_mail
         .send_mail(
             user_account_email_address,
@@ -390,12 +397,13 @@ async fn send_mail_to_user(
 
 fn create_text_for_user_mail(
     consultant_id: i64,
+    consultation_req_id: i64,
     amount: i32,
     candidates: &(String, String, String),
 ) -> String {
     // TODO: 文面の調整
     format!(
-        r"下記の内容で相談申し込みを行いました。
+        r"下記の内容で相談申し込み（相談申し込み番号: {}）を行いました。
 
 相談相手
   コンサルタントID: {}
@@ -416,6 +424,7 @@ fn create_text_for_user_mail(
 
 【お問い合わせ先】
 Email: {}",
+        consultation_req_id,
         consultant_id,
         amount,
         candidates.0,
@@ -1244,6 +1253,7 @@ Email: {}",
     #[test]
     fn test_create_text_for_user_mail() {
         let consultant_id = 2;
+        let consultation_req_id = 13;
         let amount = 5000;
         let first_candidate = "2022年 11月 12日 7時00分";
         let second_candidate = "2022年 11月 12日 23時00分";
@@ -1251,6 +1261,7 @@ Email: {}",
 
         let result = create_text_for_user_mail(
             consultant_id,
+            consultation_req_id,
             amount,
             &(
                 first_candidate.to_string(),
@@ -1260,7 +1271,7 @@ Email: {}",
         );
 
         let expected = format!(
-            r"下記の内容で相談申し込みを行いました。
+            r"下記の内容で相談申し込み（相談申し込み番号: {}）を行いました。
 
 相談相手
   コンサルタントID: {}
@@ -1281,6 +1292,7 @@ Email: {}",
 
 【お問い合わせ先】
 Email: {}",
+            consultation_req_id,
             consultant_id,
             amount,
             first_candidate,

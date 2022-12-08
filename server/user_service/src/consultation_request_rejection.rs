@@ -5,8 +5,11 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl, RefundQuery};
-use common::smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
-use common::{ApiError, ErrResp, RespResult};
+use common::smtp::{
+    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
+    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
+};
+use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use entity::{consultation_req, user_account};
 use serde::{Deserialize, Serialize};
@@ -56,19 +59,13 @@ async fn handle_consultation_request_rejection(
     validate_consultation_req_for_delete(&req, user_account_id)?;
 
     op.delete_consultation_req(req.consultation_req_id).await?;
-
-    let user_email_address = op
-        .find_user_email_address_by_user_account_id(req.user_account_id)
-        .await?;
-    // メールアドレスが取得出来ない = アカウント削除済みを意味するのでそのケースは通知の必要なし
-    if let Some(user_email_address) = user_email_address {
-        info!(
-            "send consultation request rejection mail (consultation_req_id: {}) to {}",
-            req.consultation_req_id, user_email_address
-        );
-        send_mail.send_mail("to", "from", "subject", "text").await?;
-    }
-
+    send_consultation_req_rejection_mail_if_user_exists(
+        req.user_account_id,
+        req.consultation_req_id,
+        &op,
+        &send_mail,
+    )
+    .await?;
     // release_credit_facilityは、型にBox<dyn std::error::Error>を含んでいるせいで他のawaitより後ろの最後に実施しなければビルドエラーとなる
     // 実行順が重要な場合は、型をErrRespに変更する等再考するところから始める
     let result = op.release_credit_facility(req.charge_id.as_str()).await;
@@ -211,4 +208,39 @@ fn validate_consultation_req_for_delete(
         ));
     }
     Ok(())
+}
+
+async fn send_consultation_req_rejection_mail_if_user_exists(
+    user_account_id: i64,
+    consultation_req_id: i64,
+    op: &impl ConsultationRequestRejection,
+    send_mail: &impl SendMail,
+) -> Result<(), ErrResp> {
+    let user_email_address = op
+        .find_user_email_address_by_user_account_id(user_account_id)
+        .await?;
+    // メールアドレスが取得出来ない = アカウント削除済みを意味するのでそのケースは通知の必要なし
+    if let Some(user_email_address) = user_email_address {
+        info!(
+            "send consultation request rejection mail (consultation_req_id: {}) to {}",
+            consultation_req_id, user_email_address
+        );
+        send_mail
+            .send_mail(
+                user_email_address.as_str(),
+                SYSTEM_EMAIL_ADDRESS,
+                "subject",
+                "text",
+            )
+            .await?;
+    }
+    Ok(())
+}
+
+fn create_text(consultation_req_id: i64) -> String {
+    // TODO: 文面の調整
+    format!(
+        r"{}, {}, {}",
+        consultation_req_id, WEB_SITE_NAME, INQUIRY_EMAIL_ADDRESS
+    )
 }
