@@ -5,6 +5,7 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl, RefundQuery};
+use common::smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
 use common::{ApiError, ErrResp, RespResult};
 use entity::consultation_req;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
@@ -22,7 +23,13 @@ pub(crate) async fn post_consultation_request_rejection(
 ) -> RespResult<ConsultationRequestRejectionResult> {
     let consultation_req_id = param.consultation_req_id;
     let op = ConsultationRequestRejectionImpl { pool };
-    handle_consultation_request_rejection(account_id, consultation_req_id, op).await
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
+    handle_consultation_request_rejection(account_id, consultation_req_id, op, smtp_client).await
 }
 
 #[derive(Deserialize)]
@@ -37,6 +44,7 @@ async fn handle_consultation_request_rejection(
     user_account_id: i64,
     consultation_req_id: i64,
     op: impl ConsultationRequestRejection,
+    send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestRejectionResult> {
     validate_consultation_req_id_is_positive(consultation_req_id)?;
     validate_identity_exists(user_account_id, &op).await?;
