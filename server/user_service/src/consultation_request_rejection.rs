@@ -12,12 +12,16 @@ use common::smtp::{
 use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use entity::{consultation_req, user_account};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{self, consultation_req_exists, ConsultationRequest, ACCESS_INFO};
+
+static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =
+    Lazy::new(|| format!("[{}] 相談申し込み拒否通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_consultation_request_rejection(
     User { account_id }: User,
@@ -229,8 +233,8 @@ async fn send_consultation_req_rejection_mail_if_user_exists(
             .send_mail(
                 user_email_address.as_str(),
                 SYSTEM_EMAIL_ADDRESS,
-                "subject",
-                "text",
+                CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.as_str(),
+                create_text(consultation_req_id).as_str(),
             )
             .await?;
     }
@@ -240,7 +244,10 @@ async fn send_consultation_req_rejection_mail_if_user_exists(
 fn create_text(consultation_req_id: i64) -> String {
     // TODO: 文面の調整
     format!(
-        r"{}, {}, {}",
-        consultation_req_id, WEB_SITE_NAME, INQUIRY_EMAIL_ADDRESS
+        r"相談申し込み（相談申し込み番号: {}）が拒否されました（相談申し込みが拒否されたため、相談料金の支払いは発生しません）
+        
+        【お問い合わせ先】
+        Email: {}",
+        consultation_req_id, INQUIRY_EMAIL_ADDRESS
     )
 }
