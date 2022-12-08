@@ -1,8 +1,10 @@
 // Copyright 2022 Ken Miura
 
+use async_session::log::warn;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
+use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl, RefundQuery};
 use common::{ApiError, ErrResp, RespResult};
 use entity::consultation_req;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
@@ -11,7 +13,7 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
-use crate::util::{self, consultation_req_exists, ConsultationRequest};
+use crate::util::{self, consultation_req_exists, ConsultationRequest, ACCESS_INFO};
 
 pub(crate) async fn post_consultation_request_rejection(
     User { account_id }: User,
@@ -46,8 +48,16 @@ async fn handle_consultation_request_rejection(
     validate_consultation_req_for_delete(&req, user_account_id)?;
 
     op.delete_consultation_req(req.consultation_req_id).await?;
-    // TODO: Errの場合でも大きな問題にはならないので、先に進めるように修正
-    op.invalidate_charge(req.charge_id.as_str()).await?;
+    let result = op.release_credit_facility(req.charge_id.as_str()).await;
+    // 与信枠は59日後に自動的に開放されるので、失敗しても大きな問題にはならない
+    // 従って失敗した場合でもログに記録するだけで処理は先に進める
+    if result.is_err() {
+        warn!(
+            "failed to release credit facility (charge_id: {}, result: {:?})",
+            req.charge_id.as_str(),
+            result
+        );
+    }
 
     // TODO: メール送信
 
@@ -63,7 +73,11 @@ trait ConsultationRequestRejection {
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
     async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp>;
-    async fn invalidate_charge(&self, charge_id: &str) -> Result<(), ErrResp>;
+    /// 与信枠を開放する（＋支払いの確定を出来なくする）
+    async fn release_credit_facility(
+        &self,
+        charge_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 struct ConsultationRequestRejectionImpl {
@@ -97,8 +111,15 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         Ok(())
     }
 
-    async fn invalidate_charge(&self, charge_id: &str) -> Result<(), ErrResp> {
-        todo!()
+    async fn release_credit_facility(
+        &self,
+        charge_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+        let refund_reason = "refunded_by_consultation_request_rejection".to_string();
+        let query = RefundQuery::new(refund_reason).map_err(Box::new)?;
+        let _ = charge_op.refund(charge_id, query).await.map_err(Box::new)?;
+        Ok(())
     }
 }
 
