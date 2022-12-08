@@ -7,8 +7,8 @@ use axum::{extract::State, Json};
 use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl, RefundQuery};
 use common::smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
 use common::{ApiError, ErrResp, RespResult};
-use entity::consultation_req;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use entity::{consultation_req, user_account};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -55,6 +55,11 @@ async fn handle_consultation_request_rejection(
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_delete(&req, user_account_id)?;
 
+    // ビルドエラー回避のため、この位置で相談を申し込んだユーザーのメールアドレスを取得
+    let user_email_address = op
+        .find_user_email_address_by_user_account_id(req.user_account_id)
+        .await?;
+
     op.delete_consultation_req(req.consultation_req_id).await?;
     let result = op.release_credit_facility(req.charge_id.as_str()).await;
     // 与信枠は59日後に自動的に開放されるので、失敗しても大きな問題にはならない
@@ -65,9 +70,16 @@ async fn handle_consultation_request_rejection(
             req.charge_id.as_str(),
             result
         );
-    }
+    };
 
-    // TODO: メール送信
+    // メールアドレスを取得出来ている場合のみ拒否された通知を行う
+    // メールアドレスが取得出来ない = アカウント削除済みを意味するのでそのケースは通知の必要なし
+    if let Some(user_email_address) = user_email_address {
+        info!(
+            "send consultation request rejection mail (consultation_req_id: {}) to {}",
+            req.consultation_req_id, user_email_address
+        );
+    }
 
     info!("rejected consultation request ({:?})", req);
     Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
@@ -86,6 +98,10 @@ trait ConsultationRequestRejection {
         &self,
         charge_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>>;
+    async fn find_user_email_address_by_user_account_id(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<String>, ErrResp>;
 }
 
 struct ConsultationRequestRejectionImpl {
@@ -128,6 +144,23 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         let query = RefundQuery::new(refund_reason).map_err(Box::new)?;
         let _ = charge_op.refund(charge_id, query).await.map_err(Box::new)?;
         Ok(())
+    }
+
+    async fn find_user_email_address_by_user_account_id(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<String>, ErrResp> {
+        let model_option = user_account::Entity::find_by_id(user_account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find user_account (user_account_id: {}): {}",
+                    user_account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model_option.map(|m| m.email_address))
     }
 }
 
