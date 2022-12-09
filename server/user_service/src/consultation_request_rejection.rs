@@ -253,4 +253,132 @@ Email: {}",
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use common::{
+        payment_platform::{ErrorDetail, ErrorInfo},
+        ErrResp, RespResult,
+    };
+    use once_cell::sync::Lazy;
+
+    use crate::util::{tests::SendMailMock, ConsultationRequest};
+
+    use super::{
+        handle_consultation_request_rejection, ConsultationRequestRejection,
+        ConsultationRequestRejectionResult,
+    };
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<ConsultationRequestRejectionResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        user_account_id: i64,
+        consultation_req_id: i64,
+        op: ConsultationRequestRejectionMock,
+        smtp_client: SendMailMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct ConsultationRequestRejectionMock {
+        account_id_of_consultant: i64,
+        consultation_req_id: i64,
+        consultation_req: Option<ConsultationRequest>,
+        too_many_requests: bool,
+        account_id_of_user: i64,
+        user_email_address: Option<String>,
+    }
+
+    #[async_trait]
+    impl ConsultationRequestRejection for ConsultationRequestRejectionMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            if self.account_id_of_consultant != account_id {
+                return Ok(false);
+            };
+            Ok(true)
+        }
+
+        async fn find_consultation_req_by_consultation_req_id(
+            &self,
+            consultation_req_id: i64,
+        ) -> Result<Option<ConsultationRequest>, ErrResp> {
+            assert_eq!(self.consultation_req_id, consultation_req_id);
+            if let Some(consultation_req) = self.consultation_req.clone() {
+                assert_eq!(consultation_req.consultation_req_id, consultation_req_id);
+            }
+            Ok(self.consultation_req.clone())
+        }
+
+        async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp> {
+            assert_eq!(self.consultation_req_id, consultation_req_id);
+            Ok(())
+        }
+
+        async fn release_credit_facility(
+            &self,
+            _charge_id: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            if self.too_many_requests {
+                let err_info = Box::new(ErrorInfo {
+                    error: ErrorDetail {
+                        message: "test_message".to_string(),
+                        status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
+                        r#type: "test_type".to_string(),
+                        code: None,
+                        param: None,
+                        charge: None,
+                    },
+                });
+                let api_err = common::payment_platform::Error::ApiError(err_info);
+                return Err(Box::new(api_err));
+            }
+            Ok(())
+        }
+
+        async fn find_user_email_address_by_user_account_id(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.account_id_of_user, user_account_id);
+            Ok(self.user_email_address.clone())
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_handle_consultation_request_rejection() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.user_account_id;
+            let consultation_req_id = test_case.input.consultation_req_id;
+            let op = test_case.input.op.clone();
+            let smtp_client = test_case.input.smtp_client.clone();
+
+            let result = handle_consultation_request_rejection(
+                account_id,
+                consultation_req_id,
+                op,
+                smtp_client,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
