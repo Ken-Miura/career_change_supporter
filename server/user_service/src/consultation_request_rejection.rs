@@ -246,8 +246,11 @@ fn create_text(consultation_req_id: i64) -> String {
     format!(
         r"相談申し込み（相談申し込み番号: {}）が拒否されました（相談申し込みが拒否されたため、相談料金の支払いは発生しません）
         
-        【お問い合わせ先】
-        Email: {}",
+【お問い合わせ先】
+Email: {}",
         consultation_req_id, INQUIRY_EMAIL_ADDRESS
     )
 }
+
+#[cfg(test)]
+mod tests {}
