@@ -63,15 +63,7 @@ async fn handle_consultation_request_rejection(
     validate_consultation_req_for_delete(&req, user_account_id)?;
 
     op.delete_consultation_req(req.consultation_req_id).await?;
-    send_consultation_req_rejection_mail_if_user_exists(
-        req.user_account_id,
-        req.consultation_req_id,
-        &op,
-        &send_mail,
-    )
-    .await?;
-    // release_credit_facilityは、型にBox<dyn std::error::Error>を含んでいるせいで他のawaitより後ろの最後に実施しなければビルドエラーとなる
-    // 実行順が重要な場合は、型をErrRespに変更する等再考するところから始める
+
     let result = op.release_credit_facility(req.charge_id.as_str()).await;
     // 与信枠は[EXPIRY_DAYS_OF_CHARGE]日後に自動的に開放されるので、失敗しても大きな問題にはならない
     // 従って失敗した場合でもログに記録するだけで処理は先に進める
@@ -82,6 +74,14 @@ async fn handle_consultation_request_rejection(
             result
         );
     };
+
+    send_consultation_req_rejection_mail_if_user_exists(
+        req.user_account_id,
+        req.consultation_req_id,
+        &op,
+        &send_mail,
+    )
+    .await?;
 
     info!("rejected consultation request ({:?})", req);
     Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {})))
@@ -95,15 +95,15 @@ trait ConsultationRequestRejection {
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
     async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp>;
-    async fn find_user_email_address_by_user_account_id(
-        &self,
-        user_account_id: i64,
-    ) -> Result<Option<String>, ErrResp>;
     /// 与信枠を開放する（＋支払いの確定を出来なくする）
     async fn release_credit_facility(
         &self,
         charge_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    async fn find_user_email_address_by_user_account_id(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<String>, ErrResp>;
 }
 
 struct ConsultationRequestRejectionImpl {
@@ -137,6 +137,17 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         Ok(())
     }
 
+    async fn release_credit_facility(
+        &self,
+        charge_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+        let refund_reason = "refunded_by_consultation_request_rejection".to_string();
+        let query = RefundQuery::new(refund_reason).map_err(Box::new)?;
+        let _ = charge_op.refund(charge_id, query).await.map_err(Box::new)?;
+        Ok(())
+    }
+
     async fn find_user_email_address_by_user_account_id(
         &self,
         user_account_id: i64,
@@ -152,17 +163,6 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
                 unexpected_err_resp()
             })?;
         Ok(model_option.map(|m| m.email_address))
-    }
-
-    async fn release_credit_facility(
-        &self,
-        charge_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-        let refund_reason = "refunded_by_consultation_request_rejection".to_string();
-        let query = RefundQuery::new(refund_reason).map_err(Box::new)?;
-        let _ = charge_op.refund(charge_id, query).await.map_err(Box::new)?;
-        Ok(())
     }
 }
 
