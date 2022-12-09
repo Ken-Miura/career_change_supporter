@@ -254,8 +254,11 @@ Email: {}",
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
     use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::TimeZone;
+    use common::smtp::SYSTEM_EMAIL_ADDRESS;
+    use common::JAPANESE_TIME_ZONE;
     use common::{
         payment_platform::{ErrorDetail, ErrorInfo},
         ErrResp, RespResult,
@@ -265,8 +268,8 @@ mod tests {
     use crate::util::{tests::SendMailMock, ConsultationRequest};
 
     use super::{
-        handle_consultation_request_rejection, ConsultationRequestRejection,
-        ConsultationRequestRejectionResult,
+        create_text, handle_consultation_request_rejection, ConsultationRequestRejection,
+        ConsultationRequestRejectionResult, CONSULTATION_REQ_REJECTION_MAIL_SUBJECT,
     };
 
     #[derive(Debug)]
@@ -349,7 +352,62 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id_of_consultant = 1;
+        let consultation_req_id = 3;
+        let account_id_of_user = 2;
+        let user_email_address = "test2@test.com".to_string();
+        let mail_text = create_text(consultation_req_id);
+        let dummy_consultation_req = create_dummy_consultation_req(
+            consultation_req_id,
+            account_id_of_consultant,
+            account_id_of_user,
+        );
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input {
+                user_account_id: account_id_of_consultant,
+                consultation_req_id,
+                op: ConsultationRequestRejectionMock {
+                    account_id_of_consultant,
+                    consultation_req_id,
+                    consultation_req: Some(dummy_consultation_req),
+                    too_many_requests: false,
+                    account_id_of_user,
+                    user_email_address: Some(user_email_address.clone()),
+                },
+                smtp_client: SendMailMock::new(
+                    user_email_address,
+                    SYSTEM_EMAIL_ADDRESS.to_string(),
+                    CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                    mail_text,
+                ),
+            },
+            expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
+        }]
+    });
+
+    fn create_dummy_consultation_req(
+        consultation_req_id: i64,
+        account_id_of_consultant: i64,
+        account_id_of_user: i64,
+    ) -> ConsultationRequest {
+        ConsultationRequest {
+            consultation_req_id,
+            user_account_id: account_id_of_user,
+            consultant_id: account_id_of_consultant,
+            fee_per_hour_in_yen: 5000,
+            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 12, 1).and_hms(7, 0, 0),
+            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                .ymd(2022, 12, 2)
+                .and_hms(23, 0, 0),
+            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 12, 3).and_hms(11, 0, 0),
+            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                .ymd(2022, 12, 3)
+                .and_hms(11, 0, 0),
+        }
+    }
 
     #[tokio::test]
     async fn handle_handle_consultation_request_rejection() {
