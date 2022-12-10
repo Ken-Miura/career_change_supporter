@@ -363,28 +363,97 @@ mod tests {
             account_id_of_consultant,
             account_id_of_user,
         );
-        vec![TestCase {
-            name: "success".to_string(),
-            input: Input {
-                user_account_id: account_id_of_consultant,
-                consultation_req_id,
-                op: ConsultationRequestRejectionMock {
-                    account_id_of_consultant,
+        vec![
+            TestCase {
+                name: "success case (normal)".to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
                     consultation_req_id,
-                    consultation_req: Some(dummy_consultation_req),
-                    too_many_requests: false,
-                    account_id_of_user,
-                    user_email_address: Some(user_email_address.clone()),
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: Some(dummy_consultation_req.clone()),
+                        too_many_requests: false,
+                        account_id_of_user,
+                        user_email_address: Some(user_email_address.clone()),
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address.clone(),
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text.clone(),
+                    ),
                 },
-                smtp_client: SendMailMock::new(
-                    user_email_address,
-                    SYSTEM_EMAIL_ADDRESS.to_string(),
-                    CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
-                    mail_text,
-                ),
+                expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
             },
-            expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
-        }]
+            TestCase {
+                name: "success case (fail release_credit_facility)".to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
+                    consultation_req_id,
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: Some(dummy_consultation_req.clone()),
+                        too_many_requests: true,
+                        account_id_of_user,
+                        user_email_address: Some(user_email_address.clone()),
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address.clone(),
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text.clone(),
+                    ),
+                },
+                expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
+            },
+            TestCase {
+                name: "success case (no user email address found)".to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
+                    consultation_req_id,
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: Some(dummy_consultation_req.clone()),
+                        too_many_requests: false,
+                        account_id_of_user,
+                        user_email_address: None,
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address.clone(),
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text.clone(),
+                    ),
+                },
+                expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
+            },
+            TestCase {
+                name: "success case (fail release_credit_facility and no user email address found)"
+                    .to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
+                    consultation_req_id,
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: Some(dummy_consultation_req),
+                        too_many_requests: true,
+                        account_id_of_user,
+                        user_email_address: None,
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address,
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text,
+                    ),
+                },
+                expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
+            },
+        ]
     });
 
     fn create_dummy_consultation_req(
