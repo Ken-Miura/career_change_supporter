@@ -535,33 +535,33 @@ mod tests {
                     }),
                 )),
             },
-            // TestCase {
-            //     name: "fail NoIdentityRegistered".to_string(),
-            //     input: Input {
-            //         user_account_id: account_id_of_consultant,
-            //         consultation_req_id,
-            //         op: ConsultationRequestRejectionMock {
-            //             account_id_of_consultant,
-            //             consultation_req_id,
-            //             consultation_req: Some(dummy_consultation_req.clone()),
-            //             too_many_requests: false,
-            //             account_id_of_user,
-            //             user_email_address: Some(user_email_address.clone()),
-            //         },
-            //         smtp_client: SendMailMock::new(
-            //             user_email_address.clone(),
-            //             SYSTEM_EMAIL_ADDRESS.to_string(),
-            //             CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
-            //             mail_text.clone(),
-            //         ),
-            //     },
-            //     expected: Err((
-            //         StatusCode::BAD_REQUEST,
-            //         Json(ApiError {
-            //             code: Code::NoConsultationReqFound as u32,
-            //         }),
-            //     )),
-            // },
+            TestCase {
+                name: "fail NoConsultationReqFound (no consultation request found)".to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
+                    consultation_req_id,
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: None,
+                        too_many_requests: false,
+                        account_id_of_user,
+                        user_email_address: Some(user_email_address.clone()),
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address.clone(),
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text.clone(),
+                    ),
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoConsultationReqFound as u32,
+                    }),
+                )),
+            },
         ]
     });
 
