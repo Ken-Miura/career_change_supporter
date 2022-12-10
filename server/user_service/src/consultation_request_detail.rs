@@ -619,7 +619,43 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NonPositiveConsultationReqId".to_string(),
+                name: "fail NonPositiveConsultationReqId (id: 0)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    0,
+                    current_date_time,
+                    true,
+                    Some(ConsultationRequest {
+                        consultation_req_id: -1,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(7, 0, 0),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 5)
+                            .and_hms(23, 0, 0),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 12, 11)
+                            .and_hms(7, 0, 0),
+                    }),
+                    vec![Some(5), Some(2), Some(3), None],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultationReqId as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NonPositiveConsultationReqId (id: -1)".to_string(),
                 input: Input::new(
                     account_id_of_consultant,
                     account_id_of_user,
