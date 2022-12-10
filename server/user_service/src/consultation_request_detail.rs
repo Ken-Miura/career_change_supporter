@@ -187,7 +187,7 @@ fn validate_consultation_req_for_reference(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::NonConsultationReqFound as u32,
+                code: Code::NoConsultationReqFound as u32,
             }),
         ));
     }
@@ -197,7 +197,7 @@ fn validate_consultation_req_for_reference(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::NonConsultationReqFound as u32,
+                code: Code::NoConsultationReqFound as u32,
             }),
         ));
     }
@@ -691,7 +691,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NonConsultationReqFound (no consultation request found)".to_string(),
+                name: "fail NoConsultationReqFound (no consultation request found)".to_string(),
                 input: Input::new(
                     account_id_of_consultant,
                     account_id_of_user,
@@ -704,12 +704,12 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::NonConsultationReqFound as u32,
+                        code: Code::NoConsultationReqFound as u32,
                     }),
                 )),
             },
             TestCase {
-                name: "fail NonConsultationReqFound (consultant id does not match)".to_string(),
+                name: "fail NoConsultationReqFound (consultant id does not match)".to_string(),
                 input: Input::new(
                     account_id_of_consultant,
                     account_id_of_user,
@@ -740,12 +740,12 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::NonConsultationReqFound as u32,
+                        code: Code::NoConsultationReqFound as u32,
                     }),
                 )),
             },
             TestCase {
-                name: "fail NonConsultationReqFound (current date time is within 6 hours of latest candidate date time)".to_string(),
+                name: "fail NoConsultationReqFound (current date time is within 6 hours of latest candidate date time)".to_string(),
                 input: Input::new(
                     account_id_of_consultant,
                     account_id_of_user,
@@ -776,7 +776,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::NonConsultationReqFound as u32,
+                        code: Code::NoConsultationReqFound as u32,
                     }),
                 )),
             },

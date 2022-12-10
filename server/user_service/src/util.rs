@@ -432,7 +432,7 @@ pub(crate) fn consultation_req_exists(
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::NonConsultationReqFound as u32,
+                code: Code::NoConsultationReqFound as u32,
             }),
         )
     })?;
