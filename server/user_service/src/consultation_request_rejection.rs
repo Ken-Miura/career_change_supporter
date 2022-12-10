@@ -258,13 +258,14 @@ mod tests {
     use axum::{async_trait, Json};
     use chrono::TimeZone;
     use common::smtp::SYSTEM_EMAIL_ADDRESS;
-    use common::JAPANESE_TIME_ZONE;
     use common::{
         payment_platform::{ErrorDetail, ErrorInfo},
         ErrResp, RespResult,
     };
+    use common::{ApiError, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::util::{tests::SendMailMock, ConsultationRequest};
 
     use super::{
@@ -439,19 +440,73 @@ mod tests {
                     op: ConsultationRequestRejectionMock {
                         account_id_of_consultant,
                         consultation_req_id,
-                        consultation_req: Some(dummy_consultation_req),
+                        consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: true,
                         account_id_of_user,
                         user_email_address: None,
                     },
                     smtp_client: SendMailMock::new(
-                        user_email_address,
+                        user_email_address.clone(),
                         SYSTEM_EMAIL_ADDRESS.to_string(),
                         CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
-                        mail_text,
+                        mail_text.clone(),
                     ),
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
+            },
+            TestCase {
+                name: "fail NonPositiveConsultationReqId (id: 0)".to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
+                    consultation_req_id: 0,
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: Some(dummy_consultation_req.clone()),
+                        too_many_requests: false,
+                        account_id_of_user,
+                        user_email_address: Some(user_email_address.clone()),
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address.clone(),
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text.clone(),
+                    ),
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultationReqId as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NonPositiveConsultationReqId (id: -1)".to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
+                    consultation_req_id: -1,
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: Some(dummy_consultation_req.clone()),
+                        too_many_requests: false,
+                        account_id_of_user,
+                        user_email_address: Some(user_email_address.clone()),
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address.clone(),
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text.clone(),
+                    ),
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultationReqId as u32,
+                    }),
+                )),
             },
         ]
     });
