@@ -516,7 +516,7 @@ mod tests {
                     op: ConsultationRequestRejectionMock {
                         account_id_of_consultant,
                         consultation_req_id,
-                        consultation_req: Some(dummy_consultation_req.clone()),
+                        consultation_req: Some(dummy_consultation_req),
                         too_many_requests: false,
                         account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
@@ -553,6 +553,37 @@ mod tests {
                         SYSTEM_EMAIL_ADDRESS.to_string(),
                         CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
                         mail_text.clone(),
+                    ),
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoConsultationReqFound as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NoConsultationReqFound (account id of consultant does not match consultant id)".to_string(),
+                input: Input {
+                    user_account_id: account_id_of_consultant,
+                    consultation_req_id,
+                    op: ConsultationRequestRejectionMock {
+                        account_id_of_consultant,
+                        consultation_req_id,
+                        consultation_req: Some(create_dummy_consultation_req(
+                            consultation_req_id,
+                            account_id_of_consultant + 1,
+                            account_id_of_user,
+                        )),
+                        too_many_requests: false,
+                        account_id_of_user,
+                        user_email_address: Some(user_email_address.clone()),
+                    },
+                    smtp_client: SendMailMock::new(
+                        user_email_address,
+                        SYSTEM_EMAIL_ADDRESS.to_string(),
+                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
+                        mail_text,
                     ),
                 },
                 expected: Err((
