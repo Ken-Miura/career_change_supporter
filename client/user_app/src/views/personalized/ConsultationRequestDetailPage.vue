@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getConsultationRequestDetailDone" class="m-6">
+    <div v-if="!(getConsultationRequestDetailDone && postConsultationRequestRejectionDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -82,9 +82,12 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { useGetConsultationRequestDetail } from '@/util/personalized/consultation-request-detail/useGetConsultationRequestDetail'
+import { usePostConsultationRequestRejection } from '@/util/personalized/consultation-request-detail/usePostConsultationRequestRejection'
 import { Message } from '@/util/Message'
 import { GetConsultationRequestDetailResp } from '@/util/personalized/consultation-request-detail/GetConsultationRequestDetailResp'
 import { ConsultationRequestDetail } from '@/util/personalized/consultation-request-detail/ConsultationRequestDetail'
+import { ConsultationRequestRejectionParam } from '@/util/personalized/consultation-request-detail/ConsultationRequestRejectionParam'
+import { PostConsultationRequestRejectionResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestRejectionResp'
 
 export default defineComponent({
   name: 'ConsultationRequestDetailPage',
@@ -109,6 +112,10 @@ export default defineComponent({
     const picked = ref('')
     const unexpectedErrMsg = Message.UNEXPECTED_ERR
     const userChecked = ref(false)
+    const {
+      postConsultationRequestRejectionDone,
+      postConsultationRequestRejectionFunc
+    } = usePostConsultationRequestRejection()
     const errorBelowBtn = reactive({
       exists: false,
       message: ''
@@ -141,7 +148,30 @@ export default defineComponent({
     })
 
     const rejectConsultationReq = async () => {
-      console.log(`相談申し込みを拒否する ${consultationReqId}`)
+      try {
+        const param = { consultation_req_id: parseInt(consultationReqId) } as ConsultationRequestRejectionParam
+        const resp = await postConsultationRequestRejectionFunc(param)
+        if (!(resp instanceof PostConsultationRequestRejectionResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = createErrorMessage(resp.getApiError().getCode())
+          return
+        }
+        // TODO: route
+      } catch (e) {
+        errorBelowBtn.exists = true
+        errorBelowBtn.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     const takeConsultationReq = async () => {
@@ -150,6 +180,7 @@ export default defineComponent({
 
     return {
       getConsultationRequestDetailDone,
+      postConsultationRequestRejectionDone,
       error,
       consultationReqDetail,
       picked,
