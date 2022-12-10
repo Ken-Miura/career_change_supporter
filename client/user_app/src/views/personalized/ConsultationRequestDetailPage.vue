@@ -167,7 +167,7 @@ export default defineComponent({
           errorBelowBtn.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        // TODO: route
+        await router.push('/consultation-request-rejection')
       } catch (e) {
         errorBelowBtn.exists = true
         errorBelowBtn.message = `${Message.UNEXPECTED_ERR}: ${e}`

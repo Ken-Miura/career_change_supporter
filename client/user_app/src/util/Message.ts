@@ -145,4 +145,5 @@ export namespace Message {
     export const PAY_JP_CODE_THREE_D_SECURE_INCOMPLETED_MESSAGE = '相談申し込み中に別の操作が行われたため、処理に失敗しました。再度初めから相談申し込みを行って下さい'
     export const PAY_JP_CODE_THREE_D_SECURE_FAILED_MESSAGE = 'カードの認証処理（3Dセキュア認証）に失敗しました。理再度初めから相談申し込みを行って下さい'
     export const PAY_JP_CODE_NOT_IN_THREE_D_SECURE_FLOW_MESSAGE = 'カードの認証処理（3Dセキュア認証）がタイムアウトしました。再度初めから相談申し込みを行って下さい'
+    export const CONSULTATION_REQUEST_REJECTION_MESSAGE = '相談申し込みを拒否しました'
 }
