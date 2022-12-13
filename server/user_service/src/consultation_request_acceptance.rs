@@ -9,6 +9,7 @@ use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
 use crate::util::session::User;
+use crate::util::validate_consultation_req_id_is_positive;
 
 pub(crate) async fn post_consultation_request_acceptance(
     User { account_id }: User,
@@ -44,6 +45,8 @@ async fn handle_consultation_request_acceptance(
     op: impl ConsultationRequestAcceptanceOperation,
     send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
+    let consultation_req_id = param.consultation_req_id;
+    validate_consultation_req_id_is_positive(consultation_req_id)?;
     todo!()
 }
 

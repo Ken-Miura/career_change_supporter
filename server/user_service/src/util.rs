@@ -367,6 +367,24 @@ pub(crate) async fn check_if_user_account_is_available(
     Ok(available)
 }
 
+pub(crate) fn validate_consultation_req_id_is_positive(
+    consultation_req_id: i64,
+) -> Result<(), ErrResp> {
+    if !consultation_req_id.is_positive() {
+        error!(
+            "consultation_req_id ({}) is not positive",
+            consultation_req_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonPositiveConsultationReqId as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
 /// 相談申し込み
 #[derive(Clone, Debug)]
 pub(crate) struct ConsultationRequest {

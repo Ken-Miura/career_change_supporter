@@ -18,7 +18,10 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
-use crate::util::{self, consultation_req_exists, ConsultationRequest, ACCESS_INFO};
+use crate::util::{
+    self, consultation_req_exists, validate_consultation_req_id_is_positive, ConsultationRequest,
+    ACCESS_INFO,
+};
 
 static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み拒否通知", WEB_SITE_NAME));
@@ -166,22 +169,6 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
             })?;
         Ok(model_option.map(|m| m.email_address))
     }
-}
-
-fn validate_consultation_req_id_is_positive(consultation_req_id: i64) -> Result<(), ErrResp> {
-    if !consultation_req_id.is_positive() {
-        error!(
-            "consultation_req_id ({}) is not positive",
-            consultation_req_id
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NonPositiveConsultationReqId as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 async fn validate_identity_exists(
