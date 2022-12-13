@@ -1,7 +1,10 @@
 // Copyright 2022 Ken Miura
 
+use axum::async_trait;
 use axum::{extract::State, Json};
-use common::RespResult;
+use chrono::{DateTime, FixedOffset, Utc};
+use common::smtp::{SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
+use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +15,16 @@ pub(crate) async fn post_consultation_request_acceptance(
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestAcceptanceParam>,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
-    todo!()
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    let op = ConsultationRequestAcceptanceOperationImpl { pool };
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
+    handle_consultation_request_acceptance(account_id, &param, &current_date_time, op, smtp_client)
+        .await
 }
 
 #[derive(Deserialize)]
@@ -24,3 +36,22 @@ pub(crate) struct ConsultationRequestAcceptanceParam {
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultationRequestAcceptanceResult {}
+
+async fn handle_consultation_request_acceptance(
+    user_account_id: i64,
+    param: &ConsultationRequestAcceptanceParam,
+    current_date_time: &DateTime<FixedOffset>,
+    op: impl ConsultationRequestAcceptanceOperation,
+    send_mail: impl SendMail,
+) -> RespResult<ConsultationRequestAcceptanceResult> {
+    todo!()
+}
+
+#[async_trait]
+trait ConsultationRequestAcceptanceOperation {}
+
+struct ConsultationRequestAcceptanceOperationImpl {
+    pool: DatabaseConnection,
+}
+
+impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOperationImpl {}
