@@ -62,6 +62,9 @@ async fn handle_consultation_request_acceptance(
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_acceptance(&req, user_account_id, current_date_time)?;
 
+    // ユーザーが無効化されているか
+    // コンサルタントが無効化されているか
+    // TODO: レコード作成（ユーザーがいない場合は失敗させる）＋メール送信
     todo!()
 }
 
