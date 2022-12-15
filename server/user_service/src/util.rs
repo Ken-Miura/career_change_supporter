@@ -346,7 +346,6 @@ pub(crate) async fn check_if_identity_exists(
 
 #[derive(Clone, Debug)]
 pub(crate) struct UserAccount {
-    pub(crate) user_account_id: i64,
     pub(crate) email_address: String,
     pub(crate) disabled_at: Option<DateTime<FixedOffset>>,
 }
@@ -367,7 +366,6 @@ async fn get_if_user_exists(
             unexpected_err_resp()
         })?;
     Ok(model.map(|m| UserAccount {
-        user_account_id: m.user_account_id,
         email_address: m.email_address,
         disabled_at: m.disabled_at,
     }))

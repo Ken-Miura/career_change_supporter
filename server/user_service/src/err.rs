@@ -125,6 +125,9 @@ pub(crate) enum Code {
     PayJpCodeNotInThreeDSecureFlow = 20113,
     NonPositiveConsultationReqId = 20114,
     NoConsultationReqFound = 20115,
+    UerDoesNotCheckConfirmationItems = 20116,
+    ConsultantIsNotAvailableOnConsultationAcceptance = 20117,
+    UserIsNotAvailableOnConsultationAcceptance = 20118,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

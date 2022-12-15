@@ -15,7 +15,7 @@ use crate::err::Code;
 use crate::util::session::User;
 use crate::util::{
     self, consultation_req_exists, validate_consultation_req_id_is_positive, ConsultationRequest,
-    MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    UserAccount, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
 };
 
 pub(crate) async fn post_consultation_request_acceptance(
@@ -52,6 +52,7 @@ async fn handle_consultation_request_acceptance(
     op: impl ConsultationRequestAcceptanceOperation,
     send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
+    validate_user_checked_confirmation_items(param.user_checked)?;
     let consultation_req_id = param.consultation_req_id;
     validate_consultation_req_id_is_positive(consultation_req_id)?;
     validate_identity_exists(user_account_id, &op).await?;
@@ -62,9 +63,10 @@ async fn handle_consultation_request_acceptance(
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_acceptance(&req, user_account_id, current_date_time)?;
 
-    // ユーザーが無効化されているか
-    // コンサルタントが無効化されているか
-    // TODO: レコード作成（ユーザーがいない場合は失敗させる）＋メール送信
+    let consultant = get_consultant_if_available(req.consultant_id, &op).await?;
+    let user = get_user_account_if_available(req.user_account_id, &op).await?;
+
+    // TODO: レコード作成＋メール送信
     todo!()
 }
 
@@ -76,6 +78,18 @@ trait ConsultationRequestAcceptanceOperation {
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
+
+    /// コンサルタントが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
+    async fn get_consultant_if_available(
+        &self,
+        consultant_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp>;
+
+    /// ユーザーが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
+    async fn get_user_account_if_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp>;
 }
 
 struct ConsultationRequestAcceptanceOperationImpl {
@@ -94,6 +108,32 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
         util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
     }
+
+    async fn get_consultant_if_available(
+        &self,
+        consultant_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp> {
+        util::get_if_user_account_is_available(&self.pool, consultant_id).await
+    }
+
+    async fn get_user_account_if_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp> {
+        util::get_if_user_account_is_available(&self.pool, user_account_id).await
+    }
+}
+
+fn validate_user_checked_confirmation_items(user_checked: bool) -> Result<(), ErrResp> {
+    if !user_checked {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::UerDoesNotCheckConfirmationItems as u32,
+            }),
+        ));
+    };
+    Ok(())
 }
 
 async fn validate_identity_exists(
@@ -137,4 +177,36 @@ fn validate_consultation_req_for_acceptance(
         ));
     }
     Ok(())
+}
+
+async fn get_consultant_if_available(
+    consultant_id: i64,
+    op: &impl ConsultationRequestAcceptanceOperation,
+) -> Result<UserAccount, ErrResp> {
+    let consultant = op.get_consultant_if_available(consultant_id).await?;
+    consultant.ok_or_else(|| {
+        error!("consultant ({}) is not available", consultant_id);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantIsNotAvailableOnConsultationAcceptance as u32,
+            }),
+        )
+    })
+}
+
+async fn get_user_account_if_available(
+    user_account_id: i64,
+    op: &impl ConsultationRequestAcceptanceOperation,
+) -> Result<UserAccount, ErrResp> {
+    let user = op.get_user_account_if_available(user_account_id).await?;
+    user.ok_or_else(|| {
+        error!("user ({}) is not available", user_account_id);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::UserIsNotAvailableOnConsultationAcceptance as u32,
+            }),
+        )
+    })
 }
