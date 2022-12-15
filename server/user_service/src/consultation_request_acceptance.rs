@@ -52,7 +52,8 @@ async fn handle_consultation_request_acceptance(
     op: impl ConsultationRequestAcceptanceOperation,
     send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
-    validate_user_checked_confirmation_items(param.user_checked)?;
+    validate_picked_candidate(param.picked_candidate)?;
+    validate_user_checked_confirmation_items(param.user_checked, user_account_id)?;
     let consultation_req_id = param.consultation_req_id;
     validate_consultation_req_id_is_positive(consultation_req_id)?;
     validate_identity_exists(user_account_id, &op).await?;
@@ -124,8 +125,28 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
     }
 }
 
-fn validate_user_checked_confirmation_items(user_checked: bool) -> Result<(), ErrResp> {
+fn validate_picked_candidate(picked_candidate: u8) -> Result<(), ErrResp> {
+    if !(1..=3).contains(&picked_candidate) {
+        error!("invalid candidate ({})", picked_candidate);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidCandidate as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_user_checked_confirmation_items(
+    user_checked: bool,
+    user_account_id: i64,
+) -> Result<(), ErrResp> {
     if !user_checked {
+        error!(
+            "user ({}) did not check confirmation items",
+            user_account_id
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
