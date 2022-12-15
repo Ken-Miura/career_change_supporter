@@ -169,6 +169,10 @@ fn validate_consultation_req_for_reference(
     current_date_time: &DateTime<FixedOffset>,
 ) -> Result<(), ErrResp> {
     if consultation_req.consultant_id != consultant_id {
+        error!(
+            "consultant_id ({}) does not match consultation_req.consultant_id ({})",
+            consultant_id, consultation_req.consultant_id
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -179,6 +183,10 @@ fn validate_consultation_req_for_reference(
     let criteria = *current_date_time
         + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64);
     if consultation_req.latest_candidate_date_time_in_jst <= criteria {
+        error!(
+            "latest candidate ({}) is not over criteria ({})",
+            consultation_req.latest_candidate_date_time_in_jst, criteria
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {

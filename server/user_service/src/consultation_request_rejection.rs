@@ -193,6 +193,10 @@ fn validate_consultation_req_for_delete(
     consultant_id: i64,
 ) -> Result<(), ErrResp> {
     if consultation_req.consultant_id != consultant_id {
+        error!(
+            "consultant_id ({}) does not match consultation_req.consultant_id ({})",
+            consultant_id, consultation_req.consultant_id
+        );
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
