@@ -7,7 +7,11 @@ use chrono::{DateTime, Duration, FixedOffset, Utc};
 use common::smtp::{SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
 use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
 use common::{ApiError, ErrResp, ErrRespStruct};
-use entity::sea_orm::{DatabaseConnection, TransactionError, TransactionTrait};
+use entity::consultation_req;
+use entity::sea_orm::{
+    DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, TransactionError,
+    TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -146,7 +150,8 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
             .pool
             .transaction::<_, Consultation, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // consultation_reqをselect for update (exclusive lock)
+                    let req =
+                        get_consultation_req_with_exclusive_lock(consultation_req_id, txn).await?;
                     // consultationをinsert
                     // user_ratingをinsert
                     // settlementをinsert
@@ -168,6 +173,34 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
             })?;
         Ok(consultation)
     }
+}
+
+async fn get_consultation_req_with_exclusive_lock(
+    consultation_req_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<consultation_req::Model, ErrRespStruct> {
+    let req = consultation_req::Entity::find_by_id(consultation_req_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find consultation_req (consultation_req_id: {}): {}",
+                consultation_req_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    req.ok_or_else(|| {
+        error!(
+            "failed to get consultation_req (consultation_req_id: {})",
+            consultation_req_id
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })
 }
 
 fn validate_picked_candidate(picked_candidate: u8) -> Result<(), ErrResp> {
