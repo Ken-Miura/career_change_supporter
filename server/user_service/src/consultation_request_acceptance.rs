@@ -56,8 +56,9 @@ async fn handle_consultation_request_acceptance(
     op: impl ConsultationRequestAcceptanceOperation,
     send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
-    validate_picked_candidate(param.picked_candidate)?;
-    info!("picked_candidate: {}", param.picked_candidate);
+    let picked_candidate = param.picked_candidate;
+    validate_picked_candidate(picked_candidate)?;
+    info!("picked_candidate: {}", picked_candidate);
     validate_user_checked_confirmation_items(param.user_checked, user_account_id)?;
     let consultation_req_id = param.consultation_req_id;
     validate_consultation_req_id_is_positive(consultation_req_id)?;
@@ -72,7 +73,10 @@ async fn handle_consultation_request_acceptance(
     let consultant = get_consultant_if_available(req.consultant_id, &op).await?;
     let user = get_user_account_if_available(req.user_account_id, &op).await?;
 
-    // TODO: レコード作成＋メール送信
+    let consultation = op
+        .accept_consultation_req(consultation_req_id, picked_candidate)
+        .await?;
+    // TODO: メール送信
     todo!()
 }
 
