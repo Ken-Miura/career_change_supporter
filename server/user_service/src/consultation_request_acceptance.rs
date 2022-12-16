@@ -6,12 +6,12 @@ use axum::{extract::State, Json};
 use chrono::{DateTime, Duration, FixedOffset, Utc};
 use common::smtp::{SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
 use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
-use common::{ApiError, ErrResp};
-use entity::sea_orm::DatabaseConnection;
+use common::{ApiError, ErrResp, ErrRespStruct};
+use entity::sea_orm::{DatabaseConnection, TransactionError, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
     self, consultation_req_exists, validate_consultation_req_id_is_positive, ConsultationRequest,
@@ -91,6 +91,19 @@ trait ConsultationRequestAcceptanceOperation {
         &self,
         user_account_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp>;
+
+    async fn accept_consultation_req(
+        &self,
+        consultation_req_id: i64,
+        picked_candidate: u8,
+    ) -> Result<Consultation, ErrResp>;
+}
+
+#[derive(Clone, Debug)]
+struct Consultation {
+    consultation_req_id: i64,
+    fee_per_hour_in_yen: i32,
+    consultation_date_time_in_jst: DateTime<FixedOffset>,
 }
 
 struct ConsultationRequestAcceptanceOperationImpl {
@@ -122,6 +135,38 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         user_account_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp> {
         util::get_if_user_account_is_available(&self.pool, user_account_id).await
+    }
+
+    async fn accept_consultation_req(
+        &self,
+        consultation_req_id: i64,
+        picked_candidate: u8,
+    ) -> Result<Consultation, ErrResp> {
+        let consultation = self
+            .pool
+            .transaction::<_, Consultation, ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    // consultation_reqをselect for update (exclusive lock)
+                    // consultationをinsert
+                    // user_ratingをinsert
+                    // settlementをinsert
+                    // consultant_ratingをinsert
+                    // consultation_reqをdelete
+                    todo!()
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to accept_consultation_req: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(consultation)
     }
 }
 
