@@ -13,7 +13,7 @@ use entity::sea_orm::{
     TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
@@ -57,6 +57,7 @@ async fn handle_consultation_request_acceptance(
     send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
     validate_picked_candidate(param.picked_candidate)?;
+    info!("picked_candidate: {}", param.picked_candidate);
     validate_user_checked_confirmation_items(param.user_checked, user_account_id)?;
     let consultation_req_id = param.consultation_req_id;
     validate_consultation_req_id_is_positive(consultation_req_id)?;
@@ -152,6 +153,12 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                 Box::pin(async move {
                     let req =
                         get_consultation_req_with_exclusive_lock(consultation_req_id, txn).await?;
+                    let meeting_date = select_meeting_date_time(
+                        &req.first_candidate_date_time,
+                        &req.second_candidate_date_time,
+                        &req.third_candidate_date_time,
+                        picked_candidate,
+                    )?;
                     // consultationをinsert
                     // user_ratingをinsert
                     // settlementをinsert
@@ -201,6 +208,26 @@ async fn get_consultation_req_with_exclusive_lock(
             err_resp: unexpected_err_resp(),
         }
     })
+}
+
+fn select_meeting_date_time(
+    first_candidate_date_time: &DateTime<FixedOffset>,
+    second_candidate_date_time: &DateTime<FixedOffset>,
+    third_candidate_date_time: &DateTime<FixedOffset>,
+    picked_candidate: u8,
+) -> Result<DateTime<FixedOffset>, ErrRespStruct> {
+    if picked_candidate == 1 {
+        Ok(*first_candidate_date_time)
+    } else if picked_candidate == 2 {
+        Ok(*second_candidate_date_time)
+    } else if picked_candidate == 3 {
+        Ok(*third_candidate_date_time)
+    } else {
+        error!("invalid picked_candidate ({})", picked_candidate);
+        Err(ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        })
+    }
 }
 
 fn validate_picked_candidate(picked_candidate: u8) -> Result<(), ErrResp> {
