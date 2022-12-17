@@ -573,7 +573,7 @@ impl MigrationTrait for Migration {
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
                   expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  stopped_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  stopped_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   UNIQUE(user_account_id, consultant_id, meeting_at)
                 );",
             ))
