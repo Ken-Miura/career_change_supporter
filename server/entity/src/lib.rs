@@ -25,6 +25,7 @@ pub mod rejected_create_career_req;
 pub mod rejected_create_identity_req;
 pub mod rejected_update_identity_req;
 pub mod settlement;
+pub mod stopped_settlement;
 pub mod tenant;
 pub mod terms_of_use;
 pub mod update_identity_req;

@@ -99,6 +99,7 @@ trait RequestConsultationOperation {
         &self,
         consultant_id: i64,
         criteria: &DateTime<FixedOffset>,
+        current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp>;
 
     /// 相談を受け付けたが、まだ未決済（相談者がまだ評価を実施していない、または自動決済が走っていない状態）となっているものの相談料の合計
@@ -185,6 +186,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         &self,
         consultant_id: i64,
         criteria: &DateTime<FixedOffset>,
+        current_date_time: &DateTime<FixedOffset>,
     ) -> Result<i32, ErrResp> {
         let reqs = ConsultationReq::find()
             .filter(consultation_req::Column::ConsultantId.eq(consultant_id))
@@ -199,7 +201,8 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
                 unexpected_err_resp()
             })?;
         let charge_ids = reqs.into_iter().map(|r| r.charge_id).collect();
-        let amount = get_sum_of_amount(charge_ids).await?;
+        let charges = get_charges(charge_ids).await?;
+        let amount = calculate_sum_of_amount_of_valid_charge(&charges, current_date_time)?;
         Ok(amount)
     }
 
@@ -210,19 +213,18 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
     ) -> Result<i32, ErrResp> {
         let settlements = Settlement::find()
             .filter(settlement::Column::ConsultantId.eq(consultant_id))
-            .filter(settlement::Column::ExpiredAt.gt(*current_date_time))
-            .filter(settlement::Column::Settled.eq(false))
             .all(&self.pool)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter settlement (consultant_id: {}, current_date_time: {}): {}",
-                    consultant_id, current_date_time, e
+                    "failed to filter settlement (consultant_id: {}): {}",
+                    consultant_id, e
                 );
                 unexpected_err_resp()
             })?;
         let charge_ids = settlements.into_iter().map(|s| s.charge_id).collect();
-        let amount = get_sum_of_amount(charge_ids).await?;
+        let charges = get_charges(charge_ids).await?;
+        let amount = calculate_sum_of_amount_of_valid_charge(&charges, current_date_time)?;
         Ok(amount)
     }
 
@@ -244,9 +246,9 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
     }
 }
 
-async fn get_sum_of_amount(charge_ids: Vec<String>) -> Result<i32, ErrResp> {
+async fn get_charges(charge_ids: Vec<String>) -> Result<Vec<Charge>, ErrResp> {
     let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-    let mut amount = 0;
+    let mut charges = Vec::with_capacity(charge_ids.len());
     for charge_id in charge_ids {
         let charge = charge_op
             .ge_charge_by_charge_id(charge_id.as_str())
@@ -270,6 +272,22 @@ async fn get_sum_of_amount(charge_ids: Vec<String>) -> Result<i32, ErrResp> {
                     unexpected_err_resp()
                 }
             })?;
+        charges.push(charge);
+    }
+    Ok(charges)
+}
+
+fn calculate_sum_of_amount_of_valid_charge(
+    charges: &Vec<Charge>,
+    current_date_time: &DateTime<FixedOffset>,
+) -> Result<i32, ErrResp> {
+    let mut amount = 0;
+    for charge in charges {
+        if let Some(expired_at) = charge.expired_at {
+            if current_date_time.timestamp() > expired_at {
+                continue;
+            }
+        }
         amount += charge.amount;
     }
     Ok(amount)
@@ -546,7 +564,7 @@ async fn ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
     let criteria = *current_date_time
         + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64);
     let amount_of_consultation_req = request_consultation_op
-        .get_amount_of_consultation_req(consultant_id, &criteria)
+        .get_amount_of_consultation_req(consultant_id, &criteria, current_date_time)
         .await?;
 
     let expected_rewards = request_consultation_op
@@ -778,6 +796,7 @@ mod tests {
             &self,
             consultant_id: i64,
             criteria: &DateTime<FixedOffset>,
+            current_date_time: &DateTime<FixedOffset>,
         ) -> Result<i32, ErrResp> {
             assert_eq!(self.consultant_id, consultant_id);
             assert_eq!(
@@ -785,6 +804,7 @@ mod tests {
                     + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64),
                 *criteria
             );
+            assert_eq!(self.current_date_time, *current_date_time);
             Ok(self.amount)
         }
 

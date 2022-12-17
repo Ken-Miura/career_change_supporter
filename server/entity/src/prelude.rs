@@ -21,6 +21,7 @@ pub use super::rejected_create_career_req::Entity as RejectedCreateCareerReq;
 pub use super::rejected_create_identity_req::Entity as RejectedCreateIdentityReq;
 pub use super::rejected_update_identity_req::Entity as RejectedUpdateIdentityReq;
 pub use super::settlement::Entity as Settlement;
+pub use super::stopped_settlement::Entity as StoppedSettlement;
 pub use super::tenant::Entity as Tenant;
 pub use super::terms_of_use::Entity as TermsOfUse;
 pub use super::update_identity_req::Entity as UpdateIdentityReq;
