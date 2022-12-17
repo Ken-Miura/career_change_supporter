@@ -486,22 +486,21 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
-                  settled BOOLEAN NOT NULL,
-                  stop_settlement BOOLEAN NOT NULL,
-                  expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   UNIQUE(user_account_id, consultant_id, meeting_at)
                 );",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(
-                sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.settlement To user_app;"),
-            )
+            .execute(sql.stmt(
+                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.settlement To user_app;",
+            ))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, UPDATE ON ccs_schema.settlement To admin_app;"))
+            .execute(
+                sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.settlement To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
@@ -513,12 +512,6 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"CREATE INDEX settlement_meeting_at_idx ON ccs_schema.settlement (meeting_at);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX settlement_expired_at_idx ON ccs_schema.settlement (expired_at);",
             ))
             .await
             .map(|_| ())?;
@@ -565,6 +558,46 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"CREATE INDEX consultant_rating_meeting_at_idx ON ccs_schema.consultant_rating (meeting_at);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.stopped_settlement (
+                  stopped_settlement_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  consultant_id BIGINT NOT NULL,
+                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  charge_id TEXT NOT NULL UNIQUE,
+                  expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  stopped_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.stopped_settlement To admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.stopped_settlement_stopped_settlement_id_seq TO admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX stopped_settlement_meeting_at_idx ON ccs_schema.stopped_settlement (meeting_at);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX stopped_settlement_expired_at_idx ON ccs_schema.stopped_settlement (expired_at);",
             ))
             .await
             .map(|_| ())?;
