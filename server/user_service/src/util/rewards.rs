@@ -142,112 +142,118 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
 
 #[cfg(test)]
 mod tests {
-    // TODO: rewrite tests
     // use std::str::FromStr;
 
-    // use axum::http::StatusCode;
-    // use axum::{async_trait, Json};
+    use std::str::FromStr;
+
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     // use chrono::TimeZone;
-    // use common::payment_platform::charge::RefundQuery;
-    // use common::{
-    //     payment_platform::{
-    //         charge::{Charge, ChargeOperation, CreateCharge, Query as SearchChargesQuery},
-    //         customer::Card,
-    //         ErrorDetail, ErrorInfo, List,
-    //     },
-    //     ErrResp,
-    // };
+    use common::payment_platform::charge::RefundQuery;
+    use common::{
+        payment_platform::{
+            charge::{Charge, ChargeOperation, CreateCharge, Query},
+            customer::Card,
+            ErrorDetail, ErrorInfo, List,
+        },
+        ErrResp,
+    };
+    use once_cell::sync::Lazy;
+    use rust_decimal::prelude::FromPrimitive;
+    use rust_decimal::{Decimal, RoundingStrategy};
+
+    use super::calculate_rewards;
     // use common::{ApiError, JAPANESE_TIME_ZONE};
     // use once_cell::sync::Lazy;
     // use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 
     // use crate::err::Code;
 
-    // #[derive(Debug, Clone)]
-    // struct ChargeOperationMock {
-    //     num_of_charges_per_req: u32,
-    //     since_timestamp: i64,
-    //     until_timestamp: i64,
-    //     tenant_id: String,
-    //     num_of_search_trial: usize,
-    //     lists: Vec<List<Charge>>,
-    //     too_many_requests: bool,
-    // }
+    #[derive(Debug, Clone)]
+    struct ChargeOperationMock {
+        num_of_charges_per_req: u32,
+        since_timestamp: i64,
+        until_timestamp: i64,
+        tenant_id: String,
+        num_of_search_trial: usize,
+        lists: Vec<List<Charge>>,
+        too_many_requests: bool,
+    }
 
-    // #[async_trait]
-    // impl ChargeOperation for ChargeOperationMock {
-    //     async fn search_charges(
-    //         &mut self,
-    //         query: &SearchChargesQuery,
-    //     ) -> Result<List<Charge>, common::payment_platform::Error> {
-    //         assert_eq!(
-    //             self.num_of_charges_per_req,
-    //             query.limit().expect("failed to get limit")
-    //         );
-    //         assert_eq!(
-    //             self.since_timestamp,
-    //             query.since().expect("failed to get since")
-    //         );
-    //         assert_eq!(
-    //             self.until_timestamp,
-    //             query.until().expect("failed to get until")
-    //         );
-    //         assert_eq!(
-    //             self.tenant_id,
-    //             query.tenant().expect("failed to get tenant")
-    //         );
-    //         if self.too_many_requests {
-    //             let err_detail = ErrorDetail {
-    //                 message: "message".to_string(),
-    //                 status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
-    //                 r#type: "type".to_string(),
-    //                 code: None,
-    //                 param: None,
-    //                 charge: None,
-    //             };
-    //             let err_info = ErrorInfo { error: err_detail };
-    //             return Err(common::payment_platform::Error::ApiError(Box::new(
-    //                 err_info,
-    //             )));
-    //         }
-    //         let result = self.lists[self.num_of_search_trial].clone();
-    //         self.num_of_search_trial += 1;
-    //         Ok(result)
-    //     }
+    #[async_trait]
+    impl ChargeOperation for ChargeOperationMock {
+        async fn search_charges(
+            &mut self,
+            query: &Query,
+        ) -> Result<List<Charge>, common::payment_platform::Error> {
+            assert_eq!(
+                self.num_of_charges_per_req,
+                query.limit().expect("failed to get limit")
+            );
+            assert_eq!(
+                self.since_timestamp,
+                query.since().expect("failed to get since")
+            );
+            assert_eq!(
+                self.until_timestamp,
+                query.until().expect("failed to get until")
+            );
+            assert_eq!(
+                self.tenant_id,
+                query.tenant().expect("failed to get tenant")
+            );
+            if self.too_many_requests {
+                let err_detail = ErrorDetail {
+                    message: "message".to_string(),
+                    status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
+                    r#type: "type".to_string(),
+                    code: None,
+                    param: None,
+                    charge: None,
+                };
+                let err_info = ErrorInfo { error: err_detail };
+                return Err(common::payment_platform::Error::ApiError(Box::new(
+                    err_info,
+                )));
+            }
+            let result = self.lists[self.num_of_search_trial].clone();
+            self.num_of_search_trial += 1;
+            Ok(result)
+        }
 
-    //     async fn create_charge(
-    //         &self,
-    //         _create_charge: &CreateCharge,
-    //     ) -> Result<Charge, common::payment_platform::Error> {
-    //         // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-    //         panic!("this method must not be called")
-    //     }
+        async fn create_charge(
+            &self,
+            _create_charge: &CreateCharge,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
 
-    //     async fn ge_charge_by_charge_id(
-    //         &self,
-    //         _charge_id: &str,
-    //     ) -> Result<Charge, common::payment_platform::Error> {
-    //         // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-    //         panic!("this method must not be called")
-    //     }
+        async fn ge_charge_by_charge_id(
+            &self,
+            _charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
 
-    //     async fn finish_three_d_secure_flow(
-    //         &self,
-    //         _charge_id: &str,
-    //     ) -> Result<Charge, common::payment_platform::Error> {
-    //         // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-    //         panic!("this method must not be called")
-    //     }
+        async fn finish_three_d_secure_flow(
+            &self,
+            _charge_id: &str,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
 
-    //     async fn refund(
-    //         &self,
-    //         _charge_id: &str,
-    //         _query: RefundQuery,
-    //     ) -> Result<Charge, common::payment_platform::Error> {
-    //         // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-    //         panic!("this method must not be called")
-    //     }
-    // }
+        async fn refund(
+            &self,
+            _charge_id: &str,
+            _query: RefundQuery,
+        ) -> Result<Charge, common::payment_platform::Error> {
+            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
+            panic!("this method must not be called")
+        }
+    }
 
     // #[derive(Debug)]
     // struct TestCase {
@@ -764,4 +770,170 @@ mod tests {
     //         }
     //     }
     // }
+
+    #[derive(Debug)]
+    struct CalculateRewardsTestCase {
+        name: String,
+        input: Vec<Charge>,
+        expected: i32,
+    }
+
+    static CALCULATE_REWARDS_TEST_CASE_SET: Lazy<Vec<CalculateRewardsTestCase>> = Lazy::new(|| {
+        vec![
+            CalculateRewardsTestCase {
+                name: "1 charge".to_string(),
+                input: vec![create_dummy_charge_for_calc(
+                    5000, 0, "30.0", true, 1675176747,
+                )],
+                expected: 3500,
+            },
+            CalculateRewardsTestCase {
+                name: "2 charges".to_string(),
+                input: vec![
+                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747),
+                ],
+                expected: 3500 + 2800,
+            },
+            CalculateRewardsTestCase {
+                name: "3 charges".to_string(),
+                input: vec![
+                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747),
+                ],
+                expected: 3500 + 2800 + 2100,
+            },
+            CalculateRewardsTestCase {
+                name: "non captured charge is not counted as rewards case 1".to_string(),
+                input: vec![create_dummy_charge_for_calc(
+                    4000, 0, "30.0", false, 1675176747,
+                )],
+                expected: 0,
+            },
+            CalculateRewardsTestCase {
+                name: "non captured charge is not counted as rewards case 2".to_string(),
+                input: vec![
+                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(4000, 0, "30.0", false, 1675176747),
+                ],
+                expected: 3500,
+            },
+            CalculateRewardsTestCase {
+                name: "fully refunded charge case 1".to_string(),
+                input: vec![create_dummy_charge_for_calc(
+                    5000, 5000, "30.0", true, 1675176747,
+                )],
+                expected: 0,
+            },
+            CalculateRewardsTestCase {
+                name: "fully refunded charge case 2".to_string(),
+                input: vec![
+                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(5000, 5000, "30.0", true, 1675176747),
+                ],
+                expected: 2800,
+            },
+            CalculateRewardsTestCase {
+                name: "partially refunded charge case 1".to_string(), // 部分返金を実装する予定はないが、念の為テストしておく
+                input: vec![create_dummy_charge_for_calc(
+                    5000, 1000, "30.0", true, 1675176747,
+                )],
+                expected: 2800,
+            },
+            CalculateRewardsTestCase {
+                name: "partially refunded charge case 2".to_string(), // 部分返金を実装する予定はないが、念の為テストしておく
+                input: vec![
+                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(5000, 1000, "30.0", true, 1675176747),
+                ],
+                expected: 2100 + 2800,
+            },
+        ]
+    });
+
+    fn create_dummy_charge_for_calc(
+        amount: i32,
+        amount_refunded: i32,
+        platform_fee_rate: &str,
+        captured: bool,
+        expired_at: i64,
+    ) -> Charge {
+        let refunded = amount_refunded > 0;
+        let refund_reason = if refunded {
+            Some("テスト".to_string())
+        } else {
+            None
+        };
+        let fee_rate = 3;
+        let sale = amount - amount_refunded;
+        let fee = Decimal::from_i32(sale).unwrap()
+            * (Decimal::from_i32(fee_rate).unwrap() / Decimal::from_i32(100).unwrap());
+        let platform_fee = Decimal::from_i32(sale).unwrap()
+            * (Decimal::from_str(platform_fee_rate).unwrap() / Decimal::from_i32(100).unwrap());
+        // tenantオブジェクトのpayjp_fee_includedがtrueであることが前提のtotal_platform_fee
+        let total_platform_fee =
+            (platform_fee - fee).round_dp_with_strategy(0, RoundingStrategy::ToZero);
+        Charge {
+            id: "ch_845572127a994770fe175d906094f".to_string(),
+            object: "charge".to_string(),
+            livemode: false,
+            created: 1639931415,
+            amount,
+            currency: "jpy".to_string(),
+            paid: true,
+            expired_at: Some(expired_at),
+            captured,
+            captured_at: Some(1639931415),
+            card: Some(Card {
+                object: "card".to_string(),
+                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
+                created: 1639931415,
+                name: None,
+                last4: "4242".to_string(),
+                exp_month: 12,
+                exp_year: 2022,
+                brand: "Visa".to_string(),
+                cvc_check: "passed".to_string(),
+                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
+                address_state: None,
+                address_city: None,
+                address_line1: None,
+                address_line2: None,
+                country: None,
+                address_zip: None,
+                address_zip_check: "unchecked".to_string(),
+                metadata: None,
+            }),
+            customer: None,
+            description: None,
+            failure_code: None,
+            failure_message: None,
+            fee_rate: Some(fee_rate.to_string()),
+            refunded,
+            amount_refunded,
+            refund_reason,
+            subscription: None,
+            metadata: None,
+            platform_fee: None,
+            tenant: Some("bbcccc6d8bfb4dff9d133c993ecbe084".to_string()),
+            platform_fee_rate: Some(platform_fee_rate.to_string()),
+            total_platform_fee: Some(
+                total_platform_fee
+                    .to_string()
+                    .parse::<i32>()
+                    .expect("failed to parse number str"),
+            ),
+            three_d_secure_status: Some("verified".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_calculate_rewards() {
+        for test_case in CALCULATE_REWARDS_TEST_CASE_SET.iter() {
+            let result = calculate_rewards(&test_case.input).expect("failed to get Ok");
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(result, test_case.expected, "{}", message);
+        }
+    }
 }
