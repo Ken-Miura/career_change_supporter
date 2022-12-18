@@ -13,6 +13,8 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 
+use super::KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ;
+
 pub(crate) const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 100;
 
 /// 指定されたパラメータで[Charge]を取得する
@@ -73,18 +75,22 @@ pub(crate) fn calculate_rewards(charges: &[Charge]) -> Result<i32, ErrResp> {
     Ok(rewards)
 }
 
-// TODO: meeting_date_timeがmetadataに入っているかどうかを追加
-/// 未決済かつ、決済可能（与信枠開放されていない（＝返金処理されていない）＋決済確定期限が過ぎていない）なものの相談料の合計を算出する
+/// 相談申し込みを受け付けていて、未決済、かつ決済可能なものの相談料の合計を算出する
+///
+/// 相談申し込みを受け付けているとは、[Charge]のmetadataに[KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ]を含んでいることを意味する
+/// （相談申し込みを受け付ける際、相談日時が確定する。その際にその相談日時を[Charge]のmetadataに埋め込むため、その有無が判断する基準となる）
 ///
 /// 未決済かつ、決済可能なものとは、具体的には下記の2つのを指す
-/// - 相談依頼があり、まだ相談を受け付けるか決めていないもの
-/// - 相談を受け付けたが、まだ未決済（相談者がまだ評価を実施していない、または自動決済が走っていない状態）となっているもの (決済を止められているものも含む)
+/// - 支払い処理が確定していない
+/// - 返金処理（与信枠の開放処理）がされていない
+/// - 現在日時が支払い処理の有効期限を過ぎていない
 pub(crate) fn calculate_expected_rewards(
     charges: &[Charge],
     current_date_time: &DateTime<FixedOffset>,
 ) -> Result<i32, ErrResp> {
     let expected_rewards = charges
         .iter()
+        .filter(|charge| check_if_consultation_request_is_accepted(charge))
         .filter(|charge| !charge.captured)
         .filter(|charge| !charge.refunded)
         .filter(|charge| {
@@ -95,6 +101,17 @@ pub(crate) fn calculate_expected_rewards(
         })
         .try_fold(0, accumulate_rewards)?;
     Ok(expected_rewards)
+}
+
+fn check_if_consultation_request_is_accepted(charge: &Charge) -> bool {
+    let metadata = charge.metadata.clone();
+    match metadata {
+        Some(md) => {
+            let meeting_date_time = md.get(KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ);
+            meeting_date_time.is_some()
+        }
+        None => false,
+    }
 }
 
 // [tenantオブジェクト](https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)のpayjp_fee_includedがtrueであるとことを前提として実装

@@ -175,6 +175,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     create_settlement(&req, &meeting_date_time, txn).await?;
                     // consultant_ratingをinsert
                     // consultation_reqをdelete
+                    // KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJをmetadataに追加する
 
                     Ok(Consultation {
                         consultation_req_id: req.consultation_req_id,
