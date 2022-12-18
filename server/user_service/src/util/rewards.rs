@@ -73,6 +73,7 @@ pub(crate) fn calculate_rewards(charges: &[Charge]) -> Result<i32, ErrResp> {
     Ok(rewards)
 }
 
+// TODO: meeting_date_timeがmetadataに入っているかどうかを追加
 /// 未決済かつ、決済可能（与信枠開放されていない（＝返金処理されていない）＋決済確定期限が過ぎていない）なものの相談料の合計を算出する
 ///
 /// 未決済かつ、決済可能なものとは、具体的には下記の2つのを指す
@@ -148,6 +149,7 @@ mod tests {
 
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset};
     // use chrono::TimeZone;
     use common::payment_platform::charge::RefundQuery;
     use common::{
@@ -161,6 +163,8 @@ mod tests {
     use once_cell::sync::Lazy;
     use rust_decimal::prelude::FromPrimitive;
     use rust_decimal::{Decimal, RoundingStrategy};
+
+    use crate::util::rewards::calculate_expected_rewards;
 
     use super::calculate_rewards;
     // use common::{ApiError, JAPANESE_TIME_ZONE};
@@ -849,6 +853,28 @@ mod tests {
                 ],
                 expected: 2100 + 2800,
             },
+            CalculateRewardsTestCase {
+                name: "decimal number round to zero case 1".to_string(),
+                input: vec![create_dummy_charge_for_calc(
+                    5003, 0, "30.0", true, 1675176747,
+                )],
+                expected: 3503,
+            },
+            CalculateRewardsTestCase {
+                name: "decimal number round to zero case 2".to_string(),
+                input: vec![create_dummy_charge_for_calc(
+                    4008, 0, "30.0", true, 1675176747,
+                )],
+                expected: 2806,
+            },
+            CalculateRewardsTestCase {
+                name: "decimal number round to zero case 3".to_string(),
+                input: vec![
+                    create_dummy_charge_for_calc(5003, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(4008, 0, "30.0", true, 1675176747),
+                ],
+                expected: 3503 + 2806,
+            },
         ]
     });
 
@@ -932,6 +958,26 @@ mod tests {
     fn test_calculate_rewards() {
         for test_case in CALCULATE_REWARDS_TEST_CASE_SET.iter() {
             let result = calculate_rewards(&test_case.input).expect("failed to get Ok");
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(result, test_case.expected, "{}", message);
+        }
+    }
+
+    #[derive(Debug)]
+    struct CalculateExpectedRewardsTestCase {
+        name: String,
+        input: (Vec<Charge>, DateTime<FixedOffset>),
+        expected: i32,
+    }
+
+    static CALCULATE_EXPECTED_REWARDS_TEST_CASE_SET: Lazy<Vec<CalculateExpectedRewardsTestCase>> =
+        Lazy::new(|| vec![]);
+
+    #[test]
+    fn test_calculate_expected_rewards() {
+        for test_case in CALCULATE_EXPECTED_REWARDS_TEST_CASE_SET.iter() {
+            let result = calculate_expected_rewards(&test_case.input.0, &test_case.input.1)
+                .expect("failed to get Ok");
             let message = format!("test case \"{}\" failed", test_case.name.clone());
             assert_eq!(result, test_case.expected, "{}", message);
         }
