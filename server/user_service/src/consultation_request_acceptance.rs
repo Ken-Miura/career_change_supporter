@@ -77,10 +77,11 @@ async fn handle_consultation_request_acceptance(
     let consultant = get_consultant_if_available(req.consultant_id, &op).await?;
     let user = get_user_account_if_available(req.user_account_id, &op).await?;
 
-    let consultation = op
+    let _consultation = op
         .accept_consultation_req(consultation_req_id, picked_candidate)
         .await?;
     // TODO: メール送信
+    println!("{:?}, {:?}", consultant.email_address, user.email_address);
     todo!()
 }
 
