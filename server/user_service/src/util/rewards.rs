@@ -107,8 +107,8 @@ fn check_if_consultation_request_is_accepted(charge: &Charge) -> bool {
     let metadata = charge.metadata.clone();
     match metadata {
         Some(md) => {
-            let meeting_date_time = md.get(KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ);
-            meeting_date_time.is_some()
+            let mdt = md.get(KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ);
+            mdt.is_some()
         }
         None => false,
     }
@@ -166,7 +166,9 @@ mod tests {
 
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::payment_platform::Metadata;
+    use common::JAPANESE_TIME_ZONE;
     // use chrono::TimeZone;
     use common::payment_platform::charge::RefundQuery;
     use common::{
@@ -182,6 +184,7 @@ mod tests {
     use rust_decimal::{Decimal, RoundingStrategy};
 
     use crate::util::rewards::calculate_expected_rewards;
+    use crate::util::KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ;
 
     use super::calculate_rewards;
     // use common::{ApiError, JAPANESE_TIME_ZONE};
@@ -800,95 +803,96 @@ mod tests {
     }
 
     static CALCULATE_REWARDS_TEST_CASE_SET: Lazy<Vec<CalculateRewardsTestCase>> = Lazy::new(|| {
+        let mdt = Some((*JAPANESE_TIME_ZONE).ymd(2022, 4, 5).and_hms(21, 00, 00));
         vec![
             CalculateRewardsTestCase {
                 name: "1 charge".to_string(),
                 input: vec![create_dummy_charge_for_calc(
-                    5000, 0, "30.0", true, 1675176747,
+                    5000, 0, "30.0", true, 1675176747, mdt,
                 )],
                 expected: 3500,
             },
             CalculateRewardsTestCase {
                 name: "2 charges".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747),
-                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747, mdt),
+                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747, mdt),
                 ],
                 expected: 3500 + 2800,
             },
             CalculateRewardsTestCase {
                 name: "3 charges".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747),
-                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747),
-                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747, mdt),
+                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747, mdt),
+                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747, mdt),
                 ],
                 expected: 3500 + 2800 + 2100,
             },
             CalculateRewardsTestCase {
                 name: "non captured charge is not counted as rewards case 1".to_string(),
                 input: vec![create_dummy_charge_for_calc(
-                    4000, 0, "30.0", false, 1675176747,
+                    4000, 0, "30.0", false, 1675176747, mdt,
                 )],
                 expected: 0,
             },
             CalculateRewardsTestCase {
                 name: "non captured charge is not counted as rewards case 2".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747),
-                    create_dummy_charge_for_calc(4000, 0, "30.0", false, 1675176747),
+                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747, mdt),
+                    create_dummy_charge_for_calc(4000, 0, "30.0", false, 1675176747, mdt),
                 ],
                 expected: 3500,
             },
             CalculateRewardsTestCase {
                 name: "fully refunded charge case 1".to_string(),
                 input: vec![create_dummy_charge_for_calc(
-                    5000, 5000, "30.0", true, 1675176747,
+                    5000, 5000, "30.0", true, 1675176747, mdt,
                 )],
                 expected: 0,
             },
             CalculateRewardsTestCase {
                 name: "fully refunded charge case 2".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747),
-                    create_dummy_charge_for_calc(5000, 5000, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747, mdt),
+                    create_dummy_charge_for_calc(5000, 5000, "30.0", true, 1675176747, mdt),
                 ],
                 expected: 2800,
             },
             CalculateRewardsTestCase {
                 name: "partially refunded charge case 1".to_string(), // 部分返金を実装する予定はないが、念の為テストしておく
                 input: vec![create_dummy_charge_for_calc(
-                    5000, 1000, "30.0", true, 1675176747,
+                    5000, 1000, "30.0", true, 1675176747, mdt,
                 )],
                 expected: 2800,
             },
             CalculateRewardsTestCase {
                 name: "partially refunded charge case 2".to_string(), // 部分返金を実装する予定はないが、念の為テストしておく
                 input: vec![
-                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747),
-                    create_dummy_charge_for_calc(5000, 1000, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747, mdt),
+                    create_dummy_charge_for_calc(5000, 1000, "30.0", true, 1675176747, mdt),
                 ],
                 expected: 2100 + 2800,
             },
             CalculateRewardsTestCase {
                 name: "decimal number round to zero case 1".to_string(),
                 input: vec![create_dummy_charge_for_calc(
-                    5003, 0, "30.0", true, 1675176747,
+                    5003, 0, "30.0", true, 1675176747, mdt,
                 )],
                 expected: 3503,
             },
             CalculateRewardsTestCase {
                 name: "decimal number round to zero case 2".to_string(),
                 input: vec![create_dummy_charge_for_calc(
-                    4008, 0, "30.0", true, 1675176747,
+                    4008, 0, "30.0", true, 1675176747, mdt,
                 )],
                 expected: 2806,
             },
             CalculateRewardsTestCase {
                 name: "decimal number round to zero case 3".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(5003, 0, "30.0", true, 1675176747),
-                    create_dummy_charge_for_calc(4008, 0, "30.0", true, 1675176747),
+                    create_dummy_charge_for_calc(5003, 0, "30.0", true, 1675176747, mdt),
+                    create_dummy_charge_for_calc(4008, 0, "30.0", true, 1675176747, mdt),
                 ],
                 expected: 3503 + 2806,
             },
@@ -901,6 +905,7 @@ mod tests {
         platform_fee_rate: &str,
         captured: bool,
         expired_at: i64,
+        meeting_date_time: Option<DateTime<FixedOffset>>,
     ) -> Charge {
         let refunded = amount_refunded > 0;
         let refund_reason = if refunded {
@@ -917,6 +922,16 @@ mod tests {
         // tenantオブジェクトのpayjp_fee_includedがtrueであることが前提のtotal_platform_fee
         let total_platform_fee =
             (platform_fee - fee).round_dp_with_strategy(0, RoundingStrategy::ToZero);
+        let metadata = if let Some(mdt) = meeting_date_time {
+            let mut md = Metadata::with_capacity(1); // 実際にはその他にもメタデータもあるが、テストで利用しないため省略
+            md.insert(
+                KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ.to_string(),
+                mdt.to_rfc3339(),
+            );
+            Some(md)
+        } else {
+            None
+        };
         Charge {
             id: "ch_845572127a994770fe175d906094f".to_string(),
             object: "charge".to_string(),
@@ -957,7 +972,7 @@ mod tests {
             amount_refunded,
             refund_reason,
             subscription: None,
-            metadata: None,
+            metadata,
             platform_fee: None,
             tenant: Some("bbcccc6d8bfb4dff9d133c993ecbe084".to_string()),
             platform_fee_rate: Some(platform_fee_rate.to_string()),
