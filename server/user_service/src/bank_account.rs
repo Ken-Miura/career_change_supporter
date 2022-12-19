@@ -53,7 +53,7 @@ static KATAKANA_LOWER_CASE_UPPER_CASE_SET: Lazy<HashSet<(String, String)>> = Laz
     set
 });
 
-const PLATFORM_FEE_RATE: &str = "30.00";
+const PLATFORM_FEE_RATE_IN_PERCENTAGE: &str = "30.00";
 const PAYJP_FEE_INCLUDED: bool = true;
 const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 
@@ -312,7 +312,7 @@ impl SubmitBankAccountOperationImpl {
                     if let Some(tenant) = tenant_option {
                         let update_tenant = UpdateTenant {
                             name: bank_account.account_holder_name.clone(),
-                            platform_fee_rate: PLATFORM_FEE_RATE.to_string(),
+                            platform_fee_rate: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
                             minimum_transfer_amount: MINIMUM_TRANSFER_AMOUNT,
                             bank_code: bank_account.bank_code,
                             bank_branch_code: bank_account.branch_code,
@@ -355,7 +355,7 @@ impl SubmitBankAccountOperationImpl {
                         let create_tenant = CreateTenant {
                             name: bank_account.account_holder_name.clone(),
                             id: uuid.clone(),
-                            platform_fee_rate: PLATFORM_FEE_RATE.to_string(),
+                            platform_fee_rate: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
                             payjp_fee_included: PAYJP_FEE_INCLUDED,
                             minimum_transfer_amount: MINIMUM_TRANSFER_AMOUNT,
                             bank_code: bank_account.bank_code,
