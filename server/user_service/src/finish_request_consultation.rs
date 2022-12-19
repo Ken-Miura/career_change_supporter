@@ -563,13 +563,13 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         let id_and_charge = self.pool.transaction::<_, (i64, Charge), ErrRespStruct>(|txn| {
             Box::pin(async move {
                 let platform_fee_rate = charge.platform_fee_rate.ok_or_else(|| {
-                    error!("");
+                    error!("failed to get platform_fee_rate (charge.id: {})", charge.id.clone());
                     ErrRespStruct {
                         err_resp: unexpected_err_resp()
                     }
                 })?;
                 let expired_at_timestamp = charge.expired_at.ok_or_else(|| {
-                    error!("");
+                    error!("failed to get expired_at (charge.id: {})", charge.id.clone());
                     ErrRespStruct {
                         err_resp: unexpected_err_resp()
                     }
