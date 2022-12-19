@@ -346,17 +346,20 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける。
+            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultation_req (
                   consultation_req_id BIGSERIAL PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
-                  fee_per_hour_in_yen INTEGER NOT NULL,
                   first_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   second_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   third_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                  latest_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
-                  latest_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
+                  credit_facilities_expired_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
             .await
@@ -479,6 +482,7 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.settlement (
                   settlement_id BIGSERIAL PRIMARY KEY,
@@ -486,6 +490,9 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
+                  credit_facilities_expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   UNIQUE(user_account_id, consultant_id, meeting_at)
                 );",
             ))
@@ -565,6 +572,7 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.stopped_settlement (
                   stopped_settlement_id BIGSERIAL PRIMARY KEY,
@@ -572,11 +580,17 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
-                  expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
+                  credit_facilities_expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   stopped_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   UNIQUE(user_account_id, consultant_id, meeting_at)
                 );",
             ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.consultation_req To user_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
@@ -597,7 +611,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX stopped_settlement_expired_at_idx ON ccs_schema.stopped_settlement (expired_at);",
+                r"CREATE INDEX stopped_settlement_credit_facilities_expired_at_idx ON ccs_schema.stopped_settlement (credit_facilities_expired_at);",
             ))
             .await
             .map(|_| ())?;
@@ -605,6 +619,7 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.receipt (
                   receipt_id BIGSERIAL PRIMARY KEY,
@@ -612,6 +627,8 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
                   settled_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   UNIQUE(user_account_id, consultant_id, meeting_at)
                 );",
@@ -664,6 +681,7 @@ impl MigrationTrait for Migration {
         let _ = conn
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.refund (
                   refund_id BIGSERIAL PRIMARY KEY,
@@ -671,6 +689,9 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
+                  settled_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   refunded_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   UNIQUE(user_account_id, consultant_id, meeting_at)
                 );",
