@@ -518,6 +518,12 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
+                r"CREATE INDEX settlement_consultant_id_idx ON ccs_schema.settlement (consultant_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
                 r"CREATE INDEX settlement_meeting_at_idx ON ccs_schema.settlement (meeting_at);",
             ))
             .await
@@ -605,6 +611,12 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
+                r"CREATE INDEX stopped_settlement_consultant_id_idx ON ccs_schema.stopped_settlement (consultant_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
                 r"CREATE INDEX stopped_settlement_meeting_at_idx ON ccs_schema.stopped_settlement (meeting_at);",
             ))
             .await
@@ -659,6 +671,12 @@ impl MigrationTrait for Migration {
                     r"GRANT USAGE ON SEQUENCE ccs_schema.receipt_receipt_id_seq TO admin_app;",
                 ),
             )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX receipt_consultant_id_idx ON ccs_schema.receipt (consultant_id);",
+            ))
             .await
             .map(|_| ())?;
         let _ = conn

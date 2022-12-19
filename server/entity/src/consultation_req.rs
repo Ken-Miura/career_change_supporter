@@ -9,13 +9,16 @@ pub struct Model {
     pub consultation_req_id: i64,
     pub user_account_id: i64,
     pub consultant_id: i64,
-    pub fee_per_hour_in_yen: i32,
     pub first_candidate_date_time: DateTimeWithTimeZone,
     pub second_candidate_date_time: DateTimeWithTimeZone,
     pub third_candidate_date_time: DateTimeWithTimeZone,
+    pub latest_candidate_date_time: DateTimeWithTimeZone,
     #[sea_orm(column_type = "Text", unique)]
     pub charge_id: String,
-    pub latest_candidate_date_time: DateTimeWithTimeZone,
+    pub fee_per_hour_in_yen: i32,
+    #[sea_orm(column_type = "Text")]
+    pub platform_fee_rate_in_percentage: String,
+    pub credit_facilities_expired_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
