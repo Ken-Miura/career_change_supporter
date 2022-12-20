@@ -83,7 +83,7 @@ async fn handle_reward_req(
                 tenant_id.as_str(),
             )
             .await?;
-        let rewards_of_the_month = calculate_rewards(&charges_of_the_month)?;
+        let rewards_of_the_month = 0; // calculate_rewards(&charges_of_the_month)?;
 
         let (current_year_since_timestamp, current_year_until_timestamp) =
             create_start_and_end_timestamps_of_current_year(current_time.year());
@@ -94,7 +94,7 @@ async fn handle_reward_req(
                 tenant_id.as_str(),
             )
             .await?;
-        let rewards_of_the_year = calculate_rewards(&charges_of_the_year)?;
+        let rewards_of_the_year = 0; // calculate_rewards(&charges_of_the_year)?;
 
         let transfers = get_latest_two_tenant_transfers(tenant_transfer_op, &tenant_id).await?;
         (
