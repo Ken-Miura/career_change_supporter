@@ -560,21 +560,25 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
         charge: Charge,
     ) -> Result<(i64, Charge), ErrResp> {
+        let platform_fee_rate = charge.platform_fee_rate.ok_or_else(|| {
+            error!(
+                "failed to get platform_fee_rate (charge.id: {})",
+                charge.id.clone()
+            );
+            unexpected_err_resp()
+        })?;
+        let expired_at_timestamp = charge.expired_at.ok_or_else(|| {
+            error!(
+                "failed to get expired_at (charge.id: {})",
+                charge.id.clone()
+            );
+            unexpected_err_resp()
+        })?;
+        let expired_at = Utc
+            .timestamp(expired_at_timestamp, 0)
+            .with_timezone(&(*JAPANESE_TIME_ZONE));
         let id_and_charge = self.pool.transaction::<_, (i64, Charge), ErrRespStruct>(|txn| {
             Box::pin(async move {
-                let platform_fee_rate = charge.platform_fee_rate.ok_or_else(|| {
-                    error!("failed to get platform_fee_rate (charge.id: {})", charge.id.clone());
-                    ErrRespStruct {
-                        err_resp: unexpected_err_resp()
-                    }
-                })?;
-                let expired_at_timestamp = charge.expired_at.ok_or_else(|| {
-                    error!("failed to get expired_at (charge.id: {})", charge.id.clone());
-                    ErrRespStruct {
-                        err_resp: unexpected_err_resp()
-                    }
-                })?;
-                let expired_at = Utc.timestamp(expired_at_timestamp, 0).with_timezone(&(*JAPANESE_TIME_ZONE));
                 let active_model = entity::consultation_req::ActiveModel {
                     consultation_req_id: NotSet,
                     user_account_id: Set(account_id),
