@@ -28,7 +28,7 @@ use crate::util::{
     convert_payment_err_to_err_resp, ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE,
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    MAX_ANNUAL_REWARDS_IN_YEN,
+    MAX_ANNUAL_REWARDS_IN_YEN, create_start_and_end_date_time_of_current_year,
 };
 use crate::{
     err::unexpected_err_resp,
@@ -93,10 +93,11 @@ trait RequestConsultationOperation {
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp>;
 
-    async fn filter_receipts_of_the_year_by_consultant_id(
+    async fn filter_receipts_of_the_duration_by_consultant_id(
         &self,
         consultant_id: i64,
-        current_date_time: &DateTime<FixedOffset>,
+        start: &DateTime<FixedOffset>,
+        end: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp>;
 
     async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp>;
@@ -162,6 +163,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
+        // TODO: 補足コメント
         todo!()
     }
 
@@ -170,14 +172,18 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
+        // TODO: 補足コメント
         todo!()
     }
 
-    async fn filter_receipts_of_the_year_by_consultant_id(
+    // （startとendを含む）startからendまでの期間のPaymentInfoを取得する
+    async fn filter_receipts_of_the_duration_by_consultant_id(
         &self,
         consultant_id: i64,
-        current_date_time: &DateTime<FixedOffset>,
+        start: &DateTime<FixedOffset>,
+        end: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
+        // TODO: 補足コメント
         todo!()
     }
 
@@ -464,7 +470,6 @@ async fn ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
     Ok(())
 }
 
-// TODO: 補足コメント
 async fn get_expected_rewards(
     consultant_id: i64,
     current_date_time: &DateTime<FixedOffset>,
@@ -481,14 +486,14 @@ async fn get_expected_rewards(
     Ok(expected_rewards)
 }
 
-// TODO: 補足コメント
 async fn get_rewards(
     consultant_id: i64,
     current_date_time: &DateTime<FixedOffset>,
     op: &impl RequestConsultationOperation,
 ) -> Result<i32, ErrResp> {
+    let (start, end) = create_start_and_end_date_time_of_current_year(current_date_time);
     let p = op
-        .filter_receipts_of_the_year_by_consultant_id(consultant_id, current_date_time)
+        .filter_receipts_of_the_duration_by_consultant_id(consultant_id, &start, &end)
         .await?;
     let rewards = calculate_rewards(&p)?;
     Ok(rewards)

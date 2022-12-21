@@ -10,7 +10,7 @@ use std::{env::var, io::Cursor};
 
 use axum::{http::StatusCode, Json};
 use bytes::Bytes;
-use chrono::{DateTime, FixedOffset, TimeZone};
+use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
 use common::{
     payment_platform::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
@@ -488,6 +488,21 @@ pub(crate) fn consultation_req_exists(
         )
     })?;
     Ok(req)
+}
+
+/// 渡された日時に対して、その年の日本時間における1月1日0時0分0秒と12月31日23時59分59秒を示す日時を返す。
+pub(crate) fn create_start_and_end_date_time_of_current_year(
+    current_date_time: &DateTime<FixedOffset>,
+) -> (DateTime<FixedOffset>, DateTime<FixedOffset>) {
+    let current_year = current_date_time.year();
+
+    let start = JAPANESE_TIME_ZONE.ymd(current_year, 1, 1).and_hms(0, 0, 0);
+
+    let end = JAPANESE_TIME_ZONE
+        .ymd(current_year, 12, 31)
+        .and_hms(23, 59, 59);
+
+    (start, end)
 }
 
 /// 渡された西暦に対して、その年の日本時間における1月1日0時0分0秒と12月31日23時59分59秒のタイムスタンプを返す
