@@ -3,7 +3,6 @@
 use std::str::FromStr;
 
 use axum::{http::StatusCode, Json};
-use chrono::{DateTime, FixedOffset};
 use common::{
     payment_platform::charge::{Charge, ChargeOperation, Query},
     ApiError, ErrResp,
@@ -57,57 +56,6 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
         unexpected_err_resp()
     })?;
     Ok(fee)
-}
-
-pub(crate) const MAX_NUM_OF_CHARGES_PER_REQUEST: u32 = 100;
-
-/// 指定されたパラメータで[Charge]を取得する
-pub(crate) async fn get_charges(
-    mut charge_op: impl ChargeOperation,
-    num_of_charges_per_req: u32,
-    since_timestamp: i64,
-    until_timestamp: i64,
-    tenant_id: &str,
-) -> Result<Vec<Charge>, ErrResp> {
-    let search_charges_query = Query::build()
-        .limit(num_of_charges_per_req)
-        .since(since_timestamp)
-        .until(until_timestamp)
-        .tenant(tenant_id)
-        .finish()
-        .map_err(|e| {
-            error!("failed to build search charges query: {}", e);
-            unexpected_err_resp()
-        })?;
-    let mut result = vec![];
-    let mut has_more_charges = true;
-    while has_more_charges {
-        let mut charges = charge_op
-            .search_charges(&search_charges_query)
-            .await
-            .map_err(|err| match err {
-                common::payment_platform::Error::RequestProcessingError(err) => {
-                    error!("failed to process request on getting charges: {}", err);
-                    unexpected_err_resp()
-                }
-                common::payment_platform::Error::ApiError(err) => {
-                    error!("failed to request charge operation: {}", err);
-                    let status_code = err.error.status as u16;
-                    if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() {
-                        return (
-                            StatusCode::TOO_MANY_REQUESTS,
-                            Json(ApiError {
-                                code: Code::ReachPaymentPlatformRateLimit as u32,
-                            }),
-                        );
-                    }
-                    unexpected_err_resp()
-                }
-            })?;
-        result.append(&mut charges.data);
-        has_more_charges = charges.has_more;
-    }
-    Ok(result)
 }
 
 #[cfg(test)]

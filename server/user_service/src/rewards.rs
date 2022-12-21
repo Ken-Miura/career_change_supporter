@@ -22,7 +22,6 @@ use serde::Serialize;
 use tracing::{error, info};
 
 use crate::util::create_start_and_end_timestamps_of_current_year;
-use crate::util::rewards::{calculate_rewards, get_charges, MAX_NUM_OF_CHARGES_PER_REQUEST};
 use crate::{
     err::{self, unexpected_err_resp},
     util::{session::User, BankAccount, ACCESS_INFO},
@@ -381,14 +380,7 @@ impl RewardOperation for RewardOperationImpl {
         tenant_id: &str,
     ) -> Result<Vec<Charge>, ErrResp> {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-        let result = get_charges(
-            charge_op,
-            MAX_NUM_OF_CHARGES_PER_REQUEST,
-            since_timestamp,
-            until_timestamp,
-            tenant_id,
-        )
-        .await?;
+        let result = vec![];
         Ok(result)
     }
 
@@ -399,14 +391,7 @@ impl RewardOperation for RewardOperationImpl {
         tenant_id: &str,
     ) -> Result<Vec<Charge>, ErrResp> {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-        let result = get_charges(
-            charge_op,
-            MAX_NUM_OF_CHARGES_PER_REQUEST,
-            since_timestamp,
-            until_timestamp,
-            tenant_id,
-        )
-        .await?;
+        let result = vec![];
         Ok(result)
     }
 }
