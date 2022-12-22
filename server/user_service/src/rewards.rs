@@ -2,13 +2,11 @@
 
 use axum::async_trait;
 use axum::{extract::State, http::StatusCode, Json};
-use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, TimeZone, Utc};
-use common::payment_platform::charge::Charge;
+use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 use common::util::Ymd;
 use common::JAPANESE_TIME_ZONE;
 use common::{
     payment_platform::{
-        charge::ChargeOperationImpl,
         tenant::{TenantOperation, TenantOperationImpl},
         tenant_transfer::{
             Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
@@ -21,7 +19,11 @@ use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::Serialize;
 use tracing::{error, info};
 
-use crate::util::create_start_and_end_timestamps_of_current_year;
+use crate::util::rewards::{
+    calculate_rewards, create_start_and_end_date_time_of_current_month,
+    create_start_and_end_date_time_of_current_year, PaymentInfo,
+};
+use crate::util::{self};
 use crate::{
     err::{self, unexpected_err_resp},
     util::{session::User, BankAccount, ACCESS_INFO},
@@ -70,30 +72,27 @@ async fn handle_reward_req(
             account_holder_name: tenant_obj.bank_account_holder_name,
         };
 
-        let (current_month_since_timestamp, current_month_until_timestamp) =
-            create_start_and_end_timestamps_of_current_month(
-                current_time.year(),
-                current_time.month(),
-            );
-        let charges_of_the_month = reward_op
-            .get_charges_of_the_month(
-                current_month_since_timestamp,
-                current_month_until_timestamp,
-                tenant_id.as_str(),
+        let (current_month_since, current_month_until) =
+            create_start_and_end_date_time_of_current_month(&current_time);
+        let payments_of_the_month = reward_op
+            .filter_receipts_of_the_duration_by_consultant_id(
+                account_id,
+                &current_month_since,
+                &current_month_until,
             )
             .await?;
-        let rewards_of_the_month = 0; // calculate_rewards(&charges_of_the_month)?;
+        let rewards_of_the_month = calculate_rewards(&payments_of_the_month)?;
 
-        let (current_year_since_timestamp, current_year_until_timestamp) =
-            create_start_and_end_timestamps_of_current_year(current_time.year());
-        let charges_of_the_year = reward_op
-            .get_charges_of_the_year(
-                current_year_since_timestamp,
-                current_year_until_timestamp,
-                tenant_id.as_str(),
+        let (current_year_since, current_year_until) =
+            create_start_and_end_date_time_of_current_year(&current_time);
+        let payments_of_the_year = reward_op
+            .filter_receipts_of_the_duration_by_consultant_id(
+                account_id,
+                &current_year_since,
+                &current_year_until,
             )
             .await?;
-        let rewards_of_the_year = 0; // calculate_rewards(&charges_of_the_year)?;
+        let rewards_of_the_year = calculate_rewards(&payments_of_the_year)?;
 
         let transfers = get_latest_two_tenant_transfers(tenant_transfer_op, &tenant_id).await?;
         (
@@ -218,29 +217,6 @@ async fn get_tenant_obj_by_tenant_id(
     Ok(tenant)
 }
 
-fn create_start_and_end_timestamps_of_current_month(
-    current_year: i32,
-    current_month: u32,
-) -> (i64, i64) {
-    let start_timestamp = JAPANESE_TIME_ZONE
-        .ymd(current_year, current_month, 1)
-        .and_hms(0, 0, 0)
-        .timestamp();
-
-    let (year_for_until, month_for_until) = if current_month >= 12 {
-        (current_year + 1, 1)
-    } else {
-        (current_year, current_month + 1)
-    };
-    let end_timestamp = (JAPANESE_TIME_ZONE
-        .ymd(year_for_until, month_for_until, 1)
-        .and_hms(23, 59, 59)
-        - Duration::days(1))
-    .timestamp();
-
-    (start_timestamp, end_timestamp)
-}
-
 async fn get_latest_two_tenant_transfers(
     tenant_transfer_op: impl TenantTransferOperation,
     tenant_id: &str,
@@ -332,19 +308,13 @@ trait RewardOperation {
         account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 
-    async fn get_charges_of_the_month(
+    /// （startとendを含む）startからendまでの期間のPaymentInfoを取得する
+    async fn filter_receipts_of_the_duration_by_consultant_id(
         &self,
-        since_timestamp: i64,
-        until_timestamp: i64,
-        tenant_id: &str,
-    ) -> Result<Vec<Charge>, ErrResp>;
-
-    async fn get_charges_of_the_year(
-        &self,
-        since_timestamp: i64,
-        until_timestamp: i64,
-        tenant_id: &str,
-    ) -> Result<Vec<Charge>, ErrResp>;
+        consultant_id: i64,
+        start: &DateTime<FixedOffset>,
+        end: &DateTime<FixedOffset>,
+    ) -> Result<Vec<PaymentInfo>, ErrResp>;
 }
 
 struct RewardOperationImpl {
@@ -373,26 +343,19 @@ impl RewardOperation for RewardOperationImpl {
         Ok(model.map(|m| m.tenant_id))
     }
 
-    async fn get_charges_of_the_month(
+    async fn filter_receipts_of_the_duration_by_consultant_id(
         &self,
-        since_timestamp: i64,
-        until_timestamp: i64,
-        tenant_id: &str,
-    ) -> Result<Vec<Charge>, ErrResp> {
-        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-        let result = vec![];
-        Ok(result)
-    }
-
-    async fn get_charges_of_the_year(
-        &self,
-        since_timestamp: i64,
-        until_timestamp: i64,
-        tenant_id: &str,
-    ) -> Result<Vec<Charge>, ErrResp> {
-        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-        let result = vec![];
-        Ok(result)
+        consultant_id: i64,
+        start: &DateTime<FixedOffset>,
+        end: &DateTime<FixedOffset>,
+    ) -> Result<Vec<PaymentInfo>, ErrResp> {
+        util::rewards::filter_receipts_of_the_duration_by_consultant_id(
+            &self.pool,
+            consultant_id,
+            start,
+            end,
+        )
+        .await
     }
 }
 
@@ -403,6 +366,7 @@ mod tests {
     // TODO: rewrite tests
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset};
     use common::{
         payment_platform::{
             charge::Charge,
@@ -416,6 +380,7 @@ mod tests {
     };
 
     use crate::err::Code;
+    use crate::util::rewards::PaymentInfo;
 
     use super::RewardOperation;
 
@@ -439,51 +404,60 @@ mod tests {
             Ok(self.tenant_id_option.clone())
         }
 
-        async fn get_charges_of_the_month(
+        async fn filter_receipts_of_the_duration_by_consultant_id(
             &self,
-            since_timestamp: i64,
-            until_timestamp: i64,
-            tenant_id: &str,
-        ) -> Result<Vec<Charge>, ErrResp> {
-            assert_eq!(self.month_since_timestamp, since_timestamp);
-            assert_eq!(self.month_until_timestamp, until_timestamp);
-            if let Some(tenant) = self.tenant_id_option.clone() {
-                assert_eq!(tenant.as_str(), tenant_id);
-            };
-            if self.too_many_requests {
-                return Err((
-                    StatusCode::TOO_MANY_REQUESTS,
-                    Json(ApiError {
-                        code: Code::ReachPaymentPlatformRateLimit as u32,
-                    }),
-                ));
-            }
-            // Ok(self.rewards_of_the_month)
+            consultant_id: i64,
+            start: &DateTime<FixedOffset>,
+            end: &DateTime<FixedOffset>,
+        ) -> Result<Vec<PaymentInfo>, ErrResp> {
             todo!()
         }
 
-        async fn get_charges_of_the_year(
-            &self,
-            since_timestamp: i64,
-            until_timestamp: i64,
-            tenant_id: &str,
-        ) -> Result<Vec<Charge>, ErrResp> {
-            assert_eq!(self.year_since_timestamp, since_timestamp);
-            assert_eq!(self.year_until_timestamp, until_timestamp);
-            if let Some(tenant) = self.tenant_id_option.clone() {
-                assert_eq!(tenant.as_str(), tenant_id);
-            };
-            if self.too_many_requests {
-                return Err((
-                    StatusCode::TOO_MANY_REQUESTS,
-                    Json(ApiError {
-                        code: Code::ReachPaymentPlatformRateLimit as u32,
-                    }),
-                ));
-            }
-            // Ok(self.rewards_of_the_year)
-            todo!()
-        }
+        // async fn get_charges_of_the_month(
+        //     &self,
+        //     since_timestamp: i64,
+        //     until_timestamp: i64,
+        //     tenant_id: &str,
+        // ) -> Result<Vec<Charge>, ErrResp> {
+        //     assert_eq!(self.month_since_timestamp, since_timestamp);
+        //     assert_eq!(self.month_until_timestamp, until_timestamp);
+        //     if let Some(tenant) = self.tenant_id_option.clone() {
+        //         assert_eq!(tenant.as_str(), tenant_id);
+        //     };
+        //     if self.too_many_requests {
+        //         return Err((
+        //             StatusCode::TOO_MANY_REQUESTS,
+        //             Json(ApiError {
+        //                 code: Code::ReachPaymentPlatformRateLimit as u32,
+        //             }),
+        //         ));
+        //     }
+        //     // Ok(self.rewards_of_the_month)
+        //     todo!()
+        // }
+
+        // async fn get_charges_of_the_year(
+        //     &self,
+        //     since_timestamp: i64,
+        //     until_timestamp: i64,
+        //     tenant_id: &str,
+        // ) -> Result<Vec<Charge>, ErrResp> {
+        //     assert_eq!(self.year_since_timestamp, since_timestamp);
+        //     assert_eq!(self.year_until_timestamp, until_timestamp);
+        //     if let Some(tenant) = self.tenant_id_option.clone() {
+        //         assert_eq!(tenant.as_str(), tenant_id);
+        //     };
+        //     if self.too_many_requests {
+        //         return Err((
+        //             StatusCode::TOO_MANY_REQUESTS,
+        //             Json(ApiError {
+        //                 code: Code::ReachPaymentPlatformRateLimit as u32,
+        //             }),
+        //         ));
+        //     }
+        //     // Ok(self.rewards_of_the_year)
+        //     todo!()
+        // }
     }
 
     struct TenantOperationMock {

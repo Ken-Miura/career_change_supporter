@@ -12,7 +12,6 @@ use common::{
     ErrResp, RespResult,
 };
 use common::{ApiError, JAPANESE_TIME_ZONE};
-use entity::prelude::Receipt;
 use entity::prelude::Settlement;
 use entity::prelude::StoppedSettlement;
 use entity::sea_orm::{ColumnTrait, QueryFilter};
@@ -20,20 +19,22 @@ use entity::{
     prelude::ConsultingFee,
     sea_orm::{DatabaseConnection, EntityTrait},
 };
-use entity::{receipt, settlement, stopped_settlement};
+use entity::{settlement, stopped_settlement};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
-use crate::util::rewards::{calculate_rewards, PaymentInfo};
+use crate::util::rewards::{
+    calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
+};
 use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
 use crate::util::{
-    convert_payment_err_to_err_resp, create_start_and_end_date_time_of_current_year,
-    ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
-    KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ, MAX_ANNUAL_REWARDS_IN_YEN,
+    convert_payment_err_to_err_resp, ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE,
+    KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    MAX_ANNUAL_REWARDS_IN_YEN,
 };
 use crate::{
     err::unexpected_err_resp,
@@ -228,28 +229,13 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         start: &DateTime<FixedOffset>,
         end: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        let models = Receipt::find()
-            .filter(receipt::Column::ConsultantId.eq(consultant_id))
-            .filter(receipt::Column::SettledAt.between(*start, *end))
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter receipt (consultant_id: {}, start: {}, end: {}): {}",
-                    consultant_id, start, end, e
-                );
-                unexpected_err_resp()
-            })?;
-        // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
-        // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
-        // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
-        Ok(models
-            .into_iter()
-            .map(|m| PaymentInfo {
-                fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-            })
-            .collect::<Vec<PaymentInfo>>())
+        util::rewards::filter_receipts_of_the_duration_by_consultant_id(
+            &self.pool,
+            consultant_id,
+            start,
+            end,
+        )
+        .await
     }
 
     async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp> {

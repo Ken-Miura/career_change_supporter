@@ -3,9 +3,18 @@
 use std::str::FromStr;
 
 use axum::{http::StatusCode, Json};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, TimeZone};
 use common::{
     payment_platform::charge::{Charge, ChargeOperation, Query},
-    ApiError, ErrResp,
+    ApiError, ErrResp, JAPANESE_TIME_ZONE,
+};
+use entity::{
+    prelude::Receipt,
+    sea_orm::{EntityTrait, QueryFilter},
+};
+use entity::{
+    receipt,
+    sea_orm::{ColumnTrait, DatabaseConnection},
 };
 use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use tracing::error;
@@ -16,6 +25,36 @@ use crate::err::{unexpected_err_resp, Code};
 pub(crate) struct PaymentInfo {
     pub(crate) fee_per_hour_in_yen: i32,
     pub(crate) platform_fee_rate_in_percentage: String,
+}
+
+pub(crate) async fn filter_receipts_of_the_duration_by_consultant_id(
+    pool: &DatabaseConnection,
+    consultant_id: i64,
+    start: &DateTime<FixedOffset>,
+    end: &DateTime<FixedOffset>,
+) -> Result<Vec<PaymentInfo>, ErrResp> {
+    let models = Receipt::find()
+        .filter(receipt::Column::ConsultantId.eq(consultant_id))
+        .filter(receipt::Column::SettledAt.between(*start, *end))
+        .all(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to filter receipt (consultant_id: {}, start: {}, end: {}): {}",
+                consultant_id, start, end, e
+            );
+            unexpected_err_resp()
+        })?;
+    // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
+    // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
+    // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
+    Ok(models
+        .into_iter()
+        .map(|m| PaymentInfo {
+            fee_per_hour_in_yen: m.fee_per_hour_in_yen,
+            platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
+        })
+        .collect::<Vec<PaymentInfo>>())
 }
 
 // [tenantオブジェクト](https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)のpayjp_fee_includedがtrueであるとことを前提として実装
@@ -56,6 +95,41 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
         unexpected_err_resp()
     })?;
     Ok(fee)
+}
+
+/// 渡された日時に対して、その年の日本時間における1月1日0時0分0秒と12月31日23時59分59秒を示す日時を返す。
+pub(crate) fn create_start_and_end_date_time_of_current_year(
+    current_date_time: &DateTime<FixedOffset>,
+) -> (DateTime<FixedOffset>, DateTime<FixedOffset>) {
+    let current_year = current_date_time.year();
+
+    let start = JAPANESE_TIME_ZONE.ymd(current_year, 1, 1).and_hms(0, 0, 0);
+
+    let end = JAPANESE_TIME_ZONE
+        .ymd(current_year, 12, 31)
+        .and_hms(23, 59, 59);
+
+    (start, end)
+}
+
+/// 渡された日時に対して、その月の日本時間における1日0時0分0秒と最終日23時59分59秒を示す日時を返す。
+pub(crate) fn create_start_and_end_date_time_of_current_month(
+    current_date_time: &DateTime<FixedOffset>,
+) -> (DateTime<FixedOffset>, DateTime<FixedOffset>) {
+    let current_year = current_date_time.year();
+    let current_month = current_date_time.month();
+    let start = JAPANESE_TIME_ZONE
+        .ymd(current_date_time.year(), current_month, 1)
+        .and_hms(0, 0, 0);
+
+    let (year, month) = if current_month >= 12 {
+        (current_year + 1, 1)
+    } else {
+        (current_year, current_month + 1)
+    };
+    let end = JAPANESE_TIME_ZONE.ymd(year, month, 1).and_hms(23, 59, 59) - Duration::days(1);
+
+    (start, end)
 }
 
 #[cfg(test)]
