@@ -2,12 +2,8 @@
 
 use std::str::FromStr;
 
-use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, TimeZone};
-use common::{
-    payment_platform::charge::{Charge, ChargeOperation, Query},
-    ApiError, ErrResp, JAPANESE_TIME_ZONE,
-};
+use common::{ErrResp, JAPANESE_TIME_ZONE};
 use entity::{
     prelude::Receipt,
     sea_orm::{EntityTrait, QueryFilter},
@@ -19,8 +15,11 @@ use entity::{
 use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::err::unexpected_err_resp;
 
+/// 支払いに関する情報を保持する構造体
+///
+/// [crate::common::payment_platform::charge::Chage]と同じデータを保持するキャッシュとしての役割を持つ
 #[derive(Clone, Debug)]
 pub(crate) struct PaymentInfo {
     pub(crate) fee_per_hour_in_yen: i32,
@@ -134,8 +133,6 @@ pub(crate) fn create_start_and_end_date_time_of_current_month(
 
 #[cfg(test)]
 mod tests {
-    // use std::str::FromStr;
-
     use std::str::FromStr;
 
     use axum::http::StatusCode;
@@ -160,98 +157,14 @@ mod tests {
     // use crate::util::rewards::calculate_expected_rewards;
     // use crate::util::KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ;
 
+    use crate::util::rewards::create_start_and_end_date_time_of_current_year;
+
     use super::calculate_rewards;
     // use common::{ApiError, JAPANESE_TIME_ZONE};
     // use once_cell::sync::Lazy;
     // use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 
     // use crate::err::Code;
-
-    #[derive(Debug, Clone)]
-    struct ChargeOperationMock {
-        num_of_charges_per_req: u32,
-        since_timestamp: i64,
-        until_timestamp: i64,
-        tenant_id: String,
-        num_of_search_trial: usize,
-        lists: Vec<List<Charge>>,
-        too_many_requests: bool,
-    }
-
-    #[async_trait]
-    impl ChargeOperation for ChargeOperationMock {
-        async fn search_charges(
-            &mut self,
-            query: &Query,
-        ) -> Result<List<Charge>, common::payment_platform::Error> {
-            assert_eq!(
-                self.num_of_charges_per_req,
-                query.limit().expect("failed to get limit")
-            );
-            assert_eq!(
-                self.since_timestamp,
-                query.since().expect("failed to get since")
-            );
-            assert_eq!(
-                self.until_timestamp,
-                query.until().expect("failed to get until")
-            );
-            assert_eq!(
-                self.tenant_id,
-                query.tenant().expect("failed to get tenant")
-            );
-            if self.too_many_requests {
-                let err_detail = ErrorDetail {
-                    message: "message".to_string(),
-                    status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
-                    r#type: "type".to_string(),
-                    code: None,
-                    param: None,
-                    charge: None,
-                };
-                let err_info = ErrorInfo { error: err_detail };
-                return Err(common::payment_platform::Error::ApiError(Box::new(
-                    err_info,
-                )));
-            }
-            let result = self.lists[self.num_of_search_trial].clone();
-            self.num_of_search_trial += 1;
-            Ok(result)
-        }
-
-        async fn create_charge(
-            &self,
-            _create_charge: &CreateCharge,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-            panic!("this method must not be called")
-        }
-
-        async fn ge_charge_by_charge_id(
-            &self,
-            _charge_id: &str,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-            panic!("this method must not be called")
-        }
-
-        async fn finish_three_d_secure_flow(
-            &self,
-            _charge_id: &str,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-            panic!("this method must not be called")
-        }
-
-        async fn refund(
-            &self,
-            _charge_id: &str,
-            _query: RefundQuery,
-        ) -> Result<Charge, common::payment_platform::Error> {
-            // このAPIでは必要ない機能なので、呼んだらテストを失敗させる
-            panic!("this method must not be called")
-        }
-    }
 
     // #[derive(Debug)]
     // struct TestCase {
@@ -987,5 +900,27 @@ mod tests {
             // let message = format!("test case \"{}\" failed", test_case.name.clone());
             // assert_eq!(result, test_case.expected, "{}", message);
         }
+    }
+
+    #[test]
+    fn test_case_normal_year_create_start_and_end_date_time_of_current_year() {
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 7, 15).and_hms(15, 43, 39);
+        let (start, end) = create_start_and_end_date_time_of_current_year(&current_date_time);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2022, 1, 1).and_hms(0, 0, 0), start);
+        assert_eq!(
+            JAPANESE_TIME_ZONE.ymd(2022, 12, 31).and_hms(23, 59, 59),
+            end
+        );
+    }
+
+    #[test]
+    fn test_case_leap_year_create_start_and_end_date_time_of_current_year() {
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2020, 12, 15).and_hms(15, 43, 39);
+        let (start, end) = create_start_and_end_date_time_of_current_year(&current_date_time);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2020, 1, 1).and_hms(0, 0, 0), start);
+        assert_eq!(
+            JAPANESE_TIME_ZONE.ymd(2020, 12, 31).and_hms(23, 59, 59),
+            end
+        );
     }
 }
