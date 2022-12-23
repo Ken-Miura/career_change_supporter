@@ -389,7 +389,9 @@ mod tests {
     // TODO: rewrite tests
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::payment_platform::tenant::ReviewedBrands;
+    use common::JAPANESE_TIME_ZONE;
     use common::{
         payment_platform::{
             charge::Charge,
@@ -403,6 +405,7 @@ mod tests {
     };
 
     use crate::err::Code;
+    use crate::rewards::{handle_reward_req, Transfer};
     use crate::util::rewards::{
         create_start_and_end_date_time_of_current_month,
         create_start_and_end_date_time_of_current_year, PaymentInfo,
@@ -531,116 +534,101 @@ mod tests {
         }
     }
 
-    // #[tokio::test]
-    // async fn handle_reward_req_returns_empty_rewards() {
-    //     let account_id = 9853;
-    //     let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-    //     let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
-    //     let reward_op = RewardOperationMock {
-    //         tenant_id_option: None,
-    //         too_many_requests: false,
-    //         month_since_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 1)
-    //             .and_hms(0, 0, 0)
-    //             .timestamp(),
-    //         month_until_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 31)
-    //             .and_hms(23, 59, 59)
-    //             .timestamp(),
-    //         rewards_of_the_month: 0,
-    //         year_since_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 1, 1)
-    //             .and_hms(0, 0, 0)
-    //             .timestamp(),
-    //         year_until_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 31)
-    //             .and_hms(23, 59, 59)
-    //             .timestamp(),
-    //         rewards_of_the_year: 0,
-    //     };
-    //     let tenant = create_dummy_tenant(tenant_id);
-    //     let tenant_op = TenantOperationMock {
-    //         tenant,
-    //         too_many_requests: false,
-    //     };
-    //     let tenant_transfer_op = TenantTransferOperationMock {
-    //         tenant_transfers: List {
-    //             object: "list".to_string(),
-    //             has_more: false,
-    //             url: "/v1/tenant_transfers".to_string(),
-    //             data: vec![],
-    //             count: 0,
-    //         },
-    //         too_many_requests: false,
-    //     };
+    #[tokio::test]
+    async fn handle_reward_req_returns_empty_rewards() {
+        let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let reward_op = RewardOperationMock {
+            account_id,
+            tenant_id_option: None,
+            current_date_time,
+            payments_of_the_month: vec![],
+            payments_of_the_year: vec![],
+        };
+        let tenant = create_dummy_tenant(tenant_id);
+        let tenant_op = TenantOperationMock {
+            tenant,
+            too_many_requests: false,
+        };
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![],
+                count: 0,
+            },
+            too_many_requests: false,
+        };
 
-    //     let result = handle_reward_req(
-    //         account_id,
-    //         reward_op,
-    //         tenant_op,
-    //         current_datetime,
-    //         tenant_transfer_op,
-    //     )
-    //     .await
-    //     .expect("failed to get Ok");
+        let result = handle_reward_req(
+            account_id,
+            reward_op,
+            tenant_op,
+            current_date_time,
+            tenant_transfer_op,
+        )
+        .await
+        .expect("failed to get Ok");
 
-    //     assert_eq!(StatusCode::OK, result.0);
-    //     assert_eq!(None, result.1 .0.bank_account);
-    //     assert_eq!(None, result.1 .0.rewards_of_the_month);
-    //     assert_eq!(None, result.1 .0.rewards_of_the_year);
-    //     let empty = Vec::<Transfer>::with_capacity(0);
-    //     assert_eq!(empty, result.1 .0.latest_two_transfers);
-    // }
+        assert_eq!(StatusCode::OK, result.0);
+        assert_eq!(None, result.1 .0.bank_account);
+        assert_eq!(None, result.1 .0.rewards_of_the_month);
+        assert_eq!(None, result.1 .0.rewards_of_the_year);
+        let empty = Vec::<Transfer>::with_capacity(0);
+        assert_eq!(empty, result.1 .0.latest_two_transfers);
+    }
 
-    // fn create_dummy_tenant(tenant_id: &str) -> common::payment_platform::tenant::Tenant {
-    //     let reviewed_brands = vec![
-    //         ReviewedBrands {
-    //             brand: "Visa".to_string(),
-    //             status: "passed".to_string(),
-    //             available_date: Some(1626016999),
-    //         },
-    //         ReviewedBrands {
-    //             brand: "MasterCard".to_string(),
-    //             status: "passed".to_string(),
-    //             available_date: Some(1626016999),
-    //         },
-    //         ReviewedBrands {
-    //             brand: "JCB".to_string(),
-    //             status: "passed".to_string(),
-    //             available_date: Some(1626016999),
-    //         },
-    //         ReviewedBrands {
-    //             brand: "AmericanExpress".to_string(),
-    //             status: "passed".to_string(),
-    //             available_date: Some(1626016999),
-    //         },
-    //         ReviewedBrands {
-    //             brand: "DinersClub".to_string(),
-    //             status: "passed".to_string(),
-    //             available_date: Some(1626016999),
-    //         },
-    //     ];
-    //     common::payment_platform::tenant::Tenant {
-    //         id: tenant_id.to_string(),
-    //         name: "タナカ　タロウ".to_string(),
-    //         object: "tenant".to_string(),
-    //         livemode: false,
-    //         created: 1626016999,
-    //         platform_fee_rate: "10.15".to_string(),
-    //         payjp_fee_included: true,
-    //         minimum_transfer_amount: 1000,
-    //         bank_code: "0001".to_string(),
-    //         bank_branch_code: "123".to_string(),
-    //         bank_account_type: "普通".to_string(),
-    //         bank_account_number: "1111222".to_string(),
-    //         bank_account_holder_name: "タナカ　タロウ".to_string(),
-    //         bank_account_status: "pending".to_string(),
-    //         currencies_supported: vec!["jpy".to_string()],
-    //         default_currency: "jpy".to_string(),
-    //         reviewed_brands,
-    //         metadata: None,
-    //     }
-    // }
+    fn create_dummy_tenant(tenant_id: &str) -> common::payment_platform::tenant::Tenant {
+        let reviewed_brands = vec![
+            ReviewedBrands {
+                brand: "Visa".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "MasterCard".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "JCB".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "AmericanExpress".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+            ReviewedBrands {
+                brand: "DinersClub".to_string(),
+                status: "passed".to_string(),
+                available_date: Some(1626016999),
+            },
+        ];
+        common::payment_platform::tenant::Tenant {
+            id: tenant_id.to_string(),
+            name: "タナカ　タロウ".to_string(),
+            object: "tenant".to_string(),
+            livemode: false,
+            created: 1626016999,
+            platform_fee_rate: "10.15".to_string(),
+            payjp_fee_included: true,
+            minimum_transfer_amount: 1000,
+            bank_code: "0001".to_string(),
+            bank_branch_code: "123".to_string(),
+            bank_account_type: "普通".to_string(),
+            bank_account_number: "1111222".to_string(),
+            bank_account_holder_name: "タナカ　タロウ".to_string(),
+            bank_account_status: "pending".to_string(),
+            currencies_supported: vec!["jpy".to_string()],
+            default_currency: "jpy".to_string(),
+            reviewed_brands,
+            metadata: None,
+        }
+    }
 
     // #[tokio::test]
     // async fn handle_reward_req_fail_tenant_too_many_requests() {
