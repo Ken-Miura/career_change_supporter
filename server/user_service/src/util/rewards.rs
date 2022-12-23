@@ -157,7 +157,10 @@ mod tests {
     // use crate::util::rewards::calculate_expected_rewards;
     // use crate::util::KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ;
 
-    use crate::util::rewards::create_start_and_end_date_time_of_current_year;
+    use crate::util::rewards::{
+        create_start_and_end_date_time_of_current_month,
+        create_start_and_end_date_time_of_current_year,
+    };
 
     use super::calculate_rewards;
     // use common::{ApiError, JAPANESE_TIME_ZONE};
@@ -920,6 +923,41 @@ mod tests {
         assert_eq!(JAPANESE_TIME_ZONE.ymd(2020, 1, 1).and_hms(0, 0, 0), start);
         assert_eq!(
             JAPANESE_TIME_ZONE.ymd(2020, 12, 31).and_hms(23, 59, 59),
+            end
+        );
+    }
+
+    #[test]
+    fn test_case_normal_month_create_start_and_end_date_time_of_current_month() {
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 7, 15).and_hms(15, 43, 39);
+        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2022, 7, 1).and_hms(0, 0, 0), start);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2022, 7, 31).and_hms(23, 59, 59), end);
+    }
+
+    #[test]
+    fn test_case_feb_in_normal_year_create_start_and_end_date_time_of_current_month() {
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 2, 15).and_hms(15, 43, 39);
+        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2021, 2, 1).and_hms(0, 0, 0), start);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2021, 2, 28).and_hms(23, 59, 59), end);
+    }
+
+    #[test]
+    fn test_case_feb_in_leap_year_create_start_and_end_date_time_of_current_month() {
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2020, 2, 15).and_hms(15, 43, 39);
+        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2020, 2, 1).and_hms(0, 0, 0), start);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2020, 2, 29).and_hms(23, 59, 59), end);
+    }
+
+    #[test]
+    fn test_case_dec_create_start_and_end_date_time_of_current_month() {
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 12, 15).and_hms(15, 43, 39);
+        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time);
+        assert_eq!(JAPANESE_TIME_ZONE.ymd(2022, 12, 1).and_hms(0, 0, 0), start);
+        assert_eq!(
+            JAPANESE_TIME_ZONE.ymd(2022, 12, 31).and_hms(23, 59, 59),
             end
         );
     }
