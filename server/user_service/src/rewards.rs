@@ -75,7 +75,7 @@ async fn handle_reward_req(
         let (current_month_since, current_month_until) =
             create_start_and_end_date_time_of_current_month(&current_time);
         let payments_of_the_month = reward_op
-            .filter_receipts_of_the_duration_by_consultant_id(
+            .filter_receipts_of_the_month_by_consultant_id(
                 account_id,
                 &current_month_since,
                 &current_month_until,
@@ -86,7 +86,7 @@ async fn handle_reward_req(
         let (current_year_since, current_year_until) =
             create_start_and_end_date_time_of_current_year(&current_time);
         let payments_of_the_year = reward_op
-            .filter_receipts_of_the_duration_by_consultant_id(
+            .filter_receipts_of_the_year_by_consultant_id(
                 account_id,
                 &current_year_since,
                 &current_year_until,
@@ -309,7 +309,15 @@ trait RewardOperation {
     ) -> Result<Option<String>, ErrResp>;
 
     /// （startとendを含む）startからendまでの期間のPaymentInfoを取得する
-    async fn filter_receipts_of_the_duration_by_consultant_id(
+    async fn filter_receipts_of_the_year_by_consultant_id(
+        &self,
+        consultant_id: i64,
+        start: &DateTime<FixedOffset>,
+        end: &DateTime<FixedOffset>,
+    ) -> Result<Vec<PaymentInfo>, ErrResp>;
+
+    /// （startとendを含む）startからendまでの期間のPaymentInfoを取得する
+    async fn filter_receipts_of_the_month_by_consultant_id(
         &self,
         consultant_id: i64,
         start: &DateTime<FixedOffset>,
@@ -343,7 +351,22 @@ impl RewardOperation for RewardOperationImpl {
         Ok(model.map(|m| m.tenant_id))
     }
 
-    async fn filter_receipts_of_the_duration_by_consultant_id(
+    async fn filter_receipts_of_the_year_by_consultant_id(
+        &self,
+        consultant_id: i64,
+        start: &DateTime<FixedOffset>,
+        end: &DateTime<FixedOffset>,
+    ) -> Result<Vec<PaymentInfo>, ErrResp> {
+        util::rewards::filter_receipts_of_the_duration_by_consultant_id(
+            &self.pool,
+            consultant_id,
+            start,
+            end,
+        )
+        .await
+    }
+
+    async fn filter_receipts_of_the_month_by_consultant_id(
         &self,
         consultant_id: i64,
         start: &DateTime<FixedOffset>,
@@ -404,7 +427,16 @@ mod tests {
             Ok(self.tenant_id_option.clone())
         }
 
-        async fn filter_receipts_of_the_duration_by_consultant_id(
+        async fn filter_receipts_of_the_year_by_consultant_id(
+            &self,
+            consultant_id: i64,
+            start: &DateTime<FixedOffset>,
+            end: &DateTime<FixedOffset>,
+        ) -> Result<Vec<PaymentInfo>, ErrResp> {
+            todo!()
+        }
+
+        async fn filter_receipts_of_the_month_by_consultant_id(
             &self,
             consultant_id: i64,
             start: &DateTime<FixedOffset>,
