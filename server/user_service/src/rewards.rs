@@ -403,37 +403,29 @@ mod tests {
     };
 
     use crate::err::Code;
-    use crate::util::rewards::PaymentInfo;
+    use crate::util::rewards::{
+        create_start_and_end_date_time_of_current_month,
+        create_start_and_end_date_time_of_current_year, PaymentInfo,
+    };
 
     use super::RewardOperation;
 
     struct RewardOperationMock {
+        account_id: i64,
         tenant_id_option: Option<String>,
-        too_many_requests: bool,
-        month_since_timestamp: i64,
-        month_until_timestamp: i64,
-        // rewards_of_the_month: i32,
-        year_since_timestamp: i64,
-        year_until_timestamp: i64,
-        // rewards_of_the_year: i32,
+        current_date_time: DateTime<FixedOffset>,
+        payments_of_the_month: Vec<PaymentInfo>,
+        payments_of_the_year: Vec<PaymentInfo>,
     }
 
     #[async_trait]
     impl RewardOperation for RewardOperationMock {
         async fn find_tenant_id_by_account_id(
             &self,
-            _account_id: i64,
+            account_id: i64,
         ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.account_id, account_id);
             Ok(self.tenant_id_option.clone())
-        }
-
-        async fn filter_receipts_of_the_year_by_consultant_id(
-            &self,
-            consultant_id: i64,
-            start: &DateTime<FixedOffset>,
-            end: &DateTime<FixedOffset>,
-        ) -> Result<Vec<PaymentInfo>, ErrResp> {
-            todo!()
         }
 
         async fn filter_receipts_of_the_month_by_consultant_id(
@@ -442,54 +434,25 @@ mod tests {
             start: &DateTime<FixedOffset>,
             end: &DateTime<FixedOffset>,
         ) -> Result<Vec<PaymentInfo>, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, consultant_id);
+            let (s, e) = create_start_and_end_date_time_of_current_month(&self.current_date_time);
+            assert_eq!(*start, s);
+            assert_eq!(*end, e);
+            Ok(self.payments_of_the_month.clone())
         }
 
-        // async fn get_charges_of_the_month(
-        //     &self,
-        //     since_timestamp: i64,
-        //     until_timestamp: i64,
-        //     tenant_id: &str,
-        // ) -> Result<Vec<Charge>, ErrResp> {
-        //     assert_eq!(self.month_since_timestamp, since_timestamp);
-        //     assert_eq!(self.month_until_timestamp, until_timestamp);
-        //     if let Some(tenant) = self.tenant_id_option.clone() {
-        //         assert_eq!(tenant.as_str(), tenant_id);
-        //     };
-        //     if self.too_many_requests {
-        //         return Err((
-        //             StatusCode::TOO_MANY_REQUESTS,
-        //             Json(ApiError {
-        //                 code: Code::ReachPaymentPlatformRateLimit as u32,
-        //             }),
-        //         ));
-        //     }
-        //     // Ok(self.rewards_of_the_month)
-        //     todo!()
-        // }
-
-        // async fn get_charges_of_the_year(
-        //     &self,
-        //     since_timestamp: i64,
-        //     until_timestamp: i64,
-        //     tenant_id: &str,
-        // ) -> Result<Vec<Charge>, ErrResp> {
-        //     assert_eq!(self.year_since_timestamp, since_timestamp);
-        //     assert_eq!(self.year_until_timestamp, until_timestamp);
-        //     if let Some(tenant) = self.tenant_id_option.clone() {
-        //         assert_eq!(tenant.as_str(), tenant_id);
-        //     };
-        //     if self.too_many_requests {
-        //         return Err((
-        //             StatusCode::TOO_MANY_REQUESTS,
-        //             Json(ApiError {
-        //                 code: Code::ReachPaymentPlatformRateLimit as u32,
-        //             }),
-        //         ));
-        //     }
-        //     // Ok(self.rewards_of_the_year)
-        //     todo!()
-        // }
+        async fn filter_receipts_of_the_year_by_consultant_id(
+            &self,
+            consultant_id: i64,
+            start: &DateTime<FixedOffset>,
+            end: &DateTime<FixedOffset>,
+        ) -> Result<Vec<PaymentInfo>, ErrResp> {
+            assert_eq!(self.account_id, consultant_id);
+            let (s, e) = create_start_and_end_date_time_of_current_year(&self.current_date_time);
+            assert_eq!(*start, s);
+            assert_eq!(*end, e);
+            Ok(self.payments_of_the_year.clone())
+        }
     }
 
     struct TenantOperationMock {
