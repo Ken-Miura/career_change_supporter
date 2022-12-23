@@ -133,57 +133,17 @@ pub(crate) fn create_start_and_end_date_time_of_current_month(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
 
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::payment_platform::Metadata;
+    use chrono::TimeZone;
     use common::JAPANESE_TIME_ZONE;
-    // use chrono::TimeZone;
-    use common::payment_platform::charge::RefundQuery;
-    use common::{
-        payment_platform::{
-            charge::{Charge, ChargeOperation, CreateCharge, Query},
-            customer::Card,
-            ErrorDetail, ErrorInfo, List,
-        },
-        ErrResp,
-    };
     use once_cell::sync::Lazy;
-    use rust_decimal::prelude::FromPrimitive;
-    use rust_decimal::{Decimal, RoundingStrategy};
-
-    // use crate::util::rewards::calculate_expected_rewards;
-    // use crate::util::KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ;
 
     use crate::util::rewards::{
         create_start_and_end_date_time_of_current_month,
         create_start_and_end_date_time_of_current_year,
     };
 
-    use super::calculate_rewards;
-    // use common::{ApiError, JAPANESE_TIME_ZONE};
-    // use once_cell::sync::Lazy;
-    // use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
-
-    // use crate::err::Code;
-
-    // #[derive(Debug)]
-    // struct TestCase {
-    //     name: String,
-    //     input: Input,
-    //     expected: Result<i32, ErrResp>,
-    // }
-
-    // #[derive(Debug)]
-    // struct Input {
-    //     charge_op: ChargeOperationMock,
-    //     num_of_charges_per_req: u32,
-    //     since_timestamp: i64,
-    //     until_timestamp: i64,
-    //     tenant_id: String,
-    // }
+    use super::{calculate_rewards, PaymentInfo};
 
     // static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
     //     vec![
@@ -688,220 +648,91 @@ mod tests {
     #[derive(Debug)]
     struct CalculateRewardsTestCase {
         name: String,
-        input: Vec<Charge>,
+        input: Vec<PaymentInfo>,
         expected: i32,
     }
 
     static CALCULATE_REWARDS_TEST_CASE_SET: Lazy<Vec<CalculateRewardsTestCase>> = Lazy::new(|| {
-        let mdt = Some((*JAPANESE_TIME_ZONE).ymd(2022, 4, 5).and_hms(21, 00, 00));
         vec![
             CalculateRewardsTestCase {
-                name: "1 charge".to_string(),
-                input: vec![create_dummy_charge_for_calc(
-                    5000, 0, "30.0", true, 1675176747, mdt,
-                )],
+                name: "1 payment".to_string(),
+                input: vec![PaymentInfo {
+                    fee_per_hour_in_yen: 5000,
+                    platform_fee_rate_in_percentage: "30.0".to_string(),
+                }],
                 expected: 3500,
             },
             CalculateRewardsTestCase {
-                name: "2 charges".to_string(),
+                name: "2 payments".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747, mdt),
-                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747, mdt),
+                    PaymentInfo {
+                        fee_per_hour_in_yen: 5000,
+                        platform_fee_rate_in_percentage: "30.0".to_string(),
+                    },
+                    PaymentInfo {
+                        fee_per_hour_in_yen: 4000,
+                        platform_fee_rate_in_percentage: "30.0".to_string(),
+                    },
                 ],
                 expected: 3500 + 2800,
             },
             CalculateRewardsTestCase {
-                name: "3 charges".to_string(),
+                name: "3 payments".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747, mdt),
-                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747, mdt),
-                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747, mdt),
+                    PaymentInfo {
+                        fee_per_hour_in_yen: 5000,
+                        platform_fee_rate_in_percentage: "30.0".to_string(),
+                    },
+                    PaymentInfo {
+                        fee_per_hour_in_yen: 4000,
+                        platform_fee_rate_in_percentage: "30.0".to_string(),
+                    },
+                    PaymentInfo {
+                        fee_per_hour_in_yen: 3000,
+                        platform_fee_rate_in_percentage: "30.0".to_string(),
+                    },
                 ],
                 expected: 3500 + 2800 + 2100,
             },
             CalculateRewardsTestCase {
-                name: "non captured charge is not counted as rewards case 1".to_string(),
-                input: vec![create_dummy_charge_for_calc(
-                    4000, 0, "30.0", false, 1675176747, mdt,
-                )],
-                expected: 0,
-            },
-            CalculateRewardsTestCase {
-                name: "non captured charge is not counted as rewards case 2".to_string(),
-                input: vec![
-                    create_dummy_charge_for_calc(5000, 0, "30.0", true, 1675176747, mdt),
-                    create_dummy_charge_for_calc(4000, 0, "30.0", false, 1675176747, mdt),
-                ],
-                expected: 3500,
-            },
-            CalculateRewardsTestCase {
-                name: "fully refunded charge case 1".to_string(),
-                input: vec![create_dummy_charge_for_calc(
-                    5000, 5000, "30.0", true, 1675176747, mdt,
-                )],
-                expected: 0,
-            },
-            CalculateRewardsTestCase {
-                name: "fully refunded charge case 2".to_string(),
-                input: vec![
-                    create_dummy_charge_for_calc(4000, 0, "30.0", true, 1675176747, mdt),
-                    create_dummy_charge_for_calc(5000, 5000, "30.0", true, 1675176747, mdt),
-                ],
-                expected: 2800,
-            },
-            CalculateRewardsTestCase {
-                name: "partially refunded charge case 1".to_string(), // 部分返金を実装する予定はないが、念の為テストしておく
-                input: vec![create_dummy_charge_for_calc(
-                    5000, 1000, "30.0", true, 1675176747, mdt,
-                )],
-                expected: 2800,
-            },
-            CalculateRewardsTestCase {
-                name: "partially refunded charge case 2".to_string(), // 部分返金を実装する予定はないが、念の為テストしておく
-                input: vec![
-                    create_dummy_charge_for_calc(3000, 0, "30.0", true, 1675176747, mdt),
-                    create_dummy_charge_for_calc(5000, 1000, "30.0", true, 1675176747, mdt),
-                ],
-                expected: 2100 + 2800,
-            },
-            CalculateRewardsTestCase {
-                name: "decimal number round to zero case 1".to_string(),
-                input: vec![create_dummy_charge_for_calc(
-                    5003, 0, "30.0", true, 1675176747, mdt,
-                )],
+                name: "decimal number in fee round to zero case 1".to_string(),
+                input: vec![PaymentInfo {
+                    fee_per_hour_in_yen: 5003,
+                    platform_fee_rate_in_percentage: "30.0".to_string(),
+                }],
                 expected: 3503,
             },
             CalculateRewardsTestCase {
-                name: "decimal number round to zero case 2".to_string(),
-                input: vec![create_dummy_charge_for_calc(
-                    4008, 0, "30.0", true, 1675176747, mdt,
-                )],
+                name: "decimal number in fee round to zero case 2".to_string(),
+                input: vec![PaymentInfo {
+                    fee_per_hour_in_yen: 4008,
+                    platform_fee_rate_in_percentage: "30.0".to_string(),
+                }],
                 expected: 2806,
             },
             CalculateRewardsTestCase {
-                name: "decimal number round to zero case 3".to_string(),
+                name: "decimal number in fee round to zero case 3".to_string(),
                 input: vec![
-                    create_dummy_charge_for_calc(5003, 0, "30.0", true, 1675176747, mdt),
-                    create_dummy_charge_for_calc(4008, 0, "30.0", true, 1675176747, mdt),
+                    PaymentInfo {
+                        fee_per_hour_in_yen: 5003,
+                        platform_fee_rate_in_percentage: "30.0".to_string(),
+                    },
+                    PaymentInfo {
+                        fee_per_hour_in_yen: 4008,
+                        platform_fee_rate_in_percentage: "30.0".to_string(),
+                    },
                 ],
                 expected: 3503 + 2806,
             },
         ]
     });
 
-    fn create_dummy_charge_for_calc(
-        amount: i32,
-        amount_refunded: i32,
-        platform_fee_rate: &str,
-        captured: bool,
-        expired_at: i64,
-        meeting_date_time: Option<DateTime<FixedOffset>>,
-    ) -> Charge {
-        let refunded = amount_refunded > 0;
-        let refund_reason = if refunded {
-            Some("テスト".to_string())
-        } else {
-            None
-        };
-        let fee_rate = 3;
-        let sale = amount - amount_refunded;
-        let fee = Decimal::from_i32(sale).unwrap()
-            * (Decimal::from_i32(fee_rate).unwrap() / Decimal::from_i32(100).unwrap());
-        let platform_fee = Decimal::from_i32(sale).unwrap()
-            * (Decimal::from_str(platform_fee_rate).unwrap() / Decimal::from_i32(100).unwrap());
-        // tenantオブジェクトのpayjp_fee_includedがtrueであることが前提のtotal_platform_fee
-        let total_platform_fee =
-            (platform_fee - fee).round_dp_with_strategy(0, RoundingStrategy::ToZero);
-        let metadata = if let Some(mdt) = meeting_date_time {
-            let mut md = Metadata::with_capacity(1); // 実際にはその他にもメタデータもあるが、テストで利用しないため省略
-                                                     // md.insert(
-                                                     //     KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJ.to_string(),
-                                                     //     mdt.to_rfc3339(),
-                                                     // );
-            Some(md)
-        } else {
-            None
-        };
-        Charge {
-            id: "ch_845572127a994770fe175d906094f".to_string(),
-            object: "charge".to_string(),
-            livemode: false,
-            created: 1639931415,
-            amount,
-            currency: "jpy".to_string(),
-            paid: true,
-            expired_at: Some(expired_at),
-            captured,
-            captured_at: Some(1639931415),
-            card: Some(Card {
-                object: "card".to_string(),
-                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
-                created: 1639931415,
-                name: None,
-                last4: "4242".to_string(),
-                exp_month: 12,
-                exp_year: 2022,
-                brand: "Visa".to_string(),
-                cvc_check: "passed".to_string(),
-                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
-                address_state: None,
-                address_city: None,
-                address_line1: None,
-                address_line2: None,
-                country: None,
-                address_zip: None,
-                address_zip_check: "unchecked".to_string(),
-                metadata: None,
-            }),
-            customer: None,
-            description: None,
-            failure_code: None,
-            failure_message: None,
-            fee_rate: Some(fee_rate.to_string()),
-            refunded,
-            amount_refunded,
-            refund_reason,
-            subscription: None,
-            metadata,
-            platform_fee: None,
-            tenant: Some("bbcccc6d8bfb4dff9d133c993ecbe084".to_string()),
-            platform_fee_rate: Some(platform_fee_rate.to_string()),
-            total_platform_fee: Some(
-                total_platform_fee
-                    .to_string()
-                    .parse::<i32>()
-                    .expect("failed to parse number str"),
-            ),
-            three_d_secure_status: Some("verified".to_string()),
-        }
-    }
-
     #[test]
     fn test_calculate_rewards() {
         for test_case in CALCULATE_REWARDS_TEST_CASE_SET.iter() {
-            // let result = calculate_rewards(&test_case.input).expect("failed to get Ok");
-            // let message = format!("test case \"{}\" failed", test_case.name.clone());
-            // assert_eq!(result, test_case.expected, "{}", message);
-        }
-    }
-
-    #[derive(Debug)]
-    struct CalculateExpectedRewardsTestCase {
-        name: String,
-        input: (Vec<Charge>, DateTime<FixedOffset>),
-        expected: i32,
-    }
-
-    static CALCULATE_EXPECTED_REWARDS_TEST_CASE_SET: Lazy<Vec<CalculateExpectedRewardsTestCase>> =
-        Lazy::new(|| vec![]);
-
-    #[test]
-    fn test_calculate_expected_rewards() {
-        for test_case in CALCULATE_EXPECTED_REWARDS_TEST_CASE_SET.iter() {
-            // let result = calculate_expected_rewards(&test_case.input.0, &test_case.input.1)
-            //     .expect("failed to get Ok");
-            // let message = format!("test case \"{}\" failed", test_case.name.clone());
-            // assert_eq!(result, test_case.expected, "{}", message);
+            let result = calculate_rewards(&test_case.input).expect("failed to get Ok");
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            assert_eq!(result, test_case.expected, "{}", message);
         }
     }
 
