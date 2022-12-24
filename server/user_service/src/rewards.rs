@@ -671,65 +671,47 @@ mod tests {
         assert_eq!(Code::ReachPaymentPlatformRateLimit as u32, result.1 .0.code);
     }
 
-    // #[tokio::test]
-    // async fn handle_reward_req_fail_tenant_transfers_too_many_requests() {
-    //     let account_id = 9853;
-    //     let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-    //     let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
-    //     let reward_op = RewardOperationMock {
-    //         tenant_id_option: Some(tenant_id.to_string()),
-    //         too_many_requests: false,
-    //         month_since_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 1)
-    //             .and_hms(0, 0, 0)
-    //             .timestamp(),
-    //         month_until_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 31)
-    //             .and_hms(23, 59, 59)
-    //             .timestamp(),
-    //         rewards_of_the_month: 0,
-    //         year_since_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 1, 1)
-    //             .and_hms(0, 0, 0)
-    //             .timestamp(),
-    //         year_until_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 31)
-    //             .and_hms(23, 59, 59)
-    //             .timestamp(),
-    //         rewards_of_the_year: 0,
-    //     };
-    //     let tenant = create_dummy_tenant(tenant_id);
-    //     let tenant_op = TenantOperationMock {
-    //         tenant,
-    //         too_many_requests: false,
-    //     };
-    //     let tenant_transfer_op = TenantTransferOperationMock {
-    //         tenant_transfers: List {
-    //             object: "list".to_string(),
-    //             has_more: false,
-    //             url: "/v1/tenant_transfers".to_string(),
-    //             data: vec![],
-    //             count: 0,
-    //         },
-    //         too_many_requests: true,
-    //     };
+    #[tokio::test]
+    async fn handle_reward_req_fail_tenant_transfers_too_many_requests() {
+        let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let reward_op = RewardOperationMock {
+            account_id,
+            tenant_id_option: Some(tenant_id.to_string()),
+            current_date_time,
+            payments_of_the_month: vec![],
+            payments_of_the_year: vec![],
+        };
+        let tenant = create_dummy_tenant(tenant_id);
+        let tenant_op = TenantOperationMock {
+            tenant,
+            too_many_requests: false,
+        };
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![],
+                count: 0,
+            },
+            too_many_requests: true,
+        };
 
-    //     let result = handle_reward_req(
-    //         account_id,
-    //         reward_op,
-    //         tenant_op,
-    //         current_datetime,
-    //         tenant_transfer_op,
-    //     )
-    //     .await
-    //     .expect_err("failed to get Err");
+        let result = handle_reward_req(
+            account_id,
+            reward_op,
+            tenant_op,
+            current_date_time,
+            tenant_transfer_op,
+        )
+        .await
+        .expect_err("failed to get Err");
 
-    //     assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
-    //     assert_eq!(
-    //         err::Code::ReachPaymentPlatformRateLimit as u32,
-    //         result.1 .0.code
-    //     );
-    // }
+        assert_eq!(StatusCode::TOO_MANY_REQUESTS, result.0);
+        assert_eq!(Code::ReachPaymentPlatformRateLimit as u32, result.1 .0.code);
+    }
 
     // #[tokio::test]
     // async fn handle_reward_req_returns_reward_with_tenant_1tenant_transfer() {
