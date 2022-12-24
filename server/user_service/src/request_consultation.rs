@@ -627,7 +627,7 @@ mod tests {
         rewards::{create_start_and_end_date_time_of_current_year, PaymentInfo},
         ConsultationDateTime, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
         KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-        KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ, MAX_ANNUAL_REWARDS_IN_YEN,
+        KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     };
 
     use super::{
@@ -2235,64 +2235,67 @@ mod tests {
                     }),
                 )),
             },
-            // TestCase {
-            //     name: "fail ExceedMaxAnnualRewards".to_string(),
-            //     input: Input {
-            //         account_id: 1,
-            //         param: RequestConsultationParam {
-            //             consultant_id: 2,
-            //             fee_per_hour_in_yen: 5000,
-            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-            //             first_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 14,
-            //                 hour: 21,
-            //             },
-            //             second_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 4,
-            //                 hour: 18,
-            //             },
-            //             third_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 20,
-            //                 hour: 21,
-            //             },
-            //         },
-            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-            //         req_op: RequestConsultationOperationMock {
-            //             account_id: 1,
-            //             consultant_id: 2,
-            //             fee_per_hour_in_yen: Some(5000),
-            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-            //             amount: 3000,
-            //             expected_rewards: 4000,
-            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 14)
-            //                 .and_hms(21, 0, 0),
-            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 4)
-            //                 .and_hms(18, 0, 0),
-            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 20)
-            //                 .and_hms(21, 0, 0),
-            //             rewards_of_the_year: *MAX_ANNUAL_REWARDS_IN_YEN - (3000 + 4000 + 5000 - 1),
-            //             user_account_is_available: true,
-            //         },
-            //     },
-            //     expected: Err((
-            //         StatusCode::BAD_REQUEST,
-            //         Json(ApiError {
-            //             code: Code::ExceedMaxAnnualRewards as u32,
-            //         }),
-            //     )),
-            // },
+            TestCase {
+                name: "fail ExceedMaxAnnualRewards".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: RequestConsultationParam {
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: 5000,
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 14,
+                            hour: 21,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 18,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 20,
+                            hour: 21,
+                        },
+                    },
+                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    req_op: RequestConsultationOperationMock {
+                        account_id: 1,
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: Some(5000),
+                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        first_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 14)
+                            .and_hms(21, 0, 0),
+                        second_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(18, 0, 0),
+                        third_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 20)
+                            .and_hms(21, 0, 0),
+                        user_account_is_available: true,
+                        settlement_payments:
+                            create_payments_that_has_reward_over_one_third_of_max_rewards(),
+                        stopped_settlement_payments:
+                            create_payments_that_has_reward_over_one_third_of_max_rewards(),
+                        receipt_payments:
+                            create_payments_that_has_reward_over_one_third_of_max_rewards(),
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ExceedMaxAnnualRewards as u32,
+                    }),
+                )),
+            },
         ]
     });
 
@@ -2346,6 +2349,22 @@ mod tests {
             total_platform_fee: Some(1350),
             three_d_secure_status: Some("unverified".to_string()),
         }
+    }
+
+    fn create_payments_that_has_reward_over_one_third_of_max_rewards() -> Vec<PaymentInfo> {
+        // *MAX_ANNUAL_REWARDS_IN_YENのおよそ三分の一
+        let one_third_of_max = 156667;
+        let mut result = vec![];
+        let mut rewards = 0;
+        while rewards < one_third_of_max {
+            let p = PaymentInfo {
+                fee_per_hour_in_yen: 3000,
+                platform_fee_rate_in_percentage: "30.0".to_string(),
+            };
+            result.push(p);
+            rewards += 2100;
+        }
+        result
     }
 
     #[tokio::test]
