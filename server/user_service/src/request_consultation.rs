@@ -613,7 +613,7 @@ mod tests {
 
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
+    use chrono::{DateTime, FixedOffset, TimeZone};
     use common::payment_platform::customer::Card;
     use common::ApiError;
     use common::{
