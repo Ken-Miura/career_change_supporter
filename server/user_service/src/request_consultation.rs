@@ -615,12 +615,14 @@ mod tests {
     use axum::{async_trait, Json};
     use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
     use common::payment_platform::customer::Card;
+    use common::ApiError;
     use common::{
         payment_platform::charge::{Charge, CreateCharge},
         ErrResp, RespResult, JAPANESE_TIME_ZONE,
     };
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::util::{
         rewards::{create_start_and_end_date_time_of_current_year, PaymentInfo},
         ConsultationDateTime, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
@@ -856,122 +858,168 @@ mod tests {
                     }),
                 )),
             },
-            // TestCase {
-            //     name: "consultant is negative".to_string(),
-            //     input: Input {
-            //         account_id: 1,
-            //         param: RequestConsultationParam {
-            //             consultant_id: -1,
-            //             fee_per_hour_in_yen: 5000,
-            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-            //             first_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 4,
-            //                 hour: 7,
-            //             },
-            //             second_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 4,
-            //                 hour: 23,
-            //             },
-            //             third_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 22,
-            //                 hour: 7,
-            //             },
-            //         },
-            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-            //         req_op: RequestConsultationOperationMock {
-            //             account_id: 1,
-            //             consultant_id: -1,
-            //             fee_per_hour_in_yen: Some(5000),
-            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-            //             amount: 5000,
-            //             expected_rewards: 15000,
-            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 4)
-            //                 .and_hms(7, 0, 0),
-            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 4)
-            //                 .and_hms(23, 0, 0),
-            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 22)
-            //                 .and_hms(7, 0, 0),
-            //             rewards_of_the_year: 20000,
-            //             user_account_is_available: true,
-            //         },
-            //     },
-            //     expected: Err((
-            //         StatusCode::BAD_REQUEST,
-            //         Json(ApiError {
-            //             code: Code::NonPositiveConsultantId as u32,
-            //         }),
-            //     )),
-            // },
-            // TestCase {
-            //     name: "first_candidate_in_jst IllegalConsultationDateTime".to_string(),
-            //     input: Input {
-            //         account_id: 1,
-            //         param: RequestConsultationParam {
-            //             consultant_id: 2,
-            //             fee_per_hour_in_yen: 5000,
-            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-            //             first_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 4,
-            //                 hour: 24,
-            //             },
-            //             second_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 4,
-            //                 hour: 23,
-            //             },
-            //             third_candidate_in_jst: ConsultationDateTime {
-            //                 year: 2022,
-            //                 month: 11,
-            //                 day: 22,
-            //                 hour: 7,
-            //             },
-            //         },
-            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-            //         req_op: RequestConsultationOperationMock {
-            //             account_id: 1,
-            //             consultant_id: 2,
-            //             fee_per_hour_in_yen: Some(5000),
-            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-            //             amount: 5000,
-            //             expected_rewards: 15000,
-            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 4)
-            //                 .and_hms(7, 0, 0),
-            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 4)
-            //                 .and_hms(23, 0, 0),
-            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-            //                 .ymd(2022, 11, 22)
-            //                 .and_hms(7, 0, 0),
-            //             rewards_of_the_year: 20000,
-            //             user_account_is_available: true,
-            //         },
-            //     },
-            //     expected: Err((
-            //         StatusCode::BAD_REQUEST,
-            //         Json(ApiError {
-            //             code: Code::IllegalConsultationDateTime as u32,
-            //         }),
-            //     )),
-            // },
+            TestCase {
+                name: "consultant id is negative".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: RequestConsultationParam {
+                        consultant_id: -1,
+                        fee_per_hour_in_yen: 5000,
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 22,
+                            hour: 7,
+                        },
+                    },
+                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    req_op: RequestConsultationOperationMock {
+                        account_id: 1,
+                        consultant_id: -1,
+                        fee_per_hour_in_yen: Some(5000),
+                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        first_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(7, 0, 0),
+                        second_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(23, 0, 0),
+                        third_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_is_available: true,
+                        settlement_payments: vec![PaymentInfo {
+                            fee_per_hour_in_yen: 5000,
+                            platform_fee_rate_in_percentage: "30.0".to_string(),
+                        }],
+                        stopped_settlement_payments: vec![PaymentInfo {
+                            fee_per_hour_in_yen: 5000,
+                            platform_fee_rate_in_percentage: "30.0".to_string(),
+                        }],
+                        receipt_payments: vec![
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                        ],
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultantId as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "first_candidate_in_jst IllegalConsultationDateTime".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: RequestConsultationParam {
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: 5000,
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 24,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 22,
+                            hour: 7,
+                        },
+                    },
+                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    req_op: RequestConsultationOperationMock {
+                        account_id: 1,
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: Some(5000),
+                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        first_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(7, 0, 0),
+                        second_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(23, 0, 0),
+                        third_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_is_available: true,
+                        settlement_payments: vec![PaymentInfo {
+                            fee_per_hour_in_yen: 5000,
+                            platform_fee_rate_in_percentage: "30.0".to_string(),
+                        }],
+                        stopped_settlement_payments: vec![PaymentInfo {
+                            fee_per_hour_in_yen: 5000,
+                            platform_fee_rate_in_percentage: "30.0".to_string(),
+                        }],
+                        receipt_payments: vec![
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                        ],
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::IllegalConsultationDateTime as u32,
+                    }),
+                )),
+            },
             // TestCase {
             //     name: "first_candidate_in_jst IllegalConsultationHour".to_string(),
             //     input: Input {
