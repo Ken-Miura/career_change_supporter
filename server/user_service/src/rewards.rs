@@ -817,7 +817,7 @@ mod tests {
                 refund_count: 0,
                 dispute_amount: 0,
                 dispute_count: 0,
-                total_platform_fee: 1500,
+                total_platform_fee: 1350,
             },
             term_start: 1638284400,
             term_end: 1640962800,
@@ -873,7 +873,7 @@ mod tests {
             platform_fee: None,
             tenant: Some(tenant_id.to_string()),
             platform_fee_rate: Some("30.0".to_string()),
-            total_platform_fee: Some(1500),
+            total_platform_fee: Some(1350),
             three_d_secure_status: Some("verified".to_string()),
         }
     }
