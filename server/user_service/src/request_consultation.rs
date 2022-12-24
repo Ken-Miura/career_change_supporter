@@ -610,1342 +610,1374 @@ fn generate_metadata(
 
 #[cfg(test)]
 mod tests {
-    // TODO: Rewrite tests
 
-    // use axum::async_trait;
-    // use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
-    // use common::{
-    //     payment_platform::charge::{Charge, CreateCharge},
-    //     ErrResp, RespResult, JAPANESE_TIME_ZONE,
-    // };
-    // use once_cell::sync::Lazy;
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
+    use common::payment_platform::customer::Card;
+    use common::{
+        payment_platform::charge::{Charge, CreateCharge},
+        ErrResp, RespResult, JAPANESE_TIME_ZONE,
+    };
+    use once_cell::sync::Lazy;
 
-    // use crate::util::{
-    //     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    //     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    // };
+    use crate::util::{
+        rewards::{create_start_and_end_date_time_of_current_year, PaymentInfo},
+        ConsultationDateTime, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
+        KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ, MAX_ANNUAL_REWARDS_IN_YEN,
+    };
 
-    // use super::{
-    //     handle_request_consultation, RequestConsultationOperation, RequestConsultationParam,
-    //     RequestConsultationResult,
-    // };
+    use super::{
+        handle_request_consultation, RequestConsultationOperation, RequestConsultationParam,
+        RequestConsultationResult,
+    };
 
-    // #[derive(Debug)]
-    // struct TestCase {
-    //     name: String,
-    //     input: Input,
-    //     expected: RespResult<RequestConsultationResult>,
-    // }
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<RequestConsultationResult>,
+    }
 
-    // #[derive(Debug)]
-    // struct Input {
-    //     account_id: i64,
-    //     param: RequestConsultationParam,
-    //     current_date_time: DateTime<FixedOffset>,
-    //     req_op: RequestConsultationOperationMock,
-    // }
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        param: RequestConsultationParam,
+        current_date_time: DateTime<FixedOffset>,
+        req_op: RequestConsultationOperationMock,
+    }
 
-    // #[derive(Clone, Debug)]
-    // struct RequestConsultationOperationMock {
-    //     account_id: i64,
-    //     consultant_id: i64,
-    //     fee_per_hour_in_yen: Option<i32>,
-    //     tenant_id: Option<String>,
-    //     card_token: String,
-    //     charge: Charge,
-    //     charges: Vec<Charge>,
-    //     current_date_time: DateTime<FixedOffset>,
-    //     first_candidate_in_jst: DateTime<FixedOffset>,
-    //     second_candidate_in_jst: DateTime<FixedOffset>,
-    //     third_candidate_in_jst: DateTime<FixedOffset>,
-    //     user_account_is_available: bool,
-    // }
+    #[derive(Clone, Debug)]
+    struct RequestConsultationOperationMock {
+        account_id: i64,
+        consultant_id: i64,
+        fee_per_hour_in_yen: Option<i32>,
+        tenant_id: Option<String>,
+        card_token: String,
+        charge: Charge,
+        current_date_time: DateTime<FixedOffset>,
+        first_candidate_in_jst: DateTime<FixedOffset>,
+        second_candidate_in_jst: DateTime<FixedOffset>,
+        third_candidate_in_jst: DateTime<FixedOffset>,
+        user_account_is_available: bool,
+        settlement_payments: Vec<PaymentInfo>,
+        stopped_settlement_payments: Vec<PaymentInfo>,
+        receipt_payments: Vec<PaymentInfo>,
+    }
 
-    // #[async_trait]
-    // impl RequestConsultationOperation for RequestConsultationOperationMock {
-    //     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-    //         if self.account_id != account_id {
-    //             return Ok(false);
-    //         };
-    //         Ok(true)
-    //     }
+    #[async_trait]
+    impl RequestConsultationOperation for RequestConsultationOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            if self.account_id != account_id {
+                return Ok(false);
+            };
+            Ok(true)
+        }
 
-    //     async fn check_if_user_account_is_available(
-    //         &self,
-    //         _user_account_id: i64,
-    //     ) -> Result<bool, ErrResp> {
-    //         Ok(self.user_account_is_available)
-    //     }
+        async fn check_if_user_account_is_available(
+            &self,
+            _user_account_id: i64,
+        ) -> Result<bool, ErrResp> {
+            Ok(self.user_account_is_available)
+        }
 
-    //     async fn check_if_consultant_is_available(
-    //         &self,
-    //         consultant_id: i64,
-    //     ) -> Result<bool, ErrResp> {
-    //         if self.consultant_id != consultant_id {
-    //             return Ok(false);
-    //         };
-    //         Ok(true)
-    //     }
+        async fn check_if_consultant_is_available(
+            &self,
+            consultant_id: i64,
+        ) -> Result<bool, ErrResp> {
+            if self.consultant_id != consultant_id {
+                return Ok(false);
+            };
+            Ok(true)
+        }
 
-    //     async fn find_fee_per_hour_in_yen_by_consultant_id(
-    //         &self,
-    //         consultant_id: i64,
-    //     ) -> Result<Option<i32>, ErrResp> {
-    //         assert_eq!(self.consultant_id, consultant_id);
-    //         Ok(self.fee_per_hour_in_yen)
-    //     }
+        async fn find_fee_per_hour_in_yen_by_consultant_id(
+            &self,
+            consultant_id: i64,
+        ) -> Result<Option<i32>, ErrResp> {
+            assert_eq!(self.consultant_id, consultant_id);
+            Ok(self.fee_per_hour_in_yen)
+        }
 
-    //     async fn find_tenant_id_by_consultant_id(
-    //         &self,
-    //         consultant_id: i64,
-    //     ) -> Result<Option<String>, ErrResp> {
-    //         assert_eq!(self.consultant_id, consultant_id);
-    //         Ok(self.tenant_id.clone())
-    //     }
+        async fn find_tenant_id_by_consultant_id(
+            &self,
+            consultant_id: i64,
+        ) -> Result<Option<String>, ErrResp> {
+            assert_eq!(self.consultant_id, consultant_id);
+            Ok(self.tenant_id.clone())
+        }
 
-    //     async fn get_charges_of_the_duration_by_tenant_id(
-    //         &self,
-    //         since_timestamp: i64,
-    //         until_timestamp: i64,
-    //         tenant_id: &str,
-    //     ) -> Result<Vec<Charge>, ErrResp> {
-    //         assert_eq!(self.tenant_id.clone().expect("failed to get Ok"), tenant_id);
-    //         let year = self.current_date_time.year();
-    //         let since = JAPANESE_TIME_ZONE
-    //             .ymd(year, 1, 1)
-    //             .and_hms(0, 0, 0)
-    //             .timestamp();
-    //         assert_eq!(since, since_timestamp);
-    //         let until = JAPANESE_TIME_ZONE
-    //             .ymd(year, 12, 31)
-    //             .and_hms(23, 59, 59)
-    //             .timestamp();
-    //         assert_eq!(until, until_timestamp);
-    //         Ok(self.charges.clone())
-    //     }
+        async fn filter_valid_settlement_by_consultant_id(
+            &self,
+            consultant_id: i64,
+            current_date_time: &DateTime<FixedOffset>,
+        ) -> Result<Vec<PaymentInfo>, ErrResp> {
+            assert_eq!(self.consultant_id, consultant_id);
+            assert_eq!(self.current_date_time, *current_date_time);
+            Ok(self.settlement_payments.clone())
+        }
 
-    //     async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp> {
-    //         assert_eq!(
-    //             self.fee_per_hour_in_yen.expect("failed to get Ok"),
-    //             create_charge.price().expect("failed to get Ok").0
-    //         );
-    //         assert_eq!(
-    //             self.card_token,
-    //             create_charge.card().expect("failed to get Ok")
-    //         );
-    //         assert_eq!(self.tenant_id, create_charge.tenant());
-    //         let metadata = create_charge.metadata().expect("failed to get Ok");
-    //         let consultant_id = metadata
-    //             .get(KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ)
-    //             .expect("failed to get Ok")
-    //             .parse::<i64>()
-    //             .expect("failed to get Ok");
-    //         assert_eq!(self.consultant_id, consultant_id);
-    //         let first_candidate = metadata
-    //             .get(KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
-    //             .expect("failed to get Ok");
-    //         let first_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(first_candidate)
-    //             .expect("failed to get Ok");
-    //         assert_eq!(self.first_candidate_in_jst, first_candidate);
-    //         let second_candidate = metadata
-    //             .get(KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
-    //             .expect("failed to get Ok");
-    //         let second_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(second_candidate)
-    //             .expect("failed to get Ok");
-    //         assert_eq!(self.second_candidate_in_jst, second_candidate);
-    //         let third_candidate = metadata
-    //             .get(KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
-    //             .expect("failed to get Ok");
-    //         let third_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(third_candidate)
-    //             .expect("failed to get Ok");
-    //         assert_eq!(self.third_candidate_in_jst, third_candidate);
-    //         Ok(self.charge.clone())
-    //     }
-    // }
+        async fn filter_valid_stopped_settlement_by_consultant_id(
+            &self,
+            consultant_id: i64,
+            current_date_time: &DateTime<FixedOffset>,
+        ) -> Result<Vec<PaymentInfo>, ErrResp> {
+            assert_eq!(self.consultant_id, consultant_id);
+            assert_eq!(self.current_date_time, *current_date_time);
+            Ok(self.stopped_settlement_payments.clone())
+        }
 
-    // // TODO: rewrite tests
-    // static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
-    //     vec![
-    //         // TestCase {
-    //         //     name: "success case 1".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 4000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 23,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(4000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: *MAX_ANNUAL_REWARDS_IN_YEN - (5000 + 15000 + 4000),
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Ok((
-    //         //         StatusCode::OK,
-    //         //         Json(RequestConsultationResult {
-    //         //             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "consultant is negative".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: -1,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 23,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: -1,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::NonPositiveConsultantId as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "first_candidate_in_jst IllegalConsultationDateTime".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 24,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 23,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::IllegalConsultationDateTime as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "first_candidate_in_jst IllegalConsultationHour".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 6,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 23,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(6, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::IllegalConsultationHour as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "first_candidate_in_jst InvalidConsultationDateTime".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 23,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::InvalidConsultationDateTime as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "second_candidate_in_jst IllegalConsultationDateTime".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 24,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::IllegalConsultationDateTime as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "second_candidate_in_jst IllegalConsultationHour".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 0,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(0, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::IllegalConsultationHour as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "first_candidate_in_jst InvalidConsultationDateTime".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 12,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(6, 59, 59),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(6, 59, 59),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 12)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::InvalidConsultationDateTime as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "third_candidate_in_jst IllegalConsultationDateTime".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 23,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 21,
-    //         //                 hour: 24,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 21)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::IllegalConsultationDateTime as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "third_candidate_in_jst IllegalConsultationHour".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 23,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 6,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(23, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(6, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::IllegalConsultationHour as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "third_candidate_in_jst InvalidConsultationDateTime".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 5,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 22,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 5)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 22)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::InvalidConsultationDateTime as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "first_candidate_in_jst == second_candidate_in_jst".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 5,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 5,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 7,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 5)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 5)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::DuplicateDateTimeCandidates as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "second_candidate_in_jst == third_candidate_in_jst".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 5,
-    //         //                 hour: 7,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 5)
-    //         //                 .and_hms(7, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::DuplicateDateTimeCandidates as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "third_candidate_in_jst == first_candidate_in_jst".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 20,
-    //         //                 hour: 21,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 20,
-    //         //                 hour: 21,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 20)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 20)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::DuplicateDateTimeCandidates as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "fail AccountDisabled".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 14,
-    //         //                 hour: 21,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 20,
-    //         //                 hour: 21,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 14)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 20)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: false,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::AccountDisabled as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "fail NoIdentityRegistered".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 14,
-    //         //                 hour: 21,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 20,
-    //         //                 hour: 21,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 3,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 14)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 20)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::NoIdentityRegistered as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "fail ConsultantIsNotAvailable".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 14,
-    //         //                 hour: 21,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 20,
-    //         //                 hour: 21,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 3,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 5000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 14)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 20)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::ConsultantIsNotAvailable as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "fail FeePerHourInYenWasUpdated".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 14,
-    //         //                 hour: 21,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 20,
-    //         //                 hour: 21,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(6000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 6000,
-    //         //             expected_rewards: 15000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 14)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 20)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             rewards_of_the_year: 20000,
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::FeePerHourInYenWasUpdated as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //         // TestCase {
-    //         //     name: "fail ExceedMaxAnnualRewards".to_string(),
-    //         //     input: Input {
-    //         //         account_id: 1,
-    //         //         param: RequestConsultationParam {
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: 5000,
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             first_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 14,
-    //         //                 hour: 21,
-    //         //             },
-    //         //             second_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 4,
-    //         //                 hour: 18,
-    //         //             },
-    //         //             third_candidate_in_jst: ConsultationDateTime {
-    //         //                 year: 2022,
-    //         //                 month: 11,
-    //         //                 day: 20,
-    //         //                 hour: 21,
-    //         //             },
-    //         //         },
-    //         //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //         req_op: RequestConsultationOperationMock {
-    //         //             account_id: 1,
-    //         //             consultant_id: 2,
-    //         //             fee_per_hour_in_yen: Some(5000),
-    //         //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    //         //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-    //         //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-    //         //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
-    //         //             amount: 3000,
-    //         //             expected_rewards: 4000,
-    //         //             first_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 14)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             second_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 4)
-    //         //                 .and_hms(18, 0, 0),
-    //         //             third_candidate_in_jst: JAPANESE_TIME_ZONE
-    //         //                 .ymd(2022, 11, 20)
-    //         //                 .and_hms(21, 0, 0),
-    //         //             rewards_of_the_year: *MAX_ANNUAL_REWARDS_IN_YEN - (3000 + 4000 + 5000 - 1),
-    //         //             user_account_is_available: true,
-    //         //         },
-    //         //     },
-    //         //     expected: Err((
-    //         //         StatusCode::BAD_REQUEST,
-    //         //         Json(ApiError {
-    //         //             code: Code::ExceedMaxAnnualRewards as u32,
-    //         //         }),
-    //         //     )),
-    //         // },
-    //     ]
-    // });
+        async fn filter_receipts_of_the_duration_by_consultant_id(
+            &self,
+            consultant_id: i64,
+            start: &DateTime<FixedOffset>,
+            end: &DateTime<FixedOffset>,
+        ) -> Result<Vec<PaymentInfo>, ErrResp> {
+            assert_eq!(self.consultant_id, consultant_id);
+            let (s, e) = create_start_and_end_date_time_of_current_year(&self.current_date_time);
+            assert_eq!(s, *start);
+            assert_eq!(e, *end);
+            Ok(self.receipt_payments.clone())
+        }
 
-    // // create_dummy_chargeでAPI呼び出しの結果返却されるChargeを作成する
-    // // 返却されたChargeはidだけ利用し、他を参照することはないのでid以外はダミーで関係ない値で埋めてある
-    // // fn create_dummy_charge(charge_id: &str) -> Charge {
-    // //     Charge {
-    // //         id: charge_id.to_string(),
-    // //         object: "charge".to_string(),
-    // //         livemode: false,
-    // //         created: 1639931415,
-    // //         amount: 5000,
-    // //         currency: "jpy".to_string(),
-    // //         paid: true,
-    // //         expired_at: None,
-    // //         captured: false,
-    // //         captured_at: Some(1639931415),
-    // //         card: Some(Card {
-    // //             object: "card".to_string(),
-    // //             id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
-    // //             created: 1639931415,
-    // //             name: None,
-    // //             last4: "4242".to_string(),
-    // //             exp_month: 12,
-    // //             exp_year: 2022,
-    // //             brand: "Visa".to_string(),
-    // //             cvc_check: "passed".to_string(),
-    // //             fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
-    // //             address_state: None,
-    // //             address_city: None,
-    // //             address_line1: None,
-    // //             address_line2: None,
-    // //             country: None,
-    // //             address_zip: None,
-    // //             address_zip_check: "unchecked".to_string(),
-    // //             metadata: None,
-    // //         }),
-    // //         customer: None,
-    // //         description: None,
-    // //         failure_code: None,
-    // //         failure_message: None,
-    // //         fee_rate: Some("3.00".to_string()),
-    // //         refunded: false,
-    // //         amount_refunded: 0,
-    // //         refund_reason: None,
-    // //         subscription: None,
-    // //         metadata: None,
-    // //         platform_fee: None,
-    // //         tenant: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-    // //         platform_fee_rate: Some("30.0".to_string()),
-    // //         total_platform_fee: Some(1350),
-    // //         three_d_secure_status: Some("unverified".to_string()),
-    // //     }
-    // // }
+        async fn create_charge(&self, create_charge: &CreateCharge) -> Result<Charge, ErrResp> {
+            assert_eq!(
+                self.fee_per_hour_in_yen.expect("failed to get Ok"),
+                create_charge.price().expect("failed to get Ok").0
+            );
+            assert_eq!(
+                self.card_token,
+                create_charge.card().expect("failed to get Ok")
+            );
+            assert_eq!(self.tenant_id, create_charge.tenant());
+            let metadata = create_charge.metadata().expect("failed to get Ok");
+            let consultant_id = metadata
+                .get(KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ)
+                .expect("failed to get Ok")
+                .parse::<i64>()
+                .expect("failed to get Ok");
+            assert_eq!(self.consultant_id, consultant_id);
+            let first_candidate = metadata
+                .get(KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
+                .expect("failed to get Ok");
+            let first_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(first_candidate)
+                .expect("failed to get Ok");
+            assert_eq!(self.first_candidate_in_jst, first_candidate);
+            let second_candidate = metadata
+                .get(KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
+                .expect("failed to get Ok");
+            let second_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(second_candidate)
+                .expect("failed to get Ok");
+            assert_eq!(self.second_candidate_in_jst, second_candidate);
+            let third_candidate = metadata
+                .get(KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ)
+                .expect("failed to get Ok");
+            let third_candidate = DateTime::<FixedOffset>::parse_from_rfc3339(third_candidate)
+                .expect("failed to get Ok");
+            assert_eq!(self.third_candidate_in_jst, third_candidate);
+            Ok(self.charge.clone())
+        }
+    }
 
-    // #[tokio::test]
-    // async fn handle_request_consultation_tests() {
-    //     for test_case in TEST_CASE_SET.iter() {
-    //         let account_id = test_case.input.account_id;
-    //         let param = test_case.input.param.clone();
-    //         let current_date_time = test_case.input.current_date_time;
-    //         let req_op = test_case.input.req_op.clone();
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        vec![
+            TestCase {
+                name: "success case 1".to_string(),
+                input: Input {
+                    account_id: 1,
+                    param: RequestConsultationParam {
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: 4000,
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 4,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 11,
+                            day: 22,
+                            hour: 7,
+                        },
+                    },
+                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    req_op: RequestConsultationOperationMock {
+                        account_id: 1,
+                        consultant_id: 2,
+                        fee_per_hour_in_yen: Some(4000),
+                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        first_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(7, 0, 0),
+                        second_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 4)
+                            .and_hms(23, 0, 0),
+                        third_candidate_in_jst: JAPANESE_TIME_ZONE
+                            .ymd(2022, 11, 22)
+                            .and_hms(7, 0, 0),
+                        user_account_is_available: true,
+                        settlement_payments: vec![PaymentInfo {
+                            fee_per_hour_in_yen: 5000,
+                            platform_fee_rate_in_percentage: "30.0".to_string(),
+                        }],
+                        stopped_settlement_payments: vec![],
+                        receipt_payments: vec![
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                            PaymentInfo {
+                                fee_per_hour_in_yen: 5000,
+                                platform_fee_rate_in_percentage: "30.0".to_string(),
+                            },
+                        ],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(RequestConsultationResult {
+                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                    }),
+                )),
+            },
+            // TestCase {
+            //     name: "consultant is negative".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: -1,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 23,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: -1,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(23, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::NonPositiveConsultantId as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "first_candidate_in_jst IllegalConsultationDateTime".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 24,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 23,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(23, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::IllegalConsultationDateTime as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "first_candidate_in_jst IllegalConsultationHour".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 6,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 23,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(6, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(23, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::IllegalConsultationHour as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "first_candidate_in_jst InvalidConsultationDateTime".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 23,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(23, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::InvalidConsultationDateTime as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "second_candidate_in_jst IllegalConsultationDateTime".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 24,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(23, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::IllegalConsultationDateTime as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "second_candidate_in_jst IllegalConsultationHour".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 0,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(0, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::IllegalConsultationHour as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "first_candidate_in_jst InvalidConsultationDateTime".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 12,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(6, 59, 59),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(6, 59, 59),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 12)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::InvalidConsultationDateTime as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "third_candidate_in_jst IllegalConsultationDateTime".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 23,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 21,
+            //                 hour: 24,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(23, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 21)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::IllegalConsultationDateTime as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "third_candidate_in_jst IllegalConsultationHour".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 23,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 6,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(23, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(6, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::IllegalConsultationHour as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "third_candidate_in_jst InvalidConsultationDateTime".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 5,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 22,
+            //                 hour: 7,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 5)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 22)
+            //                 .and_hms(7, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::InvalidConsultationDateTime as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "first_candidate_in_jst == second_candidate_in_jst".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 5,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 5,
+            //                 hour: 7,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 7,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 5)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 5)
+            //                 .and_hms(7, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(7, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::DuplicateDateTimeCandidates as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "second_candidate_in_jst == third_candidate_in_jst".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 5,
+            //                 hour: 7,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 5)
+            //                 .and_hms(7, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::DuplicateDateTimeCandidates as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "third_candidate_in_jst == first_candidate_in_jst".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 20,
+            //                 hour: 21,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 20,
+            //                 hour: 21,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 20)
+            //                 .and_hms(21, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 20)
+            //                 .and_hms(21, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::DuplicateDateTimeCandidates as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "fail AccountDisabled".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 14,
+            //                 hour: 21,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 20,
+            //                 hour: 21,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 14)
+            //                 .and_hms(21, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 20)
+            //                 .and_hms(21, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: false,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::AccountDisabled as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "fail NoIdentityRegistered".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 14,
+            //                 hour: 21,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 20,
+            //                 hour: 21,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 3,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 14)
+            //                 .and_hms(21, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 20)
+            //                 .and_hms(21, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::NoIdentityRegistered as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "fail ConsultantIsNotAvailable".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 14,
+            //                 hour: 21,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 20,
+            //                 hour: 21,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 3,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 5000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 14)
+            //                 .and_hms(21, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 20)
+            //                 .and_hms(21, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::ConsultantIsNotAvailable as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "fail FeePerHourInYenWasUpdated".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 14,
+            //                 hour: 21,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 20,
+            //                 hour: 21,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(6000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 6000,
+            //             expected_rewards: 15000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 14)
+            //                 .and_hms(21, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 20)
+            //                 .and_hms(21, 0, 0),
+            //             rewards_of_the_year: 20000,
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::FeePerHourInYenWasUpdated as u32,
+            //         }),
+            //     )),
+            // },
+            // TestCase {
+            //     name: "fail ExceedMaxAnnualRewards".to_string(),
+            //     input: Input {
+            //         account_id: 1,
+            //         param: RequestConsultationParam {
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: 5000,
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             first_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 14,
+            //                 hour: 21,
+            //             },
+            //             second_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 4,
+            //                 hour: 18,
+            //             },
+            //             third_candidate_in_jst: ConsultationDateTime {
+            //                 year: 2022,
+            //                 month: 11,
+            //                 day: 20,
+            //                 hour: 21,
+            //             },
+            //         },
+            //         current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //         req_op: RequestConsultationOperationMock {
+            //             account_id: 1,
+            //             consultant_id: 2,
+            //             fee_per_hour_in_yen: Some(5000),
+            //             tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            //             card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
+            //             charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
+            //             current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+            //             amount: 3000,
+            //             expected_rewards: 4000,
+            //             first_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 14)
+            //                 .and_hms(21, 0, 0),
+            //             second_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 4)
+            //                 .and_hms(18, 0, 0),
+            //             third_candidate_in_jst: JAPANESE_TIME_ZONE
+            //                 .ymd(2022, 11, 20)
+            //                 .and_hms(21, 0, 0),
+            //             rewards_of_the_year: *MAX_ANNUAL_REWARDS_IN_YEN - (3000 + 4000 + 5000 - 1),
+            //             user_account_is_available: true,
+            //         },
+            //     },
+            //     expected: Err((
+            //         StatusCode::BAD_REQUEST,
+            //         Json(ApiError {
+            //             code: Code::ExceedMaxAnnualRewards as u32,
+            //         }),
+            //     )),
+            // },
+        ]
+    });
 
-    //         let resp =
-    //             handle_request_consultation(account_id, param, &current_date_time, req_op).await;
+    // create_dummy_chargeでAPI呼び出しの結果返却されるChargeを作成する
+    // 返却されたChargeはidだけ利用し、他を参照することはないのでid以外はダミーで関係ない値で埋めてある
+    fn create_dummy_charge(charge_id: &str) -> Charge {
+        Charge {
+            id: charge_id.to_string(),
+            object: "charge".to_string(),
+            livemode: false,
+            created: 1639931415,
+            amount: 5000,
+            currency: "jpy".to_string(),
+            paid: true,
+            expired_at: None,
+            captured: false,
+            captured_at: Some(1639931415),
+            card: Some(Card {
+                object: "card".to_string(),
+                id: "car_33ab04bcdc00f0cc6d6df16bbe79".to_string(),
+                created: 1639931415,
+                name: None,
+                last4: "4242".to_string(),
+                exp_month: 12,
+                exp_year: 2022,
+                brand: "Visa".to_string(),
+                cvc_check: "passed".to_string(),
+                fingerprint: "e1d8225886e3a7211127df751c86787f".to_string(),
+                address_state: None,
+                address_city: None,
+                address_line1: None,
+                address_line2: None,
+                country: None,
+                address_zip: None,
+                address_zip_check: "unchecked".to_string(),
+                metadata: None,
+            }),
+            customer: None,
+            description: None,
+            failure_code: None,
+            failure_message: None,
+            fee_rate: Some("3.00".to_string()),
+            refunded: false,
+            amount_refunded: 0,
+            refund_reason: None,
+            subscription: None,
+            metadata: None,
+            platform_fee: None,
+            tenant: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
+            platform_fee_rate: Some("30.0".to_string()),
+            total_platform_fee: Some(1350),
+            three_d_secure_status: Some("unverified".to_string()),
+        }
+    }
 
-    //         let message = format!("test case \"{}\" failed", test_case.name.clone());
-    //         if test_case.expected.is_ok() {
-    //             let result = resp.expect("failed to get Ok");
-    //             let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
-    //             assert_eq!(expected_result.0, result.0, "{}", message);
-    //             assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
-    //         } else {
-    //             let result = resp.expect_err("failed to get Err");
-    //             let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
-    //             assert_eq!(expected_result.0, result.0, "{}", message);
-    //             assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
-    //         }
-    //     }
-    // }
+    #[tokio::test]
+    async fn handle_request_consultation_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let param = test_case.input.param.clone();
+            let current_date_time = test_case.input.current_date_time;
+            let req_op = test_case.input.req_op.clone();
+
+            let resp =
+                handle_request_consultation(account_id, param, &current_date_time, req_op).await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let result = resp.expect("failed to get Ok");
+                let expected_result = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            } else {
+                let result = resp.expect_err("failed to get Err");
+                let expected_result = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected_result.0, result.0, "{}", message);
+                assert_eq!(expected_result.1 .0, result.1 .0, "{}", message);
+            }
+        }
+    }
 }
