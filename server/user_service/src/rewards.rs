@@ -878,98 +878,95 @@ mod tests {
         }
     }
 
-    // #[tokio::test]
-    // async fn handle_reward_req_returns_reward_with_tenant_2tenant_transfers() {
-    //     let account_id = 9853;
-    //     let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-    //     let reward_op = RewardOperationMock {
-    //         tenant_id_option: Some(tenant_id.to_string()),
-    //         too_many_requests: false,
-    //         month_since_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 1)
-    //             .and_hms(0, 0, 0)
-    //             .timestamp(),
-    //         month_until_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 31)
-    //             .and_hms(23, 59, 59)
-    //             .timestamp(),
-    //         rewards_of_the_month: 2696,
-    //         year_since_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 1, 1)
-    //             .and_hms(0, 0, 0)
-    //             .timestamp(),
-    //         year_until_timestamp: JAPANESE_TIME_ZONE
-    //             .ymd(2021, 12, 31)
-    //             .and_hms(23, 59, 59)
-    //             .timestamp(),
-    //         rewards_of_the_year: 16000,
-    //     };
-    //     let tenant = create_dummy_tenant(tenant_id);
-    //     let tenant_op = TenantOperationMock {
-    //         tenant: tenant.clone(),
-    //         too_many_requests: false,
-    //     };
-    //     let transfer_id1 = "ten_tr_920fdff2a571ace3441bd78b3";
-    //     let tenant_transfer1 = create_dummy_tenant_transfer(transfer_id1, tenant_id);
-    //     let transfer_id2 = "ten_tr_920fdff2a571ace3441bd78b4";
-    //     let tenant_transfer2 = create_dummy_tenant_transfer(transfer_id2, tenant_id);
-    //     let tenant_transfer_op = TenantTransferOperationMock {
-    //         tenant_transfers: List {
-    //             object: "list".to_string(),
-    //             has_more: false,
-    //             url: "/v1/tenant_transfers".to_string(),
-    //             data: vec![tenant_transfer1.clone(), tenant_transfer2.clone()],
-    //             count: 1,
-    //         },
-    //         too_many_requests: false,
-    //     };
-    //     let current_datetime = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+    #[tokio::test]
+    async fn handle_reward_req_returns_reward_with_tenant_2tenant_transfers() {
+        let account_id = 9853;
+        let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let reward_op = RewardOperationMock {
+            account_id,
+            tenant_id_option: Some(tenant_id.to_string()),
+            current_date_time,
+            payments_of_the_month: vec![PaymentInfo {
+                fee_per_hour_in_yen: 5003,
+                platform_fee_rate_in_percentage: "30.0".to_string(),
+            }],
+            payments_of_the_year: vec![
+                PaymentInfo {
+                    fee_per_hour_in_yen: 5003,
+                    platform_fee_rate_in_percentage: "30.0".to_string(),
+                },
+                PaymentInfo {
+                    fee_per_hour_in_yen: 4008,
+                    platform_fee_rate_in_percentage: "30.0".to_string(),
+                },
+            ],
+        };
+        let tenant = create_dummy_tenant(tenant_id);
+        let tenant_op = TenantOperationMock {
+            tenant: tenant.clone(),
+            too_many_requests: false,
+        };
+        let transfer_id1 = "ten_tr_920fdff2a571ace3441bd78b3";
+        let tenant_transfer1 = create_dummy_tenant_transfer(transfer_id1, tenant_id);
+        let transfer_id2 = "ten_tr_920fdff2a571ace3441bd78b4";
+        let tenant_transfer2 = create_dummy_tenant_transfer(transfer_id2, tenant_id);
+        let tenant_transfer_op = TenantTransferOperationMock {
+            tenant_transfers: List {
+                object: "list".to_string(),
+                has_more: false,
+                url: "/v1/tenant_transfers".to_string(),
+                data: vec![tenant_transfer1.clone(), tenant_transfer2.clone()],
+                count: 1,
+            },
+            too_many_requests: false,
+        };
 
-    //     let result = handle_reward_req(
-    //         account_id,
-    //         reward_op,
-    //         tenant_op,
-    //         current_datetime,
-    //         tenant_transfer_op,
-    //     )
-    //     .await
-    //     .expect("failed to get Ok");
+        let result = handle_reward_req(
+            account_id,
+            reward_op,
+            tenant_op,
+            current_date_time,
+            tenant_transfer_op,
+        )
+        .await
+        .expect("failed to get Ok");
 
-    //     assert_eq!(StatusCode::OK, result.0);
-    //     let bank_account = BankAccount {
-    //         bank_code: tenant.bank_code.to_string(),
-    //         branch_code: tenant.bank_branch_code.to_string(),
-    //         account_type: tenant.bank_account_type.to_string(),
-    //         account_number: tenant.bank_account_number.to_string(),
-    //         account_holder_name: tenant.bank_account_holder_name.to_string(),
-    //     };
-    //     assert_eq!(Some(bank_account), result.1 .0.bank_account);
-    //     assert_eq!(Some(2696), result.1 .0.rewards_of_the_month);
-    //     assert_eq!(Some(16000), result.1 .0.rewards_of_the_year);
-    //     let transfer1 = Transfer {
-    //         status: "pending".to_string(),
-    //         amount: 2696,
-    //         scheduled_date_in_jst: Ymd {
-    //             year: 2022,
-    //             month: 1,
-    //             day: 31,
-    //         },
-    //         transfer_amount: None,
-    //         transfer_date_in_jst: None,
-    //         carried_balance: Some(0),
-    //     };
-    //     let transfer2 = Transfer {
-    //         status: "pending".to_string(),
-    //         amount: 2696,
-    //         scheduled_date_in_jst: Ymd {
-    //             year: 2022,
-    //             month: 1,
-    //             day: 31,
-    //         },
-    //         transfer_amount: None,
-    //         transfer_date_in_jst: None,
-    //         carried_balance: Some(0),
-    //     };
-    //     assert_eq!(vec![transfer1, transfer2], result.1 .0.latest_two_transfers);
-    // }
+        assert_eq!(StatusCode::OK, result.0);
+        let bank_account = BankAccount {
+            bank_code: tenant.bank_code.to_string(),
+            branch_code: tenant.bank_branch_code.to_string(),
+            account_type: tenant.bank_account_type.to_string(),
+            account_number: tenant.bank_account_number.to_string(),
+            account_holder_name: tenant.bank_account_holder_name.to_string(),
+        };
+        assert_eq!(Some(bank_account), result.1 .0.bank_account);
+        assert_eq!(Some(3503), result.1 .0.rewards_of_the_month);
+        assert_eq!(Some(3503 + 2806), result.1 .0.rewards_of_the_year);
+        let transfer1 = Transfer {
+            status: "pending".to_string(),
+            amount: 3503,
+            scheduled_date_in_jst: Ymd {
+                year: 2022,
+                month: 1,
+                day: 31,
+            },
+            transfer_amount: None,
+            transfer_date_in_jst: None,
+            carried_balance: Some(0),
+        };
+        let transfer2 = Transfer {
+            status: "pending".to_string(),
+            amount: 3503,
+            scheduled_date_in_jst: Ymd {
+                year: 2022,
+                month: 1,
+                day: 31,
+            },
+            transfer_amount: None,
+            transfer_date_in_jst: None,
+            carried_balance: Some(0),
+        };
+        assert_eq!(vec![transfer1, transfer2], result.1 .0.latest_two_transfers);
+    }
 }
