@@ -27,7 +27,10 @@ use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
 use crate::util::{
-    find_document_model_by_user_account_id_with_shared_lock, insert_document, ACCESS_INFO,
+    document_operation::{
+        find_document_model_by_user_account_id_with_shared_lock, insert_document,
+    },
+    ACCESS_INFO,
 };
 use crate::{
     err::Code,
