@@ -6,6 +6,7 @@ pub(crate) mod consultation;
 pub(crate) mod disabled_check;
 pub(crate) mod document_operation;
 pub(crate) mod fee_per_hour_in_yen_range;
+pub(crate) mod identity_checker;
 pub(crate) mod image_converter;
 pub(crate) mod multipart;
 pub(crate) mod optional_env_var;
@@ -60,26 +61,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
 });
-
-/// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
-///
-/// 個人情報の登録をしていないと使えないAPIに関して、処理を継続してよいか確認するために利用する。
-pub(crate) async fn check_if_identity_exists(
-    pool: &DatabaseConnection,
-    account_id: i64,
-) -> Result<bool, ErrResp> {
-    let model = entity::prelude::Identity::find_by_id(account_id)
-        .one(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find identity (user_account_id: {}): {}",
-                account_id, e
-            );
-            unexpected_err_resp()
-        })?;
-    Ok(model.is_some())
-}
 
 #[derive(Clone, Debug)]
 pub(crate) struct UserAccount {

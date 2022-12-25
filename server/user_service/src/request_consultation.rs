@@ -117,7 +117,7 @@ struct RequestConsultationOperationImpl {
 #[async_trait]
 impl RequestConsultationOperation for RequestConsultationOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_identity_exists(&self.pool, account_id).await
+        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
     }
 
     async fn check_if_user_account_is_available(

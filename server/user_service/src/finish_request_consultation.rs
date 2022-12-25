@@ -526,7 +526,7 @@ struct FinishRequestConsultationOperationImpl {
 #[async_trait]
 impl FinishRequestConsultationOperation for FinishRequestConsultationOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_identity_exists(&self.pool, account_id).await
+        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
     }
 
     async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp> {
