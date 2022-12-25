@@ -26,7 +26,7 @@ use crate::util::rewards::{
 use crate::util::{self};
 use crate::{
     err::{self, unexpected_err_resp},
-    util::{session::User, BankAccount, ACCESS_INFO},
+    util::{bank_account::BankAccount, session::User, ACCESS_INFO},
 };
 
 const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
@@ -408,11 +408,11 @@ mod tests {
 
     use crate::err::Code;
     use crate::rewards::{handle_reward_req, Transfer};
+    use crate::util::bank_account::BankAccount;
     use crate::util::rewards::{
         create_start_and_end_date_time_of_current_month,
         create_start_and_end_date_time_of_current_year, PaymentInfo,
     };
-    use crate::util::BankAccount;
 
     use super::RewardOperation;
 

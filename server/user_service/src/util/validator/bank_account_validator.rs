@@ -5,7 +5,7 @@ use std::{collections::HashSet, error::Error, fmt::Display};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::util::BankAccount;
+use crate::util::bank_account::BankAccount;
 
 use super::identity_validator;
 
@@ -199,8 +199,8 @@ impl Error for BankAccountValidationError {}
 #[cfg(test)]
 mod tests {
     use crate::util::{
+        bank_account::BankAccount,
         validator::tests::{CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET},
-        BankAccount,
     };
 
     use super::{

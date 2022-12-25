@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+pub(crate) mod bank_account;
 pub(crate) mod charge_metadata_key;
 pub(crate) mod disabled_check;
 pub(crate) mod fee_per_hour_in_yen_range;
@@ -63,15 +64,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
 });
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub(crate) struct BankAccount {
-    pub(crate) bank_code: String,
-    pub(crate) branch_code: String,
-    pub(crate) account_type: String,
-    pub(crate) account_number: String,
-    pub(crate) account_holder_name: String,
-}
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub(crate) struct ConsultationDateTime {

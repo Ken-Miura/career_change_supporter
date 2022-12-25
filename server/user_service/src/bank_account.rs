@@ -32,9 +32,9 @@ use crate::util::{
 use crate::{
     err::Code,
     util::{
+        bank_account::BankAccount,
         session::User,
         validator::bank_account_validator::{validate_bank_account, BankAccountValidationError},
-        BankAccount,
     },
 };
 
@@ -617,7 +617,7 @@ mod tests {
 
     use crate::bank_account::BankAccountResult;
     use crate::err::Code;
-    use crate::util::BankAccount;
+    use crate::util::bank_account::BankAccount;
 
     use super::{handle_bank_account_req, BankAccountRegisterReq, SubmitBankAccountOperation};
 
