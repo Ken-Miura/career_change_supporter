@@ -294,9 +294,9 @@ mod tests {
     use common::MAX_NUM_OF_CAREER_PER_USER_ACCOUNT;
 
     use crate::err::Code::NoAccountFound;
+    use crate::util::fee_per_hour_in_yen_range::MAX_FEE_PER_HOUR_IN_YEN;
+    use crate::util::fee_per_hour_in_yen_range::MIN_FEE_PER_HOUR_IN_YEN;
     use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
-    use crate::util::MAX_FEE_PER_HOUR_IN_YEN;
-    use crate::util::MIN_FEE_PER_HOUR_IN_YEN;
 
     use super::CareerDescription;
     use super::{handle_profile_req, ProfileOperation};

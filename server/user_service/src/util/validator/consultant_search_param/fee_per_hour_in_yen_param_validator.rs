@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use crate::{
     consultants_search::FeePerHourInYenParam,
-    util::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
+    util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
 };
 
 pub(crate) fn validate_fee_per_hour_in_yen_param(
@@ -90,7 +90,7 @@ mod tests {
 
     use crate::{
         consultants_search::FeePerHourInYenParam,
-        util::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
+        util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
     };
 
     use super::{validate_fee_per_hour_in_yen_param, FeePerHourInYenParamError};

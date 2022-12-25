@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 pub(crate) mod disabled_check;
+pub(crate) mod fee_per_hour_in_yen_range;
 pub(crate) mod rewards;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
@@ -31,9 +32,6 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-
-pub(crate) const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
-pub(crate) const MAX_FEE_PER_HOUR_IN_YEN: i32 = 10000;
 
 pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_THREE: i32 = 3;
 pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_FIVE: i32 = 5;
