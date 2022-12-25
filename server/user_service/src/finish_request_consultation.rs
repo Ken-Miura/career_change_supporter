@@ -28,7 +28,7 @@ use crate::util::charge_metadata_key::{
 };
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::User;
-use crate::util::{self, convert_payment_err_to_err_resp, ACCESS_INFO};
+use crate::util::{self, consultation::convert_payment_err_to_err_resp, ACCESS_INFO};
 
 static CONSULTANT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み通知", WEB_SITE_NAME));
