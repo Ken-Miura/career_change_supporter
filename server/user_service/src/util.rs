@@ -16,6 +16,7 @@ pub(crate) mod years_of_service_period;
 
 use std::env::var;
 
+use async_session::log::info;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
 use common::{
@@ -296,6 +297,7 @@ pub(crate) fn convert_payment_err_to_err_resp(e: &common::payment_platform::Erro
 }
 
 fn create_err_resp_from_code(code: &str) -> ErrResp {
+    info!("code: {}", code);
     if code == "incorrect_card_data" {
         (
             StatusCode::BAD_REQUEST,
@@ -359,6 +361,7 @@ fn create_err_resp_from_code(code: &str) -> ErrResp {
 }
 
 fn create_err_resp_from_status(status: u32) -> ErrResp {
+    info!("status: {}", status);
     if status == 402 {
         (
             StatusCode::BAD_REQUEST,
