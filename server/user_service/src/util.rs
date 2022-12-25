@@ -33,7 +33,6 @@ use entity::{
 };
 use image::{ImageError, ImageFormat};
 use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
