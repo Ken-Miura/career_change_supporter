@@ -13,11 +13,12 @@ use tracing::{error, info};
 
 use crate::err::Code;
 use crate::util::session::User;
-use crate::util::{
-    self, round_to_one_decimal_places, VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN,
-    VALID_YEARS_OF_SERVICE_PERIOD_FIVE, VALID_YEARS_OF_SERVICE_PERIOD_TEN,
-    VALID_YEARS_OF_SERVICE_PERIOD_THREE, VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
+use crate::util::years_of_service_period::{
+    VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
+    VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
+    VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
 };
+use crate::util::{self, round_to_one_decimal_places};
 
 const YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS: &str = "LESS_THAN_THREE_YEARS";
 const YEARS_OF_SERVICE_THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS: &str =

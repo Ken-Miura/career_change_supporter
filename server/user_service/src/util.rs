@@ -6,6 +6,7 @@ pub(crate) mod rewards;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
 pub(crate) mod validator;
+pub(crate) mod years_of_service_period;
 
 use std::{env::var, io::Cursor};
 
@@ -32,12 +33,6 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-
-pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_THREE: i32 = 3;
-pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_FIVE: i32 = 5;
-pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TEN: i32 = 10;
-pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN: i32 = 15;
-pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TWENTY: i32 = 20;
 
 pub(crate) const ROOT_PATH: &str = "/api";
 

@@ -7,9 +7,12 @@ use once_cell::sync::Lazy;
 use crate::{
     consultants_search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
     util::{
-        validator::MAX_ANNUAL_INCOME_IN_MAN_YEN, VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN,
-        VALID_YEARS_OF_SERVICE_PERIOD_FIVE, VALID_YEARS_OF_SERVICE_PERIOD_TEN,
-        VALID_YEARS_OF_SERVICE_PERIOD_THREE, VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
+        validator::MAX_ANNUAL_INCOME_IN_MAN_YEN,
+        years_of_service_period::{
+            VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
+            VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
+            VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
+        },
     },
 };
 

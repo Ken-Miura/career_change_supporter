@@ -1,0 +1,7 @@
+// Copyright 2022 Ken Miura
+
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_THREE: i32 = 3;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_FIVE: i32 = 5;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TEN: i32 = 10;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN: i32 = 15;
+pub(crate) const VALID_YEARS_OF_SERVICE_PERIOD_TWENTY: i32 = 20;
