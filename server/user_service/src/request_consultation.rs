@@ -24,6 +24,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
+use crate::util::charge_metadata_key::{
+    KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+};
 use crate::util::rewards::{
     calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
@@ -32,8 +36,6 @@ use crate::util::validator::consultation_date_time_validator::{
 };
 use crate::util::{
     convert_payment_err_to_err_resp, ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE,
-    KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     MAX_ANNUAL_REWARDS_IN_YEN,
 };
 use crate::{
@@ -623,11 +625,13 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
+    use crate::util::charge_metadata_key::{
+        KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+    };
     use crate::util::{
         rewards::{create_start_and_end_date_time_of_current_year, PaymentInfo},
-        ConsultationDateTime, KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ,
-        KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-        KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
+        ConsultationDateTime,
     };
 
     use super::{
