@@ -14,10 +14,9 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, consultation_req_exists,
+    self, consultation::ConsultationDateTime, consultation_req_exists,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-    round_to_one_decimal_places, validate_consultation_req_id_is_positive, ConsultationDateTime,
-    ConsultationRequest,
+    round_to_one_decimal_places, validate_consultation_req_id_is_positive, ConsultationRequest,
 };
 
 pub(crate) async fn get_consultation_request_detail(
@@ -233,7 +232,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::util::ConsultationDateTime;
+    use crate::util::consultation::ConsultationDateTime;
 
     use super::{
         handle_consultation_request_detail, ConsultationRequest, ConsultationRequestDetail,

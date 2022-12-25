@@ -2,6 +2,7 @@
 
 pub(crate) mod bank_account;
 pub(crate) mod charge_metadata_key;
+pub(crate) mod consultation;
 pub(crate) mod disabled_check;
 pub(crate) mod fee_per_hour_in_yen_range;
 pub(crate) mod optional_env_var;
@@ -64,14 +65,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
 });
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub(crate) struct ConsultationDateTime {
-    pub(crate) year: i32,
-    pub(crate) month: u32,
-    pub(crate) day: u32,
-    pub(crate) hour: u32,
-}
 
 /// jpeg画像をpng画像に変換する<br>
 /// <br>
