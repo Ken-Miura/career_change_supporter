@@ -91,7 +91,7 @@ impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
     }
 
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::check_if_user_account_is_available(&self.pool, consultant_id).await
+        util::disabled_checker::check_if_user_account_is_available(&self.pool, consultant_id).await
     }
 
     async fn search_consultant(&self, index_name: &str, query: &Value) -> Result<Value, ErrResp> {
