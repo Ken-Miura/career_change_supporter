@@ -1,5 +1,7 @@
 // Copyright 2022 Ken Miura
 
+use std::env;
+
 use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -20,6 +22,7 @@ use entity::{
     sea_orm::{DatabaseConnection, EntityTrait},
 };
 use entity::{settlement, stopped_settlement};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -34,14 +37,30 @@ use crate::util::rewards::{
 use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
-use crate::util::{
-    convert_payment_err_to_err_resp, ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE,
-    MAX_ANNUAL_REWARDS_IN_YEN,
-};
+use crate::util::{convert_payment_err_to_err_resp, ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE};
 use crate::{
     err::unexpected_err_resp,
     util::{self, session::User, ACCESS_INFO},
 };
+
+const KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN: &str = "MAX_ANNUAL_REWARDS_IN_YEN";
+/// 年間で稼ぐことが可能な最大報酬額（単位：円）
+///
+/// 動作確認時の利便性のために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
+static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
+    let max_annual_rewards =
+        env::var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| "470000".to_string());
+    let max_annual_rewards = max_annual_rewards
+        .parse()
+        .expect("failed to parse MAX_ANNUAL_REWARDS_IN_YEN");
+    if max_annual_rewards <= 0 {
+        panic!(
+            "MAX_ANNUAL_REWARDS_IN_YEN must be positive: {}",
+            max_annual_rewards
+        );
+    }
+    max_annual_rewards
+});
 
 pub(crate) async fn post_request_consultation(
     User { account_id }: User,

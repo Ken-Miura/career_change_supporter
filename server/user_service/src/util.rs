@@ -63,25 +63,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     access_info.expect("failed to get Ok")
 });
 
-pub(crate) const KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN: &str = "MAX_ANNUAL_REWARDS_IN_YEN";
-/// 年間で稼ぐことが可能な最大報酬額（単位：円）
-///
-/// 動作確認時の利便性のために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
-    let max_annual_rewards =
-        var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| "470000".to_string());
-    let max_annual_rewards = max_annual_rewards
-        .parse()
-        .expect("failed to parse MAX_ANNUAL_REWARDS_IN_YEN");
-    if max_annual_rewards <= 0 {
-        panic!(
-            "MAX_ANNUAL_REWARDS_IN_YEN must be positive: {}",
-            max_annual_rewards
-        );
-    }
-    max_annual_rewards
-});
-
 pub(crate) const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
     "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
 /// 相談者が相談依頼を行った日時を起点とし、相談開始日時までの秒単位での最小期間
