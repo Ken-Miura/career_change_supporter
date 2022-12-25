@@ -5,7 +5,8 @@ use std::io::Cursor;
 
 use crate::util::validator::career_validator::{validate_career, CareerValidationError};
 use crate::util::{
-    self, convert_jpeg_to_png, multipart::clone_file_name_if_exists, multipart::FileNameAndBinary,
+    self, image_converter::convert_jpeg_to_png, multipart::clone_file_name_if_exists,
+    multipart::FileNameAndBinary,
 };
 use async_session::serde_json;
 use axum::async_trait;
@@ -648,7 +649,7 @@ mod tests {
 
     use super::{handle_multipart, CareerResult, MAX_CAREER_IMAGE_SIZE_IN_BYTES};
     use crate::util::tests::SendMailMock;
-    use crate::{err::Code, util::convert_jpeg_to_png};
+    use crate::{err::Code, util::image_converter::convert_jpeg_to_png};
 
     use super::{
         create_subject, create_text, handle_career_req, CareerField, MultipartWrapper,
