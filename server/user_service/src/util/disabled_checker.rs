@@ -52,13 +52,3 @@ pub(crate) async fn get_if_user_account_is_available(
     };
     Ok(result)
 }
-
-/// ユーザーが利用可能か確認する。
-/// UserAccountが存在し、かつdisabled_atがNULLである場合、trueを返す。そうでない場合、falseを返す。
-pub(crate) async fn check_if_user_account_is_available(
-    pool: &DatabaseConnection,
-    user_account_id: i64,
-) -> Result<bool, ErrResp> {
-    let user = get_if_user_account_is_available(pool, user_account_id).await?;
-    Ok(user.is_some())
-}

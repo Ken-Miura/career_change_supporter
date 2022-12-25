@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
+use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::User;
 use crate::util::years_of_service_period::{
     VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
@@ -91,7 +92,8 @@ impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
     }
 
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::disabled_checker::check_if_user_account_is_available(&self.pool, consultant_id).await
+        let op = DisabledCheckOperationImpl::new(&self.pool);
+        util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
     }
 
     async fn search_consultant(&self, index_name: &str, query: &Value) -> Result<Value, ErrResp> {

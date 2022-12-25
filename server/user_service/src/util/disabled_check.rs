@@ -11,7 +11,7 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 #[async_trait]
-pub(super) trait DisabledCheckOperation {
+pub(crate) trait DisabledCheckOperation {
     /// アカウントが無効化されているかどうか
     ///
     /// - アカウントが存在しない場合、Noneを返す
@@ -21,12 +21,12 @@ pub(super) trait DisabledCheckOperation {
     async fn check_if_account_is_disabled(&self, account_id: i64) -> Result<Option<bool>, ErrResp>;
 }
 
-pub(super) struct DisabledCheckOperationImpl<'a> {
+pub(crate) struct DisabledCheckOperationImpl<'a> {
     pool: &'a DatabaseConnection,
 }
 
 impl<'a> DisabledCheckOperationImpl<'a> {
-    pub(super) fn new(pool: &'a DatabaseConnection) -> Self {
+    pub(crate) fn new(pool: &'a DatabaseConnection) -> Self {
         Self { pool }
     }
 }
@@ -47,3 +47,20 @@ impl<'a> DisabledCheckOperation for DisabledCheckOperationImpl<'a> {
         Ok(model.map(|m| m.disabled_at.is_some()))
     }
 }
+
+/// ユーザーが利用可能か確認する。
+/// アカウントが存在し、かつ無効化されていない（=利用可能な）場合、trueを返す。そうでない場合、falseを返す。
+pub(crate) async fn check_if_user_account_is_available(
+    user_account_id: i64,
+    op: impl DisabledCheckOperation,
+) -> Result<bool, ErrResp> {
+    let result_option = op.check_if_account_is_disabled(user_account_id).await?;
+    if let Some(disabled) = result_option {
+        Ok(!disabled)
+    } else {
+        Ok(false)
+    }
+}
+
+#[cfg(test)]
+mod tests {}

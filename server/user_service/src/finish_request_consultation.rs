@@ -26,6 +26,7 @@ use crate::util::charge_metadata_key::{
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
+use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::User;
 use crate::util::{self, consultation::convert_payment_err_to_err_resp, ACCESS_INFO};
@@ -545,12 +546,13 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         &self,
         user_account_id: i64,
     ) -> Result<bool, ErrResp> {
-        util::disabled_checker::check_if_user_account_is_available(&self.pool, user_account_id)
-            .await
+        let op = DisabledCheckOperationImpl::new(&self.pool);
+        util::disabled_check::check_if_user_account_is_available(user_account_id, op).await
     }
 
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        util::disabled_checker::check_if_user_account_is_available(&self.pool, consultant_id).await
+        let op = DisabledCheckOperationImpl::new(&self.pool);
+        util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
     }
 
     async fn create_request_consultation(
