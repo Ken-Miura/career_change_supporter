@@ -675,7 +675,6 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
     }
 }
 
-// TODO: Rewite tests
 #[cfg(test)]
 mod tests {
     use axum::http::StatusCode;
@@ -767,14 +766,14 @@ mod tests {
             consultant_id: i64,
             candidates: Candidates,
             latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-            _charge: Charge,
+            charge: Charge,
         ) -> Result<(i64, Charge), ErrResp> {
             assert_eq!(self.account_id, account_id);
             assert_eq!(self.consultant_id, consultant_id);
-            // assert_eq!(self.charge.amount, fee_per_hour_in_yen);
+            assert_eq!(self.charge.id, charge.id);
+            assert_eq!(self.charge.amount, charge.amount);
             let c = extract_candidates_date_time_in_jst(&self.charge).expect("failed to get Ok");
             assert_eq!(c, candidates);
-            // assert_eq!(self.charge_id, charge_id);
             assert_eq!(
                 self.latest_candidate_date_time_in_jst,
                 latest_candidate_date_time_in_jst
