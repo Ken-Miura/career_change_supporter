@@ -45,25 +45,25 @@ pub(super) trait TermsOfUseLoadOperation {
     ) -> Result<Option<TermsOfUseData>, ErrResp>;
 }
 
-pub(super) struct TermsOfUseLoadOperationImpl {
-    pool: DatabaseConnection,
+pub(super) struct TermsOfUseLoadOperationImpl<'a> {
+    pool: &'a DatabaseConnection,
 }
 
-impl TermsOfUseLoadOperationImpl {
-    pub(super) fn new(pool: DatabaseConnection) -> Self {
+impl<'a> TermsOfUseLoadOperationImpl<'a> {
+    pub(super) fn new(pool: &'a DatabaseConnection) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl {
+impl<'a> TermsOfUseLoadOperation for TermsOfUseLoadOperationImpl<'a> {
     async fn find(
         &self,
         account_id: i64,
         terms_of_use_version: i32,
     ) -> Result<Option<TermsOfUseData>, ErrResp> {
         let model = TermsOfUse::find_by_id((account_id, terms_of_use_version))
-            .one(&self.pool)
+            .one(self.pool)
             .await
             .map_err(|e| {
                 error!(

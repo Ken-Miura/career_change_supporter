@@ -21,21 +21,21 @@ pub(super) trait DisabledCheckOperation {
     async fn check_if_account_is_disabled(&self, account_id: i64) -> Result<Option<bool>, ErrResp>;
 }
 
-pub(super) struct DisabledCheckOperationImpl {
-    pool: DatabaseConnection,
+pub(super) struct DisabledCheckOperationImpl<'a> {
+    pool: &'a DatabaseConnection,
 }
 
-impl DisabledCheckOperationImpl {
-    pub(super) fn new(pool: DatabaseConnection) -> Self {
+impl<'a> DisabledCheckOperationImpl<'a> {
+    pub(super) fn new(pool: &'a DatabaseConnection) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl DisabledCheckOperation for DisabledCheckOperationImpl {
+impl<'a> DisabledCheckOperation for DisabledCheckOperationImpl<'a> {
     async fn check_if_account_is_disabled(&self, account_id: i64) -> Result<Option<bool>, ErrResp> {
         let model = UserAccount::find_by_id(account_id)
-            .one(&self.pool)
+            .one(self.pool)
             .await
             .map_err(|e| {
                 error!(

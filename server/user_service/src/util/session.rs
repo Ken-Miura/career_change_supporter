@@ -103,10 +103,10 @@ where
         let user = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
 
         let pool = app_state.pool;
-        let disabled_check_op = DisabledCheckOperationImpl::new(pool.clone());
+        let disabled_check_op = DisabledCheckOperationImpl::new(&pool);
         let _ = ensure_account_is_not_disabled(user.account_id, disabled_check_op).await?;
 
-        let terms_of_use_op = TermsOfUseLoadOperationImpl::new(pool);
+        let terms_of_use_op = TermsOfUseLoadOperationImpl::new(&pool);
         let _ = check_if_user_has_already_agreed(
             user.account_id,
             *TERMS_OF_USE_VERSION,
