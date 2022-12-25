@@ -1,7 +1,5 @@
 // Copyright 2022 Ken Miura
 
-use std::env;
-
 use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -22,7 +20,6 @@ use entity::{
     sea_orm::{DatabaseConnection, EntityTrait},
 };
 use entity::{settlement, stopped_settlement};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -31,36 +28,18 @@ use crate::util::charge_metadata_key::{
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
+use crate::util::optional_env_var::{EXPIRY_DAYS_OF_CHARGE, MAX_ANNUAL_REWARDS_IN_YEN};
 use crate::util::rewards::{
     calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
 use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
-use crate::util::{convert_payment_err_to_err_resp, ConsultationDateTime, EXPIRY_DAYS_OF_CHARGE};
+use crate::util::{convert_payment_err_to_err_resp, ConsultationDateTime};
 use crate::{
     err::unexpected_err_resp,
     util::{self, session::User, ACCESS_INFO},
 };
-
-const KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN: &str = "MAX_ANNUAL_REWARDS_IN_YEN";
-/// 年間で稼ぐことが可能な最大報酬額（単位：円）
-///
-/// 動作確認時の利便性のために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
-    let max_annual_rewards =
-        env::var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| "470000".to_string());
-    let max_annual_rewards = max_annual_rewards
-        .parse()
-        .expect("failed to parse MAX_ANNUAL_REWARDS_IN_YEN");
-    if max_annual_rewards <= 0 {
-        panic!(
-            "MAX_ANNUAL_REWARDS_IN_YEN must be positive: {}",
-            max_annual_rewards
-        );
-    }
-    max_annual_rewards
-});
 
 pub(crate) async fn post_request_consultation(
     User { account_id }: User,

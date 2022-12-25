@@ -26,11 +26,9 @@ use crate::util::charge_metadata_key::{
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
+use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::User;
-use crate::util::{
-    self, convert_payment_err_to_err_resp, ACCESS_INFO,
-    MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-};
+use crate::util::{self, convert_payment_err_to_err_resp, ACCESS_INFO};
 
 static CONSULTANT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み通知", WEB_SITE_NAME));
@@ -695,7 +693,9 @@ mod tests {
         KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     };
-    use crate::util::{EXPIRY_DAYS_OF_CHARGE, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE};
+    use crate::util::optional_env_var::{
+        EXPIRY_DAYS_OF_CHARGE, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    };
 
     use super::{
         create_text_for_consultant_mail, create_text_for_user_mail,

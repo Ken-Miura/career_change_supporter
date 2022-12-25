@@ -5,8 +5,11 @@ use std::{error::Error, fmt::Display};
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
 use crate::util::{
-    ConsultationDateTime, FIRST_START_HOUR_OF_CONSULTATION, LAST_START_HOUR_OF_CONSULTATION,
-    MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
+    optional_env_var::{
+        FIRST_START_HOUR_OF_CONSULTATION, LAST_START_HOUR_OF_CONSULTATION,
+        MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
+    },
+    ConsultationDateTime,
 };
 
 pub(crate) fn validate_consultation_date_time(

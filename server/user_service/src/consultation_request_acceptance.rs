@@ -19,8 +19,9 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, consultation_req_exists, validate_consultation_req_id_is_positive, ConsultationRequest,
-    UserAccount, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    self, consultation_req_exists,
+    optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    validate_consultation_req_id_is_positive, ConsultationRequest, UserAccount,
 };
 
 pub(crate) async fn post_consultation_request_acceptance(
@@ -175,7 +176,6 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     create_settlement(&req, &meeting_date_time, txn).await?;
                     // consultant_ratingをinsert
                     // consultation_reqをdelete
-                    // KEY_TO_MEETING_DATE_TIME_IN_JST_ON_CHARGE_OBJをmetadataに追加する
 
                     Ok(Consultation {
                         consultation_req_id: req.consultation_req_id,

@@ -23,8 +23,8 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
+use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::User;
-use crate::util::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 
 const NUM_OF_CONSULTATION_REQUESTS: u64 = 20;
 
@@ -124,7 +124,7 @@ mod tests {
 
     use crate::{
         consultation_requests::NUM_OF_CONSULTATION_REQUESTS,
-        util::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+        util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     };
 
     use super::{
