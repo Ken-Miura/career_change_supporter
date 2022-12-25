@@ -5,6 +5,7 @@ pub(crate) mod charge_metadata_key;
 pub(crate) mod consultation;
 pub(crate) mod disabled_check;
 pub(crate) mod fee_per_hour_in_yen_range;
+pub(crate) mod multipart;
 pub(crate) mod optional_env_var;
 pub(crate) mod rewards;
 pub(crate) mod session;
@@ -38,8 +39,6 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 
 pub(crate) const ROOT_PATH: &str = "/api";
-
-pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 /// PAY.JPにアクセスするための情報を保持する変数
 pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
@@ -91,18 +90,6 @@ pub(crate) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrRes
             unexpected_err_resp()
         })?;
     Ok(bytes)
-}
-
-/// 引数が存在する場合、ファイル名のみ複製を行う
-pub(crate) fn clone_file_name_if_exists(
-    file_name_and_binary_option: Option<FileNameAndBinary>,
-) -> (Option<FileNameAndBinary>, Option<String>) {
-    if let Some(file_name_and_binary) = file_name_and_binary_option {
-        let image2 = Some((file_name_and_binary.0.clone(), file_name_and_binary.1));
-        let image2_file_name_without_ext = Some(file_name_and_binary.0);
-        return (image2, image2_file_name_without_ext);
-    };
-    (None, None)
 }
 
 /// 共有ロックを行い、documentテーブルからドキュメントIDを取得する
@@ -448,8 +435,7 @@ pub(crate) mod tests {
     use crate::err::Code;
 
     use super::{
-        clone_file_name_if_exists, convert_jpeg_to_png, convert_payment_err_to_err_resp,
-        round_to_one_decimal_places,
+        convert_jpeg_to_png, convert_payment_err_to_err_resp, round_to_one_decimal_places,
     };
 
     #[derive(Clone, Debug)]
@@ -510,7 +496,7 @@ pub(crate) mod tests {
         assert_eq!(result.1.code, Code::InvalidJpegImage as u32);
     }
 
-    fn create_dummy_jpeg_image() -> Cursor<Vec<u8>> {
+    pub(super) fn create_dummy_jpeg_image() -> Cursor<Vec<u8>> {
         let img: RgbImage = ImageBuffer::new(128, 128);
         let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
         img.write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
@@ -534,25 +520,6 @@ pub(crate) mod tests {
         img.write_to(&mut png_img, image::ImageOutputFormat::Png)
             .expect("failed to get Ok");
         png_img
-    }
-
-    #[test]
-    fn clone_file_name_if_exists_returns_none_if_none_is_passed() {
-        let (ret1, ret2) = clone_file_name_if_exists(None);
-        assert_eq!(None, ret1);
-        assert_eq!(None, ret2);
-    }
-
-    #[test]
-    fn clone_file_name_if_exists_returns_arg_and_file_name_if_value_is_passed() {
-        let file_name = "c89bfd885f6df5fd-345306a47b7dd758";
-        let binary = create_dummy_jpeg_image();
-        let file_name_and_binary = (file_name.to_string(), binary);
-
-        let (ret1, ret2) = clone_file_name_if_exists(Some(file_name_and_binary.clone()));
-
-        assert_eq!(Some(file_name_and_binary), ret1);
-        assert_eq!(Some(file_name.to_string()), ret2);
     }
 
     #[derive(Debug)]

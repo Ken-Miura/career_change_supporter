@@ -4,7 +4,9 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::util::validator::career_validator::{validate_career, CareerValidationError};
-use crate::util::{self, clone_file_name_if_exists, convert_jpeg_to_png, FileNameAndBinary};
+use crate::util::{
+    self, convert_jpeg_to_png, multipart::clone_file_name_if_exists, multipart::FileNameAndBinary,
+};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::extract::State;
