@@ -63,4 +63,71 @@ pub(crate) async fn check_if_user_account_is_available(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+
+    use axum::async_trait;
+    use common::ErrResp;
+
+    use super::{check_if_user_account_is_available, DisabledCheckOperation};
+
+    struct DisabledCheckOperationMock {
+        account_id: i64,
+        disabled: Option<bool>,
+    }
+
+    #[async_trait]
+    impl DisabledCheckOperation for DisabledCheckOperationMock {
+        async fn check_if_account_is_disabled(
+            &self,
+            account_id: i64,
+        ) -> Result<Option<bool>, ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(self.disabled)
+        }
+    }
+
+    #[tokio::test]
+    async fn test_check_if_user_account_is_available_returns_false_when_no_user_is_found() {
+        let account_id = 5325;
+        let op = DisabledCheckOperationMock {
+            account_id,
+            disabled: None,
+        };
+
+        let ret = check_if_user_account_is_available(account_id, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert!(!ret);
+    }
+
+    #[tokio::test]
+    async fn test_check_if_user_account_is_available_returns_false_when_user_is_disabled() {
+        let account_id = 5325;
+        let op = DisabledCheckOperationMock {
+            account_id,
+            disabled: Some(true),
+        };
+
+        let ret = check_if_user_account_is_available(account_id, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert!(!ret);
+    }
+
+    #[tokio::test]
+    async fn test_check_if_user_account_is_available_returns_true_when_user_is_not_disabled() {
+        let account_id = 5325;
+        let op = DisabledCheckOperationMock {
+            account_id,
+            disabled: Some(false),
+        };
+
+        let ret = check_if_user_account_is_available(account_id, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert!(ret);
+    }
+}
