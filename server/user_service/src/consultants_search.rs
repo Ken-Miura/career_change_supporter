@@ -13,7 +13,7 @@ use tracing::{error, info};
 
 use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
-use crate::util::{self, round_to_one_decimal_places};
+use crate::util::{self, consultation_request::round_to_one_decimal_places};
 use crate::{
     err::Code,
     util::{
