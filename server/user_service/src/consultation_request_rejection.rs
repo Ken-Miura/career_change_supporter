@@ -19,9 +19,9 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, consultation_req_exists,
+    self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
-    ConsultationRequest, ACCESS_INFO,
+    ACCESS_INFO,
 };
 
 static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =
@@ -124,7 +124,11 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
-        util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
+        util::consultation_request::find_consultation_req_by_consultation_req_id(
+            &self.pool,
+            consultation_req_id,
+        )
+        .await
     }
 
     async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp> {
@@ -260,7 +264,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::util::{tests::SendMailMock, ConsultationRequest};
+    use crate::util::{consultation_request::ConsultationRequest, tests::SendMailMock};
 
     use super::{
         create_text, handle_consultation_request_rejection, ConsultationRequestRejection,

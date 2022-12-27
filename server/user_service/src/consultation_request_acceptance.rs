@@ -19,10 +19,10 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, available_user_account::UserAccount, consultation_req_exists,
+    self, available_user_account::UserAccount, consultation_request::consultation_req_exists,
+    consultation_request::ConsultationRequest,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
-    ConsultationRequest,
 };
 
 pub(crate) async fn post_consultation_request_acceptance(
@@ -136,7 +136,11 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
-        util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
+        util::consultation_request::find_consultation_req_by_consultation_req_id(
+            &self.pool,
+            consultation_req_id,
+        )
+        .await
     }
 
     async fn get_consultant_if_available(

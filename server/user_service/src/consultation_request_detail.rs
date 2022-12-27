@@ -14,11 +14,11 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, consultation::ConsultationDateTime, consultation_req_exists,
+    self, consultation::ConsultationDateTime, consultation_request::consultation_req_exists,
+    consultation_request::ConsultationRequest,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     round_to_one_decimal_places,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
-    ConsultationRequest,
 };
 
 pub(crate) async fn get_consultation_request_detail(
@@ -126,7 +126,11 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
-        util::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id).await
+        util::consultation_request::find_consultation_req_by_consultation_req_id(
+            &self.pool,
+            consultation_req_id,
+        )
+        .await
     }
 
     async fn filter_user_rating_by_user_account_id(
