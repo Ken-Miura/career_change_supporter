@@ -12,7 +12,7 @@ use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
     TransactionError, TransactionTrait,
 };
-use entity::{consultation, consultation_req, user_rating};
+use entity::{consultation, consultation_req, settlement, user_rating};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -311,25 +311,24 @@ async fn create_settlement(
     meeting_date_time: &DateTime<FixedOffset>,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    // let active_model = settlement::ActiveModel {
-    //     settlement_id: NotSet,
-    //     user_account_id: Set(req.user_account_id),
-    //     consultant_id: Set(req.consultant_id),
-    //     meeting_at: Set(*meeting_date_time),
-    //     charge_id: Set(req.charge_id.clone()),
-    //     settled: Set(false),
-    //     stop_settlement: Set(false),
-    //     expired_at: Set(req.latest_candidate_date_time),
-    // };
-    // let _ = active_model.insert(txn).await.map_err(|e| {
-    //     error!("failed to insert settlement (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}",
-    //         req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
-    //     ErrRespStruct {
-    //         err_resp: unexpected_err_resp(),
-    //     }
-    // })?;
-    // Ok(())
-    todo!()
+    let active_model = settlement::ActiveModel {
+        settlement_id: NotSet,
+        user_account_id: Set(req.user_account_id),
+        consultant_id: Set(req.consultant_id),
+        meeting_at: Set(*meeting_date_time),
+        charge_id: Set(req.charge_id.clone()),
+        fee_per_hour_in_yen: Set(req.fee_per_hour_in_yen),
+        platform_fee_rate_in_percentage: Set(req.platform_fee_rate_in_percentage.clone()),
+        credit_facilities_expired_at: Set(req.credit_facilities_expired_at),
+    };
+    let _ = active_model.insert(txn).await.map_err(|e| {
+        error!("failed to insert settlement (user_account_id: {}, consultant_id: {}, meeting_at: {}, req: {:?}): {}",
+            req.user_account_id, req.consultant_id, meeting_date_time, req, e);
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 fn validate_picked_candidate(picked_candidate: u8) -> Result<(), ErrResp> {
