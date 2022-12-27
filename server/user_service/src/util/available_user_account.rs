@@ -2,10 +2,9 @@
 
 use chrono::{DateTime, FixedOffset};
 use common::ErrResp;
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
-use tracing::error;
+use entity::sea_orm::DatabaseConnection;
 
-use crate::err::unexpected_err_resp;
+use super::find_user_account_by_user_account_id;
 
 #[derive(Clone, Debug)]
 pub(crate) struct UserAccount {
@@ -18,16 +17,7 @@ async fn get_if_user_exists(
     pool: &DatabaseConnection,
     user_account_id: i64,
 ) -> Result<Option<UserAccount>, ErrResp> {
-    let model = entity::prelude::UserAccount::find_by_id(user_account_id)
-        .one(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find user_account (user_account_id): {}): {}",
-                user_account_id, e
-            );
-            unexpected_err_resp()
-        })?;
+    let model = find_user_account_by_user_account_id(pool, user_account_id).await?;
     Ok(model.map(|m| UserAccount {
         email_address: m.email_address,
         disabled_at: m.disabled_at,

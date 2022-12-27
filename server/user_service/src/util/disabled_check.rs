@@ -2,13 +2,9 @@
 
 use axum::async_trait;
 use common::ErrResp;
-use entity::{
-    prelude::UserAccount,
-    sea_orm::{DatabaseConnection, EntityTrait},
-};
-use tracing::error;
+use entity::sea_orm::DatabaseConnection;
 
-use crate::err::unexpected_err_resp;
+use super::find_user_account_by_user_account_id;
 
 #[async_trait]
 pub(crate) trait DisabledCheckOperation {
@@ -34,16 +30,7 @@ impl<'a> DisabledCheckOperationImpl<'a> {
 #[async_trait]
 impl<'a> DisabledCheckOperation for DisabledCheckOperationImpl<'a> {
     async fn check_if_account_is_disabled(&self, account_id: i64) -> Result<Option<bool>, ErrResp> {
-        let model = UserAccount::find_by_id(account_id)
-            .one(self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_account (user_accound_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
+        let model = find_user_account_by_user_account_id(self.pool, account_id).await?;
         Ok(model.map(|m| m.disabled_at.is_some()))
     }
 }

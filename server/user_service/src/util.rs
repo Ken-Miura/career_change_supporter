@@ -1,10 +1,10 @@
 // Copyright 2021 Ken Miura
 
+pub(crate) mod available_user_account;
 pub(crate) mod bank_account;
 pub(crate) mod charge_metadata_key;
 pub(crate) mod consultation;
 pub(crate) mod disabled_check;
-pub(crate) mod disabled_checker;
 pub(crate) mod document_operation;
 pub(crate) mod fee_per_hour_in_yen_range;
 pub(crate) mod identity_checker;
@@ -31,6 +31,7 @@ use common::{
 use entity::{
     prelude::ConsultationReq,
     sea_orm::{DatabaseConnection, EntityTrait},
+    user_account,
 };
 use once_cell::sync::Lazy;
 use tracing::error;
@@ -62,6 +63,23 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
 });
+
+async fn find_user_account_by_user_account_id(
+    pool: &DatabaseConnection,
+    user_account_id: i64,
+) -> Result<Option<user_account::Model>, ErrResp> {
+    let model = entity::prelude::UserAccount::find_by_id(user_account_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id): {}): {}",
+                user_account_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model)
+}
 
 pub(crate) fn validate_consultation_req_id_is_positive(
     consultation_req_id: i64,

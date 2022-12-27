@@ -19,7 +19,7 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, consultation_req_exists, disabled_checker::UserAccount,
+    self, available_user_account::UserAccount, consultation_req_exists,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     validate_consultation_req_id_is_positive, ConsultationRequest,
 };
@@ -142,14 +142,16 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         &self,
         consultant_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp> {
-        util::disabled_checker::get_if_user_account_is_available(&self.pool, consultant_id).await
+        util::available_user_account::get_if_user_account_is_available(&self.pool, consultant_id)
+            .await
     }
 
     async fn get_user_account_if_available(
         &self,
         user_account_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp> {
-        util::disabled_checker::get_if_user_account_is_available(&self.pool, user_account_id).await
+        util::available_user_account::get_if_user_account_is_available(&self.pool, user_account_id)
+            .await
     }
 
     async fn accept_consultation_req(
