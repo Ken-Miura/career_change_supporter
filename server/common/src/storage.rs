@@ -25,7 +25,7 @@ pub const CAREER_IMAGES_BUCKET_NAME: &str = "ccs-career-images";
 
 // PutObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
 // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
-// https://docs.rs/aws-sdk-s3/0.8.0/aws_sdk_s3/types/enum.SdkError.html
+// https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
 pub async fn upload_object(
     bucket_name: &str,
     key: &str,
@@ -48,7 +48,7 @@ pub async fn upload_object(
 
 // GetObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
 // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
-// https://docs.rs/aws-sdk-s3/0.8.0/aws_sdk_s3/types/enum.SdkError.html
+// https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
 pub async fn download_object(bucket_name: &str, key: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let endpoint = AWS_S3_ENDPOINT_URI.to_string();
     let client = create_client(&endpoint).await?;
@@ -67,7 +67,7 @@ pub async fn download_object(bucket_name: &str, key: &str) -> Result<Vec<u8>, Bo
 
 // DeleteObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
 // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
-// https://docs.rs/aws-sdk-s3/0.8.0/aws_sdk_s3/types/enum.SdkError.html
+// https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
 pub async fn delete_object(bucket_name: &str, key: &str) -> Result<(), Box<dyn Error>> {
     let endpoint = AWS_S3_ENDPOINT_URI.to_string();
     let client = create_client(&endpoint).await?;
