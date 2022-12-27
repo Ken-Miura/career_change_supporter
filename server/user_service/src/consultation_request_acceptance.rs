@@ -21,7 +21,8 @@ use crate::util::session::User;
 use crate::util::{
     self, available_user_account::UserAccount, consultation_req_exists,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-    validate_consultation_req_id_is_positive, ConsultationRequest,
+    validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
+    ConsultationRequest,
 };
 
 pub(crate) async fn post_consultation_request_acceptance(

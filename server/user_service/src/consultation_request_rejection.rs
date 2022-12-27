@@ -19,8 +19,9 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, consultation_req_exists, validate_consultation_req_id_is_positive, ConsultationRequest,
-    ACCESS_INFO,
+    self, consultation_req_exists,
+    validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
+    ConsultationRequest, ACCESS_INFO,
 };
 
 static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =

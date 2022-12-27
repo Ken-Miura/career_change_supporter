@@ -16,7 +16,9 @@ use crate::util::session::User;
 use crate::util::{
     self, consultation::ConsultationDateTime, consultation_req_exists,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-    round_to_one_decimal_places, validate_consultation_req_id_is_positive, ConsultationRequest,
+    round_to_one_decimal_places,
+    validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
+    ConsultationRequest,
 };
 
 pub(crate) async fn get_consultation_request_detail(
