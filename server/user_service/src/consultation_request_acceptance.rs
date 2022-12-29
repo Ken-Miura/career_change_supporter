@@ -7,12 +7,13 @@ use chrono::{DateTime, Duration, FixedOffset, Utc};
 use common::smtp::{SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
 use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
 use common::{ApiError, ErrResp, ErrRespStruct};
+use entity::prelude::ConsultationReq;
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
     TransactionError, TransactionTrait,
 };
-use entity::{consultation, consultation_req, settlement, user_rating};
+use entity::{consultant_rating, consultation, consultation_req, settlement, user_rating};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -79,11 +80,15 @@ async fn handle_consultation_request_acceptance(
     let consultant = get_consultant_if_available(req.consultant_id, &op).await?;
     let user = get_user_account_if_available(req.user_account_id, &op).await?;
 
-    let _consultation = op
+    let consultation = op
         .accept_consultation_req(consultation_req_id, picked_candidate)
         .await?;
+
     // TODO: メール送信
-    println!("{:?}, {:?}", consultant.email_address, user.email_address);
+    println!(
+        "{:?}, {:?}, {:?}",
+        consultant.email_address, user.email_address, consultation
+    );
     todo!()
 }
 
@@ -181,8 +186,10 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     create_consultation(&req, &meeting_date_time, txn).await?;
                     create_user_rating(&req, &meeting_date_time, txn).await?;
                     create_settlement(&req, &meeting_date_time, txn).await?;
-                    // consultant_ratingをinsert
-                    // consultation_reqをdelete
+                    create_consultant_rating(&req, &meeting_date_time, txn).await?;
+
+                    delete_consultation_req_by_consultation_req_id(req.consultation_req_id, txn)
+                        .await?;
 
                     Ok(Consultation {
                         consultation_req_id: req.consultation_req_id,
@@ -328,6 +335,49 @@ async fn create_settlement(
             err_resp: unexpected_err_resp(),
         }
     })?;
+    Ok(())
+}
+
+async fn create_consultant_rating(
+    req: &consultation_req::Model,
+    meeting_date_time: &DateTime<FixedOffset>,
+    txn: &DatabaseTransaction,
+) -> Result<(), ErrRespStruct> {
+    let active_model = consultant_rating::ActiveModel {
+        consultant_rating_id: NotSet,
+        user_account_id: Set(req.user_account_id),
+        consultant_id: Set(req.consultant_id),
+        meeting_at: Set(*meeting_date_time),
+        charge_id: Set(req.charge_id.clone()),
+        rating: NotSet,
+        rated_at: NotSet,
+    };
+    let _ = active_model.insert(txn).await.map_err(|e| {
+        error!("failed to insert consultant_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}", 
+            req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
+}
+
+async fn delete_consultation_req_by_consultation_req_id(
+    consultation_req_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<(), ErrRespStruct> {
+    ConsultationReq::delete_by_id(consultation_req_id)
+        .exec(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete consultantion_req (consultation_req_id: {}): {}",
+                consultation_req_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
     Ok(())
 }
 
