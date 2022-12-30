@@ -50,7 +50,7 @@ pub(crate) async fn post_consultation_request_acceptance(
         .await
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(crate) struct ConsultationRequestAcceptanceParam {
     pub(crate) consultation_req_id: i64,
     pub(crate) picked_candidate: u8,
@@ -659,7 +659,8 @@ mod tests {
     };
 
     use super::{
-        Consultation, ConsultationRequestAcceptanceOperation, ConsultationRequestAcceptanceParam,
+        handle_consultation_request_acceptance, Consultation,
+        ConsultationRequestAcceptanceOperation, ConsultationRequestAcceptanceParam,
         ConsultationRequestAcceptanceResult,
     };
 
@@ -679,7 +680,7 @@ mod tests {
         send_mail: SendMailMock,
     }
 
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     struct ConsultationRequestAcceptanceOperationMock {}
 
     #[async_trait]
@@ -722,6 +723,34 @@ mod tests {
 
     #[tokio::test]
     async fn handle_consultation_request_acceptance_tests() {
-        for test_case in TEST_CASE_SET.iter() {}
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.user_account_id;
+            let param = test_case.input.param.clone();
+            let current_date_time = test_case.input.current_date_time;
+            let op = test_case.input.op.clone();
+            let smtp_client = test_case.input.send_mail.clone();
+
+            let result = handle_consultation_request_acceptance(
+                account_id,
+                &param,
+                &current_date_time,
+                op,
+                smtp_client,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
     }
 }
