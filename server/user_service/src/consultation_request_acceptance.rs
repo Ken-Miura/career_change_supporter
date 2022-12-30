@@ -15,7 +15,7 @@ use entity::sea_orm::{
 };
 use entity::{consultant_rating, consultation, consultation_req, settlement, user_rating};
 use serde::{Deserialize, Serialize};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
@@ -84,12 +84,37 @@ async fn handle_consultation_request_acceptance(
         .accept_consultation_req(consultation_req_id, picked_candidate)
         .await?;
 
-    // TODO: メール送信
-    println!(
-        "{:?}, {:?}, {:?}",
-        consultant.email_address, user.email_address, consultation
-    );
-    todo!()
+    let result = send_mail_to_user(
+        req.consultation_req_id,
+        &consultation,
+        user.email_address.as_str(),
+        &send_mail,
+    )
+    .await;
+    // 相談受け付け処理（DBのトランザクション）は完了しているため、万が一通知メールが失敗しても処理自体はエラーとしない
+    if result.is_err() {
+        warn!(
+            "failed to send email to user (consultation_req_id: {}, consultation: {:?}, email_address: {}, result: {:?})",
+            req.consultation_req_id, consultation, user.email_address, result
+        );
+    }
+
+    let result = send_mail_to_consultant(
+        req.consultation_req_id,
+        &consultation,
+        consultant.email_address.as_str(),
+        &send_mail,
+    )
+    .await;
+    // 相談受け付け処理（DBのトランザクション）は完了しているため、万が一通知メールが失敗しても処理自体はエラーとしない
+    if result.is_err() {
+        warn!(
+            "failed to send email to consultant (consultation_req_id: {}, consultation: {:?}, email_address: {}, result: {:?})",
+            req.consultation_req_id, consultation, consultant.email_address, result
+        );
+    }
+
+    Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {})))
 }
 
 #[async_trait]
@@ -494,4 +519,22 @@ async fn get_user_account_if_available(
             }),
         )
     })
+}
+
+async fn send_mail_to_user(
+    consultation_req_id: i64,
+    consultation: &Consultation,
+    email_address: &str,
+    send_mail: &impl SendMail,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    todo!()
+}
+
+async fn send_mail_to_consultant(
+    consultation_req_id: i64,
+    consultation: &Consultation,
+    email_address: &str,
+    send_mail: &impl SendMail,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    todo!()
 }
