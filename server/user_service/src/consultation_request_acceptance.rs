@@ -681,33 +681,48 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct ConsultationRequestAcceptanceOperationMock {}
+    struct ConsultationRequestAcceptanceOperationMock {
+        account_id: i64,
+        consultation_req: ConsultationRequest,
+        consultant: Option<UserAccount>,
+        user: Option<UserAccount>,
+        picked_candidate: u8,
+        consultation: Consultation,
+    }
 
     #[async_trait]
     impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            }
+            Ok(true)
         }
 
         async fn find_consultation_req_by_consultation_req_id(
             &self,
             consultation_req_id: i64,
         ) -> Result<Option<ConsultationRequest>, ErrResp> {
-            todo!()
+            if self.consultation_req.consultation_req_id != consultation_req_id {
+                return Ok(None);
+            }
+            Ok(Some(self.consultation_req.clone()))
         }
 
         async fn get_consultant_if_available(
             &self,
             consultant_id: i64,
         ) -> Result<Option<UserAccount>, ErrResp> {
-            todo!()
+            assert_eq!(self.consultation_req.consultant_id, consultant_id);
+            Ok(self.consultant.clone())
         }
 
         async fn get_user_account_if_available(
             &self,
             user_account_id: i64,
         ) -> Result<Option<UserAccount>, ErrResp> {
-            todo!()
+            assert_eq!(self.consultation_req.user_account_id, user_account_id);
+            Ok(self.user.clone())
         }
 
         async fn accept_consultation_req(
@@ -715,7 +730,12 @@ mod tests {
             consultation_req_id: i64,
             picked_candidate: u8,
         ) -> Result<Consultation, ErrResp> {
-            todo!()
+            assert_eq!(
+                self.consultation_req.consultation_req_id,
+                consultation_req_id
+            );
+            assert_eq!(self.picked_candidate, picked_candidate);
+            Ok(self.consultation.clone())
         }
     }
 
