@@ -50,7 +50,7 @@ pub(crate) async fn post_consultation_request_acceptance(
         .await
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct ConsultationRequestAcceptanceParam {
     pub(crate) consultation_req_id: i64,
     pub(crate) picked_candidate: u8,
@@ -644,4 +644,84 @@ Email: {}",
         consultation_date_time,
         INQUIRY_EMAIL_ADDRESS
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::util::{
+        available_user_account::UserAccount, consultation_request::ConsultationRequest,
+        tests::SendMailMock,
+    };
+
+    use super::{
+        Consultation, ConsultationRequestAcceptanceOperation, ConsultationRequestAcceptanceParam,
+        ConsultationRequestAcceptanceResult,
+    };
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<ConsultationRequestAcceptanceResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        user_account_id: i64,
+        param: ConsultationRequestAcceptanceParam,
+        current_date_time: DateTime<FixedOffset>,
+        op: ConsultationRequestAcceptanceOperationMock,
+        send_mail: SendMailMock,
+    }
+
+    #[derive(Debug)]
+    struct ConsultationRequestAcceptanceOperationMock {}
+
+    #[async_trait]
+    impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn find_consultation_req_by_consultation_req_id(
+            &self,
+            consultation_req_id: i64,
+        ) -> Result<Option<ConsultationRequest>, ErrResp> {
+            todo!()
+        }
+
+        async fn get_consultant_if_available(
+            &self,
+            consultant_id: i64,
+        ) -> Result<Option<UserAccount>, ErrResp> {
+            todo!()
+        }
+
+        async fn get_user_account_if_available(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Option<UserAccount>, ErrResp> {
+            todo!()
+        }
+
+        async fn accept_consultation_req(
+            &self,
+            consultation_req_id: i64,
+            picked_candidate: u8,
+        ) -> Result<Consultation, ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_consultation_request_acceptance_tests() {
+        for test_case in TEST_CASE_SET.iter() {}
+    }
 }
