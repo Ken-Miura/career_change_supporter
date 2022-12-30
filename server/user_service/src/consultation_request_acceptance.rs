@@ -3,10 +3,13 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use chrono::{DateTime, Duration, FixedOffset, Utc};
-use common::smtp::{SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
+use common::smtp::{
+    SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME,
+    SYSTEM_EMAIL_ADDRESS,
+};
 use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
-use common::{ApiError, ErrResp, ErrRespStruct};
+use common::{ApiError, ErrResp, ErrRespStruct, WEB_SITE_NAME};
 use entity::prelude::ConsultationReq;
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
@@ -14,6 +17,7 @@ use entity::sea_orm::{
     TransactionError, TransactionTrait,
 };
 use entity::{consultant_rating, consultation, consultation_req, settlement, user_rating};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
 
@@ -25,6 +29,9 @@ use crate::util::{
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
 };
+
+static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
+    Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_consultation_request_acceptance(
     User { account_id }: User,
@@ -147,7 +154,8 @@ trait ConsultationRequestAcceptanceOperation {
 
 #[derive(Clone, Debug)]
 struct Consultation {
-    consultation_req_id: i64,
+    user_account_id: i64,
+    consultant_id: i64,
     fee_per_hour_in_yen: i32,
     consultation_date_time_in_jst: DateTime<FixedOffset>,
 }
@@ -217,7 +225,8 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                         .await?;
 
                     Ok(Consultation {
-                        consultation_req_id: req.consultation_req_id,
+                        user_account_id: req.user_account_id,
+                        consultant_id: req.consultant_id,
                         fee_per_hour_in_yen: req.fee_per_hour_in_yen,
                         consultation_date_time_in_jst: meeting_date_time
                             .with_timezone(&(*JAPANESE_TIME_ZONE)),
@@ -526,8 +535,61 @@ async fn send_mail_to_user(
     consultation: &Consultation,
     email_address: &str,
     send_mail: &impl SendMail,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    todo!()
+) -> Result<(), ErrResp> {
+    let date_time =
+        create_japanese_date_time_expression(&consultation.consultation_date_time_in_jst);
+    let text = create_text_for_user(
+        consultation_req_id,
+        consultation.consultant_id,
+        consultation.fee_per_hour_in_yen,
+        date_time.as_str(),
+    );
+    send_mail
+        .send_mail(
+            email_address,
+            SYSTEM_EMAIL_ADDRESS,
+            CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT.as_str(),
+            text.as_str(),
+        )
+        .await?;
+    Ok(())
+}
+
+fn create_japanese_date_time_expression(date_time: &DateTime<FixedOffset>) -> String {
+    let year = date_time.year();
+    let month = date_time.month();
+    let day = date_time.day();
+    let hour = date_time.hour();
+    format!("{}年 {}月 {}日 {}時00分", year, month, day, hour)
+}
+
+fn create_text_for_user(
+    consultation_req_id: i64,
+    consultant_id: i64,
+    fee_per_hour_in_yen: i32,
+    consultation_date_time: &str,
+) -> String {
+    // TODO: 文面の調整
+    format!(
+        r"相談申し込み（相談申し込み番号: {}）が成立しました。下記に成立した相談申し込みの詳細を記載いたします。
+
+【相談相手】
+  コンサルタントID: {}
+
+【相談料金】
+  {} 円
+
+【相談開始日時】
+  {}
+
+【お問い合わせ先】
+Email: {}",
+        consultation_req_id,
+        consultant_id,
+        fee_per_hour_in_yen,
+        consultation_date_time,
+        INQUIRY_EMAIL_ADDRESS
+    )
 }
 
 async fn send_mail_to_consultant(
@@ -535,6 +597,51 @@ async fn send_mail_to_consultant(
     consultation: &Consultation,
     email_address: &str,
     send_mail: &impl SendMail,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    todo!()
+) -> Result<(), ErrResp> {
+    let date_time =
+        create_japanese_date_time_expression(&consultation.consultation_date_time_in_jst);
+    let text = create_text_for_consultant(
+        consultation_req_id,
+        consultation.user_account_id,
+        consultation.fee_per_hour_in_yen,
+        date_time.as_str(),
+    );
+    send_mail
+        .send_mail(
+            email_address,
+            SYSTEM_EMAIL_ADDRESS,
+            CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT.as_str(),
+            text.as_str(),
+        )
+        .await?;
+    Ok(())
+}
+
+fn create_text_for_consultant(
+    consultation_req_id: i64,
+    user_account_id: i64,
+    fee_per_hour_in_yen: i32,
+    consultation_date_time: &str,
+) -> String {
+    // TODO: 文面の調整
+    format!(
+        r"相談申し込み（相談申し込み番号: {}）が成立しました。下記に成立した相談申し込みの詳細を記載いたします。
+
+【相談申し込み者】
+  ユーザーID: {}
+
+【相談料金】
+  {} 円
+
+【相談開始日時】
+  {}
+
+【お問い合わせ先】
+Email: {}",
+        consultation_req_id,
+        user_account_id,
+        fee_per_hour_in_yen,
+        consultation_date_time,
+        INQUIRY_EMAIL_ADDRESS
+    )
 }
