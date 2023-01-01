@@ -650,12 +650,11 @@ Email: {}",
 mod tests {
     use axum::async_trait;
     use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use common::{smtp::SendMail, ErrResp, RespResult};
     use once_cell::sync::Lazy;
 
     use crate::util::{
         available_user_account::UserAccount, consultation_request::ConsultationRequest,
-        tests::SendMailMock,
     };
 
     use super::{
@@ -736,6 +735,22 @@ mod tests {
             );
             assert_eq!(self.picked_candidate, picked_candidate);
             Ok(self.consultation.clone())
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct SendMailMock {}
+
+    #[async_trait]
+    impl SendMail for SendMailMock {
+        async fn send_mail(
+            &self,
+            _to: &str,
+            _from: &str,
+            _subject: &str,
+            _text: &str,
+        ) -> Result<(), ErrResp> {
+            Ok(())
         }
     }
 
