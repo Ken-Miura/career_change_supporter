@@ -651,10 +651,12 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, Duration, FixedOffset, TimeZone};
+    use common::smtp::SYSTEM_EMAIL_ADDRESS;
     use common::{smtp::SendMail, ErrResp, RespResult};
     use common::{ApiError, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::consultation_request_acceptance::CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT;
     use crate::err::Code;
     use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
     use crate::util::{
@@ -768,10 +770,12 @@ mod tests {
         async fn send_mail(
             &self,
             _to: &str,
-            _from: &str,
-            _subject: &str,
+            from: &str,
+            subject: &str,
             _text: &str,
         ) -> Result<(), ErrResp> {
+            assert_eq!(from, SYSTEM_EMAIL_ADDRESS);
+            assert_eq!(subject, *CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT);
             Ok(())
         }
     }
