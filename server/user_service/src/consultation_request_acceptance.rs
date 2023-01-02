@@ -738,6 +738,24 @@ mod tests {
                 consultation_req_id
             );
             assert_eq!(self.picked_candidate, picked_candidate);
+            if picked_candidate == 1 {
+                assert_eq!(
+                    self.consultation.consultation_date_time_in_jst,
+                    self.consultation_req.first_candidate_date_time_in_jst
+                );
+            } else if picked_candidate == 2 {
+                assert_eq!(
+                    self.consultation.consultation_date_time_in_jst,
+                    self.consultation_req.second_candidate_date_time_in_jst
+                );
+            } else if picked_candidate == 3 {
+                assert_eq!(
+                    self.consultation.consultation_date_time_in_jst,
+                    self.consultation_req.third_candidate_date_time_in_jst
+                );
+            } else {
+                panic!("cannot be reaced");
+            }
             Ok(self.consultation.clone())
         }
     }
@@ -868,8 +886,8 @@ mod tests {
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                                .ymd(2023, 1, 6)
+                                .and_hms(15, 0, 0),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -921,8 +939,8 @@ mod tests {
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                                .ymd(2023, 1, 7)
+                                .and_hms(7, 0, 0),
                         },
                     },
                     send_mail: send_mail.clone(),
