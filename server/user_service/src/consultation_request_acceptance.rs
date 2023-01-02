@@ -957,6 +957,59 @@ mod tests {
                 expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
             },
             TestCase {
+                name: "success case (ignore send mail failed)".to_string(),
+                input: Input {
+                    user_account_id: user_account_id_of_consultant,
+                    param: ConsultationRequestAcceptanceParam {
+                        consultation_req_id,
+                        picked_candidate,
+                        user_checked,
+                    },
+                    current_date_time,
+                    op: ConsultationRequestAcceptanceOperationMock {
+                        account_id: user_account_id_of_consultant,
+                        consultation_req: ConsultationRequest {
+                            consultation_req_id,
+                            user_account_id,
+                            consultant_id: user_account_id_of_consultant,
+                            fee_per_hour_in_yen,
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 5)
+                                .and_hms(23, 0, 0),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 6)
+                                .and_hms(15, 0, 0),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 7)
+                                .and_hms(7, 0, 0),
+                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 7)
+                                .and_hms(7, 0, 0),
+                        },
+                        consultant: Some(UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        }),
+                        user: Some(UserAccount {
+                            email_address: user_email_address.to_string(),
+                            disabled_at: None,
+                        }),
+                        picked_candidate,
+                        consultation: Consultation {
+                            user_account_id,
+                            consultant_id: user_account_id_of_consultant,
+                            fee_per_hour_in_yen,
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 5)
+                                .and_hms(23, 0, 0),
+                        },
+                    },
+                    send_mail: SendMailMock { fail: true },
+                },
+                expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
+            },
+            TestCase {
                 name: "invalid candidate case 1".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
