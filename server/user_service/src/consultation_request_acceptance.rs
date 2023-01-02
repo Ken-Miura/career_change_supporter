@@ -651,12 +651,14 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::smtp::SYSTEM_EMAIL_ADDRESS;
+    use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
     use common::{smtp::SendMail, ErrResp, RespResult};
     use common::{ApiError, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::consultation_request_acceptance::CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT;
+    use crate::consultation_request_acceptance::{
+        create_text_for_user, CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT,
+    };
     use crate::err::{unexpected_err_resp, Code};
     use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
     use crate::util::{
@@ -1751,5 +1753,43 @@ mod tests {
                 assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
             }
         }
+    }
+
+    #[test]
+    fn test_create_text_for_user() {
+        let consultation_req_id = 1312;
+        let consultant_id = 53;
+        let fee_per_hour_in_yen = 5000;
+        let consultation_date_time = "2022年 11月 12日 7時00分";
+
+        let result = create_text_for_user(
+            consultation_req_id,
+            consultant_id,
+            fee_per_hour_in_yen,
+            consultation_date_time,
+        );
+
+        let expected = format!(
+            r"相談申し込み（相談申し込み番号: {}）が成立しました。下記に成立した相談申し込みの詳細を記載いたします。
+
+【相談相手】
+  コンサルタントID: {}
+
+【相談料金】
+  {} 円
+
+【相談開始日時】
+  {}
+
+【お問い合わせ先】
+Email: {}",
+            consultation_req_id,
+            consultant_id,
+            fee_per_hour_in_yen,
+            consultation_date_time,
+            INQUIRY_EMAIL_ADDRESS
+        );
+
+        assert_eq!(result, expected);
     }
 }
