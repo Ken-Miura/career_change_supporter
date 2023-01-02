@@ -657,7 +657,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::consultation_request_acceptance::CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT;
-    use crate::err::Code;
+    use crate::err::{unexpected_err_resp, Code};
     use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
     use crate::util::{
         available_user_account::UserAccount, consultation_request::ConsultationRequest,
@@ -763,7 +763,9 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct SendMailMock {}
+    struct SendMailMock {
+        fail: bool,
+    }
 
     #[async_trait]
     impl SendMail for SendMailMock {
@@ -776,6 +778,9 @@ mod tests {
         ) -> Result<(), ErrResp> {
             assert_eq!(from, SYSTEM_EMAIL_ADDRESS);
             assert_eq!(subject, *CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT);
+            if self.fail {
+                return Err(unexpected_err_resp());
+            }
             Ok(())
         }
     }
@@ -790,7 +795,7 @@ mod tests {
         let fee_per_hour_in_yen = 4500;
         let consultant_email_address = "test0@test.com";
         let user_email_address = "test1@test.com";
-        let send_mail = SendMailMock {};
+        let send_mail = SendMailMock { fail: false };
         vec![
             TestCase {
                 name: "success case (first choise is picked)".to_string(),
