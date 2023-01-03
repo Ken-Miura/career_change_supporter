@@ -134,7 +134,7 @@ export function createErrorMessage (code: number): string {
   return result
 }
 
-export function createErrorMessageInternal (code: string): string {
+function createErrorMessageInternal (code: string): string {
   const message = codeToMessage.get(code)
   if (!message) {
     throw new Error(`unexpected code: ${code}`)
