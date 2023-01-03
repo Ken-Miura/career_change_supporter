@@ -596,7 +596,7 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.consultation_req To user_app;"))
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.stopped_settlement To user_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
