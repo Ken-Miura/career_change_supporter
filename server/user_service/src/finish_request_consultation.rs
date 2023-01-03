@@ -89,7 +89,7 @@ async fn handle_finish_request_consultation(
             consultant_id,
             candidates_date_time_in_jst,
             latest_candidate_date_time_in_jst,
-            charge,
+            charge.id,
         )
         .await?;
     let consultation_req_id = id_and_charge.0;
@@ -508,7 +508,7 @@ trait FinishRequestConsultationOperation {
         consultant_id: i64,
         candidates: Candidates,
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-        charge: Charge,
+        charge_id: String,
     ) -> Result<(i64, Charge), ErrResp>;
     async fn get_user_account_email_address_by_user_account_id(
         &self,
@@ -561,27 +561,40 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         consultant_id: i64,
         candidates: Candidates,
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-        charge: Charge,
+        charge_id: String,
     ) -> Result<(i64, Charge), ErrResp> {
-        let platform_fee_rate = charge.platform_fee_rate.ok_or_else(|| {
-            error!(
-                "failed to get platform_fee_rate (charge.id: {})",
-                charge.id.clone()
-            );
-            unexpected_err_resp()
-        })?;
-        let expired_at_timestamp = charge.expired_at.ok_or_else(|| {
-            error!(
-                "failed to get expired_at (charge.id: {})",
-                charge.id.clone()
-            );
-            unexpected_err_resp()
-        })?;
-        let expired_at = Utc
-            .timestamp(expired_at_timestamp, 0)
-            .with_timezone(&(*JAPANESE_TIME_ZONE));
         let id_and_charge = self.pool.transaction::<_, (i64, Charge), ErrRespStruct>(|txn| {
             Box::pin(async move {
+                // 適切にロールバックが可能なように、通常はDB操作を行った後、最後にその他の失敗する可能性のある処理を行う。
+                // しかし、ここでは先にDB操作以外の処理（PAYJP APIの呼び出し）を行い、その後にDB操作を行うように記載している。
+                // これはDBに入れる値であるplatform_fee_rateとexpired_atがPAYJP APIの呼び出し以降出ない限り、手に入らないため。
+                // 万が一、PAYJP APIの呼び出しが成功した後、DB操作が失敗してロールバックした場合、PAYJP上に余計なChargeが残ったままになる。
+                // しかし、このChargeは、captured=falseである（=与信枠の確保のみで支払いは確定していない）ため、大きな問題とならないと考えられる。
+                let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+                let charge = charge_op.finish_three_d_secure_flow(charge_id.as_str())
+                    .await
+                    .map_err(|e| {
+                        error!("failed to finish 3D secure flow (charge_id: {}): {}", charge_id, e);
+                        ErrRespStruct {
+                            err_resp: convert_payment_err_to_err_resp(&e),
+                        }
+                    })?;
+
+                let platform_fee_rate = charge.platform_fee_rate.clone().ok_or_else(|| {
+                    error!("failed to get platform_fee_rate (charge_id: {})", charge_id);
+                    ErrRespStruct {
+                        err_resp: unexpected_err_resp()
+                    }
+                })?;
+                let expired_at_timestamp = charge.expired_at.ok_or_else(|| {
+                    error!("failed to get expired_at (charge_id: {})", charge_id);
+                    ErrRespStruct {
+                        err_resp: unexpected_err_resp()
+                    }
+                })?;
+                let expired_at = Utc
+                    .timestamp(expired_at_timestamp, 0)
+                    .with_timezone(&(*JAPANESE_TIME_ZONE));
                 let active_model = entity::consultation_req::ActiveModel {
                     consultation_req_id: NotSet,
                     user_account_id: Set(account_id),
@@ -604,15 +617,6 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                         err_resp: unexpected_err_resp(),
                     }
                 })?;
-
-                let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-                let charge = charge_op.finish_three_d_secure_flow(charge.id.as_str())
-                    .await.map_err(|e| {
-                        error!("failed to finish 3D secure flow (charge.id: {}): {}", charge.id, e);
-                        ErrRespStruct {
-                            err_resp: convert_payment_err_to_err_resp(&e),
-                        }
-                    })?;
 
                 Ok((result.consultation_req_id, charge))
             })
@@ -770,12 +774,11 @@ mod tests {
             consultant_id: i64,
             candidates: Candidates,
             latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-            charge: Charge,
+            charge_id: String,
         ) -> Result<(i64, Charge), ErrResp> {
             assert_eq!(self.account_id, account_id);
             assert_eq!(self.consultant_id, consultant_id);
-            assert_eq!(self.charge.id, charge.id);
-            assert_eq!(self.charge.amount, charge.amount);
+            assert_eq!(self.charge.id, charge_id);
             let c = extract_candidates_date_time_in_jst(&self.charge).expect("failed to get Ok");
             assert_eq!(c, candidates);
             assert_eq!(
