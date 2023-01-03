@@ -21,7 +21,7 @@
             <div class="grid grid-cols-2 mt-4 ml-4">
               <h3 class="text-xl justify-self-start col-span-1">ユーザーID</h3><h3 class="text-xl justify-self-start col-span-1">{{ consultationReqDetail.user_account_id }}</h3>
               <div class="mt-3 justify-self-start col-span-1 text-xl">評価</div><div class="mt-3 justify-self-start col-span-1 text-xl"><span v-if="consultationReqDetail.user_rating !== null">{{ consultationReqDetail.user_rating }}</span><span v-else>0</span>/5（評価件数：{{ consultationReqDetail.num_of_rated_of_user }} 件）</div>
-              <p class="mt-3 justify-self-start col-span-1 text-xl">支払われる相談料</p><p class="mt-3 justify-self-start col-span-1 text-xl">{{ consultationReqDetail.fee_per_hour_in_yen }} 円</p>
+              <p class="mt-3 justify-self-start col-span-1 text-xl">相談料</p><p class="mt-3 justify-self-start col-span-1 text-xl">{{ consultationReqDetail.fee_per_hour_in_yen }} 円</p>
             </div>
             <div class="flex flex-col justify-center mt-6 ml-4">
               <p class="font-bold text-xl">希望相談開始日時候補一覧</p>
