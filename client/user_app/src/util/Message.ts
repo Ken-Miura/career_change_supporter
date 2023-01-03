@@ -150,4 +150,5 @@ export namespace Message {
     export const NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE = '不正な相談申し込み番号です'
     export const NO_CONSULTATION_REQ_FOUND_MESSAGE = '相談申し込みが見つかりませんでした'
     export const INVALID_CANDIDATE_MESSAGE = '不正な相談日時候補です'
+    export const USER_DOES_NOT_CHECK_CONFIRMATION_ITEMS_MESSAGE = '確認事項がチェックされていません'
 }

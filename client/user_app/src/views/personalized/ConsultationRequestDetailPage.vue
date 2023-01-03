@@ -201,6 +201,11 @@ export default defineComponent({
           errorBelowBtn.message = Message.INVALID_CANDIDATE_MESSAGE
           return
         }
+        if (!userChecked.value) {
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = Message.USER_DOES_NOT_CHECK_CONFIRMATION_ITEMS_MESSAGE
+          return
+        }
         const param = {
           consultation_req_id: reqId,
           picked_candidate: parseInt(picked.value),
