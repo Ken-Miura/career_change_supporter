@@ -216,7 +216,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                         picked_candidate,
                     )?;
 
-                    // TOOD: 既に同じ時刻にミーティングがないか確認する
+                    // TODO: 既に同じ時刻にミーティングがないか確認する
                     // TODO: メンテナンス時刻に重なっていないか確認する
 
                     create_consultation(&req, &meeting_date_time, txn).await?;
