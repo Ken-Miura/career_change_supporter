@@ -181,11 +181,28 @@ export default defineComponent({
       }
     }
 
+    const checkIfPickedValueIsInValidRange = (pickedValue: string): boolean => {
+      if (pickedValue === '1' || pickedValue === '2' || pickedValue === '3') {
+        return true
+      }
+      return false
+    }
+
     const takeConsultationReq = async () => {
-      // TODO: Add validation
       try {
+        const reqId = parseInt(consultationReqId)
+        if (!(reqId > 0)) {
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE
+          return
+        }
+        if (!checkIfPickedValueIsInValidRange(picked.value)) {
+          errorBelowBtn.exists = true
+          errorBelowBtn.message = Message.INVALID_CANDIDATE_MESSAGE
+          return
+        }
         const param = {
-          consultation_req_id: parseInt(consultationReqId),
+          consultation_req_id: reqId,
           picked_candidate: parseInt(picked.value),
           user_checked: userChecked.value
         } as ConsultationRequestAcceptanceParam
