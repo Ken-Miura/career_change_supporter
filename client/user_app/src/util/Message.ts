@@ -151,4 +151,6 @@ export namespace Message {
     export const NO_CONSULTATION_REQ_FOUND_MESSAGE = '相談申し込みが見つかりませんでした'
     export const INVALID_CANDIDATE_MESSAGE = '不正な相談日時候補です'
     export const USER_DOES_NOT_CHECK_CONFIRMATION_ITEMS_MESSAGE = '確認事項がチェックされていません'
+    export const CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE = 'アカウントが存在しない、または無効化されています' // 操作者が相談申し込みを受けるときに発生するメッセージなので、操作者自身のアカウントを示すエラーメッセージとなる
+    export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE = '相談申し込み者のユーザーが存在しない、または無効化されています'
 }
