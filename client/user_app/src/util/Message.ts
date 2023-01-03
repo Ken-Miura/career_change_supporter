@@ -148,5 +148,6 @@ export namespace Message {
     export const CONSULTATION_REQUEST_REJECTION_MESSAGE = '相談申し込みを拒否しました'
     export const CONSULTATION_REQUEST_ACCEPTANCE_MESSAGE = '相談申し込みを受けました'
     export const NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE = '不正な相談申し込み番号です'
+    export const NO_CONSULTATION_REQ_FOUND_MESSAGE = '相談申し込みが見つかりませんでした'
     export const INVALID_CANDIDATE_MESSAGE = '不正な相談日時候補です'
 }
