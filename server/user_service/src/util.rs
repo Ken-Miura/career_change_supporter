@@ -12,6 +12,7 @@ pub(crate) mod identity_checker;
 pub(crate) mod image_converter;
 pub(crate) mod multipart;
 pub(crate) mod optional_env_var;
+pub(crate) mod platform_fee_rate;
 pub(crate) mod rewards;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;

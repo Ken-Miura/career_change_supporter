@@ -26,6 +26,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
+use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::util::{
     document_operation::{
         find_document_model_by_user_account_id_with_shared_lock, insert_document,
@@ -56,7 +57,6 @@ static KATAKANA_LOWER_CASE_UPPER_CASE_SET: Lazy<HashSet<(String, String)>> = Laz
     set
 });
 
-const PLATFORM_FEE_RATE_IN_PERCENTAGE: &str = "30.00";
 const PAYJP_FEE_INCLUDED: bool = true;
 const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 

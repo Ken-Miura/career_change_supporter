@@ -28,6 +28,7 @@ use crate::util::charge_metadata_key::{
 };
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
+use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::util::session::User;
 use crate::util::{self, consultation::convert_payment_err_to_err_resp, ACCESS_INFO};
 
@@ -567,7 +568,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
             Box::pin(async move {
                 // 適切にロールバックが可能なように、通常はDB操作を行った後、最後にその他の失敗する可能性のある処理を行う。
                 // しかし、ここでは先にDB操作以外の処理（PAYJP APIの呼び出し）を行い、その後にDB操作を行うように記載している。
-                // これはDBに入れる値であるplatform_fee_rateとexpired_atがPAYJP APIの呼び出し以降出ない限り、手に入らないため。
+                // これはDBに入れる値であるexpired_atがPAYJP APIの呼び出し以降出ない限り、手に入らないため。
                 // 万が一、PAYJP APIの呼び出しが成功した後、DB操作が失敗してロールバックした場合、PAYJP上に余計なChargeが残ったままになる。
                 // しかし、このChargeは、captured=falseである（=与信枠の確保のみで支払いは確定していない）ため、大きな問題とならないと考えられる。
                 let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
@@ -580,12 +581,6 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                         }
                     })?;
 
-                let platform_fee_rate = charge.platform_fee_rate.clone().ok_or_else(|| {
-                    error!("failed to get platform_fee_rate (charge_id: {})", charge_id);
-                    ErrRespStruct {
-                        err_resp: unexpected_err_resp()
-                    }
-                })?;
                 let expired_at_timestamp = charge.expired_at.ok_or_else(|| {
                     error!("failed to get expired_at (charge_id: {})", charge_id);
                     ErrRespStruct {
@@ -605,7 +600,7 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                     latest_candidate_date_time: Set(latest_candidate_date_time_in_jst),
                     charge_id: Set(charge.id.clone()),
                     fee_per_hour_in_yen: Set(charge.amount), // 3Dセキュアフロー内の一連の流れであり、途中に返金処理が発生していることはない。従ってcharge.amount_refundedを考慮する必要はない
-                    platform_fee_rate_in_percentage: Set(platform_fee_rate),
+                    platform_fee_rate_in_percentage: Set(PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string()), // platform_fee_rateは、captured=trueの状態にならない限り手に入らないため、（テナントに設定してある）想定値を使う
                     credit_facilities_expired_at: Set(expired_at)
                 };
                 let result = active_model.insert(txn).await.map_err(|e| {
