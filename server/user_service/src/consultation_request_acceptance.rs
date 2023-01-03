@@ -440,7 +440,7 @@ fn validate_user_checked_confirmation_items(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::UerDoesNotCheckConfirmationItems as u32,
+                code: Code::UserDoesNotCheckConfirmationItems as u32,
             }),
         ));
     };
@@ -1128,7 +1128,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail UerDoesNotCheckConfirmationItems".to_string(),
+                name: "fail UserDoesNotCheckConfirmationItems".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
                     param: ConsultationRequestAcceptanceParam {
@@ -1181,7 +1181,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::UerDoesNotCheckConfirmationItems as u32,
+                        code: Code::UserDoesNotCheckConfirmationItems as u32,
                     }),
                 )),
             },

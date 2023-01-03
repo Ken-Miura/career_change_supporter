@@ -126,7 +126,7 @@ pub(crate) enum Code {
     NonPositiveConsultationReqId = 20114,
     NoConsultationReqFound = 20115,
     InvalidCandidate = 20116,
-    UerDoesNotCheckConfirmationItems = 20117,
+    UserDoesNotCheckConfirmationItems = 20117,
     ConsultantIsNotAvailableOnConsultationAcceptance = 20118,
     UserIsNotAvailableOnConsultationAcceptance = 20119,
 }
