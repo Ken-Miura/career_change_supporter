@@ -87,8 +87,18 @@ async fn handle_consultation_request_acceptance(
     let consultant = get_consultant_if_available(req.consultant_id, &op).await?;
     let user = get_user_account_if_available(req.user_account_id, &op).await?;
 
+    let meeting_date_time = select_meeting_date_time(
+        &req.first_candidate_date_time_in_jst,
+        &req.second_candidate_date_time_in_jst,
+        &req.third_candidate_date_time_in_jst,
+        picked_candidate,
+    )?;
+
+    // TODO: 既に同じ時刻にミーティングがないか確認する
+    // TODO: メンテナンス時刻に重なっていないか確認する
+
     let consultation = op
-        .accept_consultation_req(consultation_req_id, picked_candidate)
+        .accept_consultation_req(consultation_req_id, meeting_date_time)
         .await?;
 
     let result = send_mail_to_user(
@@ -148,7 +158,7 @@ trait ConsultationRequestAcceptanceOperation {
     async fn accept_consultation_req(
         &self,
         consultation_req_id: i64,
-        picked_candidate: u8,
+        meeting_date_time: DateTime<FixedOffset>,
     ) -> Result<Consultation, ErrResp>;
 }
 
@@ -200,7 +210,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
     async fn accept_consultation_req(
         &self,
         consultation_req_id: i64,
-        picked_candidate: u8,
+        meeting_date_time: DateTime<FixedOffset>,
     ) -> Result<Consultation, ErrResp> {
         let consultation = self
             .pool
@@ -208,16 +218,6 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                 Box::pin(async move {
                     let req =
                         get_consultation_req_with_exclusive_lock(consultation_req_id, txn).await?;
-
-                    let meeting_date_time = select_meeting_date_time(
-                        &req.first_candidate_date_time,
-                        &req.second_candidate_date_time,
-                        &req.third_candidate_date_time,
-                        picked_candidate,
-                    )?;
-
-                    // TODO: 既に同じ時刻にミーティングがないか確認する
-                    // TODO: メンテナンス時刻に重なっていないか確認する
 
                     create_consultation(&req, &meeting_date_time, txn).await?;
                     create_user_rating(&req, &meeting_date_time, txn).await?;
@@ -277,26 +277,6 @@ async fn get_consultation_req_with_exclusive_lock(
             err_resp: unexpected_err_resp(),
         }
     })
-}
-
-fn select_meeting_date_time(
-    first_candidate_date_time: &DateTime<FixedOffset>,
-    second_candidate_date_time: &DateTime<FixedOffset>,
-    third_candidate_date_time: &DateTime<FixedOffset>,
-    picked_candidate: u8,
-) -> Result<DateTime<FixedOffset>, ErrRespStruct> {
-    if picked_candidate == 1 {
-        Ok(*first_candidate_date_time)
-    } else if picked_candidate == 2 {
-        Ok(*second_candidate_date_time)
-    } else if picked_candidate == 3 {
-        Ok(*third_candidate_date_time)
-    } else {
-        error!("invalid picked_candidate ({})", picked_candidate);
-        Err(ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        })
-    }
 }
 
 async fn create_consultation(
@@ -533,6 +513,24 @@ async fn get_user_account_if_available(
     })
 }
 
+fn select_meeting_date_time(
+    first_candidate_date_time: &DateTime<FixedOffset>,
+    second_candidate_date_time: &DateTime<FixedOffset>,
+    third_candidate_date_time: &DateTime<FixedOffset>,
+    picked_candidate: u8,
+) -> Result<DateTime<FixedOffset>, ErrResp> {
+    if picked_candidate == 1 {
+        Ok(*first_candidate_date_time)
+    } else if picked_candidate == 2 {
+        Ok(*second_candidate_date_time)
+    } else if picked_candidate == 3 {
+        Ok(*third_candidate_date_time)
+    } else {
+        error!("invalid picked_candidate ({})", picked_candidate);
+        Err(unexpected_err_resp())
+    }
+}
+
 async fn send_mail_to_user(
     consultation_req_id: i64,
     consultation: &Consultation,
@@ -696,7 +694,7 @@ mod tests {
         consultation_req: ConsultationRequest,
         consultant: Option<UserAccount>,
         user: Option<UserAccount>,
-        picked_candidate: u8,
+        meeting_date_time: DateTime<FixedOffset>,
         consultation: Consultation,
     }
 
@@ -738,31 +736,13 @@ mod tests {
         async fn accept_consultation_req(
             &self,
             consultation_req_id: i64,
-            picked_candidate: u8,
+            meeting_date_time: DateTime<FixedOffset>,
         ) -> Result<Consultation, ErrResp> {
             assert_eq!(
                 self.consultation_req.consultation_req_id,
                 consultation_req_id
             );
-            assert_eq!(self.picked_candidate, picked_candidate);
-            if picked_candidate == 1 {
-                assert_eq!(
-                    self.consultation.consultation_date_time_in_jst,
-                    self.consultation_req.first_candidate_date_time_in_jst
-                );
-            } else if picked_candidate == 2 {
-                assert_eq!(
-                    self.consultation.consultation_date_time_in_jst,
-                    self.consultation_req.second_candidate_date_time_in_jst
-                );
-            } else if picked_candidate == 3 {
-                assert_eq!(
-                    self.consultation.consultation_date_time_in_jst,
-                    self.consultation_req.third_candidate_date_time_in_jst
-                );
-            } else {
-                panic!("cannot be reaced");
-            }
+            assert_eq!(self.meeting_date_time, meeting_date_time);
             Ok(self.consultation.clone())
         }
     }
@@ -841,7 +821,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -894,7 +874,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate: 2,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 6).and_hms(15, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -947,7 +927,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate: 3,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 7).and_hms(7, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1000,7 +980,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1053,7 +1033,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate: 0,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1111,7 +1091,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate: 4,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1169,7 +1149,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1227,7 +1207,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1285,7 +1265,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1343,7 +1323,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1401,7 +1381,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1459,7 +1439,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1523,7 +1503,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1590,7 +1570,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1648,7 +1628,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1703,7 +1683,7 @@ mod tests {
                             disabled_at: None,
                         }),
                         user: None,
-                        picked_candidate,
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
