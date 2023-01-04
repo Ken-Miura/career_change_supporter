@@ -69,7 +69,7 @@ sea-orm-cli migrate refresh
 ### 変更されたテーブルをentity以下のソースコードに反映（DBのテーブルをEntityを表すソースコードに反映する処理）
 ```
 export DATABASE_URL=postgres://postgres:example@db/ccs_db
-sea-orm-cli generate entity -s ccs_schema -o entity/src
+sea-orm-cli generate entity -l -s ccs_schema -o entity/src
 ```
 
 # 設計

@@ -14,6 +14,7 @@ pub use super::create_identity_req::Entity as CreateIdentityReq;
 pub use super::deleted_user_account::Entity as DeletedUserAccount;
 pub use super::document::Entity as Document;
 pub use super::identity::Entity as Identity;
+pub use super::maintenance::Entity as Maintenance;
 pub use super::pwd_change_req::Entity as PwdChangeReq;
 pub use super::receipt::Entity as Receipt;
 pub use super::refund::Entity as Refund;

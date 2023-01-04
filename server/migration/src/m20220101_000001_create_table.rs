@@ -405,7 +405,8 @@ impl MigrationTrait for Migration {
                   consultant_peer_id ccs_schema.uuid_simple_form,
                   consultant_peer_opend_at TIMESTAMP WITH TIME ZONE,
                   consultation_started_at TIMESTAMP WITH TIME ZONE,
-                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                  UNIQUE(user_account_id, meeting_at),
+                  UNIQUE(consultant_id, meeting_at)
                 );",
             ))
             .await
@@ -1186,6 +1187,41 @@ impl MigrationTrait for Migration {
             .execute(
                 sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.rejected_create_career_req_rjd_cre_career_req_id_seq TO admin_app;"),
             )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.maintenance (
+                  maintenance_id BIGSERIAL PRIMARY KEY,
+                  maintenance_start_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  maintenance_end_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  description TEXT NOT NULL,
+                  CHECK (maintenance_end_at > maintenance_start_at)
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.maintenance To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.maintenance To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.maintenance_maintenance_id_seq TO admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX maintenance_maintenance_end_at_idx ON ccs_schema.maintenance (maintenance_end_at);",
+            ))
             .await
             .map(|_| ())?;
 
