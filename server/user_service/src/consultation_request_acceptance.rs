@@ -8,6 +8,7 @@ use common::smtp::{
     SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME,
     SYSTEM_EMAIL_ADDRESS,
 };
+use common::util::Maintenance;
 use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
 use common::{ApiError, ErrResp, ErrRespStruct, WEB_SITE_NAME};
 use entity::prelude::ConsultationReq;
@@ -16,7 +17,9 @@ use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
     PaginatorTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
-use entity::{consultant_rating, consultation, consultation_req, settlement, user_rating};
+use entity::{
+    consultant_rating, consultation, consultation_req, maintenance, settlement, user_rating,
+};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
@@ -170,6 +173,11 @@ trait ConsultationRequestAcceptanceOperation {
         meeting_date_time: DateTime<FixedOffset>,
     ) -> Result<u64, ErrResp>;
 
+    async fn filter_maintenance_by_maintenance_end_at(
+        &self,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<Maintenance>, ErrResp>;
+
     async fn accept_consultation_req(
         &self,
         consultation_req_id: i64,
@@ -260,6 +268,33 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                 unexpected_err_resp()
             })?;
         Ok(cnt)
+    }
+
+    async fn filter_maintenance_by_maintenance_end_at(
+        &self,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<Maintenance>, ErrResp> {
+        let maintenances = maintenance::Entity::find()
+            .filter(maintenance::Column::MaintenanceEndAt.lt(current_date_time))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter maintenance (current_date_time: {}): {}",
+                    current_date_time, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(maintenances
+            .into_iter()
+            .map(|m| Maintenance {
+                maintenance_start_at_in_jst: m
+                    .maintenance_start_at
+                    .with_timezone(&*JAPANESE_TIME_ZONE),
+                maintenance_end_at_in_jst: m.maintenance_end_at.with_timezone(&*JAPANESE_TIME_ZONE),
+                description: m.description,
+            })
+            .collect::<Vec<Maintenance>>())
     }
 
     async fn accept_consultation_req(
@@ -760,6 +795,7 @@ mod tests {
     use axum::{async_trait, Json};
     use chrono::{DateTime, Duration, FixedOffset, TimeZone};
     use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
+    use common::util::Maintenance;
     use common::{smtp::SendMail, ErrResp, RespResult};
     use common::{ApiError, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
@@ -860,6 +896,13 @@ mod tests {
             assert_eq!(self.consultation_req.consultant_id, consultant_id);
             assert_eq!(self.meeting_date_time, meeting_date_time);
             Ok(self.consultant_same_meeting_date_time_cnt)
+        }
+
+        async fn filter_maintenance_by_maintenance_end_at(
+            &self,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<Vec<Maintenance>, ErrResp> {
+            todo!()
         }
 
         async fn accept_consultation_req(

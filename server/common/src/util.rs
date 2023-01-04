@@ -9,6 +9,7 @@ use std::fmt::Display;
 use std::string::FromUtf8Error;
 
 use bcrypt::BcryptError;
+use chrono::{DateTime, FixedOffset};
 use cookie::SameSite;
 use serde::{Deserialize, Serialize};
 use tower_cookies::Cookie;
@@ -133,6 +134,14 @@ pub struct Career {
     pub position_name: Option<String>,
     pub is_new_graduate: bool,
     pub note: Option<String>,
+}
+
+/// メンテナンス情報
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Maintenance {
+    pub maintenance_start_at_in_jst: DateTime<FixedOffset>,
+    pub maintenance_end_at_in_jst: DateTime<FixedOffset>,
+    pub description: String,
 }
 
 #[cfg(test)]
