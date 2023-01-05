@@ -153,4 +153,7 @@ export namespace Message {
     export const USER_DOES_NOT_CHECK_CONFIRMATION_ITEMS_MESSAGE = '確認事項がチェックされていません'
     export const CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE = 'アカウントが存在しない、または無効化されています' // 操作者が相談申し込みを受けるときに発生するメッセージなので、操作者自身のアカウントを示すエラーメッセージとなる
     export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE = '相談申し込み者のユーザーが存在しない、または無効化されています'
+    export const USER_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '選択された相談開始日時に関して、相談申し込み者が既に別のコンサルタントとの予定を確定させています。他の相談開始日時を選択して下さい'
+    export const CONSULTANT_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '別のユーザーとの相談予定と重なっています。他の相談開始日時を選択して下さい' // 操作者が相談申し込みを受けるときに発生するメッセージなので、操作者自身の誤りを示すエラーメッセージとなる
+    export const MEETING_DATE_TIME_OVERLAPS_MAINTENANCE_MESSAGE = '相談開始日時がメンテナンスと重なっています。他の相談開始日時を選択して下さい'
 }
