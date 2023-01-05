@@ -275,7 +275,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<Maintenance>, ErrResp> {
         let maintenances = maintenance::Entity::find()
-            .filter(maintenance::Column::MaintenanceEndAt.lt(current_date_time))
+            .filter(maintenance::Column::MaintenanceEndAt.gte(current_date_time))
             .all(&self.pool)
             .await
             .map_err(|e| {
