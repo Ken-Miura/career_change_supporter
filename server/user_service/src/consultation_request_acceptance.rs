@@ -645,7 +645,7 @@ async fn ensure_consultant_has_no_same_meeting_date_time(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::ConsultanthasSameMeetingDateTime as u32,
+                code: Code::ConsultantHasSameMeetingDateTime as u32,
             }),
         ));
     }
@@ -671,7 +671,7 @@ async fn ensure_user_has_no_same_meeting_date_time(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::UserhasSameMeetingDateTime as u32,
+                code: Code::UserHasSameMeetingDateTime as u32,
             }),
         ));
     }
@@ -2104,7 +2104,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail UserhasSameMeetingDateTime".to_string(),
+                name: "fail UserHasSameMeetingDateTime".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
                     param: ConsultationRequestAcceptanceParam {
@@ -2161,12 +2161,12 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::UserhasSameMeetingDateTime as u32,
+                        code: Code::UserHasSameMeetingDateTime as u32,
                     }),
                 )),
             },
             TestCase {
-                name: "fail ConsultanthasSameMeetingDateTime".to_string(),
+                name: "fail ConsultantHasSameMeetingDateTime".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
                     param: ConsultationRequestAcceptanceParam {
@@ -2223,7 +2223,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::ConsultanthasSameMeetingDateTime as u32,
+                        code: Code::ConsultantHasSameMeetingDateTime as u32,
                     }),
                 )),
             },

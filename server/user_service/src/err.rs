@@ -129,8 +129,8 @@ pub(crate) enum Code {
     UserDoesNotCheckConfirmationItems = 20117,
     ConsultantIsNotAvailableOnConsultationAcceptance = 20118,
     UserIsNotAvailableOnConsultationAcceptance = 20119,
-    UserhasSameMeetingDateTime = 20120,
-    ConsultanthasSameMeetingDateTime = 20121,
+    UserHasSameMeetingDateTime = 20120,
+    ConsultantHasSameMeetingDateTime = 20121,
     MeetingDateTimeOverlapsMaintenance = 20122,
 }
 
