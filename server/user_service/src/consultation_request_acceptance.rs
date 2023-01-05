@@ -626,6 +626,7 @@ fn select_meeting_date_time(
     }
 }
 
+// TODO: コンサルタントとしてのみならず、ユーザーとして同じミーティングを保持していないか追加確認する
 async fn ensure_consultant_has_no_same_meeting_date_time(
     consultant_id: i64,
     meeting_date_time: DateTime<FixedOffset>,
@@ -652,6 +653,7 @@ async fn ensure_consultant_has_no_same_meeting_date_time(
     Ok(())
 }
 
+// TODO: ユーザーとしてのみならず、コンサルタントとして同じミーティングを保持していないか追加確認する
 async fn ensure_user_has_no_same_meeting_date_time(
     user_account_id: i64,
     meeting_date_time: DateTime<FixedOffset>,
