@@ -131,6 +131,7 @@ pub(crate) enum Code {
     UserIsNotAvailableOnConsultationAcceptance = 20119,
     UserhasSameMeetingDateTime = 20120,
     ConsultanthasSameMeetingDateTime = 20121,
+    MeetingDateTimeOverlapsMaintenance = 20122,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

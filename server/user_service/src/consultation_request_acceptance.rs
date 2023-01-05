@@ -101,7 +101,12 @@ async fn handle_consultation_request_acceptance(
         .await?;
     ensure_user_has_no_same_meeting_date_time(req.user_account_id, meeting_date_time, &op).await?;
 
-    // TODO: メンテナンス時刻に重なっていないか確認する
+    ensure_meeting_date_time_does_not_overlap_maintenance(
+        *current_date_time,
+        meeting_date_time,
+        &op,
+    )
+    .await?;
 
     let consultation = op
         .accept_consultation_req(consultation_req_id, meeting_date_time)
@@ -621,6 +626,32 @@ fn select_meeting_date_time(
     }
 }
 
+async fn ensure_consultant_has_no_same_meeting_date_time(
+    consultant_id: i64,
+    meeting_date_time: DateTime<FixedOffset>,
+    op: &impl ConsultationRequestAcceptanceOperation,
+) -> Result<(), ErrResp> {
+    let cnt = op
+        .count_consultation_filtered_by_consultant_id_and_meeting_at(
+            consultant_id,
+            meeting_date_time,
+        )
+        .await?;
+    if cnt != 0 {
+        error!(
+            "same meeting date time found (cnt: {}, consultant_id: {}, meeting_date_time: {})",
+            cnt, consultant_id, meeting_date_time
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultanthasSameMeetingDateTime as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
 async fn ensure_user_has_no_same_meeting_date_time(
     user_account_id: i64,
     meeting_date_time: DateTime<FixedOffset>,
@@ -647,28 +678,29 @@ async fn ensure_user_has_no_same_meeting_date_time(
     Ok(())
 }
 
-async fn ensure_consultant_has_no_same_meeting_date_time(
-    consultant_id: i64,
+async fn ensure_meeting_date_time_does_not_overlap_maintenance(
+    current_date_time: DateTime<FixedOffset>,
     meeting_date_time: DateTime<FixedOffset>,
     op: &impl ConsultationRequestAcceptanceOperation,
 ) -> Result<(), ErrResp> {
-    let cnt = op
-        .count_consultation_filtered_by_consultant_id_and_meeting_at(
-            consultant_id,
-            meeting_date_time,
-        )
+    let results = op
+        .filter_maintenance_by_maintenance_end_at(current_date_time)
         .await?;
-    if cnt != 0 {
-        error!(
-            "same meeting date time found (cnt: {}, consultant_id: {}, meeting_date_time: {})",
-            cnt, consultant_id, meeting_date_time
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::ConsultanthasSameMeetingDateTime as u32,
-            }),
-        ));
+    for result in results {
+        if result.maintenance_start_at_in_jst <= meeting_date_time
+            && meeting_date_time <= result.maintenance_end_at_in_jst
+        {
+            error!(
+                "meeting date time ({}) overlaps maintenance ({:?}) (current date time: {})",
+                meeting_date_time, result, current_date_time
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::MeetingDateTimeOverlapsMaintenance as u32,
+                }),
+            ));
+        }
     }
     Ok(())
 }
@@ -840,6 +872,8 @@ mod tests {
         meeting_date_time: DateTime<FixedOffset>,
         user_same_meeting_date_time_cnt: u64,
         consultant_same_meeting_date_time_cnt: u64,
+        current_date_time: DateTime<FixedOffset>,
+        maintenance_info: Vec<Maintenance>,
         consultation: Consultation,
     }
 
@@ -902,7 +936,8 @@ mod tests {
             &self,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<Vec<Maintenance>, ErrResp> {
-            todo!()
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(self.maintenance_info.clone())
         }
 
         async fn accept_consultation_req(
@@ -996,6 +1031,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1051,6 +1088,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 6).and_hms(15, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1106,6 +1145,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 7).and_hms(7, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1161,6 +1202,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1216,6 +1259,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1276,6 +1321,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1336,6 +1383,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1396,6 +1445,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1456,6 +1507,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1516,6 +1569,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1576,6 +1631,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1636,6 +1693,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1702,6 +1761,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1771,6 +1832,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1831,6 +1894,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1888,6 +1953,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -1948,6 +2015,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 1,
                         consultant_same_meeting_date_time_cnt: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
@@ -2008,6 +2077,8 @@ mod tests {
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
                         user_same_meeting_date_time_cnt: 0,
                         consultant_same_meeting_date_time_cnt: 1,
+                        current_date_time,
+                        maintenance_info: vec![],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
