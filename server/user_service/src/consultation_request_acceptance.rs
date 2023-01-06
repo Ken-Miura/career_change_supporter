@@ -14,7 +14,7 @@ use common::{ApiError, ErrResp, ErrRespStruct, WEB_SITE_NAME};
 use entity::prelude::ConsultationReq;
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
     PaginatorTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use entity::{
@@ -166,13 +166,25 @@ trait ConsultationRequestAcceptanceOperation {
         user_account_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp>;
 
-    async fn count_consultation_filtered_by_user_account_id_and_meeting_at(
+    async fn count_user_side_consultation_by_user_account_id(
         &self,
         user_account_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
     ) -> Result<u64, ErrResp>;
 
-    async fn count_consultation_filtered_by_consultant_id_and_meeting_at(
+    async fn count_consultant_side_consultation_by_user_account_id(
+        &self,
+        user_account_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<u64, ErrResp>;
+
+    async fn count_consultant_side_consultation_by_consultant_id(
+        &self,
+        consultant_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<u64, ErrResp>;
+
+    async fn count_user_side_consultation_by_consultant_id(
         &self,
         consultant_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
@@ -235,43 +247,87 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
             .await
     }
 
-    async fn count_consultation_filtered_by_user_account_id_and_meeting_at(
+    async fn count_user_side_consultation_by_user_account_id(
         &self,
         user_account_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
     ) -> Result<u64, ErrResp> {
-        let cnt = consultation::Entity::find()
-            .filter(consultation::Column::MeetingAt.eq(meeting_date_time))
-            .filter(consultation::Column::UserAccountId.eq(user_account_id))
-            .count(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to count consultation (user_account_id: {}, meeting_date_time: {}): {}",
-                    user_account_id, meeting_date_time, e
-                );
-                unexpected_err_resp()
-            })?;
+        let cnt = count_consultation_filtered_by_user_account_id_and_meeting_at(
+            user_account_id,
+            meeting_date_time,
+            &self.pool,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to count user side consultation (user_account_id: {}, meeting_date_time: {}): {}",
+                user_account_id, meeting_date_time, e
+            );
+            unexpected_err_resp()
+        })?;
         Ok(cnt)
     }
 
-    async fn count_consultation_filtered_by_consultant_id_and_meeting_at(
+    async fn count_consultant_side_consultation_by_user_account_id(
+        &self,
+        user_account_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<u64, ErrResp> {
+        let cnt = count_consultation_filtered_by_consultant_id_and_meeting_at(
+            user_account_id,
+            meeting_date_time,
+            &self.pool,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to count consultant side consultation (user_account_id: {}, meeting_date_time: {}): {}",
+                user_account_id, meeting_date_time, e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(cnt)
+    }
+
+    async fn count_consultant_side_consultation_by_consultant_id(
         &self,
         consultant_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
     ) -> Result<u64, ErrResp> {
-        let cnt = consultation::Entity::find()
-            .filter(consultation::Column::MeetingAt.eq(meeting_date_time))
-            .filter(consultation::Column::ConsultantId.eq(consultant_id))
-            .count(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to count consultation (consultant_id: {}, meeting_date_time: {}): {}",
-                    consultant_id, meeting_date_time, e
-                );
-                unexpected_err_resp()
-            })?;
+        let cnt = count_consultation_filtered_by_consultant_id_and_meeting_at(
+            consultant_id,
+            meeting_date_time,
+            &self.pool,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to count consultant side consultation (consultant_id: {}, meeting_date_time: {}): {}",
+                consultant_id, meeting_date_time, e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(cnt)
+    }
+
+    async fn count_user_side_consultation_by_consultant_id(
+        &self,
+        consultant_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<u64, ErrResp> {
+        let cnt = count_consultation_filtered_by_user_account_id_and_meeting_at(
+            consultant_id,
+            meeting_date_time,
+            &self.pool,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to count user side consultation (consultant_id: {}, meeting_date_time: {}): {}",
+                consultant_id, meeting_date_time, e
+            );
+            unexpected_err_resp()
+        })?;
         Ok(cnt)
     }
 
@@ -344,6 +400,32 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
             })?;
         Ok(consultation)
     }
+}
+
+async fn count_consultation_filtered_by_consultant_id_and_meeting_at(
+    consultant_id: i64,
+    meeting_date_time: DateTime<FixedOffset>,
+    pool: &DatabaseConnection,
+) -> Result<u64, DbErr> {
+    let cnt = consultation::Entity::find()
+        .filter(consultation::Column::MeetingAt.eq(meeting_date_time))
+        .filter(consultation::Column::ConsultantId.eq(consultant_id))
+        .count(pool)
+        .await?;
+    Ok(cnt)
+}
+
+async fn count_consultation_filtered_by_user_account_id_and_meeting_at(
+    user_account_id: i64,
+    meeting_date_time: DateTime<FixedOffset>,
+    pool: &DatabaseConnection,
+) -> Result<u64, DbErr> {
+    let cnt = consultation::Entity::find()
+        .filter(consultation::Column::MeetingAt.eq(meeting_date_time))
+        .filter(consultation::Column::UserAccountId.eq(user_account_id))
+        .count(pool)
+        .await?;
+    Ok(cnt)
 }
 
 async fn get_consultation_req_with_exclusive_lock(
@@ -626,21 +708,34 @@ fn select_meeting_date_time(
     }
 }
 
-// TODO: コンサルタントとしてのみならず、ユーザーとして同じミーティングを保持していないか追加確認する
 async fn ensure_consultant_has_no_same_meeting_date_time(
     consultant_id: i64,
     meeting_date_time: DateTime<FixedOffset>,
     op: &impl ConsultationRequestAcceptanceOperation,
 ) -> Result<(), ErrResp> {
+    // コンサルタントが、相談相手として同じ日時の相談を持っているかどうか
     let cnt = op
-        .count_consultation_filtered_by_consultant_id_and_meeting_at(
-            consultant_id,
-            meeting_date_time,
-        )
+        .count_consultant_side_consultation_by_consultant_id(consultant_id, meeting_date_time)
         .await?;
     if cnt != 0 {
         error!(
-            "same meeting date time found (cnt: {}, consultant_id: {}, meeting_date_time: {})",
+            "same meeting date time (as consultant) found (cnt: {}, consultant_id: {}, meeting_date_time: {})",
+            cnt, consultant_id, meeting_date_time
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantHasSameMeetingDateTime as u32,
+            }),
+        ));
+    }
+    // コンサルタントが、相談申し込み者として同じ日時の相談を持っているかどうか
+    let cnt = op
+        .count_user_side_consultation_by_consultant_id(consultant_id, meeting_date_time)
+        .await?;
+    if cnt != 0 {
+        error!(
+            "same meeting date time  (as user)  found (cnt: {}, consultant_id: {}, meeting_date_time: {})",
             cnt, consultant_id, meeting_date_time
         );
         return Err((
@@ -653,21 +748,34 @@ async fn ensure_consultant_has_no_same_meeting_date_time(
     Ok(())
 }
 
-// TODO: ユーザーとしてのみならず、コンサルタントとして同じミーティングを保持していないか追加確認する
 async fn ensure_user_has_no_same_meeting_date_time(
     user_account_id: i64,
     meeting_date_time: DateTime<FixedOffset>,
     op: &impl ConsultationRequestAcceptanceOperation,
 ) -> Result<(), ErrResp> {
+    // ユーザーが、相談申し込み者として同じ日時の相談を持っているかどうか
     let cnt = op
-        .count_consultation_filtered_by_user_account_id_and_meeting_at(
-            user_account_id,
-            meeting_date_time,
-        )
+        .count_user_side_consultation_by_user_account_id(user_account_id, meeting_date_time)
         .await?;
     if cnt != 0 {
         error!(
-            "same meeting date time found (cnt: {}, user_account_id: {}, meeting_date_time: {})",
+            "same meeting date time (as user) found (cnt: {}, user_account_id: {}, meeting_date_time: {})",
+            cnt, user_account_id, meeting_date_time
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::UserHasSameMeetingDateTime as u32,
+            }),
+        ));
+    }
+    // ユーザーが、相談相手として同じ日時の相談を持っているかどうか
+    let cnt = op
+        .count_consultant_side_consultation_by_user_account_id(user_account_id, meeting_date_time)
+        .await?;
+    if cnt != 0 {
+        error!(
+            "same meeting date time (as consultant) found (cnt: {}, user_account_id: {}, meeting_date_time: {})",
             cnt, user_account_id, meeting_date_time
         );
         return Err((
@@ -872,8 +980,10 @@ mod tests {
         consultant: Option<UserAccount>,
         user: Option<UserAccount>,
         meeting_date_time: DateTime<FixedOffset>,
-        user_same_meeting_date_time_cnt: u64,
-        consultant_same_meeting_date_time_cnt: u64,
+        cnt_user_side_consultation_by_user_account_id: u64,
+        cnt_consultant_side_consultation_by_user_account_id: u64,
+        cnt_consultant_side_consultation_by_consultant_id: u64,
+        cnt_user_side_consultation_by_consultant_id: u64,
         current_date_time: DateTime<FixedOffset>,
         maintenance_info: Vec<Maintenance>,
         consultation: Consultation,
@@ -914,24 +1024,44 @@ mod tests {
             Ok(self.user.clone())
         }
 
-        async fn count_consultation_filtered_by_user_account_id_and_meeting_at(
+        async fn count_user_side_consultation_by_user_account_id(
             &self,
             user_account_id: i64,
             meeting_date_time: DateTime<FixedOffset>,
         ) -> Result<u64, ErrResp> {
             assert_eq!(self.consultation_req.user_account_id, user_account_id);
             assert_eq!(self.meeting_date_time, meeting_date_time);
-            Ok(self.user_same_meeting_date_time_cnt)
+            Ok(self.cnt_user_side_consultation_by_user_account_id)
         }
 
-        async fn count_consultation_filtered_by_consultant_id_and_meeting_at(
+        async fn count_consultant_side_consultation_by_user_account_id(
+            &self,
+            user_account_id: i64,
+            meeting_date_time: DateTime<FixedOffset>,
+        ) -> Result<u64, ErrResp> {
+            assert_eq!(self.consultation_req.user_account_id, user_account_id);
+            assert_eq!(self.meeting_date_time, meeting_date_time);
+            Ok(self.cnt_consultant_side_consultation_by_user_account_id)
+        }
+
+        async fn count_consultant_side_consultation_by_consultant_id(
             &self,
             consultant_id: i64,
             meeting_date_time: DateTime<FixedOffset>,
         ) -> Result<u64, ErrResp> {
             assert_eq!(self.consultation_req.consultant_id, consultant_id);
             assert_eq!(self.meeting_date_time, meeting_date_time);
-            Ok(self.consultant_same_meeting_date_time_cnt)
+            Ok(self.cnt_consultant_side_consultation_by_consultant_id)
+        }
+
+        async fn count_user_side_consultation_by_consultant_id(
+            &self,
+            consultant_id: i64,
+            meeting_date_time: DateTime<FixedOffset>,
+        ) -> Result<u64, ErrResp> {
+            assert_eq!(self.consultation_req.consultant_id, consultant_id);
+            assert_eq!(self.meeting_date_time, meeting_date_time);
+            Ok(self.cnt_user_side_consultation_by_consultant_id)
         }
 
         async fn filter_maintenance_by_maintenance_end_at(
@@ -1031,8 +1161,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1088,8 +1220,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 6).and_hms(15, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1145,8 +1279,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 7).and_hms(7, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1202,8 +1338,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1259,8 +1397,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
                             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
@@ -1324,8 +1464,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
                             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
@@ -1389,8 +1531,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1451,8 +1595,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1513,8 +1659,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1575,8 +1723,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1637,8 +1787,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1699,8 +1851,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1761,8 +1915,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1823,8 +1979,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1891,8 +2049,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -1962,8 +2122,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -2024,8 +2186,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -2083,8 +2247,10 @@ mod tests {
                         }),
                         user: None,
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -2106,7 +2272,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail UserHasSameMeetingDateTime".to_string(),
+                name: "fail UserHasSameMeetingDateTime (user has already other meeting as user at the time)".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
                     param: ConsultationRequestAcceptanceParam {
@@ -2145,8 +2311,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 1,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 1,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -2168,7 +2336,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail ConsultantHasSameMeetingDateTime".to_string(),
+                name: "fail UserHasSameMeetingDateTime (user has already other meeting as consultant at the time)".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
                     param: ConsultationRequestAcceptanceParam {
@@ -2207,8 +2375,138 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 1,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 1,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
+                        consultation: Consultation {
+                            user_account_id,
+                            consultant_id: user_account_id_of_consultant,
+                            fee_per_hour_in_yen,
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 5)
+                                .and_hms(23, 0, 0),
+                        },
+                    },
+                    send_mail: send_mail.clone(),
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::UserHasSameMeetingDateTime as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail ConsultantHasSameMeetingDateTime (consultant has already other meeting as consultant at the time)".to_string(),
+                input: Input {
+                    user_account_id: user_account_id_of_consultant,
+                    param: ConsultationRequestAcceptanceParam {
+                        consultation_req_id,
+                        picked_candidate,
+                        user_checked,
+                    },
+                    current_date_time,
+                    op: ConsultationRequestAcceptanceOperationMock {
+                        account_id: user_account_id_of_consultant,
+                        consultation_req: ConsultationRequest {
+                            consultation_req_id,
+                            user_account_id,
+                            consultant_id: user_account_id_of_consultant,
+                            fee_per_hour_in_yen,
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 5)
+                                .and_hms(23, 0, 0),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 6)
+                                .and_hms(15, 0, 0),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 7)
+                                .and_hms(7, 0, 0),
+                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 7)
+                                .and_hms(7, 0, 0),
+                        },
+                        consultant: Some(UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        }),
+                        user: Some(UserAccount {
+                            email_address: user_email_address.to_string(),
+                            disabled_at: None,
+                        }),
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 1,
+                        cnt_user_side_consultation_by_consultant_id: 0,
+                        current_date_time,
+                        maintenance_info: vec![],
+                        consultation: Consultation {
+                            user_account_id,
+                            consultant_id: user_account_id_of_consultant,
+                            fee_per_hour_in_yen,
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 5)
+                                .and_hms(23, 0, 0),
+                        },
+                    },
+                    send_mail: send_mail.clone(),
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultantHasSameMeetingDateTime as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail ConsultantHasSameMeetingDateTime (consultant has already other meeting as user at the time)".to_string(),
+                input: Input {
+                    user_account_id: user_account_id_of_consultant,
+                    param: ConsultationRequestAcceptanceParam {
+                        consultation_req_id,
+                        picked_candidate,
+                        user_checked,
+                    },
+                    current_date_time,
+                    op: ConsultationRequestAcceptanceOperationMock {
+                        account_id: user_account_id_of_consultant,
+                        consultation_req: ConsultationRequest {
+                            consultation_req_id,
+                            user_account_id,
+                            consultant_id: user_account_id_of_consultant,
+                            fee_per_hour_in_yen,
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 5)
+                                .and_hms(23, 0, 0),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 6)
+                                .and_hms(15, 0, 0),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 7)
+                                .and_hms(7, 0, 0),
+                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                                .ymd(2023, 1, 7)
+                                .and_hms(7, 0, 0),
+                        },
+                        consultant: Some(UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        }),
+                        user: Some(UserAccount {
+                            email_address: user_email_address.to_string(),
+                            disabled_at: None,
+                        }),
+                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 1,
                         current_date_time,
                         maintenance_info: vec![],
                         consultation: Consultation {
@@ -2269,8 +2567,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
                             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
@@ -2339,8 +2639,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
                             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
@@ -2409,8 +2711,10 @@ mod tests {
                             disabled_at: None,
                         }),
                         meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
-                        user_same_meeting_date_time_cnt: 0,
-                        consultant_same_meeting_date_time_cnt: 0,
+                        cnt_user_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_user_account_id: 0,
+                        cnt_consultant_side_consultation_by_consultant_id: 0,
+                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
                             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
