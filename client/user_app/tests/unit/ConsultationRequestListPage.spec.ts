@@ -102,6 +102,7 @@ describe('ConsultantListPage.vue', () => {
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
   })
+
   it(`moves to login if refresh returns ${Code.UNAUTHORIZED}`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     getConsultationRequestsFuncMock.mockResolvedValue(apiErrResp)
