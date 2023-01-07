@@ -16,7 +16,7 @@
             {{ unexpectedErrMsg }}
           </div>
           <div v-else>
-            <h3 class="font-bold text-2xl">相談申し込み詳細</h3>
+            <h3 data-test="consultation-req-detail-label" class="font-bold text-2xl">相談申し込み詳細</h3>
             <p class="mt-2 text-lg">詳細を確認し、相談申し込みを受けるかどうか選択して下さい。</p>
             <div class="grid grid-cols-2 mt-4 ml-4">
               <h3 class="text-xl justify-self-start col-span-1">ユーザーID</h3><h3 class="text-xl justify-self-start col-span-1">{{ consultationReqDetail.user_account_id }}</h3>

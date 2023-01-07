@@ -165,4 +165,21 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
+
+  it('displays consultation request detail case 1', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const consultationReqDetailLabel = wrapper.find('[data-test="consultation-req-detail-label"]')
+    expect(consultationReqDetailLabel.text()).toContain('相談申し込み詳細')
+  })
 })
