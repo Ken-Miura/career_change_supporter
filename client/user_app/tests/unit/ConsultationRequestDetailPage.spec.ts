@@ -30,6 +30,34 @@ jest.mock('@/util/personalized/consultation-request-detail/useGetConsultationReq
   })
 }))
 
+function createDummyConsultationRequestDetail (consultationReq: number): ConsultationRequestDetail {
+  return {
+    consultation_req_id: consultationReq,
+    user_account_id: 432,
+    user_rating: null,
+    num_of_rated_of_user: 0,
+    fee_per_hour_in_yen: 7000,
+    first_candidate_in_jst: {
+      year: 2023,
+      month: 1,
+      day: 14,
+      hour: 7
+    } as ConsultationDateTime,
+    second_candidate_in_jst: {
+      year: 2023,
+      month: 1,
+      day: 14,
+      hour: 8
+    } as ConsultationDateTime,
+    third_candidate_in_jst: {
+      year: 2023,
+      month: 1,
+      day: 14,
+      hour: 9
+    } as ConsultationDateTime
+  } as ConsultationRequestDetail
+}
+
 describe('ConsultationRequestDetailPage.vue', () => {
   beforeEach(() => {
     routeParam = '23'
@@ -40,31 +68,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
 
   it('has WaitingCircle and TheHeader while waiting response', async () => {
     getConsultationRequestDetailDoneMock.value = false
-    const result = {
-      consultation_req_id: parseInt(routeParam),
-      user_account_id: 432,
-      user_rating: null,
-      num_of_rated_of_user: 0,
-      fee_per_hour_in_yen: 7000,
-      first_candidate_in_jst: {
-        year: 2023,
-        month: 1,
-        day: 14,
-        hour: 7
-      } as ConsultationDateTime,
-      second_candidate_in_jst: {
-        year: 2023,
-        month: 1,
-        day: 14,
-        hour: 8
-      } as ConsultationDateTime,
-      third_candidate_in_jst: {
-        year: 2023,
-        month: 1,
-        day: 14,
-        hour: 9
-      } as ConsultationDateTime
-    } as ConsultationRequestDetail
+    const result = createDummyConsultationRequestDetail(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
     getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
     const wrapper = mount(ConsultationRequestDetailPage, {
