@@ -9,6 +9,8 @@ import { GetConsultationRequestDetailResp } from '@/util/personalized/consultati
 import { ConsultationRequestDetail } from '@/util/personalized/consultation-request-detail/ConsultationRequestDetail'
 import { ConsultationDateTime } from '@/util/personalized/ConsultationDateTime'
 import { Message } from '@/util/Message'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -130,5 +132,37 @@ describe('ConsultationRequestDetailPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it(`moves to login if refresh returns ${Code.UNAUTHORIZED}`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
+    mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`moves to terms-of-use if refresh returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
+    mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 })
