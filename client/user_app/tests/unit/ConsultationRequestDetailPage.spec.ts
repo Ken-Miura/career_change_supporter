@@ -2,6 +2,7 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import flushPromises from 'flush-promises'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import ConsultationRequestDetailPage from '@/views/personalized/ConsultationRequestDetailPage.vue'
 import { ref } from 'vue'
 import { GetConsultationRequestDetailResp } from '@/util/personalized/consultation-request-detail/GetConsultationRequestDetailResp'
@@ -86,5 +87,26 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('has TheHeader, has no AlertMessage and WaitingCircle if request is done successfully', async () => {
+    const result = createDummyConsultationRequestDetail(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
   })
 })
