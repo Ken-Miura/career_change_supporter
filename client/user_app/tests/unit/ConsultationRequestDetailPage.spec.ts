@@ -34,7 +34,7 @@ jest.mock('@/util/personalized/consultation-request-detail/useGetConsultationReq
   })
 }))
 
-function createDummyConsultationRequestDetail (consultationReq: number): ConsultationRequestDetail {
+function createDummyConsultationRequestDetail1 (consultationReq: number): ConsultationRequestDetail {
   return {
     consultation_req_id: consultationReq,
     user_account_id: 432,
@@ -72,7 +72,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
 
   it('has WaitingCircle and TheHeader while waiting response', async () => {
     getConsultationRequestDetailDoneMock.value = false
-    const result = createDummyConsultationRequestDetail(parseInt(routeParam))
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
     getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
     const wrapper = mount(ConsultationRequestDetailPage, {
@@ -93,7 +93,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
   })
 
   it('has TheHeader, has no AlertMessage and WaitingCircle if request is done successfully', async () => {
-    const result = createDummyConsultationRequestDetail(parseInt(routeParam))
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
     getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
     const wrapper = mount(ConsultationRequestDetailPage, {
