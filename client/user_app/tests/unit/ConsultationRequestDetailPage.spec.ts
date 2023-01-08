@@ -11,6 +11,7 @@ import { ConsultationDateTime } from '@/util/personalized/ConsultationDateTime'
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { PostConsultationRequestRejectionResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestRejectionResp'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -430,6 +431,29 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('moves ConsultationRequestRejectionPage if reject button is pushed', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rejectResp = PostConsultationRequestRejectionResp.create()
+    postConsultationRequestRejectionFuncMock.mockResolvedValue(rejectResp)
+    const rejectBtn = wrapper.find('[data-test="reject-btn"]')
+    await rejectBtn.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/consultation-request-rejection')
   })
 
   it('has WaitingCircle and TheHeader while waiting response of acceptance', async () => {
