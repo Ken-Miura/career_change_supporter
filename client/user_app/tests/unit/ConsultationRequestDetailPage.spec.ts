@@ -528,6 +528,32 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorBelowBtn.text()).toContain(errDetail)
   })
 
+  it(`displays ${Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE} if ${Code.NON_POSITIVE_CONSULTATION_REQ_ID} is returned on rejection`, async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NON_POSITIVE_CONSULTATION_REQ_ID))
+    postConsultationRequestRejectionFuncMock.mockResolvedValue(apiErrResp)
+    const rejectBtn = wrapper.find('[data-test="reject-btn"]')
+    await rejectBtn.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE)
+    expect(errorBelowBtn.text()).toContain(Code.NON_POSITIVE_CONSULTATION_REQ_ID.toString())
+  })
+
   it('has WaitingCircle and TheHeader while waiting response of acceptance', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
