@@ -185,7 +185,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  it(`moves to login if refresh returns ${Code.UNAUTHORIZED}`, async () => {
+  it(`moves to login if getting consultation req detail returns ${Code.UNAUTHORIZED}`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
     mount(ConsultationRequestDetailPage, {
@@ -201,7 +201,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
-  it(`moves to terms-of-use if refresh returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
+  it(`moves to terms-of-use if getting consultation req detail returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
     getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
     mount(ConsultationRequestDetailPage, {
@@ -217,7 +217,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
-  it(`displays ${Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE} if refresh returns ${Code.NON_POSITIVE_CONSULTATION_REQ_ID}`, async () => {
+  it(`displays ${Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE} if getting consultation req detail returns ${Code.NON_POSITIVE_CONSULTATION_REQ_ID}`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NON_POSITIVE_CONSULTATION_REQ_ID))
     getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(ConsultationRequestDetailPage, {
@@ -234,7 +234,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorMessage.text()).toContain(Code.NON_POSITIVE_CONSULTATION_REQ_ID.toString())
   })
 
-  it(`displays ${Message.NO_IDENTITY_REGISTERED_MESSAGE} if refresh returns ${Code.NO_IDENTITY_REGISTERED}`, async () => {
+  it(`displays ${Message.NO_IDENTITY_REGISTERED_MESSAGE} if getting consultation req detail returns ${Code.NO_IDENTITY_REGISTERED}`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_IDENTITY_REGISTERED))
     getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(ConsultationRequestDetailPage, {
@@ -251,7 +251,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorMessage.text()).toContain(Code.NO_IDENTITY_REGISTERED.toString())
   })
 
-  it(`displays ${Message.NO_CONSULTATION_REQ_FOUND_MESSAGE} if refresh returns ${Code.NO_CONSULTATION_REQ_FOUND}`, async () => {
+  it(`displays ${Message.NO_CONSULTATION_REQ_FOUND_MESSAGE} if getting consultation req detail returns ${Code.NO_CONSULTATION_REQ_FOUND}`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_CONSULTATION_REQ_FOUND))
     getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(ConsultationRequestDetailPage, {
@@ -605,6 +605,8 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorBelowBtn.text()).toContain(Message.NO_CONSULTATION_REQ_FOUND_MESSAGE)
     expect(errorBelowBtn.text()).toContain(Code.NO_CONSULTATION_REQ_FOUND.toString())
   })
+
+  // TODO: Add rejection test
 
   it('has WaitingCircle and TheHeader while waiting response of acceptance', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
