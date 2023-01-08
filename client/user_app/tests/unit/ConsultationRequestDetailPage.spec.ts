@@ -194,6 +194,23 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
+  it(`displays ${Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE} if refresh returns ${Code.NON_POSITIVE_CONSULTATION_REQ_ID}`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NON_POSITIVE_CONSULTATION_REQ_ID))
+    getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const errorMessage = wrapper.find('[data-test="error-message"]')
+    expect(errorMessage.text()).toContain(Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE)
+    expect(errorMessage.text()).toContain(Code.NON_POSITIVE_CONSULTATION_REQ_ID.toString())
+  })
+
   it('displays consultation request detail case 1', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
