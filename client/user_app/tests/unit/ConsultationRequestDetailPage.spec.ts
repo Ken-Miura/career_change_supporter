@@ -228,6 +228,23 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorMessage.text()).toContain(Code.NO_IDENTITY_REGISTERED.toString())
   })
 
+  it(`displays ${Message.NO_CONSULTATION_REQ_FOUND_MESSAGE} if refresh returns ${Code.NO_CONSULTATION_REQ_FOUND}`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_CONSULTATION_REQ_FOUND))
+    getConsultationRequestDetailFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const errorMessage = wrapper.find('[data-test="error-message"]')
+    expect(errorMessage.text()).toContain(Message.NO_CONSULTATION_REQ_FOUND_MESSAGE)
+    expect(errorMessage.text()).toContain(Code.NO_CONSULTATION_REQ_FOUND.toString())
+  })
+
   it('displays consultation request detail case 1', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
