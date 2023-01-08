@@ -479,6 +479,29 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
+  it(`moves to terms-of-use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on rejection`, async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    postConsultationRequestRejectionFuncMock.mockResolvedValue(apiErrResp)
+    const rejectBtn = wrapper.find('[data-test="reject-btn"]')
+    await rejectBtn.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
   it('has WaitingCircle and TheHeader while waiting response of acceptance', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
