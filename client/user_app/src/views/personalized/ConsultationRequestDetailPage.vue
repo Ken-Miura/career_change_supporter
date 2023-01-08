@@ -60,7 +60,7 @@
               <button data-test="reject-btn" v-on:click="rejectConsultationReq" class="mr-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談申し込みを拒否する</button>
               <button data-test="accept-btn" v-on:click="takeConsultationReq" v-bind:disabled="!userChecked" class="ml-10 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談申し込みを受ける</button>
             </div>
-            <div v-if="errorBelowBtn.exists">
+            <div data-test="error-below-btn" v-if="errorBelowBtn.exists">
               <AlertMessage class="mt-6" v-bind:message="errorBelowBtn.message"/>
             </div>
           </div>

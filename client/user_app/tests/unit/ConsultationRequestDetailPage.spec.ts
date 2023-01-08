@@ -299,4 +299,21 @@ describe('ConsultationRequestDetailPage.vue', () => {
     const acceptBtn = wrapper.find('[data-test="accept-btn"]')
     expect(acceptBtn.text()).toContain('相談申し込みを受ける')
   })
+
+  it('has no error message below buttn on opening the page', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(false)
+  })
 })
