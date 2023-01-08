@@ -34,6 +34,24 @@ jest.mock('@/util/personalized/consultation-request-detail/useGetConsultationReq
   })
 }))
 
+const postConsultationRequestRejectionDoneMock = ref(true)
+const postConsultationRequestRejectionFuncMock = jest.fn()
+jest.mock('@/util/personalized/consultation-request-detail/usePostConsultationRequestRejection', () => ({
+  usePostConsultationRequestRejection: () => ({
+    postConsultationRequestRejectionDone: postConsultationRequestRejectionDoneMock,
+    postConsultationRequestRejectionFunc: postConsultationRequestRejectionFuncMock
+  })
+}))
+
+const postConsultationRequestAcceptanceDoneMock = ref(true)
+const postConsultationRequestAcceptanceFuncMock = jest.fn()
+jest.mock('@/util/personalized/consultation-request-detail/usePostConsultationRequestAcceptance', () => ({
+  usePostConsultationRequestAcceptance: () => ({
+    postConsultationRequestAcceptanceDone: postConsultationRequestAcceptanceDoneMock,
+    postConsultationRequestAcceptanceFunc: postConsultationRequestAcceptanceFuncMock
+  })
+}))
+
 function createDummyConsultationRequestDetail1 (consultationReq: number): ConsultationRequestDetail {
   return {
     consultation_req_id: consultationReq,
@@ -96,6 +114,10 @@ describe('ConsultationRequestDetailPage.vue', () => {
     routerPushMock.mockClear()
     getConsultationRequestDetailDoneMock.value = true
     getConsultationRequestDetailFuncMock.mockReset()
+    postConsultationRequestRejectionDoneMock.value = true
+    postConsultationRequestRejectionFuncMock.mockReset()
+    postConsultationRequestAcceptanceDoneMock.value = true
+    postConsultationRequestAcceptanceFuncMock.mockReset()
   })
 
   it('has WaitingCircle and TheHeader while waiting response', async () => {
