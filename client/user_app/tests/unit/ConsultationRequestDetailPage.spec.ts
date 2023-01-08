@@ -300,7 +300,7 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(acceptBtn.text()).toContain('相談申し込みを受ける')
   })
 
-  it('has no error message below buttn on opening the page', async () => {
+  it('has no error message below button on opening the page', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
     getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
@@ -315,5 +315,23 @@ describe('ConsultationRequestDetailPage.vue', () => {
 
     const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
     expect(errorBelowBtn.exists()).toBe(false)
+  })
+
+  it('lets accept button disabled on opening the page', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    const buttonDisabledAttr = acceptBtn.attributes('disabled')
+    expect(buttonDisabledAttr).toBeDefined()
   })
 })
