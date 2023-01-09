@@ -1,13 +1,15 @@
 // Copyright 2023 Ken Miura
 
-use axum::async_trait;
 use axum::extract::State;
+use axum::{async_trait, http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{RespResult, JAPANESE_TIME_ZONE};
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
+use tracing::error;
 
-use crate::util::{consultation::ConsultationDateTime, session::User};
+use crate::err::Code;
+use crate::util::{self, consultation::ConsultationDateTime, session::User};
 
 pub(crate) async fn get_consultations(
     User { account_id }: User,
