@@ -967,4 +967,39 @@ describe('ConsultationRequestDetailPage.vue', () => {
     const result2 = checkIfPickedValueIsInValidRange('4')
     expect(result2).toBe(false)
   })
+
+  it(`displays ${Message.INVALID_CANDIDATE_MESSAGE} if ${Code.INVALID_CANDIDATE} is returned`, async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const thirdCandidate = wrapper.find('[data-test="third-candidate"]')
+    thirdCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_CANDIDATE))
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(apiErrResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 3, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.INVALID_CANDIDATE_MESSAGE)
+    expect(errorBelowBtn.text()).toContain(Code.INVALID_CANDIDATE.toString())
+  })
 })
