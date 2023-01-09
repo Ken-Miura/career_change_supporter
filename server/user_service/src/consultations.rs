@@ -2,12 +2,19 @@
 
 use axum::async_trait;
 use axum::extract::State;
-use chrono::{DateTime, FixedOffset, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, Timelike, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::DatabaseConnection;
+use entity::{
+    consultation,
+    sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter},
+};
 use serde::Serialize;
+use tracing::error;
 
-use crate::util::{consultation::ConsultationDateTime, session::User};
+use crate::{
+    err::unexpected_err_resp,
+    util::{consultation::ConsultationDateTime, session::User},
+};
 
 pub(crate) async fn get_consultations(
     User { account_id }: User,
@@ -53,13 +60,13 @@ trait ConsultationsOperation {
     async fn filter_user_side_consultation(
         &self,
         user_account_id: i64,
-        meeting_date_time: DateTime<FixedOffset>,
+        criteria_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<UserSideConsultation>, ErrResp>;
 
     async fn filter_consultant_side_consultation(
         &self,
         consultant_id: i64,
-        meeting_date_time: DateTime<FixedOffset>,
+        criteria_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<ConsultantSideConsultation>, ErrResp>;
 }
 
@@ -72,16 +79,70 @@ impl ConsultationsOperation for ConsultationsOperationImpl {
     async fn filter_user_side_consultation(
         &self,
         user_account_id: i64,
-        meeting_date_time: DateTime<FixedOffset>,
+        criteria_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<UserSideConsultation>, ErrResp> {
-        todo!()
+        let results = consultation::Entity::find()
+        .filter(consultation::Column::MeetingAt.gte(criteria_date_time))
+        .filter(consultation::Column::UserAccountId.eq(user_account_id))
+        .all(&self.pool)
+        .await
+        .map_err(|e| {
+          error!(
+            "failed to filter user side consultation (user_account_id: {}, criteria_date_time: {}): {}",
+            user_account_id, criteria_date_time, e
+          );
+          unexpected_err_resp()
+        })?;
+        Ok(results
+            .into_iter()
+            .map(|m| {
+                let meeting_at_in_jst = m.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
+                UserSideConsultation {
+                    consultation_id: m.consultation_id,
+                    consultant_id: m.consultant_id,
+                    meeting_date_time_in_jst: ConsultationDateTime {
+                        year: meeting_at_in_jst.year(),
+                        month: meeting_at_in_jst.month(),
+                        day: meeting_at_in_jst.day(),
+                        hour: meeting_at_in_jst.hour(),
+                    },
+                }
+            })
+            .collect::<Vec<UserSideConsultation>>())
     }
 
     async fn filter_consultant_side_consultation(
         &self,
         consultant_id: i64,
-        meeting_date_time: DateTime<FixedOffset>,
+        criteria_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<ConsultantSideConsultation>, ErrResp> {
-        todo!()
+        let results = consultation::Entity::find()
+            .filter(consultation::Column::MeetingAt.gte(criteria_date_time))
+            .filter(consultation::Column::ConsultantId.eq(consultant_id))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+              error!(
+                  "failed to filter consultant side consultation (consultant_id: {}, criteria_date_time: {}): {}",
+                  consultant_id, criteria_date_time, e
+              );
+              unexpected_err_resp()
+          })?;
+        Ok(results
+            .into_iter()
+            .map(|m| {
+                let meeting_at_in_jst = m.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
+                ConsultantSideConsultation {
+                    consultation_id: m.consultation_id,
+                    user_account_id: m.user_account_id,
+                    meeting_date_time_in_jst: ConsultationDateTime {
+                        year: meeting_at_in_jst.year(),
+                        month: meeting_at_in_jst.month(),
+                        day: meeting_at_in_jst.day(),
+                        hour: meeting_at_in_jst.hour(),
+                    },
+                }
+            })
+            .collect::<Vec<ConsultantSideConsultation>>())
     }
 }
