@@ -761,4 +761,36 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/consultation-request-acceptance')
   })
+
+  it(`moves login if accept button is pushed and then ${Code.UNAUTHORIZED} is returned`, async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidate = wrapper.find('[data-test="first-candidate"]')
+    firstCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(apiErrResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 1, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
 })
