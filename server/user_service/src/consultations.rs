@@ -1,15 +1,13 @@
 // Copyright 2023 Ken Miura
 
+use axum::async_trait;
 use axum::extract::State;
-use axum::{async_trait, http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
-use tracing::error;
 
-use crate::err::Code;
-use crate::util::{self, consultation::ConsultationDateTime, session::User};
+use crate::util::{consultation::ConsultationDateTime, session::User};
 
 pub(crate) async fn get_consultations(
     User { account_id }: User,
@@ -51,11 +49,39 @@ async fn handle_consultations(
 }
 
 #[async_trait]
-trait ConsultationsOperation {}
+trait ConsultationsOperation {
+    async fn filter_user_side_consultation(
+        &self,
+        user_account_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<UserSideConsultation>, ErrResp>;
+
+    async fn filter_consultant_side_consultation(
+        &self,
+        consultant_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<ConsultantSideConsultation>, ErrResp>;
+}
 
 struct ConsultationsOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl ConsultationsOperation for ConsultationsOperationImpl {}
+impl ConsultationsOperation for ConsultationsOperationImpl {
+    async fn filter_user_side_consultation(
+        &self,
+        user_account_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<UserSideConsultation>, ErrResp> {
+        todo!()
+    }
+
+    async fn filter_consultant_side_consultation(
+        &self,
+        consultant_id: i64,
+        meeting_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<ConsultantSideConsultation>, ErrResp> {
+        todo!()
+    }
+}
