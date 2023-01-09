@@ -825,4 +825,39 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
+
+  it('displays AlertMessage when error has happened on acceptance', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidate = wrapper.find('[data-test="first-candidate"]')
+    firstCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const errDetail = 'connection error'
+    postConsultationRequestAcceptanceFuncMock.mockRejectedValue(new Error(errDetail))
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 1, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.UNEXPECTED_ERR)
+    expect(errorBelowBtn.text()).toContain(errDetail)
+  })
 })
