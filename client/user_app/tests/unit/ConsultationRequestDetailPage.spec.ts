@@ -860,4 +860,72 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorBelowBtn.text()).toContain(Message.UNEXPECTED_ERR)
     expect(errorBelowBtn.text()).toContain(errDetail)
   })
+
+  // 悪意あるユーザーの操作以外発生しないケースだが、テストしておく
+  it(`displays ${Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE} if consultation req is not positive (zero)`, async () => {
+    routeParam = '0'
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const thirdCandidate = wrapper.find('[data-test="third-candidate"]')
+    thirdCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const acceptResp = PostConsultationRequestAcceptanceResp.create()
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(acceptResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE)
+  })
+
+  // 悪意あるユーザーの操作以外発生しないケースだが、テストしておく
+  it(`displays ${Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE} if consultation req is not positive (negative)`, async () => {
+    routeParam = '-1'
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const thirdCandidate = wrapper.find('[data-test="third-candidate"]')
+    thirdCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const acceptResp = PostConsultationRequestAcceptanceResp.create()
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(acceptResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE)
+  })
 })
