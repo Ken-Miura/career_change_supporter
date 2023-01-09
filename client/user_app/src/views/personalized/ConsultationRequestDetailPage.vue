@@ -28,15 +28,15 @@
               <p data-test="candidates-description" class="mt-2 ml-2 text-xl">下記の候補一覧の内、一つを選択して下さい。相談は開始日時から1時間です。</p>
               <div class="mt-4 ml-4">
                 <div class="flex items-center mb-4">
-                  <input v-model="picked" type="radio" value="1" name="candidates" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <input data-test="first-candidate" v-model="picked" type="radio" value="1" name="candidates" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
                   <label data-test="first-candidate-label" class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第一希望: {{ consultationReqDetail.first_candidate_in_jst.year }}年{{ consultationReqDetail.first_candidate_in_jst.month }}月{{ consultationReqDetail.first_candidate_in_jst.day }}日{{ consultationReqDetail.first_candidate_in_jst.hour }}時</label>
                 </div>
                 <div class="flex items-center mb-4">
-                  <input v-model="picked" type="radio" value="2" name="candidates" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <input data-test="second-candidate" v-model="picked" type="radio" value="2" name="candidates" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
                   <label data-test="second-candidate-label" class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第二希望: {{ consultationReqDetail.second_candidate_in_jst.year }}年{{ consultationReqDetail.second_candidate_in_jst.month }}月{{ consultationReqDetail.second_candidate_in_jst.day }}日{{ consultationReqDetail.second_candidate_in_jst.hour }}時</label>
                 </div>
                 <div class="flex items-center mb-4">
-                  <input v-model="picked" type="radio" value="3" name="candidates" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <input data-test="third-candidate" v-model="picked" type="radio" value="3" name="candidates" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
                   <label data-test="third-candidate-label" class="ml-2 text-xl font-medium text-gray-900 dark:text-gray-300">第三希望: {{ consultationReqDetail.third_candidate_in_jst.year }}年{{ consultationReqDetail.third_candidate_in_jst.month }}月{{ consultationReqDetail.third_candidate_in_jst.day }}日{{ consultationReqDetail.third_candidate_in_jst.hour }}時</label>
                 </div>
               </div>
@@ -53,7 +53,7 @@
                     <li data-test="second-confirmation">私は相談申し込みを受けた後、それをキャンセルできないことを理解しています。</li>
                   </ul>
                 </div>
-                <input v-model="userChecked" type="checkbox" class="ml-5 col-span-1 justify-self-center bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                <input data-test="user-checked" v-model="userChecked" type="checkbox" class="ml-5 col-span-1 justify-self-center bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
               </div>
             </div>
             <div class="flex justify-center mt-8">

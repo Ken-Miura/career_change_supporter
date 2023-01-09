@@ -12,13 +12,14 @@ import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { PostConsultationRequestRejectionResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestRejectionResp'
+import { PostConsultationRequestAcceptanceResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestAcceptanceResp'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
   useRoute: () => ({
     params: {
-      consultant_id: routeParam
+      consultation_req_id: routeParam
     }
   }),
   useRouter: () => ({
@@ -606,8 +607,6 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorBelowBtn.text()).toContain(Code.NO_CONSULTATION_REQ_FOUND.toString())
   })
 
-  // TODO: Add rejection test
-
   it('has WaitingCircle and TheHeader while waiting response of acceptance', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
@@ -630,5 +629,37 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('moves ConsultationRequestAcceptancePage if first candidate is selected and then accept button is pushed', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidate = wrapper.find('[data-test="first-candidate"]')
+    firstCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const acceptResp = PostConsultationRequestAcceptanceResp.create()
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(acceptResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    // const data = JSON.parse(`{"name": "CareerDeletionConfirmPage", "params": {"career_id": ${routeParam}}}`)
+    // expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/consultation-request-acceptance')
   })
 })

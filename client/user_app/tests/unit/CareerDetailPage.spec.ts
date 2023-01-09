@@ -309,7 +309,6 @@ describe('CareerDetailPage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
     const data = JSON.parse(`{"name": "CareerDeletionConfirmPage", "params": {"career_id": ${routeParam}}}`)
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
