@@ -726,4 +726,39 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/consultation-request-acceptance')
   })
+
+  it('picks last selected candidate', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const firstCandidate = wrapper.find('[data-test="first-candidate"]')
+    firstCandidate.setValue(true)
+    await flushPromises()
+    const secondCandidate = wrapper.find('[data-test="second-candidate"]')
+    secondCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const acceptResp = PostConsultationRequestAcceptanceResp.create()
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(acceptResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 2, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/consultation-request-acceptance')
+  })
 })
