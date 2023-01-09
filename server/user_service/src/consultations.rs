@@ -1,7 +1,8 @@
 // Copyright 2023 Ken Miura
 
+use axum::async_trait;
 use axum::extract::State;
-use chrono::Utc;
+use chrono::{DateTime, FixedOffset, Utc};
 use common::{RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
@@ -12,8 +13,9 @@ pub(crate) async fn get_consultations(
     User { account_id }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultationsResult> {
-    let _current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    todo!()
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    let op = ConsultationsOperationImpl { pool };
+    handle_consultations(account_id, &current_date_time, op).await
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -37,3 +39,21 @@ pub(crate) struct ConsultantSideConsultation {
     pub(crate) user_account_id: i64, // 相談申し込み者のユーザーID
     pub(crate) meeting_date_time_in_jst: ConsultationDateTime,
 }
+
+async fn handle_consultations(
+    account_id: i64,
+    current_date_time: &DateTime<FixedOffset>,
+    op: impl ConsultationsOperation,
+) -> RespResult<ConsultationsResult> {
+    todo!()
+}
+
+#[async_trait]
+trait ConsultationsOperation {}
+
+struct ConsultationsOperationImpl {
+    pool: DatabaseConnection,
+}
+
+#[async_trait]
+impl ConsultationsOperation for ConsultationsOperationImpl {}
