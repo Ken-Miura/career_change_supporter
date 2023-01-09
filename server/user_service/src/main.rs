@@ -10,6 +10,7 @@ mod consultation_request_acceptance;
 mod consultation_request_detail;
 mod consultation_request_rejection;
 mod consultation_requests;
+mod consultations;
 mod err;
 mod fee_per_hour_in_yen;
 mod fee_per_hour_in_yen_for_application;
@@ -37,6 +38,7 @@ use crate::consultation_request_acceptance::post_consultation_request_acceptance
 use crate::consultation_request_detail::get_consultation_request_detail;
 use crate::consultation_request_rejection::post_consultation_request_rejection;
 use crate::consultation_requests::get_consultation_requests;
+use crate::consultations::get_consultations;
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::finish_request_consultation::post_finish_request_consultation;
@@ -222,6 +224,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultation-request-detail", get(get_consultation_request_detail))
                 .route("/consultation-request-rejection", post(post_consultation_request_rejection))
                 .route("/consultation-request-acceptance", post(post_consultation_request_acceptance))
+                .route("/consultations", get(get_consultations))
                 .with_state(state),
         )
         .layer(
