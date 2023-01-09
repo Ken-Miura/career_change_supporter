@@ -13,6 +13,7 @@ import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { PostConsultationRequestRejectionResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestRejectionResp'
 import { PostConsultationRequestAcceptanceResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestAcceptanceResp'
+import { checkIfPickedValueIsInValidRange } from '@/util/personalized/consultation-request-detail/PickedValueValidator'
 
 let routeParam = ''
 const routerPushMock = jest.fn()
@@ -949,5 +950,21 @@ describe('ConsultationRequestDetailPage.vue', () => {
     const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
     expect(errorBelowBtn.exists()).toBe(true)
     expect(errorBelowBtn.text()).toContain(Message.NON_POSITIVE_CONSULTATION_REQ_ID_MESSAGE)
+  })
+
+  it('returns true if picked value is in valid range using checkIfPickedValueIsInValidRange', async () => {
+    const result1 = checkIfPickedValueIsInValidRange('1')
+    expect(result1).toBe(true)
+    const result2 = checkIfPickedValueIsInValidRange('2')
+    expect(result2).toBe(true)
+    const result3 = checkIfPickedValueIsInValidRange('3')
+    expect(result3).toBe(true)
+  })
+
+  it('returns false if picked value is not in valid range using checkIfPickedValueIsInValidRange', async () => {
+    const result1 = checkIfPickedValueIsInValidRange('0')
+    expect(result1).toBe(false)
+    const result2 = checkIfPickedValueIsInValidRange('4')
+    expect(result2).toBe(false)
   })
 })

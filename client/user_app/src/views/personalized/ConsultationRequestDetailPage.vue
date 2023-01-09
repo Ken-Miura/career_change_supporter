@@ -91,6 +91,7 @@ import { ConsultationRequestRejectionParam } from '@/util/personalized/consultat
 import { PostConsultationRequestRejectionResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestRejectionResp'
 import { PostConsultationRequestAcceptanceResp } from '@/util/personalized/consultation-request-detail/PostConsultationRequestAcceptanceResp'
 import { ConsultationRequestAcceptanceParam } from '@/util/personalized/consultation-request-detail/ConsultationRequestAcceptanceParam'
+import { checkIfPickedValueIsInValidRange } from '@/util/personalized/consultation-request-detail/PickedValueValidator'
 
 export default defineComponent({
   name: 'ConsultationRequestDetailPage',
@@ -179,13 +180,6 @@ export default defineComponent({
         errorBelowBtn.exists = true
         errorBelowBtn.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-    }
-
-    const checkIfPickedValueIsInValidRange = (pickedValue: string): boolean => {
-      if (pickedValue === '1' || pickedValue === '2' || pickedValue === '3') {
-        return true
-      }
-      return false
     }
 
     const takeConsultationReq = async () => {
