@@ -1108,6 +1108,76 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorBelowBtn.text()).toContain(Code.NO_IDENTITY_REGISTERED.toString())
   })
 
+  it(`displays ${Message.CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE} if ${Code.CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE} is returned`, async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const thirdCandidate = wrapper.find('[data-test="third-candidate"]')
+    thirdCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE))
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(apiErrResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 3, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE)
+    expect(errorBelowBtn.text()).toContain(Code.CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE.toString())
+  })
+
+  it(`displays ${Message.USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE} if ${Code.USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE} is returned`, async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const thirdCandidate = wrapper.find('[data-test="third-candidate"]')
+    thirdCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE))
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(apiErrResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 3, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE)
+    expect(errorBelowBtn.text()).toContain(Code.USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE.toString())
+  })
+
   it(`displays ${Message.NO_CONSULTATION_REQ_FOUND_MESSAGE} if ${Code.NO_CONSULTATION_REQ_FOUND} is returned`, async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
