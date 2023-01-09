@@ -410,6 +410,28 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(buttonDisabledAttr).toBeDefined()
   })
 
+  it('lets accept button enabled after user checks confirmation', async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    const buttonDisabledAttr = acceptBtn.attributes('disabled')
+    expect(buttonDisabledAttr).not.toBeDefined()
+  })
+
   it('has WaitingCircle and TheHeader while waiting response of rejection', async () => {
     const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
     const resp = GetConsultationRequestDetailResp.create(result)
