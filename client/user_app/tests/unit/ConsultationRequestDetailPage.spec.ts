@@ -657,8 +657,8 @@ describe('ConsultationRequestDetailPage.vue', () => {
     await flushPromises()
 
     expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
-    // const data = JSON.parse(`{"name": "CareerDeletionConfirmPage", "params": {"career_id": ${routeParam}}}`)
-    // expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 1, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/consultation-request-acceptance')
   })
