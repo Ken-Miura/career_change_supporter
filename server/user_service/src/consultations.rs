@@ -169,10 +169,12 @@ impl ConsultationsOperation for ConsultationsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::{async_trait, http::StatusCode, Json};
+    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
+    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
+
+    use crate::util::consultation::LENGTH_OF_MEETING_IN_MINUTE;
 
     use super::{
         handle_consultations, ConsultantSideConsultation, ConsultationsOperation,
@@ -224,7 +226,32 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = 5315;
+        let current_date_time = JAPANESE_TIME_ZONE.ymd(2023, 1, 10).and_hms(7, 0, 0);
+        let length_of_meeting_in_minute = Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+        let criteria_date_time = current_date_time - length_of_meeting_in_minute;
+        vec![TestCase {
+            name: "success (empty results)".to_string(),
+            input: Input {
+                account_id,
+                current_date_time,
+                op: ConsultationsOperationMock {
+                    user_account_id: account_id,
+                    criteria_date_time,
+                    user_side_consultations: vec![],
+                    consultant_side_consultations: vec![],
+                },
+            },
+            expected: Ok((
+                StatusCode::OK,
+                Json(ConsultationsResult {
+                    user_side_consultations: vec![],
+                    consultant_side_consultations: vec![],
+                }),
+            )),
+        }]
+    });
 
     #[tokio::test]
     async fn test_handle_consultations() {
