@@ -251,6 +251,26 @@ mod tests {
                 hour: 20,
             },
         };
+        let consultant_side_consultation1 = ConsultantSideConsultation {
+            consultation_id: 676,
+            user_account_id: account_id + 3,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2023,
+                month: 1,
+                day: 20,
+                hour: 15,
+            },
+        };
+        let consultant_side_consultation2 = ConsultantSideConsultation {
+            consultation_id: 677,
+            user_account_id: account_id + 4,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2023,
+                month: 1,
+                day: 21,
+                hour: 15,
+            },
+        };
         vec![
             TestCase {
                 name: "success (empty results)".to_string(),
@@ -273,7 +293,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "success (1 user_side_consultation, 0 consultant_side_consultations)"
+                name: "success (1 user_side_consultation, 0 consultant_side_consultation)"
                     .to_string(),
                 input: Input {
                     account_id,
@@ -294,7 +314,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "success (2 user_side_consultations, 0 consultant_side_consultations)"
+                name: "success (2 user_side_consultations, 0 consultant_side_consultation)"
                     .to_string(),
                 input: Input {
                     account_id,
@@ -317,6 +337,108 @@ mod tests {
                             user_side_consultation2.clone(),
                         ],
                         consultant_side_consultations: vec![],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success (0 user_side_consultation, 1 consultant_side_consultation)"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: ConsultationsOperationMock {
+                        user_account_id: account_id,
+                        criteria_date_time,
+                        user_side_consultations: vec![],
+                        consultant_side_consultations: vec![consultant_side_consultation1.clone()],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationsResult {
+                        user_side_consultations: vec![],
+                        consultant_side_consultations: vec![consultant_side_consultation1.clone()],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success (0 user_side_consultation, 2 consultant_side_consultations)"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: ConsultationsOperationMock {
+                        user_account_id: account_id,
+                        criteria_date_time,
+                        user_side_consultations: vec![],
+                        consultant_side_consultations: vec![
+                            consultant_side_consultation1.clone(),
+                            consultant_side_consultation2.clone(),
+                        ],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationsResult {
+                        user_side_consultations: vec![],
+                        consultant_side_consultations: vec![
+                            consultant_side_consultation1.clone(),
+                            consultant_side_consultation2.clone(),
+                        ],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success (1 user_side_consultation, 1 consultant_side_consultation)"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: ConsultationsOperationMock {
+                        user_account_id: account_id,
+                        criteria_date_time,
+                        user_side_consultations: vec![user_side_consultation1.clone()],
+                        consultant_side_consultations: vec![consultant_side_consultation1.clone()],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationsResult {
+                        user_side_consultations: vec![user_side_consultation1.clone()],
+                        consultant_side_consultations: vec![consultant_side_consultation1.clone()],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success (2 user_side_consultations, 2 consultant_side_consultations)"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: ConsultationsOperationMock {
+                        user_account_id: account_id,
+                        criteria_date_time,
+                        user_side_consultations: vec![
+                            user_side_consultation1.clone(),
+                            user_side_consultation2.clone(),
+                        ],
+                        consultant_side_consultations: vec![
+                            consultant_side_consultation1.clone(),
+                            consultant_side_consultation2.clone(),
+                        ],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationsResult {
+                        user_side_consultations: vec![
+                            user_side_consultation1,
+                            user_side_consultation2,
+                        ],
+                        consultant_side_consultations: vec![
+                            consultant_side_consultation1,
+                            consultant_side_consultation2,
+                        ],
                     }),
                 )),
             },
