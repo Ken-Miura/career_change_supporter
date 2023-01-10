@@ -1,8 +1,8 @@
 // Copyright 2023 Ken Miura
 
-use axum::async_trait;
 use axum::extract::State;
-use chrono::{DateTime, Datelike, FixedOffset, Timelike, Utc};
+use axum::{async_trait, http::StatusCode, Json};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::{
     consultation,
@@ -13,7 +13,10 @@ use tracing::error;
 
 use crate::{
     err::unexpected_err_resp,
-    util::{consultation::ConsultationDateTime, session::User},
+    util::{
+        consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE},
+        session::User,
+    },
 };
 
 pub(crate) async fn get_consultations(
@@ -52,7 +55,24 @@ async fn handle_consultations(
     current_date_time: &DateTime<FixedOffset>,
     op: impl ConsultationsOperation,
 ) -> RespResult<ConsultationsResult> {
-    todo!()
+    let length_of_meeting_in_minute = Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+    let criteria = *current_date_time - length_of_meeting_in_minute;
+
+    let user_side_consultations = op
+        .filter_user_side_consultation(account_id, criteria)
+        .await?;
+
+    let consultant_side_consultations = op
+        .filter_consultant_side_consultation(account_id, criteria)
+        .await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(ConsultationsResult {
+            user_side_consultations,
+            consultant_side_consultations,
+        }),
+    ))
 }
 
 #[async_trait]

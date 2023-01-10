@@ -18,6 +18,7 @@ use crate::err::{
     Code::{NoAccountFound, NotTermsOfUseAgreedYet, Unauthorized},
 };
 
+use super::consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
@@ -44,12 +45,11 @@ pub(crate) static KEY_OF_SIGNED_COOKIE_FOR_USER_APP: Lazy<Key> = Lazy::new(|| {
 
 pub(crate) const SESSION_ID_COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
-const LENGTH_OF_MEETING: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 
 /// セッションの有効期限
 pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
-    Duration::from_secs(60 * (LENGTH_OF_MEETING + TIME_FOR_SUBSEQUENT_OPERATIONS));
+    Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
 /// ユーザーの情報にアクセスするためのID
 ///

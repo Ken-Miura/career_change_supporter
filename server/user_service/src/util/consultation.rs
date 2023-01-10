@@ -8,6 +8,8 @@ use tracing::info;
 
 use crate::err::{unexpected_err_resp, Code};
 
+pub(crate) const LENGTH_OF_MEETING_IN_MINUTE: u64 = 60;
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub(crate) struct ConsultationDateTime {
     pub(crate) year: i32,
