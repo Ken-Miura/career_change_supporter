@@ -9,7 +9,7 @@ edition = "2021"
 async-redis-session = "0.2.2"
 aws-config = "0.52.0"
 aws-sdk-s3 = "0.22.0"
-axum = { version = "0.6.1", features = ["macros"] }
+axum = { version = "0.6.2", features = ["macros"] }
 bcrypt = "0.13.0"
 chrono = "0.4.22"
 cookie = "0.16.1"
