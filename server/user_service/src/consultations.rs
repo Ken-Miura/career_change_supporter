@@ -194,7 +194,12 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct ConsultationsOperationMock {}
+    struct ConsultationsOperationMock {
+        user_account_id: i64,
+        criteria_date_time: DateTime<FixedOffset>,
+        user_side_consultations: Vec<UserSideConsultation>,
+        consultant_side_consultations: Vec<ConsultantSideConsultation>,
+    }
 
     #[async_trait]
     impl ConsultationsOperation for ConsultationsOperationMock {
@@ -203,7 +208,9 @@ mod tests {
             user_account_id: i64,
             criteria_date_time: DateTime<FixedOffset>,
         ) -> Result<Vec<UserSideConsultation>, ErrResp> {
-            todo!()
+            assert_eq!(self.user_account_id, user_account_id);
+            assert_eq!(self.criteria_date_time, criteria_date_time);
+            Ok(self.user_side_consultations.clone())
         }
 
         async fn filter_consultant_side_consultation(
@@ -211,7 +218,9 @@ mod tests {
             consultant_id: i64,
             criteria_date_time: DateTime<FixedOffset>,
         ) -> Result<Vec<ConsultantSideConsultation>, ErrResp> {
-            todo!()
+            assert_eq!(self.user_account_id, consultant_id);
+            assert_eq!(self.criteria_date_time, criteria_date_time);
+            Ok(self.consultant_side_consultations.clone())
         }
     }
 
