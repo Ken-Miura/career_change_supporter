@@ -174,7 +174,7 @@ mod tests {
     use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::util::consultation::LENGTH_OF_MEETING_IN_MINUTE;
+    use crate::util::consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE};
 
     use super::{
         handle_consultations, ConsultantSideConsultation, ConsultationsOperation,
@@ -231,26 +231,96 @@ mod tests {
         let current_date_time = JAPANESE_TIME_ZONE.ymd(2023, 1, 10).and_hms(7, 0, 0);
         let length_of_meeting_in_minute = Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
         let criteria_date_time = current_date_time - length_of_meeting_in_minute;
-        vec![TestCase {
-            name: "success (empty results)".to_string(),
-            input: Input {
-                account_id,
-                current_date_time,
-                op: ConsultationsOperationMock {
-                    user_account_id: account_id,
-                    criteria_date_time,
-                    user_side_consultations: vec![],
-                    consultant_side_consultations: vec![],
-                },
+        let user_side_consultation1 = UserSideConsultation {
+            consultation_id: 511,
+            consultant_id: account_id + 1,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2023,
+                month: 1,
+                day: 16,
+                hour: 17,
             },
-            expected: Ok((
-                StatusCode::OK,
-                Json(ConsultationsResult {
-                    user_side_consultations: vec![],
-                    consultant_side_consultations: vec![],
-                }),
-            )),
-        }]
+        };
+        let user_side_consultation2 = UserSideConsultation {
+            consultation_id: 512,
+            consultant_id: account_id + 2,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2023,
+                month: 1,
+                day: 16,
+                hour: 20,
+            },
+        };
+        vec![
+            TestCase {
+                name: "success (empty results)".to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: ConsultationsOperationMock {
+                        user_account_id: account_id,
+                        criteria_date_time,
+                        user_side_consultations: vec![],
+                        consultant_side_consultations: vec![],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationsResult {
+                        user_side_consultations: vec![],
+                        consultant_side_consultations: vec![],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success (1 user_side_consultation, 0 consultant_side_consultations)"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: ConsultationsOperationMock {
+                        user_account_id: account_id,
+                        criteria_date_time,
+                        user_side_consultations: vec![user_side_consultation1.clone()],
+                        consultant_side_consultations: vec![],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationsResult {
+                        user_side_consultations: vec![user_side_consultation1.clone()],
+                        consultant_side_consultations: vec![],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success (2 user_side_consultations, 0 consultant_side_consultations)"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: ConsultationsOperationMock {
+                        user_account_id: account_id,
+                        criteria_date_time,
+                        user_side_consultations: vec![
+                            user_side_consultation1.clone(),
+                            user_side_consultation2.clone(),
+                        ],
+                        consultant_side_consultations: vec![],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationsResult {
+                        user_side_consultations: vec![
+                            user_side_consultation1.clone(),
+                            user_side_consultation2.clone(),
+                        ],
+                        consultant_side_consultations: vec![],
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
