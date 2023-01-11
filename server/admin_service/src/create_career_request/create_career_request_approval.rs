@@ -642,7 +642,9 @@ mod tests {
             create_career_req_id,
             user_account_id,
         };
-        let approval_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 1).and_hms(21, 00, 40);
+        let approval_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
+            .unwrap();
         let op_mock = CreateCareerReqApprovalOperationMock {
             admin,
             user_option,
@@ -684,7 +686,9 @@ mod tests {
             create_career_req_id,
             user_account_id,
         };
-        let approval_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 1).and_hms(21, 00, 40);
+        let approval_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
+            .unwrap();
         let op_mock = CreateCareerReqApprovalOperationMock {
             admin,
             user_option: None,
@@ -730,48 +734,48 @@ mod tests {
             TestCase {
                 name: "less 1 year".to_string(),
                 input: Input {
-                    from: NaiveDate::from_ymd(2009, 4, 1),
-                    to: NaiveDate::from_ymd(2010, 3, 31),
+                    from: NaiveDate::from_ymd_opt(2009, 4, 1).expect("failed to get NaiveDate"),
+                    to: NaiveDate::from_ymd_opt(2010, 3, 31).expect("failed to get NaiveDate"),
                 },
                 expected: 0,
             },
             TestCase {
                 name: "just 1 year".to_string(),
                 input: Input {
-                    from: NaiveDate::from_ymd(2009, 4, 1),
-                    to: NaiveDate::from_ymd(2010, 4, 1),
+                    from: NaiveDate::from_ymd_opt(2009, 4, 1).expect("failed to get NaiveDate"),
+                    to: NaiveDate::from_ymd_opt(2010, 4, 1).expect("failed to get NaiveDate"),
                 },
                 expected: 1,
             },
             TestCase {
                 name: "less 1 year (leap year)".to_string(),
                 input: Input {
-                    from: NaiveDate::from_ymd(2011, 4, 1),
-                    to: NaiveDate::from_ymd(2012, 3, 30),
+                    from: NaiveDate::from_ymd_opt(2011, 4, 1).expect("failed to get NaiveDate"),
+                    to: NaiveDate::from_ymd_opt(2012, 3, 30).expect("failed to get NaiveDate"),
                 },
                 expected: 0,
             },
             TestCase {
                 name: "just 1 year (leap year)".to_string(),
                 input: Input {
-                    from: NaiveDate::from_ymd(2011, 4, 1),
-                    to: NaiveDate::from_ymd(2012, 3, 31),
+                    from: NaiveDate::from_ymd_opt(2011, 4, 1).expect("failed to get NaiveDate"),
+                    to: NaiveDate::from_ymd_opt(2012, 3, 31).expect("failed to get NaiveDate"),
                 },
                 expected: 1,
             },
             TestCase {
                 name: "passed leap year 2 times".to_string(),
                 input: Input {
-                    from: NaiveDate::from_ymd(2010, 4, 1),
-                    to: NaiveDate::from_ymd(2019, 3, 30),
+                    from: NaiveDate::from_ymd_opt(2010, 4, 1).expect("failed to get NaiveDate"),
+                    to: NaiveDate::from_ymd_opt(2019, 3, 30).expect("failed to get NaiveDate"),
                 },
                 expected: 9,
             },
             TestCase {
                 name: "passed leap year 3 times".to_string(),
                 input: Input {
-                    from: NaiveDate::from_ymd(2010, 4, 1),
-                    to: NaiveDate::from_ymd(2020, 3, 29),
+                    from: NaiveDate::from_ymd_opt(2010, 4, 1).expect("failed to get NaiveDate"),
+                    to: NaiveDate::from_ymd_opt(2020, 3, 29).expect("failed to get NaiveDate"),
                 },
                 expected: 10,
             },

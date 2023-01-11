@@ -357,7 +357,9 @@ mod tests {
             user_account_id,
             email_address: user_email_address.clone(),
         });
-        let approval_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 1).and_hms(21, 00, 40);
+        let approval_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
+            .unwrap();
         let op_mock = CreateIdentityReqApprovalOperationMock {
             admin,
             user_option,
@@ -393,7 +395,9 @@ mod tests {
         };
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
-        let approval_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 1).and_hms(21, 00, 40);
+        let approval_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
+            .unwrap();
         let op_mock = CreateIdentityReqApprovalOperationMock {
             admin,
             user_option: None,

@@ -207,7 +207,9 @@ mod tests {
 
     fn create_3_dummy_items() -> Vec<CreateCareerReqItem> {
         let mut items = Vec::with_capacity(3);
-        let requested_at_1 = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let requested_at_1 = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
         let item1 = CreateCareerReqItem {
             create_career_req_id: 1,
             company_name: String::from("テスト１株式会社"),

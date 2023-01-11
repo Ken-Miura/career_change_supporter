@@ -293,7 +293,9 @@ mod tests {
         validate_email_address(email_addr).expect("failed to get Ok");
         validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-        let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             admin_account_id: id,
@@ -327,7 +329,9 @@ mod tests {
         validate_email_address(email_addr2).expect("failed to get Ok");
         validate_password(pwd).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-        let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             admin_account_id: id,
@@ -356,7 +360,9 @@ mod tests {
         validate_password(pwd1).expect("failed to get Ok");
         validate_password(pwd2).expect("failed to get Ok");
         let hashed_pwd = hash_password(pwd1).expect("failed to hash pwd");
-        let creation_time = JAPANESE_TIME_ZONE.ymd(2021, 9, 11).and_hms(15, 30, 45);
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
         let last_login = creation_time + chrono::Duration::days(1);
         let account = Account {
             admin_account_id: id,

@@ -476,7 +476,9 @@ mod tests {
             user_account_id,
         };
         let rejection_reason = "画像が不鮮明なため";
-        let rejected_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 5).and_hms(21, 00, 40);
+        let rejected_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
+            .unwrap();
         let op_mock = CreateCareerReqRejectionOperationMock {
             admin,
             user_option,
@@ -525,7 +527,9 @@ mod tests {
             user_account_id,
         };
         let rejection_reason = "<script>alert('test');<script>";
-        let rejected_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 5).and_hms(21, 00, 40);
+        let rejected_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
+            .unwrap();
         let op_mock = CreateCareerReqRejectionOperationMock {
             admin,
             user_option,
@@ -570,7 +574,9 @@ mod tests {
             user_account_id,
         };
         let rejection_reason = "画像が不鮮明なため";
-        let rejected_time = JAPANESE_TIME_ZONE.ymd(2022, 4, 5).and_hms(21, 00, 40);
+        let rejected_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
+            .unwrap();
         let op_mock = CreateCareerReqRejectionOperationMock {
             admin,
             user_option: None,

@@ -366,20 +366,20 @@ mod tests {
     #[test]
     fn query_has_value_that_is_passed_on_query_builder() {
         let since = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 9)
-            .and_hms(23, 00, 40)
+            .with_ymd_and_hms(2021, 12, 9, 23, 0, 40)
+            .unwrap()
             .timestamp();
         let until = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 9)
-            .and_hms(23, 00, 41)
+            .with_ymd_and_hms(2021, 12, 9, 23, 0, 41)
+            .unwrap()
             .timestamp();
         let since_scheduled_date = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 11)
-            .and_hms(23, 00, 40)
+            .with_ymd_and_hms(2021, 12, 11, 23, 0, 40)
+            .unwrap()
             .timestamp();
         let until_scheduled_date = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 11)
-            .and_hms(23, 00, 41)
+            .with_ymd_and_hms(2021, 12, 11, 23, 0, 41)
+            .unwrap()
             .timestamp();
         let status = "pending";
         let transfer = "tr_8f0c0fe2c9f8a47f9d18f03959ba1";
@@ -456,8 +456,8 @@ mod tests {
     #[test]
     fn query_accepts_same_since_and_until() {
         let since = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 9)
-            .and_hms(23, 00, 40)
+            .with_ymd_and_hms(2021, 12, 9, 23, 0, 40)
+            .unwrap()
             .timestamp();
         let until = since;
         let result = Query::build().since(since).until(until).finish();
@@ -467,12 +467,12 @@ mod tests {
     #[test]
     fn query_fail_to_create_query_when_since_exceeds_until() {
         let since_timestamp = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 9)
-            .and_hms(23, 00, 40)
+            .with_ymd_and_hms(2021, 12, 9, 23, 0, 40)
+            .unwrap()
             .timestamp();
         let until_timestamp = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 9)
-            .and_hms(23, 00, 39)
+            .with_ymd_and_hms(2021, 12, 9, 23, 0, 39)
+            .unwrap()
             .timestamp();
         let result = Query::build()
             .since(since_timestamp)
@@ -498,8 +498,8 @@ mod tests {
     #[test]
     fn query_accepts_same_since_scheduled_date_and_until_scheduled_date() {
         let since_scheduled_date = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 11)
-            .and_hms(23, 00, 40)
+            .with_ymd_and_hms(2021, 12, 11, 23, 0, 40)
+            .unwrap()
             .timestamp();
         let until_scheduled_date = since_scheduled_date;
         let result = Query::build()
@@ -512,12 +512,12 @@ mod tests {
     #[test]
     fn query_fail_to_create_query_when_since_scheduled_date_exceeds_until_scheduled_date() {
         let since_scheduled_date_timestamp = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 11)
-            .and_hms(23, 00, 40)
+            .with_ymd_and_hms(2021, 12, 11, 23, 0, 40)
+            .unwrap()
             .timestamp();
         let until_scheduled_date_timestamp = JAPANESE_TIME_ZONE
-            .ymd(2021, 12, 11)
-            .and_hms(23, 00, 39)
+            .with_ymd_and_hms(2021, 12, 11, 23, 0, 39)
+            .unwrap()
             .timestamp();
         let result = Query::build()
             .since_scheduled_date(since_scheduled_date_timestamp)

@@ -161,7 +161,10 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_one_user_found() {
-        let date_of_birth = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
+        let date_of_birth = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(1991, 4, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
         let user = create_dummy_user1(date_of_birth);
         let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user.clone()],
@@ -182,7 +185,10 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_no_user_found() {
-        let date_of_birth = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
+        let date_of_birth = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(1991, 4, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
         let user = create_dummy_user1(date_of_birth);
         let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user.clone()],
@@ -203,11 +209,15 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_one_user_found_one_user_not_found() {
-        let date_of_birth1 = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
+        let date_of_birth1 = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(1991, 4, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
         let user1 = create_dummy_user1(date_of_birth1);
         let date_of_birth2 = JAPANESE_TIME_ZONE
-            .ymd(1991, date_of_birth1.month() + 1, 1)
-            .naive_local();
+            .with_ymd_and_hms(1991, date_of_birth1.month() + 1, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
         let user2 = create_dummy_user2(date_of_birth2);
         let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user1.clone(), user2],
@@ -228,19 +238,27 @@ mod tests {
 
     #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_multiple_users_found() {
-        let date_of_birth1 = JAPANESE_TIME_ZONE.ymd(1991, 4, 1).naive_local();
+        let date_of_birth1 = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(1991, 4, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
         let user1 = create_dummy_user1(date_of_birth1);
         let date_of_birth2 = JAPANESE_TIME_ZONE
-            .ymd(1991, date_of_birth1.month() + 1, 1)
-            .naive_local();
+            .with_ymd_and_hms(1991, date_of_birth1.month() + 1, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
         let user2 = create_dummy_user2(date_of_birth2);
         let date_of_birth3 = JAPANESE_TIME_ZONE
-            .ymd(
+            .with_ymd_and_hms(
                 date_of_birth1.year(),
                 date_of_birth1.month(),
                 date_of_birth1.day(),
+                0,
+                0,
+                0,
             )
-            .naive_local();
+            .unwrap()
+            .date_naive();
         let user3 = create_dummy_user3(date_of_birth3);
         let op_mock = UsersByDateOfBirthOperationMock {
             users: vec![user1.clone(), user2, user3.clone()],
