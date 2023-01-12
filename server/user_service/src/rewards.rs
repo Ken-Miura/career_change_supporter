@@ -73,7 +73,7 @@ async fn handle_reward_req(
         };
 
         let (current_month_since, current_month_until) =
-            create_start_and_end_date_time_of_current_month(&current_time);
+            create_start_and_end_date_time_of_current_month(&current_time)?;
         let payments_of_the_month = reward_op
             .filter_receipts_of_the_month_by_consultant_id(
                 account_id,
@@ -84,7 +84,7 @@ async fn handle_reward_req(
         let rewards_of_the_month = calculate_rewards(&payments_of_the_month)?;
 
         let (current_year_since, current_year_until) =
-            create_start_and_end_date_time_of_current_year(&current_time);
+            create_start_and_end_date_time_of_current_year(&current_time)?;
         let payments_of_the_year = reward_op
             .filter_receipts_of_the_year_by_consultant_id(
                 account_id,
@@ -441,7 +441,7 @@ mod tests {
             end: &DateTime<FixedOffset>,
         ) -> Result<Vec<PaymentInfo>, ErrResp> {
             assert_eq!(self.account_id, consultant_id);
-            let (s, e) = create_start_and_end_date_time_of_current_month(&self.current_date_time);
+            let (s, e) = create_start_and_end_date_time_of_current_month(&self.current_date_time)?;
             assert_eq!(*start, s);
             assert_eq!(*end, e);
             Ok(self.payments_of_the_month.clone())
@@ -454,7 +454,7 @@ mod tests {
             end: &DateTime<FixedOffset>,
         ) -> Result<Vec<PaymentInfo>, ErrResp> {
             assert_eq!(self.account_id, consultant_id);
-            let (s, e) = create_start_and_end_date_time_of_current_year(&self.current_date_time);
+            let (s, e) = create_start_and_end_date_time_of_current_year(&self.current_date_time)?;
             assert_eq!(*start, s);
             assert_eq!(*end, e);
             Ok(self.payments_of_the_year.clone())

@@ -517,7 +517,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
                             image1_file_name_without_ext,
                             image2_file_name_without_ext,
                             current_date_time,
-                        );
+                        )?;
                     let _ = active_model.insert(txn).await.map_err(|e| {
                         error!(
                             "failed to insert create_career_req (user_account_id: {}): {}",
@@ -558,16 +558,41 @@ impl SubmitCareerOperationImpl {
         image1_file_name_without_ext: String,
         image2_file_name_without_ext: Option<String>,
         current_date_time: DateTime<FixedOffset>,
-    ) -> create_career_req::ActiveModel {
-        let start_date = NaiveDate::from_ymd(
+    ) -> Result<create_career_req::ActiveModel, ErrRespStruct> {
+        let start_date = NaiveDate::from_ymd_opt(
             career.career_start_date.year,
             career.career_start_date.month,
             career.career_start_date.day,
-        );
-        let end_date = career
-            .career_end_date
-            .map(|ymd| NaiveDate::from_ymd(ymd.year, ymd.month, ymd.day));
-        create_career_req::ActiveModel {
+        )
+        .ok_or_else(|| {
+            error!(
+                "failed to generate start_date (year: {}, month: {}, day: {})",
+                career.career_start_date.year,
+                career.career_start_date.month,
+                career.career_start_date.day
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+        let end_date_option = career.career_end_date;
+        let end_date = match end_date_option {
+            Some(ymd) => {
+                if let Some(result) = NaiveDate::from_ymd_opt(ymd.year, ymd.month, ymd.day) {
+                    Some(result)
+                } else {
+                    error!(
+                        "failed to generate end_date (year: {}, month: {}, day: {})",
+                        ymd.year, ymd.month, ymd.day
+                    );
+                    return Err(ErrRespStruct {
+                        err_resp: unexpected_err_resp(),
+                    });
+                }
+            }
+            None => None,
+        };
+        Ok(create_career_req::ActiveModel {
             create_career_req_id: NotSet,
             user_account_id: Set(account_id),
             company_name: Set(career.company_name),
@@ -585,7 +610,7 @@ impl SubmitCareerOperationImpl {
             image1_file_name_without_ext: Set(image1_file_name_without_ext),
             image2_file_name_without_ext: Set(image2_file_name_without_ext),
             requested_at: Set(current_date_time),
-        }
+        })
     }
 
     async fn upload_png_images_to_career_storage(

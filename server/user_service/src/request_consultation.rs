@@ -545,7 +545,7 @@ async fn get_rewards(
     current_date_time: &DateTime<FixedOffset>,
     op: &impl RequestConsultationOperation,
 ) -> Result<i32, ErrResp> {
-    let (start, end) = create_start_and_end_date_time_of_current_year(current_date_time);
+    let (start, end) = create_start_and_end_date_time_of_current_year(current_date_time)?;
     let p = op
         .filter_receipts_of_the_duration_by_consultant_id(consultant_id, &start, &end)
         .await?;
@@ -742,7 +742,7 @@ mod tests {
             end: &DateTime<FixedOffset>,
         ) -> Result<Vec<PaymentInfo>, ErrResp> {
             assert_eq!(self.consultant_id, consultant_id);
-            let (s, e) = create_start_and_end_date_time_of_current_year(&self.current_date_time);
+            let (s, e) = create_start_and_end_date_time_of_current_year(&self.current_date_time)?;
             assert_eq!(s, *start);
             assert_eq!(e, *end);
             Ok(self.receipt_payments.clone())

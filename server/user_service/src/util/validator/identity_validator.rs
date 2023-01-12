@@ -826,7 +826,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -850,7 +850,7 @@ mod tests {
             address_line2: Some("サーパスマンション 101号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -873,7 +873,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -896,7 +896,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -919,7 +919,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -951,7 +951,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -987,7 +987,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1019,7 +1019,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1051,7 +1051,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1083,7 +1083,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1115,7 +1115,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1147,7 +1147,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1179,7 +1179,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1211,7 +1211,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1243,7 +1243,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1275,7 +1275,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1307,7 +1307,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1339,7 +1339,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1371,7 +1371,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1403,7 +1403,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1435,7 +1435,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1467,7 +1467,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1495,7 +1495,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -1518,7 +1518,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -1541,7 +1541,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -1573,7 +1573,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -1609,7 +1609,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1641,7 +1641,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1673,7 +1673,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1705,7 +1705,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1737,7 +1737,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1769,7 +1769,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1801,7 +1801,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1833,7 +1833,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1865,7 +1865,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1897,7 +1897,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1929,7 +1929,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1961,7 +1961,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -1993,7 +1993,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2025,7 +2025,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2057,7 +2057,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2089,7 +2089,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2121,7 +2121,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -2149,7 +2149,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2179,7 +2179,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -2202,7 +2202,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -2225,7 +2225,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -2257,7 +2257,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -2293,7 +2293,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2327,7 +2327,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2361,7 +2361,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2395,7 +2395,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2429,7 +2429,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2463,7 +2463,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2497,7 +2497,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2531,7 +2531,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2565,7 +2565,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2599,7 +2599,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2633,7 +2633,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2667,7 +2667,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2701,7 +2701,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2735,7 +2735,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2769,7 +2769,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2803,7 +2803,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2837,7 +2837,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -2865,7 +2865,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -2895,7 +2895,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -2918,7 +2918,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -2941,7 +2941,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -2973,7 +2973,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -3009,7 +3009,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3043,7 +3043,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3077,7 +3077,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3111,7 +3111,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3145,7 +3145,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3179,7 +3179,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3213,7 +3213,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3247,7 +3247,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3281,7 +3281,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3315,7 +3315,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3349,7 +3349,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3383,7 +3383,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3417,7 +3417,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3451,7 +3451,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3485,7 +3485,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3519,7 +3519,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3549,7 +3549,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -3572,7 +3572,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 2, 1);
+        let current_date = NaiveDate::from_ymd_opt(2022, 2, 1).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -3595,7 +3595,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 2);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 2).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -3618,7 +3618,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 2);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 2).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -3641,7 +3641,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 1);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 1).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
@@ -3675,7 +3675,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2021, 12, 31);
+        let current_date = NaiveDate::from_ymd_opt(2021, 12, 31).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
@@ -3709,7 +3709,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 2);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 2).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
@@ -3743,7 +3743,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2021, 12, 2);
+        let current_date = NaiveDate::from_ymd_opt(2021, 12, 2).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
@@ -3777,7 +3777,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 20);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 20).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
@@ -3815,7 +3815,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -3843,7 +3843,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3875,7 +3875,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3907,7 +3907,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3939,7 +3939,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -3971,7 +3971,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4003,7 +4003,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4035,7 +4035,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4067,7 +4067,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4099,7 +4099,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4131,7 +4131,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4163,7 +4163,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4195,7 +4195,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4227,7 +4227,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4259,7 +4259,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4291,7 +4291,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4323,7 +4323,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4351,7 +4351,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -4374,7 +4374,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -4397,7 +4397,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -4429,7 +4429,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -4465,7 +4465,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4497,7 +4497,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4529,7 +4529,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4561,7 +4561,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4593,7 +4593,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4625,7 +4625,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4657,7 +4657,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4689,7 +4689,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4721,7 +4721,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4753,7 +4753,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4785,7 +4785,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4817,7 +4817,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4849,7 +4849,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4881,7 +4881,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4913,7 +4913,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4945,7 +4945,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -4973,7 +4973,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -4996,7 +4996,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -5019,7 +5019,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -5051,7 +5051,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -5087,7 +5087,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -5115,7 +5115,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -5143,7 +5143,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -5171,7 +5171,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5203,7 +5203,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5235,7 +5235,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5267,7 +5267,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5299,7 +5299,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5331,7 +5331,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5363,7 +5363,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5395,7 +5395,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5423,7 +5423,7 @@ mod tests {
             address_line2: None,
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -5446,7 +5446,7 @@ mod tests {
             address_line2: Some("あ".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -5469,7 +5469,7 @@ mod tests {
             address_line2: Some("ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -5492,7 +5492,7 @@ mod tests {
             address_line2: Some("".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -5528,7 +5528,7 @@ mod tests {
             address_line2: Some("あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string()),
             telephone_number: "09012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
 
@@ -5568,7 +5568,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -5596,7 +5596,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -5624,7 +5624,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             validate_identity(&id, &current_date).expect("failed to get Ok");
         }
@@ -5652,7 +5652,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5686,7 +5686,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5720,7 +5720,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5754,7 +5754,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5788,7 +5788,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5822,7 +5822,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5856,7 +5856,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5890,7 +5890,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -5920,7 +5920,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "0123456789".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -5943,7 +5943,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "0123456789012".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         validate_identity(&identity, &current_date).expect("failed to get Ok");
     }
@@ -5966,7 +5966,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "012345678".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
@@ -5993,7 +5993,7 @@ mod tests {
             address_line2: Some("サーパスマンション　１０１号室".to_string()),
             telephone_number: "01234567890123".to_string(),
         };
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
 
         let err = validate_identity(&identity, &current_date).expect_err("failed to get Err");
         assert_eq!(
@@ -6024,7 +6024,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6056,7 +6056,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6088,7 +6088,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6120,7 +6120,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6152,7 +6152,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6184,7 +6184,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6216,7 +6216,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6248,7 +6248,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6280,7 +6280,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6312,7 +6312,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6344,7 +6344,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(
@@ -6376,7 +6376,7 @@ mod tests {
             };
             identity_list.push(identity);
         }
-        let current_date = NaiveDate::from_ymd(2022, 1, 30);
+        let current_date = NaiveDate::from_ymd_opt(2022, 1, 30).expect("failed to get NaiveDate");
         for id in identity_list {
             let err = validate_identity(&id, &current_date).expect_err("failed to get Err");
             assert_eq!(

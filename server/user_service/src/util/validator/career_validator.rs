@@ -126,16 +126,28 @@ fn ensure_career_start_date_does_not_exceed_career_end_date(
     career_start_date: &Ymd,
     career_end_date: &Ymd,
 ) -> Result<(), CareerValidationError> {
-    let start_date = NaiveDate::from_ymd(
+    let start_date = NaiveDate::from_ymd_opt(
         career_start_date.year,
         career_start_date.month,
         career_start_date.day,
-    );
-    let end_date = NaiveDate::from_ymd(
+    )
+    .ok_or_else(
+        || CareerValidationError::CareerStartDateExceedsCareerEndDate {
+            career_start_date: career_start_date.clone(),
+            career_end_date: career_end_date.clone(),
+        },
+    )?;
+    let end_date = NaiveDate::from_ymd_opt(
         career_end_date.year,
         career_end_date.month,
         career_end_date.day,
-    );
+    )
+    .ok_or_else(
+        || CareerValidationError::CareerStartDateExceedsCareerEndDate {
+            career_start_date: career_start_date.clone(),
+            career_end_date: career_end_date.clone(),
+        },
+    )?;
     if start_date > end_date {
         return Err(CareerValidationError::CareerStartDateExceedsCareerEndDate {
             career_start_date: career_start_date.clone(),
