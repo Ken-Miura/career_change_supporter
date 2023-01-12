@@ -1111,7 +1111,9 @@ mod tests {
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         let user_account_id_of_consultant = 6895;
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2023, 1, 1).and_hms(23, 32, 21);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 1, 1, 23, 32, 21)
+            .unwrap();
         let consultation_req_id = 431;
         let picked_candidate = 1;
         let user_checked = true;
@@ -1138,19 +1140,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1160,7 +1154,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1171,9 +1165,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1197,19 +1189,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1219,7 +1203,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 6).and_hms(15, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1230,9 +1214,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1256,19 +1238,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1278,7 +1252,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 7).and_hms(7, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1289,9 +1263,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1315,19 +1287,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1337,7 +1301,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1348,9 +1312,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: SendMailMock { fail: true },
@@ -1374,19 +1336,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1396,28 +1350,22 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(21, 0, 0),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(22, 0, 0),
+                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 21, 0, 0).unwrap(),
+                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1441,19 +1389,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1463,28 +1403,22 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(0, 0, 0),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(4, 0, 0),
+                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
+                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 4, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1508,19 +1442,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1530,7 +1456,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1541,9 +1467,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1572,19 +1496,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1594,7 +1510,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1605,9 +1521,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1636,19 +1550,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1658,7 +1564,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1669,9 +1575,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1700,19 +1604,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1722,7 +1618,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1733,9 +1629,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1764,19 +1658,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1786,7 +1672,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1797,9 +1683,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1828,19 +1712,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1850,7 +1726,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1861,9 +1737,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1892,19 +1766,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1914,7 +1780,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1925,9 +1791,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -1956,19 +1820,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant + 1,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -1978,7 +1834,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -1989,9 +1845,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2012,7 +1866,7 @@ mod tests {
                         picked_candidate,
                         user_checked,
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2020,22 +1874,14 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(7, 0, 0)
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                 + Duration::hours(
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 4)
-                                .and_hms(23, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 3)
-                                .and_hms(7, 0, 0),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(7, 0, 0)
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                 + Duration::hours(
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
@@ -2048,7 +1894,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -2059,9 +1905,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(7, 0, 0)
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                 + Duration::hours(
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
@@ -2085,7 +1929,7 @@ mod tests {
                         picked_candidate,
                         user_checked,
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(7, 0, 1),
+                    current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 1).unwrap(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2093,22 +1937,14 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(7, 0, 0)
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                 + Duration::hours(
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 4)
-                                .and_hms(23, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 3)
-                                .and_hms(7, 0, 0),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(7, 0, 0)
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                 + Duration::hours(
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
@@ -2121,7 +1957,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -2132,9 +1968,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(7, 0, 0)
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                 + Duration::hours(
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
@@ -2166,26 +2000,18 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: None,
                         user: Some(UserAccount {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -2196,9 +2022,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2227,26 +2051,18 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
                             disabled_at: None,
                         }),
                         user: None,
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -2257,9 +2073,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2288,19 +2102,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -2310,7 +2116,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 1,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -2321,9 +2127,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2352,19 +2156,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -2374,7 +2170,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 1,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -2385,9 +2181,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2416,19 +2210,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -2438,7 +2224,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 1,
@@ -2449,9 +2235,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2480,19 +2264,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -2502,7 +2278,7 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
@@ -2513,9 +2289,7 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2544,19 +2318,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -2566,28 +2332,22 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(22, 0, 0),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 30, 0),
+                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
+                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 30, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2616,19 +2376,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -2638,28 +2390,22 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(22, 0, 0),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
+                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail: send_mail.clone(),
@@ -2688,19 +2434,11 @@ mod tests {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(15, 0, 0),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 7)
-                                .and_hms(7, 0, 0),
+                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
                         consultant: Some(UserAccount {
                             email_address: consultant_email_address.to_string(),
@@ -2710,28 +2448,22 @@ mod tests {
                             email_address: user_email_address.to_string(),
                             disabled_at: None,
                         }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.ymd(2023, 1, 5).and_hms(23, 0, 0),
+                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         cnt_user_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_user_account_id: 0,
                         cnt_consultant_side_consultation_by_consultant_id: 0,
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 6)
-                                .and_hms(0, 0, 0),
+                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
                         consultation: Consultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE
-                                .ymd(2023, 1, 5)
-                                .and_hms(23, 0, 0),
+                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
                     },
                     send_mail,

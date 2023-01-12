@@ -228,7 +228,9 @@ mod tests {
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         let account_id = 5315;
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2023, 1, 10).and_hms(7, 0, 0);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 1, 10, 7, 0, 0)
+            .unwrap();
         let length_of_meeting_in_minute = Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
         let criteria_date_time = current_date_time - length_of_meeting_in_minute;
         let user_side_consultation1 = UserSideConsultation {

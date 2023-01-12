@@ -193,7 +193,9 @@ mod tests {
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         let account_id = 1;
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+            .unwrap();
         vec![
             TestCase {
                 name: "success case (empty result)".to_string(),

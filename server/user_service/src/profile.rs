@@ -372,7 +372,7 @@ mod tests {
     fn create_max_num_of_dummy_career_descriptions() -> Vec<CareerDescription> {
         let mut career_descriptions =
             Vec::with_capacity(MAX_NUM_OF_CAREER_PER_USER_ACCOUNT as usize);
-        let mut start_date = NaiveDate::from_ymd(2013, 4, 1);
+        let mut start_date = NaiveDate::from_ymd_opt(2013, 4, 1).expect("failed to get NaiveDate");
         let mut end_date = Some(start_date + chrono::Duration::days(365));
         for i in 0..MAX_NUM_OF_CAREER_PER_USER_ACCOUNT {
             let career_start_date = Ymd {
@@ -429,7 +429,7 @@ mod tests {
         let email_address = "profile.test@test.com".to_string();
         let email_address_option = Some(email_address.clone());
 
-        let current_date = NaiveDate::from_ymd(2022, 2, 25);
+        let current_date = NaiveDate::from_ymd_opt(2022, 2, 25).expect("failed to get NaiveDate");
         let date_of_birth = Ymd {
             year: current_date.year() - MIN_AGE_REQUIREMENT,
             month: current_date.month(),
@@ -470,7 +470,7 @@ mod tests {
         let email_address = "profile.test@test.com".to_string();
         let email_address_option = Some(email_address.clone());
 
-        let current_date = NaiveDate::from_ymd(2022, 2, 25);
+        let current_date = NaiveDate::from_ymd_opt(2022, 2, 25).expect("failed to get NaiveDate");
         let date_of_birth = Ymd {
             year: current_date.year() - MIN_AGE_REQUIREMENT,
             month: current_date.month(),
@@ -510,7 +510,7 @@ mod tests {
         let email_address = "profile.test@test.com".to_string();
         let email_address_option = Some(email_address.clone());
 
-        let current_date = NaiveDate::from_ymd(2022, 2, 25);
+        let current_date = NaiveDate::from_ymd_opt(2022, 2, 25).expect("failed to get NaiveDate");
         let date_of_birth = Ymd {
             year: current_date.year() - MIN_AGE_REQUIREMENT,
             month: current_date.month(),

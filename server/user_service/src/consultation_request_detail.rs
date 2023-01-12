@@ -323,7 +323,9 @@ mod tests {
         let account_id_of_consultant = 1;
         let account_id_of_user = 2;
         let consultation_req_id = 1;
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2022, 12, 1).and_hms(7, 31, 54);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 12, 1, 7, 31, 54)
+            .unwrap();
         let fee_per_hour_in_yen = 6000;
         vec![
             TestCase {
@@ -339,19 +341,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![],
                 ),
@@ -397,19 +391,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5)],
                 ),
@@ -455,19 +441,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2)],
                 ),
@@ -513,19 +491,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3)],
                 ),
@@ -571,19 +541,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),
@@ -629,19 +591,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),
@@ -665,19 +619,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),
@@ -701,19 +647,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),
@@ -755,19 +693,11 @@ mod tests {
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant + 1,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),
@@ -784,26 +714,18 @@ mod tests {
                     account_id_of_consultant,
                     account_id_of_user,
                     consultation_req_id,
-                    JAPANESE_TIME_ZONE.ymd(2022, 12, 11).and_hms(1, 0, 0),
+                    JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 1, 0, 0).unwrap(),
                     true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),
@@ -820,26 +742,18 @@ mod tests {
                     account_id_of_consultant,
                     account_id_of_user,
                     consultation_req_id,
-                    JAPANESE_TIME_ZONE.ymd(2022, 12, 11).and_hms(0, 59, 59),
+                    JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 0, 59, 59).unwrap(),
                     true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
                         consultant_id: account_id_of_consultant,
                         fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(7, 0, 0),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 5)
-                            .and_hms(23, 0, 0),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 12, 11)
-                            .and_hms(7, 0, 0),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
                     vec![Some(5), Some(2), Some(3), None],
                 ),

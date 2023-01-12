@@ -604,15 +604,19 @@ mod tests {
             user_account_id: account_id_of_user,
             consultant_id: account_id_of_consultant,
             fee_per_hour_in_yen: 5000,
-            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 12, 1).and_hms(7, 0, 0),
+            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2022, 12, 1, 7, 0, 0)
+                .unwrap(),
             second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                .ymd(2022, 12, 2)
-                .and_hms(23, 0, 0),
-            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.ymd(2022, 12, 3).and_hms(11, 0, 0),
+                .with_ymd_and_hms(2022, 12, 2, 23, 0, 0)
+                .unwrap(),
+            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2022, 12, 3, 11, 0, 0)
+                .unwrap(),
             charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                .ymd(2022, 12, 3)
-                .and_hms(11, 0, 0),
+                .with_ymd_and_hms(2022, 12, 3, 11, 0, 0)
+                .unwrap(),
         }
     }
 
