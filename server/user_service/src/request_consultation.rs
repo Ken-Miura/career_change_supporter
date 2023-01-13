@@ -4,7 +4,7 @@ use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
-use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 use common::payment_platform::charge::{Charge, CreateCharge};
 use common::payment_platform::Metadata;
 use common::{
@@ -298,7 +298,7 @@ async fn handle_request_consultation(
         &request_consultation_param.first_candidate_in_jst,
         &request_consultation_param.second_candidate_in_jst,
         &request_consultation_param.third_candidate_in_jst,
-    );
+    )?;
     let tenant_id = get_tenant_id(consultant_id, &op).await?;
     let create_charge = CreateCharge::build()
         .price(&price)
@@ -558,7 +558,7 @@ fn generate_metadata(
     first_candidate_in_jst: &ConsultationDateTime,
     second_candidate_in_jst: &ConsultationDateTime,
     third_candidate_in_jst: &ConsultationDateTime,
-) -> Metadata {
+) -> Result<Metadata, ErrResp> {
     let mut metadata = Metadata::with_capacity(4);
 
     let _ = metadata.insert(
@@ -566,49 +566,88 @@ fn generate_metadata(
         consultant_id.to_string(),
     );
 
-    let date_time = DateTime::<FixedOffset>::from_local(
-        NaiveDate::from_ymd(
-            first_candidate_in_jst.year,
-            first_candidate_in_jst.month,
-            first_candidate_in_jst.day,
-        )
-        .and_hms(first_candidate_in_jst.hour, 0, 0),
-        *JAPANESE_TIME_ZONE,
-    );
+    // 日本のタイムゾーンにおいて、（サマータイム等による）タイムゾーンの遷移は発生しないので一意にならない場合はすべてエラー
+    let date_time = match JAPANESE_TIME_ZONE.with_ymd_and_hms(
+        first_candidate_in_jst.year,
+        first_candidate_in_jst.month,
+        first_candidate_in_jst.day,
+        first_candidate_in_jst.hour,
+        0,
+        0,
+    ) {
+        chrono::LocalResult::None => {
+            error!(
+                "failed to get date_time (first_candidate_in_jst: {:?})",
+                first_candidate_in_jst
+            );
+            return Err(unexpected_err_resp());
+        }
+        chrono::LocalResult::Single(s) => s,
+        chrono::LocalResult::Ambiguous(a1, a2) => {
+            error!("failed to get date_time (first_candidate_in_jst: {:?}, ambiguous1: {}, ambiguous2: {})", first_candidate_in_jst, a1, a2);
+            return Err(unexpected_err_resp());
+        }
+    };
     let _ = metadata.insert(
         KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
         date_time.to_rfc3339(),
     );
 
-    let date_time = DateTime::<FixedOffset>::from_local(
-        NaiveDate::from_ymd(
-            second_candidate_in_jst.year,
-            second_candidate_in_jst.month,
-            second_candidate_in_jst.day,
-        )
-        .and_hms(second_candidate_in_jst.hour, 0, 0),
-        *JAPANESE_TIME_ZONE,
-    );
+    // 日本のタイムゾーンにおいて、（サマータイム等による）タイムゾーンの遷移は発生しないので一意にならない場合はすべてエラー
+    let date_time = match JAPANESE_TIME_ZONE.with_ymd_and_hms(
+        second_candidate_in_jst.year,
+        second_candidate_in_jst.month,
+        second_candidate_in_jst.day,
+        second_candidate_in_jst.hour,
+        0,
+        0,
+    ) {
+        chrono::LocalResult::None => {
+            error!(
+                "failed to get date_time (second_candidate_in_jst: {:?})",
+                second_candidate_in_jst
+            );
+            return Err(unexpected_err_resp());
+        }
+        chrono::LocalResult::Single(s) => s,
+        chrono::LocalResult::Ambiguous(a1, a2) => {
+            error!("failed to get date_time (second_candidate_in_jst: {:?}, ambiguous1: {}, ambiguous2: {})", second_candidate_in_jst, a1, a2);
+            return Err(unexpected_err_resp());
+        }
+    };
     let _ = metadata.insert(
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
         date_time.to_rfc3339(),
     );
 
-    let date_time = DateTime::<FixedOffset>::from_local(
-        NaiveDate::from_ymd(
-            third_candidate_in_jst.year,
-            third_candidate_in_jst.month,
-            third_candidate_in_jst.day,
-        )
-        .and_hms(third_candidate_in_jst.hour, 0, 0),
-        *JAPANESE_TIME_ZONE,
-    );
+    // 日本のタイムゾーンにおいて、（サマータイム等による）タイムゾーンの遷移は発生しないので一意にならない場合はすべてエラー
+    let date_time = match JAPANESE_TIME_ZONE.with_ymd_and_hms(
+        third_candidate_in_jst.year,
+        third_candidate_in_jst.month,
+        third_candidate_in_jst.day,
+        third_candidate_in_jst.hour,
+        0,
+        0,
+    ) {
+        chrono::LocalResult::None => {
+            error!(
+                "failed to get date_time (third_candidate_in_jst: {:?})",
+                third_candidate_in_jst
+            );
+            return Err(unexpected_err_resp());
+        }
+        chrono::LocalResult::Single(s) => s,
+        chrono::LocalResult::Ambiguous(a1, a2) => {
+            error!("failed to get date_time (third_candidate_in_jst: {:?}, ambiguous1: {}, ambiguous2: {})", third_candidate_in_jst, a1, a2);
+            return Err(unexpected_err_resp());
+        }
+    };
     let _ = metadata.insert(
         KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ.to_string(),
         date_time.to_rfc3339(),
     );
 
-    metadata
+    Ok(metadata)
 }
 
 #[cfg(test)]
@@ -816,7 +855,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -824,16 +865,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -890,7 +933,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: -1,
@@ -898,16 +943,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -971,7 +1018,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -979,16 +1028,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1052,7 +1103,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1060,16 +1113,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(6, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 6, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1133,7 +1188,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 1)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1141,16 +1198,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 1)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1214,7 +1273,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1222,16 +1283,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1295,7 +1358,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1303,16 +1368,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(0, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 0, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1376,7 +1443,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(6, 59, 59),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 6, 59, 59)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1384,16 +1453,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(6, 59, 59),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 6, 59, 59)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 12)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 12, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1457,7 +1528,9 @@ mod tests {
                             hour: 24,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1465,16 +1538,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 21)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 21, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1538,7 +1613,9 @@ mod tests {
                             hour: 6,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1546,16 +1623,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(23, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(6, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 6, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1619,7 +1698,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 1)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1627,16 +1708,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 1),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 1)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 5)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 5, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1700,7 +1783,9 @@ mod tests {
                             hour: 7,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1708,16 +1793,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 5)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 5, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 5)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 5, 7, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1781,7 +1868,9 @@ mod tests {
                             hour: 18,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1789,16 +1878,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 5)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 5, 7, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1862,7 +1953,9 @@ mod tests {
                             hour: 21,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1870,16 +1963,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 20)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 20)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -1943,7 +2038,9 @@ mod tests {
                             hour: 21,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -1951,16 +2048,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 14)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 14, 21, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 20)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
+                            .unwrap(),
                         user_account_is_available: false,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -2024,7 +2123,9 @@ mod tests {
                             hour: 21,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 3,
                         consultant_id: 2,
@@ -2032,16 +2133,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 14)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 14, 21, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 20)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -2105,7 +2208,9 @@ mod tests {
                             hour: 21,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 3,
@@ -2113,16 +2218,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 14)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 14, 21, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 20)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -2186,7 +2293,9 @@ mod tests {
                             hour: 21,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -2194,16 +2303,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 14)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 14, 21, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 20)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
@@ -2267,7 +2378,9 @@ mod tests {
                             hour: 21,
                         },
                     },
-                    current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                    current_date_time: JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                        .unwrap(),
                     req_op: RequestConsultationOperationMock {
                         account_id: 1,
                         consultant_id: 2,
@@ -2275,16 +2388,18 @@ mod tests {
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
                         charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE.ymd(2022, 11, 1).and_hms(7, 0, 0),
+                        current_date_time: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+                            .unwrap(),
                         first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 14)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 14, 21, 0, 0)
+                            .unwrap(),
                         second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 4)
-                            .and_hms(18, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
+                            .unwrap(),
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 20)
-                            .and_hms(21, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
+                            .unwrap(),
                         user_account_is_available: true,
                         settlement_payments:
                             create_payments_that_has_reward_over_one_third_of_max_rewards(),

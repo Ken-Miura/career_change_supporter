@@ -3,7 +3,7 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Timelike, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Timelike};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::payment_platform::Metadata;
 use common::smtp::{
@@ -587,9 +587,22 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
                         err_resp: unexpected_err_resp()
                     }
                 })?;
-                let expired_at = Utc
-                    .timestamp(expired_at_timestamp, 0)
-                    .with_timezone(&(*JAPANESE_TIME_ZONE));
+                // 日本のタイムゾーンにおいて、（サマータイム等による）タイムゾーンの遷移は発生しないので一意にならない場合はすべてエラー
+                let expired_at = match JAPANESE_TIME_ZONE.timestamp_opt(expired_at_timestamp, 0) {
+                    chrono::LocalResult::None => {
+                        error!("failed to get expired_at (expired_at_timestamp: {})", expired_at_timestamp);
+                        return Err(ErrRespStruct {
+                            err_resp: unexpected_err_resp()
+                        });
+                    },
+                    chrono::LocalResult::Single(s) => s,
+                    chrono::LocalResult::Ambiguous(a1, a2) => {
+                        error!("failed to get expired_at (expired_at_timestamp: {}, ambiguous1: {}, ambiguous2: {})", expired_at_timestamp, a1, a2);
+                        return Err(ErrRespStruct {
+                            err_resp: unexpected_err_resp()
+                        });
+                    },
+                };
                 let active_model = entity::consultation_req::ActiveModel {
                     consultation_req_id: NotSet,
                     user_account_id: Set(account_id),
@@ -839,15 +852,21 @@ mod tests {
                             "verified",
                             create_metadata(
                                 2,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: true,
@@ -870,15 +889,21 @@ mod tests {
                             "attempted",
                             create_metadata(
                                 2,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: true,
@@ -901,15 +926,21 @@ mod tests {
                             "verified",
                             create_metadata(
                                 2,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: false,
@@ -937,15 +968,21 @@ mod tests {
                             "verified",
                             create_metadata(
                                 2,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: true,
@@ -973,15 +1010,21 @@ mod tests {
                             "verified",
                             create_metadata(
                                 3,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: true,
@@ -1009,15 +1052,21 @@ mod tests {
                             "unverified",
                             create_metadata(
                                 2,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: true,
@@ -1045,15 +1094,21 @@ mod tests {
                             "failed",
                             create_metadata(
                                 2,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: true,
@@ -1081,15 +1136,21 @@ mod tests {
                             "error",
                             create_metadata(
                                 2,
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(7, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 4).and_hms(23, 0, 0),
-                                JAPANESE_TIME_ZONE.ymd(2022, 11, 22).and_hms(7, 0, 0),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
+                                    .unwrap(),
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                                    .unwrap(),
                             ),
                         ),
                         consultant_id: 2,
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .ymd(2022, 11, 22)
-                            .and_hms(7, 0, 0),
+                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                            .unwrap(),
                         user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                         user_account_is_available: true,

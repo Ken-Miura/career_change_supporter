@@ -541,7 +541,9 @@ mod tests {
     async fn handle_reward_req_returns_empty_rewards() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 12, 31, 23, 59, 59)
+            .unwrap();
         let reward_op = RewardOperationMock {
             account_id,
             tenant_id_option: None,
@@ -637,7 +639,9 @@ mod tests {
     async fn handle_reward_req_fail_tenant_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 12, 31, 23, 59, 59)
+            .unwrap();
         let reward_op = RewardOperationMock {
             account_id,
             tenant_id_option: Some(tenant_id.to_string()),
@@ -679,7 +683,9 @@ mod tests {
     async fn handle_reward_req_fail_tenant_transfers_too_many_requests() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 12, 31, 23, 59, 59)
+            .unwrap();
         let reward_op = RewardOperationMock {
             account_id,
             tenant_id_option: Some(tenant_id.to_string()),
@@ -721,7 +727,9 @@ mod tests {
     async fn handle_reward_req_returns_reward_with_tenant_1tenant_transfer() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 12, 31, 23, 59, 59)
+            .unwrap();
         let reward_op = RewardOperationMock {
             account_id,
             tenant_id_option: Some(tenant_id.to_string()),
@@ -882,7 +890,9 @@ mod tests {
     async fn handle_reward_req_returns_reward_with_tenant_2tenant_transfers() {
         let account_id = 9853;
         let tenant_id = "c8f0aa44901940849cbdb8b3e7d9f305";
-        let current_date_time = JAPANESE_TIME_ZONE.ymd(2021, 12, 31).and_hms(23, 59, 59);
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 12, 31, 23, 59, 59)
+            .unwrap();
         let reward_op = RewardOperationMock {
             account_id,
             tenant_id_option: Some(tenant_id.to_string()),

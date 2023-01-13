@@ -419,7 +419,9 @@ mod tests {
     async fn handle_password_update_req_success() {
         let email_addr = "test@test.com";
         validate_email_address(email_addr).expect("failed to get Ok");
-        let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let pwd_change_requested_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 11, 14, 21, 22, 40)
+            .unwrap();
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
             requested_at: pwd_change_requested_at,
@@ -465,7 +467,9 @@ mod tests {
     async fn handle_password_update_req_fail_no_account_found() {
         let email_addr = "test@test.com";
         validate_email_address(email_addr).expect("failed to get Ok");
-        let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let pwd_change_requested_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 11, 14, 21, 22, 40)
+            .unwrap();
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
             requested_at: pwd_change_requested_at,
@@ -511,7 +515,9 @@ mod tests {
     async fn handle_password_update_req_fail_no_password_change_req_found() {
         let email_addr = "test@test.com";
         validate_email_address(email_addr).expect("failed to get Ok");
-        let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let pwd_change_requested_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 11, 14, 21, 22, 40)
+            .unwrap();
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
             requested_at: pwd_change_requested_at,
@@ -557,7 +563,9 @@ mod tests {
     async fn handle_password_update_req_fail_password_change_req_expired() {
         let email_addr = "test@test.com";
         validate_email_address(email_addr).expect("failed to get Ok");
-        let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let pwd_change_requested_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 11, 14, 21, 22, 40)
+            .unwrap();
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
             requested_at: pwd_change_requested_at,
@@ -604,7 +612,9 @@ mod tests {
     async fn handle_password_update_req_fail_invalid_password() {
         let email_addr = "test@test.com";
         validate_email_address(email_addr).expect("failed to get Ok");
-        let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let pwd_change_requested_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 11, 14, 21, 22, 40)
+            .unwrap();
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
             requested_at: pwd_change_requested_at,
@@ -654,7 +664,9 @@ mod tests {
     async fn handle_password_update_req_fail_invalid_uuid() {
         let email_addr = "test@test.com";
         validate_email_address(email_addr).expect("failed to get Ok");
-        let pwd_change_requested_at = JAPANESE_TIME_ZONE.ymd(2021, 11, 14).and_hms(21, 22, 40);
+        let pwd_change_requested_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 11, 14, 21, 22, 40)
+            .unwrap();
         let password_change_req = PasswordChangeReq {
             email_address: email_addr.to_string(),
             requested_at: pwd_change_requested_at,
