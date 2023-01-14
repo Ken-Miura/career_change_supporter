@@ -135,4 +135,31 @@ describe('SchedulePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
+
+  it('displays no user side consultation and consultation description when both do not exist', async () => {
+    const consultationsResult = {
+      user_side_consultations: [],
+      consultant_side_consultations: []
+    } as ConsultationsResult
+    const resp = GetConsultationsResp.create(consultationsResult)
+    getConsultationsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(SchedulePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideConsultationLabel = wrapper.find('[data-test="user-side-consultation-label"]')
+    expect(userSideConsultationLabel.text()).toContain('あなたが申し込んだ相談')
+    const noUserSideConsultationLabel = wrapper.find('[data-test="no-user-side-consultation-label"]')
+    expect(noUserSideConsultationLabel.text()).toContain('あなたが申し込んだ相談はありません')
+
+    const consultantSideConsultationLabel = wrapper.find('[data-test="consultant-side-consultation-label"]')
+    expect(consultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談')
+    const noConsultantSideConsultationLabel = wrapper.find('[data-test="no-consultant-side-consultation-label"]')
+    expect(noConsultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談はありません')
+  })
 })

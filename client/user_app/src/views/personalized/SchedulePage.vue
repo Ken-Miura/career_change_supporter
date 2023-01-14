@@ -12,7 +12,7 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">あなたが申し込んだ相談</h3>
+          <h3 data-test="user-side-consultation-label" class="font-bold text-2xl">あなたが申し込んだ相談</h3>
           <div v-if="consultationsResult.user_side_consultations.length !== 0" class="m-4 text-2xl">
             <ul>
               <li v-for="user_side_consultation in consultationsResult.user_side_consultations" v-bind:key="user_side_consultation.consultation_id">
@@ -27,11 +27,11 @@
             </ul>
           </div>
           <div v-else class="m-6 text-2xl">
-            <p class="text-xl">あなたが申し込んだ相談はありません</p>
+            <p data-test="no-user-side-consultation-label" class="text-xl">あなたが申し込んだ相談はありません</p>
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">あなたが受け付けた相談</h3>
+          <h3 data-test="consultant-side-consultation-label" class="font-bold text-2xl">あなたが受け付けた相談</h3>
           <div v-if="consultationsResult.consultant_side_consultations.length !== 0" class="m-4 text-2xl">
             <ul>
               <li v-for="consultant_side_consultation in consultationsResult.consultant_side_consultations" v-bind:key="consultant_side_consultation.consultation_id">
@@ -46,7 +46,7 @@
             </ul>
           </div>
           <div v-else class="m-6 text-2xl">
-            <p class="text-xl">あなたが受け付けた相談はありません</p>
+            <p data-test="no-consultant-side-consultation-label" class="text-xl">あなたが受け付けた相談はありません</p>
           </div>
         </div>
       </div>
