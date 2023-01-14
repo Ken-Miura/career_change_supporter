@@ -20,7 +20,7 @@
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">コンサルタントID（{{ user_side_consultation.consultant_id }}）への相談</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div class="mt-4 justify-self-start col-span-2">相談開始日時：{{ user_side_consultation.meeting_date_time_in_jst.year }}年{{ user_side_consultation.meeting_date_time_in_jst.month }}月{{ user_side_consultation.meeting_date_time_in_jst.day }}日{{ user_side_consultation.meeting_date_time_in_jst.hour }}時</div>
-                    <button class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
+                    <button v-on:click="moveToUserSideConsultationPage(user_side_consultation.consultation_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
                   </div>
                 </div>
               </li>
@@ -39,7 +39,7 @@
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーID（{{ consultant_side_consultation.user_account_id }}）からの相談</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div class="mt-4 justify-self-start col-span-2">相談開始日時：{{ consultant_side_consultation.meeting_date_time_in_jst.year }}年{{ consultant_side_consultation.meeting_date_time_in_jst.month }}月{{ consultant_side_consultation.meeting_date_time_in_jst.day }}日{{ consultant_side_consultation.meeting_date_time_in_jst.hour }}時</div>
-                    <button class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
+                    <button v-on:click="moveToConsultantSideConsultationPage(consultant_side_consultation.consultation_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
                   </div>
                 </div>
               </li>
@@ -84,6 +84,7 @@ export default defineComponent({
       message: ''
     })
     const router = useRouter()
+
     onMounted(async () => {
       try {
         const resp = await getConsultationsFunc()
@@ -109,10 +110,21 @@ export default defineComponent({
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
+    const moveToUserSideConsultationPage = async (consultationId: number) => {
+      await router.push({ name: 'UserSideConsultationPage', params: { consultation_id: consultationId } })
+    }
+
+    const moveToConsultantSideConsultationPage = async (consultationId: number) => {
+      await router.push({ name: 'ConsultantSideConsultationPage', params: { consultation_id: consultationId } })
+    }
+
     return {
       getConsultationsDone,
       consultationsResult,
-      error
+      error,
+      moveToUserSideConsultationPage,
+      moveToConsultantSideConsultationPage
     }
   }
 })

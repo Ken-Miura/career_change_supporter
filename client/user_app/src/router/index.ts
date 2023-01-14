@@ -29,6 +29,8 @@ import RequestConsultationSuccessPage from '../views/personalized/RequestConsult
 import ConsultationRequestDetailPage from '../views/personalized/ConsultationRequestDetailPage.vue'
 import ConsultationRequestRejectionPage from '../views/personalized/ConsultationRequestRejectionPage.vue'
 import ConsultationRequestAcceptancePage from '../views/personalized/ConsultationRequestAcceptancePage.vue'
+import UserSideConsultationPage from '../views/personalized/UserSideConsultationPage.vue'
+import ConsultantSideConsultationPage from '../views/personalized/ConsultantSideConsultationPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -174,6 +176,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/schedule',
     name: 'SchedulePage',
     component: SchedulePage
+  },
+  {
+    path: '/user-side-consultation/:consultation_id',
+    name: 'UserSideConsultationPage',
+    component: UserSideConsultationPage
+  },
+  {
+    path: '/consultant-side-consultation/:consultation_id',
+    name: 'ConsultantSideConsultationPage',
+    component: ConsultantSideConsultationPage
   },
   {
     path: '/consultants-search',
