@@ -61,6 +61,8 @@
 import { defineComponent, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
@@ -71,7 +73,9 @@ import { ConsultationsResult } from '@/util/personalized/schedule/ConsultationsR
 export default defineComponent({
   name: 'SchedulePage',
   components: {
-    TheHeader
+    TheHeader,
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const {
