@@ -353,4 +353,51 @@ describe('SchedulePage.vue', () => {
     const consultantSideConsultationDateTime2 = consultantSideConsultation2.find('[data-test="consultant-side-consultation-date-time"]')
     expect(consultantSideConsultationDateTime2.text()).toContain(`相談開始日時：${consultantDummy2.meeting_date_time_in_jst.year}年${consultantDummy2.meeting_date_time_in_jst.month}月${consultantDummy2.meeting_date_time_in_jst.day}日${consultantDummy2.meeting_date_time_in_jst.hour}時`)
   })
+
+  it('displays 2 user side consultations and 2 consultant side consultations description', async () => {
+    const userDummy1 = createDummyUserSideConsultation1()
+    const userDummy2 = createDummyUserSideConsultation2()
+    const consultantDummy1 = createDummyConsultantSideConsultation1()
+    const consultantDummy2 = createDummyConsultantSideConsultation2()
+    const consultationsResult = {
+      user_side_consultations: [userDummy1, userDummy2],
+      consultant_side_consultations: [consultantDummy1, consultantDummy2]
+    } as ConsultationsResult
+    const resp = GetConsultationsResp.create(consultationsResult)
+    getConsultationsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(SchedulePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideConsultationLabel = wrapper.find('[data-test="user-side-consultation-label"]')
+    expect(userSideConsultationLabel.text()).toContain('あなたが申し込んだ相談')
+    const userSideConsultation1 = wrapper.find(`[data-test="user-side-consultation-id-${userDummy1.consultation_id}"]`)
+    const consultantIdLabel1 = userSideConsultation1.find('[data-test="consultant-id-label"]')
+    expect(consultantIdLabel1.text()).toContain(`コンサルタントID（${userDummy1.consultant_id}）への相談`)
+    const userSideConsultationDateTime1 = userSideConsultation1.find('[data-test="user-side-consultation-date-time"]')
+    expect(userSideConsultationDateTime1.text()).toContain(`相談開始日時：${userDummy1.meeting_date_time_in_jst.year}年${userDummy1.meeting_date_time_in_jst.month}月${userDummy1.meeting_date_time_in_jst.day}日${userDummy1.meeting_date_time_in_jst.hour}時`)
+    const userSideConsultation2 = wrapper.find(`[data-test="user-side-consultation-id-${userDummy2.consultation_id}"]`)
+    const consultantIdLabel2 = userSideConsultation2.find('[data-test="consultant-id-label"]')
+    expect(consultantIdLabel2.text()).toContain(`コンサルタントID（${userDummy2.consultant_id}）への相談`)
+    const userSideConsultationDateTime2 = userSideConsultation2.find('[data-test="user-side-consultation-date-time"]')
+    expect(userSideConsultationDateTime2.text()).toContain(`相談開始日時：${userDummy2.meeting_date_time_in_jst.year}年${userDummy2.meeting_date_time_in_jst.month}月${userDummy2.meeting_date_time_in_jst.day}日${userDummy2.meeting_date_time_in_jst.hour}時`)
+
+    const consultantSideConsultationLabel = wrapper.find('[data-test="consultant-side-consultation-label"]')
+    expect(consultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談')
+    const consultantSideConsultation1 = wrapper.find(`[data-test="consultant-side-consultation-id-${consultantDummy1.consultation_id}"]`)
+    const userAccountIdLabel1 = consultantSideConsultation1.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${consultantDummy1.user_account_id}）からの相談`)
+    const consultantSideConsultationDateTime1 = consultantSideConsultation1.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime1.text()).toContain(`相談開始日時：${consultantDummy1.meeting_date_time_in_jst.year}年${consultantDummy1.meeting_date_time_in_jst.month}月${consultantDummy1.meeting_date_time_in_jst.day}日${consultantDummy1.meeting_date_time_in_jst.hour}時`)
+    const consultantSideConsultation2 = wrapper.find(`[data-test="consultant-side-consultation-id-${consultantDummy2.consultation_id}"]`)
+    const userAccountIdLabel2 = consultantSideConsultation2.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel2.text()).toContain(`ユーザーID（${consultantDummy2.user_account_id}）からの相談`)
+    const consultantSideConsultationDateTime2 = consultantSideConsultation2.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime2.text()).toContain(`相談開始日時：${consultantDummy2.meeting_date_time_in_jst.year}年${consultantDummy2.meeting_date_time_in_jst.month}月${consultantDummy2.meeting_date_time_in_jst.day}日${consultantDummy2.meeting_date_time_in_jst.hour}時`)
+  })
 })
