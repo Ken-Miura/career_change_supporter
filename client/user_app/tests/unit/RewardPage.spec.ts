@@ -30,7 +30,7 @@ jest.mock('vuex', () => ({
   })
 }))
 
-const getRewardsDoneMock = ref(false)
+const getRewardsDoneMock = ref(true)
 const getRewardsFuncMock = jest.fn()
 jest.mock('@/util/personalized/reward/useGetRewards', () => ({
   useGetRewards: () => ({
@@ -42,7 +42,7 @@ jest.mock('@/util/personalized/reward/useGetRewards', () => ({
 describe('RewardPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
-    getRewardsDoneMock.value = false
+    getRewardsDoneMock.value = true
     getRewardsFuncMock.mockReset()
   })
 

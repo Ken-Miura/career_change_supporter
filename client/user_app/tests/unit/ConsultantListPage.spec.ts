@@ -33,7 +33,7 @@ jest.mock('vuex', () => ({
   })
 }))
 
-const postConsultantsSearchDoneMock = ref(false)
+const postConsultantsSearchDoneMock = ref(true)
 const postConsultantsSearchFuncMock = jest.fn()
 jest.mock('@/util/personalized/consultant-list/usePostConsultantsSearch', () => ({
   usePostConsultantsSearch: () => ({

@@ -30,7 +30,7 @@ jest.mock('vuex', () => ({
   })
 }))
 
-const getProfileDoneMock = ref(false)
+const getProfileDoneMock = ref(true)
 const getProfileFuncMock = jest.fn()
 jest.mock('@/util/personalized/profile/useGetProfile', () => ({
   useGetProfile: () => ({
@@ -44,7 +44,7 @@ describe('ProfilePage.vue', () => {
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
     identityMock = null
-    getProfileDoneMock.value = false
+    getProfileDoneMock.value = true
     getProfileFuncMock.mockReset()
   })
 
