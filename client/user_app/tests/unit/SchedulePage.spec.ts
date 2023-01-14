@@ -12,6 +12,7 @@ import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { UserSideConsultation } from '@/util/personalized/schedule/UserSideConsultation'
 import { ConsultationDateTime } from '@/util/personalized/ConsultationDateTime'
+import { ConsultantSideConsultation } from '@/util/personalized/schedule/ConsultantSideConsultation'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -53,6 +54,32 @@ function createDummyUserSideConsultation2 (): UserSideConsultation {
       hour: 23
     } as ConsultationDateTime
   } as UserSideConsultation
+}
+
+function createDummyConsultantSideConsultation1 (): ConsultantSideConsultation {
+  return {
+    consultation_id: 3,
+    user_account_id: 13,
+    meeting_date_time_in_jst: {
+      year: 2023,
+      month: 1,
+      day: 21,
+      hour: 15
+    } as ConsultationDateTime
+  } as ConsultantSideConsultation
+}
+
+function createDummyConsultantSideConsultation2 (): ConsultantSideConsultation {
+  return {
+    consultation_id: 4,
+    user_account_id: 14,
+    meeting_date_time_in_jst: {
+      year: 2023,
+      month: 1,
+      day: 22,
+      hour: 16
+    } as ConsultationDateTime
+  } as ConsultantSideConsultation
 }
 
 describe('SchedulePage.vue', () => {
@@ -164,7 +191,7 @@ describe('SchedulePage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
-  it('displays no user side consultation and consultation description when both do not exist', async () => {
+  it('displays no user side consultation and consultant side consultation description when both do not exist', async () => {
     const consultationsResult = {
       user_side_consultations: [],
       consultant_side_consultations: []
@@ -191,7 +218,7 @@ describe('SchedulePage.vue', () => {
     expect(noConsultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談はありません')
   })
 
-  it('displays 1 user side consultation and consultation description', async () => {
+  it('displays 1 user side consultation and no consultant side consultation description', async () => {
     const userDummy1 = createDummyUserSideConsultation1()
     const consultationsResult = {
       user_side_consultations: [userDummy1],
@@ -222,7 +249,7 @@ describe('SchedulePage.vue', () => {
     expect(noConsultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談はありません')
   })
 
-  it('displays 2 user side consultations and consultation description', async () => {
+  it('displays 2 user side consultations and no consultant side consultation description', async () => {
     const userDummy1 = createDummyUserSideConsultation1()
     const userDummy2 = createDummyUserSideConsultation2()
     const consultationsResult = {
@@ -257,5 +284,73 @@ describe('SchedulePage.vue', () => {
     expect(consultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談')
     const noConsultantSideConsultationLabel = wrapper.find('[data-test="no-consultant-side-consultation-label"]')
     expect(noConsultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談はありません')
+  })
+
+  it('displays no user side consultation and 1 consultant side consultation description', async () => {
+    const consultantDummy1 = createDummyConsultantSideConsultation1()
+    const consultationsResult = {
+      user_side_consultations: [],
+      consultant_side_consultations: [consultantDummy1]
+    } as ConsultationsResult
+    const resp = GetConsultationsResp.create(consultationsResult)
+    getConsultationsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(SchedulePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideConsultationLabel = wrapper.find('[data-test="user-side-consultation-label"]')
+    expect(userSideConsultationLabel.text()).toContain('あなたが申し込んだ相談')
+    const noUserSideConsultationLabel = wrapper.find('[data-test="no-user-side-consultation-label"]')
+    expect(noUserSideConsultationLabel.text()).toContain('あなたが申し込んだ相談はありません')
+
+    const consultantSideConsultationLabel = wrapper.find('[data-test="consultant-side-consultation-label"]')
+    expect(consultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談')
+    const consultantSideConsultation1 = wrapper.find(`[data-test="consultant-side-consultation-id-${consultantDummy1.consultation_id}"]`)
+    const userAccountIdLabel1 = consultantSideConsultation1.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${consultantDummy1.user_account_id}）からの相談`)
+    const consultantSideConsultationDateTime1 = consultantSideConsultation1.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime1.text()).toContain(`相談開始日時：${consultantDummy1.meeting_date_time_in_jst.year}年${consultantDummy1.meeting_date_time_in_jst.month}月${consultantDummy1.meeting_date_time_in_jst.day}日${consultantDummy1.meeting_date_time_in_jst.hour}時`)
+  })
+
+  it('displays no user side consultation and 2 consultant side consultations description', async () => {
+    const consultantDummy1 = createDummyConsultantSideConsultation1()
+    const consultantDummy2 = createDummyConsultantSideConsultation2()
+    const consultationsResult = {
+      user_side_consultations: [],
+      consultant_side_consultations: [consultantDummy1, consultantDummy2]
+    } as ConsultationsResult
+    const resp = GetConsultationsResp.create(consultationsResult)
+    getConsultationsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(SchedulePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideConsultationLabel = wrapper.find('[data-test="user-side-consultation-label"]')
+    expect(userSideConsultationLabel.text()).toContain('あなたが申し込んだ相談')
+    const noUserSideConsultationLabel = wrapper.find('[data-test="no-user-side-consultation-label"]')
+    expect(noUserSideConsultationLabel.text()).toContain('あなたが申し込んだ相談はありません')
+
+    const consultantSideConsultationLabel = wrapper.find('[data-test="consultant-side-consultation-label"]')
+    expect(consultantSideConsultationLabel.text()).toContain('あなたが受け付けた相談')
+    const consultantSideConsultation1 = wrapper.find(`[data-test="consultant-side-consultation-id-${consultantDummy1.consultation_id}"]`)
+    const userAccountIdLabel1 = consultantSideConsultation1.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${consultantDummy1.user_account_id}）からの相談`)
+    const consultantSideConsultationDateTime1 = consultantSideConsultation1.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime1.text()).toContain(`相談開始日時：${consultantDummy1.meeting_date_time_in_jst.year}年${consultantDummy1.meeting_date_time_in_jst.month}月${consultantDummy1.meeting_date_time_in_jst.day}日${consultantDummy1.meeting_date_time_in_jst.hour}時`)
+    const consultantSideConsultation2 = wrapper.find(`[data-test="consultant-side-consultation-id-${consultantDummy2.consultation_id}"]`)
+    const userAccountIdLabel2 = consultantSideConsultation2.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel2.text()).toContain(`ユーザーID（${consultantDummy2.user_account_id}）からの相談`)
+    const consultantSideConsultationDateTime2 = consultantSideConsultation2.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime2.text()).toContain(`相談開始日時：${consultantDummy2.meeting_date_time_in_jst.year}年${consultantDummy2.meeting_date_time_in_jst.month}月${consultantDummy2.meeting_date_time_in_jst.day}日${consultantDummy2.meeting_date_time_in_jst.hour}時`)
   })
 })
