@@ -11,6 +11,9 @@ export async function createPayJp (): Promise<any> {
     throw new Error(`failed to load script from ${payJpJsUrl}: ${e}`)
   }
   const payJpPubKey = process.env.VUE_APP_PAYJP_PUBLIC_KEY
+  if (!payJpPubKey) {
+    throw new Error('No VUE_APP_PAYJP_PUBLIC_KEY value found')
+  }
   // https://js.pay.jp/v2/pay.js 内でPayjpオブジェクトをwindowに追加している。
   // コンパイラは、ホストされたJavascriptファイル内で行われている処理を検知できないため、明示的にチェックを無視する。
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment

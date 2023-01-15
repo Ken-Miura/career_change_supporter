@@ -14,6 +14,7 @@
 import { defineComponent } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRoute } from 'vue-router'
+import { getSkyWayApiKey } from '@/util/SkyWay'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -21,9 +22,10 @@ export default defineComponent({
     TheHeader
   },
   setup () {
+    const skyWayApiKey = getSkyWayApiKey()
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
-    const message = `UserSideConsultationPage ${consultationId}`
+    const message = `UserSideConsultationPage ${consultationId} ${skyWayApiKey}`
     return { message }
   }
 })
