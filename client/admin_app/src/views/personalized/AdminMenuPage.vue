@@ -9,7 +9,9 @@
           <button data-test="move-to-create-career-request-list-page-button" v-on:click="moveToCreateCareerRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼</button>
           <button data-test="move-to-disable-account-page-button" v-on:click="moveToDisableAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント無効化</button>
           <button data-test="move-to-enable-account-page-button" v-on:click="moveToEnableAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント有効化</button>
+          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談情報確認</button>
           <button data-test="move-to-refund-page-button" v-on:click="moveToRefundPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金処理</button>
+          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス設定</button>
         </div>
       </div>
     </main>
