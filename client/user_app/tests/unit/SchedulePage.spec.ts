@@ -32,7 +32,7 @@ jest.mock('@/util/personalized/schedule/useGetConsultations', () => ({
 
 function createDummyUserSideConsultation1 (): UserSideConsultation {
   return {
-    consultation_id: 1,
+    consultation_id: 11,
     consultant_id: 1,
     meeting_date_time_in_jst: {
       year: 2023,
@@ -45,7 +45,7 @@ function createDummyUserSideConsultation1 (): UserSideConsultation {
 
 function createDummyUserSideConsultation2 (): UserSideConsultation {
   return {
-    consultation_id: 2,
+    consultation_id: 22,
     consultant_id: 2,
     meeting_date_time_in_jst: {
       year: 2023,
@@ -399,5 +399,60 @@ describe('SchedulePage.vue', () => {
     expect(userAccountIdLabel2.text()).toContain(`ユーザーID（${consultantDummy2.user_account_id}）からの相談`)
     const consultantSideConsultationDateTime2 = consultantSideConsultation2.find('[data-test="consultant-side-consultation-date-time"]')
     expect(consultantSideConsultationDateTime2.text()).toContain(`相談開始日時：${consultantDummy2.meeting_date_time_in_jst.year}年${consultantDummy2.meeting_date_time_in_jst.month}月${consultantDummy2.meeting_date_time_in_jst.day}日${consultantDummy2.meeting_date_time_in_jst.hour}時`)
+  })
+
+  it('moves UserSideConsultationPage with param userDummy1', async () => {
+    const userDummy1 = createDummyUserSideConsultation1()
+    const consultationsResult = {
+      user_side_consultations: [userDummy1],
+      consultant_side_consultations: []
+    } as ConsultationsResult
+    const resp = GetConsultationsResp.create(consultationsResult)
+    getConsultationsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(SchedulePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideConsultation1 = wrapper.find(`[data-test="user-side-consultation-id-${userDummy1.consultation_id}"]`)
+    const btn = userSideConsultation1.find('[data-test="move-to-user-side-consultation-page"]')
+    await btn.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"name": "UserSideConsultationPage", "params": { "consultation_id": ${userDummy1.consultation_id} }}`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
+
+  it('moves UserSideConsultationPage with param userDummy2', async () => {
+    const userDummy1 = createDummyUserSideConsultation1()
+    const userDummy2 = createDummyUserSideConsultation1()
+    const consultationsResult = {
+      user_side_consultations: [userDummy1, userDummy2],
+      consultant_side_consultations: []
+    } as ConsultationsResult
+    const resp = GetConsultationsResp.create(consultationsResult)
+    getConsultationsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(SchedulePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideConsultation2 = wrapper.find(`[data-test="user-side-consultation-id-${userDummy2.consultation_id}"]`)
+    const btn = userSideConsultation2.find('[data-test="move-to-user-side-consultation-page"]')
+    await btn.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"name": "UserSideConsultationPage", "params": { "consultation_id": ${userDummy2.consultation_id} }}`)
+    expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 })
