@@ -16,7 +16,6 @@ pub struct Model {
     pub user_account_peer_opened_at: Option<DateTimeWithTimeZone>,
     pub consultant_peer_id: Option<String>,
     pub consultant_peer_opend_at: Option<DateTimeWithTimeZone>,
-    pub consultation_started_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

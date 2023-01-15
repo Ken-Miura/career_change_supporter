@@ -404,7 +404,6 @@ impl MigrationTrait for Migration {
                   user_account_peer_opened_at TIMESTAMP WITH TIME ZONE,
                   consultant_peer_id ccs_schema.uuid_simple_form,
                   consultant_peer_opend_at TIMESTAMP WITH TIME ZONE,
-                  consultation_started_at TIMESTAMP WITH TIME ZONE,
                   UNIQUE(user_account_id, meeting_at),
                   UNIQUE(consultant_id, meeting_at)
                 );",

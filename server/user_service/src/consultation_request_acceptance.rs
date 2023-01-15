@@ -471,7 +471,6 @@ async fn create_consultation(
         user_account_peer_opened_at: NotSet,
         consultant_peer_id: NotSet,
         consultant_peer_opend_at: NotSet,
-        consultation_started_at: NotSet,
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
         error!("failed to insert consultation (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}", 
