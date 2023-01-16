@@ -5,11 +5,11 @@ use std::{error::Error, fmt::Display};
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
 use crate::util::{
-    consultation::ConsultationDateTime,
     optional_env_var::{
         FIRST_START_HOUR_OF_CONSULTATION, LAST_START_HOUR_OF_CONSULTATION,
         MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
     },
+    request_consultation::ConsultationDateTime,
 };
 
 pub(crate) fn validate_consultation_date_time(
@@ -121,7 +121,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::util::{
-        consultation::ConsultationDateTime,
+        request_consultation::ConsultationDateTime,
         validator::consultation_date_time_validator::validate_consultation_date_time,
     };
 

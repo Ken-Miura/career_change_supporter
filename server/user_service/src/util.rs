@@ -3,7 +3,6 @@
 pub(crate) mod available_user_account;
 pub(crate) mod bank_account;
 pub(crate) mod charge_metadata_key;
-pub(crate) mod consultation;
 pub(crate) mod consultation_request;
 pub(crate) mod disabled_check;
 pub(crate) mod document_operation;
@@ -13,6 +12,7 @@ pub(crate) mod image_converter;
 pub(crate) mod multipart;
 pub(crate) mod optional_env_var;
 pub(crate) mod platform_fee_rate;
+pub(crate) mod request_consultation;
 pub(crate) mod rewards;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;

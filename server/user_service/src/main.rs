@@ -6,6 +6,7 @@ mod bank_account;
 mod career;
 mod consultant_detail;
 mod consultants_search;
+mod consultation;
 mod consultation_request_acceptance;
 mod consultation_request_detail;
 mod consultation_request_rejection;
@@ -77,6 +78,7 @@ use common::storage::{
 };
 use common::util::check_env_vars;
 use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
+use consultation::KEY_TO_SKY_WAY_SECRET_KEY;
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
@@ -117,6 +119,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_OPENSEARCH_ENDPOINT_URI.to_string(),
         KEY_TO_OPENSEARCH_USERNAME.to_string(),
         KEY_TO_OPENSEARCH_PASSWORD.to_string(),
+        KEY_TO_SKY_WAY_SECRET_KEY.to_string(),
     ]
 });
 

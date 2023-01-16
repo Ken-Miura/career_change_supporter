@@ -28,9 +28,9 @@ use crate::util::charge_metadata_key::{
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
-use crate::util::consultation::{convert_payment_err_to_err_resp, ConsultationDateTime};
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::optional_env_var::{EXPIRY_DAYS_OF_CHARGE, MAX_ANNUAL_REWARDS_IN_YEN};
+use crate::util::request_consultation::{convert_payment_err_to_err_resp, ConsultationDateTime};
 use crate::util::rewards::{
     calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
@@ -670,7 +670,7 @@ mod tests {
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     };
     use crate::util::{
-        consultation::ConsultationDateTime,
+        request_consultation::ConsultationDateTime,
         rewards::{create_start_and_end_date_time_of_current_year, PaymentInfo},
     };
 

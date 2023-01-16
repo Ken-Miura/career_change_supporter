@@ -18,8 +18,8 @@ use crate::err::{
     Code::{NoAccountFound, NotTermsOfUseAgreedYet, Unauthorized},
 };
 
-use super::consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
+use super::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };

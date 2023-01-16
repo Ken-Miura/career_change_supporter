@@ -14,9 +14,10 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
 use crate::util::{
-    self, consultation::ConsultationDateTime, consultation_request::consultation_req_exists,
+    self, consultation_request::consultation_req_exists,
     consultation_request::round_to_one_decimal_places, consultation_request::ConsultationRequest,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+    request_consultation::ConsultationDateTime,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
 };
 
@@ -237,7 +238,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::util::consultation::ConsultationDateTime;
+    use crate::util::request_consultation::ConsultationDateTime;
 
     use super::{
         handle_consultation_request_detail, ConsultationRequest, ConsultationRequestDetail,

@@ -132,7 +132,7 @@ mod tests {
     };
     use once_cell::sync::Lazy;
 
-    use crate::{err::Code, util::consultation::convert_payment_err_to_err_resp};
+    use crate::{err::Code, util::request_consultation::convert_payment_err_to_err_resp};
 
     #[derive(Debug)]
     struct ConvertPaymentErrToErrRespTestCase {
