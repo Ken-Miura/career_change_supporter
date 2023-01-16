@@ -57,7 +57,7 @@ fn generate_sky_way_credential_auth_token(
     mac.update(content.as_bytes());
     let result = mac.finalize();
     let code_bytes = result.into_bytes();
-    // Base64は、方式に関して標準 (+, /)、URLセーフ(-, _)の２つ、パディングに関して有りなしの２つの４パターンある
+    // Base64は、方式に関して標準 (+, /)、URLセーフ(-, _)の２つ、パディングに関して有りなしの２つの組み合わせで４パターンある
     // 公式のGolangの例を見ると、標準かつ、パディングありなのでそれに従う
     // https://github.com/skyway/skyway-peer-authentication-samples/blob/master/golang/sample.go#L99
     let encoded = general_purpose::STANDARD.encode(code_bytes);
