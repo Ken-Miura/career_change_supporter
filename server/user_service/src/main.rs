@@ -35,6 +35,7 @@ use crate::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
 use crate::career::{delete, get, post};
 use crate::consultant_detail::get_consultant_detail;
 use crate::consultants_search::post_consultants_search;
+use crate::consultation::user_side_consultation::get_user_side_consultation;
 use crate::consultation_request_acceptance::post_consultation_request_acceptance;
 use crate::consultation_request_detail::get_consultation_request_detail;
 use crate::consultation_request_rejection::post_consultation_request_rejection;
@@ -228,6 +229,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultation-request-rejection", post(post_consultation_request_rejection))
                 .route("/consultation-request-acceptance", post(post_consultation_request_acceptance))
                 .route("/consultations", get(get_consultations))
+                .route("/user-side-consultation", get(get_user_side_consultation))
                 .with_state(state),
         )
         .layer(
