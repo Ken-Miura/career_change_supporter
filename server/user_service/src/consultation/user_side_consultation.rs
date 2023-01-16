@@ -16,9 +16,10 @@ use super::{generate_sky_way_credential_auth_token, SkyWayCredential, SKY_WAY_SE
 
 pub(crate) async fn get_user_side_consultation(
     User { account_id: _ }: User,
-    _query: Query<UserSideConsultationQuery>,
+    query: Query<UserSideConsultationQuery>,
     State(_pool): State<DatabaseConnection>,
 ) -> RespResult<UserSideConsultationResult> {
+    println!("{}", query.0.consultation_id);
     let user_account_peer_id = "11b060e0b9f74e898c55afff5e12e399";
     let timestamp = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE)).timestamp();
     let ttl = 60 * 60;
@@ -45,7 +46,7 @@ pub(crate) async fn get_user_side_consultation(
 
 #[derive(Deserialize)]
 pub(crate) struct UserSideConsultationQuery {
-    pub(crate) _consultation_id: i64,
+    pub(crate) consultation_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

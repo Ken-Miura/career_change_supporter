@@ -11,10 +11,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, onMounted } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRoute } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
+import { useGetUserSideConsultation } from '@/util/personalized/user-side-consultation/useGetUserSideConsultation'
+import { GetUserSideConsultationResp } from '@/util/personalized/user-side-consultation/GetUserSideConsultationResp'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -26,6 +28,25 @@ export default defineComponent({
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
     const message = `UserSideConsultationPage ${consultationId} ${skyWayApiKey}`
+
+    const {
+      getUserSideConsultationDone,
+      getUserSideConsultationFunc
+    } = useGetUserSideConsultation()
+
+    onMounted(async () => {
+      console.log(getUserSideConsultationDone.value)
+      try {
+        const response = await getUserSideConsultationFunc(consultationId)
+        if (response instanceof GetUserSideConsultationResp) {
+          const result = response.getConsultationsResult()
+          console.log(result)
+        }
+      } catch (e) {
+        console.log(e)
+      }
+    })
+
     return { message }
   }
 })
