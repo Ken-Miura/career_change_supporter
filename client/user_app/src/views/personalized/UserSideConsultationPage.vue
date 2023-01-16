@@ -17,6 +17,7 @@ import { useRoute } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
 import { useGetUserSideConsultation } from '@/util/personalized/user-side-consultation/useGetUserSideConsultation'
 import { GetUserSideConsultationResp } from '@/util/personalized/user-side-consultation/GetUserSideConsultationResp'
+import Peer from 'skyway-js'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -41,6 +42,10 @@ export default defineComponent({
         if (response instanceof GetUserSideConsultationResp) {
           const result = response.getConsultationsResult()
           console.log(result)
+          const peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 3 })
+          peer.on('open', function () {
+            console.log('peer open')
+          })
         }
       } catch (e) {
         console.log(e)
