@@ -47,10 +47,7 @@ fn generate_sky_way_credential_auth_token(
 ) -> Result<String, ErrResp> {
     let content = format!("{}:{}:{}", timestamp, ttl, peer_id);
     let mut mac = Hmac::<Sha256>::new_from_slice(sky_way_secret_key.as_bytes()).map_err(|e| {
-        error!(
-            "failed to create HMAC-SHA256 instance from {}: {}",
-            sky_way_secret_key, e
-        );
+        error!("failed to create HMAC-SHA256 instance: {}", e);
         unexpected_err_resp()
     })?;
     mac.update(content.as_bytes());
