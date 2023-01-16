@@ -18,13 +18,12 @@ pub(crate) mod user_side_consultation;
 pub(crate) const KEY_TO_SKY_WAY_SECRET_KEY: &str = "SKY_WAY_SECRET_KEY";
 /// SkyWayのPeer生成に使うcredentialを生成する際に利用するキー
 static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
-    let sky_way_secret_key = env::var(KEY_TO_SKY_WAY_SECRET_KEY).unwrap_or_else(|_| {
+    env::var(KEY_TO_SKY_WAY_SECRET_KEY).unwrap_or_else(|_| {
         panic!(
             "Not environment variable found: environment variable \"{}\" must be set",
             KEY_TO_SKY_WAY_SECRET_KEY
         )
-    });
-    sky_way_secret_key
+    })
 });
 
 /// SkyWayでPeer認証に用いるCredential
@@ -49,8 +48,8 @@ fn generate_sky_way_credential_auth_token(
     let content = format!("{}:{}:{}", timestamp, ttl, peer_id);
     let mut mac = Hmac::<Sha256>::new_from_slice(sky_way_secret_key.as_bytes()).map_err(|e| {
         error!(
-            "failed to create HMAC-SHA256 instance from {}",
-            sky_way_secret_key
+            "failed to create HMAC-SHA256 instance from {}: {}",
+            sky_way_secret_key, e
         );
         unexpected_err_resp()
     })?;
