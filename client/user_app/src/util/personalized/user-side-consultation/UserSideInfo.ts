@@ -1,6 +1,6 @@
 import { SkyWayCredential } from '../SkyWayCredential'
 
-export type UserSideConsultation = {
+export type UserSideInfo = {
   /* eslint-disable camelcase */
   user_account_peer_id: string,
   credential: SkyWayCredential,

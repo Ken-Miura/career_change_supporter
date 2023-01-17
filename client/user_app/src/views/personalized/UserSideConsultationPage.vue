@@ -15,8 +15,8 @@ import { defineComponent, onMounted } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import { useRoute } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
-import { useGetUserSideConsultation } from '@/util/personalized/user-side-consultation/useGetUserSideConsultation'
-import { GetUserSideConsultationResp } from '@/util/personalized/user-side-consultation/GetUserSideConsultationResp'
+import { useGetUserSideInfo } from '@/util/personalized/user-side-consultation/useGetUserSideInfo'
+import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/GetUserSideInfoResp'
 import Peer from 'skyway-js'
 
 export default defineComponent({
@@ -31,16 +31,16 @@ export default defineComponent({
     const message = `UserSideConsultationPage ${consultationId} ${skyWayApiKey}`
 
     const {
-      getUserSideConsultationDone,
-      getUserSideConsultationFunc
-    } = useGetUserSideConsultation()
+      getUserSideInfoDone,
+      getUserSideInfoFunc
+    } = useGetUserSideInfo()
 
     onMounted(async () => {
-      console.log(getUserSideConsultationDone.value)
+      console.log(getUserSideInfoDone.value)
       try {
-        const response = await getUserSideConsultationFunc(consultationId)
-        if (response instanceof GetUserSideConsultationResp) {
-          const result = response.getConsultationsResult()
+        const response = await getUserSideInfoFunc(consultationId)
+        if (response instanceof GetUserSideInfoResp) {
+          const result = response.getUserSideInfo()
           console.log(result)
           const peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 3 })
           peer.on('open', function () {
