@@ -3,14 +3,19 @@
 use std::env;
 
 use async_session::log::error;
+use axum::http::StatusCode;
+use axum::Json;
 use base64::{engine::general_purpose, Engine};
-use common::ErrResp;
+use common::{ApiError, ErrResp};
 use hmac::{Hmac, Mac};
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use sha2::Sha256;
 
-use crate::{err::unexpected_err_resp, util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE};
+use crate::{
+    err::{unexpected_err_resp, Code},
+    util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE,
+};
 
 pub(crate) mod consultant_side_info;
 pub(crate) mod user_side_info;
@@ -66,4 +71,17 @@ fn generate_sky_way_credential_auth_token(
     // https://github.com/skyway/skyway-peer-authentication-samples/blob/master/golang/sample.go#L99
     let encoded = general_purpose::STANDARD.encode(code_bytes);
     Ok(encoded)
+}
+
+fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrResp> {
+    if !consultation_id.is_positive() {
+        error!("consultation_id ({}) is not positive", consultation_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonPositiveConsultationId as u32,
+            }),
+        ));
+    }
+    Ok(())
 }

@@ -7,13 +7,16 @@ use axum::{
     Json,
 };
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{RespResult, JAPANESE_TIME_ZONE};
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
+use crate::err::Code;
+use crate::util;
 use crate::util::session::User;
 
-use super::{generate_sky_way_credential_auth_token, SkyWayCredential, SKY_WAY_SECRET_KEY};
+use super::{generate_sky_way_credential_auth_token, SkyWayCredential, SKY_WAY_SECRET_KEY, validate_consultation_id_is_positive};
 
 pub(crate) async fn get_user_side_info(
     User { account_id }: User,
@@ -44,6 +47,8 @@ async fn handle_user_side_info(
     current_date_time: &DateTime<FixedOffset>,
     op: impl UserSideInfoOperation,
 ) -> RespResult<UserSideInfoResult> {
+    validate_consultation_id_is_positive(consultation_id)?;
+    validate_identity_exists(account_id, &op).await?;
     todo!()
     // println!("{}", consultation_id);
     // let user_account_peer_id = "11b060e0b9f74e898c55afff5e12e399";
@@ -71,11 +76,34 @@ async fn handle_user_side_info(
 }
 
 #[async_trait]
-trait UserSideInfoOperation {}
+trait UserSideInfoOperation {
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+}
 
 struct UserSideInfoOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl UserSideInfoOperation for UserSideInfoOperationImpl {}
+impl UserSideInfoOperation for UserSideInfoOperationImpl {
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
+    }
+}
+
+async fn validate_identity_exists(
+    account_id: i64,
+    op: &impl UserSideInfoOperation,
+) -> Result<(), ErrResp> {
+    let identity_exists = op.check_if_identity_exists(account_id).await?;
+    if !identity_exists {
+        error!("identity is not registered (account_id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
