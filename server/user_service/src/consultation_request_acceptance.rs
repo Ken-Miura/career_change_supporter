@@ -199,11 +199,11 @@ trait ConsultationRequestAcceptanceOperation {
         &self,
         consultation_req_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
-    ) -> Result<Consultation, ErrResp>;
+    ) -> Result<AcceptedConsultation, ErrResp>;
 }
 
 #[derive(Clone, Debug)]
-struct Consultation {
+struct AcceptedConsultation {
     user_account_id: i64,
     consultant_id: i64,
     fee_per_hour_in_yen: i32,
@@ -362,10 +362,10 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         &self,
         consultation_req_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
-    ) -> Result<Consultation, ErrResp> {
+    ) -> Result<AcceptedConsultation, ErrResp> {
         let consultation = self
             .pool
-            .transaction::<_, Consultation, ErrRespStruct>(|txn| {
+            .transaction::<_, AcceptedConsultation, ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let req =
                         get_consultation_req_with_exclusive_lock(consultation_req_id, txn).await?;
@@ -378,7 +378,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     delete_consultation_req_by_consultation_req_id(req.consultation_req_id, txn)
                         .await?;
 
-                    Ok(Consultation {
+                    Ok(AcceptedConsultation {
                         user_account_id: req.user_account_id,
                         consultant_id: req.consultant_id,
                         fee_per_hour_in_yen: req.fee_per_hour_in_yen,
@@ -816,7 +816,7 @@ async fn ensure_meeting_date_time_does_not_overlap_maintenance(
 
 async fn send_mail_to_user(
     consultation_req_id: i64,
-    consultation: &Consultation,
+    consultation: &AcceptedConsultation,
     email_address: &str,
     send_mail: &impl SendMail,
 ) -> Result<(), ErrResp> {
@@ -878,7 +878,7 @@ Email: {}",
 
 async fn send_mail_to_consultant(
     consultation_req_id: i64,
-    consultation: &Consultation,
+    consultation: &AcceptedConsultation,
     email_address: &str,
     send_mail: &impl SendMail,
 ) -> Result<(), ErrResp> {
@@ -951,7 +951,7 @@ mod tests {
     };
 
     use super::{
-        handle_consultation_request_acceptance, Consultation,
+        handle_consultation_request_acceptance, AcceptedConsultation,
         ConsultationRequestAcceptanceOperation, ConsultationRequestAcceptanceParam,
         ConsultationRequestAcceptanceResult,
     };
@@ -985,7 +985,7 @@ mod tests {
         cnt_user_side_consultation_by_consultant_id: u64,
         current_date_time: DateTime<FixedOffset>,
         maintenance_info: Vec<Maintenance>,
-        consultation: Consultation,
+        consultation: AcceptedConsultation,
     }
 
     #[async_trait]
@@ -1075,7 +1075,7 @@ mod tests {
             &self,
             consultation_req_id: i64,
             meeting_date_time: DateTime<FixedOffset>,
-        ) -> Result<Consultation, ErrResp> {
+        ) -> Result<AcceptedConsultation, ErrResp> {
             assert_eq!(
                 self.consultation_req.consultation_req_id,
                 consultation_req_id
@@ -1160,7 +1160,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1209,7 +1209,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1258,7 +1258,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1307,7 +1307,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1360,7 +1360,7 @@ mod tests {
                             maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1413,7 +1413,7 @@ mod tests {
                             maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 4, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1462,7 +1462,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1516,7 +1516,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1570,7 +1570,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1624,7 +1624,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1678,7 +1678,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1732,7 +1732,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1786,7 +1786,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1840,7 +1840,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1900,7 +1900,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -1963,7 +1963,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2017,7 +2017,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2068,7 +2068,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2122,7 +2122,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2176,7 +2176,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2230,7 +2230,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2284,7 +2284,7 @@ mod tests {
                         cnt_user_side_consultation_by_consultant_id: 1,
                         current_date_time,
                         maintenance_info: vec![],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2342,7 +2342,7 @@ mod tests {
                             maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 30, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2400,7 +2400,7 @@ mod tests {
                             maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,
@@ -2458,7 +2458,7 @@ mod tests {
                             maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
                             description: "テスト".to_string(),
                         }],
-                        consultation: Consultation {
+                        consultation: AcceptedConsultation {
                             user_account_id,
                             consultant_id: user_account_id_of_consultant,
                             fee_per_hour_in_yen,

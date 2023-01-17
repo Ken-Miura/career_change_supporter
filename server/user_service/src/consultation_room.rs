@@ -6,7 +6,12 @@ use async_session::log::error;
 use axum::http::StatusCode;
 use axum::Json;
 use base64::{engine::general_purpose, Engine};
-use common::{ApiError, ErrResp};
+use chrono::{DateTime, FixedOffset};
+use common::{ApiError, ErrResp, JAPANESE_TIME_ZONE};
+use entity::{
+    consultation,
+    sea_orm::{DatabaseConnection, EntityTrait},
+};
 use hmac::{Hmac, Mac};
 use once_cell::sync::Lazy;
 use serde::Serialize;
@@ -71,6 +76,46 @@ fn generate_sky_way_credential_auth_token(
     // https://github.com/skyway/skyway-peer-authentication-samples/blob/master/golang/sample.go#L99
     let encoded = general_purpose::STANDARD.encode(code_bytes);
     Ok(encoded)
+}
+
+#[derive(Clone, Debug)]
+struct Consultation {
+    user_account_id: i64,
+    consultant_id: i64,
+    consultation_date_time_in_jst: DateTime<FixedOffset>,
+    user_account_peer_id: Option<String>,
+    user_account_peer_opened_at_in_jst: Option<DateTime<FixedOffset>>,
+    consultant_peer_id: Option<String>,
+    consultant_peer_opend_at_in_jst: Option<DateTime<FixedOffset>>,
+}
+
+async fn find_consultation_by_consultation_id(
+    consultation_id: i64,
+    pool: &DatabaseConnection,
+) -> Result<Option<Consultation>, ErrResp> {
+    let model = consultation::Entity::find_by_id(consultation_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find consultation (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model.map(|m| Consultation {
+        user_account_id: m.user_account_id,
+        consultant_id: m.consultant_id,
+        consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+        user_account_peer_id: m.user_account_peer_id,
+        user_account_peer_opened_at_in_jst: m
+            .user_account_peer_opened_at
+            .map(|u| u.with_timezone(&(*JAPANESE_TIME_ZONE))),
+        consultant_peer_id: m.consultant_peer_id,
+        consultant_peer_opend_at_in_jst: m
+            .consultant_peer_opend_at
+            .map(|c| c.with_timezone(&(*JAPANESE_TIME_ZONE))),
+    }))
 }
 
 fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrResp> {

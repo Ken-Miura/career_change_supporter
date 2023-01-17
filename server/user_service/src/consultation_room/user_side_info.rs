@@ -16,7 +16,10 @@ use crate::err::Code;
 use crate::util;
 use crate::util::session::User;
 
-use super::{generate_sky_way_credential_auth_token, SkyWayCredential, SKY_WAY_SECRET_KEY, validate_consultation_id_is_positive};
+use super::{
+    generate_sky_way_credential_auth_token, validate_consultation_id_is_positive, Consultation,
+    SkyWayCredential, SKY_WAY_SECRET_KEY,
+};
 
 pub(crate) async fn get_user_side_info(
     User { account_id }: User,
@@ -78,6 +81,11 @@ async fn handle_user_side_info(
 #[async_trait]
 trait UserSideInfoOperation {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+
+    async fn find_consultation_by_consultation_id(
+        &self,
+        consultation_id: i64,
+    ) -> Result<Option<Consultation>, ErrResp>;
 }
 
 struct UserSideInfoOperationImpl {
@@ -88,6 +96,13 @@ struct UserSideInfoOperationImpl {
 impl UserSideInfoOperation for UserSideInfoOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
         util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
+    }
+
+    async fn find_consultation_by_consultation_id(
+        &self,
+        consultation_id: i64,
+    ) -> Result<Option<Consultation>, ErrResp> {
+        super::find_consultation_by_consultation_id(consultation_id, &self.pool).await
     }
 }
 
