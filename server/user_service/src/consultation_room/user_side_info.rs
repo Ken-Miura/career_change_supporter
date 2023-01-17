@@ -52,6 +52,10 @@ async fn handle_user_side_info(
 ) -> RespResult<UserSideInfoResult> {
     validate_consultation_id_is_positive(consultation_id)?;
     validate_identity_exists(account_id, &op).await?;
+    let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
+    ensure_user_account_id_is_same_as_the_one_in_consultation(result.user_account_id, account_id)?;
+    // 時間チェック
+    // Disableチェック（いらない？）
     todo!()
     // println!("{}", consultation_id);
     // let user_account_peer_id = "11b060e0b9f74e898c55afff5e12e399";
@@ -117,6 +121,48 @@ async fn validate_identity_exists(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+async fn get_consultation_by_consultation_id(
+    consultation_id: i64,
+    op: &impl UserSideInfoOperation,
+) -> Result<Consultation, ErrResp> {
+    let consultation_option = op
+        .find_consultation_by_consultation_id(consultation_id)
+        .await?;
+    if let Some(consultation) = consultation_option {
+        Ok(consultation)
+    } else {
+        error!(
+            "no consultation (consultation_id: {}) found",
+            consultation_id
+        );
+        Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoConsultationFound as u32,
+            }),
+        ))
+    }
+}
+
+fn ensure_user_account_id_is_same_as_the_one_in_consultation(
+    user_account_id_in_consultation: i64,
+    user_account_id: i64,
+) -> Result<(), ErrResp> {
+    if user_account_id_in_consultation != user_account_id {
+        error!(
+            "user_account_id in consultation ({}) is not same as passed user_accound_id ({})",
+            user_account_id_in_consultation, user_account_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoConsultationFound as u32,
             }),
         ));
     }
