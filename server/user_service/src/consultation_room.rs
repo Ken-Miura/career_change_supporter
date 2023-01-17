@@ -12,8 +12,8 @@ use sha2::Sha256;
 
 use crate::err::unexpected_err_resp;
 
-pub(crate) mod consultant_side_consultation;
-pub(crate) mod user_side_consultation;
+pub(crate) mod consultant_side_info;
+pub(crate) mod user_side_info;
 
 pub(crate) const KEY_TO_SKY_WAY_SECRET_KEY: &str = "SKY_WAY_SECRET_KEY";
 /// SkyWayのPeer生成に使うcredentialを生成する際に利用するキー

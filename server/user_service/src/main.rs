@@ -6,11 +6,11 @@ mod bank_account;
 mod career;
 mod consultant_detail;
 mod consultants_search;
-mod consultation;
 mod consultation_request_acceptance;
 mod consultation_request_detail;
 mod consultation_request_rejection;
 mod consultation_requests;
+mod consultation_room;
 mod consultations;
 mod err;
 mod fee_per_hour_in_yen;
@@ -35,11 +35,11 @@ use crate::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
 use crate::career::{delete, get, post};
 use crate::consultant_detail::get_consultant_detail;
 use crate::consultants_search::post_consultants_search;
-use crate::consultation::user_side_consultation::get_user_side_consultation;
 use crate::consultation_request_acceptance::post_consultation_request_acceptance;
 use crate::consultation_request_detail::get_consultation_request_detail;
 use crate::consultation_request_rejection::post_consultation_request_rejection;
 use crate::consultation_requests::get_consultation_requests;
+use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
@@ -79,7 +79,7 @@ use common::storage::{
 };
 use common::util::check_env_vars;
 use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
-use consultation::KEY_TO_SKY_WAY_SECRET_KEY;
+use consultation_room::KEY_TO_SKY_WAY_SECRET_KEY;
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
@@ -229,7 +229,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultation-request-rejection", post(post_consultation_request_rejection))
                 .route("/consultation-request-acceptance", post(post_consultation_request_acceptance))
                 .route("/consultations", get(get_consultations))
-                .route("/user-side-consultation", get(get_user_side_consultation))
+                .route("/user-side-info", get(get_user_side_info))
                 .with_state(state),
         )
         .layer(

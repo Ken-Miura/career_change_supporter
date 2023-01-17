@@ -14,11 +14,11 @@ use crate::util::session::User;
 
 use super::{generate_sky_way_credential_auth_token, SkyWayCredential, SKY_WAY_SECRET_KEY};
 
-pub(crate) async fn get_user_side_consultation(
+pub(crate) async fn get_user_side_info(
     User { account_id: _ }: User,
-    query: Query<UserSideConsultationQuery>,
+    query: Query<UserSideInfoQuery>,
     State(_pool): State<DatabaseConnection>,
-) -> RespResult<UserSideConsultationResult> {
+) -> RespResult<UserSideInfoResult> {
     println!("{}", query.0.consultation_id);
     let user_account_peer_id = "11b060e0b9f74e898c55afff5e12e399";
     let timestamp = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE)).timestamp();
@@ -36,7 +36,7 @@ pub(crate) async fn get_user_side_consultation(
     };
     Ok((
         StatusCode::OK,
-        Json(UserSideConsultationResult {
+        Json(UserSideInfoResult {
             user_account_peer_id: user_account_peer_id.to_string(),
             credential,
             consultant_peer_id: None,
@@ -45,13 +45,13 @@ pub(crate) async fn get_user_side_consultation(
 }
 
 #[derive(Deserialize)]
-pub(crate) struct UserSideConsultationQuery {
-    pub(crate) consultation_id: i64,
+pub(crate) struct UserSideInfoQuery {
+    consultation_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
-pub(crate) struct UserSideConsultationResult {
-    pub(crate) user_account_peer_id: String,
-    pub(crate) credential: SkyWayCredential,
-    pub(crate) consultant_peer_id: Option<String>,
+pub(crate) struct UserSideInfoResult {
+    user_account_peer_id: String,
+    credential: SkyWayCredential,
+    consultant_peer_id: Option<String>,
 }
