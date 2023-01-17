@@ -10,7 +10,7 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use sha2::Sha256;
 
-use crate::err::unexpected_err_resp;
+use crate::{err::unexpected_err_resp, util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE};
 
 pub(crate) mod consultant_side_info;
 pub(crate) mod user_side_info;
@@ -25,6 +25,14 @@ static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
         )
     })
 });
+
+/// [SkyWayCredential]のttlに使う値
+///
+/// 600 - 90000 の間を設定する必要がある
+/// https://github.com/skyway/skyway-peer-authentication-samples/blob/master/README.jp.md#ttl
+///
+/// 相談時間（[LENGTH_OF_MEETING_IN_MINUTE]分）+ 余裕（20分）を設定し、必ず相談時間中にCredentialの期限が切れないようにする。
+const SKY_WAY_CREDENTIAL_TTL_IN_SECONDS: u32 = 60 * (LENGTH_OF_MEETING_IN_MINUTE as u32 + 20);
 
 /// SkyWayでPeer認証に用いるCredential
 ///
