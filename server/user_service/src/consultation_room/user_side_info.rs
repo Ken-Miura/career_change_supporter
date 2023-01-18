@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use chrono::{DateTime, FixedOffset, Utc};
+use chrono::{DateTime, Duration, FixedOffset, Utc};
 use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
@@ -22,6 +22,7 @@ use crate::util::session::User;
 use super::{
     generate_sky_way_credential_auth_token, validate_consultation_id_is_positive, Consultation,
     SkyWayCredential, SKY_WAY_CREDENTIAL_TTL_IN_SECONDS, SKY_WAY_SECRET_KEY,
+    TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES,
 };
 
 pub(crate) async fn get_user_side_info(
@@ -73,7 +74,18 @@ async fn handle_user_side_info(
     ensure_user_account_id_is_valid(result.user_account_id, account_id)?;
     let _ = get_consultant_if_available(result.consultant_id, &op).await?;
     let _ = get_user_account_if_available(result.user_account_id, &op).await?;
-    // 時間チェック
+    let offset = Duration::minutes(TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES);
+    let criteria = result.consultation_date_time_in_jst - offset;
+    if criteria > *current_date_time {
+        error!("consultation room has not opened yet (current_date_time: {}, consultation_date_time_in_jst: {}, offset: {})", 
+            current_date_time, result.consultation_date_time_in_jst, offset);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultationRoomHasNotOpenedYet as u32,
+            }),
+        ));
+    }
 
     // todo!()
     let user_account_peer_id = peer_id;

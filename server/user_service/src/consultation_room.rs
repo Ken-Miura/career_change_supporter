@@ -25,6 +25,8 @@ use crate::{
 pub(crate) mod consultant_side_info;
 pub(crate) mod user_side_info;
 
+const TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES: i64 = 5;
+
 pub(crate) const KEY_TO_SKY_WAY_SECRET_KEY: &str = "SKY_WAY_SECRET_KEY";
 /// SkyWayのPeer生成に使うcredentialを生成する際に利用するキー
 static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {

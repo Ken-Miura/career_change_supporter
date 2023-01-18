@@ -136,6 +136,7 @@ pub(crate) enum Code {
     NoConsultationFound = 20124,
     ConsultantIsNotAvailableOnConsultationRoom = 20125,
     UserIsNotAvailableOnConsultationRoom = 20126,
+    ConsultationRoomHasNotOpenedYet = 20127,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
