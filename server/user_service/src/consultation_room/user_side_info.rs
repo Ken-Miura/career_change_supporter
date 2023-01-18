@@ -53,7 +53,7 @@ async fn handle_user_side_info(
     validate_consultation_id_is_positive(consultation_id)?;
     validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
-    ensure_user_account_id_is_same_as_the_one_in_consultation(result.user_account_id, account_id)?;
+    ensure_user_account_id_is_valid(result.user_account_id, account_id)?;
     // 時間チェック
     // Disableチェック（いらない？）
     todo!()
@@ -150,7 +150,7 @@ async fn get_consultation_by_consultation_id(
     }
 }
 
-fn ensure_user_account_id_is_same_as_the_one_in_consultation(
+fn ensure_user_account_id_is_valid(
     user_account_id_in_consultation: i64,
     user_account_id: i64,
 ) -> Result<(), ErrResp> {
