@@ -43,6 +43,8 @@ export default defineComponent({
       await router.push('/create-career-request-list')
     }
     const moveToDisableAccountPage = async () => {
+      // 相談料の支払いが発生しないように調整（settlement -> stopped_settlement）
+      // opensearch上のデータの削除は、実装上必要はない
       await router.push('/disable-account')
     }
     const moveToEnableAccountPage = async () => {
