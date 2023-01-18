@@ -8,8 +8,12 @@ use axum::{
 };
 use chrono::{DateTime, Duration, FixedOffset, Utc};
 use common::util::validator::uuid_validator::validate_uuid;
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::DatabaseConnection;
+use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use entity::consultation;
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionError,
+    TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 use uuid::Uuid;
@@ -20,8 +24,8 @@ use crate::util::available_user_account::UserAccount;
 use crate::util::session::User;
 
 use super::{
-    generate_sky_way_credential_auth_token, validate_consultation_id_is_positive, Consultation,
-    SkyWayCredential, SKY_WAY_CREDENTIAL_TTL_IN_SECONDS, SKY_WAY_SECRET_KEY,
+    create_sky_way_credential, get_consultation_with_exclusive_lock,
+    validate_consultation_id_is_positive, Consultation, SkyWayCredential,
     TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES,
 };
 
@@ -87,27 +91,27 @@ async fn handle_user_side_info(
         ));
     }
 
-    // todo!()
-    let user_account_peer_id = peer_id;
+    let updated_result = op
+        .update_consultation_if_needed(consultation_id, *current_date_time, peer_id.to_string())
+        .await?;
+
+    let user_account_peer_id = updated_result.user_account_peer_id.ok_or_else(|| {
+        error!(
+            "user_account_peer_id is None (consultation_id: {})",
+            consultation_id
+        );
+        unexpected_err_resp()
+    })?;
+
     let timestamp = current_date_time.timestamp();
-    let ttl = SKY_WAY_CREDENTIAL_TTL_IN_SECONDS;
-    let auth_token = generate_sky_way_credential_auth_token(
-        user_account_peer_id,
-        timestamp,
-        ttl,
-        (*SKY_WAY_SECRET_KEY).as_str(),
-    )?;
-    let credential = SkyWayCredential {
-        auth_token,
-        ttl,
-        timestamp,
-    };
+    let credential = create_sky_way_credential(user_account_peer_id.as_str(), timestamp)?;
+
     Ok((
         StatusCode::OK,
         Json(UserSideInfoResult {
-            user_account_peer_id: user_account_peer_id.to_string(),
+            user_account_peer_id,
             credential,
-            consultant_peer_id: None,
+            consultant_peer_id: updated_result.consultant_peer_id,
         }),
     ))
 }
@@ -136,8 +140,8 @@ trait UserSideInfoOperation {
     async fn update_consultation_if_needed(
         &self,
         consultation_id: i64,
-        current_date_time: &DateTime<FixedOffset>,
-        peer_id: &str,
+        current_date_time: DateTime<FixedOffset>,
+        peer_id: String,
     ) -> Result<Consultation, ErrResp>;
 }
 
@@ -177,10 +181,56 @@ impl UserSideInfoOperation for UserSideInfoOperationImpl {
     async fn update_consultation_if_needed(
         &self,
         consultation_id: i64,
-        current_date_time: &DateTime<FixedOffset>,
-        peer_id: &str,
+        current_date_time: DateTime<FixedOffset>,
+        peer_id: String,
     ) -> Result<Consultation, ErrResp> {
-        todo!()
+        let updated_result = self
+            .pool
+            .transaction::<_, Consultation, ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let result = get_consultation_with_exclusive_lock(consultation_id, txn).await?;
+
+                    if result.user_account_peer_id.is_some() {
+                        return Ok(Consultation {
+                            user_account_id: result.user_account_id,
+                            consultant_id: result.consultant_id,
+                            consultation_date_time_in_jst: result
+                                .meeting_at
+                                .with_timezone(&(*JAPANESE_TIME_ZONE)),
+                            user_account_peer_id: result.user_account_peer_id,
+                            consultant_peer_id: result.consultant_peer_id,
+                        });
+                    }
+
+                    let updated_result =
+                        update_user_side_info(peer_id, current_date_time, result, txn).await?;
+
+                    Ok(Consultation {
+                        user_account_id: updated_result.user_account_id,
+                        consultant_id: updated_result.consultant_id,
+                        consultation_date_time_in_jst: updated_result
+                            .meeting_at
+                            .with_timezone(&(*JAPANESE_TIME_ZONE)),
+                        user_account_peer_id: updated_result.user_account_peer_id,
+                        consultant_peer_id: updated_result.consultant_peer_id,
+                    })
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!(
+                        "failed to update_consultation_if_needed: {}",
+                        err_resp_struct
+                    );
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(updated_result)
     }
 }
 
@@ -208,8 +258,8 @@ async fn get_consultation_by_consultation_id(
     let consultation_option = op
         .find_consultation_by_consultation_id(consultation_id)
         .await?;
-    if let Some(consultation) = consultation_option {
-        Ok(consultation)
+    if let Some(c) = consultation_option {
+        Ok(c)
     } else {
         error!(
             "no consultation (consultation_id: {}) found",
@@ -273,4 +323,24 @@ async fn get_user_account_if_available(
             }),
         )
     })
+}
+
+async fn update_user_side_info(
+    peer_id: String,
+    current_date_time: DateTime<FixedOffset>,
+    model: consultation::Model,
+    txn: &DatabaseTransaction,
+) -> Result<consultation::Model, ErrRespStruct> {
+    let consultation_id = model.consultation_id;
+    let mut active_model: consultation::ActiveModel = model.into();
+    active_model.user_account_peer_id = Set(Some(peer_id.clone()));
+    active_model.user_account_peer_opened_at = Set(Some(current_date_time));
+    let updated_result = active_model.update(txn).await.map_err(|e| {
+        error!("failed to update consultation (consultation_id: {}, peer_id: {}, current_date_time: {}): {}", 
+        consultation_id, peer_id, current_date_time, e);
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(updated_result)
 }
