@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
+use crate::util::available_user_account::UserAccount;
 use crate::util::session::User;
 
 use super::{
@@ -70,8 +71,9 @@ async fn handle_user_side_info(
     validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_user_account_id_is_valid(result.user_account_id, account_id)?;
+    let _ = get_consultant_if_available(result.consultant_id, &op).await?;
+    let _ = get_user_account_if_available(result.user_account_id, &op).await?;
     // 時間チェック
-    // Disableチェック（いらない？）
     todo!()
     // println!("{}", consultation_id);
     // let user_account_peer_id = "11b060e0b9f74e898c55afff5e12e399";
@@ -106,6 +108,18 @@ trait UserSideInfoOperation {
         &self,
         consultation_id: i64,
     ) -> Result<Option<Consultation>, ErrResp>;
+
+    /// コンサルタントが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
+    async fn get_consultant_if_available(
+        &self,
+        consultant_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp>;
+
+    /// ユーザーが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
+    async fn get_user_account_if_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp>;
 }
 
 struct UserSideInfoOperationImpl {
@@ -123,6 +137,22 @@ impl UserSideInfoOperation for UserSideInfoOperationImpl {
         consultation_id: i64,
     ) -> Result<Option<Consultation>, ErrResp> {
         super::find_consultation_by_consultation_id(consultation_id, &self.pool).await
+    }
+
+    async fn get_consultant_if_available(
+        &self,
+        consultant_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp> {
+        util::available_user_account::get_if_user_account_is_available(&self.pool, consultant_id)
+            .await
+    }
+
+    async fn get_user_account_if_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<UserAccount>, ErrResp> {
+        util::available_user_account::get_if_user_account_is_available(&self.pool, user_account_id)
+            .await
     }
 }
 
@@ -183,4 +213,36 @@ fn ensure_user_account_id_is_valid(
         ));
     }
     Ok(())
+}
+
+async fn get_consultant_if_available(
+    consultant_id: i64,
+    op: &impl UserSideInfoOperation,
+) -> Result<UserAccount, ErrResp> {
+    let consultant = op.get_consultant_if_available(consultant_id).await?;
+    consultant.ok_or_else(|| {
+        error!("consultant ({}) is not available", consultant_id);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultantIsNotAvailableOnConsultationRoom as u32,
+            }),
+        )
+    })
+}
+
+async fn get_user_account_if_available(
+    user_account_id: i64,
+    op: &impl UserSideInfoOperation,
+) -> Result<UserAccount, ErrResp> {
+    let user = op.get_user_account_if_available(user_account_id).await?;
+    user.ok_or_else(|| {
+        error!("user ({}) is not available", user_account_id);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::UserIsNotAvailableOnConsultationRoom as u32,
+            }),
+        )
+    })
 }
