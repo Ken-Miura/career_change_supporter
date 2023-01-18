@@ -7,12 +7,14 @@ use axum::{
     Json,
 };
 use chrono::{DateTime, FixedOffset, Utc};
+use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
+use uuid::Uuid;
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util;
 use crate::util::session::User;
 
@@ -28,8 +30,16 @@ pub(crate) async fn get_user_side_info(
 ) -> RespResult<UserSideInfoResult> {
     let consultation_id = query.0.consultation_id;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    let peer_id = Uuid::new_v4().simple().to_string();
     let op = UserSideInfoOperationImpl { pool };
-    handle_user_side_info(account_id, consultation_id, &current_date_time, op).await
+    handle_user_side_info(
+        account_id,
+        consultation_id,
+        &current_date_time,
+        peer_id.as_str(),
+        op,
+    )
+    .await
 }
 
 #[derive(Deserialize)]
@@ -48,9 +58,15 @@ async fn handle_user_side_info(
     account_id: i64,
     consultation_id: i64,
     current_date_time: &DateTime<FixedOffset>,
+    peer_id: &str,
     op: impl UserSideInfoOperation,
 ) -> RespResult<UserSideInfoResult> {
     validate_consultation_id_is_positive(consultation_id)?;
+    validate_uuid(peer_id).map_err(|e| {
+        error!("failed to validate {}: {}", peer_id, e);
+        // peer_idは、ユーザーから渡されるものではなく、サーバで生成するものなので失敗はunexpected_err_resp
+        unexpected_err_resp()
+    })?;
     validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_user_account_id_is_valid(result.user_account_id, account_id)?;
