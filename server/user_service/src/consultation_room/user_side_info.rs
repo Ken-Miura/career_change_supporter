@@ -21,7 +21,7 @@ use crate::util::session::User;
 
 use super::{
     generate_sky_way_credential_auth_token, validate_consultation_id_is_positive, Consultation,
-    SkyWayCredential, SKY_WAY_SECRET_KEY,
+    SkyWayCredential, SKY_WAY_CREDENTIAL_TTL_IN_SECONDS, SKY_WAY_SECRET_KEY,
 };
 
 pub(crate) async fn get_user_side_info(
@@ -74,30 +74,30 @@ async fn handle_user_side_info(
     let _ = get_consultant_if_available(result.consultant_id, &op).await?;
     let _ = get_user_account_if_available(result.user_account_id, &op).await?;
     // 時間チェック
-    todo!()
-    // println!("{}", consultation_id);
-    // let user_account_peer_id = "11b060e0b9f74e898c55afff5e12e399";
-    // let timestamp = current_date_time.timestamp();
-    // let ttl = 60 * 60;
-    // let auth_token = generate_sky_way_credential_auth_token(
-    //     user_account_peer_id,
-    //     timestamp,
-    //     ttl,
-    //     (*SKY_WAY_SECRET_KEY).as_str(),
-    // )?;
-    // let credential = SkyWayCredential {
-    //     auth_token,
-    //     ttl,
-    //     timestamp,
-    // };
-    // Ok((
-    //     StatusCode::OK,
-    //     Json(UserSideInfoResult {
-    //         user_account_peer_id: user_account_peer_id.to_string(),
-    //         credential,
-    //         consultant_peer_id: None,
-    //     }),
-    // ))
+
+    // todo!()
+    let user_account_peer_id = peer_id;
+    let timestamp = current_date_time.timestamp();
+    let ttl = SKY_WAY_CREDENTIAL_TTL_IN_SECONDS;
+    let auth_token = generate_sky_way_credential_auth_token(
+        user_account_peer_id,
+        timestamp,
+        ttl,
+        (*SKY_WAY_SECRET_KEY).as_str(),
+    )?;
+    let credential = SkyWayCredential {
+        auth_token,
+        ttl,
+        timestamp,
+    };
+    Ok((
+        StatusCode::OK,
+        Json(UserSideInfoResult {
+            user_account_peer_id: user_account_peer_id.to_string(),
+            credential,
+            consultant_peer_id: None,
+        }),
+    ))
 }
 
 #[async_trait]
