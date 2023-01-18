@@ -39,6 +39,7 @@ use crate::consultation_request_acceptance::post_consultation_request_acceptance
 use crate::consultation_request_detail::get_consultation_request_detail;
 use crate::consultation_request_rejection::post_consultation_request_rejection;
 use crate::consultation_requests::get_consultation_requests;
+use crate::consultation_room::consultant_side_info::get_consultant_side_info;
 use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
@@ -230,6 +231,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultation-request-acceptance", post(post_consultation_request_acceptance))
                 .route("/consultations", get(get_consultations))
                 .route("/user-side-info", get(get_user_side_info))
+                .route("/consultant-side-info", get(get_consultant_side_info))
                 .with_state(state),
         )
         .layer(
