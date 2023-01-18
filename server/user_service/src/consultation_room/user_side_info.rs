@@ -76,7 +76,7 @@ async fn handle_user_side_info(
     let _ = get_user_account_if_available(result.user_account_id, &op).await?;
     let offset = Duration::minutes(TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES);
     let criteria = result.consultation_date_time_in_jst - offset;
-    if criteria > *current_date_time {
+    if *current_date_time < criteria {
         error!("consultation room has not opened yet (current_date_time: {}, consultation_date_time_in_jst: {}, offset: {})", 
             current_date_time, result.consultation_date_time_in_jst, offset);
         return Err((
@@ -132,6 +132,13 @@ trait UserSideInfoOperation {
         &self,
         user_account_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp>;
+
+    async fn update_consultation_if_needed(
+        &self,
+        consultation_id: i64,
+        current_date_time: &DateTime<FixedOffset>,
+        peer_id: &str,
+    ) -> Result<Consultation, ErrResp>;
 }
 
 struct UserSideInfoOperationImpl {
@@ -165,6 +172,15 @@ impl UserSideInfoOperation for UserSideInfoOperationImpl {
     ) -> Result<Option<UserAccount>, ErrResp> {
         util::available_user_account::get_if_user_account_is_available(&self.pool, user_account_id)
             .await
+    }
+
+    async fn update_consultation_if_needed(
+        &self,
+        consultation_id: i64,
+        current_date_time: &DateTime<FixedOffset>,
+        peer_id: &str,
+    ) -> Result<Consultation, ErrResp> {
+        todo!()
     }
 }
 
