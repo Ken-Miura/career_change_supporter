@@ -14,7 +14,7 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">{{ message }}</h3>
           <div>
-            <video id="sky-way-remote-stream"></video>
+            <video id="user-side-sky-way-remote-stream"></video>
           </div>
         </div>
       </div>
@@ -68,7 +68,7 @@ export default defineComponent({
         if (response instanceof GetUserSideInfoResp) {
           const result = response.getUserSideInfo()
 
-          const remoteVideo = document.getElementById('sky-way-remote-stream')
+          const remoteVideo = document.getElementById('user-side-sky-way-remote-stream')
           if (!remoteVideo) {
             console.log('!remoteVideo')
             return
