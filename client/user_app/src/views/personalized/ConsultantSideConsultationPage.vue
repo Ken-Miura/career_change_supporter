@@ -36,6 +36,8 @@ import { Message } from '@/util/Message'
 import Peer, { MediaConnection } from 'skyway-js'
 import { useGetConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/useGetConsultantSideInfo'
 import { GetConsultantSideInfoResp } from '@/util/personalized/consultant-side-consultation/GetConsultantSideInfoResp'
+import { ApiErrorResp } from '@/util/ApiError'
+import { createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
   name: 'ConsultantSideConsultationPage',
@@ -65,6 +67,11 @@ export default defineComponent({
     onMounted(async () => {
       try {
         const response = await getConsultantSideInfoFunc(consultationId)
+        if (response instanceof ApiErrorResp) {
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
         if (response instanceof GetConsultantSideInfoResp) {
           const result = response.getConsultantSideInfo()
 

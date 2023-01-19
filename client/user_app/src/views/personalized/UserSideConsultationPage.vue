@@ -36,6 +36,8 @@ import { useGetUserSideInfo } from '@/util/personalized/user-side-consultation/u
 import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/GetUserSideInfoResp'
 import Peer, { MediaConnection } from 'skyway-js'
 import { Message } from '@/util/Message'
+import { ApiErrorResp } from '@/util/ApiError'
+import { createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -65,6 +67,11 @@ export default defineComponent({
     onMounted(async () => {
       try {
         const response = await getUserSideInfoFunc(consultationId)
+        if (response instanceof ApiErrorResp) {
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
         if (response instanceof GetUserSideInfoResp) {
           const result = response.getUserSideInfo()
 
