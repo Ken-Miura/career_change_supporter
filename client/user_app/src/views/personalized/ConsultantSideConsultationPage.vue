@@ -57,6 +57,7 @@ export default defineComponent({
       getConsultantSideInfoFunc
     } = useGetConsultantSideInfo()
 
+    const peer = ref(null as Peer | null)
     const mediaConnection = ref(null as MediaConnection | null)
 
     const error = reactive({
@@ -90,14 +91,18 @@ export default defineComponent({
               video: true
             })
 
-          const peer = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 3 })
+          peer.value = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 3 })
+          if (!peer.value) {
+            console.log('!peer.value')
+            return
+          }
 
-          peer.on('error', e => {
+          peer.value.on('error', e => {
             error.exists = true
             error.message = `${Message.UNEXPECTED_ERR}: ${e}`
           })
 
-          peer.on('call', (mc) => {
+          peer.value.on('call', (mc) => {
             if (!mediaConnection.value) {
               console.log('!mediaConnection.value')
               return
@@ -136,13 +141,16 @@ export default defineComponent({
             console.log('!userAccountPeerId')
             return
           }
-          peer.on('open', async function () {
+          peer.value.on('open', async function () {
             if (!mediaConnection.value) {
               console.log('!mediaConnection.value')
               return
             }
-
-            const mc = peer.call(userAccountPeerId, localStream)
+            if (!peer.value) {
+              console.log('!peer.value')
+              return
+            }
+            const mc = peer.value.call(userAccountPeerId, localStream)
             mediaConnection.value = mc
 
             mediaConnection.value.on('stream', async stream => {
@@ -180,10 +188,16 @@ export default defineComponent({
     onUnmounted(async () => {
       if (!mediaConnection.value) {
         console.log('!mediaConnection.value')
-        return
+      } else {
+        mediaConnection.value.close(true)
+        mediaConnection.value = null
       }
-      mediaConnection.value.close(true)
-      mediaConnection.value = null
+      if (!peer.value) {
+        console.log('!peer.value')
+      } else {
+        peer.value.destroy()
+        peer.value = null
+      }
     })
 
     return {
