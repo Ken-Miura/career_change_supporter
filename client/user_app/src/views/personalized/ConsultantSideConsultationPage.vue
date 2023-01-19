@@ -156,13 +156,13 @@ export default defineComponent({
             mediaConnection.value.on('stream', async stream => {
               remoteVideo.srcObject = stream
               remoteVideo.playsInline = true
+              try {
+                await remoteVideo.play()
+              } catch (e) {
+                error.exists = true
+                error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+              }
             })
-            try {
-              await remoteVideo.play()
-            } catch (e) {
-              error.exists = true
-              error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-            }
 
             mediaConnection.value.once('close', () => {
               const srcObj = remoteVideo.srcObject
