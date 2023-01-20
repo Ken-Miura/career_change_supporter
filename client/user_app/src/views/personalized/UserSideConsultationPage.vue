@@ -13,8 +13,11 @@
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">{{ message }}</h3>
-          <div>
-            <video id="user-side-sky-way-remote-stream"></video>
+          <div v-if="mediaStream">
+            <video v-bind:srcObject.prop="mediaStream" autoplay playsinline></video>
+          </div>
+          <div v-else>
+            <p>mediaStream === null</p>
           </div>
         </div>
       </div>
@@ -34,7 +37,7 @@ import { useRoute } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
 import { useGetUserSideInfo } from '@/util/personalized/user-side-consultation/useGetUserSideInfo'
 import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/GetUserSideInfoResp'
-import Peer, { MediaConnection } from 'skyway-js'
+import Peer from 'skyway-js'
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
 import { createErrorMessage } from '@/util/Error'
@@ -57,8 +60,8 @@ export default defineComponent({
       getUserSideInfoFunc
     } = useGetUserSideInfo()
 
-    const peer = ref(null as Peer | null)
-    const mediaConnection = ref(null as MediaConnection | null)
+    const mediaStream = ref(null as MediaStream | null)
+    let peer = null as Peer | null
 
     const error = reactive({
       exists: false,
@@ -76,63 +79,38 @@ export default defineComponent({
         if (response instanceof GetUserSideInfoResp) {
           const result = response.getUserSideInfo()
 
-          const remoteVideo = document.getElementById('user-side-sky-way-remote-stream')
-          if (!remoteVideo) {
-            console.log('!remoteVideo')
-            return
-          }
-          if (!(remoteVideo instanceof HTMLVideoElement)) {
-            console.log('!(remoteVideo instanceof HTMLVideoElement)')
-            return
-          }
           const localStream = await navigator.mediaDevices
             .getUserMedia({
               audio: true,
               video: true
             })
 
-          peer.value = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 3 })
-          if (!peer.value) {
-            console.log('!peer.value')
+          peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
+          if (!peer) {
+            console.log('!peer')
             return
           }
 
-          peer.value.on('error', e => {
+          peer.on('error', e => {
             error.exists = true
             error.message = `${Message.UNEXPECTED_ERR}: ${e}`
           })
 
-          peer.value.on('call', (mc) => {
-            if (!mediaConnection.value) {
-              console.log('!mediaConnection.value')
-              return
-            }
-            mediaConnection.value = mc
-            mediaConnection.value.answer(localStream)
+          peer.on('call', (mediaConnection) => {
+            mediaConnection.answer(localStream)
 
-            mediaConnection.value.on('stream', async stream => {
-              remoteVideo.srcObject = stream
-              remoteVideo.playsInline = true
-              try {
-                await remoteVideo.play()
-              } catch (e) {
-                error.exists = true
-                error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-              }
+            mediaConnection.on('stream', async stream => {
+              console.log('mediaStream.value = stream 1')
+              mediaStream.value = stream
             })
 
-            mediaConnection.value.once('close', () => {
-              const srcObj = remoteVideo.srcObject
-              if (!srcObj) {
-                console.log('!srcObj')
+            mediaConnection.once('close', () => {
+              if (!mediaStream.value) {
+                console.log('!mediaStream.value 1')
                 return
               }
-              if (!(srcObj instanceof MediaStream)) {
-                console.log('!(srcObj instanceof MediaStream)')
-                return
-              }
-              srcObj.getTracks().forEach(track => track.stop())
-              remoteVideo.srcObject = null
+              mediaStream.value.getTracks().forEach(track => track.stop())
+              mediaStream.value = null
             })
           })
 
@@ -141,42 +119,27 @@ export default defineComponent({
             console.log('!consultantPeerId')
             return
           }
-          peer.value.on('open', async function () {
-            if (!mediaConnection.value) {
-              console.log('!mediaConnection.value')
-              return
-            }
-            if (!peer.value) {
-              console.log('!peer.value')
+          console.log('consultantPeerId: ' + consultantPeerId)
+          peer.on('open', async function () {
+            if (!peer) {
+              console.log('!peer')
               return
             }
 
-            const mc = peer.value.call(consultantPeerId, localStream)
-            mediaConnection.value = mc
+            const mediaConnection = peer.call(consultantPeerId, localStream)
 
-            mediaConnection.value.on('stream', async stream => {
-              remoteVideo.srcObject = stream
-              remoteVideo.playsInline = true
-              try {
-                await remoteVideo.play()
-              } catch (e) {
-                error.exists = true
-                error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-              }
+            mediaConnection.on('stream', async stream => {
+              console.log('mediaStream.value = stream 2')
+              mediaStream.value = stream
             })
 
-            mediaConnection.value.once('close', () => {
-              const srcObj = remoteVideo.srcObject
-              if (!srcObj) {
-                console.log('!srcObj')
+            mediaConnection.once('close', () => {
+              if (!mediaStream.value) {
+                console.log('!mediaStream.value 2')
                 return
               }
-              if (!(srcObj instanceof MediaStream)) {
-                console.log('!(srcObj instanceof MediaStream)')
-                return
-              }
-              srcObj.getTracks().forEach(track => track.stop())
-              remoteVideo.srcObject = null
+              mediaStream.value.getTracks().forEach(track => track.stop())
+              mediaStream.value = null
             })
           })
         }
@@ -187,24 +150,19 @@ export default defineComponent({
     })
 
     onUnmounted(async () => {
-      if (!mediaConnection.value) {
-        console.log('!mediaConnection.value')
+      if (!peer) {
+        console.log('!peer')
       } else {
-        mediaConnection.value.close(true)
-        mediaConnection.value = null
-      }
-      if (!peer.value) {
-        console.log('!peer.value')
-      } else {
-        peer.value.destroy()
-        peer.value = null
+        peer.destroy()
+        peer = null
       }
     })
 
     return {
       getUserSideInfoDone,
       error,
-      message
+      message,
+      mediaStream
     }
   }
 })
