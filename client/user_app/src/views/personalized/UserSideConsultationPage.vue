@@ -70,79 +70,92 @@ export default defineComponent({
 
     onMounted(async () => {
       try {
-        const response = await getUserSideInfoFunc(consultationId)
-        if (response instanceof ApiErrorResp) {
+        const resp = await getUserSideInfoFunc(consultationId)
+        if (!(resp instanceof GetUserSideInfoResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          // const code = resp.getApiError().getCode()
+          // if (code === Code.UNAUTHORIZED) {
+          //   await router.push('/login')
+          //   return
+          // } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+          //   await router.push('/terms-of-use')
+          //   return
+          // }
           error.exists = true
-          error.message = createErrorMessage(response.getApiError().getCode())
+          error.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        if (response instanceof GetUserSideInfoResp) {
-          const result = response.getUserSideInfo()
+        const result = resp.getUserSideInfo()
 
-          const localStream = await navigator.mediaDevices
-            .getUserMedia({
-              audio: true,
-              video: true
-            })
-
-          peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
-          if (!peer) {
-            console.log('!peer')
-            return
-          }
-
-          peer.on('error', e => {
-            error.exists = true
-            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        const localStream = await navigator.mediaDevices
+          .getUserMedia({
+            audio: true,
+            video: true
           })
 
-          peer.on('call', (mediaConnection) => {
-            mediaConnection.answer(localStream)
+        peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
+        if (!peer) {
+          console.log('!peer')
+          return
+        }
 
-            mediaConnection.on('stream', async stream => {
-              console.log('mediaStream.value = stream 1')
-              mediaStream.value = stream
-            })
+        peer.on('error', e => {
+          error.exists = true
+          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        })
 
-            mediaConnection.once('close', () => {
-              if (!mediaStream.value) {
-                console.log('!mediaStream.value 1')
-                return
-              }
-              mediaStream.value.getTracks().forEach(track => track.stop())
-              mediaStream.value = null
-            })
+        peer.on('call', (mediaConnection) => {
+          console.log('on call')
+
+          mediaConnection.answer(localStream)
+
+          mediaConnection.on('stream', async stream => {
+            console.log('stream event on callee side')
+            mediaStream.value = stream
           })
 
-          const consultantPeerId = result.consultant_peer_id
-          if (!consultantPeerId) {
-            console.log('!consultantPeerId')
-            return
-          }
-          console.log('consultantPeerId: ' + consultantPeerId)
-          peer.on('open', async function () {
-            if (!peer) {
-              console.log('!peer')
+          mediaConnection.once('close', () => {
+            console.log('close event on callee side')
+            if (!mediaStream.value) {
               return
             }
-
-            const mediaConnection = peer.call(consultantPeerId, localStream)
-
-            mediaConnection.on('stream', async stream => {
-              console.log('mediaStream.value = stream 2')
-              mediaStream.value = stream
-            })
-
-            mediaConnection.once('close', () => {
-              if (!mediaStream.value) {
-                console.log('!mediaStream.value 2')
-                return
-              }
-              mediaStream.value.getTracks().forEach(track => track.stop())
-              mediaStream.value = null
-            })
+            const ms = mediaStream.value
+            ms.getTracks().forEach(track => track.stop())
+            mediaStream.value = null
           })
-        }
+        })
+
+        // const consultantPeerId = result.consultant_peer_id
+        // if (!consultantPeerId) {
+        //   console.log('!consultantPeerId')
+        //   return
+        // }
+        // console.log('consultantPeerId: ' + consultantPeerId)
+        peer.on('open', async function () {
+          console.log('peer open')
+          // if (!peer) {
+          //   console.log('!peer')
+          //   return
+          // }
+
+          // const mediaConnection = peer.call(consultantPeerId, localStream)
+
+          // mediaConnection.on('stream', async stream => {
+          //   console.log('stream event on caller side')
+          //   mediaStream.value = stream
+          // })
+
+          // mediaConnection.once('close', () => {
+          //   if (!mediaStream.value) {
+          //     console.log('close event on caller side')
+          //     return
+          //   }
+          //   mediaStream.value.getTracks().forEach(track => track.stop())
+          //   mediaStream.value = null
+          // })
+        })
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -152,10 +165,10 @@ export default defineComponent({
     onUnmounted(async () => {
       if (!peer) {
         console.log('!peer')
-      } else {
-        peer.destroy()
-        peer = null
+        return
       }
+      peer.destroy()
+      peer = null
     })
 
     return {
