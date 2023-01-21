@@ -11,13 +11,13 @@
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">{{ message }}</h3>
-          <div v-if="mediaStream">
-            <video v-bind:srcObject.prop="mediaStream" autoplay playsinline></video>
+        <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <div v-if="mediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
+            <img class="w-full md:w-4/5 z-50 self-center" src="/user-side-consultation/consultant-silhouette.png" />
+            <audio v-bind:srcObject.prop="mediaStream" autoplay></audio>
           </div>
           <div v-else>
-            <p>mediaStream === null</p>
+            <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい</h3>
           </div>
         </div>
       </div>
@@ -62,6 +62,7 @@ export default defineComponent({
 
     const mediaStream = ref(null as MediaStream | null)
     let peer = null as Peer | null
+    let localStream = null as MediaStream | null
 
     const error = reactive({
       exists: false,
@@ -89,15 +90,21 @@ export default defineComponent({
         }
         const result = resp.getUserSideInfo()
 
-        const localStream = await navigator.mediaDevices
+        localStream = await window.navigator.mediaDevices
           .getUserMedia({
             audio: true,
-            video: true
+            video: false
           })
+        if (!localStream) {
+          error.exists = true
+          error.message = '!localStream'
+          return
+        }
 
         peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
         if (!peer) {
-          console.log('!peer')
+          error.exists = true
+          error.message = '!peer'
           return
         }
 
@@ -107,22 +114,22 @@ export default defineComponent({
         })
 
         peer.on('call', (mediaConnection) => {
-          console.log('on call')
-
+          if (!localStream) {
+            error.exists = true
+            error.message = '!localStream'
+            return
+          }
           mediaConnection.answer(localStream)
 
           mediaConnection.on('stream', async stream => {
-            console.log('stream event on callee side')
             mediaStream.value = stream
           })
 
           mediaConnection.once('close', () => {
-            console.log('close event on callee side')
             if (!mediaStream.value) {
               return
             }
-            const ms = mediaStream.value
-            ms.getTracks().forEach(track => track.stop())
+            mediaStream.value.getTracks().forEach(track => track.stop())
             mediaStream.value = null
           })
         })
@@ -163,12 +170,14 @@ export default defineComponent({
     })
 
     onUnmounted(async () => {
-      if (!peer) {
-        console.log('!peer')
-        return
+      if (peer) {
+        peer.destroy()
+        peer = null
       }
-      peer.destroy()
-      peer = null
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop())
+        localStream = null
+      }
     })
 
     return {

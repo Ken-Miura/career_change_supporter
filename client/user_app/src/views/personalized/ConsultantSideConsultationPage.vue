@@ -62,6 +62,7 @@ export default defineComponent({
 
     const mediaStream = ref(null as MediaStream | null)
     let peer = null as Peer | null
+    let localStream = null as MediaStream | null
 
     const error = reactive({
       exists: false,
@@ -79,11 +80,15 @@ export default defineComponent({
         if (response instanceof GetConsultantSideInfoResp) {
           const result = response.getConsultantSideInfo()
 
-          const localStream = await navigator.mediaDevices
+          localStream = await window.navigator.mediaDevices
             .getUserMedia({
               audio: true,
               video: true
             })
+          if (!localStream) {
+            console.log('!localStream')
+            return
+          }
 
           peer = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
           if (!peer) {
@@ -93,7 +98,7 @@ export default defineComponent({
 
           peer.on('error', e => {
             error.exists = true
-            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+            error.message = `${Message.UNEXPECTED_ERR}: ${e} ${e.type}`
           })
 
           peer.on('call', (mediaConnection) => {
@@ -161,11 +166,13 @@ export default defineComponent({
     })
 
     onUnmounted(async () => {
-      if (!peer) {
-        console.log('!peer')
-      } else {
+      if (peer) {
         peer.destroy()
         peer = null
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop())
+        localStream = null
       }
     })
 
