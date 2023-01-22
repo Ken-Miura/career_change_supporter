@@ -53,7 +53,6 @@ export default defineComponent({
     const skyWayApiKey = getSkyWayApiKey()
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
-    const message = `UserSideConsultationPage ${consultationId} ${skyWayApiKey}`
 
     const {
       getUserSideInfoDone,
@@ -188,7 +187,6 @@ export default defineComponent({
     return {
       getUserSideInfoDone,
       error,
-      message,
       mediaStream
     }
   }
