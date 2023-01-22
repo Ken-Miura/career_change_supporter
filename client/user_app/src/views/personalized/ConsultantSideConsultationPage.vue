@@ -118,6 +118,12 @@ export default defineComponent({
         }
 
         peer.on('error', e => {
+          const errType = e.type
+          // fetchPeerExistsを行わずにcallを行うので発生が予見されるエラー
+          // そのため、特に何もしない（一度お互いに入室し、その後何らかの理由で再度入室することになった場合発生し得る）
+          if (errType === 'peer-unavailable') {
+            return
+          }
           error.exists = true
           error.message = `${Message.UNEXPECTED_ERR}: ${e}`
         })
@@ -160,6 +166,9 @@ export default defineComponent({
             error.message = '!localStream'
             return
           }
+
+          // fetchPeerExistsで事前に確認してから通信したほうが確実だが
+          // rate limitが厳しすぎるので使わない
           const mediaConnection = peer.call(userAccountPeerId, localStream)
 
           mediaConnection.on('stream', async stream => {
