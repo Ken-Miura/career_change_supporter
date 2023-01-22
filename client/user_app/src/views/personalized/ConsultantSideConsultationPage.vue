@@ -35,14 +35,14 @@ import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
 import { Message } from '@/util/Message'
 import Peer from 'skyway-js'
 import { useGetConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/useGetConsultantSideInfo'
 import { GetConsultantSideInfoResp } from '@/util/personalized/consultant-side-consultation/GetConsultantSideInfoResp'
 import { ApiErrorResp } from '@/util/ApiError'
-import { createErrorMessage } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
   name: 'ConsultantSideConsultationPage',
@@ -71,96 +71,109 @@ export default defineComponent({
       message: ''
     })
 
+    const router = useRouter()
+
     onMounted(async () => {
       try {
-        const response = await getConsultantSideInfoFunc(consultationId)
-        if (response instanceof ApiErrorResp) {
+        const resp = await getConsultantSideInfoFunc(consultationId)
+        if (!(resp instanceof GetConsultantSideInfoResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
           error.exists = true
-          error.message = createErrorMessage(response.getApiError().getCode())
+          error.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        if (response instanceof GetConsultantSideInfoResp) {
-          const result = response.getConsultantSideInfo()
-
-          localStream = await window.navigator.mediaDevices
-            .getUserMedia({
-              audio: true,
-              video: true
-            })
-          if (!localStream) {
-            console.log('!localStream')
-            return
-          }
-
-          peer = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
-          if (!peer) {
-            console.log('!peer')
-            return
-          }
-
-          peer.on('error', e => {
-            error.exists = true
-            error.message = `${Message.UNEXPECTED_ERR}: ${e} ${e.type}`
-          })
-
-          peer.on('call', (mediaConnection) => {
-            if (!localStream) {
-              console.log('!localStream')
-              return
-            }
-            mediaConnection.answer(localStream)
-
-            mediaConnection.on('stream', async stream => {
-              console.log('mediaStream.value = stream 1')
-              mediaStream.value = stream
-            })
-
-            mediaConnection.once('close', () => {
-              if (!mediaStream.value) {
-                console.log('!mediaStream.value 1')
-                return
-              }
-              mediaStream.value.getTracks().forEach(track => track.stop())
-              mediaStream.value = null
-            })
-          })
-
-          const userAccountPeerId = result.user_account_peer_id
-          if (!userAccountPeerId) {
-            console.log('!userAccountPeerId')
-            return
-          }
-          console.log('userAccountPeerId: ' + userAccountPeerId)
-          peer.on('open', async function () {
-            if (!peer) {
-              console.log('!peer')
-              return
-            }
-            if (!userAccountPeerId) {
-              console.log('!userAccountPeerId')
-              return
-            }
-            if (!localStream) {
-              console.log('!localStream')
-              return
-            }
-            const mediaConnection = peer.call(userAccountPeerId, localStream)
-
-            mediaConnection.on('stream', async stream => {
-              console.log('mediaStream.value = stream 2')
-              mediaStream.value = stream
-            })
-
-            mediaConnection.once('close', () => {
-              if (!mediaStream.value) {
-                console.log('!mediaStream.value 2')
-                return
-              }
-              mediaStream.value.getTracks().forEach(track => track.stop())
-              mediaStream.value = null
-            })
-          })
+        if (resp instanceof ApiErrorResp) {
+          error.exists = true
+          error.message = createErrorMessage(resp.getApiError().getCode())
+          return
         }
+        const result = resp.getConsultantSideInfo()
+
+        localStream = await window.navigator.mediaDevices
+          .getUserMedia({
+            audio: true,
+            video: false
+          })
+        if (!localStream) {
+          error.exists = true
+          error.message = '!localStream'
+          return
+        }
+
+        peer = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
+        if (!peer) {
+          error.exists = true
+          error.message = '!peer'
+          return
+        }
+
+        peer.on('error', e => {
+          error.exists = true
+          error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        })
+
+        peer.on('call', (mediaConnection) => {
+          if (!localStream) {
+            error.exists = true
+            error.message = '!localStream'
+            return
+          }
+          mediaConnection.answer(localStream)
+
+          mediaConnection.on('stream', async stream => {
+            mediaStream.value = stream
+          })
+
+          mediaConnection.once('close', () => {
+            if (!mediaStream.value) {
+              return
+            }
+            mediaStream.value.getTracks().forEach(track => track.stop())
+            mediaStream.value = null
+          })
+        })
+
+        const userAccountPeerId = result.user_account_peer_id
+        if (!userAccountPeerId) {
+          error.exists = true
+          error.message = '!userAccountPeerId'
+          return
+        }
+        peer.on('open', async function () {
+          if (!peer) {
+            error.exists = true
+            error.message = '!peer'
+            return
+          }
+          if (!localStream) {
+            error.exists = true
+            error.message = '!localStream'
+            return
+          }
+          const mediaConnection = peer.call(userAccountPeerId, localStream)
+
+          mediaConnection.on('stream', async stream => {
+            mediaStream.value = stream
+          })
+
+          mediaConnection.once('close', () => {
+            if (!mediaStream.value) {
+              return
+            }
+            mediaStream.value.getTracks().forEach(track => track.stop())
+            mediaStream.value = null
+          })
+        })
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
