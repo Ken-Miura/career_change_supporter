@@ -33,14 +33,14 @@ import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
 import { useGetUserSideInfo } from '@/util/personalized/user-side-consultation/useGetUserSideInfo'
 import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/GetUserSideInfoResp'
 import Peer from 'skyway-js'
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
-import { createErrorMessage } from '@/util/Error'
+import { Code, createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -69,6 +69,8 @@ export default defineComponent({
       message: ''
     })
 
+    const router = useRouter()
+
     onMounted(async () => {
       try {
         const resp = await getUserSideInfoFunc(consultationId)
@@ -76,14 +78,14 @@ export default defineComponent({
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
           }
-          // const code = resp.getApiError().getCode()
-          // if (code === Code.UNAUTHORIZED) {
-          //   await router.push('/login')
-          //   return
-          // } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-          //   await router.push('/terms-of-use')
-          //   return
-          // }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
           error.exists = true
           error.message = createErrorMessage(resp.getApiError().getCode())
           return
@@ -134,34 +136,37 @@ export default defineComponent({
           })
         })
 
-        // const consultantPeerId = result.consultant_peer_id
-        // if (!consultantPeerId) {
-        //   console.log('!consultantPeerId')
-        //   return
-        // }
-        // console.log('consultantPeerId: ' + consultantPeerId)
+        const consultantPeerId = result.consultant_peer_id
+        if (!consultantPeerId) {
+          error.exists = true
+          error.message = '!consultantPeerId'
+          return
+        }
         peer.on('open', async function () {
-          console.log('peer open')
-          // if (!peer) {
-          //   console.log('!peer')
-          //   return
-          // }
+          if (!peer) {
+            error.exists = true
+            error.message = '!peer'
+            return
+          }
+          if (!localStream) {
+            error.exists = true
+            error.message = '!localStream'
+            return
+          }
 
-          // const mediaConnection = peer.call(consultantPeerId, localStream)
+          const mediaConnection = peer.call(consultantPeerId, localStream)
 
-          // mediaConnection.on('stream', async stream => {
-          //   console.log('stream event on caller side')
-          //   mediaStream.value = stream
-          // })
+          mediaConnection.on('stream', async stream => {
+            mediaStream.value = stream
+          })
 
-          // mediaConnection.once('close', () => {
-          //   if (!mediaStream.value) {
-          //     console.log('close event on caller side')
-          //     return
-          //   }
-          //   mediaStream.value.getTracks().forEach(track => track.stop())
-          //   mediaStream.value = null
-          // })
+          mediaConnection.once('close', () => {
+            if (!mediaStream.value) {
+              return
+            }
+            mediaStream.value.getTracks().forEach(track => track.stop())
+            mediaStream.value = null
+          })
         })
       } catch (e) {
         error.exists = true
