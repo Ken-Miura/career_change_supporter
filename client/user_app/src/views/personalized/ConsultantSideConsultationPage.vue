@@ -14,7 +14,9 @@
         <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <div v-if="mediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
             <img class="w-full md:w-4/5 z-50 self-center" src="/user-side-consultation/consultant-silhouette.png" />
-            <audio v-bind:srcObject.prop="mediaStream" autoplay>使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</audio>
+            <audio v-bind:srcObject.prop="mediaStream" autoplay>
+              <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
+            </audio>
           </div>
           <div v-else>
             <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい</h3>
