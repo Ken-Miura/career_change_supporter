@@ -41,6 +41,7 @@ import { Message } from '@/util/Message'
 import Peer from 'skyway-js'
 import { useGetConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/useGetConsultantSideInfo'
 import { GetConsultantSideInfoResp } from '@/util/personalized/consultant-side-consultation/GetConsultantSideInfoResp'
+import { closeConsultationRoom } from '@/util/personalized/ConsultationRoomCloser'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 
@@ -189,31 +190,8 @@ export default defineComponent({
       }
     })
 
-    const closePeer = () => {
-      try {
-        if (peer) {
-          peer.destroy()
-          peer = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    const closeLocalStream = () => {
-      try {
-        if (localStream) {
-          localStream.getTracks().forEach(track => track.stop())
-          localStream = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    onUnmounted(async () => {
-      closePeer()
-      closeLocalStream()
+    onUnmounted(() => {
+      closeConsultationRoom(peer, localStream)
     })
 
     return {

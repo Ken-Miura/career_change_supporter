@@ -39,6 +39,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
 import { useGetUserSideInfo } from '@/util/personalized/user-side-consultation/useGetUserSideInfo'
 import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/GetUserSideInfoResp'
+import { closeConsultationRoom } from '@/util/personalized/ConsultationRoomCloser'
 import Peer from 'skyway-js'
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
@@ -183,31 +184,8 @@ export default defineComponent({
       }
     })
 
-    const closePeer = () => {
-      try {
-        if (peer) {
-          peer.destroy()
-          peer = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    const closeLocalStream = () => {
-      try {
-        if (localStream) {
-          localStream.getTracks().forEach(track => track.stop())
-          localStream = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    onUnmounted(async () => {
-      closePeer()
-      closeLocalStream()
+    onUnmounted(() => {
+      closeConsultationRoom(peer, localStream)
     })
 
     return {
