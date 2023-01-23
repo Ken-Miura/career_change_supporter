@@ -152,7 +152,7 @@ export default defineComponent({
         // 加えて、下記のコメントより、openのイベントハンドラ内でcallを呼び出すのは危険に思える
         // https://support.skyway.io/hc/ja/community/posts/115009852848-peer%E7%94%9F%E6%88%90-%E5%88%9D%E6%9C%9F%E5%8C%96-%E3%81%8C%E5%AE%8C%E5%85%A8%E3%81%AB%E5%AE%8C%E4%BA%86%E3%81%99%E3%82%8B%E3%82%BF%E3%82%A4%E3%83%9F%E3%83%B3%E3%82%B0%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6
         // TODO: 従って別の手法を検討する
-        peer.on('open', async function () {
+        peer.on('open', () => {
           if (!peer) {
             error.exists = true
             error.message = '!peer'
