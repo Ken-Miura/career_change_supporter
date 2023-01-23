@@ -146,8 +146,6 @@ export default defineComponent({
 
         const consultantPeerId = result.consultant_peer_id
         if (!consultantPeerId) {
-          error.exists = true
-          error.message = '!consultantPeerId'
           return
         }
         peer.on('open', async function () {

@@ -152,8 +152,6 @@ export default defineComponent({
 
         const userAccountPeerId = result.user_account_peer_id
         if (!userAccountPeerId) {
-          error.exists = true
-          error.message = '!userAccountPeerId'
           return
         }
         peer.on('open', async function () {
