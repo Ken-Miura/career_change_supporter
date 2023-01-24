@@ -5,16 +5,16 @@
       <WaitingCircle />
     </div>
     <main v-else>
-      <div v-if="error.exists">
+      <div v-if="peerError.exists">
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <AlertMessage class="mt-2" v-bind:message="error.message"/>
+          <AlertMessage class="mt-2" v-bind:message="peerError.message"/>
         </div>
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <div v-if="mediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
+          <div v-if="remoteMediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
             <img class="w-full md:w-4/5 z-50 self-center" src="/user-side-consultation/consultant-silhouette.png" />
-            <audio v-bind:srcObject.prop="mediaStream" autoplay>
+            <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
               <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
             </audio>
           </div>
@@ -31,13 +31,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { defineComponent, onMounted, onUnmounted } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getSkyWayApiKey } from '@/util/SkyWay'
 import { useGetUserSideInfo } from '@/util/personalized/user-side-consultation/useGetUserSideInfo'
+import { usePeerHandleRegister } from '@/util/personalized/usePeerHandleRegister'
 import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/GetUserSideInfoResp'
 import { closePeer } from '@/util/personalized/PeerCloser'
 import { closeMediaStream } from '@/util/personalized/MediaStreamCloser'
@@ -63,14 +64,16 @@ export default defineComponent({
       getUserSideInfoFunc
     } = useGetUserSideInfo()
 
-    const mediaStream = ref(null as MediaStream | null)
+    const {
+      peerError,
+      remoteMediaStream,
+      registerErrorHandler,
+      registerReceiveCallHandler,
+      registerCallOnOpenHandler
+    } = usePeerHandleRegister()
+
     let peer = null as Peer | null
     let localStream = null as MediaStream | null
-
-    const error = reactive({
-      exists: false,
-      message: ''
-    })
 
     const router = useRouter()
 
@@ -89,8 +92,8 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          error.exists = true
-          error.message = createErrorMessage(resp.getApiError().getCode())
+          peerError.exists = true
+          peerError.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
         const result = resp.getUserSideInfo()
@@ -101,86 +104,28 @@ export default defineComponent({
             video: false
           })
         if (!localStream) {
-          error.exists = true
-          error.message = '!localStream'
+          peerError.exists = true
+          peerError.message = '!localStream'
           return
         }
 
         peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
         if (!peer) {
-          error.exists = true
-          error.message = '!peer'
+          peerError.exists = true
+          peerError.message = '!peer'
           return
         }
 
-        peer.on('error', e => {
-          const errType = e.type
-          // fetchPeerExistsを行わずにcallを行うので発生が予見されるエラー
-          // そのため、特に何もしない（一度お互いに入室し、その後何らかの理由で再度入室することになった場合発生し得る）
-          if (errType === 'peer-unavailable') {
-            return
-          }
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: ${e} ${errType}`
-        })
-
-        peer.on('call', (mediaConnection) => {
-          if (!localStream) {
-            error.exists = true
-            error.message = '!localStream'
-            return
-          }
-          mediaConnection.answer(localStream)
-
-          mediaConnection.on('stream', async stream => {
-            mediaStream.value = stream
-          })
-
-          mediaConnection.once('close', () => {
-            if (!mediaStream.value) {
-              return
-            }
-            mediaStream.value.getTracks().forEach(track => track.stop())
-            mediaStream.value = null
-          })
-        })
-
+        registerErrorHandler(peer)
+        registerReceiveCallHandler(peer, localStream)
         const consultantPeerId = result.consultant_peer_id
         if (!consultantPeerId) {
           return
         }
-
-        peer.on('open', () => {
-          if (!peer) {
-            error.exists = true
-            error.message = '!peer'
-            return
-          }
-          if (!localStream) {
-            error.exists = true
-            error.message = '!localStream'
-            return
-          }
-
-          // fetchPeerExistsで事前に確認してから通信したほうが確実だが
-          // rate limitが厳しすぎるので使わない
-          const mediaConnection = peer.call(consultantPeerId, localStream)
-
-          mediaConnection.on('stream', async stream => {
-            mediaStream.value = stream
-          })
-
-          mediaConnection.once('close', () => {
-            if (!mediaStream.value) {
-              return
-            }
-            mediaStream.value.getTracks().forEach(track => track.stop())
-            mediaStream.value = null
-          })
-        })
+        registerCallOnOpenHandler(peer, localStream, consultantPeerId)
       } catch (e) {
-        error.exists = true
-        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        peerError.exists = true
+        peerError.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
 
@@ -191,8 +136,8 @@ export default defineComponent({
 
     return {
       getUserSideInfoDone,
-      error,
-      mediaStream
+      peerError,
+      remoteMediaStream
     }
   }
 })
