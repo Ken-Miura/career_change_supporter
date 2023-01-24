@@ -41,7 +41,8 @@ import { Message } from '@/util/Message'
 import Peer from 'skyway-js'
 import { useGetConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/useGetConsultantSideInfo'
 import { GetConsultantSideInfoResp } from '@/util/personalized/consultant-side-consultation/GetConsultantSideInfoResp'
-import { closeConsultationRoom } from '@/util/personalized/ConsultationRoomCloser'
+import { closePeer } from '@/util/personalized/PeerCloser'
+import { closeMediaStream } from '@/util/personalized/MediaStreamCloser'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 
@@ -189,7 +190,8 @@ export default defineComponent({
     })
 
     onUnmounted(() => {
-      closeConsultationRoom(peer, localStream)
+      closePeer(peer)
+      closeMediaStream(localStream)
     })
 
     return {
