@@ -115,7 +115,8 @@ export default defineComponent({
           peerError.message = '!peer'
           return
         }
-
+        // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
+        // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
         registerErrorHandler(peer)
         registerReceiveCallHandler(peer, localStream)
         const consultantPeerId = result.consultant_peer_id
