@@ -1,4 +1,4 @@
-import Peer from 'skyway-js'
+import Peer, { PeerError } from 'skyway-js'
 import { reactive, ref } from 'vue'
 import { Message } from '../Message'
 
@@ -9,6 +9,11 @@ export function usePeerHandleRegister () {
   })
   const remoteMediaStream = ref(null as MediaStream | null)
 
+  const createErrMessage = (errType: string, e: PeerError):string => {
+    // TODO: Add errors
+    return `${Message.UNEXPECTED_ERR}: ${e} ${errType}`
+  }
+
   const registerErrorHandler = (peer: Peer) => {
     peer.on('error', e => {
       const errType = e.type
@@ -17,9 +22,8 @@ export function usePeerHandleRegister () {
       if (errType === 'peer-unavailable') {
         return
       }
-      // TODO: Add errors
       peerError.exists = true
-      peerError.message = `${Message.UNEXPECTED_ERR}: ${e} ${errType}`
+      peerError.message = createErrMessage(errType, e)
     })
   }
 
