@@ -9,9 +9,17 @@ export function usePeerHandleRegister () {
   })
   const remoteMediaStream = ref(null as MediaStream | null)
 
+  // https://webrtc.ecl.ntt.com/api-reference/javascript.html#event-error
   const createErrMessage = (errType: string, e: PeerError):string => {
-    // TODO: Add errors
-    return `${Message.UNEXPECTED_ERR}: ${e} ${errType}`
+    if (errType === 'disconnected' || errType === 'socket-error') {
+      return `${Message.SKY_WAY_CONNECTION_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
+    } else if (errType === 'server-error' || errType === 'unavailable-id') {
+      return `${Message.SKY_WAY_SERVER_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
+    } else if (errType === 'authentication') {
+      return `${Message.SKY_WAY_CONSULTATION_ALREADY_ENDED_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
+    } else {
+      return `${Message.SKY_WAY_UNEXPECTED_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
+    }
   }
 
   const registerErrorHandler = (peer: Peer) => {
