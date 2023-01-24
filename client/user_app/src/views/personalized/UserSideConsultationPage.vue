@@ -105,14 +105,14 @@ export default defineComponent({
           })
         if (!localStream) {
           peerError.exists = true
-          peerError.message = '!localStream'
+          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
           return
         }
 
         peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
         if (!peer) {
           peerError.exists = true
-          peerError.message = '!peer'
+          peerError.message = Message.FAILED_TO_INITIALIZE_PEER
           return
         }
         // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
