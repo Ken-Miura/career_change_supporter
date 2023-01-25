@@ -46,6 +46,7 @@ import Peer from 'skyway-js'
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
+import { createGetAudioMediaStreamErrMessage, getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -98,11 +99,13 @@ export default defineComponent({
         }
         const result = resp.getUserSideInfo()
 
-        localStream = await window.navigator.mediaDevices
-          .getUserMedia({
-            audio: true,
-            video: false
-          })
+        try {
+          localStream = await getAudioMediaStream()
+        } catch (e) {
+          peerError.exists = true
+          peerError.message = createGetAudioMediaStreamErrMessage(e)
+          return
+        }
         if (!localStream) {
           peerError.exists = true
           peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE

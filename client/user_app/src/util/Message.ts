@@ -159,7 +159,16 @@ export namespace Message {
     export const SKY_WAY_CONNECTION_ERROR_MESSAGE = '相手との接続確立ができません。退出し、インターネットにつながっていることを確認した上で再度入室して下さい'
     export const SKY_WAY_SERVER_ERROR_MESSAGE = '相手との接続確立中に問題が発生しました。退出し、少し待ってから再度入室して下さい'
     export const SKY_WAY_CONSULTATION_ALREADY_ENDED_ERROR_MESSAGE = '相談終了時刻が過ぎているため、相談室が閉じられました'
-    export const SKY_WAY_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているtypeとmessageを問い合わせからご連絡下さい、'
+    export const SKY_WAY_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているtypeとmessageを問い合わせからご連絡下さい'
     export const FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE = 'マイクとの接続に失敗しました。ブラウザからマイクを使える状態になっているか確認して下さい'
     export const FAILED_TO_INITIALIZE_PEER = SKY_WAY_CONNECTION_ERROR_MESSAGE
+    export const GET_USER_MEDIA_ABORT_ERROR = '予期せぬエラーが発生しました。別のマイク、または別の端末で再度お試し下さい'
+    export const GET_USER_MEDIA_NOT_ALLOWED_ERROR = 'マイクの使用権限がありません。マイクを使用できるように権限設定を見直して下さい'
+    export const GET_USER_MEDIA_NOT_FOUND_ERROR = 'マイクが見つかりませんでした。相談を行うためにはマイクが接続された端末をご利用下さい'
+    export const GET_USER_MEDIA_NOT_READABLE_ERROR = 'マイクに接続できませんでした。別のマイク、または別の端末で再度お試し下さい'
+    export const GET_USER_MEDIA_OVERCONSTRAINED_ERROR = 'マイクが存在しない、またはマイクにアクセスする権限がありません。マイクがある端末を使うか、権限設定を見直して下さい'
+    export const GET_USER_MEDIA_SECURITY_ERROR = 'ブラウザがマイクの使用を停止しました。別のブラウザをご使用するか、ブラウザの設定をご確認下さい'
+    export const GET_USER_MEDIA_DOMEXCEPTION_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID））、表示されているname、messageを問い合わせからご連絡下さい'
+    export const GET_USER_MEDIA_TYPE_ERROR = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているmessageを問い合わせからご連絡下さい'
+    export const GET_USER_MEDIA_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）を問い合わせからご連絡下さい'
 }
