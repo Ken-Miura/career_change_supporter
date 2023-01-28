@@ -13,8 +13,10 @@ export function usePeerHandleRegister () {
   const createErrMessage = (errType: string, e: PeerError):string => {
     if (errType === 'disconnected' || errType === 'socket-error') {
       return `${Message.SKY_WAY_CONNECTION_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
-    } else if (errType === 'server-error' || errType === 'unavailable-id') {
+    } else if (errType === 'server-error') {
       return `${Message.SKY_WAY_SERVER_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
+    } else if (errType === 'unavailable-id') {
+      return `${Message.SKY_WAY_UNAVAILABLE_PEER_ID_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
     } else if (errType === 'authentication') {
       return `${Message.SKY_WAY_CONSULTATION_ALREADY_ENDED_ERROR_MESSAGE} (type: ${errType}, message: ${e})`
     } else {
