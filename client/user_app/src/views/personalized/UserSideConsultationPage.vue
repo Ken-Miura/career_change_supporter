@@ -11,7 +11,7 @@
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <div v-if="remoteMediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
             <img class="w-full md:w-4/5 self-center" src="/user-side-consultation/consultant-silhouette.png" />
             <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
@@ -19,9 +19,13 @@
             </audio>
           </div>
           <div v-else>
-            <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい</h3>
+            <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
+            <h3 class="font-bold text-2xl text-center">相手との接続が切断された場合、一度退出し、再度入室して下さい。</h3>
           </div>
         </div>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <button v-on:click="leaveConsultationRoom" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">退出する</button>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
@@ -138,10 +142,15 @@ export default defineComponent({
       closeMediaStream(localStream)
     })
 
+    const leaveConsultationRoom = async () => {
+      await router.push('/schedule')
+    }
+
     return {
       getUserSideInfoDone,
       peerError,
-      remoteMediaStream
+      remoteMediaStream,
+      leaveConsultationRoom
     }
   }
 })
