@@ -16,8 +16,6 @@ APIサーバで実装する際の参考: https://github.com/tokio-rs/axum/issues
 上記のURLを参考にするだけではコンパイルエラーとなる。axumはmiddlewareに対してInfallibleなエラーを許していないので下記のようにエラーハンドリングも追加する必要がある。<br>
 https://docs.rs/axum/latest/axum/error_handling/index.html#applying-fallible-middleware
 
-実装時点でSDKがVirtual Hosted-Styleを[サポートしていなかった](https://github.com/awslabs/aws-sdk-rust/discussions/485)。そのため、それまでPath-Styleで実装し、Virtual Hosted-Styleがサポートされた後、修正する
-
 AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサーバ→Redis、APサーバ→DB、APサーバ→OpenSearch）にTLSを用いるかどうか検討する
 
 クライアント側のコードでオーディオを使うためにgetUserMediaを使う。インターネット上にデプロイした際にその関数を使う際にFeature-Policyが必要確認する。

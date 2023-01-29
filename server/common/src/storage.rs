@@ -2,8 +2,7 @@
 
 use std::{env::var, error::Error};
 
-use aws_sdk_s3::{types::ByteStream, Client, Endpoint};
-use http::Uri;
+use aws_sdk_s3::{types::ByteStream, Client};
 use once_cell::sync::Lazy;
 
 pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
@@ -85,10 +84,8 @@ pub async fn delete_object(bucket_name: &str, key: &str) -> Result<(), Box<dyn E
 
 async fn create_client(endpoint_uri: &str) -> Result<Client, Box<dyn Error>> {
     let conf = aws_config::load_from_env().await;
-    let uri = endpoint_uri.parse::<Uri>().map_err(Box::new)?;
-    let ep = Endpoint::immutable_uri(uri).map_err(Box::new)?;
     let s3_conf = aws_sdk_s3::config::Builder::from(&conf)
-        .endpoint_resolver(ep)
+        .endpoint_url(endpoint_uri)
         .build();
     Ok(Client::from_conf(s3_conf))
 }
