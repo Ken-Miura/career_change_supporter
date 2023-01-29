@@ -20,7 +20,7 @@
                   <div data-test="consultant-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">コンサルタントID（{{ user_side_consultation.consultant_id }}）への相談</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div data-test="user-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談開始日時：{{ user_side_consultation.meeting_date_time_in_jst.year }}年{{ user_side_consultation.meeting_date_time_in_jst.month }}月{{ user_side_consultation.meeting_date_time_in_jst.day }}日{{ user_side_consultation.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-user-side-consultation-page" v-on:click="moveToUserSideConsultationPage(user_side_consultation.consultation_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
+                    <button data-test="move-to-user-side-consultation-page" v-on:click="moveToUserSideConsultationPage(user_side_consultation.consultation_id, user_side_consultation.consultant_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
                   </div>
                 </div>
               </li>
@@ -39,7 +39,7 @@
                   <div data-test="user-account-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーID（{{ consultant_side_consultation.user_account_id }}）からの相談</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div data-test="consultant-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談開始日時：{{ consultant_side_consultation.meeting_date_time_in_jst.year }}年{{ consultant_side_consultation.meeting_date_time_in_jst.month }}月{{ consultant_side_consultation.meeting_date_time_in_jst.day }}日{{ consultant_side_consultation.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-consultant-side-consultation-page" v-on:click="moveToConsultantSideConsultationPage(consultant_side_consultation.consultation_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
+                    <button data-test="move-to-consultant-side-consultation-page" v-on:click="moveToConsultantSideConsultationPage(consultant_side_consultation.consultation_id, consultant_side_consultation.user_account_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
                   </div>
                 </div>
               </li>
@@ -115,12 +115,12 @@ export default defineComponent({
       }
     })
 
-    const moveToUserSideConsultationPage = async (consultationId: number) => {
-      await router.push({ name: 'UserSideConsultationPage', params: { consultation_id: consultationId } })
+    const moveToUserSideConsultationPage = async (consultationId: number, consultantId: number) => {
+      await router.push(`/user-side-consultation/${consultationId}/consultant/${consultantId}`)
     }
 
-    const moveToConsultantSideConsultationPage = async (consultationId: number) => {
-      await router.push({ name: 'ConsultantSideConsultationPage', params: { consultation_id: consultationId } })
+    const moveToConsultantSideConsultationPage = async (consultationId: number, userAccountId: number) => {
+      await router.push(`/consultant-side-consultation/${consultationId}/user/${userAccountId}`)
     }
 
     return {

@@ -179,13 +179,23 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/user-side-consultation/:consultation_id',
-    name: 'UserSideConsultationPage',
-    component: UserSideConsultationPage
+    children: [
+      {
+        path: 'consultant/:consultant_id',
+        name: 'UserSideConsultationPage',
+        component: UserSideConsultationPage
+      }
+    ]
   },
   {
     path: '/consultant-side-consultation/:consultation_id',
-    name: 'ConsultantSideConsultationPage',
-    component: ConsultantSideConsultationPage
+    children: [
+      {
+        path: 'user/:user_account_id',
+        name: 'ConsultantSideConsultationPage',
+        component: ConsultantSideConsultationPage
+      }
+    ]
   },
   {
     path: '/consultants-search',

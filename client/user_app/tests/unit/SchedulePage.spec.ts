@@ -424,7 +424,7 @@ describe('SchedulePage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "UserSideConsultationPage", "params": { "consultation_id": ${userDummy1.consultation_id} }}`)
+    const data = `/user-side-consultation/${userDummy1.consultation_id}/consultant/${userDummy1.consultant_id}`
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -452,7 +452,7 @@ describe('SchedulePage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "UserSideConsultationPage", "params": { "consultation_id": ${userDummy2.consultation_id} }}`)
+    const data = `/user-side-consultation/${userDummy2.consultation_id}/consultant/${userDummy2.consultant_id}`
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -479,7 +479,7 @@ describe('SchedulePage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "ConsultantSideConsultationPage", "params": { "consultation_id": ${consultantDummy1.consultation_id} }}`)
+    const data = `/consultant-side-consultation/${consultantDummy1.consultation_id}/user/${consultantDummy1.user_account_id}`
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -507,7 +507,7 @@ describe('SchedulePage.vue', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    const data = JSON.parse(`{"name": "ConsultantSideConsultationPage", "params": { "consultation_id": ${consultantDummy2.consultation_id} }}`)
+    const data = `/consultant-side-consultation/${consultantDummy2.consultation_id}/user/${consultantDummy2.user_account_id}`
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 })
