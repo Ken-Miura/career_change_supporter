@@ -22,6 +22,7 @@
             <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
             <h3 class="font-bold text-2xl text-center">相手との接続が切断された場合、一度退出し、再度入室して下さい。</h3>
           </div>
+          <button v-on:click="processGetUserSideInfo" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">テスト</button>
         </div>
       </div>
       <div v-if="error.exists">
@@ -122,6 +123,8 @@ export default defineComponent({
 
     let peer = null as Peer | null
     let localStream = null as MediaStream | null
+    let audioCtx = null as AudioContext | null
+    let processedLocalStream = null as MediaStream | null
 
     const error = reactive({
       exists: false,
@@ -135,7 +138,17 @@ export default defineComponent({
 
     const router = useRouter()
 
+    const releaseAllResources = async () => {
+      closePeer(peer)
+      closeMediaStream(localStream)
+      closeMediaStream(processedLocalStream)
+      if (audioCtx) {
+        await audioCtx.close()
+      }
+    }
+
     const processGetUserSideInfo = async () => {
+      await releaseAllResources()
       try {
         const resp = await getUserSideInfoFunc(consultationId)
         if (!(resp instanceof GetUserSideInfoResp)) {
@@ -169,6 +182,29 @@ export default defineComponent({
           return
         }
 
+        audioCtx = new AudioContext()
+        if (!audioCtx) {
+          peerError.exists = true
+          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          return
+        }
+        const source = audioCtx.createMediaStreamSource(localStream)
+
+        const biquadFilter = audioCtx.createBiquadFilter()
+        biquadFilter.type = 'lowshelf'
+        biquadFilter.frequency.value = 800
+        biquadFilter.gain.value = 20
+
+        source.connect(biquadFilter)
+        const dest = audioCtx.createMediaStreamDestination()
+        biquadFilter.connect(dest)
+        processedLocalStream = dest.stream
+        if (!processedLocalStream) {
+          peerError.exists = true
+          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          return
+        }
+
         peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
         if (!peer) {
           peerError.exists = true
@@ -178,12 +214,12 @@ export default defineComponent({
         // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
         // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
         registerErrorHandler(peer)
-        registerReceiveCallHandler(peer, localStream)
+        registerReceiveCallHandler(peer, processedLocalStream)
         const consultantPeerId = result.consultant_peer_id
         if (!consultantPeerId) {
           return
         }
-        registerCallOnOpenHandler(peer, localStream, consultantPeerId)
+        registerCallOnOpenHandler(peer, processedLocalStream, consultantPeerId)
       } catch (e) {
         peerError.exists = true
         peerError.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -217,13 +253,12 @@ export default defineComponent({
     }
 
     onMounted(async () => {
-      await processGetUserSideInfo()
+      // await processGetUserSideInfo()
       await processGetConsultantDetail()
     })
 
-    onUnmounted(() => {
-      closePeer(peer)
-      closeMediaStream(localStream)
+    onUnmounted(async () => {
+      await releaseAllResources()
     })
 
     const leaveConsultationRoom = async () => {
@@ -242,7 +277,8 @@ export default defineComponent({
       convertEmployedValue,
       convertContractTypeValue,
       convertIsManagerValue,
-      convertIsNewGraduateValue
+      convertIsNewGraduateValue,
+      processGetUserSideInfo
     }
   }
 })
