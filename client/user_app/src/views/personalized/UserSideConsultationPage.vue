@@ -89,7 +89,7 @@ import Peer from 'skyway-js'
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
-import { createGetAudioMediaStreamErrMessage, getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
+import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStream'
 import { useGetConsultantDetail } from '@/util/personalized/consultant-detail/useGetConsultantDetail'
 import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/GetConsultantDetailResp'
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
@@ -122,9 +122,10 @@ export default defineComponent({
     } = usePeerHandleRegister()
 
     let peer = null as Peer | null
-    let localStream = null as MediaStream | null
-    let audioCtx = null as AudioContext | null
+    const localStream = null as MediaStream | null
+    const audioCtx = null as AudioContext | null
     let processedLocalStream = null as MediaStream | null
+    let micAudio = null as any | null
 
     const error = reactive({
       exists: false,
@@ -145,9 +146,13 @@ export default defineComponent({
       if (audioCtx) {
         await audioCtx.close()
       }
+      if (micAudio) {
+        micAudio.close()
+      }
     }
 
     const processGetUserSideInfo = async () => {
+      const tone = await import('tone')
       await releaseAllResources()
       try {
         const resp = await getUserSideInfoFunc(consultationId)
@@ -170,35 +175,28 @@ export default defineComponent({
         const result = resp.getUserSideInfo()
 
         try {
-          localStream = await getAudioMediaStream()
+          micAudio = new tone.UserMedia()
         } catch (e) {
           peerError.exists = true
           peerError.message = createGetAudioMediaStreamErrMessage(e)
           return
         }
-        if (!localStream) {
+        if (!micAudio) {
           peerError.exists = true
           peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
           return
         }
 
-        audioCtx = new AudioContext()
-        if (!audioCtx) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
-          return
-        }
-        const source = audioCtx.createMediaStreamSource(localStream)
+        const shifter = new tone.PitchShift(8)
+        const reverb = new tone.Freeverb()
+        const effectedDest = tone.context.createMediaStreamDestination()
+        micAudio.connect(shifter)
+        shifter.connect(reverb)
+        reverb.connect(effectedDest)
 
-        const biquadFilter = audioCtx.createBiquadFilter()
-        biquadFilter.type = 'lowshelf'
-        biquadFilter.frequency.value = 800
-        biquadFilter.gain.value = 20
+        await micAudio.open()
 
-        source.connect(biquadFilter)
-        const dest = audioCtx.createMediaStreamDestination()
-        biquadFilter.connect(dest)
-        processedLocalStream = dest.stream
+        processedLocalStream = effectedDest.stream
         if (!processedLocalStream) {
           peerError.exists = true
           peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
