@@ -10,6 +10,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "fft.js": "4.0.3",
     "skyway-js": "4.4.5",
     "vue": "3.2.39",
     "vue-plugin-load-script": "2.1.1",

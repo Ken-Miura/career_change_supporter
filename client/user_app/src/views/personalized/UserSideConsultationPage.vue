@@ -190,14 +190,20 @@ export default defineComponent({
         }
         const source = audioCtx.createMediaStreamSource(localStream)
 
-        const biquadFilter = audioCtx.createBiquadFilter()
-        biquadFilter.type = 'lowshelf'
-        biquadFilter.frequency.value = 800
-        biquadFilter.gain.value = 20
+        try {
+          const u = new URL('@/util/pitch-shift/phase-vocoder.ts', import.meta.url)
+          await audioCtx.audioWorklet.addModule(u)
+        } catch (e) {
+          console.log(`failed to call addModule: ${e}`)
+          return
+        }
+        const phaseVocoderNode = new AudioWorkletNode(audioCtx, 'phase-vocoder-processor')
 
-        source.connect(biquadFilter)
         const dest = audioCtx.createMediaStreamDestination()
-        biquadFilter.connect(dest)
+
+        source.connect(phaseVocoderNode)
+        phaseVocoderNode.connect(dest)
+
         processedLocalStream = dest.stream
         if (!processedLocalStream) {
           peerError.exists = true
@@ -283,3 +289,11 @@ export default defineComponent({
   }
 })
 </script>
+
+function __webpack_get_worker_url__(arg0: string) {
+  throw new Error('Function not implemented.')
+}
+
+function __webpack_get_worker_url__(arg0: string) {
+  throw new Error('Function not implemented.')
+}
