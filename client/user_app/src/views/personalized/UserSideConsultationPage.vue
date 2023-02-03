@@ -189,15 +189,22 @@ export default defineComponent({
           return
         }
         const source = audioCtx.createMediaStreamSource(localStream)
+        const u = new URL('@/util/personalized/WhiteNoiseProcessor.worker.js', import.meta.url)
+        try {
+          await audioCtx.audioWorklet.addModule(u)
+        } catch (e) {
+          console.error(`failed to call addModule: ${e}`)
+          return
+        }
+        const whiteNoiseNode = new AudioWorkletNode(
+          audioCtx,
+          'white-noise-processor'
+        )
 
-        const biquadFilter = audioCtx.createBiquadFilter()
-        biquadFilter.type = 'lowshelf'
-        biquadFilter.frequency.value = 800
-        biquadFilter.gain.value = 20
-
-        source.connect(biquadFilter)
         const dest = audioCtx.createMediaStreamDestination()
-        biquadFilter.connect(dest)
+
+        source.connect(whiteNoiseNode)
+        whiteNoiseNode.connect(audioCtx.destination)
         processedLocalStream = dest.stream
         if (!processedLocalStream) {
           peerError.exists = true
