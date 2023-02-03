@@ -189,22 +189,29 @@ export default defineComponent({
           return
         }
         const source = audioCtx.createMediaStreamSource(localStream)
-        const u = new URL('@/util/personalized/WhiteNoiseProcessor.worker.js', import.meta.url)
+        const u = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
         try {
           await audioCtx.audioWorklet.addModule(u)
         } catch (e) {
           console.error(`failed to call addModule: ${e}`)
           return
         }
-        const whiteNoiseNode = new AudioWorkletNode(
-          audioCtx,
-          'white-noise-processor'
-        )
+        const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, 'phase-vocoder-processor')
 
         const dest = audioCtx.createMediaStreamDestination()
 
-        source.connect(whiteNoiseNode)
-        whiteNoiseNode.connect(audioCtx.destination)
+        console.log('after phaseVocoderProcessorNode.connect(audioCtx.destination)')
+        const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
+        if (param) {
+          console.log('param')
+          param.value = 1.50 * 1 / 1
+        } else {
+          console.log('!param')
+        }
+
+        source.connect(phaseVocoderProcessorNode)
+        phaseVocoderProcessorNode.connect(dest)
+
         processedLocalStream = dest.stream
         if (!processedLocalStream) {
           peerError.exists = true
