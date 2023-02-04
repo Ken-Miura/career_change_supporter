@@ -1,11 +1,18 @@
-export default null
+export default null // モジュールモードを強制
 
+// start of "fft.js"
+// npmレジストリに存在するが、ES Moduleとしてimportができないため、必要な依存を自身のコードの内部に取り込む
+// MITライセンスのため、コピー、改変ともに問題なし
+// version 4.0.4をベースにlintとJavascript実行エンジンの出すエラーを修正したもの
 function FFT (size) {
   this.size = size | 0
   if (this.size <= 1 || (this.size & (this.size - 1)) !== 0) { throw new Error('FFT size must be a power of two and bigger than 1') }
 
   this._csize = size << 1
 
+  // lintによりエラーが発生するため、varでなくletを利用
+  // 下記のコメントによると、古いJavascriptエンジンを想定してvarを使っていたようだが、
+  // このサービスではvarが必要な環境をサポートしないため、letへの置き換えは問題ない
   // NOTE: Use of `var` is intentional for old V8 versions
   const table = new Array(this.size * 2)
   for (let i = 0; i < table.length; i += 2) {
@@ -105,6 +112,9 @@ FFT.prototype.inverseTransform = function inverseTransform (out, data) {
 
 // radix-4 implementation
 //
+// lintによりエラーが発生するため、varでなくletを利用
+// 下記のコメントによると、古いJavascriptエンジンを想定してvarを使っていたようだが、
+// このサービスではvarが必要な環境をサポートしないため、letへの置き換えは問題ない
 // NOTE: Uses of `var` are intentional for older V8 version that do not
 // support both `let compound assignments` and `const phi`
 FFT.prototype._transform4 = function _transform4 () {
@@ -496,6 +506,16 @@ FFT.prototype._singleRealTransform4 = function _singleRealTransform4 (outOff,
   out[outOff + 7] = FDi
 }
 
+// end of "fft.js"
+
+// start of "phaze"
+// https://github.com/olvb/phaze の下記のコミットIDをベースにlintとJavascript実行エンジンの出すエラーを修正したもの
+// 841f37b822c955868075072a6abe8bfad782432e
+// 上記リポジトリのコードはnpmレジストリに登録されていないため、必要なファイルを取得し、利用する
+// ライセンスを確認する限り、利用、改変ともに問題なし
+// https://github.com/olvb/phaze/blob/master/LICENSE
+
+// start of ola-processor.js in "phaze"
 const WEBAUDIO_BLOCK_SIZE = 128
 
 /** Overlap-Add Node */
@@ -666,6 +686,7 @@ class OLAProcessor extends AudioWorkletProcessor {
     return true
   }
 
+  // eslint-disable-next-line
   processOLA (inputs, outputs, params) {
     console.assert(false, 'Not overriden')
   }
@@ -679,6 +700,9 @@ function genHannWindow (length) {
   return win
 }
 
+// end of ola-processor.js in "phaze"
+
+// start of phase-vocoder.js in "phaze"
 const BUFFERED_BLOCK_SIZE = 2048
 
 class PhaseVocoderProcessor extends OLAProcessor {
@@ -842,3 +866,7 @@ class PhaseVocoderProcessor extends OLAProcessor {
 }
 
 registerProcessor('phase-vocoder-processor', PhaseVocoderProcessor)
+
+// end of phase-vocoder.js in "phaze"
+
+// end of "phaze"
