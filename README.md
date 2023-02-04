@@ -22,6 +22,21 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 参考1: https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia
 参考2: https://developer.mozilla.org/ja/docs/Web/HTTP/Headers/Permissions-Policy
 
+著作権明記が必要なOSSに関して、ライセンスページを作成
+クライアントサイド
+
+MITライセンス
+https://github.com/indutny/fft.js/
+https://github.com/vuejs/vue/blob/main/LICENSE
+https://github.com/vuejs/vue-router/blob/dev/LICENSE
+https://github.com/vuejs/vuex/blob/main/LICENSE
+https://github.com/tserkov/vue-plugin-load-script/blob/master/LICENSE.md
+
+Apache License 2.0
+https://github.com/skyway/skyway-js-sdk/blob/master/LICENSE
+
+サーバサイドに関しては、何か指摘された場合に確認する
+
 # NOTE
 ## 開発環境
 開発環境にはVS Code (IDE) とRemote Container (VS Code用拡張プラグイン) が必須となる。それらを用意し開発を行う。
