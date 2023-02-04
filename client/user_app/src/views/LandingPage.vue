@@ -53,12 +53,12 @@
             （※1）相談をしたいユーザーの相談申し込みの判断に利用されるため、相談を受けるユーザーの職務経歴は公開されます。
           </p>
           <p class="leading-normal text-xl mb-8">
-            （※2）相談は音声のやり取りで行います。そのため、相談を行う際はマイクとスピーカーが必要となります（映像は利用しないため、カメラは不要です）相談の際の音声は加工されていないため、音声の加工が必要なユーザーは、ご自身で事前に必要な環境をセットアップした上で相談に臨んで下さい。
+            （※2）相談は音声のやり取りで行います。そのため、相談を行う際はマイクとスピーカーが必要となります（映像は利用しないため、カメラは不要です）相談の際の音声は加工されてから相手に送られます。
           </p>
         </div>
         <!--Right Col-->
         <div class="flex justify-center items-center w-full md:w-3/5 px-2 py-6 text-center">
-          <img class="w-full md:w-4/5 z-50" src="consultation.png" />
+          <img class="w-full md:w-4/5" src="consultation.png" />
         </div>
       </div>
     </div>
