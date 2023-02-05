@@ -19,6 +19,7 @@ import SchedulePage from '../views/personalized/SchedulePage.vue'
 import ConsultationRequestListPage from '../views/personalized/ConsultationRequestListPage.vue'
 import ConsultantsSearchPage from '../views/personalized/ConsultantsSearchPage.vue'
 import SubmitCareerSuccessPage from '../views/personalized/SubmitCareerSuccessPage.vue'
+import OssLicensePage from '../views/OssLicensePage.vue'
 import PrivacyPolicyPage from '../views/PrivacyPolicyPage.vue'
 import TransactionLawPage from '../views/TransactionLawPage.vue'
 import ConsultantListPage from '../views/personalized/ConsultantListPage.vue'
@@ -226,6 +227,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/submit-career-success',
     name: 'SubmitCareerSuccessPage',
     component: SubmitCareerSuccessPage
+  },
+  {
+    path: '/oss-license',
+    name: 'OssLicensePage',
+    component: OssLicensePage
   },
   {
     path: '/privacy-policy',

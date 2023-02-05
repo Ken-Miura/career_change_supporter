@@ -91,6 +91,9 @@
               <li class="mt-2 inline-block mr-2 md:block md:mr-0">
                 <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/privacy-policy">プライバシーポリシー</router-link>
               </li>
+              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+                <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/oss-license">OSSライセンス表記</router-link>
+              </li>
             </ul>
           </div>
         </div>

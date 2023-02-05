@@ -204,13 +204,14 @@ export default defineComponent({
         const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
         if (param) {
           console.log('param')
-          param.value = 1.50 * 1 / 1
+          param.value = 1.25 * 1 / 1
         } else {
           console.log('!param')
         }
 
         source.connect(phaseVocoderProcessorNode)
-        phaseVocoderProcessorNode.connect(dest)
+        phaseVocoderProcessorNode.connect(audioCtx.destination)
+        // source.connect(audioCtx.destination)
 
         processedLocalStream = dest.stream
         if (!processedLocalStream) {
