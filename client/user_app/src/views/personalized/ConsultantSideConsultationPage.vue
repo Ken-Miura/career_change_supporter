@@ -42,22 +42,27 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted } from 'vue'
+import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getSkyWayApiKey } from '@/util/SkyWay'
 import { Message } from '@/util/Message'
-import Peer from 'skyway-js'
 import { useGetConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/useGetConsultantSideInfo'
 import { GetConsultantSideInfoResp } from '@/util/personalized/consultant-side-consultation/GetConsultantSideInfoResp'
-import { usePeerHandleRegister } from '@/util/personalized/usePeerHandleRegister'
-import { closePeer } from '@/util/personalized/PeerCloser'
 import { closeMediaStream } from '@/util/personalized/MediaStreamCloser'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { createGetAudioMediaStreamErrMessage, getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
+import {
+  LocalAudioStream,
+  nowInSec,
+  RemoteVideoStream,
+  SkyWayAuthToken,
+  SkyWayContext,
+  SkyWayRoom,
+  uuidV4
+} from '@skyway-sdk/room'
 
 export default defineComponent({
   name: 'ConsultantSideConsultationPage',
@@ -67,7 +72,52 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
-    const skyWayApiKey = getSkyWayApiKey()
+    const appId = 'TODO'
+    const secret = 'TODO'
+    const token = new SkyWayAuthToken({
+      jti: uuidV4(),
+      iat: nowInSec(),
+      exp: nowInSec() + 60 * 60 * 24,
+      scope: {
+        app: {
+          id: appId,
+          turn: true,
+          actions: ['read'],
+          channels: [
+            {
+              id: '*',
+              name: '*',
+              actions: ['write'],
+              members: [
+                {
+                  id: '*',
+                  name: '*',
+                  actions: ['write'],
+                  publication: {
+                    actions: ['write']
+                  },
+                  subscription: {
+                    actions: ['write']
+                  }
+                }
+              ],
+              sfuBots: [
+                {
+                  actions: ['write'],
+                  forwardings: [
+                    {
+                      actions: ['write']
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }).encode(secret)
+    const roomName = '6ebb6af49c654d10a41babbe60251baf'
+
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
     const userAccountId = route.params.user_account_id as string
@@ -77,40 +127,18 @@ export default defineComponent({
       getConsultantSideInfoFunc
     } = useGetConsultantSideInfo()
 
-    const {
-      peerError,
-      remoteMediaStream,
-      registerErrorHandler,
-      registerReceiveCallHandler,
-      registerCallOnOpenHandler
-    } = usePeerHandleRegister()
+    const peerError = reactive({
+      exists: false,
+      message: ''
+    })
+    const remoteMediaStream = ref(null as MediaStream | null)
 
-    let peer = null as Peer | null
     let localStream = null as MediaStream | null
 
     const router = useRouter()
 
     onMounted(async () => {
       try {
-        const resp = await getConsultantSideInfoFunc(consultationId)
-        if (!(resp instanceof GetConsultantSideInfoResp)) {
-          if (!(resp instanceof ApiErrorResp)) {
-            throw new Error(`unexpected result on getting request detail: ${resp}`)
-          }
-          const code = resp.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
-            return
-          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('/terms-of-use')
-            return
-          }
-          peerError.exists = true
-          peerError.message = createErrorMessage(resp.getApiError().getCode())
-          return
-        }
-        const result = resp.getConsultantSideInfo()
-
         try {
           localStream = await getAudioMediaStream()
         } catch (e) {
@@ -124,21 +152,37 @@ export default defineComponent({
           return
         }
 
-        peer = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
-        if (!peer) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_INITIALIZE_PEER
-          return
+        const context = await SkyWayContext.Create(token)
+        const room = await SkyWayRoom.FindOrCreate(context, {
+          type: 'p2p',
+          name: roomName
+        })
+
+        const me = await room.join()
+        const audioTracks = localStream.getAudioTracks()
+        const localAudioStream = new LocalAudioStream(audioTracks[0].clone())
+        await me.publish(localAudioStream)
+        // eslint-disable-next-line
+        const subscribeAndAttach = async (publication: any) => {
+          if (publication.publisher.id === me.id) {
+            return
+          }
+          const { stream } = await me.subscribe<RemoteVideoStream>(
+            publication.id
+          )
+          switch (stream.track.kind) {
+            case 'video':
+              console.error('video')
+              break
+            case 'audio':
+              remoteMediaStream.value = new MediaStream([stream.track])
+              break
+            default:
+              console.error('default')
+          }
         }
-        // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
-        // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
-        registerErrorHandler(peer)
-        registerReceiveCallHandler(peer, localStream)
-        const userAccountPeerId = result.user_account_peer_id
-        if (!userAccountPeerId) {
-          return
-        }
-        registerCallOnOpenHandler(peer, localStream, userAccountPeerId)
+        room.publications.forEach(subscribeAndAttach)
+        room.onStreamPublished.add((e) => subscribeAndAttach(e.publication))
       } catch (e) {
         peerError.exists = true
         peerError.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -146,8 +190,8 @@ export default defineComponent({
     })
 
     onUnmounted(() => {
-      closePeer(peer)
       closeMediaStream(localStream)
+      closeMediaStream(remoteMediaStream.value)
     })
 
     const leaveConsultationRoom = async () => {
