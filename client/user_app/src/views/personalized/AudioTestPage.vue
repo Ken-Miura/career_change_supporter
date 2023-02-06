@@ -69,13 +69,21 @@ export default defineComponent({
     let localStream = null as MediaStream | null
 
     const releaseResources = async () => {
-      if (audioCtx) {
-        await audioCtx.close()
-        audioCtx = null
+      try {
+        if (audioCtx) {
+          await audioCtx.close()
+          audioCtx = null
+        }
+      } catch (e) {
+        console.error(e)
       }
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop())
-        localStream = null
+      try {
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop())
+          localStream = null
+        }
+      } catch (e) {
+        console.error(e)
       }
     }
 
@@ -104,42 +112,50 @@ export default defineComponent({
       }
     })
 
+    const setUpAudio = async () => {
+      try {
+        localStream = await getAudioMediaStream()
+      } catch (e) {
+        audioTestError.exists = true
+        audioTestError.message = createGetAudioMediaStreamErrMessage(e)
+        return
+      }
+      if (!localStream) {
+        audioTestError.exists = true
+        audioTestError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+        return
+      }
+      audioCtx = new AudioContext()
+      if (!audioCtx) {
+        audioTestError.exists = true
+        audioTestError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE // TODO: 変更
+        return
+      }
+      const source = audioCtx.createMediaStreamSource(localStream)
+      const moduleUrl = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
+      try {
+        await audioCtx.audioWorklet.addModule(moduleUrl)
+      } catch (e) {
+        audioTestError.exists = true
+        audioTestError.message = `${Message.UNEXPECTED_ERR}: ${e}` // TODO: 変更
+        return
+      }
+      const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, 'phase-vocoder-processor')
+      const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
+      if (!param) {
+        audioTestError.exists = true
+        audioTestError.message = `${Message.UNEXPECTED_ERR}` // TODO: 変更
+        return
+      }
+      param.value = generatePitchFactor()
+      source.connect(phaseVocoderProcessorNode)
+      phaseVocoderProcessorNode.connect(audioCtx.destination)
+    }
+
     const startAudioTest = async () => {
       try {
-        try {
-          localStream = await getAudioMediaStream()
-        } catch (e) {
-          audioTestError.exists = true
-          audioTestError.message = createGetAudioMediaStreamErrMessage(e)
-          return
-        }
-        if (!localStream) {
-          audioTestError.exists = true
-          audioTestError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
-          return
-        }
-        audioCtx = new AudioContext()
-        if (!audioCtx) {
-          audioTestError.exists = true
-          audioTestError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
-          return
-        }
-        const source = audioCtx.createMediaStreamSource(localStream)
-        const moduleUrl = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
-        try {
-          await audioCtx.audioWorklet.addModule(moduleUrl)
-        } catch (e) {
-          console.error(`failed to call addModule: ${e}`)
-          return
-        }
-        const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, 'phase-vocoder-processor')
-        const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
-        if (param) {
-          param.value = generatePitchFactor()
-        }
-        source.connect(phaseVocoderProcessorNode)
-        phaseVocoderProcessorNode.connect(audioCtx.destination)
         audioTestStarted.value = true
+        await setUpAudio()
       } catch (e) {
         audioTestError.exists = true
         audioTestError.message = `${Message.UNEXPECTED_ERR}: ${e}`

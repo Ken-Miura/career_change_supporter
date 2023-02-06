@@ -210,7 +210,7 @@ export default defineComponent({
         }
 
         source.connect(phaseVocoderProcessorNode)
-        phaseVocoderProcessorNode.connect(audioCtx.destination)
+        phaseVocoderProcessorNode.connect(dest)
         // source.connect(audioCtx.destination)
 
         processedLocalStream = dest.stream
