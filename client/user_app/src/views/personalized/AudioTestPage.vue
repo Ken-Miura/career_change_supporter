@@ -31,7 +31,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, reactive, ref } from 'vue'
+import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -41,6 +41,7 @@ import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
+import { createGetAudioMediaStreamErrMessage, getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
 
 export default defineComponent({
   name: 'AudioTestPage',
@@ -64,6 +65,19 @@ export default defineComponent({
       message: ''
     })
     const audioTestStarted = ref(false)
+    let audioCtx = null as AudioContext | null
+    let localStream = null as MediaStream | null
+
+    const releaseResources = async () => {
+      if (audioCtx) {
+        await audioCtx.close()
+        audioCtx = null
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop())
+        localStream = null
+      }
+    }
 
     onMounted(async () => {
       try {
@@ -91,14 +105,56 @@ export default defineComponent({
     })
 
     const startAudioTest = async () => {
-      console.log('startAudioTest')
-      audioTestStarted.value = true
+      try {
+        try {
+          localStream = await getAudioMediaStream()
+        } catch (e) {
+          audioTestError.exists = true
+          audioTestError.message = createGetAudioMediaStreamErrMessage(e)
+          return
+        }
+        if (!localStream) {
+          audioTestError.exists = true
+          audioTestError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          return
+        }
+        audioCtx = new AudioContext()
+        if (!audioCtx) {
+          audioTestError.exists = true
+          audioTestError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          return
+        }
+        const source = audioCtx.createMediaStreamSource(localStream)
+        const moduleUrl = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
+        try {
+          await audioCtx.audioWorklet.addModule(moduleUrl)
+        } catch (e) {
+          console.error(`failed to call addModule: ${e}`)
+          return
+        }
+        const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, 'phase-vocoder-processor')
+        const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
+        if (param) {
+          param.value = generatePitchFactor()
+        }
+        source.connect(phaseVocoderProcessorNode)
+        phaseVocoderProcessorNode.connect(audioCtx.destination)
+        audioTestStarted.value = true
+      } catch (e) {
+        audioTestError.exists = true
+        audioTestError.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        await releaseResources()
+      }
     }
 
     const stopAudioTest = async () => {
-      console.log('stopAudioTest')
+      await releaseResources()
       audioTestStarted.value = false
     }
+
+    onUnmounted(async () => {
+      await releaseResources()
+    })
 
     return {
       refreshDone,
@@ -110,4 +166,25 @@ export default defineComponent({
     }
   }
 })
+
+function generatePitchFactor () {
+  const num = getRandomInt(0, 2)
+  if (num === 0) {
+    return getRandomArbitrary(0.6, 0.8)
+  } else if (num === 1) {
+    return getRandomArbitrary(1.2, 1.4)
+  } else {
+    throw new Error(`num: ${num}`)
+  }
+}
+
+function getRandomInt (min: number, max: number) {
+  min = Math.ceil(min)
+  max = Math.floor(max)
+  return Math.floor(Math.random() * (max - min) + min) // The maximum is exclusive and the minimum is inclusive
+}
+
+function getRandomArbitrary (min: number, max: number) {
+  return Math.random() * (max - min) + min
+}
 </script>
