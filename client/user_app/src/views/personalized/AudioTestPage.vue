@@ -38,6 +38,7 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRefresh } from '@/util/personalized/refresh/useRefresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
@@ -187,25 +188,4 @@ export default defineComponent({
     }
   }
 })
-
-function generatePitchFactor () {
-  const num = getRandomInt(0, 2)
-  if (num === 0) {
-    return getRandomArbitrary(0.6, 0.8)
-  } else if (num === 1) {
-    return getRandomArbitrary(1.2, 1.4)
-  } else {
-    throw new Error(`num: ${num}`)
-  }
-}
-
-function getRandomInt (min: number, max: number) {
-  min = Math.ceil(min)
-  max = Math.floor(max)
-  return Math.floor(Math.random() * (max - min) + min) // The maximum is exclusive and the minimum is inclusive
-}
-
-function getRandomArbitrary (min: number, max: number) {
-  return Math.random() * (max - min) + min
-}
 </script>
