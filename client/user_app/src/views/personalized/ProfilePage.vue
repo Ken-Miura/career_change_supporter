@@ -20,15 +20,15 @@
           <h3 class="font-bold text-2xl">ユーザー情報</h3>
           <p class="mt-2 text-lg">本人確認のために利用される情報です（本人確認の完了後、相談申し込みが可能となります）ユーザー情報が他のユーザーに公開されることはありません。</p>
           <div v-if="identity !== null" data-test="identity-set" class="m-4 text-2xl grid grid-cols-3">
-            <div class="mt-2 justify-self-start col-span-1">名前</div><div class="justify-self-start col-span-2">{{ identity.last_name }}　{{ identity.first_name }}</div>
-            <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ identity.last_name_furigana }}　{{ identity.first_name_furigana }}</div>
-            <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="justify-self-start col-span-2">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
+            <div class="mt-2 justify-self-start col-span-1">名前</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name }}　{{ identity.first_name }}</div>
+            <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name_furigana }}　{{ identity.first_name_furigana }}</div>
+            <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
             <div class="mt-2 justify-self-start col-span-3">住所</div>
-            <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="justify-self-start col-span-2">{{ identity.prefecture }}</div>
-            <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="justify-self-start col-span-2">{{ identity.city }}</div>
-            <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="justify-self-start col-span-2">{{ identity.address_line1 }}</div>
-            <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="justify-self-start col-span-2">{{ identity.address_line2 }}</div>
-            <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ identity.telephone_number }}</div>
+            <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-2">{{ identity.prefecture }}</div>
+            <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-2">{{ identity.city }}</div>
+            <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-2">{{ identity.address_line1 }}</div>
+            <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ identity.address_line2 }}</div>
+            <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ identity.telephone_number }}</div>
           </div>
           <p v-else data-test="no-identity-set" class="m-4 text-xl">ユーザー情報が設定されていません。</p>
           <button data-test="move-to-identity-page-button" v-on:click="moveToIdentityPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
