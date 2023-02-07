@@ -8,11 +8,10 @@ use std::error::Error;
 use std::fmt::Display;
 use std::string::FromUtf8Error;
 
+use axum_extra::extract::cookie::{Cookie, SameSite};
 use bcrypt::BcryptError;
 use chrono::{DateTime, FixedOffset};
-use cookie::SameSite;
 use serde::{Deserialize, Serialize};
-use tower_cookies::Cookie;
 
 // TODO: リリース前に値を調整する (パスワードのストレッチングが2^BCRYPT_COST回実行される)
 const BCRYPT_COST: u32 = 7;

@@ -8,6 +8,7 @@ use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
+use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
 use common::util::{create_session_cookie, is_password_match};
 use common::{ApiError, ErrResp};
@@ -17,13 +18,11 @@ use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
 };
 use entity::user_account;
-use tower_cookies::Cookies;
 use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
-use crate::util::session::{KEY_OF_SIGNED_COOKIE_FOR_USER_APP, LOGIN_SESSION_EXPIRY};
-use crate::util::session::{KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME};
+use crate::util::session::{KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 use crate::util::ROOT_PATH;
 
 /// ログインを行う<br>
@@ -33,12 +32,11 @@ use crate::util::ROOT_PATH;
 /// - email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
 /// - email addressとpasswordが正しく、かつアカウントが無効化されている場合、ステータスコード400、エラーコード[AccountDisabled]を返す<br>
 pub(crate) async fn post_login(
-    cookies: Cookies,
+    jar: SignedCookieJar,
     State(pool): State<DatabaseConnection>,
     State(store): State<RedisSessionStore>,
     ValidCred(cred): ValidCred,
-) -> Result<StatusCode, ErrResp> {
-    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
+) -> Result<(StatusCode, SignedCookieJar), ErrResp> {
     let email_addr = cred.email_address;
     let password = cred.password;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
@@ -50,8 +48,7 @@ pub(crate) async fn post_login(
         session_id,
         ROOT_PATH.to_string(),
     );
-    signed_cookies.add(cookie);
-    Ok(StatusCode::OK)
+    Ok((StatusCode::OK, jar.add(cookie)))
 }
 
 async fn handle_login_req(

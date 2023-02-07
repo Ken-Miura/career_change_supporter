@@ -6,6 +6,7 @@ use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
+use axum_extra::extract::SignedCookieJar;
 use chrono::DateTime;
 use chrono::{Duration, FixedOffset};
 use common::smtp::{
@@ -26,12 +27,11 @@ use entity::user_account;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
-use tower_cookies::Cookies;
 use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired};
-use crate::util::session::{KEY_OF_SIGNED_COOKIE_FOR_USER_APP, SESSION_ID_COOKIE_NAME};
+use crate::util::session::SESSION_ID_COOKIE_NAME;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
@@ -49,13 +49,12 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 /// パスワード変更要求が見つからない場合、ステータスコード400、エラーコード[NoPwdChnageReqFound]を返す<br>
 /// パスワード変更要求が期限切れの場合、ステータスコード400、エラーコード[PwdChnageReqExpired]を返す<br>
 pub(crate) async fn post_password_update(
-    cookies: Cookies,
+    jar: SignedCookieJar,
     State(store): State<RedisSessionStore>,
     State(pool): State<DatabaseConnection>,
     Json(pwd_update_req): Json<PasswordUpdateReq>,
 ) -> RespResult<PasswordUpdateResult> {
-    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
-    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+    let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
     if let Some(session_id) = option_cookie {
         destroy_session_if_exists(session_id.value(), &store).await?;
     }

@@ -5,6 +5,7 @@ use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
+use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
 use common::ApiError;
 use common::ErrResp;
@@ -16,25 +17,22 @@ use entity::sea_orm::DatabaseConnection;
 use entity::sea_orm::EntityTrait;
 use entity::sea_orm::Set;
 use entity::terms_of_use;
-use tower_cookies::Cookies;
 use tracing::error;
 use tracing::info;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AlreadyAgreedTermsOfUse, Unauthorized};
-use crate::util::session::KEY_OF_SIGNED_COOKIE_FOR_USER_APP;
 use crate::util::session::SESSION_ID_COOKIE_NAME;
 use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use crate::util::{session::get_user_by_session_id, terms_of_use::TERMS_OF_USE_VERSION};
 
 /// ユーザーが利用規約に同意したことを記録する
 pub(crate) async fn post_agreement(
-    cookies: Cookies,
+    jar: SignedCookieJar,
     State(store): State<RedisSessionStore>,
     State(pool): State<DatabaseConnection>,
 ) -> Result<StatusCode, ErrResp> {
-    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
-    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+    let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
     let session_id = if let Some(s) = option_cookie {
         s.value().to_string()
     } else {

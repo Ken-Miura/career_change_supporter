@@ -10,9 +10,9 @@ async-redis-session = "0.2.2"
 aws-config = "0.54.1"
 aws-sdk-s3 = "0.24.0"
 axum = { version = "0.6.4", features = ["macros"] }
+axum-extra = { version = "0.4.2", features = ["cookie", "cookie-signed"] }
 bcrypt = "0.14.0"
 chrono = "0.4.23"
-cookie = "0.16.2"
 entity = { path = "../entity" }
 http = "0.2.8"
 http-body = "0.4.5"
@@ -24,5 +24,4 @@ reqwest = { version = "0.11.14", features = ["json"] }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 serde_qs = "0.11.0"
-tower-cookies = "0.8.0"
 tracing = "0.1.37"

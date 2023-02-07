@@ -31,6 +31,7 @@ dependencies = [
  "async-redis-session",
  "async-session",
  "axum",
+ "axum-extra",
  "chrono",
  "common",
  "dotenv",
@@ -43,7 +44,6 @@ dependencies = [
  "serde",
  "tokio",
  "tower",
- "tower-cookies",
  "tower-http",
  "tracing",
  "tracing-subscriber",
@@ -769,6 +769,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-extra"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9a320103719de37b7b4da4c8eb629d4573f6bcfd3dfe80d3208806895ccf81d"
+dependencies = [
+ "axum",
+ "bytes",
+ "cookie",
+ "futures-util",
+ "http",
+ "mime",
+ "pin-project-lite",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
 name = "axum-macros"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1131,9 +1151,9 @@ dependencies = [
  "aws-config",
  "aws-sdk-s3",
  "axum",
+ "axum-extra",
  "bcrypt",
  "chrono",
- "cookie",
  "entity",
  "http",
  "http-body",
@@ -1145,7 +1165,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs",
- "tower-cookies",
  "tracing",
 ]
 
@@ -3819,23 +3838,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tower-cookies"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4efe6d9c78aae53650a340d0e702e4f103582dce6af6bf897dc1b56c8ed5d4f6"
-dependencies = [
- "async-trait",
- "axum-core",
- "cookie",
- "futures-util",
- "http",
- "parking_lot 0.12.0",
- "pin-project-lite",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
 name = "tower-http"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4005,6 +4007,7 @@ dependencies = [
  "async-redis-session",
  "async-session",
  "axum",
+ "axum-extra",
  "base64 0.21.0",
  "bytes",
  "chrono",
@@ -4023,7 +4026,6 @@ dependencies = [
  "sha2 0.10.6",
  "tokio",
  "tower",
- "tower-cookies",
  "tower-http",
  "tracing",
  "tracing-subscriber",

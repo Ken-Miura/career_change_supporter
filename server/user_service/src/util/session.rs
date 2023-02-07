@@ -5,12 +5,10 @@ use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::{http::StatusCode, Json};
+use axum_extra::extract::SignedCookieJar;
 use common::{ApiError, AppState, ErrResp};
-use once_cell::sync::Lazy;
 use serde::Deserialize;
-use std::env::var;
 use std::time::Duration;
-use tower_cookies::{Cookies, Key};
 use tracing::{error, info};
 
 use crate::err::{
@@ -23,25 +21,6 @@ use super::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
-
-pub(crate) const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP: &str =
-    "KEY_OF_SIGNED_COOKIE_FOR_USER_APP";
-pub(crate) static KEY_OF_SIGNED_COOKIE_FOR_USER_APP: Lazy<Key> = Lazy::new(|| {
-    let key_str = var(KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP
-        )
-    });
-    let size = key_str.len();
-    if size < 64 {
-        panic!(
-            "Size of \"{}\" value regarded as utf-8 encoding must be at least 64 bytes",
-            KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP
-        )
-    }
-    Key::from(key_str.as_bytes())
-});
 
 pub(crate) const SESSION_ID_COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
@@ -75,13 +54,12 @@ where
     type Rejection = ErrResp;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let cookies = Cookies::from_request_parts(parts, state)
+        let signed_cookies = SignedCookieJar::<AppState>::from_request_parts(parts, state)
             .await
             .map_err(|e| {
                 error!("failed to get cookies: {:?}", e);
                 unexpected_err_resp()
             })?;
-        let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
         let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
         let session_id = match option_cookie {
             Some(s) => s.value().to_string(),

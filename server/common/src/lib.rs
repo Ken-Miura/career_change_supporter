@@ -24,6 +24,7 @@ use axum::{
     http::{Request, StatusCode},
     BoxError, Json,
 };
+use axum_extra::extract::cookie::Key;
 use chrono::FixedOffset;
 use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
@@ -174,6 +175,13 @@ pub struct AppState {
     pub store: RedisSessionStore,
     pub index_client: OpenSearch,
     pub pool: DatabaseConnection,
+    pub key_for_signed_cookie: Key,
+}
+
+impl From<AppState> for Key {
+    fn from(state: AppState) -> Self {
+        state.key_for_signed_cookie
+    }
 }
 
 /// HTTPリクエストにおいてログに残す要素を集めた構造体
