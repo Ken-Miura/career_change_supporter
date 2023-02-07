@@ -44,6 +44,7 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
 import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
+import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
 
 export default defineComponent({
   name: 'AudioTestPage',
@@ -147,8 +148,8 @@ export default defineComponent({
         audioTestError.message = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
         return
       }
-      const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, 'phase-vocoder-processor')
-      const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
+      const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
+      const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
       if (!param) {
         audioTestError.exists = true
         audioTestError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
