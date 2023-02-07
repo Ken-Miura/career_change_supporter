@@ -10,7 +10,7 @@ async-redis-session = "0.2.2"
 aws-config = "0.54.1"
 aws-sdk-s3 = "0.24.0"
 axum = { version = "0.6.4", features = ["macros"] }
-bcrypt = "0.13.0"
+bcrypt = "0.14.0"
 chrono = "0.4.23"
 cookie = "0.16.2"
 entity = { path = "../entity" }
