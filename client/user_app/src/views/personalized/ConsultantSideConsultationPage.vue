@@ -57,7 +57,8 @@ import { closePeer } from '@/util/personalized/PeerCloser'
 import { closeMediaStream } from '@/util/personalized/MediaStreamCloser'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
-import { createGetAudioMediaStreamErrMessage, getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
+import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
+import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
 
 export default defineComponent({
   name: 'ConsultantSideConsultationPage',

@@ -42,7 +42,8 @@ import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
-import { createGetAudioMediaStreamErrMessage, getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
+import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
+import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
 
 export default defineComponent({
   name: 'AudioTestPage',
