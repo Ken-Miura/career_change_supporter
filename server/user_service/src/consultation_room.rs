@@ -47,6 +47,25 @@ static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
     })
 });
 
+// JWTのペイロード
+#[derive(Clone, Debug, Serialize, PartialEq)]
+struct SkyWayAuthToken {
+    jti: String, // UUID v4 => 6668affc-5afa-4996-b65a-6afe2f72756b みたいなハイフンあり形式
+    iat: i64,    // DateTime<FixedOffset>.timestamp()で取れる値
+    exp: i64,    // DateTime<FixedOffset>.timestamp()で取れる値
+    scope: SkyWayScope,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq)]
+struct SkyWayScope {
+    app: SkyWayAppScope,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq)]
+struct SkyWayAppScope {
+    id: String, // アプリケーションID
+}
+
 // ここより下は旧SkyWay用の必要ないコード
 
 /// [SkyWayCredential]のttlに使う値
