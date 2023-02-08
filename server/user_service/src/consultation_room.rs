@@ -27,8 +27,17 @@ pub(crate) mod user_side_info;
 
 const TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES: i64 = 5;
 
+pub(crate) const KEY_TO_SKY_WAY_APPLICATION_ID: &str = "SKY_WAY_APPLICATION_ID";
+static SKY_WAY_APPLICATION_ID: Lazy<String> = Lazy::new(|| {
+    env::var(KEY_TO_SKY_WAY_APPLICATION_ID).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_SKY_WAY_APPLICATION_ID
+        )
+    })
+});
+
 pub(crate) const KEY_TO_SKY_WAY_SECRET_KEY: &str = "SKY_WAY_SECRET_KEY";
-/// SkyWayのPeer生成に使うcredentialを生成する際に利用するキー
 static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
     env::var(KEY_TO_SKY_WAY_SECRET_KEY).unwrap_or_else(|_| {
         panic!(
@@ -37,6 +46,8 @@ static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
         )
     })
 });
+
+// ここより下は旧SkyWay用の必要ないコード
 
 /// [SkyWayCredential]のttlに使う値
 ///
@@ -87,7 +98,7 @@ fn create_sky_way_credential(peer_id: &str, timestamp: i64) -> Result<SkyWayCred
         peer_id,
         timestamp,
         SKY_WAY_CREDENTIAL_TTL_IN_SECONDS,
-        (*SKY_WAY_SECRET_KEY).as_str(),
+        "",
     )?;
     Ok(SkyWayCredential {
         auth_token,
