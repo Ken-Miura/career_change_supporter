@@ -3,15 +3,13 @@
 use async_redis_session::RedisSessionStore;
 use async_session::SessionStore;
 use axum::{extract::State, http::StatusCode};
+use axum_extra::extract::{cookie::Cookie, SignedCookieJar};
 use common::ErrResp;
-use tower_cookies::{Cookie, Cookies};
 use tracing::{error, info};
 
 use crate::{
     err::unexpected_err_resp,
-    util::session::{
-        ADMIN_SESSION_ID_COOKIE_NAME, KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP, KEY_TO_ADMIN_ACCOUNT_ID,
-    },
+    util::session::{ADMIN_SESSION_ID_COOKIE_NAME, KEY_TO_ADMIN_ACCOUNT_ID},
 };
 
 /// ログアウトを行う
@@ -21,22 +19,25 @@ use crate::{
 /// セッションIDに対応するセッションがある場合、セッションを削除（ログアウト）し、ステータスコード200と期限切れのCookieを返す<br>
 /// （期限切れのCookieを返すのは、ブラウザ上のCookieをブラウザ自体に削除してもらうため）<br>
 pub(crate) async fn post_logout(
-    cookies: Cookies,
+    jar: SignedCookieJar,
     State(store): State<RedisSessionStore>,
-) -> Result<StatusCode, ErrResp> {
-    let signed_cookies = cookies.signed(&KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP);
-    let option_cookie = signed_cookies.get(ADMIN_SESSION_ID_COOKIE_NAME);
+) -> Result<(StatusCode, SignedCookieJar), ErrResp> {
+    let option_cookie = jar.get(ADMIN_SESSION_ID_COOKIE_NAME);
     let session_id = match option_cookie {
         Some(s) => s.value().to_string(),
         None => {
             info!("no sessoin cookie found");
-            return Ok(StatusCode::OK);
+            return Ok((
+                StatusCode::OK,
+                jar.remove(Cookie::named(ADMIN_SESSION_ID_COOKIE_NAME)),
+            ));
         }
     };
     handle_logout_req(session_id, &store).await?;
-    // removeというメソッド名がわかりづらいが、Set-Cookieにmax-ageが0のCookieをセットしている。
-    signed_cookies.remove(Cookie::new(ADMIN_SESSION_ID_COOKIE_NAME, ""));
-    Ok(StatusCode::OK)
+    Ok((
+        StatusCode::OK,
+        jar.remove(Cookie::named(ADMIN_SESSION_ID_COOKIE_NAME)),
+    ))
 }
 
 async fn handle_logout_req<'a>(

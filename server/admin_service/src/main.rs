@@ -28,13 +28,13 @@ use crate::identity_request::update_identity_request::update_identity_requests::
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
-use crate::util::session::KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;
 use axum::body::Body;
 use axum::http::Request;
 use axum::routing::{get, post};
 use axum::Router;
+use axum_extra::extract::cookie::Key;
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
     KEY_TO_OPENSEARCH_USERNAME,
@@ -59,7 +59,6 @@ use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
 use tower::ServiceBuilder;
-use tower_cookies::CookieManagerLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tower_http::LatencyUnit;
 use tracing::{Level, Span};
@@ -67,6 +66,7 @@ use uuid::Uuid;
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_APP";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_ADMIN_APP";
+const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP: &str = "KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP";
 
 /// アプリケーションの動作に必須の環境変数をすべて列挙し、
 /// 起動直後に存在をチェックする
@@ -164,10 +164,14 @@ async fn main_internal(num_of_cpus: u32) {
     )
     .expect("failed to create OpenSearch client");
 
+    let key_for_signed_cookie =
+        create_key_for_singed_cookie(KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP);
+
     let state = AppState {
         store,
         index_client,
         pool,
+        key_for_signed_cookie,
     };
 
     let app = Router::new()
@@ -270,7 +274,6 @@ async fn main_internal(num_of_cpus: u32) {
                             .latency_unit(LatencyUnit::Micros),
                     ),
             )
-                .layer(CookieManagerLayer::new())
         );
 
     let socket = var(KEY_TO_SOCKET).unwrap_or_else(|_| {
@@ -287,4 +290,21 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
+}
+
+fn create_key_for_singed_cookie(env_var_key: &str) -> Key {
+    let key_str = var(env_var_key).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            env_var_key
+        )
+    });
+    let size = key_str.len();
+    if size < 64 {
+        panic!(
+            "Size of \"{}\" value regarded as utf-8 encoding must be at least 64 bytes",
+            env_var_key
+        )
+    };
+    Key::from(key_str.as_bytes())
 }
