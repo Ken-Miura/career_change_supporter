@@ -109,23 +109,24 @@ async fn find_consultation_by_consultation_id(
     consultation_id: i64,
     pool: &DatabaseConnection,
 ) -> Result<Option<Consultation>, ErrResp> {
-    let model = consultation::Entity::find_by_id(consultation_id)
-        .one(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find consultation (consultation_id: {}): {}",
-                consultation_id, e
-            );
-            unexpected_err_resp()
-        })?;
-    Ok(model.map(|m| Consultation {
-        user_account_id: m.user_account_id,
-        consultant_id: m.consultant_id,
-        consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
-        user_account_peer_id: m.user_account_peer_id,
-        consultant_peer_id: m.consultant_peer_id,
-    }))
+    todo!()
+    // let model = consultation::Entity::find_by_id(consultation_id)
+    //     .one(pool)
+    //     .await
+    //     .map_err(|e| {
+    //         error!(
+    //             "failed to find consultation (consultation_id: {}): {}",
+    //             consultation_id, e
+    //         );
+    //         unexpected_err_resp()
+    //     })?;
+    // Ok(model.map(|m| Consultation {
+    //     user_account_id: m.user_account_id,
+    //     consultant_id: m.consultant_id,
+    //     consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+    //     user_account_peer_id: m.user_account_peer_id,
+    //     consultant_peer_id: m.consultant_peer_id,
+    // }))
 }
 
 fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrResp> {

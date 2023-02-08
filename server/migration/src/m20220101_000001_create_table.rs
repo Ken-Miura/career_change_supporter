@@ -400,10 +400,9 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   charge_id TEXT NOT NULL UNIQUE,
-                  user_account_peer_id ccs_schema.uuid_simple_form,
-                  user_account_peer_opened_at TIMESTAMP WITH TIME ZONE,
-                  consultant_peer_id ccs_schema.uuid_simple_form,
-                  consultant_peer_opend_at TIMESTAMP WITH TIME ZONE,
+                  room_name ccs_schema.uuid_simple_form NOT NULL UNIQUE,
+                  user_account_entered_at TIMESTAMP WITH TIME ZONE,
+                  consultant_entered_at TIMESTAMP WITH TIME ZONE,
                   UNIQUE(user_account_id, meeting_at),
                   UNIQUE(consultant_id, meeting_at)
                 );",

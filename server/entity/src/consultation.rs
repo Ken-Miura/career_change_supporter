@@ -12,10 +12,10 @@ pub struct Model {
     pub meeting_at: DateTimeWithTimeZone,
     #[sea_orm(column_type = "Text", unique)]
     pub charge_id: String,
-    pub user_account_peer_id: Option<String>,
-    pub user_account_peer_opened_at: Option<DateTimeWithTimeZone>,
-    pub consultant_peer_id: Option<String>,
-    pub consultant_peer_opend_at: Option<DateTimeWithTimeZone>,
+    #[sea_orm(unique)]
+    pub room_name: String,
+    pub user_account_entered_at: Option<DateTimeWithTimeZone>,
+    pub consultant_entered_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -190,30 +190,31 @@ impl UserSideInfoOperation for UserSideInfoOperationImpl {
                 Box::pin(async move {
                     let result = get_consultation_with_exclusive_lock(consultation_id, txn).await?;
 
-                    if result.user_account_peer_id.is_some() {
-                        return Ok(Consultation {
-                            user_account_id: result.user_account_id,
-                            consultant_id: result.consultant_id,
-                            consultation_date_time_in_jst: result
-                                .meeting_at
-                                .with_timezone(&(*JAPANESE_TIME_ZONE)),
-                            user_account_peer_id: result.user_account_peer_id,
-                            consultant_peer_id: result.consultant_peer_id,
-                        });
-                    }
+                    // if result.user_account_peer_id.is_some() {
+                    //     return Ok(Consultation {
+                    //         user_account_id: result.user_account_id,
+                    //         consultant_id: result.consultant_id,
+                    //         consultation_date_time_in_jst: result
+                    //             .meeting_at
+                    //             .with_timezone(&(*JAPANESE_TIME_ZONE)),
+                    //         user_account_peer_id: result.user_account_peer_id,
+                    //         consultant_peer_id: result.consultant_peer_id,
+                    //     });
+                    // }
 
                     let updated_result =
                         update_user_side_info(peer_id, current_date_time, result, txn).await?;
 
-                    Ok(Consultation {
-                        user_account_id: updated_result.user_account_id,
-                        consultant_id: updated_result.consultant_id,
-                        consultation_date_time_in_jst: updated_result
-                            .meeting_at
-                            .with_timezone(&(*JAPANESE_TIME_ZONE)),
-                        user_account_peer_id: updated_result.user_account_peer_id,
-                        consultant_peer_id: updated_result.consultant_peer_id,
-                    })
+                    todo!()
+                    // Ok(Consultation {
+                    //     user_account_id: updated_result.user_account_id,
+                    //     consultant_id: updated_result.consultant_id,
+                    //     consultation_date_time_in_jst: updated_result
+                    //         .meeting_at
+                    //         .with_timezone(&(*JAPANESE_TIME_ZONE)),
+                    //     user_account_peer_id: updated_result.user_account_peer_id,
+                    //     consultant_peer_id: updated_result.consultant_peer_id,
+                    // })
                 })
             })
             .await
@@ -331,16 +332,17 @@ async fn update_user_side_info(
     model: consultation::Model,
     txn: &DatabaseTransaction,
 ) -> Result<consultation::Model, ErrRespStruct> {
-    let consultation_id = model.consultation_id;
-    let mut active_model: consultation::ActiveModel = model.into();
-    active_model.user_account_peer_id = Set(Some(peer_id.clone()));
-    active_model.user_account_peer_opened_at = Set(Some(current_date_time));
-    let updated_result = active_model.update(txn).await.map_err(|e| {
-        error!("failed to update consultation (consultation_id: {}, peer_id: {}, current_date_time: {}): {}", 
-        consultation_id, peer_id, current_date_time, e);
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(updated_result)
+    // let consultation_id = model.consultation_id;
+    // let mut active_model: consultation::ActiveModel = model.into();
+    // active_model.user_account_peer_id = Set(Some(peer_id.clone()));
+    // active_model.user_account_peer_opened_at = Set(Some(current_date_time));
+    // let updated_result = active_model.update(txn).await.map_err(|e| {
+    //     error!("failed to update consultation (consultation_id: {}, peer_id: {}, current_date_time: {}): {}",
+    //     consultation_id, peer_id, current_date_time, e);
+    //     ErrRespStruct {
+    //         err_resp: unexpected_err_resp(),
+    //     }
+    // })?;
+    // Ok(updated_result)
+    todo!()
 }

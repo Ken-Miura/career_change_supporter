@@ -8,6 +8,7 @@ use common::smtp::{
     SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME,
     SYSTEM_EMAIL_ADDRESS,
 };
+use common::util::validator::uuid_validator::validate_uuid;
 use common::util::Maintenance;
 use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
 use common::{ApiError, ErrResp, ErrRespStruct, WEB_SITE_NAME};
@@ -23,6 +24,7 @@ use entity::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
+use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::User;
@@ -41,6 +43,7 @@ pub(crate) async fn post_consultation_request_acceptance(
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestAcceptanceParam>,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
+    let room_name = Uuid::new_v4().simple().to_string();
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = ConsultationRequestAcceptanceOperationImpl { pool };
     let smtp_client = SmtpClient::new(
@@ -49,8 +52,15 @@ pub(crate) async fn post_consultation_request_acceptance(
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_consultation_request_acceptance(account_id, &param, &current_date_time, op, smtp_client)
-        .await
+    handle_consultation_request_acceptance(
+        account_id,
+        &param,
+        &current_date_time,
+        room_name,
+        op,
+        smtp_client,
+    )
+    .await
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -67,9 +77,15 @@ async fn handle_consultation_request_acceptance(
     user_account_id: i64,
     param: &ConsultationRequestAcceptanceParam,
     current_date_time: &DateTime<FixedOffset>,
+    room_name: String,
     op: impl ConsultationRequestAcceptanceOperation,
     send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
+    validate_uuid(room_name.as_str()).map_err(|e| {
+        error!("failed to validate {}: {}", room_name, e);
+        // peer_room_nameidは、ユーザーから渡されるものではなく、サーバで生成するものなので失敗はunexpected_err_resp
+        unexpected_err_resp()
+    })?;
     let picked_candidate = param.picked_candidate;
     validate_picked_candidate(picked_candidate)?;
     info!(
@@ -109,7 +125,7 @@ async fn handle_consultation_request_acceptance(
     .await?;
 
     let consultation = op
-        .accept_consultation_req(consultation_req_id, meeting_date_time)
+        .accept_consultation_req(consultation_req_id, meeting_date_time, room_name)
         .await?;
 
     let result = send_mail_to_user(
@@ -199,6 +215,7 @@ trait ConsultationRequestAcceptanceOperation {
         &self,
         consultation_req_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
+        room_name: String,
     ) -> Result<AcceptedConsultation, ErrResp>;
 }
 
@@ -362,6 +379,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         &self,
         consultation_req_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
+        room_name: String,
     ) -> Result<AcceptedConsultation, ErrResp> {
         let consultation = self
             .pool
@@ -370,7 +388,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     let req =
                         get_consultation_req_with_exclusive_lock(consultation_req_id, txn).await?;
 
-                    create_consultation(&req, &meeting_date_time, txn).await?;
+                    create_consultation(&req, &meeting_date_time, room_name.as_str(), txn).await?;
                     create_user_rating(&req, &meeting_date_time, txn).await?;
                     create_settlement(&req, &meeting_date_time, txn).await?;
                     create_consultant_rating(&req, &meeting_date_time, txn).await?;
@@ -459,6 +477,7 @@ async fn get_consultation_req_with_exclusive_lock(
 async fn create_consultation(
     req: &consultation_req::Model,
     meeting_date_time: &DateTime<FixedOffset>,
+    room_name: &str,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = consultation::ActiveModel {
@@ -467,14 +486,13 @@ async fn create_consultation(
         consultant_id: Set(req.consultant_id),
         meeting_at: Set(*meeting_date_time),
         charge_id: Set(req.charge_id.clone()),
-        user_account_peer_id: NotSet,
-        user_account_peer_opened_at: NotSet,
-        consultant_peer_id: NotSet,
-        consultant_peer_opend_at: NotSet,
+        room_name: Set(room_name.to_string()),
+        user_account_entered_at: NotSet,
+        consultant_entered_at: NotSet,
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
-        error!("failed to insert consultation (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}", 
-            req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
+        error!("failed to insert consultation (user_account_id: {}, consultant_id: {}, meeting_at: {}, room_name: {}, charge_id: {}): {}", 
+            req.user_account_id, req.consultant_id, meeting_date_time, room_name, req.charge_id, e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
@@ -968,6 +986,7 @@ mod tests {
         user_account_id: i64,
         param: ConsultationRequestAcceptanceParam,
         current_date_time: DateTime<FixedOffset>,
+        room_name: String,
         op: ConsultationRequestAcceptanceOperationMock,
         send_mail: SendMailMock,
     }
@@ -986,6 +1005,7 @@ mod tests {
         current_date_time: DateTime<FixedOffset>,
         maintenance_info: Vec<Maintenance>,
         consultation: AcceptedConsultation,
+        room_name: String,
     }
 
     #[async_trait]
@@ -1075,12 +1095,14 @@ mod tests {
             &self,
             consultation_req_id: i64,
             meeting_date_time: DateTime<FixedOffset>,
+            room_name: String,
         ) -> Result<AcceptedConsultation, ErrResp> {
             assert_eq!(
                 self.consultation_req.consultation_req_id,
                 consultation_req_id
             );
             assert_eq!(self.meeting_date_time, meeting_date_time);
+            assert_eq!(self.room_name, room_name);
             Ok(self.consultation.clone())
         }
     }
@@ -1121,6 +1143,7 @@ mod tests {
         let consultant_email_address = "test0@test.com";
         let user_email_address = "test1@test.com";
         let send_mail = SendMailMock { fail: false };
+        let room_name = "ce0cda1b7a934b3ea7a12001b56cf4e4";
         vec![
             TestCase {
                 name: "success case (first choise is picked)".to_string(),
@@ -1132,6 +1155,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1166,6 +1190,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1181,6 +1206,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1215,6 +1241,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1230,6 +1257,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1264,6 +1292,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1279,6 +1308,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1313,6 +1343,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: SendMailMock { fail: true },
                 },
@@ -1328,6 +1359,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1366,6 +1398,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1381,6 +1414,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1419,6 +1453,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1434,6 +1469,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1468,6 +1504,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1488,6 +1525,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1522,6 +1560,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1542,6 +1581,7 @@ mod tests {
                         user_checked: false,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1576,6 +1616,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1596,6 +1637,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1630,6 +1672,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1650,6 +1693,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1684,6 +1728,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1704,6 +1749,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant + 1,
                         consultation_req: ConsultationRequest {
@@ -1738,6 +1784,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1758,6 +1805,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1792,6 +1840,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1812,6 +1861,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1846,6 +1896,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1866,6 +1917,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap(),
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1909,6 +1961,7 @@ mod tests {
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1929,6 +1982,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 1).unwrap(),
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -1972,6 +2026,7 @@ mod tests {
                                     *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
                                 ),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -1992,6 +2047,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2023,6 +2079,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2043,6 +2100,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2074,6 +2132,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2094,6 +2153,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2128,6 +2188,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2148,6 +2209,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2182,6 +2244,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2202,6 +2265,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2236,6 +2300,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2256,6 +2321,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2290,6 +2356,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2310,6 +2377,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2348,6 +2416,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2368,6 +2437,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2406,6 +2476,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail: send_mail.clone(),
                 },
@@ -2426,6 +2497,7 @@ mod tests {
                         user_checked,
                     },
                     current_date_time,
+                    room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
                         account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
@@ -2464,6 +2536,7 @@ mod tests {
                             fee_per_hour_in_yen,
                             consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                         },
+                        room_name: room_name.to_string(),
                     },
                     send_mail,
                 },
@@ -2483,6 +2556,7 @@ mod tests {
             let account_id = test_case.input.user_account_id;
             let param = test_case.input.param.clone();
             let current_date_time = test_case.input.current_date_time;
+            let room_name = test_case.input.room_name.clone();
             let op = test_case.input.op.clone();
             let smtp_client = test_case.input.send_mail.clone();
 
@@ -2490,6 +2564,7 @@ mod tests {
                 account_id,
                 &param,
                 &current_date_time,
+                room_name,
                 op,
                 smtp_client,
             )
