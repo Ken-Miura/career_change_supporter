@@ -6,8 +6,11 @@ use async_session::log::error;
 use axum::http::StatusCode;
 use axum::Json;
 use base64::{engine::general_purpose, Engine};
-use chrono::{DateTime, FixedOffset};
-use common::{ApiError, ErrResp, ErrRespStruct, JAPANESE_TIME_ZONE};
+use chrono::{DateTime, Duration, FixedOffset};
+use common::{
+    util::validator::uuid_validator::validate_uuid, ApiError, ErrResp, ErrRespStruct,
+    JAPANESE_TIME_ZONE,
+};
 use entity::{
     consultation,
     sea_orm::{DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect},
@@ -99,18 +102,36 @@ struct SkyWaySubscriptionScope {
     actions: Vec<String>,
 }
 
+const MAX_DURATION_IN_SECONDS: i64 = 60 * 60 * 24 * 3;
+
 fn create_sky_way_auth_token_payload(
-    issued_timestamp: i64,
     token_id: String,
-    expiration_timestamp: i64,
+    current_date_time: DateTime<FixedOffset>,
+    expiration_date_time: DateTime<FixedOffset>,
     application_id: String,
     room_name: String,
     member_name: String,
-) -> SkyWayAuthTokenPayload {
-    SkyWayAuthTokenPayload {
-        iat: issued_timestamp,
+) -> Result<SkyWayAuthTokenPayload, ErrResp> {
+    let duration = Duration::seconds(MAX_DURATION_IN_SECONDS);
+    let criteria = current_date_time + duration;
+    if criteria > expiration_date_time {
+        error!(
+            "current_date_time ({}) over expiration_date_time ({})",
+            current_date_time, expiration_date_time
+        );
+        return Err(unexpected_err_resp());
+    }
+    validate_uuid(room_name.as_str()).map_err(|e| {
+        error!(
+            "failed to validate room name (UUID v4 simple format) ({}): {}",
+            room_name, e
+        );
+        unexpected_err_resp()
+    })?;
+    Ok(SkyWayAuthTokenPayload {
+        iat: current_date_time.timestamp(),
         jti: token_id,
-        exp: expiration_timestamp,
+        exp: expiration_date_time.timestamp(),
         scope: SkyWayScope {
             app: SkyWayAppScope {
                 id: application_id,
@@ -139,7 +160,7 @@ fn create_sky_way_auth_token_payload(
                 }],
             },
         },
-    }
+    })
 }
 
 fn create_sky_way_auth_token(
