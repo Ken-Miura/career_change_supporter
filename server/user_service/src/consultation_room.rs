@@ -54,8 +54,8 @@ static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
 // https://skyway.ntt.com/ja/docs/user-guide/authentication/
 #[derive(Clone, Debug, Serialize, PartialEq)]
 struct SkyWayAuthTokenPayload {
-    jti: String, // UUID V4（6668affc-5afa-4996-b65a-6afe2f72756b のようなハイフン有り形式）
     iat: i64,    // 秒単位のタイムスタンプ（DateTime<FixedOffset>.timestamp()で取得できる値）
+    jti: String, // UUID V4（6668affc-5afa-4996-b65a-6afe2f72756b のようなハイフン有り形式）
     exp: i64,    // 秒単位のタイムスタンプ（DateTime<FixedOffset>.timestamp()で取得できる値）
     scope: SkyWayScope,
 }
@@ -97,6 +97,49 @@ struct SkyWaySubscriptionScope {
     // 使える値はwrite, create, deleteの3つ。このサービスではcreate, deleteを指定する。
     // （2023年2月時点では、このリソースに関してcreate, deleteを指定することはwriteと同じだが、他と合わせるためにcreate, deleteを指定）
     actions: Vec<String>,
+}
+
+fn create_sky_way_auth_token_payload(
+    issued_timestamp: i64,
+    token_id: String,
+    expiration_timestamp: i64,
+    application_id: String,
+    room_name: String,
+    member_name: String,
+) -> SkyWayAuthTokenPayload {
+    SkyWayAuthTokenPayload {
+        iat: issued_timestamp,
+        jti: token_id,
+        exp: expiration_timestamp,
+        scope: SkyWayScope {
+            app: SkyWayAppScope {
+                id: application_id,
+                actions: vec!["read".to_string()],
+                channels: vec![SkyWayChannelScope {
+                    name: room_name,
+                    actions: vec![
+                        "read".to_string(),
+                        "create".to_string(),
+                        "delete".to_string(),
+                    ],
+                    members: vec![SkyWayMemberScope {
+                        name: member_name,
+                        actions: vec![
+                            "create".to_string(),
+                            "delete".to_string(),
+                            "signal".to_string(),
+                        ],
+                        publication: SkyWayPublicationScope {
+                            actions: vec!["create".to_string(), "delete".to_string()],
+                        },
+                        subscription: SkyWaySubscriptionScope {
+                            actions: vec!["create".to_string(), "delete".to_string()],
+                        },
+                    }],
+                }],
+            },
+        },
+    }
 }
 
 fn create_sky_way_auth_token(
