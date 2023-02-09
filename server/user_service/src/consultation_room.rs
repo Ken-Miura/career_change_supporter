@@ -13,6 +13,7 @@ use entity::{
     sea_orm::{DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect},
 };
 use hmac::{Hmac, Mac};
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use sha2::Sha256;
@@ -52,7 +53,7 @@ static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
 //
 // https://skyway.ntt.com/ja/docs/user-guide/authentication/
 #[derive(Clone, Debug, Serialize, PartialEq)]
-struct SkyWayAuthToken {
+struct SkyWayAuthTokenPayload {
     jti: String, // UUID V4（6668affc-5afa-4996-b65a-6afe2f72756b のようなハイフン有り形式）
     iat: i64,    // 秒単位のタイムスタンプ（DateTime<FixedOffset>.timestamp()で取得できる値）
     exp: i64,    // 秒単位のタイムスタンプ（DateTime<FixedOffset>.timestamp()で取得できる値）
@@ -96,6 +97,32 @@ struct SkyWaySubscriptionScope {
     // 使える値はwrite, create, deleteの3つ。このサービスではcreate, deleteを指定する。
     // （2023年2月時点では、このリソースに関してcreate, deleteを指定することはwriteと同じだが、他と合わせるためにcreate, deleteを指定）
     actions: Vec<String>,
+}
+
+fn create_sky_way_auth_token(
+    payload: &SkyWayAuthTokenPayload,
+    secret: &[u8],
+) -> Result<String, ErrResp> {
+    let header = Header {
+        alg: Algorithm::HS512,
+        typ: Some("JWT".to_string()),
+        cty: None,
+        jku: None,
+        jwk: None,
+        kid: None,
+        x5u: None,
+        x5c: None,
+        x5t: None,
+        x5t_s256: None,
+    };
+    let token = encode(&header, payload, &EncodingKey::from_secret(secret)).map_err(|e| {
+        error!(
+            "failed to encode to jwt (header: {:?}, payload: {:?}): {}",
+            header, payload, e
+        );
+        unexpected_err_resp()
+    })?;
+    Ok(token)
 }
 
 // ここより下は旧SkyWay用の必要ないコード
