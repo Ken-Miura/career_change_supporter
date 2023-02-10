@@ -23,9 +23,10 @@ use crate::util::available_user_account::UserAccount;
 use crate::util::session::User;
 
 use super::{
-    create_sky_way_auth_token, create_sky_way_auth_token_payload,
+    create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,
     get_consultation_with_exclusive_lock, validate_consultation_id_is_positive, Consultation,
-    SkyWayIdentification, LEEWAY_IN_MINUTES, VALID_TOKEN_DURATION_IN_SECONDS, SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY,
+    SkyWayIdentification, LEEWAY_IN_MINUTES, SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY,
+    VALID_TOKEN_DURATION_IN_SECONDS,
 };
 
 pub(crate) async fn get_user_side_info(
@@ -34,6 +35,7 @@ pub(crate) async fn get_user_side_info(
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<UserSideInfoResult> {
     let consultation_id = query.0.consultation_id;
+    let audio_test_done = query.0.audio_test_done;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let identification = SkyWayIdentification {
         application_id: (*SKY_WAY_APPLICATION_ID).to_string(),
@@ -47,6 +49,7 @@ pub(crate) async fn get_user_side_info(
         &current_date_time,
         identification,
         token_id.as_str(),
+        audio_test_done,
         op,
     )
     .await
@@ -55,6 +58,7 @@ pub(crate) async fn get_user_side_info(
 #[derive(Deserialize)]
 pub(crate) struct UserSideInfoQuery {
     consultation_id: i64,
+    audio_test_done: bool,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -70,9 +74,11 @@ async fn handle_user_side_info(
     current_date_time: &DateTime<FixedOffset>,
     identification: SkyWayIdentification,
     token_id: &str,
+    audio_test_done: bool,
     op: impl UserSideInfoOperation,
 ) -> RespResult<UserSideInfoResult> {
     validate_consultation_id_is_positive(consultation_id)?;
+    ensure_audio_test_is_done(audio_test_done)?;
     validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_user_account_id_is_valid(result.user_account_id, account_id)?;

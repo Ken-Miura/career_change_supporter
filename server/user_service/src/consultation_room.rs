@@ -219,6 +219,18 @@ async fn find_room_name_by_consultation_id(
     Ok(model.map(|m| m.room_name))
 }
 
+fn ensure_audio_test_is_done(audio_test_done: bool) -> Result<(), ErrResp> {
+    if !audio_test_done {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::AudioTestIsNotDone as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
 // ここより下は旧SkyWay用の必要ないコード
 
 /// SkyWayでPeer認証に用いるCredential
