@@ -24,7 +24,7 @@ use crate::util::session::User;
 use super::{
     create_sky_way_auth_token, create_sky_way_auth_token_payload,
     get_consultation_with_exclusive_lock, validate_consultation_id_is_positive, Consultation,
-    SkyWayIdentification, LEEWAY_IN_MINUTES, VALID_TOKEN_DURATION_IN_SECONDS,
+    SkyWayIdentification, LEEWAY_IN_MINUTES, VALID_TOKEN_DURATION_IN_SECONDS, SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY,
 };
 
 pub(crate) async fn get_user_side_info(
@@ -35,8 +35,8 @@ pub(crate) async fn get_user_side_info(
     let consultation_id = query.0.consultation_id;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let identification = SkyWayIdentification {
-        application_id: "6668affc-5afa-4996-b65a-6afe2f72756b".to_string(),
-        secret: "dummy".to_string(),
+        application_id: (*SKY_WAY_APPLICATION_ID).to_string(),
+        secret: (*SKY_WAY_SECRET_KEY).to_string(),
     };
     let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b";
     let op = UserSideInfoOperationImpl { pool };
