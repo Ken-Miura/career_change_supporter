@@ -7,7 +7,6 @@ use axum::{
     Json,
 };
 use chrono::{DateTime, Duration, FixedOffset, Utc};
-use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::consultation;
 use entity::sea_orm::{
@@ -24,8 +23,10 @@ use crate::util::available_user_account::UserAccount;
 use crate::util::session::User;
 
 use super::{
-    create_sky_way_credential, get_consultation_with_exclusive_lock,
-    validate_consultation_id_is_positive, Consultation, SkyWayCredential, LEEWAY_IN_MINUTES,
+    create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,
+    get_consultation_with_exclusive_lock, validate_consultation_id_is_positive, Consultation,
+    SkyWayIdentification, LEEWAY_IN_MINUTES, SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY,
+    VALID_TOKEN_DURATION_IN_SECONDS,
 };
 
 pub(crate) async fn get_consultant_side_info(
@@ -34,14 +35,21 @@ pub(crate) async fn get_consultant_side_info(
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultantSideInfoResult> {
     let consultation_id = query.0.consultation_id;
+    let audio_test_done = query.0.audio_test_done;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let peer_id = Uuid::new_v4().simple().to_string();
+    let identification = SkyWayIdentification {
+        application_id: (*SKY_WAY_APPLICATION_ID).to_string(),
+        secret: (*SKY_WAY_SECRET_KEY).to_string(),
+    };
+    let token_id = Uuid::new_v4().to_string();
     let op = ConsultantSideInfoOperationImpl { pool };
     handle_consultant_side_info(
         account_id,
         consultation_id,
         &current_date_time,
-        peer_id.as_str(),
+        identification,
+        token_id.as_str(),
+        audio_test_done,
         op,
     )
     .await
@@ -50,28 +58,27 @@ pub(crate) async fn get_consultant_side_info(
 #[derive(Deserialize)]
 pub(crate) struct ConsultantSideInfoQuery {
     consultation_id: i64,
+    audio_test_done: bool,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultantSideInfoResult {
-    consultant_peer_id: String,
-    credential: SkyWayCredential,
-    user_account_peer_id: Option<String>,
+    token: String,
+    room_name: String,
+    member_name: String,
 }
 
 async fn handle_consultant_side_info(
     account_id: i64,
     consultation_id: i64,
     current_date_time: &DateTime<FixedOffset>,
-    peer_id: &str,
+    identification: SkyWayIdentification,
+    token_id: &str,
+    audio_test_done: bool,
     op: impl ConsultantSideInfoOperation,
 ) -> RespResult<ConsultantSideInfoResult> {
     validate_consultation_id_is_positive(consultation_id)?;
-    validate_uuid(peer_id).map_err(|e| {
-        error!("failed to validate {}: {}", peer_id, e);
-        // peer_idは、ユーザーから渡されるものではなく、サーバで生成するものなので失敗はunexpected_err_resp
-        unexpected_err_resp()
-    })?;
+    ensure_audio_test_is_done(audio_test_done)?;
     validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_consultant_id_is_valid(result.consultant_id, account_id)?;
@@ -90,27 +97,27 @@ async fn handle_consultant_side_info(
         ));
     }
 
-    let updated_result = op
-        .update_consultation_if_needed(consultation_id, *current_date_time, peer_id.to_string())
+    let expiration_date_time =
+        *current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
+    let payload = create_sky_way_auth_token_payload(
+        token_id.to_string(),
+        *current_date_time,
+        expiration_date_time,
+        identification.application_id,
+        result.room_name.clone(),
+        account_id.to_string(),
+    )?;
+    let token = create_sky_way_auth_token(&payload, identification.secret.as_bytes())?;
+
+    op.update_consultant_entered_at_if_needed(consultation_id, *current_date_time)
         .await?;
-
-    let consultant_peer_id = updated_result.consultant_peer_id.ok_or_else(|| {
-        error!(
-            "consultant_peer_id is None (consultation_id: {})",
-            consultation_id
-        );
-        unexpected_err_resp()
-    })?;
-
-    let timestamp = current_date_time.timestamp();
-    let credential = create_sky_way_credential(consultant_peer_id.as_str(), timestamp)?;
 
     Ok((
         StatusCode::OK,
         Json(ConsultantSideInfoResult {
-            consultant_peer_id,
-            credential,
-            user_account_peer_id: updated_result.user_account_peer_id,
+            token,
+            room_name: result.room_name,
+            member_name: account_id.to_string(),
         }),
     ))
 }
@@ -136,12 +143,11 @@ trait ConsultantSideInfoOperation {
         user_account_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp>;
 
-    async fn update_consultation_if_needed(
+    async fn update_consultant_entered_at_if_needed(
         &self,
         consultation_id: i64,
         current_date_time: DateTime<FixedOffset>,
-        peer_id: String,
-    ) -> Result<Consultation, ErrResp>;
+    ) -> Result<(), ErrResp>;
 }
 
 struct ConsultantSideInfoOperationImpl {
@@ -177,44 +183,20 @@ impl ConsultantSideInfoOperation for ConsultantSideInfoOperationImpl {
             .await
     }
 
-    async fn update_consultation_if_needed(
+    async fn update_consultant_entered_at_if_needed(
         &self,
         consultation_id: i64,
         current_date_time: DateTime<FixedOffset>,
-        peer_id: String,
-    ) -> Result<Consultation, ErrResp> {
-        let updated_result = self
-            .pool
-            .transaction::<_, Consultation, ErrRespStruct>(|txn| {
+    ) -> Result<(), ErrResp> {
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let result = get_consultation_with_exclusive_lock(consultation_id, txn).await?;
-
-                    // if result.consultant_peer_id.is_some() {
-                    //     return Ok(Consultation {
-                    //         user_account_id: result.user_account_id,
-                    //         consultant_id: result.consultant_id,
-                    //         consultation_date_time_in_jst: result
-                    //             .meeting_at
-                    //             .with_timezone(&(*JAPANESE_TIME_ZONE)),
-                    //         user_account_peer_id: result.user_account_peer_id,
-                    //         consultant_peer_id: result.consultant_peer_id,
-                    //     });
-                    // }
-
-                    let updated_result =
-                        update_consultant_side_info(peer_id, current_date_time, result, txn)
-                            .await?;
-
-                    todo!()
-                    // Ok(Consultation {
-                    //     user_account_id: updated_result.user_account_id,
-                    //     consultant_id: updated_result.consultant_id,
-                    //     consultation_date_time_in_jst: updated_result
-                    //         .meeting_at
-                    //         .with_timezone(&(*JAPANESE_TIME_ZONE)),
-                    //     user_account_peer_id: updated_result.user_account_peer_id,
-                    //     consultant_peer_id: updated_result.consultant_peer_id,
-                    // })
+                    if result.consultant_entered_at.is_some() {
+                        return Ok(());
+                    }
+                    update_consultant_entered_at(current_date_time, result, txn).await?;
+                    Ok(())
                 })
             })
             .await
@@ -225,13 +207,13 @@ impl ConsultantSideInfoOperation for ConsultantSideInfoOperationImpl {
                 }
                 TransactionError::Transaction(err_resp_struct) => {
                     error!(
-                        "failed to update_consultation_if_needed: {}",
+                        "failed to update_consultant_entered_at_if_needed: {}",
                         err_resp_struct
                     );
                     err_resp_struct.err_resp
                 }
             })?;
-        Ok(updated_result)
+        Ok(())
     }
 }
 
@@ -326,23 +308,20 @@ async fn get_user_account_if_available(
     })
 }
 
-async fn update_consultant_side_info(
-    peer_id: String,
+async fn update_consultant_entered_at(
     current_date_time: DateTime<FixedOffset>,
     model: consultation::Model,
     txn: &DatabaseTransaction,
-) -> Result<consultation::Model, ErrRespStruct> {
-    // let consultation_id = model.consultation_id;
-    // let mut active_model: consultation::ActiveModel = model.into();
-    // active_model.consultant_peer_id = Set(Some(peer_id.clone()));
-    // active_model.consultant_peer_opend_at = Set(Some(current_date_time));
-    // let updated_result = active_model.update(txn).await.map_err(|e| {
-    //     error!("failed to update consultation (consultation_id: {}, peer_id: {}, current_date_time: {}): {}",
-    //     consultation_id, peer_id, current_date_time, e);
-    //     ErrRespStruct {
-    //         err_resp: unexpected_err_resp(),
-    //     }
-    // })?;
-    // Ok(updated_result)
-    todo!()
+) -> Result<(), ErrRespStruct> {
+    let consultation_id = model.consultation_id;
+    let mut active_model: consultation::ActiveModel = model.into();
+    active_model.consultant_entered_at = Set(Some(current_date_time));
+    let _ = active_model.update(txn).await.map_err(|e| {
+        error!("failed to update consultant_entered_at consultation (consultation_id: {}, current_date_time: {}): {}",
+        consultation_id, current_date_time, e);
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }

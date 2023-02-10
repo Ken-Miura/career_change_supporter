@@ -97,17 +97,6 @@ async fn handle_user_side_info(
         ));
     }
 
-    let room_name = op
-        .find_room_name_by_consultation_id(consultation_id)
-        .await?;
-    let room_name = room_name.ok_or_else(|| {
-        error!(
-            "failed to find room_name (consultation_id: {})",
-            consultation_id
-        );
-        unexpected_err_resp()
-    })?;
-
     let expiration_date_time =
         *current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
     let payload = create_sky_way_auth_token_payload(
@@ -115,16 +104,19 @@ async fn handle_user_side_info(
         *current_date_time,
         expiration_date_time,
         identification.application_id,
-        room_name.clone(),
+        result.room_name.clone(),
         account_id.to_string(),
     )?;
     let token = create_sky_way_auth_token(&payload, identification.secret.as_bytes())?;
+
+    op.update_user_account_entered_at_if_needed(consultation_id, *current_date_time)
+        .await?;
 
     Ok((
         StatusCode::OK,
         Json(UserSideInfoResult {
             token,
-            room_name,
+            room_name: result.room_name,
             member_name: account_id.to_string(),
         }),
     ))
@@ -150,11 +142,6 @@ trait UserSideInfoOperation {
         &self,
         user_account_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp>;
-
-    async fn find_room_name_by_consultation_id(
-        &self,
-        consultation_id: i64,
-    ) -> Result<Option<String>, ErrResp>;
 
     async fn update_user_account_entered_at_if_needed(
         &self,
@@ -194,13 +181,6 @@ impl UserSideInfoOperation for UserSideInfoOperationImpl {
     ) -> Result<Option<UserAccount>, ErrResp> {
         util::available_user_account::get_if_user_account_is_available(&self.pool, user_account_id)
             .await
-    }
-
-    async fn find_room_name_by_consultation_id(
-        &self,
-        consultation_id: i64,
-    ) -> Result<Option<String>, ErrResp> {
-        super::find_room_name_by_consultation_id(&self.pool, consultation_id).await
     }
 
     async fn update_user_account_entered_at_if_needed(
