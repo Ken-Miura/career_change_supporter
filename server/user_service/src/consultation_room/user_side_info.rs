@@ -15,6 +15,7 @@ use entity::sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::error;
+use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
@@ -38,14 +39,14 @@ pub(crate) async fn get_user_side_info(
         application_id: (*SKY_WAY_APPLICATION_ID).to_string(),
         secret: (*SKY_WAY_SECRET_KEY).to_string(),
     };
-    let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b";
+    let token_id = Uuid::new_v4().to_string();
     let op = UserSideInfoOperationImpl { pool };
     handle_user_side_info(
         account_id,
         consultation_id,
         &current_date_time,
         identification,
-        token_id,
+        token_id.as_str(),
         op,
     )
     .await
