@@ -25,8 +25,7 @@ use crate::util::session::User;
 
 use super::{
     create_sky_way_credential, get_consultation_with_exclusive_lock,
-    validate_consultation_id_is_positive, Consultation, SkyWayCredential,
-    TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES,
+    validate_consultation_id_is_positive, Consultation, SkyWayCredential, LEEWAY_IN_MINUTES,
 };
 
 pub(crate) async fn get_consultant_side_info(
@@ -78,11 +77,11 @@ async fn handle_consultant_side_info(
     ensure_consultant_id_is_valid(result.consultant_id, account_id)?;
     let _ = get_consultant_if_available(result.consultant_id, &op).await?;
     let _ = get_user_account_if_available(result.user_account_id, &op).await?;
-    let offset = Duration::minutes(TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES);
-    let criteria = result.consultation_date_time_in_jst - offset;
+    let leeway = Duration::minutes(LEEWAY_IN_MINUTES);
+    let criteria = result.consultation_date_time_in_jst - leeway;
     if *current_date_time < criteria {
-        error!("consultation room has not opened yet (current_date_time: {}, consultation_date_time_in_jst: {}, offset: {})", 
-            current_date_time, result.consultation_date_time_in_jst, offset);
+        error!("consultation room has not opened yet (current_date_time: {}, consultation_date_time_in_jst: {}, leeway: {})", 
+            current_date_time, result.consultation_date_time_in_jst, leeway);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {

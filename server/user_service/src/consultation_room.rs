@@ -29,7 +29,7 @@ use crate::{
 pub(crate) mod consultant_side_info;
 pub(crate) mod user_side_info;
 
-const TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES: i64 = 5;
+const LEEWAY_IN_MINUTES: i64 = 5;
 
 pub(crate) const KEY_TO_SKY_WAY_APPLICATION_ID: &str = "SKY_WAY_APPLICATION_ID";
 static SKY_WAY_APPLICATION_ID: Lazy<String> = Lazy::new(|| {
@@ -50,6 +50,19 @@ static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
         )
     })
 });
+
+struct SkyWayIdentification {
+    application_id: String,
+    secret: String,
+}
+
+/// [SkyWayAuthTokenPayload]のexpを生成するために使う値 ([SkyWayAuthToken]が有効な期間)
+///
+///
+/// 相談時間（[LENGTH_OF_MEETING_IN_MINUTE]分）+ 相談開始時刻前から入室可能な分の余裕（[LEEWAY_IN_MINUTES]分) + 余裕（5分）を設定し、
+/// 必ず相談時間中に期限が切れないようにする。
+const VALID_TOKEN_DURATION_IN_SECONDS: i64 =
+    60 * (LENGTH_OF_MEETING_IN_MINUTE as i64 + LEEWAY_IN_MINUTES + 5);
 
 // クライアントがSkay WayにアクセスするためのJWTのペイロード部分を表す構造体
 // このサービスに必要な分のメンバーのみを定義する
@@ -189,17 +202,24 @@ fn create_sky_way_auth_token(
     Ok(token)
 }
 
-// ここより下は旧SkyWay用の必要ないコード
+async fn find_room_name_by_consultation_id(
+    pool: &DatabaseConnection,
+    consultation_id: i64,
+) -> Result<Option<String>, ErrResp> {
+    let model = consultation::Entity::find_by_id(consultation_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find consultation (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model.map(|m| m.room_name))
+}
 
-/// [SkyWayCredential]のttlに使う値
-///
-/// 600 - 90000 の間を設定する必要がある
-/// https://github.com/skyway/skyway-peer-authentication-samples/blob/master/README.jp.md#ttl
-///
-/// 相談時間（[LENGTH_OF_MEETING_IN_MINUTE]分）+ 相談開始時刻前から入室可能な分の余裕（[TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES]分) + 余裕（5分）を設定し、
-/// 必ず相談時間中にCredentialの期限が切れないようにする。
-const SKY_WAY_CREDENTIAL_TTL_IN_SECONDS: u32 = 60
-    * (LENGTH_OF_MEETING_IN_MINUTE as u32 + TIME_BEFORE_CONSULTATION_STARTS_IN_MINUTES as u32 + 5);
+// ここより下は旧SkyWay用の必要ないコード
 
 /// SkyWayでPeer認証に用いるCredential
 ///
@@ -236,17 +256,18 @@ fn generate_sky_way_credential_auth_token(
 }
 
 fn create_sky_way_credential(peer_id: &str, timestamp: i64) -> Result<SkyWayCredential, ErrResp> {
-    let auth_token = generate_sky_way_credential_auth_token(
-        peer_id,
-        timestamp,
-        SKY_WAY_CREDENTIAL_TTL_IN_SECONDS,
-        "",
-    )?;
-    Ok(SkyWayCredential {
-        auth_token,
-        ttl: SKY_WAY_CREDENTIAL_TTL_IN_SECONDS,
-        timestamp,
-    })
+    todo!()
+    // let auth_token = generate_sky_way_credential_auth_token(
+    //     peer_id,
+    //     timestamp,
+    //     SKY_WAY_CREDENTIAL_TTL_IN_SECONDS,
+    //     "",
+    // )?;
+    // Ok(SkyWayCredential {
+    //     auth_token,
+    //     ttl: SKY_WAY_CREDENTIAL_TTL_IN_SECONDS,
+    //     timestamp,
+    // })
 }
 
 #[derive(Clone, Debug)]
