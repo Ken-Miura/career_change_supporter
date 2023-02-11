@@ -112,7 +112,7 @@ struct SkyWaySubscriptionScope {
     actions: Vec<String>,
 }
 
-const MAX_DURATION_IN_SECONDS: i64 = 60 * 60 * 24 * 3;
+const MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS: i64 = 60 * 60 * 24 * 3;
 
 fn create_sky_way_auth_token_payload(
     token_id: String,
@@ -122,12 +122,19 @@ fn create_sky_way_auth_token_payload(
     room_name: String,
     member_name: String,
 ) -> Result<SkyWayAuthTokenPayload, ErrResp> {
-    let duration = Duration::seconds(MAX_DURATION_IN_SECONDS);
-    let criteria = current_date_time + duration;
-    if criteria < expiration_date_time {
+    if current_date_time > expiration_date_time {
         error!(
-            "current_date_time ({}) over expiration_date_time ({})",
+            "current_date_time ({}) exceeds expiration_date_time ({})",
             current_date_time, expiration_date_time
+        );
+        return Err(unexpected_err_resp());
+    }
+    let duration = Duration::seconds(MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS);
+    let max_exp = current_date_time + duration;
+    if expiration_date_time > max_exp {
+        error!(
+            "expiration_date_time ({}) exceeds max_exp ({})",
+            expiration_date_time, max_exp
         );
         return Err(unexpected_err_resp());
     }
