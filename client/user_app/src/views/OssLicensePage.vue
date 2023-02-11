@@ -15,10 +15,10 @@
         <p class="ml-6">https://github.com/indutny/fft.js/#license</p>
       </div>
       <div class="mt-4">
-        <h2 class="font-bold"><a class="hover:underline" href="https://github.com/skyway/skyway-js-sdk">SkyWay JavaScript SDK</a></h2>
-        <p class="ml-4">Copyright 2017 NTT Communications Corporation, http://www.ntt.com</p>
-        <p class="ml-4">Released under the Apache License, Version 2.0</p>
-        <p class="ml-6">https://github.com/skyway/skyway-js-sdk/blob/master/LICENSE</p>
+        <h2 class="font-bold"><a class="hover:underline" href="https://www.npmjs.com/package/@skyway-sdk/room">@skyway-sdk/room</a></h2>
+        <p class="ml-4">関連するページ上に明確なコピーライト表記は見つかりませんでした</p>
+        <p class="ml-4">Released under the MIT license</p>
+        <p class="ml-6">https://www.npmjs.com/package/@skyway-sdk/room</p>
       </div>
       <div class="mt-4">
         <h2 class="font-bold"><a class="hover:underline" href="https://github.com/tailwindlabs/tailwindcss">tailwindcss</a></h2>

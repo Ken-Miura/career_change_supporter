@@ -42,23 +42,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted } from 'vue'
+import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getSkyWayApiKey } from '@/util/SkyWay'
 import { Message } from '@/util/Message'
-import Peer from 'skyway-js'
 import { useGetConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/useGetConsultantSideInfo'
 import { GetConsultantSideInfoResp } from '@/util/personalized/consultant-side-consultation/GetConsultantSideInfoResp'
-import { usePeerHandleRegister } from '@/util/personalized/usePeerHandleRegister'
-import { closePeer } from '@/util/personalized/PeerCloser'
-import { closeMediaStream } from '@/util/personalized/MediaStreamCloser'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
-import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
-import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
 
 export default defineComponent({
   name: 'ConsultantSideConsultationPage',
@@ -68,7 +61,6 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
-    const skyWayApiKey = getSkyWayApiKey()
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
     const userAccountId = route.params.user_account_id as string
@@ -78,16 +70,12 @@ export default defineComponent({
       getConsultantSideInfoFunc
     } = useGetConsultantSideInfo()
 
-    const {
-      peerError,
-      remoteMediaStream,
-      registerErrorHandler,
-      registerReceiveCallHandler,
-      registerCallOnOpenHandler
-    } = usePeerHandleRegister()
-
-    let peer = null as Peer | null
-    let localStream = null as MediaStream | null
+    const peerError = reactive({
+      exists: false,
+      message: ''
+    })
+    const remoteMediaStream = ref(null as MediaStream | null)
+    // let localStream = null as MediaStream | null
 
     const router = useRouter()
 
@@ -110,36 +98,36 @@ export default defineComponent({
           peerError.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        const result = resp.getConsultantSideInfo()
+        //   const result = resp.getConsultantSideInfo()
 
-        try {
-          localStream = await getAudioMediaStream()
-        } catch (e) {
-          peerError.exists = true
-          peerError.message = createGetAudioMediaStreamErrMessage(e)
-          return
-        }
-        if (!localStream) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
-          return
-        }
+        //   try {
+        //     localStream = await getAudioMediaStream()
+        //   } catch (e) {
+        //     peerError.exists = true
+        //     peerError.message = createGetAudioMediaStreamErrMessage(e)
+        //     return
+        //   }
+        //   if (!localStream) {
+        //     peerError.exists = true
+        //     peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+        //     return
+        //   }
 
-        peer = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
-        if (!peer) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_INITIALIZE_PEER
-          return
-        }
-        // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
-        // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
-        registerErrorHandler(peer)
-        registerReceiveCallHandler(peer, localStream)
-        const userAccountPeerId = result.user_account_peer_id
-        if (!userAccountPeerId) {
-          return
-        }
-        registerCallOnOpenHandler(peer, localStream, userAccountPeerId)
+      //   peer = new Peer(result.consultant_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
+      //   if (!peer) {
+      //     peerError.exists = true
+      //     peerError.message = Message.FAILED_TO_INITIALIZE_PEER
+      //     return
+      //   }
+      //   // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
+      //   // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
+      //   registerErrorHandler(peer)
+      //   registerReceiveCallHandler(peer, localStream)
+      //   const userAccountPeerId = result.user_account_peer_id
+      //   if (!userAccountPeerId) {
+      //     return
+      //   }
+      //   registerCallOnOpenHandler(peer, localStream, userAccountPeerId)
       } catch (e) {
         peerError.exists = true
         peerError.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -147,8 +135,8 @@ export default defineComponent({
     })
 
     onUnmounted(() => {
-      closePeer(peer)
-      closeMediaStream(localStream)
+      console.log('onUnmounted')
+      // localStream = null
     })
 
     const leaveConsultationRoom = async () => {

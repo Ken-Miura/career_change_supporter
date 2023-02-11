@@ -79,13 +79,8 @@ import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getSkyWayApiKey } from '@/util/SkyWay'
 import { useGetUserSideInfo } from '@/util/personalized/user-side-consultation/useGetUserSideInfo'
-import { usePeerHandleRegister } from '@/util/personalized/usePeerHandleRegister'
 import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/GetUserSideInfoResp'
-import { closePeer } from '@/util/personalized/PeerCloser'
-import { closeMediaStream } from '@/util/personalized/MediaStreamCloser'
-import Peer from 'skyway-js'
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
@@ -104,7 +99,6 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
-    const skyWayApiKey = getSkyWayApiKey()
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
     const consultantId = route.params.consultant_id as string
@@ -114,15 +108,12 @@ export default defineComponent({
       getUserSideInfoFunc
     } = useGetUserSideInfo()
 
-    const {
-      peerError,
-      remoteMediaStream,
-      registerErrorHandler,
-      registerReceiveCallHandler,
-      registerCallOnOpenHandler
-    } = usePeerHandleRegister()
+    const peerError = reactive({
+      exists: false,
+      message: ''
+    })
+    const remoteMediaStream = ref(null as MediaStream | null)
 
-    let peer = null as Peer | null
     let localStream = null as MediaStream | null
     let audioCtx = null as AudioContext | null
     let processedLocalStream = null as MediaStream | null
@@ -140,9 +131,6 @@ export default defineComponent({
     const router = useRouter()
 
     const releaseAllResources = async () => {
-      closePeer(peer)
-      closeMediaStream(localStream)
-      closeMediaStream(processedLocalStream)
       if (audioCtx) {
         await audioCtx.close()
       }
@@ -168,7 +156,7 @@ export default defineComponent({
           peerError.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        const result = resp.getUserSideInfo()
+        // const result = resp.getUserSideInfo()
 
         try {
           localStream = await getAudioMediaStream()
@@ -201,7 +189,6 @@ export default defineComponent({
 
         const dest = audioCtx.createMediaStreamDestination()
 
-        console.log('after phaseVocoderProcessorNode.connect(audioCtx.destination)')
         const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
         if (param) {
           console.log('param')
@@ -221,21 +208,21 @@ export default defineComponent({
           return
         }
 
-        peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
-        if (!peer) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_INITIALIZE_PEER
-          return
-        }
-        // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
-        // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
-        registerErrorHandler(peer)
-        registerReceiveCallHandler(peer, processedLocalStream)
-        const consultantPeerId = result.consultant_peer_id
-        if (!consultantPeerId) {
-          return
-        }
-        registerCallOnOpenHandler(peer, processedLocalStream, consultantPeerId)
+        // peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
+        // if (!peer) {
+        //   peerError.exists = true
+        //   peerError.message = Message.FAILED_TO_INITIALIZE_PEER
+        //   return
+        // }
+        // // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
+        // // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
+        // registerErrorHandler(peer)
+        // registerReceiveCallHandler(peer, processedLocalStream)
+        // const consultantPeerId = result.consultant_peer_id
+        // if (!consultantPeerId) {
+        //   return
+        // }
+        // registerCallOnOpenHandler(peer, processedLocalStream, consultantPeerId)
       } catch (e) {
         peerError.exists = true
         peerError.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -269,7 +256,6 @@ export default defineComponent({
     }
 
     onMounted(async () => {
-      // await processGetUserSideInfo()
       await processGetConsultantDetail()
     })
 
