@@ -24,9 +24,9 @@ use crate::util::session::User;
 
 use super::{
     create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,
-    get_consultation_with_exclusive_lock, validate_consultation_id_is_positive, Consultation,
-    SkyWayIdentification, LEEWAY_IN_MINUTES, SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY,
-    VALID_TOKEN_DURATION_IN_SECONDS,
+    ensure_consultation_room_can_be_opened, get_consultation_with_exclusive_lock,
+    validate_consultation_id_is_positive, Consultation, SkyWayIdentification,
+    SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY, VALID_TOKEN_DURATION_IN_SECONDS,
 };
 
 pub(crate) async fn get_user_side_info(
@@ -84,18 +84,10 @@ async fn handle_user_side_info(
     ensure_user_account_id_is_valid(result.user_account_id, account_id)?;
     let _ = get_consultant_if_available(result.consultant_id, &op).await?;
     let _ = get_user_account_if_available(result.user_account_id, &op).await?;
-    let leeway = Duration::minutes(LEEWAY_IN_MINUTES);
-    let criteria = result.consultation_date_time_in_jst - leeway;
-    if *current_date_time < criteria {
-        error!("consultation room has not opened yet (current_date_time: {}, consultation_date_time_in_jst: {}, leeway: {})", 
-            current_date_time, result.consultation_date_time_in_jst, leeway);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::ConsultationRoomHasNotOpenedYet as u32,
-            }),
-        ));
-    }
+    ensure_consultation_room_can_be_opened(
+        current_date_time,
+        &result.consultation_date_time_in_jst,
+    )?;
 
     let expiration_date_time =
         *current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);

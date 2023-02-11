@@ -254,6 +254,25 @@ async fn find_consultation_by_consultation_id(
     }))
 }
 
+fn ensure_consultation_room_can_be_opened(
+    current_date_time: &DateTime<FixedOffset>,
+    consultation_date_time_in_jst: &DateTime<FixedOffset>,
+) -> Result<(), ErrResp> {
+    let leeway = Duration::minutes(LEEWAY_IN_MINUTES);
+    let criteria = *consultation_date_time_in_jst - leeway;
+    if *current_date_time < criteria {
+        error!("consultation room has not opened yet (current_date_time: {}, consultation_date_time_in_jst: {}, leeway: {})", 
+            current_date_time, consultation_date_time_in_jst, leeway);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultationRoomHasNotOpenedYet as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
 async fn get_consultation_with_exclusive_lock(
     consultation_id: i64,
     txn: &DatabaseTransaction,
