@@ -124,7 +124,7 @@ fn create_sky_way_auth_token_payload(
 ) -> Result<SkyWayAuthTokenPayload, ErrResp> {
     let duration = Duration::seconds(MAX_DURATION_IN_SECONDS);
     let criteria = current_date_time + duration;
-    if criteria > expiration_date_time {
+    if criteria < expiration_date_time {
         error!(
             "current_date_time ({}) over expiration_date_time ({})",
             current_date_time, expiration_date_time
