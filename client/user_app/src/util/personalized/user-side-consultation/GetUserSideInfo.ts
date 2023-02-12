@@ -2,8 +2,8 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { GetUserSideInfoResp } from './GetUserSideInfoResp'
 import { UserSideInfo } from './UserSideInfo'
 
-export async function getUserSideInfo (consultationId: string): Promise<GetUserSideInfoResp | ApiErrorResp> {
-  const params = { consultation_id: consultationId }
+export async function getUserSideInfo (consultationId: string, audioTestDone: boolean): Promise<GetUserSideInfoResp | ApiErrorResp> {
+  const params = { consultation_id: consultationId, audio_test_done: audioTestDone.toString() }
   const query = new URLSearchParams(params)
   const response = await fetch(`/api/user-side-info?${query}`, {
     method: 'GET'

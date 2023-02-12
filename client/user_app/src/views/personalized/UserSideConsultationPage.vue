@@ -5,29 +5,40 @@
       <WaitingCircle />
     </div>
     <main v-else>
-      <div v-if="peerError.exists">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <AlertMessage class="mt-2" v-bind:message="peerError.message"/>
+      <div>
+        <div v-if="!userSideInfo" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+            <div class="m-4 text-xl grid grid-cols-6 justify-center items-center">
+              <div class="col-span-5">私は音声入出力テストで使用中の環境に問題がないことを確認しました</div>
+              <input v-model="audioTestDone" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+            </div>
+          </div>
+          <button v-bind:disabled="!audioTestDone" v-on:click="processGetUserSideInfo" class="mt-4 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談を開始する</button>
+          <div v-if="getUserSideInfoErr.exists">
+            <AlertMessage class="mt-2" v-bind:message="getUserSideInfoErr.message"/>
+          </div>
         </div>
-      </div>
-      <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <div v-if="remoteMediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
-            <img class="w-full md:w-4/5 self-center" src="/user-side-consultation/consultant-silhouette.png" />
-            <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
-              <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
-            </audio>
+        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <div v-if="mediaError.exists">
+            <AlertMessage class="mt-2" v-bind:message="mediaError.message"/>
           </div>
           <div v-else>
-            <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
-            <h3 class="font-bold text-2xl text-center">相手との接続が切断された場合、一度退出し、再度入室して下さい。</h3>
+            <div v-if="remoteMediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
+              <img class="w-full md:w-4/5 self-center" src="/user-side-consultation/consultant-silhouette.png" />
+              <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
+                <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
+              </audio>
+            </div>
+            <div v-else>
+              <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
+              <h3 class="font-bold text-2xl text-center">相手との接続が切断された場合、一度退出し、再度入室して下さい。</h3>
+            </div>
           </div>
-          <button v-on:click="processGetUserSideInfo" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">テスト</button>
         </div>
       </div>
-      <div v-if="error.exists">
+      <div v-if="getConsultantDetailError.exists">
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <AlertMessage class="mt-2" v-bind:message="error.message"/>
+          <AlertMessage class="mt-2" v-bind:message="getConsultantDetailError.message"/>
         </div>
       </div>
       <div v-else>
@@ -90,6 +101,7 @@ import { useGetConsultantDetail } from '@/util/personalized/consultant-detail/us
 import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/GetConsultantDetailResp'
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
+import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -102,23 +114,27 @@ export default defineComponent({
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
     const consultantId = route.params.consultant_id as string
+    const router = useRouter()
 
+    const getUserSideInfoErr = reactive({
+      exists: false,
+      message: ''
+    })
     const {
       getUserSideInfoDone,
       getUserSideInfoFunc
     } = useGetUserSideInfo()
+    const audioTestDone = ref(false)
+    const userSideInfo = ref(null as UserSideInfo | null)
 
-    const peerError = reactive({
+    const mediaError = reactive({
       exists: false,
       message: ''
     })
+    let localStream = null as MediaStream | null
     const remoteMediaStream = ref(null as MediaStream | null)
 
-    let localStream = null as MediaStream | null
-    let audioCtx = null as AudioContext | null
-    let processedLocalStream = null as MediaStream | null
-
-    const error = reactive({
+    const getConsultantDetailError = reactive({
       exists: false,
       message: ''
     })
@@ -128,18 +144,29 @@ export default defineComponent({
       getConsultantDetailFunc
     } = useGetConsultantDetail()
 
-    const router = useRouter()
-
     const releaseAllResources = async () => {
-      if (audioCtx) {
-        await audioCtx.close()
+      try {
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop())
+          localStream = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      try {
+        if (remoteMediaStream.value) {
+          remoteMediaStream.value.getTracks().forEach(track => track.stop())
+          remoteMediaStream.value = null
+        }
+      } catch (e) {
+        console.error(e)
       }
     }
 
     const processGetUserSideInfo = async () => {
       await releaseAllResources()
       try {
-        const resp = await getUserSideInfoFunc(consultationId)
+        const resp = await getUserSideInfoFunc(consultationId, audioTestDone.value)
         if (!(resp instanceof GetUserSideInfoResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
@@ -152,80 +179,38 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          peerError.exists = true
-          peerError.message = createErrorMessage(resp.getApiError().getCode())
+          getUserSideInfoErr.exists = true
+          getUserSideInfoErr.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        // const result = resp.getUserSideInfo()
+        userSideInfo.value = resp.getUserSideInfo()
+      } catch (e) {
+        getUserSideInfoErr.exists = true
+        getUserSideInfoErr.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        return
+      }
 
+      try {
+        if (!userSideInfo.value) {
+          mediaError.exists = true
+          mediaError.message = Message.UNEXPECTED_ERR
+          return
+        }
         try {
           localStream = await getAudioMediaStream()
         } catch (e) {
-          peerError.exists = true
-          peerError.message = createGetAudioMediaStreamErrMessage(e)
+          mediaError.exists = true
+          mediaError.message = createGetAudioMediaStreamErrMessage(e)
           return
         }
         if (!localStream) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          mediaError.exists = true
+          mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
           return
         }
-
-        audioCtx = new AudioContext()
-        if (!audioCtx) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
-          return
-        }
-        const source = audioCtx.createMediaStreamSource(localStream)
-        const u = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
-        try {
-          await audioCtx.audioWorklet.addModule(u)
-        } catch (e) {
-          console.error(`failed to call addModule: ${e}`)
-          return
-        }
-        const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, 'phase-vocoder-processor')
-
-        const dest = audioCtx.createMediaStreamDestination()
-
-        const param = phaseVocoderProcessorNode.parameters.get('pitchFactor')
-        if (param) {
-          console.log('param')
-          param.value = 1.25 * 1 / 1
-        } else {
-          console.log('!param')
-        }
-
-        source.connect(phaseVocoderProcessorNode)
-        phaseVocoderProcessorNode.connect(dest)
-        // source.connect(audioCtx.destination)
-
-        processedLocalStream = dest.stream
-        if (!processedLocalStream) {
-          peerError.exists = true
-          peerError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
-          return
-        }
-
-        // peer = new Peer(result.user_account_peer_id, { key: skyWayApiKey, credential: result.credential, debug: 0 })
-        // if (!peer) {
-        //   peerError.exists = true
-        //   peerError.message = Message.FAILED_TO_INITIALIZE_PEER
-        //   return
-        // }
-        // // NOTE: peerを生成してからすべてのハンドラを登録するまでの間にawaitを含む構文を使ってはいけない
-        // // （ハンドラが登録される前にイベントが発生し、そのイベントの取りこぼしが発生する可能性があるため）
-        // registerErrorHandler(peer)
-        // registerReceiveCallHandler(peer, processedLocalStream)
-        // const consultantPeerId = result.consultant_peer_id
-        // if (!consultantPeerId) {
-        //   return
-        // }
-        // registerCallOnOpenHandler(peer, processedLocalStream, consultantPeerId)
       } catch (e) {
-        peerError.exists = true
-        peerError.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        mediaError.exists = true
+        mediaError.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -244,14 +229,14 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          error.exists = true
-          error.message = createErrorMessage(resp.getApiError().getCode())
+          getConsultantDetailError.exists = true
+          getConsultantDetailError.message = createErrorMessage(resp.getApiError().getCode())
           return
         }
         consultantDetail.value = resp.getConsultantDetail()
       } catch (e) {
-        error.exists = true
-        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        getConsultantDetailError.exists = true
+        getConsultantDetailError.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -268,19 +253,22 @@ export default defineComponent({
     }
 
     return {
+      getUserSideInfoErr,
       getUserSideInfoDone,
-      peerError,
+      audioTestDone,
+      processGetUserSideInfo,
+      userSideInfo,
+      mediaError,
       remoteMediaStream,
-      leaveConsultationRoom,
+      getConsultantDetailError,
       getConsultantDetailDone,
-      error,
       consultantDetail,
       convertYearsOfServiceValue,
       convertEmployedValue,
       convertContractTypeValue,
       convertIsManagerValue,
       convertIsNewGraduateValue,
-      processGetUserSideInfo
+      leaveConsultationRoom
     }
   }
 })
