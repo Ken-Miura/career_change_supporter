@@ -102,6 +102,7 @@ import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/G
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
+import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, RemoteAudioStream, RoomPublication, SkyWayAuthToken, SkyWayContext, SkyWayRoom, SkyWayStreamFactory } from '@skyway-sdk/room'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -132,6 +133,9 @@ export default defineComponent({
       message: ''
     })
     let localStream = null as MediaStream | null
+    let context = null as SkyWayContext | null
+    let room = null as P2PRoom | null
+    let localAudioStream = null as LocalAudioStream | null
     const remoteMediaStream = ref(null as MediaStream | null)
 
     const getConsultantDetailError = reactive({
@@ -146,9 +150,26 @@ export default defineComponent({
 
     const releaseAllResources = async () => {
       try {
-        if (localStream) {
-          localStream.getTracks().forEach(track => track.stop())
-          localStream = null
+        if (localAudioStream) {
+          localAudioStream.release()
+          localAudioStream = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      try {
+        if (room) {
+          room.close()
+          room.dispose()
+          room = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      try {
+        if (context) {
+          context.dispose()
+          context = null
         }
       } catch (e) {
         console.error(e)
@@ -157,6 +178,14 @@ export default defineComponent({
         if (remoteMediaStream.value) {
           remoteMediaStream.value.getTracks().forEach(track => track.stop())
           remoteMediaStream.value = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      try {
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop())
+          localStream = null
         }
       } catch (e) {
         console.error(e)
@@ -208,6 +237,44 @@ export default defineComponent({
           mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
           return
         }
+        context = await SkyWayContext.Create(userSideInfo.value.token)
+        if (!context) {
+          mediaError.exists = true
+          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+          return
+        }
+        room = await SkyWayRoom.FindOrCreate(context, {
+          type: 'p2p',
+          name: userSideInfo.value.room_name
+        })
+        if (!room) {
+          mediaError.exists = true
+          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+          return
+        }
+        const me = await room.join({ name: userSideInfo.value.member_name })
+        localAudioStream = new LocalAudioStream(localStream.getAudioTracks()[0].clone())
+        if (!localAudioStream) {
+          mediaError.exists = true
+          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+          return
+        }
+        me.publish(localAudioStream)
+
+        const subscribe = async (publication: RoomPublication) => {
+          if (publication.publisher.id === me.id) {
+            return
+          }
+          const { stream } = await me.subscribe(publication.id)
+          if (!(stream instanceof RemoteAudioStream)) {
+            mediaError.exists = true
+            mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+            return
+          }
+          remoteMediaStream.value = new MediaStream([stream.track.clone()])
+        }
+        room.publications.forEach(subscribe)
+        room.onStreamPublished.add((e) => subscribe(e.publication))
       } catch (e) {
         mediaError.exists = true
         mediaError.message = `${Message.UNEXPECTED_ERR}: ${e}`
