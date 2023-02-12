@@ -5,25 +5,37 @@
       <WaitingCircle />
     </div>
     <main v-else>
-      <div v-if="peerError.exists">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <AlertMessage class="mt-2" v-bind:message="peerError.message"/>
+      <div>
+        <!-- <div v-if="!userSideInfo" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+            <div class="m-4 text-xl grid grid-cols-6 justify-center items-center">
+              <div class="col-span-5">私は音声入出力テストで使用中の環境に問題がないことを確認しました</div>
+              <input v-model="audioTestDone" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+            </div>
+          </div>
+          <button v-bind:disabled="!audioTestDone" v-on:click="processGetUserSideInfo" class="mt-4 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談を開始する</button>
+          <div v-if="getUserSideInfoErr.exists">
+            <AlertMessage class="mt-2" v-bind:message="getUserSideInfoErr.message"/>
+          </div>
         </div>
-      </div>
-      <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <div v-if="remoteMediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
-            <img class="w-full md:w-4/5 self-center" src="/user-side-consultation/consultant-silhouette.png" />
-            <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
-              <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
-            </audio>
+        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <div v-if="mediaError.exists">
+            <AlertMessage class="mt-2" v-bind:message="mediaError.message"/>
           </div>
           <div v-else>
-            <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
-            <h3 class="font-bold text-2xl text-center">相手との接続が切断された場合、一度退出し、再度入室して下さい。</h3>
+            <div v-if="remoteMediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
+              <img class="w-full md:w-4/5 self-center" src="/user-side-consultation/consultant-silhouette.png" />
+              <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
+                <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
+              </audio>
+            </div>
+            <div v-else>
+              <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
+              <h3 class="font-bold text-2xl text-center">相手との接続が切断された場合、一度退出し、再度入室して下さい。</h3>
+            </div>
+            <p class="mt-6 text-xl text-center">相談時間（１時間）が過ぎたタイミングで会議室は自動的に閉じられません（相談時間が過ぎてから、一定時間後に自動的に閉じられます）相談してから１時間が経過したとき、あなたの判断で退出し、相談を終了させて下さい</p>
           </div>
-          <p class="mt-6 text-xl text-center">相談時間（１時間）が過ぎたタイミングで会議室は自動的に閉じられません（相談時間が過ぎてから、一定時間後に自動的に閉じられます）相談してから１時間が経過したとき、あなたの判断で退出し、相談を終了させて下さい</p>
-        </div>
+        </div> -->
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">相談相手の情報</h3>
@@ -57,7 +69,7 @@ export default defineComponent({
   name: 'ConsultantSideConsultationPage',
   components: {
     TheHeader,
-    AlertMessage,
+    // AlertMessage,
     WaitingCircle
   },
   setup () {

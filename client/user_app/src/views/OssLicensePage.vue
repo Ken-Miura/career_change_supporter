@@ -15,10 +15,10 @@
         <p class="ml-6">https://github.com/indutny/fft.js/#license</p>
       </div>
       <div class="mt-4">
-        <h2 class="font-bold"><a class="hover:underline" href="https://www.npmjs.com/package/@skyway-sdk/room">@skyway-sdk/room</a></h2>
-        <p class="ml-4">関連するページ上に明確なコピーライト表記は見つかりませんでした</p>
+        <h2 class="font-bold"><a class="hover:underline" href="https://github.com/skyway/js-sdk">SkyWay JS-SDK</a></h2>
+        <p class="ml-4">Copyright (c) 2023 WebRTC Platform SkyWay</p>
         <p class="ml-4">Released under the MIT license</p>
-        <p class="ml-6">https://www.npmjs.com/package/@skyway-sdk/room</p>
+        <p class="ml-6">https://github.com/skyway/js-sdk/blob/main/LICENSE</p>
       </div>
       <div class="mt-4">
         <h2 class="font-bold"><a class="hover:underline" href="https://github.com/tailwindlabs/tailwindcss">tailwindcss</a></h2>
