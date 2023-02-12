@@ -102,7 +102,7 @@ import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/G
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
-import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, RemoteAudioStream, RoomPublication, SkyWayAuthToken, SkyWayContext, SkyWayRoom, SkyWayStreamFactory } from '@skyway-sdk/room'
+import { LocalAudioStream, P2PRoom, RemoteAudioStream, RoomPublication, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
