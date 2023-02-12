@@ -67,8 +67,8 @@ const VALID_TOKEN_DURATION_IN_SECONDS: i64 =
 // https://skyway.ntt.com/ja/docs/user-guide/authentication/
 #[derive(Clone, Debug, Serialize, PartialEq)]
 struct SkyWayAuthTokenPayload {
-    iat: i64,    // 秒単位のタイムスタンプ（DateTime<FixedOffset>.timestamp()で取得できる値）
     jti: String, // UUID V4（6668affc-5afa-4996-b65a-6afe2f72756b のようなハイフン有り形式）
+    iat: i64,    // 秒単位のタイムスタンプ（DateTime<FixedOffset>.timestamp()で取得できる値）
     exp: i64,    // 秒単位のタイムスタンプ（DateTime<FixedOffset>.timestamp()で取得できる値）
     scope: SkyWayScope,
 }
@@ -185,7 +185,7 @@ fn create_sky_way_auth_token(
     secret: &[u8],
 ) -> Result<String, ErrResp> {
     let header = Header {
-        alg: Algorithm::HS512,
+        alg: Algorithm::HS256,
         typ: Some("JWT".to_string()),
         cty: None,
         jku: None,
