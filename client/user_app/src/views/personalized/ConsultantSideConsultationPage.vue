@@ -81,7 +81,7 @@ export default defineComponent({
 
     onMounted(async () => {
       try {
-        const resp = await getConsultantSideInfoFunc(consultationId)
+        const resp = await getConsultantSideInfoFunc(consultationId, false)
         if (!(resp instanceof GetConsultantSideInfoResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)

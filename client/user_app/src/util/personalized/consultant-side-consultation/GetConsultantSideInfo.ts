@@ -2,8 +2,8 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { GetConsultantSideInfoResp } from './GetConsultantSideInfoResp'
 import { ConsultantSideInfo } from './ConsultantSideInfo'
 
-export async function getConsultantSideInfo (consultationId: string): Promise<GetConsultantSideInfoResp | ApiErrorResp> {
-  const params = { consultation_id: consultationId }
+export async function getConsultantSideInfo (consultationId: string, audioTestDone: boolean): Promise<GetConsultantSideInfoResp | ApiErrorResp> {
+  const params = { consultation_id: consultationId, audio_test_done: audioTestDone.toString() }
   const query = new URLSearchParams(params)
   const response = await fetch(`/api/consultant-side-info?${query}`, {
     method: 'GET'
