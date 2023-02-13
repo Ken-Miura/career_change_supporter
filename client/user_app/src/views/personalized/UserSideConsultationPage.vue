@@ -23,8 +23,8 @@
             <AlertMessage class="mt-2" v-bind:message="mediaError.message"/>
           </div>
           <div v-else>
-            <div v-if="remoteMediaStream" class="flex flex-col justify-center items-center self-center w-full md:w-3/5">
-              <img class="w-full md:w-4/5 self-center" src="/user-side-consultation/consultant-silhouette.png" />
+            <div v-if="remoteMediaStream" class="flex flex-col items-center w-full">
+              <img class="w-full md:w-3/5" src="/user-side-consultation/consultant-silhouette.png" />
               <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
                 <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
               </audio>
@@ -102,7 +102,7 @@ import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/G
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
-import { LocalAudioStream, P2PRoom, RemoteAudioStream, RoomPublication, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
+import { LocalAudioStream, P2PRoom, RoomPublication, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -266,12 +266,14 @@ export default defineComponent({
             return
           }
           const { stream } = await me.subscribe(publication.id)
-          if (!(stream instanceof RemoteAudioStream)) {
-            mediaError.exists = true
-            mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-            return
+          switch (stream.contentType) {
+            case 'audio':
+              remoteMediaStream.value = new MediaStream([stream.track.clone()])
+              break
+            default:
+              mediaError.exists = true
+              mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
           }
-          remoteMediaStream.value = new MediaStream([stream.track.clone()])
         }
         room.publications.forEach(subscribe)
         room.onStreamPublished.add((e) => subscribe(e.publication))
