@@ -103,6 +103,8 @@ import { ConsultantDetail } from '@/util/personalized/consultant-detail/Consulta
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
 import { LocalAudioStream, P2PRoom, RoomPublication, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
+import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
+import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -133,6 +135,8 @@ export default defineComponent({
       message: ''
     })
     let localStream = null as MediaStream | null
+    let audioCtx = null as AudioContext | null
+    let processedStream = null as MediaStream | null
     let context = null as SkyWayContext | null
     let room = null as P2PRoom | null
     let localAudioStream = null as LocalAudioStream | null
@@ -183,6 +187,22 @@ export default defineComponent({
         console.error(e)
       }
       try {
+        if (processedStream) {
+          processedStream.getTracks().forEach(track => track.stop())
+          processedStream = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      try {
+        if (audioCtx) {
+          await audioCtx.close()
+          audioCtx = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      try {
         if (localStream) {
           localStream.getTracks().forEach(track => track.stop())
           localStream = null
@@ -225,6 +245,8 @@ export default defineComponent({
           mediaError.message = Message.UNEXPECTED_ERR
           return
         }
+
+        // 音声ストリーム取得
         try {
           localStream = await getAudioMediaStream()
         } catch (e) {
@@ -237,6 +259,48 @@ export default defineComponent({
           mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
           return
         }
+
+        // 音声ストリーム加工
+        try {
+          audioCtx = new AudioContext()
+        } catch (e) {
+          mediaError.exists = true
+          mediaError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
+        }
+        if (!audioCtx) {
+          mediaError.exists = true
+          mediaError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT
+          return
+        }
+        const source = audioCtx.createMediaStreamSource(localStream)
+        const moduleUrl = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
+        try {
+          await audioCtx.audioWorklet.addModule(moduleUrl)
+        } catch (e) {
+          mediaError.exists = true
+          mediaError.message = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
+          return
+        }
+        const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
+        const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
+        if (!param) {
+          mediaError.exists = true
+          mediaError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
+          return
+        }
+        param.value = generatePitchFactor()
+        const destNode = audioCtx.createMediaStreamDestination()
+        source.connect(phaseVocoderProcessorNode)
+        phaseVocoderProcessorNode.connect(destNode)
+
+        processedStream = destNode.stream
+        if (!processedStream) {
+          mediaError.exists = true
+          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+          return
+        }
+
+        // 加工音声の送信
         context = await SkyWayContext.Create(userSideInfo.value.token)
         if (!context) {
           mediaError.exists = true
@@ -253,7 +317,7 @@ export default defineComponent({
           return
         }
         const me = await room.join({ name: userSideInfo.value.member_name })
-        localAudioStream = new LocalAudioStream(localStream.getAudioTracks()[0].clone())
+        localAudioStream = new LocalAudioStream(processedStream.getAudioTracks()[0].clone())
         if (!localAudioStream) {
           mediaError.exists = true
           mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
@@ -306,6 +370,7 @@ export default defineComponent({
       } catch (e) {
         getConsultantDetailError.exists = true
         getConsultantDetailError.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        await releaseAllResources()
       }
     }
 
