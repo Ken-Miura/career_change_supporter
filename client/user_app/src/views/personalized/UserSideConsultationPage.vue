@@ -163,7 +163,7 @@ export default defineComponent({
       }
       try {
         if (room) {
-          room.close()
+          await room.close()
           room = null
         }
       } catch (e) {
