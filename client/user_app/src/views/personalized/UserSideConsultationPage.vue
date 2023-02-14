@@ -317,7 +317,7 @@ export default defineComponent({
           return
         }
         const me = await room.join({ name: userSideInfo.value.member_name })
-        localAudioStream = new LocalAudioStream(processedStream.getAudioTracks()[0].clone())
+        localAudioStream = new LocalAudioStream(processedStream.getAudioTracks()[0])
         if (!localAudioStream) {
           mediaError.exists = true
           mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
@@ -332,7 +332,7 @@ export default defineComponent({
           const { stream } = await me.subscribe(publication.id)
           switch (stream.contentType) {
             case 'audio':
-              remoteMediaStream.value = new MediaStream([stream.track.clone()])
+              remoteMediaStream.value = new MediaStream([stream.track])
               break
             default:
               mediaError.exists = true
