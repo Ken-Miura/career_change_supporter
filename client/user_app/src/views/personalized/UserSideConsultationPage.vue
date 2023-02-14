@@ -164,7 +164,6 @@ export default defineComponent({
       try {
         if (room) {
           room.close()
-          room.dispose()
           room = null
         }
       } catch (e) {
@@ -341,6 +340,21 @@ export default defineComponent({
         }
         room.publications.forEach(subscribe)
         room.onStreamPublished.add((e) => subscribe(e.publication))
+        room.onMemberLeft.add(e => {
+          if (me.id === e.member.id) {
+            return
+          }
+          // 1対1の通話のため、自身以外がRoomから出たのであればRoomには誰もいない
+          // そのため、映像は切断となる
+          try {
+            if (remoteMediaStream.value) {
+              remoteMediaStream.value.getTracks().forEach(track => track.stop())
+              remoteMediaStream.value = null
+            }
+          } catch (e) {
+            console.error(e)
+          }
+        })
       } catch (e) {
         mediaError.exists = true
         mediaError.message = `${Message.UNEXPECTED_ERR}: ${e}`
