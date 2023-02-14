@@ -102,7 +102,7 @@ import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/G
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
-import { LocalAudioStream, P2PRoom, RoomPublication, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
+import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, RoomPublication, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
 import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
 import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
 
@@ -139,6 +139,7 @@ export default defineComponent({
     let processedStream = null as MediaStream | null
     let context = null as SkyWayContext | null
     let room = null as P2PRoom | null
+    let me = null as LocalP2PRoomMember | null
     let localAudioStream = null as LocalAudioStream | null
     const remoteMediaStream = ref(null as MediaStream | null)
 
@@ -154,6 +155,14 @@ export default defineComponent({
 
     const releaseAllResources = async () => {
       try {
+        if (me) {
+          await me.leave()
+          me = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      try {
         if (localAudioStream) {
           localAudioStream.release()
           localAudioStream = null
@@ -163,7 +172,9 @@ export default defineComponent({
       }
       try {
         if (room) {
-          await room.close()
+          // roomに他のメンバーが残っている状態なのでcloseは呼ばない
+          // 自身のリソースのみを開放するためにdisposeを使う
+          await room.dispose()
           room = null
         }
       } catch (e) {
@@ -315,7 +326,12 @@ export default defineComponent({
           mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
           return
         }
-        const me = await room.join({ name: userSideInfo.value.member_name })
+        me = await room.join({ name: userSideInfo.value.member_name })
+        if (!me) {
+          mediaError.exists = true
+          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+          return
+        }
         localAudioStream = new LocalAudioStream(processedStream.getAudioTracks()[0])
         if (!localAudioStream) {
           mediaError.exists = true
@@ -325,6 +341,11 @@ export default defineComponent({
         me.publish(localAudioStream)
 
         const subscribe = async (publication: RoomPublication) => {
+          if (!me) {
+            mediaError.exists = true
+            mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+            return
+          }
           if (publication.publisher.id === me.id) {
             return
           }
@@ -341,6 +362,11 @@ export default defineComponent({
         room.publications.forEach(subscribe)
         room.onStreamPublished.add((e) => subscribe(e.publication))
         room.onMemberLeft.add(e => {
+          if (!me) {
+            mediaError.exists = true
+            mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+            return
+          }
           if (me.id === e.member.id) {
             return
           }
