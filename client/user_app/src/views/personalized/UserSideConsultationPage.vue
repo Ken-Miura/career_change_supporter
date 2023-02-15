@@ -31,7 +31,6 @@
             </div>
             <div v-else>
               <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
-              <h3 class="font-bold text-2xl text-center">相手との接続が切断された場合、一度退出し、再度入室して下さい。</h3>
             </div>
           </div>
         </div>
