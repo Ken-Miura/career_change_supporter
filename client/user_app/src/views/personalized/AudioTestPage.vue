@@ -132,11 +132,11 @@ export default defineComponent({
         audioCtx = new AudioContext()
       } catch (e) {
         audioTestError.exists = true
-        audioTestError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
+        audioTestError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE
       }
       if (!audioCtx) {
         audioTestError.exists = true
-        audioTestError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT
+        audioTestError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT_MESSAGE
         return
       }
       const source = audioCtx.createMediaStreamSource(localStream)
@@ -145,14 +145,14 @@ export default defineComponent({
         await audioCtx.audioWorklet.addModule(moduleUrl)
       } catch (e) {
         audioTestError.exists = true
-        audioTestError.message = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
+        audioTestError.message = `${Message.FAILED_TO_ADD_MODULE_MESSAGE}: ${e}`
         return
       }
       const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
       const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
       if (!param) {
         audioTestError.exists = true
-        audioTestError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
+        audioTestError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND_MESSAGE}`
         return
       }
       param.value = generatePitchFactor()

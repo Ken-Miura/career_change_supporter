@@ -16,7 +16,7 @@ export function generatePitchFactor () {
   } else if (num === 1) {
     return getRandomArbitrary(LOWER_BOUNDARY_OF_HIGH_PITCH_FACTOR, UPPER_BOUNDARY_OF_HIGH_PITCH_FACTOR)
   } else {
-    throw new Error(`${Message.FAILED_TO_GENERATE_PITCH_FACTOR} (num: ${num})`)
+    throw new Error(`${Message.FAILED_TO_GENERATE_PITCH_FACTOR_MESSAGE} (num: ${num})`)
   }
 }
 
