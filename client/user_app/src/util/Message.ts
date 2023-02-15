@@ -156,13 +156,7 @@ export namespace Message {
     export const USER_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '選択された相談開始日時に関して、相談申し込み者が既に別の予定を確定させています。他の相談開始日時を選択して下さい'
     export const CONSULTANT_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '選択された相談開始日時には既に相談予定が存在します。他の相談開始日時を選択して下さい' // 操作者が相談申し込みを受けるときに発生するメッセージなので、操作者自身の誤りを示すエラーメッセージとなる
     export const MEETING_DATE_TIME_OVERLAPS_MAINTENANCE_MESSAGE = '相談開始日時がメンテナンスと重なっています。他の相談開始日時を選択して下さい'
-    export const SKY_WAY_CONNECTION_ERROR_MESSAGE = '相手との接続確立ができません。退出し、インターネットにつながっていることを確認した上で再度入室して下さい'
-    export const SKY_WAY_SERVER_ERROR_MESSAGE = '相手との接続確立中に問題が発生しました。退出し、少し待ってから再度入室して下さい'
-    export const SKY_WAY_UNAVAILABLE_PEER_ID_ERROR_MESSAGE = '相手との接続確立中に問題が発生しました。退出し、他のブラウザで相談室に入室していないことを確認した上で再度入室して下さい'
-    export const SKY_WAY_CONSULTATION_ALREADY_ENDED_ERROR_MESSAGE = '相談終了時刻が過ぎているため、相談室が閉じられました'
-    export const SKY_WAY_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているtypeとmessageを問い合わせからご連絡下さい'
     export const FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE = 'マイクとの接続に失敗しました。ブラウザからマイクを使える状態になっているか確認して下さい'
-    export const FAILED_TO_INITIALIZE_PEER = SKY_WAY_CONNECTION_ERROR_MESSAGE
     export const GET_USER_MEDIA_ABORT_ERROR = '予期せぬエラーが発生しました。別のマイク、または別の端末で再度お試し下さい'
     export const GET_USER_MEDIA_NOT_ALLOWED_ERROR = 'マイクの使用権限がありません。マイクを使用できるように権限設定を見直して下さい'
     export const GET_USER_MEDIA_NOT_FOUND_ERROR = 'マイクが見つかりませんでした。相談を行うためにはマイクが接続された端末をご利用下さい'
@@ -177,4 +171,5 @@ export namespace Message {
     export const FAILED_TO_ADD_MODULE = '音声加工の準備に失敗しました。通信環境をご確認の上、再度お試し下さい。通信環境に問題がない状態でこのエラーが出た場合、お使いの環境では相談を行うことが出来ません'
     export const NO_PARAM_PITCH_FACTOR_FOUND = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい: NO_PARAM_PITCH_FACTOR_FOUND'
     export const FAILED_TO_GENERATE_PITCH_FACTOR = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい: FAILED_TO_GENERATE_PITCH_FACTOR'
+    // export const SKY_WAY_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているtypeとmessageを問い合わせからご連絡下さい'
 }
