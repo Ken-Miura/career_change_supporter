@@ -22,7 +22,7 @@
           <div v-if="mediaError.exists">
             <AlertMessage class="mt-2" v-bind:message="mediaError.message"/>
           </div>
-          <div v-if="skyWayErrorExists">
+          <div v-else-if="skyWayErrorExists">
             <AlertMessage class="mt-2" v-bind:message="skyWayErrorMessage"/>
           </div>
           <div v-else>
