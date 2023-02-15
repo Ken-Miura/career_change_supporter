@@ -238,6 +238,7 @@ export default defineComponent({
         } catch (e) {
           mediaError.exists = true
           mediaError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
+          return
         }
         if (!audioCtx) {
           mediaError.exists = true
