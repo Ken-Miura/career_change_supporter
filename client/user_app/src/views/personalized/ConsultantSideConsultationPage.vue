@@ -276,7 +276,7 @@ export default defineComponent({
         processedStream = destNode.stream
         if (!processedStream) {
           mediaError.exists = true
-          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+          mediaError.message = Message.NO_PROCESSED_STREAM_FOUND
           await releaseAllResources()
           return
         }
