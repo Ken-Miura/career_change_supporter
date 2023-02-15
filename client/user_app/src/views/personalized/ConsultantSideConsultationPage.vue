@@ -22,6 +22,9 @@
           <div v-if="mediaError.exists">
             <AlertMessage class="mt-2" v-bind:message="mediaError.message"/>
           </div>
+          <div v-if="skyWayErrorExists">
+            <AlertMessage class="mt-2" v-bind:message="skyWayErrorMessage"/>
+          </div>
           <div v-else>
             <div v-if="remoteMediaStream" class="flex flex-col items-center w-full">
               <img class="w-full md:w-3/5" src="/consultant-side-consultation/user-silhouette.png" />
@@ -64,11 +67,13 @@ import { GetConsultantSideInfoResp } from '@/util/personalized/consultant-side-c
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/ConsultantSideInfo'
-import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, RoomPublication, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
+import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, SkyWayContext } from '@skyway-sdk/room'
 import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
 import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
 import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
 import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
+import { useSetupSkyWay } from '@/util/personalized/skyway/useSetUpSkyWay'
+import { createRoomItem } from '@/util/personalized/skyway/CreateRoomItem'
 
 export default defineComponent({
   name: 'ConsultantSideConsultationPage',
@@ -101,17 +106,23 @@ export default defineComponent({
     let localStream = null as MediaStream | null
     let audioCtx = null as AudioContext | null
     let processedStream = null as MediaStream | null
+
+    const {
+      skyWayErrorExists,
+      skyWayErrorMessage,
+      remoteMediaStream,
+      setupSkyWay
+    } = useSetupSkyWay()
     let context = null as SkyWayContext | null
     let room = null as P2PRoom | null
-    let me = null as LocalP2PRoomMember | null
+    let member = null as LocalP2PRoomMember | null
     let localAudioStream = null as LocalAudioStream | null
-    const remoteMediaStream = ref(null as MediaStream | null)
 
     const releaseAllResources = async () => {
       try {
-        if (me) {
-          await me.leave()
-          me = null
+        if (member) {
+          await member.leave()
+          member = null
         }
       } catch (e) {
         console.error(e)
@@ -197,6 +208,11 @@ export default defineComponent({
           return
         }
         consultantSideInfo.value = resp.getConsultantSideInfo()
+        if (!consultantSideInfo.value) {
+          getConsultantSideInfoErr.exists = true
+          getConsultantSideInfoErr.message = Message.UNEXPECTED_ERR
+          return
+        }
       } catch (e) {
         getConsultantSideInfoErr.exists = true
         getConsultantSideInfoErr.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -204,13 +220,6 @@ export default defineComponent({
       }
 
       try {
-        if (!consultantSideInfo.value) {
-          mediaError.exists = true
-          mediaError.message = Message.UNEXPECTED_ERR
-          return
-        }
-
-        // 音声ストリーム取得
         try {
           localStream = await getAudioMediaStream()
         } catch (e) {
@@ -224,7 +233,6 @@ export default defineComponent({
           return
         }
 
-        // 音声ストリーム加工
         try {
           audioCtx = new AudioContext()
         } catch (e) {
@@ -263,81 +271,24 @@ export default defineComponent({
           mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
           return
         }
-
-        // 加工音声の送信
-        context = await SkyWayContext.Create(consultantSideInfo.value.token)
-        if (!context) {
-          mediaError.exists = true
-          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-          return
-        }
-        room = await SkyWayRoom.FindOrCreate(context, {
-          type: 'p2p',
-          name: consultantSideInfo.value.room_name
-        })
-        if (!room) {
-          mediaError.exists = true
-          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-          return
-        }
-        me = await room.join({ name: consultantSideInfo.value.member_name })
-        if (!me) {
-          mediaError.exists = true
-          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-          return
-        }
-        localAudioStream = new LocalAudioStream(processedStream.getAudioTracks()[0])
-        if (!localAudioStream) {
-          mediaError.exists = true
-          mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-          return
-        }
-        me.publish(localAudioStream)
-
-        const subscribe = async (publication: RoomPublication) => {
-          if (!me) {
-            mediaError.exists = true
-            mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-            return
-          }
-          if (publication.publisher.id === me.id) {
-            return
-          }
-          const { stream } = await me.subscribe(publication.id)
-          switch (stream.contentType) {
-            case 'audio':
-              remoteMediaStream.value = new MediaStream([stream.track])
-              break
-            default:
-              mediaError.exists = true
-              mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-          }
-        }
-        room.publications.forEach(subscribe)
-        room.onStreamPublished.add((e) => subscribe(e.publication))
-        room.onMemberLeft.add(e => {
-          if (!me) {
-            mediaError.exists = true
-            mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
-            return
-          }
-          if (me.id === e.member.id) {
-            return
-          }
-          // 1対1の通話のため、自身以外がRoomから出たのであればRoomには誰もいない
-          // そのため、映像は切断となる
-          try {
-            if (remoteMediaStream.value) {
-              remoteMediaStream.value.getTracks().forEach(track => track.stop())
-              remoteMediaStream.value = null
-            }
-          } catch (e) {
-            console.error(e)
-          }
-        })
       } catch (e) {
         mediaError.exists = true
         mediaError.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        await releaseAllResources()
+        return
+      }
+
+      try {
+        const audioTrack = processedStream.getAudioTracks()[0]
+        const roomItem = await createRoomItem(consultantSideInfo.value.token, consultantSideInfo.value.room_name, consultantSideInfo.value.member_name, audioTrack)
+        context = roomItem.context
+        room = roomItem.room
+        member = roomItem.member
+        localAudioStream = roomItem.localAudioStream
+        setupSkyWay(roomItem.context, roomItem.room, roomItem.member, roomItem.localAudioStream)
+      } catch (e) {
+        skyWayErrorExists.value = true
+        skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
         await releaseAllResources()
       }
     }
@@ -357,6 +308,8 @@ export default defineComponent({
       processGetConsultantSideInfo,
       consultantSideInfo,
       mediaError,
+      skyWayErrorExists,
+      skyWayErrorMessage,
       remoteMediaStream,
       leaveConsultationRoom,
       userAccountId
