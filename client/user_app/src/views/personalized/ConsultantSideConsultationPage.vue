@@ -225,11 +225,13 @@ export default defineComponent({
         } catch (e) {
           mediaError.exists = true
           mediaError.message = createGetAudioMediaStreamErrMessage(e)
+          await releaseAllResources()
           return
         }
         if (!localStream) {
           mediaError.exists = true
           mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          await releaseAllResources()
           return
         }
 
@@ -238,11 +240,13 @@ export default defineComponent({
         } catch (e) {
           mediaError.exists = true
           mediaError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
+          await releaseAllResources()
           return
         }
         if (!audioCtx) {
           mediaError.exists = true
           mediaError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT
+          await releaseAllResources()
           return
         }
         const source = audioCtx.createMediaStreamSource(localStream)
@@ -252,6 +256,7 @@ export default defineComponent({
         } catch (e) {
           mediaError.exists = true
           mediaError.message = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
+          await releaseAllResources()
           return
         }
         const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
@@ -259,6 +264,7 @@ export default defineComponent({
         if (!param) {
           mediaError.exists = true
           mediaError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
+          await releaseAllResources()
           return
         }
         param.value = generatePitchFactor()
@@ -270,6 +276,7 @@ export default defineComponent({
         if (!processedStream) {
           mediaError.exists = true
           mediaError.message = Message.UNEXPECTED_ERR // TODO: replace error message
+          await releaseAllResources()
           return
         }
       } catch (e) {
