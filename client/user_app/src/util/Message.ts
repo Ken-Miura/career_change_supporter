@@ -169,8 +169,9 @@ export namespace Message {
     export const FAILED_TO_CREATE_AUDIO_CONTEXT = '音声加工の準備中にエラーが発生しました。お使いの環境では相談を行うことが出来ません'
     export const FAILED_TO_GET_AUDIO_CONTEXT = '音声加工の準備に失敗しました。お使いの環境では相談を行うことが出来ません'
     export const FAILED_TO_ADD_MODULE = '音声加工の準備に失敗しました。通信環境をご確認の上、再度お試し下さい。通信環境に問題がない状態でこのエラーが出た場合、お使いの環境では相談を行うことが出来ません'
-    export const NO_PARAM_PITCH_FACTOR_FOUND = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい: NO_PARAM_PITCH_FACTOR_FOUND'
-    export const FAILED_TO_GENERATE_PITCH_FACTOR = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい: FAILED_TO_GENERATE_PITCH_FACTOR'
-    export const NO_PROCESSED_STREAM_FOUND = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい: NO_PROCESSED_STREAM_FOUND'
+    const REPORT_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい'
+    export const NO_PARAM_PITCH_FACTOR_FOUND = `${REPORT_UNEXPECTED_ERROR}: NO_PARAM_PITCH_FACTOR_FOUND`
+    export const FAILED_TO_GENERATE_PITCH_FACTOR = `${REPORT_UNEXPECTED_ERROR}: FAILED_TO_GENERATE_PITCH_FACTOR`
+    export const NO_PROCESSED_STREAM_FOUND = `${REPORT_UNEXPECTED_ERROR}: NO_PROCESSED_STREAM_FOUND`
     // export const SKY_WAY_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているtypeとmessageを問い合わせからご連絡下さい'
 }
