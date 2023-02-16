@@ -21,7 +21,7 @@ export function useSetupSkyWay () {
           break
         default:
           skyWayErrorExists.value = true
-          skyWayErrorMessage.value = Message.UNEXPECTED_ERR // TODO: replace error message
+          skyWayErrorMessage.value = Message.NON_AUDIO_STREAM_DETECTED
       }
     }
 
