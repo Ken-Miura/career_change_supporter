@@ -1,5 +1,6 @@
 import { MAX_ANNUAL_INCOME_IN_MAN_YEN, MIN_ANNUAL_INCOME_IN_MAN_YEN } from './AnnualIncome'
 import { MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN } from './Fee'
+import { LEEWAY_IN_MINUTES } from './Leeway'
 
 const RETRY_REQUEST = '通信環境を確認し、一定時間後に再度お試し下さい'
 
@@ -183,4 +184,10 @@ export namespace Message {
     export const SKY_WAY_NO_MEMBER_FOUND_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_NO_MEMBER_FOUND`
     export const SKY_WAY_FAILED_TO_CREATE_LOCAL_AUDIO_STREAM_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_FAILED_TO_CREATE_LOCAL_AUDIO_STREAM`
     export const SKY_WAY_NO_LOCAL_AUDIO_STREAM_FOUND_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_NO_LOCAL_AUDIO_STREAM_FOUND`
+    export const NON_POSITIVE_CONSULTATION_ID_MESSAGE = '不正な相談室番号です'
+    export const NO_CONSULTATION_FOUND_MESSAGE = '指定された相談は見つかりませんでした'
+    export const CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'コンサルタントのアカウントが存在しない、または無効化されています'
+    export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'ユーザーのアカウントが存在しない、または無効化されています'
+    export const CONSULTATION_ROOM_HAS_NOT_OPENED_YET_MESSAGE = `相談室がまだ開かれていません。相談室は相談開始時刻の${LEEWAY_IN_MINUTES}分前から入室可能になります`
+    export const AUDIO_TEST_IS_NOT_DONE_MESSAGE = '音声入出力テストで使用中の環境に問題がない旨のチェックがされていません'
 }
