@@ -133,6 +133,7 @@ export default defineComponent({
       } catch (e) {
         audioTestError.exists = true
         audioTestError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE
+        return
       }
       if (!audioCtx) {
         audioTestError.exists = true
