@@ -108,7 +108,7 @@ import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSid
 import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, SkyWayContext } from '@skyway-sdk/room'
 import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
 import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
-import { createRoomItem } from '@/util/personalized/skyway/CreateRoomItem'
+import { createSkyWayItem } from '@/util/personalized/skyway/CreateSkyWayItem'
 import { useSetupSkyWay } from '@/util/personalized/skyway/useSetUpSkyWay'
 
 export default defineComponent({
@@ -334,12 +334,12 @@ export default defineComponent({
 
       try {
         const audioTrack = processedStream.getAudioTracks()[0]
-        const roomItem = await createRoomItem(userSideInfo.value.token, userSideInfo.value.room_name, userSideInfo.value.member_name, audioTrack)
-        context = roomItem.context
-        room = roomItem.room
-        member = roomItem.member
-        localAudioStream = roomItem.localAudioStream
-        setupSkyWay(roomItem.context, roomItem.room, roomItem.member, roomItem.localAudioStream)
+        const skyWayItem = await createSkyWayItem(userSideInfo.value.token, userSideInfo.value.room_name, userSideInfo.value.member_name, audioTrack)
+        context = skyWayItem.context
+        room = skyWayItem.room
+        member = skyWayItem.member
+        localAudioStream = skyWayItem.localAudioStream
+        setupSkyWay(skyWayItem.context, skyWayItem.room, skyWayItem.member, skyWayItem.localAudioStream)
       } catch (e) {
         skyWayErrorExists.value = true
         skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`

@@ -1,8 +1,8 @@
 import { Message } from '@/util/Message'
 import { LocalAudioStream, SkyWayContext, SkyWayRoom } from '@skyway-sdk/room'
-import { RoomItem } from './RoomItem'
+import { SkyWayItem } from './SkyWayItem'
 
-export async function createRoomItem (token: string, roomName: string, memberName: string, audioMediaStreamTrack: MediaStreamTrack): Promise<RoomItem> {
+export async function createSkyWayItem (token: string, roomName: string, memberName: string, audioMediaStreamTrack: MediaStreamTrack): Promise<SkyWayItem> {
   let context = null
   try {
     context = await SkyWayContext.Create(token)
@@ -51,5 +51,5 @@ export async function createRoomItem (token: string, roomName: string, memberNam
     room,
     member,
     localAudioStream
-  } as RoomItem
+  } as SkyWayItem
 }
