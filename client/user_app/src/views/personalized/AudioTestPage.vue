@@ -14,8 +14,8 @@
         <p class="mt-2 ml-2">（※1）音声入出力に関する内容のみがテスト対象です。相談を行う前に通信環境が問題ないことは別途ご確認下さい。</p>
         <p class="ml-2">（※2）（音声入出力テスト開始時、相談開始時のどちらの場合でも）声の高さの変化具合はランダムに決まります。もし、加工後の音声が聞き取りづらい場合、「音声入出力テストを停止」を押し、その後、再度「音声入出力テストを開始」を押して下さい。</p>
         <div class="mt-4 ml-4">
-          <div v-if="audioTestError.exists">
-            <AlertMessage class="mt-2" v-bind:message="audioTestError.message"/>
+          <div v-if="audioErrorMessage">
+            <AlertMessage class="mt-2" v-bind:message="audioErrorMessage"/>
           </div>
           <div class="flex flex-col" v-else>
             <button v-bind:disabled="audioTestStarted" v-on:click="startAudioTest" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">音声入出力テストを開始</button>
@@ -38,13 +38,10 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRefresh } from '@/util/personalized/refresh/useRefresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
-import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
-import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
-import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
-import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
+import { useSetupProcessedAudio } from '@/util/personalized/useSetupProcessedAudio'
 
 export default defineComponent({
   name: 'AudioTestPage',
@@ -55,6 +52,7 @@ export default defineComponent({
   },
   setup () {
     const router = useRouter()
+
     const {
       refreshDone,
       refreshFunc
@@ -63,32 +61,13 @@ export default defineComponent({
       exists: false,
       message: ''
     })
-    const audioTestError = reactive({
-      exists: false,
-      message: ''
-    })
-    const audioTestStarted = ref(false)
-    let audioCtx = null as AudioContext | null
-    let localStream = null as MediaStream | null
 
-    const releaseResources = async () => {
-      try {
-        if (audioCtx) {
-          await audioCtx.close()
-          audioCtx = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (localStream) {
-          localStream.getTracks().forEach(track => track.stop())
-          localStream = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
+    const audioTestStarted = ref(false)
+    const {
+      audioErrorMessage,
+      releaseAudioResouces,
+      setupProcessedAudioForTest
+    } = useSetupProcessedAudio()
 
     onMounted(async () => {
       try {
@@ -115,76 +94,30 @@ export default defineComponent({
       }
     })
 
-    const setUpAudio = async () => {
-      try {
-        localStream = await getAudioMediaStream()
-      } catch (e) {
-        audioTestError.exists = true
-        audioTestError.message = createGetAudioMediaStreamErrMessage(e)
-        return
-      }
-      if (!localStream) {
-        audioTestError.exists = true
-        audioTestError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
-        return
-      }
-      try {
-        audioCtx = new AudioContext()
-      } catch (e) {
-        audioTestError.exists = true
-        audioTestError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE
-        return
-      }
-      if (!audioCtx) {
-        audioTestError.exists = true
-        audioTestError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT_MESSAGE
-        return
-      }
-      const source = audioCtx.createMediaStreamSource(localStream)
-      const moduleUrl = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
-      try {
-        await audioCtx.audioWorklet.addModule(moduleUrl)
-      } catch (e) {
-        audioTestError.exists = true
-        audioTestError.message = `${Message.FAILED_TO_ADD_MODULE_MESSAGE}: ${e}`
-        return
-      }
-      const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
-      const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
-      if (!param) {
-        audioTestError.exists = true
-        audioTestError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND_MESSAGE}`
-        return
-      }
-      param.value = generatePitchFactor()
-      source.connect(phaseVocoderProcessorNode)
-      phaseVocoderProcessorNode.connect(audioCtx.destination)
-    }
-
     const startAudioTest = async () => {
       try {
         audioTestStarted.value = true
-        await setUpAudio()
+        await releaseAudioResouces()
+        await setupProcessedAudioForTest()
       } catch (e) {
-        audioTestError.exists = true
-        audioTestError.message = `${Message.UNEXPECTED_ERR}: ${e}`
-        await releaseResources()
+        audioErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        await releaseAudioResouces()
       }
     }
 
     const stopAudioTest = async () => {
-      await releaseResources()
+      await releaseAudioResouces()
       audioTestStarted.value = false
     }
 
     onUnmounted(async () => {
-      await releaseResources()
+      await releaseAudioResouces()
     })
 
     return {
       refreshDone,
       refreshError,
-      audioTestError,
+      audioErrorMessage,
       startAudioTest,
       stopAudioTest,
       audioTestStarted
