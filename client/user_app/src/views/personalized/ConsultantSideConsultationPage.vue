@@ -69,10 +69,10 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/ConsultantSideInfo'
 import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, SkyWayContext } from '@skyway-sdk/room'
-import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
-import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
-import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
-import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
+import { getAudioMediaStream } from '@/util/personalized/processed-audio/AudioMediaStream'
+import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/processed-audio/AudioMediaStreamError'
+import { generatePitchFactor } from '@/util/personalized/processed-audio/PitchFacter'
+import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/processed-audio/PhaseVocoderProcessorConst'
 import { useSetupSkyWay } from '@/util/personalized/skyway/useSetUpSkyWay'
 import { createSkyWayItem } from '@/util/personalized/skyway/CreateSkyWayItem'
 
@@ -251,7 +251,7 @@ export default defineComponent({
           return
         }
         const source = audioCtx.createMediaStreamSource(localStream)
-        const moduleUrl = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
+        const moduleUrl = new URL('@/util/personalized/processed-audio/PhaseVocoderProcessor.worker.js', import.meta.url)
         try {
           await audioCtx.audioWorklet.addModule(moduleUrl)
         } catch (e) {

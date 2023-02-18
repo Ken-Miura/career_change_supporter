@@ -14,8 +14,8 @@
         <p class="mt-2 ml-2">（※1）音声入出力に関する内容のみがテスト対象です。相談を行う前に通信環境が問題ないことは別途ご確認下さい。</p>
         <p class="ml-2">（※2）（音声入出力テスト開始時、相談開始時のどちらの場合でも）声の高さの変化具合はランダムに決まります。もし、加工後の音声が聞き取りづらい場合、「音声入出力テストを停止」を押し、その後、再度「音声入出力テストを開始」を押して下さい。</p>
         <div class="mt-4 ml-4">
-          <div v-if="audioErrorMessage">
-            <AlertMessage class="mt-2" v-bind:message="audioErrorMessage"/>
+          <div v-if="audioTestErrorMessage">
+            <AlertMessage class="mt-2" v-bind:message="audioTestErrorMessage"/>
           </div>
           <div class="flex flex-col" v-else>
             <button v-bind:disabled="audioTestStarted" v-on:click="startAudioTest" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">音声入出力テストを開始</button>
@@ -41,7 +41,8 @@ import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
-import { useSetupProcessedAudio } from '@/util/personalized/useSetupProcessedAudio'
+import { ProcessedAudioConnectedWithSpeaker } from '@/util/personalized/processed-audio/ProcessedAudio'
+import { ProcessedAudioError } from '@/util/personalized/processed-audio/ProcessedAudioError'
 
 export default defineComponent({
   name: 'AudioTestPage',
@@ -63,11 +64,8 @@ export default defineComponent({
     })
 
     const audioTestStarted = ref(false)
-    const {
-      audioErrorMessage,
-      releaseAudioResouces,
-      setupProcessedAudioForTest
-    } = useSetupProcessedAudio()
+    const audioTestErrorMessage = ref(null as string | null)
+    let processedAudioConnectedWithSpeaker: ProcessedAudioConnectedWithSpeaker | null
 
     onMounted(async () => {
       try {
@@ -94,13 +92,25 @@ export default defineComponent({
       }
     })
 
+    const releaseAudioResouces = async () => {
+      if (processedAudioConnectedWithSpeaker) {
+        await processedAudioConnectedWithSpeaker.close()
+        processedAudioConnectedWithSpeaker = null
+      }
+    }
+
     const startAudioTest = async () => {
       try {
         audioTestStarted.value = true
-        await releaseAudioResouces()
-        await setupProcessedAudioForTest()
+        const p = new ProcessedAudioConnectedWithSpeaker()
+        processedAudioConnectedWithSpeaker = p
+        await p.init()
       } catch (e) {
-        audioErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        if (e instanceof ProcessedAudioError) {
+          audioTestErrorMessage.value = `${e.message}`
+        } else {
+          audioTestErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        }
         await releaseAudioResouces()
       }
     }
@@ -117,7 +127,7 @@ export default defineComponent({
     return {
       refreshDone,
       refreshError,
-      audioErrorMessage,
+      audioTestErrorMessage,
       startAudioTest,
       stopAudioTest,
       audioTestStarted

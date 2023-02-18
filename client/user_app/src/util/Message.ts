@@ -8,6 +8,7 @@ const RETRY_REQUEST = '通信環境を確認し、一定時間後に再度お試
 // namespaceは、非推奨ではないため、代替可能な手段ができるまで利用
 // eslint-disable-next-line
 export namespace Message {
+    // サーバのエラーコードと対応するエラーメッセージ
     export const PASSWORD_CONFIRMATION_FAILED = 'パスワードと確認用パスワードが一致していません'
     export const TEMP_ACCOUNT_CREATION_FAILED = `新規登録に失敗しました。${RETRY_REQUEST}`
     export const UNEXPECTED_ERR = `予期せぬエラーが発生しました。${RETRY_REQUEST}`
@@ -157,6 +158,14 @@ export namespace Message {
     export const USER_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '選択された相談開始日時に関して、相談申し込み者が既に別の予定を確定させています。他の相談開始日時を選択して下さい'
     export const CONSULTANT_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '選択された相談開始日時には既に相談予定が存在します。他の相談開始日時を選択して下さい' // 操作者が相談申し込みを受けるときに発生するメッセージなので、操作者自身の誤りを示すエラーメッセージとなる
     export const MEETING_DATE_TIME_OVERLAPS_MAINTENANCE_MESSAGE = '相談開始日時がメンテナンスと重なっています。他の相談開始日時を選択して下さい'
+    export const NON_POSITIVE_CONSULTATION_ID_MESSAGE = '不正な相談室番号です'
+    export const NO_CONSULTATION_FOUND_MESSAGE = '指定された相談は見つかりませんでした'
+    export const CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'コンサルタントのアカウントが存在しない、または無効化されています'
+    export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'ユーザーのアカウントが存在しない、または無効化されています'
+    export const CONSULTATION_ROOM_HAS_NOT_OPENED_YET_MESSAGE = `相談室がまだ開かれていません。相談室は相談開始時刻の${LEEWAY_IN_MINUTES}分前から入室可能になります`
+    export const AUDIO_TEST_IS_NOT_DONE_MESSAGE = '音声入出力テストで使用中の環境に問題がない旨のチェックがされていません'
+
+    // サーバのエラーコードと対応しないエラーメッセージ
     export const FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE = 'マイクとの接続に失敗しました。ブラウザからマイクを使える状態になっているか確認して下さい'
     export const GET_USER_MEDIA_ABORT_ERROR_MESSAGE = '予期せぬエラーが発生しました。別のマイク、または別の端末で再度お試し下さい'
     export const GET_USER_MEDIA_NOT_ALLOWED_ERROR_MESSAGE = 'マイクの使用権限がありません。マイクを使用できるように権限設定を見直して下さい'
@@ -173,7 +182,13 @@ export namespace Message {
     const REPORT_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい'
     export const NO_PARAM_PITCH_FACTOR_FOUND_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: NO_PARAM_PITCH_FACTOR_FOUND`
     export const FAILED_TO_GENERATE_PITCH_FACTOR_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: FAILED_TO_GENERATE_PITCH_FACTOR`
+    export const PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED`
+    export const PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET`
     export const NO_PROCESSED_STREAM_FOUND_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: NO_PROCESSED_STREAM_FOUND`
+    export const PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED`
+    export const PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED`
+    export const PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED`
+
     export const NON_AUDIO_STREAM_DETECTED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: NON_AUDIO_STREAM_DETECTED`
     const SKY_WAY_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と右記に表示された内容をお問い合わせからご連絡下さい'
     export const SKY_WAY_FAILED_TO_CREATE_CONTEXT_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_FAILED_TO_CREATE_CONTEXT`
@@ -184,10 +199,4 @@ export namespace Message {
     export const SKY_WAY_NO_MEMBER_FOUND_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_NO_MEMBER_FOUND`
     export const SKY_WAY_FAILED_TO_CREATE_LOCAL_AUDIO_STREAM_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_FAILED_TO_CREATE_LOCAL_AUDIO_STREAM`
     export const SKY_WAY_NO_LOCAL_AUDIO_STREAM_FOUND_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_NO_LOCAL_AUDIO_STREAM_FOUND`
-    export const NON_POSITIVE_CONSULTATION_ID_MESSAGE = '不正な相談室番号です'
-    export const NO_CONSULTATION_FOUND_MESSAGE = '指定された相談は見つかりませんでした'
-    export const CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'コンサルタントのアカウントが存在しない、または無効化されています'
-    export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'ユーザーのアカウントが存在しない、または無効化されています'
-    export const CONSULTATION_ROOM_HAS_NOT_OPENED_YET_MESSAGE = `相談室がまだ開かれていません。相談室は相談開始時刻の${LEEWAY_IN_MINUTES}分前から入室可能になります`
-    export const AUDIO_TEST_IS_NOT_DONE_MESSAGE = '音声入出力テストで使用中の環境に問題がない旨のチェックがされていません'
 }

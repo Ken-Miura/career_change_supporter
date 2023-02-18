@@ -98,16 +98,16 @@ import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
-import { getAudioMediaStream } from '@/util/personalized/AudioMediaStream'
-import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/AudioMediaStreamError'
+import { getAudioMediaStream } from '@/util/personalized/processed-audio/AudioMediaStream'
+import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/processed-audio/AudioMediaStreamError'
 import { useGetConsultantDetail } from '@/util/personalized/consultant-detail/useGetConsultantDetail'
 import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/GetConsultantDetailResp'
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
 import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, SkyWayContext } from '@skyway-sdk/room'
-import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/PhaseVocoderProcessorConst'
-import { generatePitchFactor } from '@/util/personalized/audio-test/PitchFacter'
+import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/processed-audio/PhaseVocoderProcessorConst'
+import { generatePitchFactor } from '@/util/personalized/processed-audio/PitchFacter'
 import { createSkyWayItem } from '@/util/personalized/skyway/CreateSkyWayItem'
 import { useSetupSkyWay } from '@/util/personalized/skyway/useSetUpSkyWay'
 
@@ -296,7 +296,7 @@ export default defineComponent({
           return
         }
         const source = audioCtx.createMediaStreamSource(localStream)
-        const moduleUrl = new URL('@/util/personalized/PhaseVocoderProcessor.worker.js', import.meta.url)
+        const moduleUrl = new URL('@/util/personalized/processed-audio/PhaseVocoderProcessor.worker.js', import.meta.url)
         try {
           await audioCtx.audioWorklet.addModule(moduleUrl)
         } catch (e) {
