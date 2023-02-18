@@ -14,16 +14,13 @@
             </div>
           </div>
           <button v-bind:disabled="!audioTestDone" v-on:click="processGetUserSideInfo" class="mt-4 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談を開始する</button>
-          <div v-if="getUserSideInfoErr.exists">
-            <AlertMessage class="mt-2" v-bind:message="getUserSideInfoErr.message"/>
+          <div v-if="getUserSideInfoErrMessage">
+            <AlertMessage class="mt-2" v-bind:message="getUserSideInfoErrMessage"/>
           </div>
         </div>
         <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <div v-if="mediaError.exists">
-            <AlertMessage class="mt-2" v-bind:message="mediaError.message"/>
-          </div>
-          <div v-else-if="skyWayErrorExists">
-            <AlertMessage class="mt-2" v-bind:message="skyWayErrorMessage"/>
+          <div v-if="audioErrorMessage">
+            <AlertMessage class="mt-2" v-bind:message="audioErrorMessage"/>
           </div>
           <div v-else>
             <div v-if="remoteMediaStream" class="flex flex-col items-center w-full">
@@ -39,9 +36,9 @@
           </div>
         </div>
       </div>
-      <div v-if="getConsultantDetailError.exists">
+      <div v-if="getConsultantDetailErrMessage">
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <AlertMessage class="mt-2" v-bind:message="getConsultantDetailError.message"/>
+          <AlertMessage class="mt-2" v-bind:message="getConsultantDetailErrMessage"/>
         </div>
       </div>
       <div v-else>
@@ -88,7 +85,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { defineComponent, onMounted, onUnmounted, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -98,18 +95,16 @@ import { GetUserSideInfoResp } from '@/util/personalized/user-side-consultation/
 import { Message } from '@/util/Message'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
-import { getAudioMediaStream } from '@/util/personalized/processed-audio/AudioMediaStream'
-import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/processed-audio/AudioMediaStreamError'
 import { useGetConsultantDetail } from '@/util/personalized/consultant-detail/useGetConsultantDetail'
 import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/GetConsultantDetailResp'
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
 import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, SkyWayContext } from '@skyway-sdk/room'
-import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/processed-audio/PhaseVocoderProcessorConst'
-import { generatePitchFactor } from '@/util/personalized/processed-audio/PitchFacter'
 import { createSkyWayItem } from '@/util/personalized/skyway/CreateSkyWayItem'
 import { useSetupSkyWay } from '@/util/personalized/skyway/useSetUpSkyWay'
+import { ProcessedAudio } from '@/util/personalized/processed-audio/ProcessedAudio'
+import { ProcessedAudioError } from '@/util/personalized/processed-audio/ProcessedAudioError'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -124,10 +119,7 @@ export default defineComponent({
     const consultantId = route.params.consultant_id as string
     const router = useRouter()
 
-    const getUserSideInfoErr = reactive({
-      exists: false,
-      message: ''
-    })
+    const getUserSideInfoErrMessage = ref(null as string | null)
     const {
       getUserSideInfoDone,
       getUserSideInfoFunc
@@ -135,13 +127,8 @@ export default defineComponent({
     const audioTestDone = ref(false)
     const userSideInfo = ref(null as UserSideInfo | null)
 
-    const mediaError = reactive({
-      exists: false,
-      message: ''
-    })
-    let localStream = null as MediaStream | null
-    let audioCtx = null as AudioContext | null
-    let processedStream = null as MediaStream | null
+    const audioErrorMessage = ref(null as string | null)
+    let processedAudio: ProcessedAudio | null
 
     const {
       skyWayErrorExists,
@@ -154,10 +141,7 @@ export default defineComponent({
     let member = null as LocalP2PRoomMember | null
     let localAudioStream = null as LocalAudioStream | null
 
-    const getConsultantDetailError = reactive({
-      exists: false,
-      message: ''
-    })
+    const getConsultantDetailErrMessage = ref(null as string | null)
     const consultantDetail = ref(null as ConsultantDetail | null)
     const {
       getConsultantDetailDone,
@@ -207,29 +191,9 @@ export default defineComponent({
       } catch (e) {
         console.error(e)
       }
-      try {
-        if (processedStream) {
-          processedStream.getTracks().forEach(track => track.stop())
-          processedStream = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (audioCtx) {
-          await audioCtx.close()
-          audioCtx = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (localStream) {
-          localStream.getTracks().forEach(track => track.stop())
-          localStream = null
-        }
-      } catch (e) {
-        console.error(e)
+      if (processedAudio) {
+        await processedAudio.close()
+        processedAudio = null
       }
     }
 
@@ -249,91 +213,25 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          getUserSideInfoErr.exists = true
-          getUserSideInfoErr.message = createErrorMessage(resp.getApiError().getCode())
+          getUserSideInfoErrMessage.value = createErrorMessage(resp.getApiError().getCode())
           return
         }
         userSideInfo.value = resp.getUserSideInfo()
         if (!userSideInfo.value) {
-          getUserSideInfoErr.exists = true
-          getUserSideInfoErr.message = Message.UNEXPECTED_ERR
+          getUserSideInfoErrMessage.value = Message.UNEXPECTED_ERR
           return
         }
       } catch (e) {
-        getUserSideInfoErr.exists = true
-        getUserSideInfoErr.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        getUserSideInfoErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
         return
       }
 
       try {
-        try {
-          localStream = await getAudioMediaStream()
-        } catch (e) {
-          mediaError.exists = true
-          mediaError.message = createGetAudioMediaStreamErrMessage(e)
-          await releaseAllResources()
-          return
-        }
-        if (!localStream) {
-          mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR
-          await releaseAllResources()
-          return
-        }
+        const p = new ProcessedAudio()
+        processedAudio = p
+        await p.init()
 
-        try {
-          audioCtx = new AudioContext()
-        } catch (e) {
-          mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
-          await releaseAllResources()
-          return
-        }
-        if (!audioCtx) {
-          mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT
-          await releaseAllResources()
-          return
-        }
-        const source = audioCtx.createMediaStreamSource(localStream)
-        const moduleUrl = new URL('@/util/personalized/processed-audio/PhaseVocoderProcessor.worker.js', import.meta.url)
-        try {
-          await audioCtx.audioWorklet.addModule(moduleUrl)
-        } catch (e) {
-          mediaError.exists = true
-          mediaError.message = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
-          await releaseAllResources()
-          return
-        }
-        const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
-        const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
-        if (!param) {
-          mediaError.exists = true
-          mediaError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
-          await releaseAllResources()
-          return
-        }
-        param.value = generatePitchFactor()
-        const destNode = audioCtx.createMediaStreamDestination()
-        source.connect(phaseVocoderProcessorNode)
-        phaseVocoderProcessorNode.connect(destNode)
-
-        processedStream = destNode.stream
-        if (!processedStream) {
-          mediaError.exists = true
-          mediaError.message = Message.NO_PROCESSED_STREAM_FOUND
-          await releaseAllResources()
-          return
-        }
-      } catch (e) {
-        mediaError.exists = true
-        mediaError.message = `${Message.UNEXPECTED_ERR}: ${e}`
-        await releaseAllResources()
-        return
-      }
-
-      try {
-        const audioTrack = processedStream.getAudioTracks()[0]
+        const audioTrack = p.getAudioMediaStreamTrack()
         const skyWayItem = await createSkyWayItem(userSideInfo.value.token, userSideInfo.value.room_name, userSideInfo.value.member_name, audioTrack)
         context = skyWayItem.context
         room = skyWayItem.room
@@ -341,8 +239,11 @@ export default defineComponent({
         localAudioStream = skyWayItem.localAudioStream
         setupSkyWay(skyWayItem.context, skyWayItem.room, skyWayItem.member, skyWayItem.localAudioStream)
       } catch (e) {
-        skyWayErrorExists.value = true
-        skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        if (e instanceof ProcessedAudioError) {
+          audioErrorMessage.value = `${e.message}`
+        } else {
+          audioErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        }
         await releaseAllResources()
       }
     }
@@ -362,15 +263,12 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          getConsultantDetailError.exists = true
-          getConsultantDetailError.message = createErrorMessage(resp.getApiError().getCode())
+          getConsultantDetailErrMessage.value = createErrorMessage(resp.getApiError().getCode())
           return
         }
         consultantDetail.value = resp.getConsultantDetail()
       } catch (e) {
-        getConsultantDetailError.exists = true
-        getConsultantDetailError.message = `${Message.UNEXPECTED_ERR}: ${e}`
-        await releaseAllResources()
+        getConsultantDetailErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -387,16 +285,16 @@ export default defineComponent({
     }
 
     return {
-      getUserSideInfoErr,
+      getUserSideInfoErrMessage,
       getUserSideInfoDone,
       audioTestDone,
       processGetUserSideInfo,
       userSideInfo,
-      mediaError,
+      audioErrorMessage,
       remoteMediaStream,
       skyWayErrorExists,
       skyWayErrorMessage,
-      getConsultantDetailError,
+      getConsultantDetailErrMessage,
       getConsultantDetailDone,
       consultantDetail,
       convertYearsOfServiceValue,
