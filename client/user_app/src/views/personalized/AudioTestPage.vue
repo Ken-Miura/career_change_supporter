@@ -5,8 +5,8 @@
       <WaitingCircle />
     </div>
     <main v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <div v-if="refreshError.exists">
-        <AlertMessage class="mt-2" v-bind:message="refreshError.message"/>
+      <div v-if="refreshErrorMessage">
+        <AlertMessage class="mt-2" v-bind:message="refreshErrorMessage"/>
       </div>
       <div v-else>
         <h3 class="font-bold text-2xl">音声入出力テスト</h3>
@@ -58,10 +58,7 @@ export default defineComponent({
       refreshDone,
       refreshFunc
     } = useRefresh()
-    const refreshError = reactive({
-      exists: false,
-      message: ''
-    })
+    const refreshErrorMessage = ref(null as string | null)
 
     const audioTestStarted = ref(false)
     const audioTestErrorMessage = ref(null as string | null)
@@ -82,13 +79,11 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          refreshError.exists = true
-          refreshError.message = createErrorMessage(resp.getApiError().getCode())
+          refreshErrorMessage.value = createErrorMessage(resp.getApiError().getCode())
           return
         }
       } catch (e) {
-        refreshError.exists = true
-        refreshError.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        refreshErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
 
@@ -100,8 +95,8 @@ export default defineComponent({
     }
 
     const startAudioTest = async () => {
+      audioTestStarted.value = true
       try {
-        audioTestStarted.value = true
         const p = new ProcessedAudioConnectedWithSpeaker()
         processedAudioConnectedWithSpeaker = p
         await p.init()
@@ -126,7 +121,7 @@ export default defineComponent({
 
     return {
       refreshDone,
-      refreshError,
+      refreshErrorMessage,
       audioTestErrorMessage,
       startAudioTest,
       stopAudioTest,
