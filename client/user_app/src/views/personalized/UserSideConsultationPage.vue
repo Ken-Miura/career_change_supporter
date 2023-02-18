@@ -22,6 +22,9 @@
           <div v-if="audioErrorMessage">
             <AlertMessage class="mt-2" v-bind:message="audioErrorMessage"/>
           </div>
+          <div v-else-if="skyWayErrorMessage">
+            <AlertMessage class="mt-2" v-bind:message="skyWayErrorMessage"/>
+          </div>
           <div v-else>
             <div v-if="remoteMediaStream" class="flex flex-col items-center w-full">
               <img class="w-full md:w-3/5" src="/user-side-consultation/consultant-silhouette.png" />
@@ -100,11 +103,11 @@ import { GetConsultantDetailResp } from '@/util/personalized/consultant-detail/G
 import { ConsultantDetail } from '@/util/personalized/consultant-detail/ConsultantDetail'
 import { convertYearsOfServiceValue, convertEmployedValue, convertContractTypeValue, convertIsManagerValue, convertIsNewGraduateValue } from '@/util/personalized/ConsultantDetailConverter'
 import { UserSideInfo } from '@/util/personalized/user-side-consultation/UserSideInfo'
-import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, SkyWayContext } from '@skyway-sdk/room'
-import { createSkyWayItem } from '@/util/personalized/skyway/CreateSkyWayItem'
 import { useSetupSkyWay } from '@/util/personalized/skyway/useSetUpSkyWay'
 import { ProcessedAudio } from '@/util/personalized/processed-audio/ProcessedAudio'
 import { ProcessedAudioError } from '@/util/personalized/processed-audio/ProcessedAudioError'
+import { SkyWayAudioMeetingRoom } from '@/util/personalized/skyway/SkyWayAudioMeetingRoom'
+import { SkyWayOriginatedError } from '@/util/personalized/skyway/SkyWayOriginatedError'
 
 export default defineComponent({
   name: 'UserSideConsultationPage',
@@ -131,15 +134,11 @@ export default defineComponent({
     let processedAudio: ProcessedAudio | null
 
     const {
-      skyWayErrorExists,
       skyWayErrorMessage,
       remoteMediaStream,
       setupSkyWay
     } = useSetupSkyWay()
-    let context = null as SkyWayContext | null
-    let room = null as P2PRoom | null
-    let member = null as LocalP2PRoomMember | null
-    let localAudioStream = null as LocalAudioStream | null
+    let audioMeetingRoom = null as SkyWayAudioMeetingRoom | null
 
     const getConsultantDetailErrMessage = ref(null as string | null)
     const consultantDetail = ref(null as ConsultantDetail | null)
@@ -149,39 +148,9 @@ export default defineComponent({
     } = useGetConsultantDetail()
 
     const releaseAllResources = async () => {
-      try {
-        if (member) {
-          await member.leave()
-          member = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (localAudioStream) {
-          localAudioStream.release()
-          localAudioStream = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (room) {
-          // roomに他のメンバーが残っている状態なのでcloseは呼ばない
-          // 自身のリソースのみを開放するためにdisposeを使う
-          await room.dispose()
-          room = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (context) {
-          context.dispose()
-          context = null
-        }
-      } catch (e) {
-        console.error(e)
+      if (audioMeetingRoom) {
+        await audioMeetingRoom.close()
+        audioMeetingRoom = null
       }
       try {
         if (remoteMediaStream.value) {
@@ -227,20 +196,19 @@ export default defineComponent({
       }
 
       try {
-        const p = new ProcessedAudio()
-        processedAudio = p
-        await p.init()
+        const pa = new ProcessedAudio()
+        processedAudio = pa
+        await pa.init()
 
-        const audioTrack = p.getAudioMediaStreamTrack()
-        const skyWayItem = await createSkyWayItem(userSideInfo.value.token, userSideInfo.value.room_name, userSideInfo.value.member_name, audioTrack)
-        context = skyWayItem.context
-        room = skyWayItem.room
-        member = skyWayItem.member
-        localAudioStream = skyWayItem.localAudioStream
-        setupSkyWay(skyWayItem.context, skyWayItem.room, skyWayItem.member, skyWayItem.localAudioStream)
+        const amr = new SkyWayAudioMeetingRoom()
+        audioMeetingRoom = amr
+        await amr.init(userSideInfo.value.token, userSideInfo.value.room_name, userSideInfo.value.member_name, pa.getAudioMediaStreamTrack())
+        setupSkyWay(amr)
       } catch (e) {
         if (e instanceof ProcessedAudioError) {
           audioErrorMessage.value = `${e.message}`
+        } else if (e instanceof SkyWayOriginatedError) {
+          skyWayErrorMessage.value = `${e.message}`
         } else {
           audioErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
         }
@@ -292,7 +260,6 @@ export default defineComponent({
       userSideInfo,
       audioErrorMessage,
       remoteMediaStream,
-      skyWayErrorExists,
       skyWayErrorMessage,
       getConsultantDetailErrMessage,
       getConsultantDetailDone,

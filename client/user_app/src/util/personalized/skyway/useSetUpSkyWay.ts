@@ -1,14 +1,15 @@
 import { Message } from '@/util/Message'
-import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, RoomPublication, SkyWayContext } from '@skyway-sdk/room'
+import { RoomPublication } from '@skyway-sdk/room'
 import { ref } from 'vue'
+import { SkyWayAudioMeetingRoom } from './SkyWayAudioMeetingRoom'
 
 export function useSetupSkyWay () {
-  const skyWayErrorExists = ref(false)
-  const skyWayErrorMessage = ref('')
+  const skyWayErrorMessage = ref(null as string | null)
   const remoteMediaStream = ref(null as MediaStream | null)
 
-  const setupSkyWay = (context: SkyWayContext, room: P2PRoom, member: LocalP2PRoomMember, localAudioStream: LocalAudioStream) => {
-    member.publish(localAudioStream)
+  const setupSkyWay = (audioMeetingRoom: SkyWayAudioMeetingRoom) => {
+    const member = audioMeetingRoom.getMember()
+    member.publish(audioMeetingRoom.getLocalAudioStream())
 
     const subscribe = async (publication: RoomPublication) => {
       if (publication.publisher.id === member.id) {
@@ -20,11 +21,11 @@ export function useSetupSkyWay () {
           remoteMediaStream.value = new MediaStream([stream.track])
           break
         default:
-          skyWayErrorExists.value = true
-          skyWayErrorMessage.value = Message.NON_AUDIO_STREAM_DETECTED_MESSAGE
+          skyWayErrorMessage.value = Message.NON_AUDIO_STREAM_DETECTED
       }
     }
 
+    const room = audioMeetingRoom.getRoom()
     room.publications.forEach(subscribe)
     room.onStreamPublished.add((e) => subscribe(e.publication))
     room.onMemberLeft.add(e => {
@@ -42,20 +43,17 @@ export function useSetupSkyWay () {
         console.error(e)
       }
 
-      context.onFatalError.add(args => {
-        skyWayErrorExists.value = true
+      audioMeetingRoom.getContext().onFatalError.add(args => {
         skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${args}` // TODO: Add error handling
       })
 
       member.onFatalError.add(args => {
-        skyWayErrorExists.value = true
         skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${args}` // TODO: Add error handling
       })
     })
   }
 
   return {
-    skyWayErrorExists,
     skyWayErrorMessage,
     remoteMediaStream,
     setupSkyWay
