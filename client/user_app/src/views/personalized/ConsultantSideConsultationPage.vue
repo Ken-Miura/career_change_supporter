@@ -14,16 +14,13 @@
             </div>
           </div>
           <button v-bind:disabled="!audioTestDone" v-on:click="processGetConsultantSideInfo" class="mt-4 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">相談を開始する</button>
-          <div v-if="getConsultantSideInfoErr.exists">
-            <AlertMessage class="mt-2" v-bind:message="getConsultantSideInfoErr.message"/>
+          <div v-if="getConsultantSideInfoErrMessage">
+            <AlertMessage class="mt-2" v-bind:message="getConsultantSideInfoErrMessage"/>
           </div>
         </div>
         <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <div v-if="audioErrorMessage">
             <AlertMessage class="mt-2" v-bind:message="audioErrorMessage"/>
-          </div>
-          <div v-else-if="skyWayErrorExists">
-            <AlertMessage class="mt-2" v-bind:message="skyWayErrorMessage"/>
           </div>
           <div v-else>
             <div v-if="remoteMediaStream" class="flex flex-col items-center w-full">
@@ -57,7 +54,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onUnmounted, reactive, ref } from 'vue'
+import { defineComponent, onUnmounted, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -69,12 +66,10 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ConsultantSideInfo } from '@/util/personalized/consultant-side-consultation/ConsultantSideInfo'
 import { LocalAudioStream, LocalP2PRoomMember, P2PRoom, SkyWayContext } from '@skyway-sdk/room'
-import { getAudioMediaStream } from '@/util/personalized/processed-audio/AudioMediaStream'
-import { createGetAudioMediaStreamErrMessage } from '@/util/personalized/processed-audio/AudioMediaStreamError'
-import { generatePitchFactor } from '@/util/personalized/processed-audio/PitchFacter'
-import { PARAM_PITCH_FACTOR, PHASE_VOCODER_PROCESSOR_MODULE_NAME } from '@/util/personalized/processed-audio/PhaseVocoderProcessorConst'
 import { useSetupSkyWay } from '@/util/personalized/skyway/useSetUpSkyWay'
 import { createSkyWayItem } from '@/util/personalized/skyway/CreateSkyWayItem'
+import { ProcessedAudio } from '@/util/personalized/processed-audio/ProcessedAudio'
+import { ProcessedAudioError } from '@/util/personalized/processed-audio/ProcessedAudioError'
 
 export default defineComponent({
   name: 'ConsultantSideConsultationPage',
@@ -89,10 +84,7 @@ export default defineComponent({
     const userAccountId = route.params.user_account_id as string
     const router = useRouter()
 
-    const getConsultantSideInfoErr = reactive({
-      exists: false,
-      message: ''
-    })
+    const getConsultantSideInfoErrMessage = ref(null as string | null)
     const {
       getConsultantSideInfoDone,
       getConsultantSideInfoFunc
@@ -101,9 +93,7 @@ export default defineComponent({
     const consultantSideInfo = ref(null as ConsultantSideInfo | null)
 
     const audioErrorMessage = ref(null as string | null)
-    let localStream = null as MediaStream | null
-    let audioCtx = null as AudioContext | null
-    let processedStream = null as MediaStream | null
+    let processedAudio: ProcessedAudio | null
 
     const {
       skyWayErrorExists,
@@ -159,29 +149,9 @@ export default defineComponent({
       } catch (e) {
         console.error(e)
       }
-      try {
-        if (processedStream) {
-          processedStream.getTracks().forEach(track => track.stop())
-          processedStream = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (audioCtx) {
-          await audioCtx.close()
-          audioCtx = null
-        }
-      } catch (e) {
-        console.error(e)
-      }
-      try {
-        if (localStream) {
-          localStream.getTracks().forEach(track => track.stop())
-          localStream = null
-        }
-      } catch (e) {
-        console.error(e)
+      if (processedAudio) {
+        await processedAudio.close()
+        processedAudio = null
       }
     }
 
@@ -201,83 +171,25 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          getConsultantSideInfoErr.exists = true
-          getConsultantSideInfoErr.message = createErrorMessage(resp.getApiError().getCode())
+          getConsultantSideInfoErrMessage.value = createErrorMessage(resp.getApiError().getCode())
           return
         }
         consultantSideInfo.value = resp.getConsultantSideInfo()
         if (!consultantSideInfo.value) {
-          getConsultantSideInfoErr.exists = true
-          getConsultantSideInfoErr.message = Message.UNEXPECTED_ERR
+          getConsultantSideInfoErrMessage.value = Message.UNEXPECTED_ERR
           return
         }
       } catch (e) {
-        getConsultantSideInfoErr.exists = true
-        getConsultantSideInfoErr.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        getConsultantSideInfoErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
         return
       }
 
       try {
-        try {
-          localStream = await getAudioMediaStream()
-        } catch (e) {
-          audioErrorMessage.value = createGetAudioMediaStreamErrMessage(e)
-          await releaseAllResources()
-          return
-        }
-        if (!localStream) {
-          audioErrorMessage.value = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR
-          await releaseAllResources()
-          return
-        }
+        const p = new ProcessedAudio()
+        processedAudio = p
+        await p.init()
 
-        try {
-          audioCtx = new AudioContext()
-        } catch (e) {
-          audioErrorMessage.value = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
-          await releaseAllResources()
-          return
-        }
-        if (!audioCtx) {
-          audioErrorMessage.value = Message.FAILED_TO_GET_AUDIO_CONTEXT
-          await releaseAllResources()
-          return
-        }
-        const source = audioCtx.createMediaStreamSource(localStream)
-        const moduleUrl = new URL('@/util/personalized/processed-audio/PhaseVocoderProcessor.worker.js', import.meta.url)
-        try {
-          await audioCtx.audioWorklet.addModule(moduleUrl)
-        } catch (e) {
-          audioErrorMessage.value = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
-          await releaseAllResources()
-          return
-        }
-        const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
-        const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
-        if (!param) {
-          audioErrorMessage.value = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
-          await releaseAllResources()
-          return
-        }
-        param.value = generatePitchFactor()
-        const destNode = audioCtx.createMediaStreamDestination()
-        source.connect(phaseVocoderProcessorNode)
-        phaseVocoderProcessorNode.connect(destNode)
-
-        processedStream = destNode.stream
-        if (!processedStream) {
-          audioErrorMessage.value = Message.NO_PROCESSED_STREAM_FOUND
-          await releaseAllResources()
-          return
-        }
-      } catch (e) {
-        audioErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
-        await releaseAllResources()
-        return
-      }
-
-      try {
-        const audioTrack = processedStream.getAudioTracks()[0]
+        const audioTrack = p.getAudioMediaStreamTrack()
         const skyWayItem = await createSkyWayItem(consultantSideInfo.value.token, consultantSideInfo.value.room_name, consultantSideInfo.value.member_name, audioTrack)
         context = skyWayItem.context
         room = skyWayItem.room
@@ -285,8 +197,11 @@ export default defineComponent({
         localAudioStream = skyWayItem.localAudioStream
         setupSkyWay(skyWayItem.context, skyWayItem.room, skyWayItem.member, skyWayItem.localAudioStream)
       } catch (e) {
-        skyWayErrorExists.value = true
-        skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        if (e instanceof ProcessedAudioError) {
+          audioErrorMessage.value = `${e.message}`
+        } else {
+          audioErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        }
         await releaseAllResources()
       }
     }
@@ -300,7 +215,7 @@ export default defineComponent({
     }
 
     return {
-      getConsultantSideInfoErr,
+      getConsultantSideInfoErrMessage,
       getConsultantSideInfoDone,
       audioTestDone,
       processGetConsultantSideInfo,
