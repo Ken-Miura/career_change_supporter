@@ -276,7 +276,7 @@ export default defineComponent({
         }
         if (!localStream) {
           mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR
           await releaseAllResources()
           return
         }
@@ -285,13 +285,13 @@ export default defineComponent({
           audioCtx = new AudioContext()
         } catch (e) {
           mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE
+          mediaError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
           await releaseAllResources()
           return
         }
         if (!audioCtx) {
           mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT_MESSAGE
+          mediaError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT
           await releaseAllResources()
           return
         }
@@ -301,7 +301,7 @@ export default defineComponent({
           await audioCtx.audioWorklet.addModule(moduleUrl)
         } catch (e) {
           mediaError.exists = true
-          mediaError.message = `${Message.FAILED_TO_ADD_MODULE_MESSAGE}: ${e}`
+          mediaError.message = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
           await releaseAllResources()
           return
         }
@@ -309,7 +309,7 @@ export default defineComponent({
         const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
         if (!param) {
           mediaError.exists = true
-          mediaError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND_MESSAGE}`
+          mediaError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
           await releaseAllResources()
           return
         }
@@ -321,7 +321,7 @@ export default defineComponent({
         processedStream = destNode.stream
         if (!processedStream) {
           mediaError.exists = true
-          mediaError.message = Message.NO_PROCESSED_STREAM_FOUND_MESSAGE
+          mediaError.message = Message.NO_PROCESSED_STREAM_FOUND
           await releaseAllResources()
           return
         }

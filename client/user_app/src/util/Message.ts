@@ -8,7 +8,7 @@ const RETRY_REQUEST = '通信環境を確認し、一定時間後に再度お試
 // namespaceは、非推奨ではないため、代替可能な手段ができるまで利用
 // eslint-disable-next-line
 export namespace Message {
-    // サーバのエラーコードと対応するエラーメッセージ
+    // サーバのエラーコードと対応するエラーメッセージはサフィックスに_MESSAGEをつけ、対応しないものはつけない
     export const PASSWORD_CONFIRMATION_FAILED = 'パスワードと確認用パスワードが一致していません'
     export const TEMP_ACCOUNT_CREATION_FAILED = `新規登録に失敗しました。${RETRY_REQUEST}`
     export const UNEXPECTED_ERR = `予期せぬエラーが発生しました。${RETRY_REQUEST}`
@@ -165,31 +165,30 @@ export namespace Message {
     export const CONSULTATION_ROOM_HAS_NOT_OPENED_YET_MESSAGE = `相談室がまだ開かれていません。相談室は相談開始時刻の${LEEWAY_IN_MINUTES}分前から入室可能になります`
     export const AUDIO_TEST_IS_NOT_DONE_MESSAGE = '音声入出力テストで使用中の環境に問題がない旨のチェックがされていません'
 
-    // サーバのエラーコードと対応しないエラーメッセージ
-    export const FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE = 'マイクとの接続に失敗しました。ブラウザからマイクを使える状態になっているか確認して下さい'
-    export const GET_USER_MEDIA_ABORT_ERROR_MESSAGE = '予期せぬエラーが発生しました。別のマイク、または別の端末で再度お試し下さい'
-    export const GET_USER_MEDIA_NOT_ALLOWED_ERROR_MESSAGE = 'マイクの使用権限がありません。マイクを使用できるように権限設定を見直して下さい'
-    export const GET_USER_MEDIA_NOT_FOUND_ERROR_MESSAGE = 'マイクが見つかりませんでした。相談を行うためにはマイクが接続された端末をご利用下さい'
-    export const GET_USER_MEDIA_NOT_READABLE_ERROR_MESSAGE = 'マイクに接続できませんでした。別のマイク、または別の端末で再度お試し下さい'
-    export const GET_USER_MEDIA_OVERCONSTRAINED_ERROR_MESSAGE = 'マイクが存在しない、またはマイクにアクセスする権限がありません。マイクがある端末を使うか、権限設定を見直して下さい'
-    export const GET_USER_MEDIA_SECURITY_ERROR_MESSAGE = 'ブラウザがマイクの使用を停止しました。別のブラウザをご使用するか、ブラウザの設定をご確認下さい'
-    export const GET_USER_MEDIA_DOMEXCEPTION_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID））、表示されているname、messageを問い合わせからご連絡下さい'
-    export const GET_USER_MEDIA_TYPE_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているmessageを問い合わせからご連絡下さい'
-    export const GET_USER_MEDIA_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）を問い合わせからご連絡下さい'
-    export const FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE = '音声加工の準備中にエラーが発生しました。お使いの環境では相談を行うことが出来ません'
-    export const FAILED_TO_GET_AUDIO_CONTEXT_MESSAGE = '音声加工の準備に失敗しました。お使いの環境では相談を行うことが出来ません'
-    export const FAILED_TO_ADD_MODULE_MESSAGE = '音声加工の準備に失敗しました。通信環境をご確認の上、再度お試し下さい。通信環境に問題がない状態でこのエラーが出た場合、お使いの環境では相談を行うことが出来ません'
-    const REPORT_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい'
-    export const NO_PARAM_PITCH_FACTOR_FOUND_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: NO_PARAM_PITCH_FACTOR_FOUND`
-    export const FAILED_TO_GENERATE_PITCH_FACTOR_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: FAILED_TO_GENERATE_PITCH_FACTOR`
-    export const PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED`
-    export const PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET`
-    export const NO_PROCESSED_STREAM_FOUND_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: NO_PROCESSED_STREAM_FOUND`
-    export const PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED`
-    export const PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED`
-    export const PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED`
+    export const FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR = 'マイクとの接続に失敗しました。ブラウザからマイクを使える状態になっているか確認して下さい'
+    export const GET_USER_MEDIA_ABORT_ERROR = '予期せぬエラーが発生しました。別のマイク、または別の端末で再度お試し下さい'
+    export const GET_USER_MEDIA_NOT_ALLOWED_ERROR = 'マイクの使用権限がありません。マイクを使用できるように権限設定を見直して下さい'
+    export const GET_USER_MEDIA_NOT_FOUND_ERROR = 'マイクが見つかりませんでした。相談を行うためにはマイクが接続された端末をご利用下さい'
+    export const GET_USER_MEDIA_NOT_READABLE_ERROR = 'マイクに接続できませんでした。別のマイク、または別の端末で再度お試し下さい'
+    export const GET_USER_MEDIA_OVERCONSTRAINED_ERROR = 'マイクが存在しない、またはマイクにアクセスする権限がありません。マイクがある端末を使うか、権限設定を見直して下さい'
+    export const GET_USER_MEDIA_SECURITY_ERROR = 'ブラウザがマイクの使用を停止しました。別のブラウザをご使用するか、ブラウザの設定をご確認下さい'
+    export const GET_USER_MEDIA_DOMEXCEPTION_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID））、表示されているname、messageを問い合わせからご連絡下さい'
+    export const GET_USER_MEDIA_TYPE_ERROR = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）、表示されているmessageを問い合わせからご連絡下さい'
+    export const GET_USER_MEDIA_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。あなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）を問い合わせからご連絡下さい'
+    export const FAILED_TO_CREATE_AUDIO_CONTEXT = '音声加工の準備中にエラーが発生しました。お使いの環境では相談を行うことが出来ません'
+    export const FAILED_TO_GET_AUDIO_CONTEXT = '音声加工の準備に失敗しました。お使いの環境では相談を行うことが出来ません'
+    export const FAILED_TO_ADD_MODULE = '音声加工の準備に失敗しました。通信環境をご確認の上、再度お試し下さい。通信環境に問題がない状態でこのエラーが出た場合、お使いの環境では相談を行うことが出来ません'
+    const REPORT_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お手数ですが、お問い合わせから右記のメッセージが表示された旨をご連絡下さい'
+    export const NO_PARAM_PITCH_FACTOR_FOUND = `${REPORT_UNEXPECTED_ERROR}: NO_PARAM_PITCH_FACTOR_FOUND`
+    export const FAILED_TO_GENERATE_PITCH_FACTOR = `${REPORT_UNEXPECTED_ERROR}: FAILED_TO_GENERATE_PITCH_FACTOR`
+    export const PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED = `${REPORT_UNEXPECTED_ERROR}: PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED`
+    export const PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET = `${REPORT_UNEXPECTED_ERROR}: PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET`
+    export const NO_PROCESSED_STREAM_FOUND = `${REPORT_UNEXPECTED_ERROR}: NO_PROCESSED_STREAM_FOUND`
+    export const PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED = `${REPORT_UNEXPECTED_ERROR}: PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED`
+    export const PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED = `${REPORT_UNEXPECTED_ERROR}: PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED`
+    export const PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED = `${REPORT_UNEXPECTED_ERROR}: PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED`
 
-    export const NON_AUDIO_STREAM_DETECTED_MESSAGE = `${REPORT_UNEXPECTED_ERROR_MESSAGE}: NON_AUDIO_STREAM_DETECTED`
+    export const NON_AUDIO_STREAM_DETECTED_MESSAGE = `${REPORT_UNEXPECTED_ERROR}: NON_AUDIO_STREAM_DETECTED`
     const SKY_WAY_UNEXPECTED_ERROR_MESSAGE = '予期せぬエラーが発生しました。お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と右記に表示された内容をお問い合わせからご連絡下さい'
     export const SKY_WAY_FAILED_TO_CREATE_CONTEXT_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_FAILED_TO_CREATE_CONTEXT`
     export const SKY_WAY_NO_CONTEXT_FOUND_MESSAGE = `${SKY_WAY_UNEXPECTED_ERROR_MESSAGE}: SKY_WAY_NO_CONTEXT_FOUND`

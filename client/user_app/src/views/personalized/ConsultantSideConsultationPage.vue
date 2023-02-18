@@ -19,8 +19,8 @@
           </div>
         </div>
         <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <div v-if="mediaError.exists">
-            <AlertMessage class="mt-2" v-bind:message="mediaError.message"/>
+          <div v-if="audioErrorMessage">
+            <AlertMessage class="mt-2" v-bind:message="audioErrorMessage"/>
           </div>
           <div v-else-if="skyWayErrorExists">
             <AlertMessage class="mt-2" v-bind:message="skyWayErrorMessage"/>
@@ -100,10 +100,7 @@ export default defineComponent({
     const audioTestDone = ref(false)
     const consultantSideInfo = ref(null as ConsultantSideInfo | null)
 
-    const mediaError = reactive({
-      exists: false,
-      message: ''
-    })
+    const audioErrorMessage = ref(null as string | null)
     let localStream = null as MediaStream | null
     let audioCtx = null as AudioContext | null
     let processedStream = null as MediaStream | null
@@ -224,14 +221,12 @@ export default defineComponent({
         try {
           localStream = await getAudioMediaStream()
         } catch (e) {
-          mediaError.exists = true
-          mediaError.message = createGetAudioMediaStreamErrMessage(e)
+          audioErrorMessage.value = createGetAudioMediaStreamErrMessage(e)
           await releaseAllResources()
           return
         }
         if (!localStream) {
-          mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE
+          audioErrorMessage.value = Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR
           await releaseAllResources()
           return
         }
@@ -239,14 +234,12 @@ export default defineComponent({
         try {
           audioCtx = new AudioContext()
         } catch (e) {
-          mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE
+          audioErrorMessage.value = Message.FAILED_TO_CREATE_AUDIO_CONTEXT
           await releaseAllResources()
           return
         }
         if (!audioCtx) {
-          mediaError.exists = true
-          mediaError.message = Message.FAILED_TO_GET_AUDIO_CONTEXT_MESSAGE
+          audioErrorMessage.value = Message.FAILED_TO_GET_AUDIO_CONTEXT
           await releaseAllResources()
           return
         }
@@ -255,16 +248,14 @@ export default defineComponent({
         try {
           await audioCtx.audioWorklet.addModule(moduleUrl)
         } catch (e) {
-          mediaError.exists = true
-          mediaError.message = `${Message.FAILED_TO_ADD_MODULE_MESSAGE}: ${e}`
+          audioErrorMessage.value = `${Message.FAILED_TO_ADD_MODULE}: ${e}`
           await releaseAllResources()
           return
         }
         const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
         const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
         if (!param) {
-          mediaError.exists = true
-          mediaError.message = `${Message.NO_PARAM_PITCH_FACTOR_FOUND_MESSAGE}`
+          audioErrorMessage.value = `${Message.NO_PARAM_PITCH_FACTOR_FOUND}`
           await releaseAllResources()
           return
         }
@@ -275,14 +266,12 @@ export default defineComponent({
 
         processedStream = destNode.stream
         if (!processedStream) {
-          mediaError.exists = true
-          mediaError.message = Message.NO_PROCESSED_STREAM_FOUND_MESSAGE
+          audioErrorMessage.value = Message.NO_PROCESSED_STREAM_FOUND
           await releaseAllResources()
           return
         }
       } catch (e) {
-        mediaError.exists = true
-        mediaError.message = `${Message.UNEXPECTED_ERR}: ${e}`
+        audioErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
         await releaseAllResources()
         return
       }
@@ -316,7 +305,7 @@ export default defineComponent({
       audioTestDone,
       processGetConsultantSideInfo,
       consultantSideInfo,
-      mediaError,
+      audioErrorMessage,
       skyWayErrorExists,
       skyWayErrorMessage,
       remoteMediaStream,

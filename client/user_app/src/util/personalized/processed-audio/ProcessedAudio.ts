@@ -11,12 +11,12 @@ async function createProceesedAudio (audioCtx: AudioContext, localStream: MediaS
   try {
     await audioCtx.audioWorklet.addModule(moduleUrl)
   } catch (e) {
-    throw new ProcessedAudioError(`${Message.FAILED_TO_ADD_MODULE_MESSAGE}: ${e}`)
+    throw new ProcessedAudioError(`${Message.FAILED_TO_ADD_MODULE}: ${e}`)
   }
   const phaseVocoderProcessorNode = new AudioWorkletNode(audioCtx, PHASE_VOCODER_PROCESSOR_MODULE_NAME)
   const param = phaseVocoderProcessorNode.parameters.get(PARAM_PITCH_FACTOR)
   if (!param) {
-    throw new ProcessedAudioError(`${Message.NO_PARAM_PITCH_FACTOR_FOUND_MESSAGE}`)
+    throw new ProcessedAudioError(`${Message.NO_PARAM_PITCH_FACTOR_FOUND}`)
   }
   param.value = generatePitchFactor()
   source.connect(phaseVocoderProcessorNode)
@@ -45,10 +45,10 @@ export class ProcessedAudio {
    */
   public async init () {
     if (this.initilized) {
-      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_ALREADY_BEEN_INITILIZED}`)
     }
     if (this.closed) {
-      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED}`)
     }
     try {
       this.localStream = await getAudioMediaStream()
@@ -57,16 +57,16 @@ export class ProcessedAudio {
       throw new ProcessedAudioError(`${message}`)
     }
     if (!this.localStream) {
-      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR}`)
     }
 
     try {
       this.audioCtx = new AudioContext()
     } catch (e) {
-      throw new ProcessedAudioError(`${Message.FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE}: ${e}`)
+      throw new ProcessedAudioError(`${Message.FAILED_TO_CREATE_AUDIO_CONTEXT}: ${e}`)
     }
     if (!this.audioCtx) {
-      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_AUDIO_CONTEXT_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_AUDIO_CONTEXT}`)
     }
 
     const phaseVocoderProcessorNode = await createProceesedAudio(this.audioCtx, this.localStream)
@@ -78,13 +78,13 @@ export class ProcessedAudio {
 
   public getAudioMediaStreamTrack (): MediaStreamTrack {
     if (!this.initilized) {
-      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_NOT_BEEN_INITILIZED_YET}`)
     }
     if (this.closed) {
-      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_HAS_ALREADY_BEEN_CLOSED}`)
     }
     if (!this.processedStream) {
-      throw new ProcessedAudioError(`${Message.NO_PROCESSED_STREAM_FOUND_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.NO_PROCESSED_STREAM_FOUND}`)
     }
     return this.processedStream.getAudioTracks()[0]
   }
@@ -138,10 +138,10 @@ export class ProcessedAudioConnectedWithSpeaker {
    */
   public async init () {
     if (this.initilized) {
-      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_INITILIZED}`)
     }
     if (this.closed) {
-      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.PROCESSED_AUDIO_CONNECTED_WITH_SPEAKER_HAS_ALREADY_BEEN_CLOSED}`)
     }
     try {
       this.localStream = await getAudioMediaStream()
@@ -150,16 +150,16 @@ export class ProcessedAudioConnectedWithSpeaker {
       throw new ProcessedAudioError(`${message}`)
     }
     if (!this.localStream) {
-      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR}`)
     }
 
     try {
       this.audioCtx = new AudioContext()
     } catch (e) {
-      throw new ProcessedAudioError(`${Message.FAILED_TO_CREATE_AUDIO_CONTEXT_MESSAGE}: ${e}`)
+      throw new ProcessedAudioError(`${Message.FAILED_TO_CREATE_AUDIO_CONTEXT}: ${e}`)
     }
     if (!this.audioCtx) {
-      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_AUDIO_CONTEXT_MESSAGE}`)
+      throw new ProcessedAudioError(`${Message.FAILED_TO_GET_AUDIO_CONTEXT}`)
     }
 
     const phaseVocoderProcessorNode = await createProceesedAudio(this.audioCtx, this.localStream)
