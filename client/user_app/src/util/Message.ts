@@ -164,7 +164,6 @@ export namespace Message {
     export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'ユーザーのアカウントが存在しない、または無効化されています'
     export const CONSULTATION_ROOM_HAS_NOT_OPENED_YET_MESSAGE = `相談室がまだ開かれていません。相談室は相談開始時刻の${LEEWAY_IN_MINUTES}分前から入室可能になります`
     export const AUDIO_TEST_IS_NOT_DONE_MESSAGE = '音声入出力テストで使用中の環境に問題がない旨のチェックがされていません'
-
     export const FAILED_TO_GET_LOCAL_MEDIA_STREAM_ERROR = 'マイクとの接続に失敗しました。ブラウザからマイクを使える状態になっているか確認して下さい'
     export const GET_USER_MEDIA_ABORT_ERROR = '予期せぬエラーが発生しました。別のマイク、または別の端末で再度お試し下さい'
     export const GET_USER_MEDIA_NOT_ALLOWED_ERROR = 'マイクの使用権限がありません。マイクを使用できるように権限設定を見直して下さい'
