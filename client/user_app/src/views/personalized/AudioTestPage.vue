@@ -97,6 +97,7 @@ export default defineComponent({
     const startAudioTest = async () => {
       audioTestStarted.value = true
       try {
+        await releaseAudioResouces()
         const p = new ProcessedAudioConnectedWithSpeaker()
         processedAudioConnectedWithSpeaker = p
         await p.init()
