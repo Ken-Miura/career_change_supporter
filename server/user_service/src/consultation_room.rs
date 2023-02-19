@@ -313,6 +313,8 @@ mod tests {
     use chrono::{Duration, TimeZone};
     use common::JAPANESE_TIME_ZONE;
 
+    use crate::err::unexpected_err_resp;
+
     use super::{
         create_sky_way_auth_token_payload, SkyWayAppScope, SkyWayAuthTokenPayload,
         SkyWayChannelScope, SkyWayMemberScope, SkyWayPublicationScope, SkyWayScope,
@@ -320,7 +322,7 @@ mod tests {
     };
 
     #[test]
-    fn test_create_sky_way_auth_token_payload() {
+    fn test_create_sky_way_auth_token_payload_success() {
         let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
@@ -376,5 +378,32 @@ mod tests {
         };
 
         assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_create_sky_way_auth_token_payload_fail_current_date_time_equal_expiration_date_time() {
+        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
+            .unwrap();
+        let expiration_date_time = current_date_time;
+        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
+        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
+        let member_name = "234".to_string();
+
+        let result = create_sky_way_auth_token_payload(
+            token_id,
+            current_date_time,
+            expiration_date_time,
+            dummy_application_id,
+            room_name,
+            member_name,
+        )
+        .expect_err("failed to get Err");
+
+        let expected_result = unexpected_err_resp();
+
+        assert_eq!(result.0, expected_result.0);
+        assert_eq!(result.1 .0, expected_result.1 .0);
     }
 }
