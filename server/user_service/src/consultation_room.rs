@@ -318,9 +318,9 @@ mod tests {
     };
 
     use super::{
-        create_sky_way_auth_token_payload, SkyWayAppScope, SkyWayAuthTokenPayload,
-        SkyWayChannelScope, SkyWayMemberScope, SkyWayPublicationScope, SkyWayScope,
-        SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
+        create_sky_way_auth_token, create_sky_way_auth_token_payload, SkyWayAppScope,
+        SkyWayAuthTokenPayload, SkyWayChannelScope, SkyWayMemberScope, SkyWayPublicationScope,
+        SkyWayScope, SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
     };
 
     #[test]
@@ -552,5 +552,36 @@ mod tests {
 
         assert_eq!(result.0, expected_result.0);
         assert_eq!(result.1 .0, expected_result.1 .0);
+    }
+
+    #[test]
+    fn test_create_sky_way_auth_token_success() {
+        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
+            .unwrap();
+        let expiration_date_time =
+            current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
+        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
+        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
+        let member_name = "234".to_string();
+
+        let payload = create_sky_way_auth_token_payload(
+            token_id,
+            current_date_time,
+            expiration_date_time,
+            dummy_application_id,
+            room_name,
+            member_name,
+        )
+        .expect("failed to get Ok");
+
+        let dummy_secret = "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=".to_string();
+
+        let result =
+            create_sky_way_auth_token(&payload, dummy_secret.as_bytes()).expect("failed to get Ok");
+
+        let expected_result = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI2NjY4YWZmYy01YWZhLTQ5OTYtYjY1YS02YWZlMmY3Mjc1NmIiLCJpYXQiOjE2NzY4MDk5NDEsImV4cCI6MTY3NjgxNDE0MSwic2NvcGUiOnsiYXBwIjp7ImlkIjoiZmIzNzRlMTEtNzQyYi00NTRlLWEzMTMtMTdkMzIwN2Q0MWY2IiwiYWN0aW9ucyI6WyJyZWFkIl0sImNoYW5uZWxzIjpbeyJuYW1lIjoiMTg3MzEzYThkNmNmNDFiYzk2M2Q3MWQ0YmZkNWYzNjMiLCJhY3Rpb25zIjpbInJlYWQiLCJjcmVhdGUiLCJkZWxldGUiXSwibWVtYmVycyI6W3sibmFtZSI6IjIzNCIsImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIiwic2lnbmFsIl0sInB1YmxpY2F0aW9uIjp7ImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIl19LCJzdWJzY3JpcHRpb24iOnsiYWN0aW9ucyI6WyJjcmVhdGUiLCJkZWxldGUiXX19XX1dfX19.qb1VLQwK2WMzmjilEG0eBO0_cqF9Xq1saxbaP0toqDg";
+        assert_eq!(result, expected_result);
     }
 }
