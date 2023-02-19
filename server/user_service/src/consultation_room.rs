@@ -122,9 +122,9 @@ fn create_sky_way_auth_token_payload(
     room_name: String,
     member_name: String,
 ) -> Result<SkyWayAuthTokenPayload, ErrResp> {
-    if current_date_time > expiration_date_time {
+    if current_date_time >= expiration_date_time {
         error!(
-            "current_date_time ({}) exceeds expiration_date_time ({})",
+            "current_date_time ({}) is equal to or exceeds expiration_date_time ({})",
             current_date_time, expiration_date_time
         );
         return Err(unexpected_err_resp());
@@ -306,4 +306,75 @@ async fn get_consultation_with_exclusive_lock(
             err_resp: unexpected_err_resp(),
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{Duration, TimeZone};
+    use common::JAPANESE_TIME_ZONE;
+
+    use super::{
+        create_sky_way_auth_token_payload, SkyWayAppScope, SkyWayAuthTokenPayload,
+        SkyWayChannelScope, SkyWayMemberScope, SkyWayPublicationScope, SkyWayScope,
+        SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
+    };
+
+    #[test]
+    fn test_create_sky_way_auth_token_payload() {
+        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
+            .unwrap();
+        let expiration_date_time =
+            current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
+        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
+        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
+        let member_name = "234".to_string();
+
+        let result = create_sky_way_auth_token_payload(
+            token_id.clone(),
+            current_date_time,
+            expiration_date_time,
+            dummy_application_id.clone(),
+            room_name.clone(),
+            member_name.clone(),
+        )
+        .expect("failed to get Ok");
+
+        let expected_result = SkyWayAuthTokenPayload {
+            jti: token_id,
+            iat: current_date_time.timestamp(),
+            exp: expiration_date_time.timestamp(),
+            scope: SkyWayScope {
+                app: SkyWayAppScope {
+                    id: dummy_application_id,
+                    actions: vec!["read".to_string()],
+                    channels: vec![SkyWayChannelScope {
+                        name: room_name,
+                        actions: vec![
+                            "read".to_string(),
+                            "create".to_string(),
+                            "delete".to_string(),
+                        ],
+                        members: vec![SkyWayMemberScope {
+                            name: member_name,
+                            actions: vec![
+                                "create".to_string(),
+                                "delete".to_string(),
+                                "signal".to_string(),
+                            ],
+                            publication: SkyWayPublicationScope {
+                                actions: vec!["create".to_string(), "delete".to_string()],
+                            },
+                            subscription: SkyWaySubscriptionScope {
+                                actions: vec!["create".to_string(), "delete".to_string()],
+                            },
+                        }],
+                    }],
+                },
+            },
+        };
+
+        assert_eq!(result, expected_result);
+    }
 }
