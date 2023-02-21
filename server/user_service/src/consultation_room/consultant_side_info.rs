@@ -353,33 +353,55 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct ConsultantSideInfoOperationMock {}
+    struct ConsultantSideInfoOperationMock {
+        account_id: i64,
+        consultation_id: i64,
+        consultation: Consultation,
+        consultant_available: bool,
+        consultant: UserAccount,
+        user_account_available: bool,
+        user_account: UserAccount,
+        current_date_time: DateTime<FixedOffset>,
+    }
 
     #[async_trait]
     impl ConsultantSideInfoOperation for ConsultantSideInfoOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            }
+            Ok(true)
         }
 
         async fn find_consultation_by_consultation_id(
             &self,
             consultation_id: i64,
         ) -> Result<Option<Consultation>, ErrResp> {
-            todo!()
+            if self.consultation_id != consultation_id {
+                return Ok(None);
+            }
+            Ok(Some(self.consultation.clone()))
         }
 
         async fn get_consultant_if_available(
             &self,
-            consultant_id: i64,
+            _consultant_id: i64,
         ) -> Result<Option<UserAccount>, ErrResp> {
-            todo!()
+            if !self.consultant_available {
+                return Ok(None);
+            }
+            Ok(Some(self.consultant.clone()))
         }
 
         async fn get_user_account_if_available(
             &self,
             user_account_id: i64,
         ) -> Result<Option<UserAccount>, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, user_account_id);
+            if !self.user_account_available {
+                return Ok(None);
+            }
+            Ok(Some(self.user_account.clone()))
         }
 
         async fn update_consultant_entered_at_if_needed(
@@ -387,7 +409,9 @@ mod tests {
             consultation_id: i64,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.consultation_id, consultation_id);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
         }
     }
 
