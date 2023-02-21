@@ -48,6 +48,7 @@ static SKY_WAY_SECRET_KEY: Lazy<String> = Lazy::new(|| {
     })
 });
 
+#[derive(Clone, Debug)]
 struct SkyWayIdentification {
     application_id: String,
     secret: String,
