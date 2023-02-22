@@ -324,8 +324,10 @@ mod tests {
         SkyWayScope, SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
     };
 
-    const DUMMY_APPLICATION_ID: &str = "fb374e11-742b-454e-a313-17d3207d41f6";
-    const DUMMY_SECRET: &str = "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=";
+    pub(in crate::consultation_room) const DUMMY_APPLICATION_ID: &str =
+        "fb374e11-742b-454e-a313-17d3207d41f6";
+    pub(in crate::consultation_room) const DUMMY_SECRET: &str =
+        "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=";
 
     #[test]
     fn test_create_sky_way_auth_token_payload_success1() {
