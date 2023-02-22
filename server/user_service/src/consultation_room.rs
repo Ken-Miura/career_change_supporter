@@ -267,14 +267,26 @@ fn ensure_consultation_room_can_be_opened(
     consultation_date_time_in_jst: &DateTime<FixedOffset>,
 ) -> Result<(), ErrResp> {
     let leeway = Duration::minutes(LEEWAY_IN_MINUTES);
-    let criteria = *consultation_date_time_in_jst - leeway;
-    if *current_date_time < criteria {
+    let start_criteria = *consultation_date_time_in_jst - leeway;
+    if *current_date_time < start_criteria {
         error!("consultation room has not opened yet (current_date_time: {}, consultation_date_time_in_jst: {}, leeway: {})", 
             current_date_time, consultation_date_time_in_jst, leeway);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::ConsultationRoomHasNotOpenedYet as u32,
+            }),
+        ));
+    }
+    let end_criteria =
+        *consultation_date_time_in_jst + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+    if *current_date_time > end_criteria {
+        error!("consultation room has already closed (current_date_time: {}, consultation_date_time_in_jst: {}, LENGTH_OF_MEETING_IN_MINUTE: {})", 
+            current_date_time, consultation_date_time_in_jst, LENGTH_OF_MEETING_IN_MINUTE);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultationRoomHasAlreadyClosed as u32,
             }),
         ));
     }
