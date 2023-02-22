@@ -324,6 +324,9 @@ mod tests {
         SkyWayScope, SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
     };
 
+    const DUMMY_APPLICATION_ID: &str = "fb374e11-742b-454e-a313-17d3207d41f6";
+    const DUMMY_SECRET: &str = "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=";
+
     #[test]
     fn test_create_sky_way_auth_token_payload_success1() {
         let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
@@ -332,7 +335,6 @@ mod tests {
             .unwrap();
         let expiration_date_time =
             current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
-        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
         let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
         let member_name = "234".to_string();
 
@@ -340,7 +342,7 @@ mod tests {
             token_id.clone(),
             current_date_time,
             expiration_date_time,
-            dummy_application_id.clone(),
+            DUMMY_APPLICATION_ID.to_string(),
             room_name.clone(),
             member_name.clone(),
         )
@@ -352,7 +354,7 @@ mod tests {
             exp: expiration_date_time.timestamp(),
             scope: SkyWayScope {
                 app: SkyWayAppScope {
-                    id: dummy_application_id,
+                    id: DUMMY_APPLICATION_ID.to_string(),
                     actions: vec!["read".to_string()],
                     channels: vec![SkyWayChannelScope {
                         name: room_name,
@@ -391,7 +393,6 @@ mod tests {
             .unwrap();
         let expiration_date_time =
             current_date_time + Duration::seconds(MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS);
-        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
         let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
         let member_name = "234".to_string();
 
@@ -399,7 +400,7 @@ mod tests {
             token_id.clone(),
             current_date_time,
             expiration_date_time,
-            dummy_application_id.clone(),
+            DUMMY_APPLICATION_ID.to_string(),
             room_name.clone(),
             member_name.clone(),
         )
@@ -411,7 +412,7 @@ mod tests {
             exp: expiration_date_time.timestamp(),
             scope: SkyWayScope {
                 app: SkyWayAppScope {
-                    id: dummy_application_id,
+                    id: DUMMY_APPLICATION_ID.to_string(),
                     actions: vec!["read".to_string()],
                     channels: vec![SkyWayChannelScope {
                         name: room_name,
@@ -449,7 +450,6 @@ mod tests {
             .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
             .unwrap();
         let expiration_date_time = current_date_time;
-        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
         let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
         let member_name = "234".to_string();
 
@@ -457,7 +457,7 @@ mod tests {
             token_id,
             current_date_time,
             expiration_date_time,
-            dummy_application_id,
+            DUMMY_APPLICATION_ID.to_string(),
             room_name,
             member_name,
         )
@@ -477,7 +477,6 @@ mod tests {
             .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
             .unwrap();
         let expiration_date_time = current_date_time - Duration::seconds(1);
-        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
         let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
         let member_name = "234".to_string();
 
@@ -485,7 +484,7 @@ mod tests {
             token_id,
             current_date_time,
             expiration_date_time,
-            dummy_application_id,
+            DUMMY_APPLICATION_ID.to_string(),
             room_name,
             member_name,
         )
@@ -507,7 +506,6 @@ mod tests {
         let expiration_date_time = current_date_time
             + Duration::seconds(MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS)
             + Duration::seconds(1);
-        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
         let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
         let member_name = "234".to_string();
 
@@ -515,7 +513,7 @@ mod tests {
             token_id,
             current_date_time,
             expiration_date_time,
-            dummy_application_id,
+            DUMMY_APPLICATION_ID.to_string(),
             room_name,
             member_name,
         )
@@ -535,7 +533,6 @@ mod tests {
             .unwrap();
         let expiration_date_time =
             current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
-        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
         let room_name = "test room".to_string(); // non UUID v4 simple format
         let member_name = "234".to_string();
 
@@ -543,7 +540,7 @@ mod tests {
             token_id,
             current_date_time,
             expiration_date_time,
-            dummy_application_id,
+            DUMMY_APPLICATION_ID.to_string(),
             room_name,
             member_name,
         )
@@ -563,7 +560,6 @@ mod tests {
             .unwrap();
         let expiration_date_time =
             current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
-        let dummy_application_id = "fb374e11-742b-454e-a313-17d3207d41f6".to_string();
         let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
         let member_name = "234".to_string();
 
@@ -571,16 +567,14 @@ mod tests {
             token_id,
             current_date_time,
             expiration_date_time,
-            dummy_application_id,
+            DUMMY_APPLICATION_ID.to_string(),
             room_name,
             member_name,
         )
         .expect("failed to get Ok");
 
-        let dummy_secret = "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=".to_string();
-
         let result =
-            create_sky_way_auth_token(&payload, dummy_secret.as_bytes()).expect("failed to get Ok");
+            create_sky_way_auth_token(&payload, DUMMY_SECRET.as_bytes()).expect("failed to get Ok");
 
         let expected_result = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI2NjY4YWZmYy01YWZhLTQ5OTYtYjY1YS02YWZlMmY3Mjc1NmIiLCJpYXQiOjE2NzY4MDk5NDEsImV4cCI6MTY3NjgxNDE0MSwic2NvcGUiOnsiYXBwIjp7ImlkIjoiZmIzNzRlMTEtNzQyYi00NTRlLWEzMTMtMTdkMzIwN2Q0MWY2IiwiYWN0aW9ucyI6WyJyZWFkIl0sImNoYW5uZWxzIjpbeyJuYW1lIjoiMTg3MzEzYThkNmNmNDFiYzk2M2Q3MWQ0YmZkNWYzNjMiLCJhY3Rpb25zIjpbInJlYWQiLCJjcmVhdGUiLCJkZWxldGUiXSwibWVtYmVycyI6W3sibmFtZSI6IjIzNCIsImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIiwic2lnbmFsIl0sInB1YmxpY2F0aW9uIjp7ImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIl19LCJzdWJzY3JpcHRpb24iOnsiYWN0aW9ucyI6WyJjcmVhdGUiLCJkZWxldGUiXX19XX1dfX19.qb1VLQwK2WMzmjilEG0eBO0_cqF9Xq1saxbaP0toqDg";
         assert_eq!(result, expected_result);
