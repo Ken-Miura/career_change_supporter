@@ -421,16 +421,15 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> =
-        Lazy::new(|| {
-            let account_id_of_consultant = MEMBER_NAME.parse::<i64>().expect("failed to get Ok");
-            let account_id_of_user = account_id_of_consultant + 6007;
-            let consultation_id = 4134;
-            let consultation_date_time_in_jst =
-                *CURRENT_DATE_TIME + Duration::minutes(LEEWAY_IN_MINUTES); // LEEWAY_IN_MINUTES分前丁度はミーティングルームへ入れる
-            let consultant_email_address = "test0@test.com";
-            let user_account_email_address = "test1@test.com";
-            vec![
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id_of_consultant = MEMBER_NAME.parse::<i64>().expect("failed to get Ok");
+        let account_id_of_user = account_id_of_consultant + 6007;
+        let consultation_id = 4134;
+        let consultation_date_time_in_jst =
+            *CURRENT_DATE_TIME + Duration::minutes(LEEWAY_IN_MINUTES); // LEEWAY_IN_MINUTES分前丁度はミーティングルームへ入れる
+        let consultant_email_address = "test0@test.com";
+        let user_account_email_address = "test1@test.com";
+        vec![
             TestCase {
                 name: "success case 1".to_string(),
                 input: Input {
@@ -633,7 +632,9 @@ mod tests {
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::NonPositiveConsultationId as u32 }),
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultationId as u32,
+                    }),
                 )),
             },
             TestCase {
@@ -670,7 +671,9 @@ mod tests {
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::NonPositiveConsultationId as u32 }),
+                    Json(ApiError {
+                        code: Code::NonPositiveConsultationId as u32,
+                    }),
                 )),
             },
             TestCase {
@@ -707,7 +710,9 @@ mod tests {
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::AudioTestIsNotDone as u32 }),
+                    Json(ApiError {
+                        code: Code::AudioTestIsNotDone as u32,
+                    }),
                 )),
             },
             TestCase {
@@ -744,7 +749,9 @@ mod tests {
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::NoIdentityRegistered as u32 }),
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
+                    }),
                 )),
             },
             TestCase {
@@ -781,7 +788,9 @@ mod tests {
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::NoConsultationFound as u32 }),
+                    Json(ApiError {
+                        code: Code::NoConsultationFound as u32,
+                    }),
                 )),
             },
             TestCase {
@@ -818,7 +827,9 @@ mod tests {
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::NoConsultationFound as u32 }),
+                    Json(ApiError {
+                        code: Code::NoConsultationFound as u32,
+                    }),
                 )),
             },
             TestCase {
@@ -844,9 +855,11 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: Some(JAPANESE_TIME_ZONE
-                                .with_ymd_and_hms(2022, 12, 20, 21, 32, 21)
-                                .unwrap()),
+                            disabled_at: Some(
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2022, 12, 20, 21, 32, 21)
+                                    .unwrap(),
+                            ),
                         },
                         user_account: UserAccount {
                             email_address: user_account_email_address.to_string(),
@@ -857,7 +870,9 @@ mod tests {
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::ConsultantIsNotAvailableOnConsultationRoom as u32 }),
+                    Json(ApiError {
+                        code: Code::ConsultantIsNotAvailableOnConsultationRoom as u32,
+                    }),
                 )),
             },
             TestCase {
@@ -887,20 +902,65 @@ mod tests {
                         },
                         user_account: UserAccount {
                             email_address: user_account_email_address.to_string(),
-                            disabled_at: Some(JAPANESE_TIME_ZONE
-                                .with_ymd_and_hms(2023, 1, 30, 6, 2, 30)
-                                .unwrap()),
+                            disabled_at: Some(
+                                JAPANESE_TIME_ZONE
+                                    .with_ymd_and_hms(2023, 1, 30, 6, 2, 30)
+                                    .unwrap(),
+                            ),
                         },
                         current_date_time: *CURRENT_DATE_TIME,
                     },
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError{ code: Code::UserIsNotAvailableOnConsultationRoom as u32 }),
+                    Json(ApiError {
+                        code: Code::UserIsNotAvailableOnConsultationRoom as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail ConsultationRoomHasNotOpenedYet".to_string(),
+                input: Input {
+                    account_id: account_id_of_consultant,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: ConsultantSideInfoOperationMock {
+                        account_id: account_id_of_consultant,
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst: *CURRENT_DATE_TIME
+                                + Duration::minutes(LEEWAY_IN_MINUTES)
+                                + Duration::seconds(1),
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultationRoomHasNotOpenedYet as u32,
+                    }),
                 )),
             },
         ]
-        });
+    });
 
     #[tokio::test]
     async fn handle_consultant_side_info_tests() {
