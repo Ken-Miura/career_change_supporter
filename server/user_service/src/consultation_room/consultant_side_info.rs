@@ -331,6 +331,7 @@ mod tests {
         TOKEN_ID,
     };
     use crate::consultation_room::LEEWAY_IN_MINUTES;
+    use crate::util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
     use crate::{
         consultation_room::{Consultation, SkyWayIdentification},
         util::available_user_account::UserAccount,
@@ -532,6 +533,48 @@ mod tests {
                             consultant_id: account_id_of_consultant,
                             consultation_date_time_in_jst: *CURRENT_DATE_TIME
                                 - Duration::minutes(10), // 現在時刻が相談開始時刻を過ぎていることを表したいだけで10分は適当な数字
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultantSideInfoResult {
+                        token: TOKEN.to_string(),
+                        room_name: ROOM_NAME.to_string(),
+                        member_name: MEMBER_NAME.to_string(),
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case 4 (current_date_time is just end of consultation)".to_string(),
+                input: Input {
+                    account_id: account_id_of_consultant,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: ConsultantSideInfoOperationMock {
+                        account_id: account_id_of_consultant,
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst: *CURRENT_DATE_TIME
+                                - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64), // 相談終了時刻丁度は許容
                             room_name: ROOM_NAME.to_string(),
                         },
                         consultant: UserAccount {
