@@ -322,8 +322,8 @@ async fn update_consultant_entered_at(
 mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{DateTime, Duration, FixedOffset};
-    use common::{ApiError, ErrResp, RespResult};
+    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
+    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::consultation_room::tests::{
@@ -819,6 +819,84 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError{ code: Code::NoConsultationFound as u32 }),
+                )),
+            },
+            TestCase {
+                name: "fail ConsultantIsNotAvailableOnConsultationRoom".to_string(),
+                input: Input {
+                    account_id: account_id_of_consultant,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: ConsultantSideInfoOperationMock {
+                        account_id: account_id_of_consultant,
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: Some(JAPANESE_TIME_ZONE
+                                .with_ymd_and_hms(2022, 12, 20, 21, 32, 21)
+                                .unwrap()),
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError{ code: Code::ConsultantIsNotAvailableOnConsultationRoom as u32 }),
+                )),
+            },
+            TestCase {
+                name: "fail ConsultantIsNotAvailableOnConsultationRoom".to_string(),
+                input: Input {
+                    account_id: account_id_of_consultant,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: ConsultantSideInfoOperationMock {
+                        account_id: account_id_of_consultant,
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: Some(JAPANESE_TIME_ZONE
+                                .with_ymd_and_hms(2023, 1, 30, 6, 2, 30)
+                                .unwrap()),
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError{ code: Code::UserIsNotAvailableOnConsultationRoom as u32 }),
                 )),
             },
         ]
