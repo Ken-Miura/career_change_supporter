@@ -317,3 +317,114 @@ async fn update_user_account_entered_at(
     })?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::{
+        consultation_room::{Consultation, SkyWayIdentification},
+        util::available_user_account::UserAccount,
+    };
+
+    use super::{handle_user_side_info, UserSideInfoOperation, UserSideInfoResult};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<UserSideInfoResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        consultation_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+        identification: SkyWayIdentification,
+        token_id: String,
+        audio_test_done: bool,
+        op: UserSideInfoOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct UserSideInfoOperationMock {}
+
+    #[async_trait]
+    impl UserSideInfoOperation for UserSideInfoOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn find_consultation_by_consultation_id(
+            &self,
+            consultation_id: i64,
+        ) -> Result<Option<Consultation>, ErrResp> {
+            todo!()
+        }
+
+        async fn get_consultant_if_available(
+            &self,
+            consultant_id: i64,
+        ) -> Result<Option<UserAccount>, ErrResp> {
+            todo!()
+        }
+
+        async fn get_user_account_if_available(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Option<UserAccount>, ErrResp> {
+            todo!()
+        }
+
+        async fn update_user_account_entered_at_if_needed(
+            &self,
+            consultation_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_user_side_info_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id_of_user = test_case.input.account_id;
+            let consultation_id = test_case.input.consultation_id;
+            let current_date_time = test_case.input.current_date_time;
+            let identification = test_case.input.identification.clone();
+            let token_id = test_case.input.token_id.clone();
+            let audio_test_done = test_case.input.audio_test_done;
+            let op = test_case.input.op.clone();
+
+            let result = handle_user_side_info(
+                account_id_of_user,
+                consultation_id,
+                &current_date_time,
+                identification,
+                token_id.as_str(),
+                audio_test_done,
+                op,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
