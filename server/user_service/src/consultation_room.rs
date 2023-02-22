@@ -311,8 +311,9 @@ async fn get_consultation_with_exclusive_lock(
 
 #[cfg(test)]
 mod tests {
-    use chrono::{Duration, TimeZone};
+    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
     use common::JAPANESE_TIME_ZONE;
+    use once_cell::sync::Lazy;
 
     use crate::{
         consultation_room::MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS, err::unexpected_err_resp,
@@ -324,49 +325,53 @@ mod tests {
         SkyWayScope, SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
     };
 
+    pub(in crate::consultation_room) const TOKEN_ID: &str = "6668affc-5afa-4996-b65a-6afe2f72756b";
     pub(in crate::consultation_room) const DUMMY_APPLICATION_ID: &str =
         "fb374e11-742b-454e-a313-17d3207d41f6";
     pub(in crate::consultation_room) const DUMMY_SECRET: &str =
         "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=";
+    pub(in crate::consultation_room) const ROOM_NAME: &str = "187313a8d6cf41bc963d71d4bfd5f363";
+    pub(in crate::consultation_room) const MEMBER_NAME: &str = "234";
+    pub(in crate::consultation_room) const TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI2NjY4YWZmYy01YWZhLTQ5OTYtYjY1YS02YWZlMmY3Mjc1NmIiLCJpYXQiOjE2NzY4MDk5NDEsImV4cCI6MTY3NjgxNDE0MSwic2NvcGUiOnsiYXBwIjp7ImlkIjoiZmIzNzRlMTEtNzQyYi00NTRlLWEzMTMtMTdkMzIwN2Q0MWY2IiwiYWN0aW9ucyI6WyJyZWFkIl0sImNoYW5uZWxzIjpbeyJuYW1lIjoiMTg3MzEzYThkNmNmNDFiYzk2M2Q3MWQ0YmZkNWYzNjMiLCJhY3Rpb25zIjpbInJlYWQiLCJjcmVhdGUiLCJkZWxldGUiXSwibWVtYmVycyI6W3sibmFtZSI6IjIzNCIsImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIiwic2lnbmFsIl0sInB1YmxpY2F0aW9uIjp7ImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIl19LCJzdWJzY3JpcHRpb24iOnsiYWN0aW9ucyI6WyJjcmVhdGUiLCJkZWxldGUiXX19XX1dfX19.qb1VLQwK2WMzmjilEG0eBO0_cqF9Xq1saxbaP0toqDg";
+    pub(in crate::consultation_room) static CURRENT_DATE_TIME: Lazy<DateTime<FixedOffset>> =
+        Lazy::new(|| {
+            JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
+                .unwrap()
+        });
 
     #[test]
     fn test_create_sky_way_auth_token_payload_success1() {
-        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-            .unwrap();
         let expiration_date_time =
-            current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
-        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
-        let member_name = "234".to_string();
+            *CURRENT_DATE_TIME + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
 
         let result = create_sky_way_auth_token_payload(
-            token_id.clone(),
-            current_date_time,
+            TOKEN_ID.to_string(),
+            *CURRENT_DATE_TIME,
             expiration_date_time,
             DUMMY_APPLICATION_ID.to_string(),
-            room_name.clone(),
-            member_name.clone(),
+            ROOM_NAME.to_string(),
+            MEMBER_NAME.to_string(),
         )
         .expect("failed to get Ok");
 
         let expected_result = SkyWayAuthTokenPayload {
-            jti: token_id,
-            iat: current_date_time.timestamp(),
+            jti: TOKEN_ID.to_string(),
+            iat: (*CURRENT_DATE_TIME).timestamp(),
             exp: expiration_date_time.timestamp(),
             scope: SkyWayScope {
                 app: SkyWayAppScope {
                     id: DUMMY_APPLICATION_ID.to_string(),
                     actions: vec!["read".to_string()],
                     channels: vec![SkyWayChannelScope {
-                        name: room_name,
+                        name: ROOM_NAME.to_string(),
                         actions: vec![
                             "read".to_string(),
                             "create".to_string(),
                             "delete".to_string(),
                         ],
                         members: vec![SkyWayMemberScope {
-                            name: member_name,
+                            name: MEMBER_NAME.to_string(),
                             actions: vec![
                                 "create".to_string(),
                                 "delete".to_string(),
@@ -389,42 +394,36 @@ mod tests {
 
     #[test]
     fn test_create_sky_way_auth_token_payload_success2() {
-        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-            .unwrap();
         let expiration_date_time =
-            current_date_time + Duration::seconds(MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS);
-        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
-        let member_name = "234".to_string();
+            *CURRENT_DATE_TIME + Duration::seconds(MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS);
 
         let result = create_sky_way_auth_token_payload(
-            token_id.clone(),
-            current_date_time,
+            TOKEN_ID.to_string(),
+            *CURRENT_DATE_TIME,
             expiration_date_time,
             DUMMY_APPLICATION_ID.to_string(),
-            room_name.clone(),
-            member_name.clone(),
+            ROOM_NAME.to_string(),
+            MEMBER_NAME.to_string(),
         )
         .expect("failed to get Ok");
 
         let expected_result = SkyWayAuthTokenPayload {
-            jti: token_id,
-            iat: current_date_time.timestamp(),
+            jti: TOKEN_ID.to_string(),
+            iat: (*CURRENT_DATE_TIME).timestamp(),
             exp: expiration_date_time.timestamp(),
             scope: SkyWayScope {
                 app: SkyWayAppScope {
                     id: DUMMY_APPLICATION_ID.to_string(),
                     actions: vec!["read".to_string()],
                     channels: vec![SkyWayChannelScope {
-                        name: room_name,
+                        name: ROOM_NAME.to_string(),
                         actions: vec![
                             "read".to_string(),
                             "create".to_string(),
                             "delete".to_string(),
                         ],
                         members: vec![SkyWayMemberScope {
-                            name: member_name,
+                            name: MEMBER_NAME.to_string(),
                             actions: vec![
                                 "create".to_string(),
                                 "delete".to_string(),
@@ -447,21 +446,15 @@ mod tests {
 
     #[test]
     fn test_create_sky_way_auth_token_payload_fail_current_date_time_equal_expiration_date_time() {
-        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-            .unwrap();
-        let expiration_date_time = current_date_time;
-        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
-        let member_name = "234".to_string();
+        let expiration_date_time = *CURRENT_DATE_TIME;
 
         let result = create_sky_way_auth_token_payload(
-            token_id,
-            current_date_time,
+            TOKEN_ID.to_string(),
+            *CURRENT_DATE_TIME,
             expiration_date_time,
             DUMMY_APPLICATION_ID.to_string(),
-            room_name,
-            member_name,
+            ROOM_NAME.to_string(),
+            MEMBER_NAME.to_string(),
         )
         .expect_err("failed to get Err");
 
@@ -474,21 +467,15 @@ mod tests {
     #[test]
     fn test_create_sky_way_auth_token_payload_fail_current_date_time_exceeds_expiration_date_time()
     {
-        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-            .unwrap();
-        let expiration_date_time = current_date_time - Duration::seconds(1);
-        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
-        let member_name = "234".to_string();
+        let expiration_date_time = *CURRENT_DATE_TIME - Duration::seconds(1);
 
         let result = create_sky_way_auth_token_payload(
-            token_id,
-            current_date_time,
+            TOKEN_ID.to_string(),
+            *CURRENT_DATE_TIME,
             expiration_date_time,
             DUMMY_APPLICATION_ID.to_string(),
-            room_name,
-            member_name,
+            ROOM_NAME.to_string(),
+            MEMBER_NAME.to_string(),
         )
         .expect_err("failed to get Err");
 
@@ -501,23 +488,17 @@ mod tests {
     #[test]
     fn test_create_sky_way_auth_token_payload_fai_expiration_date_time_exceeds_sky_way_service_limit(
     ) {
-        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-            .unwrap();
-        let expiration_date_time = current_date_time
+        let expiration_date_time = *CURRENT_DATE_TIME
             + Duration::seconds(MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS)
             + Duration::seconds(1);
-        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
-        let member_name = "234".to_string();
 
         let result = create_sky_way_auth_token_payload(
-            token_id,
-            current_date_time,
+            TOKEN_ID.to_string(),
+            *CURRENT_DATE_TIME,
             expiration_date_time,
             DUMMY_APPLICATION_ID.to_string(),
-            room_name,
-            member_name,
+            ROOM_NAME.to_string(),
+            MEMBER_NAME.to_string(),
         )
         .expect_err("failed to get Err");
 
@@ -529,22 +510,17 @@ mod tests {
 
     #[test]
     fn test_create_sky_way_auth_token_payload_fai_invalid_room_name() {
-        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-            .unwrap();
         let expiration_date_time =
-            current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
+            *CURRENT_DATE_TIME + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
         let room_name = "test room".to_string(); // non UUID v4 simple format
-        let member_name = "234".to_string();
 
         let result = create_sky_way_auth_token_payload(
-            token_id,
-            current_date_time,
+            TOKEN_ID.to_string(),
+            *CURRENT_DATE_TIME,
             expiration_date_time,
             DUMMY_APPLICATION_ID.to_string(),
             room_name,
-            member_name,
+            MEMBER_NAME.to_string(),
         )
         .expect_err("failed to get Err");
 
@@ -556,29 +532,23 @@ mod tests {
 
     #[test]
     fn test_create_sky_way_auth_token_success() {
-        let token_id = "6668affc-5afa-4996-b65a-6afe2f72756b".to_string();
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-            .unwrap();
         let expiration_date_time =
-            current_date_time + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
-        let room_name = "187313a8d6cf41bc963d71d4bfd5f363".to_string();
-        let member_name = "234".to_string();
+            *CURRENT_DATE_TIME + Duration::seconds(VALID_TOKEN_DURATION_IN_SECONDS);
 
         let payload = create_sky_way_auth_token_payload(
-            token_id,
-            current_date_time,
+            TOKEN_ID.to_string(),
+            *CURRENT_DATE_TIME,
             expiration_date_time,
             DUMMY_APPLICATION_ID.to_string(),
-            room_name,
-            member_name,
+            ROOM_NAME.to_string(),
+            MEMBER_NAME.to_string(),
         )
         .expect("failed to get Ok");
 
         let result =
             create_sky_way_auth_token(&payload, DUMMY_SECRET.as_bytes()).expect("failed to get Ok");
 
-        let expected_result = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI2NjY4YWZmYy01YWZhLTQ5OTYtYjY1YS02YWZlMmY3Mjc1NmIiLCJpYXQiOjE2NzY4MDk5NDEsImV4cCI6MTY3NjgxNDE0MSwic2NvcGUiOnsiYXBwIjp7ImlkIjoiZmIzNzRlMTEtNzQyYi00NTRlLWEzMTMtMTdkMzIwN2Q0MWY2IiwiYWN0aW9ucyI6WyJyZWFkIl0sImNoYW5uZWxzIjpbeyJuYW1lIjoiMTg3MzEzYThkNmNmNDFiYzk2M2Q3MWQ0YmZkNWYzNjMiLCJhY3Rpb25zIjpbInJlYWQiLCJjcmVhdGUiLCJkZWxldGUiXSwibWVtYmVycyI6W3sibmFtZSI6IjIzNCIsImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIiwic2lnbmFsIl0sInB1YmxpY2F0aW9uIjp7ImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIl19LCJzdWJzY3JpcHRpb24iOnsiYWN0aW9ucyI6WyJjcmVhdGUiLCJkZWxldGUiXX19XX1dfX19.qb1VLQwK2WMzmjilEG0eBO0_cqF9Xq1saxbaP0toqDg";
+        let expected_result = TOKEN;
         assert_eq!(result, expected_result);
     }
 }

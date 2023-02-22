@@ -320,11 +320,13 @@ async fn update_consultant_entered_at(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset};
     use common::{ErrResp, RespResult};
     use once_cell::sync::Lazy;
 
+    use crate::consultation_room::tests::MEMBER_NAME;
     use crate::{
         consultation_room::{Consultation, SkyWayIdentification},
         util::available_user_account::UserAccount,
@@ -415,7 +417,31 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = MEMBER_NAME.parse::<i64>().expect("failed to get Ok");
+        vec![
+        //     TestCase {
+        //     name: "success case".to_string(),
+        //     input: Input {
+        //         account_id: todo!(),
+        //         consultation_id: todo!(),
+        //         current_date_time: todo!(),
+        //         identification: todo!(),
+        //         token_id: todo!(),
+        //         audio_test_done: todo!(),
+        //         op: todo!(),
+        //     },
+        //     expected: Ok((
+        //         StatusCode::OK,
+        //         Json(ConsultantSideInfoResult {
+        //             token,
+        //             room_name,
+        //             member_name,
+        //         }),
+        //     )),
+        // }
+        ]
+    });
 
     #[tokio::test]
     async fn handle_consultant_side_info_tests() {
