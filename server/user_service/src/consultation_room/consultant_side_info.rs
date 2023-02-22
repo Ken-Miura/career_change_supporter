@@ -959,6 +959,47 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail ConsultationRoomHasAlreadyClosed".to_string(),
+                input: Input {
+                    account_id: account_id_of_consultant,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: ConsultantSideInfoOperationMock {
+                        account_id: account_id_of_consultant,
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst: *CURRENT_DATE_TIME
+                                - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
+                                - Duration::seconds(1),
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultationRoomHasAlreadyClosed as u32,
+                    }),
+                )),
+            },
         ]
     });
 
