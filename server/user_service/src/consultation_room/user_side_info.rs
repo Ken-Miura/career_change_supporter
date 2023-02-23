@@ -714,6 +714,123 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail NoIdentityRegistered".to_string(),
+                input: Input {
+                    account_id: account_id_of_user,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: UserSideInfoOperationMock {
+                        account_id: account_id_of_user + 1,
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoIdentityRegistered as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NoConsultationFound (really not found)".to_string(),
+                input: Input {
+                    account_id: account_id_of_user,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: UserSideInfoOperationMock {
+                        account_id: account_id_of_user,
+                        consultation_id: consultation_id + 1,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoConsultationFound as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NoConsultationFound (consultant id does not match)".to_string(),
+                input: Input {
+                    account_id: account_id_of_user,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: UserSideInfoOperationMock {
+                        account_id: account_id_of_user,
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user + 740,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserAccount {
+                            email_address: consultant_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        user_account: UserAccount {
+                            email_address: user_account_email_address.to_string(),
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoConsultationFound as u32,
+                    }),
+                )),
+            },
         ]
     });
 
