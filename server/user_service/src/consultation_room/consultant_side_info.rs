@@ -876,7 +876,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail ConsultantIsNotAvailableOnConsultationRoom".to_string(),
+                name: "fail UserIsNotAvailableOnConsultationRoom".to_string(),
                 input: Input {
                     account_id: account_id_of_consultant,
                     consultation_id,
