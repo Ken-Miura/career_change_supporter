@@ -101,16 +101,20 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
-            .execute(sql.stmt(r"CREATE TABLE ccs_schema.deleted_user_account (
+            /* NOTE: アカウント作成 -> 削除 -> バッチ処理によりdeleted_user_accountが削除される前に同じメールアドレスでアカウント作成 -> 削除
+             * といったケースに対応するためにemail_addressにはUNIQUEをつけない
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.deleted_user_account (
                 user_account_id BIGINT PRIMARY KEY,
-                email_address ccs_schema.email_address NOT NULL UNIQUE,
+                email_address ccs_schema.email_address NOT NULL,
                 hashed_password BYTEA NOT NULL,
                 last_login_time TIMESTAMP WITH TIME ZONE,
                 created_at TIMESTAMP WITH TIME ZONE NOT NULL,
                 disabled_at TIMESTAMP WITH TIME ZONE,
                 deleted_at TIMESTAMP WITH TIME ZONE NOT NULL
-              );"))
+              );",
+            ))
             .await
             .map(|_| ())?;
         let _ = conn
