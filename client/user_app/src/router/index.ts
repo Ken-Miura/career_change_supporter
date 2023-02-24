@@ -25,7 +25,7 @@ import TransactionLawPage from '../views/TransactionLawPage.vue'
 import ConsultantListPage from '../views/personalized/ConsultantListPage.vue'
 import ConsultantDetailPage from '../views/personalized/ConsultantDetailPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
-import RatingWaitListPage from '../views/personalized/RatingWaitListPage.vue'
+import AwaitingRatingListPage from '../views/personalized/AwaitingRatingListPage.vue'
 import AudioTestPage from '../views/personalized/AudioTestPage.vue'
 import RequestConsultationSuccessPage from '../views/personalized/RequestConsultationSuccessPage.vue'
 import ConsultationRequestDetailPage from '../views/personalized/ConsultationRequestDetailPage.vue'
@@ -270,9 +270,9 @@ const routes: Array<RouteRecordRaw> = [
     component: AudioTestPage
   },
   {
-    path: '/rating-wait-list',
-    name: 'RatingWaitListPage',
-    component: RatingWaitListPage
+    path: '/awaiting-rating-list',
+    name: 'AwaitingRatingListPage',
+    component: AwaitingRatingListPage
   }
 ]
 
