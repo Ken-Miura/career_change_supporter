@@ -75,6 +75,10 @@ async fn handle_consultations(
     ))
 }
 
+// 身分のチェックが出来ていなければ、そもそも相談の申込みができない
+// 相談の申込みが出来ていなければ、相談は何もない
+// 従って身分のチェックができていないユーザーは空の結果が返るだけなので
+// わざわざ身分チェックをする処理を入れない
 #[async_trait]
 trait ConsultationsOperation {
     async fn filter_user_side_consultation(

@@ -3,11 +3,11 @@
 use axum::async_trait;
 use axum::extract::State;
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{RespResult, JAPANESE_TIME_ZONE};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::util::{request_consultation::ConsultationDateTime, session::User};
+use crate::util::{self, request_consultation::ConsultationDateTime, session::User};
 
 pub(crate) async fn get_awaiting_ratings(
     User { account_id }: User,
@@ -40,6 +40,10 @@ struct ConsultantSideAwaitingRating {
     meeting_date_time_in_jst: ConsultationDateTime,
 }
 
+// 身分のチェックが出来ていなければ、そもそも相談の申込みができない
+// 相談の申込みが出来ていなければ、評価待ちは何もない
+// 従って身分のチェックができていないユーザーは空の結果が返るだけなので
+// わざわざ身分チェックをする処理を入れない
 #[async_trait]
 trait AwaitingRatingsOperation {}
 
