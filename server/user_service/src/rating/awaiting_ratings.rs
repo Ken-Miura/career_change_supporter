@@ -1,8 +1,9 @@
 // Copyright 2023 Ken Miura
 
-use axum::async_trait;
 use axum::extract::State;
-use chrono::{DateTime, Datelike, FixedOffset, Timelike, Utc};
+use axum::http::StatusCode;
+use axum::{async_trait, Json};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::{
     consultant_rating,
@@ -14,7 +15,10 @@ use tracing::error;
 
 use crate::{
     err::unexpected_err_resp,
-    util::{request_consultation::ConsultationDateTime, session::User},
+    util::{
+        request_consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE},
+        session::User,
+    },
 };
 
 const MAX_NUM_OF_USER_SIDE_AWAITING_RATINGS: u64 = 20;
@@ -158,5 +162,21 @@ async fn handle_awaiting_ratings(
     current_date_time: &DateTime<FixedOffset>,
     op: impl AwaitingRatingsOperation,
 ) -> RespResult<AwaitingRatingsResult> {
-    todo!()
+    let length_of_meeting_in_minute = Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+    let criteria = *current_date_time - length_of_meeting_in_minute;
+
+    let user_side_awaiting_ratings = op
+        .filter_user_side_awaiting_ratings(account_id, criteria)
+        .await?;
+    let consultant_side_awaiting_ratings = op
+        .filter_consultant_side_awaiting_ratings(account_id, criteria)
+        .await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(AwaitingRatingsResult {
+            user_side_awaiting_ratings,
+            consultant_side_awaiting_ratings,
+        }),
+    ))
 }
