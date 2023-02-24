@@ -5,6 +5,7 @@ use axum::extract::State;
 use chrono::{DateTime, Datelike, FixedOffset, Timelike, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::{
+    consultant_rating,
     sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect},
     user_rating,
 };
@@ -17,6 +18,7 @@ use crate::{
 };
 
 const MAX_NUM_OF_USER_SIDE_AWAITING_RATINGS: u64 = 20;
+const MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATINGS: u64 = 20;
 
 pub(crate) async fn get_awaiting_ratings(
     User { account_id }: User,
@@ -117,7 +119,37 @@ impl AwaitingRatingsOperation for AwaitingRatingsOperationImpl {
         consultant_id: i64,
         start_criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<ConsultantSideAwaitingRating>, ErrResp> {
-        todo!()
+        let results = consultant_rating::Entity::find()
+            .filter(consultant_rating::Column::MeetingAt.lt(start_criteria))
+            .filter(consultant_rating::Column::ConsultantId.eq(consultant_id))
+            .filter(consultant_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
+            .limit(MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATINGS)
+            .order_by_asc(consultant_rating::Column::MeetingAt)
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter consultant_rating (consultant_id: {}, start_criteria: {}): {}",
+                    consultant_id, start_criteria, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(results
+            .into_iter()
+            .map(|m| {
+                let meeting_at_in_jst = m.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
+                ConsultantSideAwaitingRating {
+                    consultant_rating_id: m.consultant_rating_id,
+                    user_account_id: m.user_account_id,
+                    meeting_date_time_in_jst: ConsultationDateTime {
+                        year: meeting_at_in_jst.year(),
+                        month: meeting_at_in_jst.month(),
+                        day: meeting_at_in_jst.day(),
+                        hour: meeting_at_in_jst.hour(),
+                    },
+                }
+            })
+            .collect::<Vec<ConsultantSideAwaitingRating>>())
     }
 }
 
