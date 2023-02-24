@@ -33,7 +33,7 @@
             <router-link class="inline-block text-white no-underline py-2 px-4" to="/schedule">スケジュール</router-link>
           </li>
           <li class="mr-3">
-            <router-link class="inline-block text-white no-underline py-2 px-4" to="/rating-wait-list">評価</router-link>
+            <router-link class="inline-block text-white no-underline py-2 px-4" to="/awaiting-rating-list">評価</router-link>
           </li>
           <li class="mr-3">
             <p data-test="p" class="inline-block text-white no-underline py-2 px-4 cursor-pointer" v-on:click="logoutHandler">ログアウト</p>
