@@ -183,9 +183,10 @@ async fn handle_awaiting_ratings(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, Duration, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
+    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
@@ -244,7 +245,32 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = 560;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 2, 25, 21, 32, 21)
+            .unwrap();
+        vec![TestCase {
+            name: "empty results".to_string(),
+            input: Input {
+                account_id,
+                current_date_time,
+                op: AwaitingRatingsOperationMock {
+                    account_id,
+                    current_date_time,
+                    user_side_awaiting_ratings: vec![],
+                    consultant_side_awaiting_ratings: vec![],
+                },
+            },
+            expected: Ok((
+                StatusCode::OK,
+                Json(AwaitingRatingsResult {
+                    user_side_awaiting_ratings: vec![],
+                    consultant_side_awaiting_ratings: vec![],
+                }),
+            )),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_user_side_info_tests() {
