@@ -371,6 +371,63 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "1 user side awaiting rating, 1 consultant side awaiting rating".to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: AwaitingRatingsOperationMock {
+                        account_id,
+                        current_date_time,
+                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1()],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                        ],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(AwaitingRatingsResult {
+                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1()],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                        ],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "2 user side awaiting ratings, 2 consultant side awaiting ratings"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: AwaitingRatingsOperationMock {
+                        account_id,
+                        current_date_time,
+                        user_side_awaiting_ratings: vec![
+                            create_dummy_user_side_awaiting_rating1(),
+                            create_dummy_user_side_awaiting_rating2(),
+                        ],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                            create_dummy_consultant_side_awaiting_rating2(),
+                        ],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(AwaitingRatingsResult {
+                        user_side_awaiting_ratings: vec![
+                            create_dummy_user_side_awaiting_rating1(),
+                            create_dummy_user_side_awaiting_rating2(),
+                        ],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                            create_dummy_consultant_side_awaiting_rating2(),
+                        ],
+                    }),
+                )),
+            },
         ]
     });
 
