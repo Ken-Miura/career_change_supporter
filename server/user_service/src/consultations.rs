@@ -105,6 +105,10 @@ impl ConsultationsOperation for ConsultationsOperationImpl {
         user_account_id: i64,
         criteria_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<UserSideConsultation>, ErrResp> {
+        // メモリ利用量が想定を上回ることを考慮し、通常取得するレコードを制限するが、
+        // ここでは下記の理由から取得するレコード数を制限しない
+        // ・表示される相談（相談室への入り口）が見えないのはユーザーを不安にさせる
+        // ・相談が登録されるためには、相談者申し込み者と相談相手が手動で申込みと受け入れのやり取りが必要になるため、そもそも表示される件数が異常な件数となるケースが少ない
         let results = consultation::Entity::find()
         .filter(consultation::Column::MeetingAt.gte(criteria_date_time))
         .filter(consultation::Column::UserAccountId.eq(user_account_id))
@@ -140,6 +144,10 @@ impl ConsultationsOperation for ConsultationsOperationImpl {
         consultant_id: i64,
         criteria_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<ConsultantSideConsultation>, ErrResp> {
+        // メモリ利用量が想定を上回ることを考慮し、通常取得するレコードを制限するが、
+        // ここでは下記の理由から取得するレコード数を制限しない
+        // ・表示される相談（相談室への入り口）が見えないのはユーザーを不安にさせる
+        // ・相談が登録されるためには、相談者申し込み者と相談相手が手動で申込みと受け入れのやり取りが必要になるため、そもそも表示される件数が異常な件数となるケースが少ない
         let results = consultation::Entity::find()
             .filter(consultation::Column::MeetingAt.gte(criteria_date_time))
             .filter(consultation::Column::ConsultantId.eq(consultant_id))
