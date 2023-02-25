@@ -280,18 +280,14 @@ mod tests {
                     op: AwaitingRatingsOperationMock {
                         account_id,
                         current_date_time,
-                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1(
-                            account_id,
-                        )],
+                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1()],
                         consultant_side_awaiting_ratings: vec![],
                     },
                 },
                 expected: Ok((
                     StatusCode::OK,
                     Json(AwaitingRatingsResult {
-                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1(
-                            account_id,
-                        )],
+                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1()],
                         consultant_side_awaiting_ratings: vec![],
                     }),
                 )),
@@ -306,8 +302,8 @@ mod tests {
                         account_id,
                         current_date_time,
                         user_side_awaiting_ratings: vec![
-                            create_dummy_user_side_awaiting_rating1(account_id),
-                            create_dummy_user_side_awaiting_rating2(account_id),
+                            create_dummy_user_side_awaiting_rating1(),
+                            create_dummy_user_side_awaiting_rating2(),
                         ],
                         consultant_side_awaiting_ratings: vec![],
                     },
@@ -316,19 +312,71 @@ mod tests {
                     StatusCode::OK,
                     Json(AwaitingRatingsResult {
                         user_side_awaiting_ratings: vec![
-                            create_dummy_user_side_awaiting_rating1(account_id),
-                            create_dummy_user_side_awaiting_rating2(account_id),
+                            create_dummy_user_side_awaiting_rating1(),
+                            create_dummy_user_side_awaiting_rating2(),
                         ],
                         consultant_side_awaiting_ratings: vec![],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "no user side awaiting ratings, 1 consultant side awaiting ratings"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: AwaitingRatingsOperationMock {
+                        account_id,
+                        current_date_time,
+                        user_side_awaiting_ratings: vec![],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                        ],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(AwaitingRatingsResult {
+                        user_side_awaiting_ratings: vec![],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                        ],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "no user side awaiting ratings, 2 consultant side awaiting ratings"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: AwaitingRatingsOperationMock {
+                        account_id,
+                        current_date_time,
+                        user_side_awaiting_ratings: vec![],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                            create_dummy_consultant_side_awaiting_rating2(),
+                        ],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(AwaitingRatingsResult {
+                        user_side_awaiting_ratings: vec![],
+                        consultant_side_awaiting_ratings: vec![
+                            create_dummy_consultant_side_awaiting_rating1(),
+                            create_dummy_consultant_side_awaiting_rating2(),
+                        ],
                     }),
                 )),
             },
         ]
     });
 
-    fn create_dummy_user_side_awaiting_rating1(account_id: i64) -> UserSideAwaitingRating {
+    fn create_dummy_user_side_awaiting_rating1() -> UserSideAwaitingRating {
         UserSideAwaitingRating {
-            user_rating_id: account_id,
+            user_rating_id: 5761,
             consultant_id: 10,
             meeting_date_time_in_jst: ConsultationDateTime {
                 year: 2023,
@@ -339,15 +387,41 @@ mod tests {
         }
     }
 
-    fn create_dummy_user_side_awaiting_rating2(account_id: i64) -> UserSideAwaitingRating {
+    fn create_dummy_user_side_awaiting_rating2() -> UserSideAwaitingRating {
         UserSideAwaitingRating {
-            user_rating_id: account_id,
+            user_rating_id: 4107,
             consultant_id: 12,
             meeting_date_time_in_jst: ConsultationDateTime {
                 year: 2023,
                 month: 2,
                 day: 26,
                 hour: 22,
+            },
+        }
+    }
+
+    fn create_dummy_consultant_side_awaiting_rating1() -> ConsultantSideAwaitingRating {
+        ConsultantSideAwaitingRating {
+            consultant_rating_id: 70671,
+            user_account_id: 234,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2023,
+                month: 1,
+                day: 26,
+                hour: 8,
+            },
+        }
+    }
+
+    fn create_dummy_consultant_side_awaiting_rating2() -> ConsultantSideAwaitingRating {
+        ConsultantSideAwaitingRating {
+            consultant_rating_id: 670,
+            user_account_id: 111,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2022,
+                month: 12,
+                day: 23,
+                hour: 15,
             },
         }
     }
