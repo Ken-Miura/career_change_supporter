@@ -180,3 +180,6 @@ async fn handle_awaiting_ratings(
         }),
     ))
 }
+
+#[cfg(test)]
+mod tests {}
