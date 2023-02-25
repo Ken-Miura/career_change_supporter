@@ -20,7 +20,7 @@
                   <div data-test="consultant-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">コンサルタントID（{{ user_side_awaiting_rating.consultant_id }}）</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div data-test="user-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談日時：{{ user_side_awaiting_rating.meeting_date_time_in_jst.year }}年{{ user_side_awaiting_rating.meeting_date_time_in_jst.month }}月{{ user_side_awaiting_rating.meeting_date_time_in_jst.day }}日{{ user_side_awaiting_rating.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-rate-consultant-page" v-on:click="moveToRateConsultantPage(user_side_awaiting_rating.user_rating_id, user_side_awaiting_rating.consultant_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">このコンサルタントを評価する</button>
+                    <button data-test="move-to-rate-consultant-page" v-on:click="moveToRateConsultantPage(user_side_awaiting_rating.user_rating_id, user_side_awaiting_rating.consultant_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
                   </div>
                 </div>
               </li>
@@ -28,6 +28,25 @@
           </div>
           <div v-else class="m-6 text-2xl">
             <p data-test="no-user-side-awaiting-ratings-label" class="text-xl">未評価のコンサルタントはいません</p>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 data-test="consultant-side-awaiting-ratings-label" class="font-bold text-2xl">相談を受け付けたユーザー</h3>
+          <div v-if="awaitingRatings.consultant_side_awaiting_ratings.length !== 0" class="m-4 text-2xl">
+            <ul>
+              <li v-for="consultant_side_awaiting_rating in awaitingRatings.consultant_side_awaiting_ratings" v-bind:key="consultant_side_awaiting_rating.consultant_rating_id">
+                <div v-bind:data-test="'consultant-rating-id-' + consultant_side_awaiting_rating.consultant_rating_id" class="mt-4">
+                  <div data-test="user-account-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーID（{{ consultant_side_awaiting_rating.user_account_id }}）からの相談</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div data-test="consultant-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談日時：{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.year }}年{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.month }}月{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.day }}日{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.hour }}時</div>
+                    <button data-test="move-to-rate-user-page" v-on:click="moveToRateUserPage(consultant_side_awaiting_rating.consultant_rating_id, consultant_side_awaiting_rating.user_account_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div v-else class="m-6 text-2xl">
+            <p data-test="no-consultant-side-awaiting-ratings-label" class="text-xl">未評価のユーザーはいません</p>
           </div>
         </div>
       </div>
@@ -95,11 +114,16 @@ export default defineComponent({
       console.log(`${userRatingId}, ${consultantId}`)
     }
 
+    const moveToRateUserPage = async (consultantRatingId: number, userAccountId: number) => {
+      console.log(`${consultantRatingId}, ${userAccountId}`)
+    }
+
     return {
       getAwaitingRatingsDone,
       errMessage,
       awaitingRatings,
-      moveToRateConsultantPage
+      moveToRateConsultantPage,
+      moveToRateUserPage
     }
   }
 })
