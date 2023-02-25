@@ -184,9 +184,11 @@ async fn handle_awaiting_ratings(
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
+    use chrono::{DateTime, Duration, FixedOffset};
     use common::{ErrResp, RespResult};
     use once_cell::sync::Lazy;
+
+    use crate::util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 
     use super::{
         handle_awaiting_ratings, AwaitingRatingsOperation, AwaitingRatingsResult,
@@ -208,7 +210,12 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct AwaitingRatingsOperationMock {}
+    struct AwaitingRatingsOperationMock {
+        account_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+        user_side_awaiting_ratings: Vec<UserSideAwaitingRating>,
+        consultant_side_awaiting_ratings: Vec<ConsultantSideAwaitingRating>,
+    }
 
     #[async_trait]
     impl AwaitingRatingsOperation for AwaitingRatingsOperationMock {
@@ -217,7 +224,11 @@ mod tests {
             user_account_id: i64,
             start_criteria: DateTime<FixedOffset>,
         ) -> Result<Vec<UserSideAwaitingRating>, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, user_account_id);
+            let criteria =
+                self.current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+            assert_eq!(criteria, start_criteria);
+            Ok(self.user_side_awaiting_ratings.clone())
         }
 
         async fn filter_consultant_side_awaiting_ratings(
@@ -225,7 +236,11 @@ mod tests {
             consultant_id: i64,
             start_criteria: DateTime<FixedOffset>,
         ) -> Result<Vec<ConsultantSideAwaitingRating>, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, consultant_id);
+            let criteria =
+                self.current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+            assert_eq!(criteria, start_criteria);
+            Ok(self.consultant_side_awaiting_ratings.clone())
         }
     }
 
