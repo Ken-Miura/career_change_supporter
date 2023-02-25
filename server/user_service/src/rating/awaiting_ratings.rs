@@ -182,4 +182,76 @@ async fn handle_awaiting_ratings(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use super::{
+        handle_awaiting_ratings, AwaitingRatingsOperation, AwaitingRatingsResult,
+        ConsultantSideAwaitingRating, UserSideAwaitingRating,
+    };
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<AwaitingRatingsResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+        op: AwaitingRatingsOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct AwaitingRatingsOperationMock {}
+
+    #[async_trait]
+    impl AwaitingRatingsOperation for AwaitingRatingsOperationMock {
+        async fn filter_user_side_awaiting_ratings(
+            &self,
+            user_account_id: i64,
+            start_criteria: DateTime<FixedOffset>,
+        ) -> Result<Vec<UserSideAwaitingRating>, ErrResp> {
+            todo!()
+        }
+
+        async fn filter_consultant_side_awaiting_ratings(
+            &self,
+            consultant_id: i64,
+            start_criteria: DateTime<FixedOffset>,
+        ) -> Result<Vec<ConsultantSideAwaitingRating>, ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_user_side_info_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let current_date_time = test_case.input.current_date_time;
+            let op = test_case.input.op.clone();
+
+            let result = handle_awaiting_ratings(account_id, &current_date_time, op).await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
