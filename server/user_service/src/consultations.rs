@@ -109,6 +109,7 @@ impl ConsultationsOperation for ConsultationsOperationImpl {
         // ここでは下記の理由から取得するレコード数を制限しない
         // ・表示される相談（相談室への入り口）が見えないのはユーザーを不安にさせる
         // ・相談が登録されるためには、相談者申し込み者と相談相手が手動で申込みと受け入れのやり取りが必要になるため、そもそも表示される件数が異常な件数となるケースが少ない
+        // ・相談者のカード利用限度額とこのサービスの最低利用申し込み料金を考えると無限にレコードが作られることはない
         let results = consultation::Entity::find()
         .filter(consultation::Column::MeetingAt.gte(criteria_date_time))
         .filter(consultation::Column::UserAccountId.eq(user_account_id))
@@ -148,7 +149,7 @@ impl ConsultationsOperation for ConsultationsOperationImpl {
         // ここでは下記の理由から取得するレコード数を制限しない
         // ・表示される相談（相談室への入り口）が見えないのはユーザーを不安にさせる
         // ・相談が登録されるためには、相談者申し込み者と相談相手が手動で申込みと受け入れのやり取りが必要になるため、そもそも表示される件数が異常な件数となるケースが少ない
-        // ・年間の利益が制限されているため、1年間に受けられる相談数が制限されている
+        // ・相談者の年間の利益を制限しているため、1年間に受けられる相談数が制限されている
         let results = consultation::Entity::find()
             .filter(consultation::Column::MeetingAt.gte(criteria_date_time))
             .filter(consultation::Column::ConsultantId.eq(consultant_id))
