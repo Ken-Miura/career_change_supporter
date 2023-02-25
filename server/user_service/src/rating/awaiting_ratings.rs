@@ -189,7 +189,7 @@ mod tests {
     use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
+    use crate::util::request_consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE};
 
     use super::{
         handle_awaiting_ratings, AwaitingRatingsOperation, AwaitingRatingsResult,
@@ -250,27 +250,107 @@ mod tests {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 2, 25, 21, 32, 21)
             .unwrap();
-        vec![TestCase {
-            name: "empty results".to_string(),
-            input: Input {
-                account_id,
-                current_date_time,
-                op: AwaitingRatingsOperationMock {
+        vec![
+            TestCase {
+                name: "empty results".to_string(),
+                input: Input {
                     account_id,
                     current_date_time,
-                    user_side_awaiting_ratings: vec![],
-                    consultant_side_awaiting_ratings: vec![],
+                    op: AwaitingRatingsOperationMock {
+                        account_id,
+                        current_date_time,
+                        user_side_awaiting_ratings: vec![],
+                        consultant_side_awaiting_ratings: vec![],
+                    },
                 },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(AwaitingRatingsResult {
+                        user_side_awaiting_ratings: vec![],
+                        consultant_side_awaiting_ratings: vec![],
+                    }),
+                )),
             },
-            expected: Ok((
-                StatusCode::OK,
-                Json(AwaitingRatingsResult {
-                    user_side_awaiting_ratings: vec![],
-                    consultant_side_awaiting_ratings: vec![],
-                }),
-            )),
-        }]
+            TestCase {
+                name: "1 user side awaiting rating, no consultant side awaiting ratings"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: AwaitingRatingsOperationMock {
+                        account_id,
+                        current_date_time,
+                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1(
+                            account_id,
+                        )],
+                        consultant_side_awaiting_ratings: vec![],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(AwaitingRatingsResult {
+                        user_side_awaiting_ratings: vec![create_dummy_user_side_awaiting_rating1(
+                            account_id,
+                        )],
+                        consultant_side_awaiting_ratings: vec![],
+                    }),
+                )),
+            },
+            TestCase {
+                name: "2 user side awaiting ratings, no consultant side awaiting ratings"
+                    .to_string(),
+                input: Input {
+                    account_id,
+                    current_date_time,
+                    op: AwaitingRatingsOperationMock {
+                        account_id,
+                        current_date_time,
+                        user_side_awaiting_ratings: vec![
+                            create_dummy_user_side_awaiting_rating1(account_id),
+                            create_dummy_user_side_awaiting_rating2(account_id),
+                        ],
+                        consultant_side_awaiting_ratings: vec![],
+                    },
+                },
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(AwaitingRatingsResult {
+                        user_side_awaiting_ratings: vec![
+                            create_dummy_user_side_awaiting_rating1(account_id),
+                            create_dummy_user_side_awaiting_rating2(account_id),
+                        ],
+                        consultant_side_awaiting_ratings: vec![],
+                    }),
+                )),
+            },
+        ]
     });
+
+    fn create_dummy_user_side_awaiting_rating1(account_id: i64) -> UserSideAwaitingRating {
+        UserSideAwaitingRating {
+            user_rating_id: account_id,
+            consultant_id: 10,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2023,
+                month: 2,
+                day: 25,
+                hour: 8,
+            },
+        }
+    }
+
+    fn create_dummy_user_side_awaiting_rating2(account_id: i64) -> UserSideAwaitingRating {
+        UserSideAwaitingRating {
+            user_rating_id: account_id,
+            consultant_id: 12,
+            meeting_date_time_in_jst: ConsultationDateTime {
+                year: 2023,
+                month: 2,
+                day: 26,
+                hour: 22,
+            },
+        }
+    }
 
     #[tokio::test]
     async fn handle_user_side_info_tests() {
