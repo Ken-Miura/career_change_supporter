@@ -9,6 +9,7 @@ import { AwaitingRatingsResp } from '@/util/personalized/awaiting-rating-list/Aw
 import { AwaitingRatings } from '@/util/personalized/awaiting-rating-list/AwaitingRatings'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
+import { MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING, MAX_NUM_OF_USER_SIDE_AWAITING_RATING } from '@/util/personalized/awaiting-rating-list/MaxNumOfAwaitingRating'
 
 const getAwaitingRatingsDoneMock = ref(true)
 const getAwaitingRatingsFuncMock = jest.fn()
@@ -105,5 +106,32 @@ describe('AwaitingRatingListPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it('displays no user side awaiting ratings and consultant side awaiting ratings when both do not exist', async () => {
+    const resp = AwaitingRatingsResp.create({ user_side_awaiting_ratings: [], consultant_side_awaiting_ratings: [] } as AwaitingRatings)
+    getAwaitingRatingsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(AwaitingRatingListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideAwaitingRatingsLabel = wrapper.find('[data-test="user-side-awaiting-ratings-label"]')
+    expect(userSideAwaitingRatingsLabel.text()).toContain('相談を行ったコンサルタント')
+    const userSideAwaitingRatingsDescription = wrapper.find('[data-test="user-side-awaiting-ratings-description"]')
+    expect(userSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
+    const noUserSideAwaitingRatingsLabel = wrapper.find('[data-test="no-user-side-awaiting-ratings-label"]')
+    expect(noUserSideAwaitingRatingsLabel.text()).toContain('未評価のコンサルタントはいません')
+
+    const consultantSideAwaitingRatingsLabel = wrapper.find('[data-test="consultant-side-awaiting-ratings-label"]')
+    expect(consultantSideAwaitingRatingsLabel.text()).toContain('相談を受け付けたユーザー')
+    const consultantSideAwaitingRatingsDescription = wrapper.find('[data-test="consultant-side-awaiting-ratings-description"]')
+    expect(consultantSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
+    const noConsultantSideAwaitingRatingsLabel = wrapper.find('[data-test="no-consultant-side-awaiting-ratings-label"]')
+    expect(noConsultantSideAwaitingRatingsLabel.text()).toContain('未評価のユーザーはいません')
   })
 })

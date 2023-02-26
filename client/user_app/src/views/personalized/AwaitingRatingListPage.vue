@@ -33,7 +33,7 @@
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="consultant-side-awaiting-ratings-label" class="font-bold text-2xl">相談を受け付けたユーザー</h3>
-          <p data-test="user-side-awaiting-ratings-description" class="mt-2 ml-2 text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING }}件分表示されます。{{ MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING }}件を超えた分は表示されているユーザーの評価を終えると表示されます。</p>
+          <p data-test="consultant-side-awaiting-ratings-description" class="mt-2 ml-2 text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING }}件分表示されます。{{ MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING }}件を超えた分は表示されているユーザーの評価を終えると表示されます。</p>
           <div v-if="awaitingRatings.consultant_side_awaiting_ratings.length !== 0" class="m-4 text-2xl">
             <ul>
               <li v-for="consultant_side_awaiting_rating in awaitingRatings.consultant_side_awaiting_ratings" v-bind:key="consultant_side_awaiting_rating.consultant_rating_id">
