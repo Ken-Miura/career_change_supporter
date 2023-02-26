@@ -277,14 +277,14 @@ const routes: Array<RouteRecordRaw> = [
     component: AwaitingRatingListPage
   },
   {
-    path: '/rate-user/:user_rating_id',
-    name: 'RateUserPage',
-    component: RateUserPage
-  },
-  {
-    path: '/rate-consultant/:consultant_rating_id',
+    path: '/rate-consultant/:user_rating_id', // コンサルタントを評価するのはユーザーなのでuser_rating_idを指定
     name: 'RateConsultantPage',
     component: RateConsultantPage
+  },
+  {
+    path: '/rate-user/:consultant_rating_id', // ユーザーを評価するのはコンサルタントなのでconsultant_rating_idを指定
+    name: 'RateUserPage',
+    component: RateUserPage
   }
 ]
 
