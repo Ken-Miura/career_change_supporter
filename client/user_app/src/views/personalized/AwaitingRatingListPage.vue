@@ -21,7 +21,7 @@
                   <div data-test="consultant-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">コンサルタントID（{{ user_side_awaiting_rating.consultant_id }}）</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div data-test="user-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談日時：{{ user_side_awaiting_rating.meeting_date_time_in_jst.year }}年{{ user_side_awaiting_rating.meeting_date_time_in_jst.month }}月{{ user_side_awaiting_rating.meeting_date_time_in_jst.day }}日{{ user_side_awaiting_rating.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-rate-consultant-page" v-on:click="moveToRateConsultantPage(user_side_awaiting_rating.user_rating_id, user_side_awaiting_rating.consultant_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
+                    <button data-test="move-to-rate-consultant-page" v-on:click="moveToRateConsultantPage(user_side_awaiting_rating.user_rating_id, user_side_awaiting_rating.consultant_id, user_side_awaiting_rating.meeting_date_time_in_jst)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
                   </div>
                 </div>
               </li>
@@ -41,7 +41,7 @@
                   <div data-test="user-account-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーID（{{ consultant_side_awaiting_rating.user_account_id }}）からの相談</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div data-test="consultant-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談日時：{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.year }}年{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.month }}月{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.day }}日{{ consultant_side_awaiting_rating.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-rate-user-page" v-on:click="moveToRateUserPage(consultant_side_awaiting_rating.consultant_rating_id, consultant_side_awaiting_rating.user_account_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
+                    <button data-test="move-to-rate-user-page" v-on:click="moveToRateUserPage(consultant_side_awaiting_rating.consultant_rating_id, consultant_side_awaiting_rating.user_account_id, consultant_side_awaiting_rating.meeting_date_time_in_jst)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
                   </div>
                 </div>
               </li>
@@ -72,6 +72,7 @@ import { AwaitingRatingsResp } from '@/util/personalized/awaiting-rating-list/Aw
 import { Message } from '@/util/Message'
 import { AwaitingRatings } from '@/util/personalized/awaiting-rating-list/AwaitingRatings'
 import { MAX_NUM_OF_USER_SIDE_AWAITING_RATING, MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING } from '@/util/personalized/awaiting-rating-list/MaxNumOfAwaitingRating'
+import { ConsultationDateTime } from '@/util/personalized/ConsultationDateTime'
 
 export default defineComponent({
   name: 'AwaitingRatingListPage',
@@ -113,11 +114,11 @@ export default defineComponent({
       }
     })
 
-    const moveToRateConsultantPage = async (userRatingId: number, consultantId: number) => {
+    const moveToRateConsultantPage = async (userRatingId: number, consultantId: number, consultationDateTime: ConsultationDateTime) => {
       console.log(`${userRatingId}, ${consultantId}`)
     }
 
-    const moveToRateUserPage = async (consultantRatingId: number, userAccountId: number) => {
+    const moveToRateUserPage = async (consultantRatingId: number, userAccountId: number, consultationDateTime: ConsultationDateTime) => {
       console.log(`${consultantRatingId}, ${userAccountId}`)
     }
 

@@ -33,6 +33,8 @@ import ConsultationRequestRejectionPage from '../views/personalized/Consultation
 import ConsultationRequestAcceptancePage from '../views/personalized/ConsultationRequestAcceptancePage.vue'
 import UserSideConsultationPage from '../views/personalized/UserSideConsultationPage.vue'
 import ConsultantSideConsultationPage from '../views/personalized/ConsultantSideConsultationPage.vue'
+import RateUserPage from '../views/personalized/RateUserPage.vue'
+import RateConsultantPage from '../views/personalized/RateConsultantPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -265,7 +267,7 @@ const routes: Array<RouteRecordRaw> = [
     component: RequestConsultationSuccessPage
   },
   {
-    path: '//audio-test',
+    path: '/audio-test',
     name: 'AudioTestPage',
     component: AudioTestPage
   },
@@ -273,6 +275,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/awaiting-rating-list',
     name: 'AwaitingRatingListPage',
     component: AwaitingRatingListPage
+  },
+  {
+    path: '/rate-user/:user_rating_id',
+    name: 'RateUserPage',
+    component: RateUserPage
+  },
+  {
+    path: '/rate-consultant/:consultant_rating_id',
+    name: 'RateConsultantPage',
+    component: RateConsultantPage
   }
 ]
 
