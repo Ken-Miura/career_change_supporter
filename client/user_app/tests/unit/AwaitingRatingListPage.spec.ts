@@ -75,7 +75,7 @@ describe('AwaitingRatingListPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  it(`moves to login if getAwaitingRatingsFuncMock returns ${Code.UNAUTHORIZED}`, async () => {
+  it(`moves to login if request returns ${Code.UNAUTHORIZED}`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     getAwaitingRatingsFuncMock.mockResolvedValue(apiErrResp)
     mount(AwaitingRatingListPage, {
@@ -91,7 +91,7 @@ describe('AwaitingRatingListPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 
-  it(`moves to login if getAwaitingRatingsFuncMock returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
+  it(`moves to login if request returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
     getAwaitingRatingsFuncMock.mockResolvedValue(apiErrResp)
     mount(AwaitingRatingListPage, {
