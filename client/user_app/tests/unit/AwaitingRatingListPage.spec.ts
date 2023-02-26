@@ -443,4 +443,64 @@ describe('AwaitingRatingListPage.vue', () => {
     const moveToRateUserPageBtn2 = consultantSideAwaitingRating2.find('[data-test="move-to-rate-user-page"]')
     expect(moveToRateUserPageBtn2.exists()).toBe(true)
   })
+
+  it('moves /rate-consultant with param when 評価する is clicked', async () => {
+    const dummyUserSideAwaitingRating1 = createDummyUserSideAwaitingRating1()
+    const resp = AwaitingRatingsResp.create({ user_side_awaiting_ratings: [dummyUserSideAwaitingRating1], consultant_side_awaiting_ratings: [] } as AwaitingRatings)
+    getAwaitingRatingsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(AwaitingRatingListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideAwaitingRatingsLabel = wrapper.find('[data-test="user-side-awaiting-ratings-label"]')
+    expect(userSideAwaitingRatingsLabel.text()).toContain('相談を行ったコンサルタント')
+    const userSideAwaitingRatingsDescription = wrapper.find('[data-test="user-side-awaiting-ratings-description"]')
+    expect(userSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
+
+    const userSideAwaitingRating1 = wrapper.find(`[data-test="user-rating-id-${dummyUserSideAwaitingRating1.user_rating_id}"]`)
+    const moveToRateConsultantPageBtn1 = userSideAwaitingRating1.find('[data-test="move-to-rate-consultant-page"]')
+    expect(moveToRateConsultantPageBtn1.exists()).toBe(true)
+    await moveToRateConsultantPageBtn1.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const dateTime = dummyUserSideAwaitingRating1.meeting_date_time_in_jst
+    const data = `/rate-consultant/${dummyUserSideAwaitingRating1.user_rating_id}?consultant-id=${dummyUserSideAwaitingRating1.consultant_id}&year=${dateTime.year}&month=${dateTime.month}&day=${dateTime.day}&hour=${dateTime.hour}`
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
+
+  it('moves /rate-consultant with param when 評価する is clicked', async () => {
+    const dummyConsultantSideAwaitingRating1 = createDummyConsultantSideAwaitingRating1()
+    const resp = AwaitingRatingsResp.create({ user_side_awaiting_ratings: [], consultant_side_awaiting_ratings: [dummyConsultantSideAwaitingRating1] } as AwaitingRatings)
+    getAwaitingRatingsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(AwaitingRatingListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const consultantSideAwaitingRatingsLabel = wrapper.find('[data-test="consultant-side-awaiting-ratings-label"]')
+    expect(consultantSideAwaitingRatingsLabel.text()).toContain('相談を受け付けたユーザー')
+    const consultantSideAwaitingRatingsDescription = wrapper.find('[data-test="consultant-side-awaiting-ratings-description"]')
+    expect(consultantSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
+
+    const consultantSideAwaitingRating1 = wrapper.find(`[data-test="consultant-rating-id-${dummyConsultantSideAwaitingRating1.consultant_rating_id}"]`)
+    const moveToRateUserPageBtn1 = consultantSideAwaitingRating1.find('[data-test="move-to-rate-user-page"]')
+    expect(moveToRateUserPageBtn1.exists()).toBe(true)
+    await moveToRateUserPageBtn1.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    const dateTime = dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst
+    const data = `/rate-user/${dummyConsultantSideAwaitingRating1.consultant_rating_id}?user-id=${dummyConsultantSideAwaitingRating1.user_account_id}&year=${dateTime.year}&month=${dateTime.month}&day=${dateTime.day}&hour=${dateTime.hour}`
+    expect(routerPushMock).toHaveBeenCalledWith(data)
+  })
 })

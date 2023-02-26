@@ -115,11 +115,11 @@ export default defineComponent({
     })
 
     const moveToRateConsultantPage = async (userRatingId: number, consultantId: number, consultationDateTime: ConsultationDateTime) => {
-      await router.push(`/rate-user/${userRatingId}?consultant-id=${consultantId}&year=${consultationDateTime.year}&month=${consultationDateTime.month}&day=${consultationDateTime.day}&hour=${consultationDateTime.hour}`)
+      await router.push(`/rate-consultant/${userRatingId}?consultant-id=${consultantId}&year=${consultationDateTime.year}&month=${consultationDateTime.month}&day=${consultationDateTime.day}&hour=${consultationDateTime.hour}`)
     }
 
     const moveToRateUserPage = async (consultantRatingId: number, userAccountId: number, consultationDateTime: ConsultationDateTime) => {
-      await router.push(`/rate-consultant/${consultantRatingId}?user-id=${userAccountId}&year=${consultationDateTime.year}&month=${consultationDateTime.month}&day=${consultationDateTime.day}&hour=${consultationDateTime.hour}`)
+      await router.push(`/rate-user/${consultantRatingId}?user-id=${userAccountId}&year=${consultationDateTime.year}&month=${consultationDateTime.month}&day=${consultationDateTime.day}&hour=${consultationDateTime.hour}`)
     }
 
     return {
