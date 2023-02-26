@@ -7,6 +7,8 @@ import { Message } from '@/util/Message'
 import { ref } from 'vue'
 import { AwaitingRatingsResp } from '@/util/personalized/awaiting-rating-list/AwaitingRatingsResp'
 import { AwaitingRatings } from '@/util/personalized/awaiting-rating-list/AwaitingRatings'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
 
 const getAwaitingRatingsDoneMock = ref(true)
 const getAwaitingRatingsFuncMock = jest.fn()
@@ -71,5 +73,37 @@ describe('AwaitingRatingListPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it(`moves to login if getAwaitingRatingsFuncMock returns ${Code.UNAUTHORIZED}`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    getAwaitingRatingsFuncMock.mockResolvedValue(apiErrResp)
+    mount(AwaitingRatingListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`moves to login if getAwaitingRatingsFuncMock returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    getAwaitingRatingsFuncMock.mockResolvedValue(apiErrResp)
+    mount(AwaitingRatingListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 })
