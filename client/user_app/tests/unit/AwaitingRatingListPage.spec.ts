@@ -284,6 +284,8 @@ describe('AwaitingRatingListPage.vue', () => {
     expect(userSideAwaitingRatingsLabel.text()).toContain('相談を行ったコンサルタント')
     const userSideAwaitingRatingsDescription = wrapper.find('[data-test="user-side-awaiting-ratings-description"]')
     expect(userSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
+    const noUserSideAwaitingRatingsLabel = wrapper.find('[data-test="no-user-side-awaiting-ratings-label"]')
+    expect(noUserSideAwaitingRatingsLabel.text()).toContain('未評価のコンサルタントはいません')
 
     const consultantSideAwaitingRatingsLabel = wrapper.find('[data-test="consultant-side-awaiting-ratings-label"]')
     expect(consultantSideAwaitingRatingsLabel.text()).toContain('相談を受け付けたユーザー')
@@ -319,6 +321,106 @@ describe('AwaitingRatingListPage.vue', () => {
     expect(userSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
     const noUserSideAwaitingRatingsLabel = wrapper.find('[data-test="no-user-side-awaiting-ratings-label"]')
     expect(noUserSideAwaitingRatingsLabel.text()).toContain('未評価のコンサルタントはいません')
+
+    const consultantSideAwaitingRatingsLabel = wrapper.find('[data-test="consultant-side-awaiting-ratings-label"]')
+    expect(consultantSideAwaitingRatingsLabel.text()).toContain('相談を受け付けたユーザー')
+    const consultantSideAwaitingRatingsDescription = wrapper.find('[data-test="consultant-side-awaiting-ratings-description"]')
+    expect(consultantSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
+
+    const consultantSideAwaitingRating1 = wrapper.find(`[data-test="consultant-rating-id-${dummyConsultantSideAwaitingRating1.consultant_rating_id}"]`)
+    const userAccountIdLabel1 = consultantSideAwaitingRating1.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${dummyConsultantSideAwaitingRating1.user_account_id}）`)
+    const consultantSideConsultationDateTime1 = consultantSideAwaitingRating1.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime1.text()).toContain(`相談日時：${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.year}年${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.month}月${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.day}日${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.hour}時`)
+    const moveToRateUserPageBtn1 = consultantSideAwaitingRating1.find('[data-test="move-to-rate-user-page"]')
+    expect(moveToRateUserPageBtn1.exists()).toBe(true)
+
+    const consultantSideAwaitingRating2 = wrapper.find(`[data-test="consultant-rating-id-${dummyConsultantSideAwaitingRating2.consultant_rating_id}"]`)
+    const userAccountIdLabel2 = consultantSideAwaitingRating2.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel2.text()).toContain(`ユーザーID（${dummyConsultantSideAwaitingRating2.user_account_id}）`)
+    const consultantSideConsultationDateTime2 = consultantSideAwaitingRating2.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime2.text()).toContain(`相談日時：${dummyConsultantSideAwaitingRating2.meeting_date_time_in_jst.year}年${dummyConsultantSideAwaitingRating2.meeting_date_time_in_jst.month}月${dummyConsultantSideAwaitingRating2.meeting_date_time_in_jst.day}日${dummyConsultantSideAwaitingRating2.meeting_date_time_in_jst.hour}時`)
+    const moveToRateUserPageBtn2 = consultantSideAwaitingRating2.find('[data-test="move-to-rate-user-page"]')
+    expect(moveToRateUserPageBtn2.exists()).toBe(true)
+  })
+
+  it('displays 1 user side awaiting rating and 1 consultant side awaiting rating', async () => {
+    const dummyUserSideAwaitingRating1 = createDummyUserSideAwaitingRating1()
+    const dummyConsultantSideAwaitingRating1 = createDummyConsultantSideAwaitingRating1()
+    const resp = AwaitingRatingsResp.create({ user_side_awaiting_ratings: [dummyUserSideAwaitingRating1], consultant_side_awaiting_ratings: [dummyConsultantSideAwaitingRating1] } as AwaitingRatings)
+    getAwaitingRatingsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(AwaitingRatingListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideAwaitingRatingsLabel = wrapper.find('[data-test="user-side-awaiting-ratings-label"]')
+    expect(userSideAwaitingRatingsLabel.text()).toContain('相談を行ったコンサルタント')
+    const userSideAwaitingRatingsDescription = wrapper.find('[data-test="user-side-awaiting-ratings-description"]')
+    expect(userSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
+
+    const userSideAwaitingRating1 = wrapper.find(`[data-test="user-rating-id-${dummyUserSideAwaitingRating1.user_rating_id}"]`)
+    const consultantIdLabel1 = userSideAwaitingRating1.find('[data-test="consultant-id-label"]')
+    expect(consultantIdLabel1.text()).toContain(`コンサルタントID（${dummyUserSideAwaitingRating1.consultant_id}）`)
+    const userSideConsultationDateTime1 = userSideAwaitingRating1.find('[data-test="user-side-consultation-date-time"]')
+    expect(userSideConsultationDateTime1.text()).toContain(`相談日時：${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.year}年${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.month}月${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.day}日${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.hour}時`)
+    const moveToRateConsultantPageBtn1 = userSideAwaitingRating1.find('[data-test="move-to-rate-consultant-page"]')
+    expect(moveToRateConsultantPageBtn1.exists()).toBe(true)
+
+    const consultantSideAwaitingRatingsLabel = wrapper.find('[data-test="consultant-side-awaiting-ratings-label"]')
+    expect(consultantSideAwaitingRatingsLabel.text()).toContain('相談を受け付けたユーザー')
+    const consultantSideAwaitingRatingsDescription = wrapper.find('[data-test="consultant-side-awaiting-ratings-description"]')
+    expect(consultantSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_CONSULTANT_SIDE_AWAITING_RATING}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
+
+    const consultantSideAwaitingRating1 = wrapper.find(`[data-test="consultant-rating-id-${dummyConsultantSideAwaitingRating1.consultant_rating_id}"]`)
+    const userAccountIdLabel1 = consultantSideAwaitingRating1.find('[data-test="user-account-id-label"]')
+    expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${dummyConsultantSideAwaitingRating1.user_account_id}）`)
+    const consultantSideConsultationDateTime1 = consultantSideAwaitingRating1.find('[data-test="consultant-side-consultation-date-time"]')
+    expect(consultantSideConsultationDateTime1.text()).toContain(`相談日時：${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.year}年${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.month}月${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.day}日${dummyConsultantSideAwaitingRating1.meeting_date_time_in_jst.hour}時`)
+    const moveToRateUserPageBtn1 = consultantSideAwaitingRating1.find('[data-test="move-to-rate-user-page"]')
+    expect(moveToRateUserPageBtn1.exists()).toBe(true)
+  })
+
+  it('displays 2 user side awaiting ratings and 2 consultant side awaiting ratings', async () => {
+    const dummyUserSideAwaitingRating1 = createDummyUserSideAwaitingRating1()
+    const dummyUserSideAwaitingRating2 = createDummyUserSideAwaitingRating2()
+    const dummyConsultantSideAwaitingRating1 = createDummyConsultantSideAwaitingRating1()
+    const dummyConsultantSideAwaitingRating2 = createDummyConsultantSideAwaitingRating2()
+    const resp = AwaitingRatingsResp.create({ user_side_awaiting_ratings: [dummyUserSideAwaitingRating1, dummyUserSideAwaitingRating2], consultant_side_awaiting_ratings: [dummyConsultantSideAwaitingRating1, dummyConsultantSideAwaitingRating2] } as AwaitingRatings)
+    getAwaitingRatingsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(AwaitingRatingListPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userSideAwaitingRatingsLabel = wrapper.find('[data-test="user-side-awaiting-ratings-label"]')
+    expect(userSideAwaitingRatingsLabel.text()).toContain('相談を行ったコンサルタント')
+    const userSideAwaitingRatingsDescription = wrapper.find('[data-test="user-side-awaiting-ratings-description"]')
+    expect(userSideAwaitingRatingsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件分表示されます。${MAX_NUM_OF_USER_SIDE_AWAITING_RATING}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
+
+    const userSideAwaitingRating1 = wrapper.find(`[data-test="user-rating-id-${dummyUserSideAwaitingRating1.user_rating_id}"]`)
+    const consultantIdLabel1 = userSideAwaitingRating1.find('[data-test="consultant-id-label"]')
+    expect(consultantIdLabel1.text()).toContain(`コンサルタントID（${dummyUserSideAwaitingRating1.consultant_id}）`)
+    const userSideConsultationDateTime1 = userSideAwaitingRating1.find('[data-test="user-side-consultation-date-time"]')
+    expect(userSideConsultationDateTime1.text()).toContain(`相談日時：${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.year}年${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.month}月${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.day}日${dummyUserSideAwaitingRating1.meeting_date_time_in_jst.hour}時`)
+    const moveToRateConsultantPageBtn1 = userSideAwaitingRating1.find('[data-test="move-to-rate-consultant-page"]')
+    expect(moveToRateConsultantPageBtn1.exists()).toBe(true)
+
+    const userSideAwaitingRating2 = wrapper.find(`[data-test="user-rating-id-${dummyUserSideAwaitingRating2.user_rating_id}"]`)
+    const consultantIdLabel2 = userSideAwaitingRating2.find('[data-test="consultant-id-label"]')
+    expect(consultantIdLabel2.text()).toContain(`コンサルタントID（${dummyUserSideAwaitingRating2.consultant_id}）`)
+    const userSideConsultationDateTime2 = userSideAwaitingRating2.find('[data-test="user-side-consultation-date-time"]')
+    expect(userSideConsultationDateTime2.text()).toContain(`相談日時：${dummyUserSideAwaitingRating2.meeting_date_time_in_jst.year}年${dummyUserSideAwaitingRating2.meeting_date_time_in_jst.month}月${dummyUserSideAwaitingRating2.meeting_date_time_in_jst.day}日${dummyUserSideAwaitingRating2.meeting_date_time_in_jst.hour}時`)
+    const moveToRateConsultantPageBtn2 = userSideAwaitingRating2.find('[data-test="move-to-rate-consultant-page"]')
+    expect(moveToRateConsultantPageBtn2.exists()).toBe(true)
 
     const consultantSideAwaitingRatingsLabel = wrapper.find('[data-test="consultant-side-awaiting-ratings-label"]')
     expect(consultantSideAwaitingRatingsLabel.text()).toContain('相談を受け付けたユーザー')
