@@ -17,7 +17,7 @@
           <div v-if="awaitingRatings.user_side_awaiting_ratings.length !== 0" class="m-2 text-2xl">
             <ul>
               <li v-for="user_side_awaiting_rating in awaitingRatings.user_side_awaiting_ratings" v-bind:key="user_side_awaiting_rating.user_rating_id">
-                <div v-bind:data-test="'user-rating-id' + user_side_awaiting_rating.user_rating_id" class="mt-4">
+                <div v-bind:data-test="'user-rating-id-' + user_side_awaiting_rating.user_rating_id" class="mt-4">
                   <div data-test="consultant-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">コンサルタントID（{{ user_side_awaiting_rating.consultant_id }}）</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div data-test="user-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談日時：{{ user_side_awaiting_rating.meeting_date_time_in_jst.year }}年{{ user_side_awaiting_rating.meeting_date_time_in_jst.month }}月{{ user_side_awaiting_rating.meeting_date_time_in_jst.day }}日{{ user_side_awaiting_rating.meeting_date_time_in_jst.hour }}時</div>
