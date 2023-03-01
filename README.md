@@ -22,6 +22,9 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 参考1: https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia
 参考2: https://developer.mozilla.org/ja/docs/Web/HTTP/Headers/Permissions-Policy
 
+アカウントをDisableにしたとき、OpenSearch上のデータをどうすべきか（何もしない、削除する、見えないようにする）
+  -> 削除する方針で検討。ただ、実装が完了し、確定後にこの項目はTODOから削除する
+
 # NOTE
 ## 開発環境
 開発環境にはVS Code (IDE) とRemote Container (VS Code用拡張プラグイン) が必須となる。それらを用意し開発を行う。
