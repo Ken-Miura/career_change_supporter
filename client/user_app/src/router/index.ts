@@ -25,7 +25,7 @@ import TransactionLawPage from '../views/TransactionLawPage.vue'
 import ConsultantListPage from '../views/personalized/ConsultantListPage.vue'
 import ConsultantDetailPage from '../views/personalized/ConsultantDetailPage.vue'
 import RequestConsultationPage from '../views/personalized/RequestConsultationPage.vue'
-import AwaitingRatingListPage from '../views/personalized/AwaitingRatingListPage.vue'
+import UnratedItemListPage from '../views/personalized/UnratedItemListPage.vue'
 import AudioTestPage from '../views/personalized/AudioTestPage.vue'
 import RequestConsultationSuccessPage from '../views/personalized/RequestConsultationSuccessPage.vue'
 import ConsultationRequestDetailPage from '../views/personalized/ConsultationRequestDetailPage.vue'
@@ -272,17 +272,17 @@ const routes: Array<RouteRecordRaw> = [
     component: AudioTestPage
   },
   {
-    path: '/awaiting-rating-list',
-    name: 'AwaitingRatingListPage',
-    component: AwaitingRatingListPage
+    path: '/unrated-item-list',
+    name: 'UnratedItemListPage',
+    component: UnratedItemListPage
   },
   {
-    path: '/rate-consultant/:user_rating_id', // コンサルタントを評価するのはユーザーなのでuser_rating_idを指定
+    path: '/rate-consultant/:consultant_rating_id',
     name: 'RateConsultantPage',
     component: RateConsultantPage
   },
   {
-    path: '/rate-user/:consultant_rating_id', // ユーザーを評価するのはコンサルタントなのでconsultant_rating_idを指定
+    path: '/rate-user/:user_rating_id',
     name: 'RateUserPage',
     component: RateUserPage
   }

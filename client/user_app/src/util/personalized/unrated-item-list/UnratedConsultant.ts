@@ -1,9 +1,9 @@
 import { ConsultationDateTime } from '../ConsultationDateTime'
 
-export type UserSideAwaitingRating = {
+export type UnratedConsultant = {
   /* eslint-disable camelcase */
-  user_rating_id: number,
-  consultant_id: number, // 相談相手のユーザーID
+  consultant_rating_id: number,
+  consultant_id: number,
   meeting_date_time_in_jst: ConsultationDateTime,
   /* eslint-enable camelcase */
 }
