@@ -1,2 +1,2 @@
-export const MAX_NUM_OF_UNRATED_USERS = 21
+export const MAX_NUM_OF_UNRATED_USERS = 20
 export const MAX_NUM_OF_UNRATED_CONSULTANTS = 20
