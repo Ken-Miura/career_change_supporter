@@ -7,7 +7,6 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub user_account_id: i64,
-    #[sea_orm(unique)]
     pub email_address: String,
     pub hashed_password: Vec<u8>,
     pub last_login_time: Option<DateTimeWithTimeZone>,
