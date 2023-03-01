@@ -52,8 +52,10 @@ use crate::logout::post_logout;
 use crate::password_change_req::post_password_change_req;
 use crate::password_update::post_password_update;
 use crate::profile::get_profile;
-use crate::rating::consultant_rating::post_consultant_rating;
-use crate::rating::unrated_items::get_unrated_items;
+use crate::rating::{
+    consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
+    user_rating::post_user_rating,
+};
 use crate::refresh::get_refresh;
 use crate::request_consultation::post_request_consultation;
 use crate::rewards::get_reward;
@@ -242,6 +244,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultant-side-info", get(get_consultant_side_info))
                 .route("/unrated-items", get(get_unrated_items))
                 .route("/consultant-rating", post(post_consultant_rating))
+                .route("/user-rating", post(post_user_rating))
                 .with_state(state),
         )
         .layer(
