@@ -63,17 +63,19 @@ struct UnratedUser {
 trait UnratedItemsOperation {
     /// コンサルタントに対する未評価のレコードを取得する
     /// 取得するレコードは、最大[MAX_NUM_OF_UNRATED_CONSULTANTS]件で相談日時で昇順にソート済
-    async fn filter_consultant_ratings(
+    /// コンサルタントを評価するのはユーザーなのでuser_account_idでフィルターする
+    async fn filter_consultant_ratings_by_user_account_id(
         &self,
-        consultant_id: i64,
+        user_account_id: i64,
         start_criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<UnratedConsultant>, ErrResp>;
 
     /// ユーザーに対する未評価のレコードを取得する
     /// 取得するレコードは、最大[MAX_NUM_OF_UNRATED_USERS]件で相談日時で昇順にソート済
-    async fn filter_unrated_users(
+    /// ユーザーを評価するのはコンサルタントなのでconsultant_idでフィルターする
+    async fn filter_unrated_users_by_consultant_id(
         &self,
-        user_account_id: i64,
+        consultant_id: i64,
         start_criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<UnratedUser>, ErrResp>;
 }
@@ -84,14 +86,14 @@ struct UnratedItemsOperationImpl {
 
 #[async_trait]
 impl UnratedItemsOperation for UnratedItemsOperationImpl {
-    async fn filter_consultant_ratings(
+    async fn filter_consultant_ratings_by_user_account_id(
         &self,
-        consultant_id: i64,
+        user_account_id: i64,
         start_criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<UnratedConsultant>, ErrResp> {
         let results = consultant_rating::Entity::find()
             .filter(consultant_rating::Column::MeetingAt.lt(start_criteria))
-            .filter(consultant_rating::Column::ConsultantId.eq(consultant_id))
+            .filter(consultant_rating::Column::UserAccountId.eq(user_account_id))
             .filter(consultant_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
             .limit(MAX_NUM_OF_UNRATED_CONSULTANTS)
             .order_by_asc(consultant_rating::Column::MeetingAt)
@@ -99,8 +101,8 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter consultant_rating (consultant_id: {}, start_criteria: {}): {}",
-                    consultant_id, start_criteria, e
+                    "failed to filter consultant_rating (user_account_id: {}, start_criteria: {}): {}",
+                    user_account_id, start_criteria, e
                 );
                 unexpected_err_resp()
             })?;
@@ -122,14 +124,14 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
             .collect::<Vec<UnratedConsultant>>())
     }
 
-    async fn filter_unrated_users(
+    async fn filter_unrated_users_by_consultant_id(
         &self,
-        user_account_id: i64,
+        consultant_id: i64,
         start_criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<UnratedUser>, ErrResp> {
         let results = user_rating::Entity::find()
             .filter(user_rating::Column::MeetingAt.lt(start_criteria))
-            .filter(user_rating::Column::UserAccountId.eq(user_account_id))
+            .filter(user_rating::Column::ConsultantId.eq(consultant_id))
             .filter(user_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
             .limit(MAX_NUM_OF_UNRATED_USERS)
             .order_by_asc(user_rating::Column::MeetingAt)
@@ -137,8 +139,8 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter user_rating (user_account_id: {}, start_criteria: {}): {}",
-                    user_account_id, start_criteria, e
+                    "failed to filter user_rating (consultant_id: {}, start_criteria: {}): {}",
+                    consultant_id, start_criteria, e
                 );
                 unexpected_err_resp()
             })?;
@@ -169,8 +171,12 @@ async fn handle_unrated_items(
     let length_of_meeting_in_minute = Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
     let criteria = *current_date_time - length_of_meeting_in_minute;
 
-    let unrated_users = op.filter_unrated_users(account_id, criteria).await?;
-    let unrated_consultants = op.filter_consultant_ratings(account_id, criteria).await?;
+    let unrated_users = op
+        .filter_unrated_users_by_consultant_id(account_id, criteria)
+        .await?;
+    let unrated_consultants = op
+        .filter_consultant_ratings_by_user_account_id(account_id, criteria)
+        .await?;
 
     Ok((
         StatusCode::OK,
@@ -220,24 +226,24 @@ mod tests {
 
     #[async_trait]
     impl UnratedItemsOperation for UnratedItemsOperationMock {
-        async fn filter_consultant_ratings(
+        async fn filter_consultant_ratings_by_user_account_id(
             &self,
-            consultant_id: i64,
+            user_account_id: i64,
             start_criteria: DateTime<FixedOffset>,
         ) -> Result<Vec<UnratedConsultant>, ErrResp> {
-            assert_eq!(self.account_id, consultant_id);
+            assert_eq!(self.account_id, user_account_id);
             let criteria =
                 self.current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
             assert_eq!(criteria, start_criteria);
             Ok(self.unrated_consultants.clone())
         }
 
-        async fn filter_unrated_users(
+        async fn filter_unrated_users_by_consultant_id(
             &self,
-            user_account_id: i64,
+            consultant_id: i64,
             start_criteria: DateTime<FixedOffset>,
         ) -> Result<Vec<UnratedUser>, ErrResp> {
-            assert_eq!(self.account_id, user_account_id);
+            assert_eq!(self.account_id, consultant_id);
             let criteria =
                 self.current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
             assert_eq!(criteria, start_criteria);
