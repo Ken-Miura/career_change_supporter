@@ -9,8 +9,6 @@
 
 Vueのデバッグ（ブレークポイントを貼って、そこで止めること）ができなくなった問題の解決
 
-Veturの[問題](https://github.com/vuejs/vetur/issues/3323)解決後、typescriptのdependencyを~4.5.5に戻す (372657113b7dbcc4661b2ebe28490dcb2cc8a674をrevert)
-
 Rate Limitについて検討、実装する（AWS API Gatewayのスロットリング、AWS WAFのrate limit、APIサーバのどれで実現するのか検討する）<br>
 APIサーバで実装する際の参考: https://github.com/tokio-rs/axum/issues/278<br>
 上記のURLを参考にするだけではコンパイルエラーとなる。axumはmiddlewareに対してInfallibleなエラーを許していないので下記のようにエラーハンドリングも追加する必要がある。<br>
