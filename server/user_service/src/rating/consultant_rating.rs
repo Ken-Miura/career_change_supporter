@@ -20,7 +20,10 @@ pub(crate) async fn post_consultant_rating(
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub(crate) struct ConsultantRatingParam {}
+pub(crate) struct ConsultantRatingParam {
+    consultant_rating_id: i64,
+    rating: i16,
+}
 
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct ConsultantRatingResult {}
@@ -35,6 +38,7 @@ async fn handle_consultant_rating(
     op: impl ConsultantRatingOperation,
 ) -> RespResult<ConsultantRatingResult> {
     // consultant_rating_idが正の整数であることをチェック
+    // ratingの範囲チェック
     // consultant_rating_idでconsultant_ratingを取得
     // consultant_ratingのユーザーとaccount_idが一致していることを確認する
     // consultant_ratingにある相談時間とcurrent_date_timeを用いて評価を実施可能かチェックする

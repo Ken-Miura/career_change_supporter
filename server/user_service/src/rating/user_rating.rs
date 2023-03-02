@@ -18,12 +18,20 @@ pub(crate) async fn post_user_rating(
 ) -> RespResult<UserRatingResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = UserRatingOperationImpl { pool };
-    handle_user_rating(account_id, req.user_rating_id, &current_date_time, op).await
+    handle_user_rating(
+        account_id,
+        req.user_rating_id,
+        req.rating,
+        &current_date_time,
+        op,
+    )
+    .await
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct UserRatingParam {
     user_rating_id: i64,
+    rating: i16,
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -62,10 +70,12 @@ impl UserRatingOperation for UserRatingOperationImpl {
 async fn handle_user_rating(
     account_id: i64,
     user_rating_id: i64,
+    rating: i16,
     current_date_time: &DateTime<FixedOffset>,
     op: impl UserRatingOperation,
 ) -> RespResult<UserRatingResult> {
     // user_rating_idが正の整数であることをチェック
+    // ratingの範囲チェック
     // user_rating_idでuser_ratingを取得
     // user_ratingのコンサルタントとaccount_idが一致していることを確認する
     // user_ratingにある相談時間とcurrent_date_timeを用いて評価を実施可能かチェックする
