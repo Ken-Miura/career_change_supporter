@@ -33,11 +33,11 @@
 	"extensions": [
 		"vadimcn.vscode-lldb@1.8.1",
 		"mutantdino.resourcemonitor@1.0.7",
-		"rust-lang.rust-analyzer@0.3.1277",
+		"rust-lang.rust-analyzer@0.3.1418",
 		"tamasfe.even-better-toml@0.19.0",
 		"serayuzgur.crates@0.5.10",
-		"octref.vetur@0.36.1",
-		"bradlc.vscode-tailwindcss@0.9.1"
+		"octref.vetur@0.37.3",
+		"bradlc.vscode-tailwindcss@0.9.7"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
