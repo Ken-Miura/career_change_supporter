@@ -31,7 +31,7 @@
     "@vue/eslint-config-typescript": "11.0.2",
     "@vue/test-utils": "2.3.0",
     "@vue/vue3-jest": "27.0.0",
-    "autoprefixer": "10.4.2",
+    "autoprefixer": "10.4.13",
     "babel-jest": "27.0.6",
     "caniuse-lite": "1.0.30001375",
     "cypress": "8.3.0",
