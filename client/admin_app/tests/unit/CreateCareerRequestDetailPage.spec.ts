@@ -821,7 +821,7 @@ describe('CreateCareerRequestDetailPage.vue', () => {
     expect(identityDetail).toContain(`${identity.telephone_number}`)
   })
 
-  it(`displays ${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} if ${Code.NO_USER_ACCOUNT_FOUND} after 承認する is pushed`, async () => {
+  it(`displays ${Message.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED_MESSAGE} if ${Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED} after 承認する is pushed`, async () => {
     routeParam = '1'
     const detail = {
       user_account_id: 705,
@@ -864,7 +864,7 @@ describe('CreateCareerRequestDetailPage.vue', () => {
     }
     const resp2 = GetIdentityByUserAccountIdResp.create(identity)
     getIdentityByUserAccountIdFuncMock.mockResolvedValue(resp2)
-    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_USER_ACCOUNT_FOUND))
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED))
     postCreateCareerRequestApprovalFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(CreateCareerRequestDetailPage, {
       global: {
@@ -886,6 +886,6 @@ describe('CreateCareerRequestDetailPage.vue', () => {
     const classes = alertMessage.classes()
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(`${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND})`)
+    expect(resultMessage).toContain(`${Message.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED})`)
   })
 })

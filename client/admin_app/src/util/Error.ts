@@ -20,6 +20,7 @@ export namespace Code {
   export const NO_USER_ACCOUNT_FOUND = 30008
   export const NO_IDENTITY_FOUND = 30009
   export const NO_CREATE_CAREER_REQ_DETAIL_FOUND = 30010
+  export const NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED = 30011
 }
 
 export function createErrorMessage (code: number): string {
@@ -55,3 +56,4 @@ codeToMessage.set(Code.NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND.toString(), `${Messag
 codeToMessage.set(Code.NO_USER_ACCOUNT_FOUND.toString(), `${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND})`)
 codeToMessage.set(Code.NO_IDENTITY_FOUND.toString(), `${Message.NO_IDENTITY_FOUND_MESSAGE} (${Code.NO_IDENTITY_FOUND})`)
 codeToMessage.set(Code.NO_CREATE_CAREER_REQ_DETAIL_FOUND.toString(), `${Message.NO_CREATE_CAREER_REQ_DETAIL_FOUND_MESSAGE} (${Code.NO_CREATE_CAREER_REQ_DETAIL_FOUND})`)
+codeToMessage.set(Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED.toString(), `${Message.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED})`)

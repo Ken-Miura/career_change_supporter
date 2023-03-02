@@ -88,15 +88,15 @@ async fn handle_update_identity_request_approval(
         .await?;
 
     let user_email_address = approved_user.ok_or_else(|| {
-        // 承認をしようとした際、既にユーザーがアカウントを削除しているケース
+        // 承認をしようとした際、既にユーザーがアカウントを削除している、またはDisabledになっているケース
         error!(
-            "no user account (user account id: {}) found",
+            "no user account (user account id: {}) found or the account is disabled",
             user_account_id
         );
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::NoUserAccountFound as u32,
+                code: Code::NoUserAccountFoundOrTheAccountIsDisabled as u32,
             }),
         )
     })?;
@@ -166,6 +166,9 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                         Some(m) => m,
                         None => { return Ok(None) },
                     };
+                    if user.disabled_at.is_some() {
+                        return Ok(None)
+                    }
 
                     let identity_option = find_identity_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
                     let _ = identity_option.ok_or_else(|| {
@@ -448,6 +451,9 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(Code::NoUserAccountFound as u32, resp.1 .0.code);
+        assert_eq!(
+            Code::NoUserAccountFoundOrTheAccountIsDisabled as u32,
+            resp.1 .0.code
+        );
     }
 }

@@ -834,7 +834,7 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
     expect(users).toContain(`${user2.telephone_number}`)
   })
 
-  it(`displays ${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} if ${Code.NO_USER_ACCOUNT_FOUND} after 承認する is pushed`, async () => {
+  it(`displays ${Message.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED_MESSAGE} if ${Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED} after 承認する is pushed`, async () => {
     routeParam = '1'
     const detail = {
       last_name: '田中',
@@ -859,7 +859,7 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
     getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
     const resp2 = GetUsersByDateOfBirthResp.create([])
     getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
-    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_USER_ACCOUNT_FOUND))
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED))
     postCreateIdentityRequestApprovalFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(CreateIdentityRequestDetailPage, {
       global: {
@@ -881,6 +881,6 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
     const classes = alertMessage.classes()
     expect(classes).not.toContain('hidden')
     const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(`${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND})`)
+    expect(resultMessage).toContain(`${Message.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED})`)
   })
 })
