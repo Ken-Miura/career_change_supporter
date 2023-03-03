@@ -132,7 +132,7 @@ impl UserRatingOperation for UserRatingOperationImpl {
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to accept_consultation_req: {}", err_resp_struct);
+                    error!("failed to update_user_rating: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
