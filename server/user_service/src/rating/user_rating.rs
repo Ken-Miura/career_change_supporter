@@ -55,6 +55,13 @@ trait UserRatingOperation {
         &self,
         user_rating_id: i64,
     ) -> Result<Option<UserRating>, ErrResp>;
+
+    async fn update_user_rating(
+        &self,
+        user_account_id: i64,
+        user_rating_id: i64,
+        rating: i16,
+    ) -> Result<(), ErrResp>;
 }
 
 struct UserRating {
@@ -97,6 +104,15 @@ impl UserRatingOperation for UserRatingOperationImpl {
             consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
             rating: m.rating,
         }))
+    }
+
+    async fn update_user_rating(
+        &self,
+        user_account_id: i64,
+        user_rating_id: i64,
+        rating: i16,
+    ) -> Result<(), ErrResp> {
+        todo!()
     }
 }
 
