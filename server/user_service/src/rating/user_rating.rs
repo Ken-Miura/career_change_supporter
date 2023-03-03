@@ -5,16 +5,19 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::User;
 
-use super::{ensure_rating_id_is_positive, ensure_rating_is_in_valid_range};
+use super::{
+    ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
+    ensure_rating_is_in_valid_range,
+};
 
 pub(crate) async fn post_user_rating(
     User { account_id }: User,
@@ -79,12 +82,26 @@ impl UserRatingOperation for UserRatingOperationImpl {
         &self,
         user_rating_id: i64,
     ) -> Result<Option<UserRating>, ErrResp> {
-        todo!()
+        let model = entity::user_rating::Entity::find_by_id(user_rating_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find user_rating (user_rating_id: {}): {}",
+                    user_rating_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| UserRating {
+            consultant_id: m.consultant_id,
+            consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+            rating: m.rating,
+        }))
     }
 }
 
 async fn handle_user_rating(
-    account_id: i64,
+    consultant_id: i64,
     user_rating_id: i64,
     rating: i16,
     current_date_time: &DateTime<FixedOffset>,
@@ -92,15 +109,18 @@ async fn handle_user_rating(
 ) -> RespResult<UserRatingResult> {
     ensure_rating_id_is_positive(user_rating_id)?;
     ensure_rating_is_in_valid_range(rating)?;
-    ensure_identity_exists(account_id, &op).await?;
-    ensure_consultant_is_available(account_id, &op).await?;
+    ensure_identity_exists(consultant_id, &op).await?;
+    ensure_consultant_is_available(consultant_id, &op).await?;
 
-    // user_rating_idでuser_ratingを取得
-    // user_ratingのコンサルタントとaccount_idが一致していることを確認する
-    // user_ratingにある相談時間とcurrent_date_timeを用いて評価を実施可能かチェックする
+    let ur = get_user_rating_by_user_rating_id(user_rating_id, &op).await?;
+    ensure_consultant_ids_are_same(consultant_id, ur.consultant_id)?;
+    ensure_end_of_consultation_date_time_has_passed(
+        &ur.consultation_date_time_in_jst,
+        current_date_time,
+    )?;
 
     // user_ratingを更新する
-    //   ユーザーの存在チェック＋ロック -> 仮に存在しない場合はそれ以降の操作は何もしないで成功で終わらせる
+    //   ユーザー(ur.user_account_id)の存在チェック＋ロック -> 仮に存在しない場合はそれ以降の操作は何もしないで成功で終わらせる
     //   user_ratingの取得＋ロック
     //   user_ratingのratingがNULLであることを確認 -> NULLでないなら既に評価済を示すエラーを返す
     //   user_ratingのratingに値を入れる
@@ -138,6 +158,43 @@ async fn ensure_consultant_is_available(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::ConsultantIsNotAvailable as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+async fn get_user_rating_by_user_rating_id(
+    user_rating_id: i64,
+    op: &impl UserRatingOperation,
+) -> Result<UserRating, ErrResp> {
+    let ur = op
+        .find_user_rating_by_user_rating_id(user_rating_id)
+        .await?;
+    match ur {
+        Some(u) => Ok(u),
+        None => Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoUserRatingFound as u32,
+            }),
+        )),
+    }
+}
+
+fn ensure_consultant_ids_are_same(
+    consultant_id: i64,
+    consultant_id_in_user_rating: i64,
+) -> Result<(), ErrResp> {
+    if consultant_id != consultant_id_in_user_rating {
+        error!(
+            "consultant_id ({}) and consultant_id_in_user_rating ({}) are not same",
+            consultant_id, consultant_id_in_user_rating
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoUserRatingFound as u32,
             }),
         ));
     }
