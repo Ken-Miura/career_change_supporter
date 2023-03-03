@@ -4,8 +4,8 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use entity::sea_orm::{DatabaseConnection, EntityTrait, TransactionError, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -65,6 +65,7 @@ trait UserRatingOperation {
 }
 
 struct UserRating {
+    user_account_id: i64,
     consultant_id: i64,
     consultation_date_time_in_jst: DateTime<FixedOffset>,
     rating: Option<i16>,
@@ -100,6 +101,7 @@ impl UserRatingOperation for UserRatingOperationImpl {
                 unexpected_err_resp()
             })?;
         Ok(model.map(|m| UserRating {
+            user_account_id: m.user_account_id,
             consultant_id: m.consultant_id,
             consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
             rating: m.rating,
@@ -112,7 +114,29 @@ impl UserRatingOperation for UserRatingOperationImpl {
         user_rating_id: i64,
         rating: i16,
     ) -> Result<(), ErrResp> {
-        todo!()
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    // user_ratingを更新する
+                    //   ユーザー(ur.user_account_id)の存在チェック＋ロック -> 仮に存在しない場合はそれ以降の操作は何もしないで成功で終わらせる
+                    //   user_ratingの取得＋ロック
+                    //   user_ratingのratingがNULLであることを確認 -> NULLでないなら既に評価済を示すエラーを返す
+                    //   user_ratingのratingに値を入れる
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to accept_consultation_req: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
 }
 
@@ -135,12 +159,10 @@ async fn handle_user_rating(
         current_date_time,
     )?;
 
-    // user_ratingを更新する
-    //   ユーザー(ur.user_account_id)の存在チェック＋ロック -> 仮に存在しない場合はそれ以降の操作は何もしないで成功で終わらせる
-    //   user_ratingの取得＋ロック
-    //   user_ratingのratingがNULLであることを確認 -> NULLでないなら既に評価済を示すエラーを返す
-    //   user_ratingのratingに値を入れる
-    todo!()
+    op.update_user_rating(ur.user_account_id, user_rating_id, rating)
+        .await?;
+
+    Ok((StatusCode::OK, Json(UserRatingResult {})))
 }
 
 async fn ensure_identity_exists(
