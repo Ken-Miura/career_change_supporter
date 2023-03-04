@@ -52,3 +52,44 @@ fn ensure_end_of_consultation_date_time_has_passed(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::http::StatusCode;
+    use common::ApiError;
+
+    use crate::err::Code;
+
+    use super::ensure_rating_id_is_positive;
+
+    #[test]
+    fn test_succsess_ensure_rating_id_is_positive() {
+        ensure_rating_id_is_positive(1).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn test_fail_zero_ensure_rating_id_is_positive() {
+        let result = ensure_rating_id_is_positive(0).expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            result.1 .0,
+            ApiError {
+                code: Code::RatingIdIsNotPositive as u32
+            }
+        );
+    }
+
+    #[test]
+    fn test_fail_negative_value_ensure_rating_id_is_positive() {
+        let result = ensure_rating_id_is_positive(-1).expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            result.1 .0,
+            ApiError {
+                code: Code::RatingIdIsNotPositive as u32
+            }
+        );
+    }
+}
