@@ -2,7 +2,7 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { PostUserRatingResp } from './PostUserRatingResp'
 
 export async function postUserRating (userRatingId: number, rating: number): Promise<PostUserRatingResp | ApiErrorResp> {
-  const data = { 'user-rating-id': userRatingId, rating }
+  const data = { user_rating_id: userRatingId, rating }
   const response = await fetch('/api/user-rating', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },

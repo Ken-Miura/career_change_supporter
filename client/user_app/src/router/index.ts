@@ -34,6 +34,7 @@ import ConsultationRequestAcceptancePage from '../views/personalized/Consultatio
 import UserSideConsultationPage from '../views/personalized/UserSideConsultationPage.vue'
 import ConsultantSideConsultationPage from '../views/personalized/ConsultantSideConsultationPage.vue'
 import RateUserPage from '../views/personalized/RateUserPage.vue'
+import RateUserSuccessPage from '../views/personalized/RateUserSuccessPage.vue'
 import RateConsultantPage from '../views/personalized/RateConsultantPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -285,6 +286,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/rate-user/:user_rating_id',
     name: 'RateUserPage',
     component: RateUserPage
+  },
+  {
+    path: '/rate-user-success',
+    name: 'RateUserSuccessPage',
+    component: RateUserSuccessPage
   }
 ]
 

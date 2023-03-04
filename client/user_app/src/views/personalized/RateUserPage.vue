@@ -79,7 +79,12 @@ export default defineComponent({
 
     const submitRating = async () => {
       try {
-        const resp = await postUserRatingFunc(parseInt(userRatingId), parseInt(rating.value))
+        const r = parseInt(rating.value)
+        if (!(MIN_RATING <= r && r <= MAX_RATING)) {
+          errMessage.value = Message.INVALID_RATING_MESSAGE
+          return
+        }
+        const resp = await postUserRatingFunc(parseInt(userRatingId), r)
         if (!(resp instanceof PostUserRatingResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
@@ -93,8 +98,9 @@ export default defineComponent({
             return
           }
           errMessage.value = createErrorMessage(resp.getApiError().getCode())
+          return
         }
-        // move success page
+        await router.push('/rate-user-success')
       } catch (e) {
         errMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
