@@ -143,6 +143,7 @@ pub(crate) enum Code {
     InvalidRating = 20131,
     EndOfConsultationDateTimeHasNotPassedYet = 20132,
     NoUserRatingFound = 20133,
+    UserAccountHasAlreadyBeenRated = 20134,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

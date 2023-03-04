@@ -26,10 +26,10 @@ use common::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
-    ErrResp,
+    ErrResp, ErrRespStruct,
 };
 use entity::{
-    sea_orm::{DatabaseConnection, EntityTrait},
+    sea_orm::{DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect},
     user_account,
 };
 use once_cell::sync::Lazy;
@@ -76,6 +76,26 @@ async fn find_user_account_by_user_account_id(
                 user_account_id, e
             );
             unexpected_err_resp()
+        })?;
+    Ok(model)
+}
+
+pub(crate) async fn find_user_account_by_user_account_id_with_exclusive_lock(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<user_account::Model>, ErrRespStruct> {
+    let model = entity::prelude::UserAccount::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id): {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
         })?;
     Ok(model)
 }

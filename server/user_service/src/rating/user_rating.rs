@@ -5,14 +5,17 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{DatabaseConnection, EntityTrait, TransactionError, TransactionTrait};
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set, TransactionError,
+    TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::User;
+use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock};
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
@@ -61,6 +64,7 @@ trait UserRatingOperation {
         user_account_id: i64,
         user_rating_id: i64,
         rating: i16,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
@@ -68,7 +72,6 @@ struct UserRating {
     user_account_id: i64,
     consultant_id: i64,
     consultation_date_time_in_jst: DateTime<FixedOffset>,
-    rating: Option<i16>,
 }
 
 struct UserRatingOperationImpl {
@@ -104,7 +107,6 @@ impl UserRatingOperation for UserRatingOperationImpl {
             user_account_id: m.user_account_id,
             consultant_id: m.consultant_id,
             consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
-            rating: m.rating,
         }))
     }
 
@@ -113,15 +115,61 @@ impl UserRatingOperation for UserRatingOperationImpl {
         user_account_id: i64,
         user_rating_id: i64,
         rating: i16,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // user_ratingを更新する
-                    //   ユーザー(ur.user_account_id)の存在チェック＋ロック -> 仮に存在しない場合はそれ以降の操作は何もしないで成功で終わらせる
-                    //   user_ratingの取得＋ロック
-                    //   user_ratingのratingがNULLであることを確認 -> NULLでないなら既に評価済を示すエラーを返す
-                    //   user_ratingのratingに値を入れる
+                    // 同じユーザーに対する複数のuser_ratingの更新が来た場合に備えて
+                    // また、user_rating更新中ににユーザーが自身のアカウントを削除する場合に備えてuser_accountで排他ロックを取得しておく
+                    let user_account_option =
+                        find_user_account_by_user_account_id_with_exclusive_lock(
+                            txn,
+                            user_account_id,
+                        )
+                        .await?;
+                    if user_account_option.is_none() {
+                        info!(
+                            "no user (user_account_id: {}) found on rating",
+                            user_account_id
+                        );
+                        return Ok(());
+                    }
+                    let model_option = entity::user_rating::Entity::find_by_id(user_rating_id)
+                        .one(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to find user_rating (user_rating_id: {}): {}",
+                                user_rating_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                    let model = match model_option {
+                        Some(m) => m,
+                        None => {
+                            error!(
+                                "no user_rating (user_rating_id: {}) found on rating",
+                                user_rating_id
+                            );
+                            return Err(ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            });
+                        }
+                    };
+                    if model.rating.is_some() {
+                        return Err(ErrRespStruct {
+                            err_resp: (
+                                StatusCode::OK,
+                                Json(ApiError {
+                                    code: Code::UserAccountHasAlreadyBeenRated as u32,
+                                }),
+                            ),
+                        });
+                    }
+                    update_user_rating(model, txn, rating, current_date_time).await?;
                     Ok(())
                 })
             })
@@ -138,6 +186,28 @@ impl UserRatingOperation for UserRatingOperationImpl {
             })?;
         Ok(())
     }
+}
+
+async fn update_user_rating(
+    model: entity::user_rating::Model,
+    txn: &DatabaseTransaction,
+    rating: i16,
+    current_date_time: DateTime<FixedOffset>,
+) -> Result<(), ErrRespStruct> {
+    let user_rating_id = model.user_rating_id;
+    let mut active_model: entity::user_rating::ActiveModel = model.into();
+    active_model.rating = Set(Some(rating));
+    active_model.rated_at = Set(Some(current_date_time));
+    let _ = active_model.update(txn).await.map_err(|e| {
+        error!(
+            "failed to update user_rating (user_rating_id: {}, rating: {}, current_date_time: {}): {}",
+            user_rating_id, rating, current_date_time, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 async fn handle_user_rating(
@@ -159,8 +229,13 @@ async fn handle_user_rating(
         current_date_time,
     )?;
 
-    op.update_user_rating(ur.user_account_id, user_rating_id, rating)
-        .await?;
+    op.update_user_rating(
+        ur.user_account_id,
+        user_rating_id,
+        rating,
+        *current_date_time,
+    )
+    .await?;
 
     Ok((StatusCode::OK, Json(UserRatingResult {})))
 }
