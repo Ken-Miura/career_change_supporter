@@ -162,7 +162,7 @@ impl UserRatingOperation for UserRatingOperationImpl {
                     if model.rating.is_some() {
                         return Err(ErrRespStruct {
                             err_resp: (
-                                StatusCode::OK,
+                                StatusCode::BAD_REQUEST,
                                 Json(ApiError {
                                     code: Code::UserAccountHasAlreadyBeenRated as u32,
                                 }),

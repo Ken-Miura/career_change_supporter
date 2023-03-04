@@ -13,7 +13,7 @@ pub(crate) mod user_rating;
 fn ensure_rating_id_is_positive(rating_id: i64) -> Result<(), ErrResp> {
     if !rating_id.is_positive() {
         return Err((
-            StatusCode::OK,
+            StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::RatingIdIsNotPositive as u32,
             }),
@@ -28,7 +28,7 @@ const MAX_RATING: i16 = 5;
 fn ensure_rating_is_in_valid_range(rating: i16) -> Result<(), ErrResp> {
     if !(MIN_RATING..=MAX_RATING).contains(&rating) {
         return Err((
-            StatusCode::OK,
+            StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::InvalidRating as u32,
             }),
@@ -44,7 +44,7 @@ fn ensure_end_of_consultation_date_time_has_passed(
     let criteria = *consultation_date_time + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
     if *current_date_time <= criteria {
         return Err((
-            StatusCode::OK,
+            StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::EndOfConsultationDateTimeHasNotPassedYet as u32,
             }),
