@@ -42,9 +42,13 @@ import { defineComponent, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePostUserRating } from '@/util/personalized/rate-user/usePostUserRating'
 import { MAX_RATING, MIN_RATING } from '@/util/personalized/RatingConstants'
+import { Message } from '@/util/Message'
+import { Code, createErrorMessage } from '@/util/Error'
+import { ApiErrorResp } from '@/util/ApiError'
+import { PostUserRatingResp } from '@/util/personalized/rate-user/PostUserRatingResp'
 
 export default defineComponent({
   name: 'RateUserPage',
@@ -54,6 +58,7 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
+    const router = useRouter()
     const route = useRoute()
     const userRatingId = route.params.user_rating_id as string
     const query = route.query
@@ -73,7 +78,26 @@ export default defineComponent({
     const rating = ref('' as string)
 
     const submitRating = async () => {
-      console.log(`userRatingId: ${userRatingId}, rating: ${rating.value}`)
+      try {
+        const resp = await postUserRatingFunc(parseInt(userRatingId), parseInt(rating.value))
+        if (!(resp instanceof PostUserRatingResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
+          errMessage.value = createErrorMessage(resp.getApiError().getCode())
+        }
+        // move success page
+      } catch (e) {
+        errMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     return {
