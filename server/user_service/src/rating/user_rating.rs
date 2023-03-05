@@ -459,6 +459,33 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail InvalidRating".to_string(),
+                input: Input {
+                    consultant_id,
+                    user_rating_id,
+                    rating: 0,
+                    current_date_time,
+                    op: UserRatingOperationMock {
+                        account_id: consultant_id,
+                        consultant_available: true,
+                        user_rating_id,
+                        user_rating: UserRating {
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidRating as u32,
+                    }),
+                )),
+            },
         ]
     });
 
