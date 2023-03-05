@@ -17,14 +17,14 @@ import TheHeader from '@/components/TheHeader.vue'
 import { Message } from '@/util/Message'
 
 export default defineComponent({
-  name: 'RateUserSuccessPage',
+  name: 'RateSuccessPage',
   components: {
     TheHeader
   },
   setup () {
-    // postUserRatingが成功した結果を表示するだけなので、
+    // 評価が成功した結果を表示するだけなので、
     // onMounted内でrefreshを呼ぶことはしない
-    const message = Message.RATE_USER_SUCCESS_MESSAGE
+    const message = Message.RATE_SUCCESS_MESSAGE
     return { message }
   }
 })

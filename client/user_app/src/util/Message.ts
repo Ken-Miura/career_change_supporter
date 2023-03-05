@@ -193,7 +193,7 @@ export namespace Message {
     export const END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET_MESSAGE = 'まだ相談が終わっていません'
     export const NO_USER_RATING_FOUND_MESSAGE = '不正な評価対象です'
     export const USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE = '既に評価済です'
-    export const RATE_USER_SUCCESS_MESSAGE = 'ユーザーの評価を行いました'
+    export const RATE_SUCCESS_MESSAGE = '評価を行いました'
     // TODO: SkyWay関連のメッセージの修正
     const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と表示されたメッセージをお問い合わせからご連絡下さい'
     export const SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED = `${SKY_WAY_UNEXPECTED_ERROR}: SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED`

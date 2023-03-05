@@ -100,7 +100,7 @@ export default defineComponent({
           errMessage.value = createErrorMessage(resp.getApiError().getCode())
           return
         }
-        await router.push('/rate-user-success')
+        await router.push('/rate-success')
       } catch (e) {
         errMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
