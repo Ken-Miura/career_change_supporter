@@ -167,6 +167,37 @@ describe('RateUserPage.vue', () => {
     expect(submitButtonAttr2).not.toBeDefined()
   })
 
+  it('moves /rate-success if 評価する is clicked', async () => {
+    userRatingId = '511'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const resp = PostUserRatingResp.create()
+    postUserRatingFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rate = 3
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/rate-success')
+  })
+
   // it('displays AlertMessage when error has happened', async () => {
   //   const errDetail = 'connection error'
   //   postUserRatingFuncMock.mockRejectedValue(new Error(errDetail))
