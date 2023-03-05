@@ -313,3 +313,98 @@ fn ensure_consultant_ids_are_same(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use super::{handle_user_rating, UserRating, UserRatingOperation, UserRatingResult};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<UserRatingResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        consultant_id: i64,
+        user_rating_id: i64,
+        rating: i16,
+        current_date_time: DateTime<FixedOffset>,
+        op: UserRatingOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct UserRatingOperationMock {}
+
+    #[async_trait]
+    impl UserRatingOperation for UserRatingOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn check_if_consultant_is_available(
+            &self,
+            consultant_id: i64,
+        ) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn find_user_rating_by_user_rating_id(
+            &self,
+            user_rating_id: i64,
+        ) -> Result<Option<UserRating>, ErrResp> {
+            todo!()
+        }
+
+        async fn update_user_rating(
+            &self,
+            user_account_id: i64,
+            user_rating_id: i64,
+            rating: i16,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_user_rating_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let consultant_id = test_case.input.consultant_id;
+            let user_rating_id = test_case.input.user_rating_id;
+            let rating = test_case.input.rating;
+            let current_date_time = test_case.input.current_date_time;
+            let op = test_case.input.op.clone();
+
+            let result = handle_user_rating(
+                consultant_id,
+                user_rating_id,
+                rating,
+                &current_date_time,
+                op,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
