@@ -351,6 +351,7 @@ mod tests {
         user_rating: UserRating,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
+        already_exists: bool,
     }
 
     #[async_trait]
@@ -390,6 +391,14 @@ mod tests {
             rating: i16,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
+            if self.already_exists {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::UserAccountHasAlreadyBeenRated as u32,
+                    }),
+                ));
+            }
             assert_eq!(self.user_rating.user_account_id, user_account_id);
             assert_eq!(self.user_rating_id, user_rating_id);
             assert_eq!(self.rating, rating);
@@ -428,6 +437,7 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(UserRatingResult {}))),
@@ -450,6 +460,7 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Err((
@@ -477,6 +488,7 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Err((
@@ -504,6 +516,7 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Err((
@@ -531,6 +544,7 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Err((
@@ -558,6 +572,7 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Err((
@@ -585,6 +600,7 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Err((
@@ -612,12 +628,41 @@ mod tests {
                         },
                         rating,
                         current_date_time,
+                        already_exists: false,
                     },
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::EndOfConsultationDateTimeHasNotPassedYet as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail UserAccountHasAlreadyBeenRated".to_string(),
+                input: Input {
+                    consultant_id,
+                    user_rating_id,
+                    rating,
+                    current_date_time,
+                    op: UserRatingOperationMock {
+                        account_id: consultant_id,
+                        consultant_available: true,
+                        user_rating_id,
+                        user_rating: UserRating {
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: true,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::UserAccountHasAlreadyBeenRated as u32,
                     }),
                 )),
             },
