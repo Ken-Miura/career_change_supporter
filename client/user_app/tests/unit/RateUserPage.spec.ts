@@ -119,6 +119,54 @@ describe('RateUserPage.vue', () => {
     expect(submitButtonAttr).toBeDefined()
   })
 
+  it('enables submit button after selecting rate', async () => {
+    userRatingId = '511'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const userRatingLabel = wrapper.find('[data-test="user-rating-label"]')
+    expect(userRatingLabel.text()).toContain('相談を受け付けたユーザーの評価')
+    const userRatingDescription = wrapper.find('[data-test="user-rating-description"]')
+    expect(userRatingDescription.text()).toContain(`相談を行ったユーザーを評価して下さい。${MIN_RATING}が最も低い（悪い）評価で、${MAX_RATING}が最も高い（良い）評価となります。`)
+
+    const userIdLabel = wrapper.find('[data-test="user-id-label"]')
+    expect(userIdLabel.text()).toContain('ユーザーID')
+    const userIdValue = wrapper.find('[data-test="user-id-value"]')
+    expect(userIdValue.text()).toContain(`${userId}`)
+
+    const consultationDateTimeLabel = wrapper.find('[data-test="consultation-date-time-label"]')
+    expect(consultationDateTimeLabel.text()).toContain('相談実施日時')
+    const consultationDateTimeValue = wrapper.find('[data-test="consultation-date-time-value"]')
+    expect(consultationDateTimeValue.text()).toContain(`${year}年${month}月${day}日${hour}時`)
+
+    const ratingLabel = wrapper.find('[data-test="rating-label"]')
+    expect(ratingLabel.text()).toContain('評価')
+    const ratingValue = wrapper.find('[data-test="rating-value"]')
+    expect(ratingValue.text()).toContain('')
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    const submitButtonAttr1 = submitButton.attributes('disabled')
+    expect(submitButtonAttr1).toBeDefined()
+
+    const rate = 3
+    const rateSelect = ratingValue.find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButtonAttr2 = submitButton.attributes('disabled')
+    expect(submitButtonAttr2).not.toBeDefined()
+  })
+
   // it('displays AlertMessage when error has happened', async () => {
   //   const errDetail = 'connection error'
   //   postUserRatingFuncMock.mockRejectedValue(new Error(errDetail))
