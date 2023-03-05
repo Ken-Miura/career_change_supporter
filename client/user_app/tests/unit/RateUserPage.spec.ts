@@ -198,26 +198,43 @@ describe('RateUserPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/rate-success')
   })
 
-  // it('displays AlertMessage when error has happened', async () => {
-  //   const errDetail = 'connection error'
-  //   postUserRatingFuncMock.mockRejectedValue(new Error(errDetail))
-  //   const wrapper = mount(RateUserPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   await flushPromises()
+  it('displays AlertMessage when error has happened', async () => {
+    userRatingId = '511'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const errDetail = 'connection error'
+    postUserRatingFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   const alertMessages = wrapper.findAllComponents(AlertMessage)
-  //   expect(alertMessages.length).toBe(1)
-  //   const alertMessage = alertMessages[0]
-  //   expect(alertMessage).not.toContain('hidden')
-  //   const resultMessage = alertMessage.text()
-  //   expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
-  //   expect(resultMessage).toContain(errDetail)
-  // })
+    const rate = 3
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
+  })
 
   // it(`moves to login if request returns ${Code.UNAUTHORIZED}`, async () => {
   //   const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
