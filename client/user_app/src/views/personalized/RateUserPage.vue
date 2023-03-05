@@ -6,15 +6,15 @@
     </div>
     <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">相談を受け付けたユーザーの評価</h3>
-        <p class="mt-4 ml-2 text-xl">相談を行ったユーザーを評価して下さい。{{ MIN_RATING }}が最も低い（悪い）評価で、{{ MAX_RATING }}が最も高い（良い）評価となります。</p>
+        <h3 data-test="user-rating-label" class="font-bold text-2xl">相談を受け付けたユーザーの評価</h3>
+        <p data-test="user-rating-description" class="mt-4 ml-2 text-xl">相談を行ったユーザーを評価して下さい。{{ MIN_RATING }}が最も低い（悪い）評価で、{{ MAX_RATING }}が最も高い（良い）評価となります。</p>
         <div class="mt-2 ml-4 grid grid-cols-3">
-          <p class="mt-4 justify-self-start text-xl col-span-2">ユーザーID</p>
-          <p class="mt-4 justify-self-center text-xl col-span-1">{{ userId }}</p>
-          <p class="mt-4 justify-self-start text-xl col-span-2">相談実施日時</p>
-          <p class="mt-4 justify-self-center text-xl col-span-1">{{ year }}年{{ month }}月{{ day }}日{{ hour }}時</p>
-          <p class="mt-4 justify-self-start text-xl col-span-2">評価</p>
-          <p class="mt-4 justify-self-center text-xl w-full col-span-1">
+          <p data-test="user-id-label" class="mt-4 justify-self-start text-xl col-span-2">ユーザーID</p>
+          <p data-test="user-id-value" class="mt-4 justify-self-center text-xl col-span-1">{{ userId }}</p>
+          <p data-test="consultation-date-time-label" class="mt-4 justify-self-start text-xl col-span-2">相談実施日時</p>
+          <p data-test="consultation-date-time-value" class="mt-4 justify-self-center text-xl col-span-1">{{ year }}年{{ month }}月{{ day }}日{{ hour }}時</p>
+          <p data-test="rating-label" class="mt-4 justify-self-start text-xl col-span-2">評価</p>
+          <p data-test="rating-value" class="mt-4 justify-self-center text-xl w-full col-span-1">
             <select v-model="rating" class="block w-full p-3 text-center rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
               <option value=""></option>
               <option value="5">5</option>
