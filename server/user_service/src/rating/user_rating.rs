@@ -320,8 +320,10 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
+
+    use crate::err::Code;
 
     use super::{handle_user_rating, UserRating, UserRatingOperation, UserRatingResult};
 
@@ -407,28 +409,57 @@ mod tests {
         let consultation_date_time_in_jst = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 3, 17, 0, 0)
             .unwrap();
-        vec![TestCase {
-            name: "success".to_string(),
-            input: Input {
-                consultant_id,
-                user_rating_id,
-                rating,
-                current_date_time,
-                op: UserRatingOperationMock {
-                    account_id: consultant_id,
-                    consultant_available: true,
+        vec![
+            TestCase {
+                name: "success".to_string(),
+                input: Input {
+                    consultant_id,
                     user_rating_id,
-                    user_rating: UserRating {
-                        user_account_id,
-                        consultant_id,
-                        consultation_date_time_in_jst,
-                    },
                     rating,
                     current_date_time,
+                    op: UserRatingOperationMock {
+                        account_id: consultant_id,
+                        consultant_available: true,
+                        user_rating_id,
+                        user_rating: UserRating {
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                    },
                 },
+                expected: Ok((StatusCode::OK, Json(UserRatingResult {}))),
             },
-            expected: Ok((StatusCode::OK, Json(UserRatingResult {}))),
-        }]
+            TestCase {
+                name: "fail RatingIdIsNotPositive".to_string(),
+                input: Input {
+                    consultant_id,
+                    user_rating_id: -1,
+                    rating,
+                    current_date_time,
+                    op: UserRatingOperationMock {
+                        account_id: consultant_id,
+                        consultant_available: true,
+                        user_rating_id,
+                        user_rating: UserRating {
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::RatingIdIsNotPositive as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
