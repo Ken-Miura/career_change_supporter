@@ -236,21 +236,36 @@ describe('RateUserPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  // it(`moves to login if request returns ${Code.UNAUTHORIZED}`, async () => {
-  //   const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
-  //   postUserRatingFuncMock.mockResolvedValue(apiErrResp)
-  //   mount(RateUserPage, {
-  //     global: {
-  //       stubs: {
-  //         RouterLink: RouterLinkStub
-  //       }
-  //     }
-  //   })
-  //   await flushPromises()
+  it(`moves to login if request returns ${Code.UNAUTHORIZED}`, async () => {
+    userRatingId = '511'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postUserRatingFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-  //   expect(routerPushMock).toHaveBeenCalledTimes(1)
-  //   expect(routerPushMock).toHaveBeenCalledWith('/login')
-  // })
+    const rate = 3
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
 
   // it(`moves to login if request returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
   //   const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
