@@ -317,9 +317,10 @@ fn ensure_consultant_ids_are_same(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use super::{handle_user_rating, UserRating, UserRatingOperation, UserRatingResult};
@@ -395,7 +396,40 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let consultant_id = 5123;
+        let user_rating_id = 51604;
+        let rating = 3;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 5, 17, 53, 12)
+            .unwrap();
+        let user_account_id = consultant_id + 640;
+        let consultation_date_time_in_jst = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 3, 17, 0, 0)
+            .unwrap();
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input {
+                consultant_id,
+                user_rating_id,
+                rating,
+                current_date_time,
+                op: UserRatingOperationMock {
+                    account_id: consultant_id,
+                    consultant_available: true,
+                    user_rating_id,
+                    user_rating: UserRating {
+                        user_account_id,
+                        consultant_id,
+                        consultation_date_time_in_jst,
+                    },
+                    rating,
+                    current_date_time,
+                },
+            },
+            expected: Ok((StatusCode::OK, Json(UserRatingResult {}))),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_user_rating_tests() {
