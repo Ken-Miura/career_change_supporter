@@ -68,6 +68,7 @@ trait UserRatingOperation {
     ) -> Result<(), ErrResp>;
 }
 
+#[derive(Clone, Debug)]
 struct UserRating {
     user_account_id: i64,
     consultant_id: i64,
@@ -340,26 +341,43 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct UserRatingOperationMock {}
+    struct UserRatingOperationMock {
+        account_id: i64,
+        consultant_available: bool,
+        user_rating_id: i64,
+        user_rating: UserRating,
+        rating: i16,
+        current_date_time: DateTime<FixedOffset>,
+    }
 
     #[async_trait]
     impl UserRatingOperation for UserRatingOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            }
+            Ok(true)
         }
 
         async fn check_if_consultant_is_available(
             &self,
             consultant_id: i64,
         ) -> Result<bool, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, consultant_id);
+            if !self.consultant_available {
+                return Ok(false);
+            }
+            Ok(true)
         }
 
         async fn find_user_rating_by_user_rating_id(
             &self,
             user_rating_id: i64,
         ) -> Result<Option<UserRating>, ErrResp> {
-            todo!()
+            if self.user_rating_id != user_rating_id {
+                return Ok(None);
+            }
+            Ok(Some(self.user_rating.clone()))
         }
 
         async fn update_user_rating(
@@ -369,7 +387,11 @@ mod tests {
             rating: i16,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.user_rating.user_account_id, user_account_id);
+            assert_eq!(self.user_rating_id, user_rating_id);
+            assert_eq!(self.rating, rating);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
         }
     }
 
