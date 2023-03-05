@@ -56,12 +56,14 @@ fn ensure_end_of_consultation_date_time_has_passed(
 #[cfg(test)]
 mod tests {
     use axum::http::StatusCode;
-    use common::ApiError;
+    use chrono::TimeZone;
+    use common::{ApiError, JAPANESE_TIME_ZONE};
 
     use crate::err::Code;
 
     use super::{
-        ensure_rating_id_is_positive, ensure_rating_is_in_valid_range, MAX_RATING, MIN_RATING,
+        ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
+        ensure_rating_is_in_valid_range, MAX_RATING, MIN_RATING,
     };
 
     #[test]
@@ -129,6 +131,71 @@ mod tests {
             result.1 .0,
             ApiError {
                 code: Code::InvalidRating as u32
+            }
+        );
+    }
+
+    #[test]
+    fn test_succsess_ensure_end_of_consultation_date_time_has_passed() {
+        let consultation_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 5, 15, 0, 0)
+            .unwrap();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 5, 16, 0, 1)
+            .unwrap();
+
+        ensure_end_of_consultation_date_time_has_passed(
+            &consultation_date_time,
+            &current_date_time,
+        )
+        .expect("failed to get Ok");
+    }
+
+    #[test]
+    fn test_fail_same_as_end_end_of_consultation_date_time_ensure_end_of_consultation_date_time_has_passed(
+    ) {
+        let consultation_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 5, 15, 0, 0)
+            .unwrap();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 5, 16, 0, 0)
+            .unwrap();
+
+        let result = ensure_end_of_consultation_date_time_has_passed(
+            &consultation_date_time,
+            &current_date_time,
+        )
+        .expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            result.1 .0,
+            ApiError {
+                code: Code::EndOfConsultationDateTimeHasNotPassedYet as u32
+            }
+        );
+    }
+
+    #[test]
+    fn test_fail_not_over_yet_ensure_end_of_consultation_date_time_has_passed() {
+        let consultation_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 5, 15, 0, 0)
+            .unwrap();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 5, 15, 59, 59)
+            .unwrap();
+
+        let result = ensure_end_of_consultation_date_time_has_passed(
+            &consultation_date_time,
+            &current_date_time,
+        )
+        .expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            result.1 .0,
+            ApiError {
+                code: Code::EndOfConsultationDateTimeHasNotPassedYet as u32
             }
         );
     }
