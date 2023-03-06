@@ -297,4 +297,78 @@ describe('RateUserPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
+
+  it(`displays ${Message.RATING_ID_IS_NOT_POSITIVE_MESSAGE} if ${Code.RATING_ID_IS_NOT_POSITIVE} is returned`, async () => {
+    userRatingId = '-1'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.RATING_ID_IS_NOT_POSITIVE))
+    postUserRatingFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rate = 1
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.RATING_ID_IS_NOT_POSITIVE_MESSAGE} (${Code.RATING_ID_IS_NOT_POSITIVE})`)
+  })
+
+  it(`displays ${Message.INVALID_RATING_MESSAGE} if ${Code.INVALID_RATING} is returned`, async () => {
+    userRatingId = '21'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_RATING))
+    postUserRatingFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rate = 2
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.INVALID_RATING_MESSAGE} (${Code.INVALID_RATING})`)
+  })
 })
