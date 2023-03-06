@@ -409,4 +409,78 @@ describe('RateUserPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(`${Message.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET_MESSAGE} (${Code.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET})`)
   })
+
+  it(`displays ${Message.NO_USER_RATING_FOUND_MESSAGE} if ${Code.NO_USER_RATING_FOUND} is returned`, async () => {
+    userRatingId = '21'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_USER_RATING_FOUND))
+    postUserRatingFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rate = 4
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.NO_USER_RATING_FOUND_MESSAGE} (${Code.NO_USER_RATING_FOUND})`)
+  })
+
+  it(`displays ${Message.USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE} if ${Code.USER_ACCOUNT_HAS_ALREADY_BEEN_RATED} is returned`, async () => {
+    userRatingId = '21'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.USER_ACCOUNT_HAS_ALREADY_BEEN_RATED))
+    postUserRatingFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rate = 4
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE} (${Code.USER_ACCOUNT_HAS_ALREADY_BEEN_RATED})`)
+  })
 })
