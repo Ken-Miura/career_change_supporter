@@ -485,7 +485,6 @@ async fn create_consultation(
         user_account_id: Set(req.user_account_id),
         consultant_id: Set(req.consultant_id),
         meeting_at: Set(*meeting_date_time),
-        charge_id: Set(req.charge_id.clone()),
         room_name: Set(room_name.to_string()),
         user_account_entered_at: NotSet,
         consultant_entered_at: NotSet,
@@ -510,7 +509,6 @@ async fn create_user_rating(
         user_account_id: Set(req.user_account_id),
         consultant_id: Set(req.consultant_id),
         meeting_at: Set(*meeting_date_time),
-        charge_id: Set(req.charge_id.clone()),
         rating: NotSet,
         rated_at: NotSet,
     };

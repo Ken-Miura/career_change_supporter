@@ -10,8 +10,6 @@ pub struct Model {
     pub user_account_id: i64,
     pub consultant_id: i64,
     pub meeting_at: DateTimeWithTimeZone,
-    #[sea_orm(column_type = "Text", unique)]
-    pub charge_id: String,
     pub rating: Option<i16>,
     pub rated_at: Option<DateTimeWithTimeZone>,
 }
