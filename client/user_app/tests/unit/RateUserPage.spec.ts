@@ -335,6 +335,7 @@ describe('RateUserPage.vue', () => {
     expect(resultMessage).toContain(`${Message.RATING_ID_IS_NOT_POSITIVE_MESSAGE} (${Code.RATING_ID_IS_NOT_POSITIVE})`)
   })
 
+  // UI上、不正な値の入力は許可していないが、仕様のためテストを用意しておく
   it(`displays ${Message.INVALID_RATING_MESSAGE} if ${Code.INVALID_RATING} is returned`, async () => {
     userRatingId = '21'
     userId = '701'
@@ -370,5 +371,42 @@ describe('RateUserPage.vue', () => {
     expect(alertMessage).not.toContain('hidden')
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(`${Message.INVALID_RATING_MESSAGE} (${Code.INVALID_RATING})`)
+  })
+
+  it(`displays ${Message.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET_MESSAGE} if ${Code.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET} is returned`, async () => {
+    userRatingId = '21'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET))
+    postUserRatingFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rate = 4
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET_MESSAGE} (${Code.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET})`)
   })
 })
