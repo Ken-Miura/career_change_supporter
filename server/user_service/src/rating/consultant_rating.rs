@@ -3,7 +3,7 @@
 use axum::async_trait;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset};
-use common::RespResult;
+use common::{ErrResp, RespResult};
 use entity::sea_orm::DatabaseConnection;
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
@@ -29,7 +29,48 @@ pub(crate) struct ConsultantRatingParam {
 pub(crate) struct ConsultantRatingResult {}
 
 #[async_trait]
-trait ConsultantRatingOperation {}
+trait ConsultantRatingOperation {
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+
+    async fn check_if_user_account_is_available(
+        &self,
+        user_account_id: i64,
+    ) -> Result<bool, ErrResp>;
+
+    async fn find_consultant_rating_by_consultant_rating_id(
+        &self,
+        consultant_rating_id: i64,
+    ) -> Result<Option<ConsultantRating>, ErrResp>;
+
+    async fn update_consultant_rating(
+        &self,
+        consultant_id: i64,
+        consultant_rating_id: i64,
+        rating: i16,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
+
+    async fn filter_consultant_rating_by_consultant_id(
+        &self,
+        consultant_id: i64,
+    ) -> Result<Vec<Option<i16>>, ErrResp>;
+
+    async fn update_rating_on_document_if_needed(
+        &self,
+        consultant_id: i64,
+        averate_rating: i16,
+    ) -> Result<(), ErrResp>;
+
+    async fn make_payment_if_needed(&self, charge_id: &str) -> Result<(), ErrResp>;
+}
+
+#[derive(Clone, Debug)]
+struct ConsultantRating {
+    consultant_id: i64,
+    user_account_id: i64,
+    consultation_date_time_in_jst: DateTime<FixedOffset>,
+    charge_id: String,
+}
 
 async fn handle_consultant_rating(
     account_id: i64,
