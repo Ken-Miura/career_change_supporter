@@ -441,12 +441,9 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.user_rating (
                   user_rating_id BIGSERIAL PRIMARY KEY,
-                  user_account_id BIGINT NOT NULL,
-                  consultant_id BIGINT NOT NULL,
-                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  consultation_id BIGINT NOT NULL UNIQUE,
                   rating SMALLINT,
-                  rated_at TIMESTAMP WITH TIME ZONE,
-                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                  rated_at TIMESTAMP WITH TIME ZONE
                 );",
             ))
             .await
@@ -469,19 +466,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX user_rating_user_account_id_idx ON ccs_schema.user_rating (user_account_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX user_rating_consultant_id_idx ON ccs_schema.user_rating (consultant_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX user_rating_meeting_at_idx ON ccs_schema.user_rating (meeting_at);",
+                r"CREATE INDEX user_rating_consultation_id_idx ON ccs_schema.user_rating (consultation_id);",
             ))
             .await
             .map(|_| ())?;
@@ -492,13 +477,9 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultant_rating (
                   consultant_rating_id BIGSERIAL PRIMARY KEY,
-                  user_account_id BIGINT NOT NULL,
-                  consultant_id BIGINT NOT NULL,
-                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  charge_id TEXT NOT NULL UNIQUE,
+                  consultation_id BIGINT NOT NULL UNIQUE,
                   rating SMALLINT,
-                  rated_at TIMESTAMP WITH TIME ZONE,
-                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                  rated_at TIMESTAMP WITH TIME ZONE
                 );",
             ))
             .await
@@ -521,19 +502,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX consultant_rating_user_account_id_idx ON ccs_schema.consultant_rating (user_account_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX consultant_rating_consultant_id_idx ON ccs_schema.consultant_rating (consultant_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX consultant_rating_meeting_at_idx ON ccs_schema.consultant_rating (meeting_at);",
+                r"CREATE INDEX consultant_rating_consultation_id_idx ON ccs_schema.consultant_rating (consultation_id);",
             ))
             .await
             .map(|_| ())?;
@@ -545,14 +514,11 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.settlement (
                   settlement_id BIGSERIAL PRIMARY KEY,
-                  user_account_id BIGINT NOT NULL,
-                  consultant_id BIGINT NOT NULL,
-                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  consultation_id BIGINT NOT NULL UNIQUE,
                   charge_id TEXT NOT NULL UNIQUE,
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   platform_fee_rate_in_percentage TEXT NOT NULL,
-                  credit_facilities_expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                  credit_facilities_expired_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
             .await
@@ -577,19 +543,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX settlement_consultant_id_idx ON ccs_schema.settlement (consultant_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX settlement_meeting_at_idx ON ccs_schema.settlement (meeting_at);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX settlement_charge_id_idx ON ccs_schema.settlement (charge_id);",
+                r"CREATE INDEX settlement_consultation_id_idx ON ccs_schema.settlement (consultation_id);",
             ))
             .await
             .map(|_| ())?;
@@ -601,15 +555,12 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.stopped_settlement (
                   stopped_settlement_id BIGSERIAL PRIMARY KEY,
-                  user_account_id BIGINT NOT NULL,
-                  consultant_id BIGINT NOT NULL,
-                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  consultation_id BIGINT NOT NULL UNIQUE,
                   charge_id TEXT NOT NULL UNIQUE,
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   platform_fee_rate_in_percentage TEXT NOT NULL,
                   credit_facilities_expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  stopped_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                  stopped_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
             .await
@@ -630,13 +581,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX stopped_settlement_consultant_id_idx ON ccs_schema.stopped_settlement (consultant_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX stopped_settlement_meeting_at_idx ON ccs_schema.stopped_settlement (meeting_at);",
+                r"CREATE INDEX stopped_settlement_consultation_id_idx ON ccs_schema.stopped_settlement (consultation_id);",
             ))
             .await
             .map(|_| ())?;
@@ -654,14 +599,11 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.receipt (
                   receipt_id BIGSERIAL PRIMARY KEY,
-                  user_account_id BIGINT NOT NULL,
-                  consultant_id BIGINT NOT NULL,
-                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  consultation_id BIGINT NOT NULL UNIQUE,
                   charge_id TEXT NOT NULL UNIQUE,
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   platform_fee_rate_in_percentage TEXT NOT NULL,
-                  settled_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                  settled_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
             .await
@@ -693,15 +635,9 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX receipt_consultant_id_idx ON ccs_schema.receipt (consultant_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX receipt_meeting_at_idx ON ccs_schema.receipt (meeting_at);",
+                    r"CREATE INDEX receipt_consultation_id_idx ON ccs_schema.receipt (consultation_id);",
                 ),
             )
             .await
@@ -722,15 +658,12 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.refund (
                   refund_id BIGSERIAL PRIMARY KEY,
-                  user_account_id BIGINT NOT NULL,
-                  consultant_id BIGINT NOT NULL,
-                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  consultation_id BIGINT NOT NULL UNIQUE,
                   charge_id TEXT NOT NULL UNIQUE,
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   platform_fee_rate_in_percentage TEXT NOT NULL,
                   settled_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  refunded_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  UNIQUE(user_account_id, consultant_id, meeting_at)
+                  refunded_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
             .await
@@ -747,7 +680,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(r"CREATE INDEX refund_meeting_at_idx ON ccs_schema.refund (meeting_at);"),
+                sql.stmt(r"CREATE INDEX refund_consultation_id_idx ON ccs_schema.refund (consultation_id);"),
             )
             .await
             .map(|_| ())?;
