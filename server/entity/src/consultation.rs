@@ -17,6 +17,55 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_one = "super::user_rating::Entity")]
+    UserRating,
+    #[sea_orm(has_one = "super::consultant_rating::Entity")]
+    ConsultantRating,
+    #[sea_orm(has_one = "super::settlement::Entity")]
+    Settlement,
+    #[sea_orm(has_one = "super::stopped_settlement::Entity")]
+    StoppedSettlement,
+    #[sea_orm(has_one = "super::receipt::Entity")]
+    Receipt,
+    #[sea_orm(has_one = "super::refund::Entity")]
+    Refund,
+}
+
+impl Related<super::user_rating::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::UserRating.def()
+    }
+}
+
+impl Related<super::consultant_rating::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ConsultantRating.def()
+    }
+}
+
+impl Related<super::settlement::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Settlement.def()
+    }
+}
+
+impl Related<super::stopped_settlement::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::StoppedSettlement.def()
+    }
+}
+
+impl Related<super::receipt::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Receipt.def()
+    }
+}
+
+impl Related<super::refund::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Refund.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

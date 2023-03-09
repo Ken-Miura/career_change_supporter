@@ -679,9 +679,9 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(
-                sql.stmt(r"CREATE INDEX refund_consultation_id_idx ON ccs_schema.refund (consultation_id);"),
-            )
+            .execute(sql.stmt(
+                r"CREATE INDEX refund_consultation_id_idx ON ccs_schema.refund (consultation_id);",
+            ))
             .await
             .map(|_| ())?;
         let _ = conn

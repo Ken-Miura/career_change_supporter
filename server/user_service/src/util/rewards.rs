@@ -32,28 +32,29 @@ pub(crate) async fn filter_receipts_of_the_duration_by_consultant_id(
     start: &DateTime<FixedOffset>,
     end: &DateTime<FixedOffset>,
 ) -> Result<Vec<PaymentInfo>, ErrResp> {
-    let models = Receipt::find()
-        .filter(receipt::Column::ConsultantId.eq(consultant_id))
-        .filter(receipt::Column::SettledAt.between(*start, *end))
-        .all(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to filter receipt (consultant_id: {}, start: {}, end: {}): {}",
-                consultant_id, start, end, e
-            );
-            unexpected_err_resp()
-        })?;
-    // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
-    // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
-    // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
-    Ok(models
-        .into_iter()
-        .map(|m| PaymentInfo {
-            fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-            platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-        })
-        .collect::<Vec<PaymentInfo>>())
+    todo!()
+    // let models = Receipt::find()
+    //     .filter(receipt::Column::ConsultantId.eq(consultant_id))
+    //     .filter(receipt::Column::SettledAt.between(*start, *end))
+    //     .all(pool)
+    //     .await
+    //     .map_err(|e| {
+    //         error!(
+    //             "failed to filter receipt (consultant_id: {}, start: {}, end: {}): {}",
+    //             consultant_id, start, end, e
+    //         );
+    //         unexpected_err_resp()
+    //     })?;
+    // // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
+    // // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
+    // // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
+    // Ok(models
+    //     .into_iter()
+    //     .map(|m| PaymentInfo {
+    //         fee_per_hour_in_yen: m.fee_per_hour_in_yen,
+    //         platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
+    //     })
+    //     .collect::<Vec<PaymentInfo>>())
 }
 
 // [tenantオブジェクト](https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)のpayjp_fee_includedがtrueであるとことを前提として実装

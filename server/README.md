@@ -71,6 +71,7 @@ sea-orm-cli migrate refresh
 export DATABASE_URL=postgres://postgres:example@db/ccs_db
 sea-orm-cli generate entity -l -s ccs_schema -o entity/src
 ```
+Relationに関しては外部キーを使わないと自動で生成されない。従って、外部キーを使わずに関連を示したい場合、手動で記載する（sea-ormにおいて複数テーブルをJOINしたり、結果をINでまとめて再度SELECTして検索したい場合、関連が必要になる）
 
 # 設計
 ## DBのテーブル設計方針

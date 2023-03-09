@@ -504,22 +504,23 @@ async fn create_user_rating(
     meeting_date_time: &DateTime<FixedOffset>,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let active_model = user_rating::ActiveModel {
-        user_rating_id: NotSet,
-        user_account_id: Set(req.user_account_id),
-        consultant_id: Set(req.consultant_id),
-        meeting_at: Set(*meeting_date_time),
-        rating: NotSet,
-        rated_at: NotSet,
-    };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!("failed to insert user_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}", 
-            req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(())
+    todo!()
+    // let active_model = user_rating::ActiveModel {
+    //     user_rating_id: NotSet,
+    //     user_account_id: Set(req.user_account_id),
+    //     consultant_id: Set(req.consultant_id),
+    //     meeting_at: Set(*meeting_date_time),
+    //     rating: NotSet,
+    //     rated_at: NotSet,
+    // };
+    // let _ = active_model.insert(txn).await.map_err(|e| {
+    //     error!("failed to insert user_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}",
+    //         req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
+    //     ErrRespStruct {
+    //         err_resp: unexpected_err_resp(),
+    //     }
+    // })?;
+    // Ok(())
 }
 
 async fn create_settlement(
@@ -527,24 +528,25 @@ async fn create_settlement(
     meeting_date_time: &DateTime<FixedOffset>,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let active_model = settlement::ActiveModel {
-        settlement_id: NotSet,
-        user_account_id: Set(req.user_account_id),
-        consultant_id: Set(req.consultant_id),
-        meeting_at: Set(*meeting_date_time),
-        charge_id: Set(req.charge_id.clone()),
-        fee_per_hour_in_yen: Set(req.fee_per_hour_in_yen),
-        platform_fee_rate_in_percentage: Set(req.platform_fee_rate_in_percentage.clone()),
-        credit_facilities_expired_at: Set(req.credit_facilities_expired_at),
-    };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!("failed to insert settlement (user_account_id: {}, consultant_id: {}, meeting_at: {}, req: {:?}): {}",
-            req.user_account_id, req.consultant_id, meeting_date_time, req, e);
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(())
+    todo!()
+    // let active_model = settlement::ActiveModel {
+    //     settlement_id: NotSet,
+    //     user_account_id: Set(req.user_account_id),
+    //     consultant_id: Set(req.consultant_id),
+    //     meeting_at: Set(*meeting_date_time),
+    //     charge_id: Set(req.charge_id.clone()),
+    //     fee_per_hour_in_yen: Set(req.fee_per_hour_in_yen),
+    //     platform_fee_rate_in_percentage: Set(req.platform_fee_rate_in_percentage.clone()),
+    //     credit_facilities_expired_at: Set(req.credit_facilities_expired_at),
+    // };
+    // let _ = active_model.insert(txn).await.map_err(|e| {
+    //     error!("failed to insert settlement (user_account_id: {}, consultant_id: {}, meeting_at: {}, req: {:?}): {}",
+    //         req.user_account_id, req.consultant_id, meeting_date_time, req, e);
+    //     ErrRespStruct {
+    //         err_resp: unexpected_err_resp(),
+    //     }
+    // })?;
+    // Ok(())
 }
 
 async fn create_consultant_rating(
@@ -552,23 +554,24 @@ async fn create_consultant_rating(
     meeting_date_time: &DateTime<FixedOffset>,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let active_model = consultant_rating::ActiveModel {
-        consultant_rating_id: NotSet,
-        user_account_id: Set(req.user_account_id),
-        consultant_id: Set(req.consultant_id),
-        meeting_at: Set(*meeting_date_time),
-        charge_id: Set(req.charge_id.clone()),
-        rating: NotSet,
-        rated_at: NotSet,
-    };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!("failed to insert consultant_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}", 
-            req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(())
+    todo!()
+    // let active_model = consultant_rating::ActiveModel {
+    //     consultant_rating_id: NotSet,
+    //     user_account_id: Set(req.user_account_id),
+    //     consultant_id: Set(req.consultant_id),
+    //     meeting_at: Set(*meeting_date_time),
+    //     charge_id: Set(req.charge_id.clone()),
+    //     rating: NotSet,
+    //     rated_at: NotSet,
+    // };
+    // let _ = active_model.insert(txn).await.map_err(|e| {
+    //     error!("failed to insert consultant_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}",
+    //         req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
+    //     ErrRespStruct {
+    //         err_resp: unexpected_err_resp(),
+    //     }
+    // })?;
+    // Ok(())
 }
 
 async fn delete_consultation_req_by_consultation_req_id(

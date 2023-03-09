@@ -173,28 +173,29 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        let models = Settlement::find()
-            .filter(settlement::Column::ConsultantId.eq(consultant_id))
-            .filter(settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter settlement (consultant_id: {}, current_date_time: {}): {}",
-                    consultant_id, current_date_time, e
-                );
-                unexpected_err_resp()
-            })?;
-        // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
-        // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
-        // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
-        Ok(models
-            .into_iter()
-            .map(|m| PaymentInfo {
-                fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-            })
-            .collect::<Vec<PaymentInfo>>())
+        todo!()
+        // let models = Settlement::find()
+        //     .filter(settlement::Column::ConsultantId.eq(consultant_id))
+        //     .filter(settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
+        //     .all(&self.pool)
+        //     .await
+        //     .map_err(|e| {
+        //         error!(
+        //             "failed to filter settlement (consultant_id: {}, current_date_time: {}): {}",
+        //             consultant_id, current_date_time, e
+        //         );
+        //         unexpected_err_resp()
+        //     })?;
+        // // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
+        // // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
+        // // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
+        // Ok(models
+        //     .into_iter()
+        //     .map(|m| PaymentInfo {
+        //         fee_per_hour_in_yen: m.fee_per_hour_in_yen,
+        //         platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
+        //     })
+        //     .collect::<Vec<PaymentInfo>>())
     }
 
     async fn filter_valid_stopped_settlement_by_consultant_id(
@@ -202,28 +203,29 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        let models = StoppedSettlement::find()
-            .filter(stopped_settlement::Column::ConsultantId.eq(consultant_id))
-            .filter(stopped_settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter stopped_settlement (consultant_id: {}, current_date_time: {}): {}",
-                    consultant_id, current_date_time, e
-                );
-                unexpected_err_resp()
-            })?;
-        // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
-        // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
-        // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
-        Ok(models
-            .into_iter()
-            .map(|m| PaymentInfo {
-                fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-            })
-            .collect::<Vec<PaymentInfo>>())
+        todo!()
+        // let models = StoppedSettlement::find()
+        //     .filter(stopped_settlement::Column::ConsultantId.eq(consultant_id))
+        //     .filter(stopped_settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
+        //     .all(&self.pool)
+        //     .await
+        //     .map_err(|e| {
+        //         error!(
+        //             "failed to filter stopped_settlement (consultant_id: {}, current_date_time: {}): {}",
+        //             consultant_id, current_date_time, e
+        //         );
+        //         unexpected_err_resp()
+        //     })?;
+        // // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
+        // // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
+        // // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
+        // Ok(models
+        //     .into_iter()
+        //     .map(|m| PaymentInfo {
+        //         fee_per_hour_in_yen: m.fee_per_hour_in_yen,
+        //         platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
+        //     })
+        //     .collect::<Vec<PaymentInfo>>())
     }
 
     async fn filter_receipts_of_the_duration_by_consultant_id(

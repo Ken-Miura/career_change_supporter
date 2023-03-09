@@ -94,21 +94,22 @@ impl UserRatingOperation for UserRatingOperationImpl {
         &self,
         user_rating_id: i64,
     ) -> Result<Option<UserRating>, ErrResp> {
-        let model = entity::user_rating::Entity::find_by_id(user_rating_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_rating (user_rating_id: {}): {}",
-                    user_rating_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| UserRating {
-            user_account_id: m.user_account_id,
-            consultant_id: m.consultant_id,
-            consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
-        }))
+        todo!()
+        // let model = entity::user_rating::Entity::find_by_id(user_rating_id)
+        //     .one(&self.pool)
+        //     .await
+        //     .map_err(|e| {
+        //         error!(
+        //             "failed to find user_rating (user_rating_id: {}): {}",
+        //             user_rating_id, e
+        //         );
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(model.map(|m| UserRating {
+        //     user_account_id: m.user_account_id,
+        //     consultant_id: m.consultant_id,
+        //     consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+        // }))
     }
 
     async fn update_user_rating(

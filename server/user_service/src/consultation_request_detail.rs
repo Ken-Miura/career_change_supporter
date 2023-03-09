@@ -137,18 +137,19 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         &self,
         user_account_id: i64,
     ) -> Result<Vec<Option<i16>>, ErrResp> {
-        let models = UserRating::find()
-            .filter(user_rating::Column::UserAccountId.eq(user_account_id))
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter user_rating (user_account_id: {}): {}",
-                    user_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(models.into_iter().map(|m| m.rating).collect())
+        todo!()
+        // let models = UserRating::find()
+        //     .filter(user_rating::Column::UserAccountId.eq(user_account_id))
+        //     .all(&self.pool)
+        //     .await
+        //     .map_err(|e| {
+        //         error!(
+        //             "failed to filter user_rating (user_account_id: {}): {}",
+        //             user_account_id, e
+        //         );
+        //         unexpected_err_resp()
+        //     })?;
+        // Ok(models.into_iter().map(|m| m.rating).collect())
     }
 }
 
