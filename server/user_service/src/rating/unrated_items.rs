@@ -5,6 +5,9 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use entity::consultation;
+use entity::prelude::ConsultantRating;
+use entity::prelude::UserRating;
 use entity::{
     consultant_rating,
     sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect},
@@ -91,38 +94,46 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
         user_account_id: i64,
         start_criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<UnratedConsultant>, ErrResp> {
-        todo!()
-        // let results = consultant_rating::Entity::find()
-        //     .filter(consultant_rating::Column::MeetingAt.lt(start_criteria))
-        //     .filter(consultant_rating::Column::UserAccountId.eq(user_account_id))
-        //     .filter(consultant_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
-        //     .limit(MAX_NUM_OF_UNRATED_CONSULTANTS)
-        //     .order_by_asc(consultant_rating::Column::MeetingAt)
-        //     .all(&self.pool)
-        //     .await
-        //     .map_err(|e| {
-        //         error!(
-        //             "failed to filter consultant_rating (user_account_id: {}, start_criteria: {}): {}",
-        //             user_account_id, start_criteria, e
-        //         );
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(results
-        //     .into_iter()
-        //     .map(|m| {
-        //         let meeting_at_in_jst = m.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
-        //         UnratedConsultant {
-        //             consultant_rating_id: m.consultant_rating_id,
-        //             consultant_id: m.consultant_id,
-        //             meeting_date_time_in_jst: ConsultationDateTime {
-        //                 year: meeting_at_in_jst.year(),
-        //                 month: meeting_at_in_jst.month(),
-        //                 day: meeting_at_in_jst.day(),
-        //                 hour: meeting_at_in_jst.hour(),
-        //             },
-        //         }
-        //     })
-        //     .collect::<Vec<UnratedConsultant>>())
+        let results = consultation::Entity::find()
+            .filter(consultation::Column::MeetingAt.lt(start_criteria))
+            .filter(consultation::Column::UserAccountId.eq(user_account_id))
+            .find_with_related(ConsultantRating)
+            .filter(consultant_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
+            .limit(MAX_NUM_OF_UNRATED_CONSULTANTS)
+            .order_by_asc(consultation::Column::MeetingAt)
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                "failed to filter consultation and consultant_rating (user_account_id: {}, start_criteria: {}): {}", user_account_id, start_criteria, e);
+                unexpected_err_resp()
+            })?;
+        let converted_results = results
+            .into_iter()
+            .map(|m| {
+                let c = m.0;
+                // consultationとconsultant_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
+                let cr = m.1.get(0).ok_or_else(|| {
+                    error!(
+                        "failed to find consultant_rating (consultant_id: {})",
+                        c.consultation_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                let meeting_at_in_jst = c.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
+                Ok(UnratedConsultant {
+                    consultant_rating_id: cr.consultant_rating_id,
+                    consultant_id: c.consultant_id,
+                    meeting_date_time_in_jst: ConsultationDateTime {
+                        year: meeting_at_in_jst.year(),
+                        month: meeting_at_in_jst.month(),
+                        day: meeting_at_in_jst.day(),
+                        hour: meeting_at_in_jst.hour(),
+                    },
+                })
+            })
+            .collect::<Result<Vec<UnratedConsultant>, ErrResp>>()?;
+        Ok(converted_results)
     }
 
     async fn filter_unrated_users_by_consultant_id(
@@ -130,38 +141,48 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
         consultant_id: i64,
         start_criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<UnratedUser>, ErrResp> {
-        todo!()
-        // let results = user_rating::Entity::find()
-        //     .filter(user_rating::Column::MeetingAt.lt(start_criteria))
-        //     .filter(user_rating::Column::ConsultantId.eq(consultant_id))
-        //     .filter(user_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
-        //     .limit(MAX_NUM_OF_UNRATED_USERS)
-        //     .order_by_asc(user_rating::Column::MeetingAt)
-        //     .all(&self.pool)
-        //     .await
-        //     .map_err(|e| {
-        //         error!(
-        //             "failed to filter user_rating (consultant_id: {}, start_criteria: {}): {}",
-        //             consultant_id, start_criteria, e
-        //         );
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(results
-        //     .into_iter()
-        //     .map(|m| {
-        //         let meeting_at_in_jst = m.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
-        //         UnratedUser {
-        //             user_rating_id: m.user_rating_id,
-        //             user_account_id: m.user_account_id,
-        //             meeting_date_time_in_jst: ConsultationDateTime {
-        //                 year: meeting_at_in_jst.year(),
-        //                 month: meeting_at_in_jst.month(),
-        //                 day: meeting_at_in_jst.day(),
-        //                 hour: meeting_at_in_jst.hour(),
-        //             },
-        //         }
-        //     })
-        //     .collect::<Vec<UnratedUser>>())
+        let results = consultation::Entity::find()
+            .filter(consultation::Column::MeetingAt.lt(start_criteria))
+            .filter(consultation::Column::ConsultantId.eq(consultant_id))
+            .find_with_related(UserRating)
+            .filter(user_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
+            .limit(MAX_NUM_OF_UNRATED_USERS)
+            .order_by_asc(consultation::Column::MeetingAt)
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter consultation and user_rating (consultant_id: {}, start_criteria: {}): {}",
+                    consultant_id, start_criteria, e
+                );
+                unexpected_err_resp()
+            })?;
+        let converted_results = results
+            .into_iter()
+            .map(|m| {
+                let c = m.0;
+                // consultationとuser_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
+                let ur = m.1.get(0).ok_or_else(|| {
+                    error!(
+                        "failed to find user_rating (consultant_id: {})",
+                        c.consultation_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                let meeting_at_in_jst = c.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
+                Ok(UnratedUser {
+                    user_rating_id: ur.user_rating_id,
+                    user_account_id: c.user_account_id,
+                    meeting_date_time_in_jst: ConsultationDateTime {
+                        year: meeting_at_in_jst.year(),
+                        month: meeting_at_in_jst.month(),
+                        day: meeting_at_in_jst.day(),
+                        hour: meeting_at_in_jst.hour(),
+                    },
+                })
+            })
+            .collect::<Result<Vec<UnratedUser>, ErrResp>>()?;
+        Ok(converted_results)
     }
 }
 
