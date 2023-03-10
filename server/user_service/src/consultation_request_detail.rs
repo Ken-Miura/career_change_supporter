@@ -149,7 +149,7 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
                 );
                 unexpected_err_resp()
             })?;
-        let result = models
+        models
             .into_iter()
             .map(|m| {
                 let r = m.rating.ok_or_else(|| {
@@ -161,8 +161,7 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
                 })?;
                 Ok(r)
             })
-            .collect::<Result<Vec<i16>, ErrResp>>()?;
-        Ok(result)
+            .collect::<Result<Vec<i16>, ErrResp>>()
     }
 }
 
