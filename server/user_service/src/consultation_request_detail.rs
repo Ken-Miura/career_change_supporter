@@ -109,7 +109,7 @@ trait ConsultationRequestDetailOperation {
     async fn filter_user_rating_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<Option<i16>>, ErrResp>;
+    ) -> Result<Vec<i16>, ErrResp>;
 }
 
 struct ConsultationRequestDetailOperationImpl {
@@ -136,20 +136,33 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
     async fn filter_user_rating_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<Option<i16>>, ErrResp> {
-        todo!()
-        // let models = UserRating::find()
-        //     .filter(user_rating::Column::UserAccountId.eq(user_account_id))
-        //     .all(&self.pool)
-        //     .await
-        //     .map_err(|e| {
-        //         error!(
-        //             "failed to filter user_rating (user_account_id: {}): {}",
-        //             user_account_id, e
-        //         );
-        //         unexpected_err_resp()
-        //     })?;
-        // Ok(models.into_iter().map(|m| m.rating).collect())
+    ) -> Result<Vec<i16>, ErrResp> {
+        let models = UserRating::find()
+            .filter(user_rating::Column::UserAccountId.eq(user_account_id))
+            .filter(user_rating::Column::Rating.is_not_null())
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter user_rating (user_account_id: {}): {}",
+                    user_account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        let result = models
+            .into_iter()
+            .map(|m| {
+                let r = m.rating.ok_or_else(|| {
+                    error!(
+                        "rating is null (user_rating_id: {}, user_account_id: {})",
+                        m.user_rating_id, m.user_account_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                Ok(r)
+            })
+            .collect::<Result<Vec<i16>, ErrResp>>()?;
+        Ok(result)
     }
 }
 
@@ -204,26 +217,14 @@ fn validate_consultation_req_for_reference(
     Ok(())
 }
 
-fn calculate_rating_and_count(
-    user_ratings: Vec<Option<i16>>,
-) -> Result<(Option<String>, i32), ErrResp> {
-    let filled_user_ratings = user_ratings
-        .into_iter()
-        .filter(|u| u.is_some())
-        .collect::<Vec<Option<i16>>>();
-    let count = filled_user_ratings.len();
+fn calculate_rating_and_count(user_ratings: Vec<i16>) -> Result<(Option<String>, i32), ErrResp> {
+    let count = user_ratings.len();
     if count == 0 {
         return Ok((None, 0));
     }
     let mut sum = 0_i32;
-    for u in filled_user_ratings {
-        match u {
-            Some(u) => sum += u as i32,
-            None => {
-                error!("failed to calculate sum of user rating");
-                return Err(unexpected_err_resp());
-            }
-        }
+    for u in user_ratings {
+        sum += u as i32
     }
     let rating = sum as f64 / count as f64;
     let rating_str = round_to_one_decimal_places(rating);
@@ -269,7 +270,7 @@ mod tests {
             current_date_time: DateTime<FixedOffset>,
             identity_exists: bool,
             req: Option<ConsultationRequest>,
-            user_ratings: Vec<Option<i16>>,
+            user_ratings: Vec<i16>,
         ) -> Self {
             Input {
                 user_account_id: account_id_of_consultant,
@@ -294,7 +295,7 @@ mod tests {
         consultation_req_id: i64,
         identity_exists: bool,
         req: Option<ConsultationRequest>,
-        user_ratings: Vec<Option<i16>>,
+        user_ratings: Vec<i16>,
     }
 
     #[async_trait]
@@ -315,7 +316,7 @@ mod tests {
         async fn filter_user_rating_by_user_account_id(
             &self,
             user_account_id: i64,
-        ) -> Result<Vec<Option<i16>>, ErrResp> {
+        ) -> Result<Vec<i16>, ErrResp> {
             assert_eq!(self.account_id_of_user, user_account_id);
             Ok(self.user_ratings.clone())
         }
@@ -399,7 +400,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5)],
+                    vec![5],
                 ),
                 expected: Ok((
                     StatusCode::OK,
@@ -449,7 +450,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2)],
+                    vec![5, 2],
                 ),
                 expected: Ok((
                     StatusCode::OK,
@@ -499,57 +500,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2), Some(3)],
-                ),
-                expected: Ok((
-                    StatusCode::OK,
-                    Json(ConsultationRequestDetail {
-                        consultation_req_id,
-                        user_account_id: account_id_of_user,
-                        user_rating: Some("3.3".to_string()),
-                        num_of_rated_of_user: 3,
-                        fee_per_hour_in_yen,
-                        first_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 12,
-                            day: 5,
-                            hour: 7,
-                        },
-                        second_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 12,
-                            day: 5,
-                            hour: 23,
-                        },
-                        third_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 12,
-                            day: 11,
-                            hour: 7,
-                        },
-                    }),
-                )),
-            },
-            TestCase {
-                name: "success case 4 (3 user ratings and empty rating found)".to_string(),
-                input: Input::new(
-                    account_id_of_consultant,
-                    account_id_of_user,
-                    consultation_req_id,
-                    current_date_time,
-                    true,
-                    Some(ConsultationRequest {
-                        consultation_req_id,
-                        user_account_id: account_id_of_user,
-                        consultant_id: account_id_of_consultant,
-                        fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
-                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
-                    }),
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Ok((
                     StatusCode::OK,
@@ -599,7 +550,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -627,7 +578,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -655,7 +606,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -673,7 +624,7 @@ mod tests {
                     current_date_time,
                     true,
                     None,
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -701,7 +652,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -729,7 +680,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -757,7 +708,7 @@ mod tests {
                         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![Some(5), Some(2), Some(3), None],
+                    vec![5, 2, 3],
                 ),
                 expected: Ok((
                     StatusCode::OK,
