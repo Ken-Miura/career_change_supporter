@@ -7,7 +7,7 @@ use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::UserRating;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
-use entity::user_rating;
+use entity::{consultation, user_rating};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -137,8 +137,9 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         &self,
         user_account_id: i64,
     ) -> Result<Vec<i16>, ErrResp> {
-        let models = UserRating::find()
-            .filter(user_rating::Column::UserAccountId.eq(user_account_id))
+        let models = consultation::Entity::find()
+            .filter(consultation::Column::UserAccountId.eq(user_account_id))
+            .find_with_related(UserRating)
             .filter(user_rating::Column::Rating.is_not_null())
             .all(&self.pool)
             .await
@@ -152,10 +153,18 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         models
             .into_iter()
             .map(|m| {
-                let r = m.rating.ok_or_else(|| {
+                // consultationとuser_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
+                let ur = m.1.get(0).ok_or_else(|| {
+                    error!(
+                        "failed to find user_rating (consultation_id: {})",
+                        m.0.consultation_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                let r = ur.rating.ok_or_else(|| {
                     error!(
                         "rating is null (user_rating_id: {}, user_account_id: {})",
-                        m.user_rating_id, m.user_account_id
+                        ur.user_rating_id, m.0.user_account_id
                     );
                     unexpected_err_resp()
                 })?;

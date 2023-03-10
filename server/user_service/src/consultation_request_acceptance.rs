@@ -391,9 +391,9 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     let consultation_id =
                         create_consultation(&req, &meeting_date_time, room_name.as_str(), txn)
                             .await?;
-                    create_user_rating(consultation_id, req.user_account_id, txn).await?;
+                    create_user_rating(consultation_id, txn).await?;
                     create_settlement(consultation_id, &req, txn).await?;
-                    create_consultant_rating(consultation_id, req.consultant_id, txn).await?;
+                    create_consultant_rating(consultation_id, txn).await?;
 
                     delete_consultation_req_by_consultation_req_id(req.consultation_req_id, txn)
                         .await?;
@@ -503,20 +503,18 @@ async fn create_consultation(
 
 async fn create_user_rating(
     consultation_id: i64,
-    user_account_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = user_rating::ActiveModel {
         user_rating_id: NotSet,
-        user_account_id: Set(user_account_id),
         consultation_id: Set(consultation_id),
         rating: NotSet,
         rated_at: NotSet,
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
         error!(
-            "failed to insert user_rating (consultation_id: {}, user_account_id: {}): {}",
-            consultation_id, user_account_id, e
+            "failed to insert user_rating (consultation_id: {}): {}",
+            consultation_id, e
         );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
@@ -552,20 +550,18 @@ async fn create_settlement(
 
 async fn create_consultant_rating(
     consultation_id: i64,
-    consultant_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = consultant_rating::ActiveModel {
         consultant_rating_id: NotSet,
-        consultant_id: Set(consultant_id),
         consultation_id: Set(consultation_id),
         rating: NotSet,
         rated_at: NotSet,
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
         error!(
-            "failed to insert consultant_rating (consultant_id: {}, consultation_id: {}): {}",
-            consultant_id, consultation_id, e
+            "failed to insert consultant_rating (consultation_id: {}): {}",
+            consultation_id, e
         );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
