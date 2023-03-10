@@ -441,6 +441,7 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.user_rating (
                   user_rating_id BIGSERIAL PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
                   consultation_id BIGINT NOT NULL UNIQUE,
                   rating SMALLINT,
                   rated_at TIMESTAMP WITH TIME ZONE
@@ -466,6 +467,12 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
+                r"CREATE INDEX user_rating_user_account_id_idx ON ccs_schema.user_rating (user_account_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
                 r"CREATE INDEX user_rating_consultation_id_idx ON ccs_schema.user_rating (consultation_id);",
             ))
             .await
@@ -477,6 +484,7 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultant_rating (
                   consultant_rating_id BIGSERIAL PRIMARY KEY,
+                  consultant_id BIGINT NOT NULL,
                   consultation_id BIGINT NOT NULL UNIQUE,
                   rating SMALLINT,
                   rated_at TIMESTAMP WITH TIME ZONE
@@ -497,6 +505,12 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT USAGE ON SEQUENCE ccs_schema.consultant_rating_consultant_rating_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX consultant_rating_consultant_id_idx ON ccs_schema.consultant_rating (consultant_id);",
             ))
             .await
             .map(|_| ())?;
