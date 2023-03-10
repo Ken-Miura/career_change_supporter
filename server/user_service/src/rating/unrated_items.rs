@@ -108,7 +108,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
                 "failed to filter consultation and consultant_rating (user_account_id: {}, start_criteria: {}): {}", user_account_id, start_criteria, e);
                 unexpected_err_resp()
             })?;
-        let converted_results = results
+        results
             .into_iter()
             .map(|m| {
                 let c = m.0;
@@ -132,8 +132,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
                     },
                 })
             })
-            .collect::<Result<Vec<UnratedConsultant>, ErrResp>>()?;
-        Ok(converted_results)
+            .collect::<Result<Vec<UnratedConsultant>, ErrResp>>()
     }
 
     async fn filter_unrated_users_by_consultant_id(
