@@ -393,7 +393,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                             .await?;
                     create_user_rating(consultation_id, req.user_account_id, txn).await?;
                     create_settlement(consultation_id, &req, txn).await?;
-                    create_consultant_rating(&req, &meeting_date_time, txn).await?;
+                    create_consultant_rating(consultation_id, req.consultant_id, txn).await?;
 
                     delete_consultation_req_by_consultation_req_id(req.consultation_req_id, txn)
                         .await?;
@@ -551,24 +551,27 @@ async fn create_settlement(
 }
 
 async fn create_consultant_rating(
-    req: &consultation_req::Model,
-    meeting_date_time: &DateTime<FixedOffset>,
+    consultation_id: i64,
+    consultant_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    todo!()
-    // let active_model = consultant_rating::ActiveModel {
-    //     consultant_rating_id: NotSet,
-    //     rating: NotSet,
-    //     rated_at: NotSet,
-    // };
-    // let _ = active_model.insert(txn).await.map_err(|e| {
-    //     error!("failed to insert consultant_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}",
-    //         req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
-    //     ErrRespStruct {
-    //         err_resp: unexpected_err_resp(),
-    //     }
-    // })?;
-    // Ok(())
+    let active_model = consultant_rating::ActiveModel {
+        consultant_rating_id: NotSet,
+        consultant_id: Set(consultant_id),
+        consultation_id: Set(consultation_id),
+        rating: NotSet,
+        rated_at: NotSet,
+    };
+    let _ = active_model.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert consultant_rating (consultant_id: {}, consultation_id: {}): {}",
+            consultant_id, consultation_id, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 async fn delete_consultation_req_by_consultation_req_id(
