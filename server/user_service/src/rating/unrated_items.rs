@@ -67,7 +67,7 @@ trait UnratedItemsOperation {
     /// コンサルタントに対する未評価のレコードを取得する
     /// 取得するレコードは、最大[MAX_NUM_OF_UNRATED_CONSULTANTS]件で相談日時で昇順にソート済
     /// コンサルタントを評価するのはユーザーなのでuser_account_idでフィルターする
-    async fn filter_consultant_ratings_by_user_account_id(
+    async fn filter_unrated_consultants_by_user_account_id(
         &self,
         user_account_id: i64,
         start_criteria: DateTime<FixedOffset>,
@@ -89,7 +89,7 @@ struct UnratedItemsOperationImpl {
 
 #[async_trait]
 impl UnratedItemsOperation for UnratedItemsOperationImpl {
-    async fn filter_consultant_ratings_by_user_account_id(
+    async fn filter_unrated_consultants_by_user_account_id(
         &self,
         user_account_id: i64,
         start_criteria: DateTime<FixedOffset>,
@@ -198,7 +198,7 @@ async fn handle_unrated_items(
         .filter_unrated_users_by_consultant_id(account_id, criteria)
         .await?;
     let unrated_consultants = op
-        .filter_consultant_ratings_by_user_account_id(account_id, criteria)
+        .filter_unrated_consultants_by_user_account_id(account_id, criteria)
         .await?;
 
     Ok((
@@ -249,7 +249,7 @@ mod tests {
 
     #[async_trait]
     impl UnratedItemsOperation for UnratedItemsOperationMock {
-        async fn filter_consultant_ratings_by_user_account_id(
+        async fn filter_unrated_consultants_by_user_account_id(
             &self,
             user_account_id: i64,
             start_criteria: DateTime<FixedOffset>,

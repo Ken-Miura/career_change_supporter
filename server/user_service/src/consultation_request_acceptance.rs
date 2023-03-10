@@ -391,7 +391,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     let consultation_id =
                         create_consultation(&req, &meeting_date_time, room_name.as_str(), txn)
                             .await?;
-                    create_user_rating(consultation_id, txn).await?;
+                    create_user_rating(consultation_id, req.user_account_id, txn).await?;
                     create_settlement(consultation_id, &req, txn).await?;
                     create_consultant_rating(&req, &meeting_date_time, txn).await?;
 
@@ -503,18 +503,20 @@ async fn create_consultation(
 
 async fn create_user_rating(
     consultation_id: i64,
+    user_account_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = user_rating::ActiveModel {
         user_rating_id: NotSet,
+        user_account_id: Set(user_account_id),
         consultation_id: Set(consultation_id),
         rating: NotSet,
         rated_at: NotSet,
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
         error!(
-            "failed to insert user_rating (consultation_id: {}): {}",
-            consultation_id, e
+            "failed to insert user_rating (consultation_id: {}, user_account_id: {}): {}",
+            consultation_id, user_account_id, e
         );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),

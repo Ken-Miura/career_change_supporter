@@ -11,7 +11,7 @@ pub(crate) mod unrated_items;
 pub(crate) mod user_rating;
 
 #[derive(Clone, Debug)]
-struct RatingWithRelatedConsultationInfo {
+struct ConsultationInfo {
     user_account_id: i64,
     consultant_id: i64,
     consultation_date_time_in_jst: DateTime<FixedOffset>,
