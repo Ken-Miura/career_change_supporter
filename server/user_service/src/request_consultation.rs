@@ -15,11 +15,11 @@ use common::{ApiError, JAPANESE_TIME_ZONE};
 use entity::prelude::Settlement;
 use entity::prelude::StoppedSettlement;
 use entity::sea_orm::{ColumnTrait, QueryFilter};
+use entity::{consultation, settlement, stopped_settlement};
 use entity::{
     prelude::ConsultingFee,
     sea_orm::{DatabaseConnection, EntityTrait},
 };
-use entity::{settlement, stopped_settlement};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
@@ -173,29 +173,39 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        todo!()
-        // let models = Settlement::find()
-        //     .filter(settlement::Column::ConsultantId.eq(consultant_id))
-        //     .filter(settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
-        //     .all(&self.pool)
-        //     .await
-        //     .map_err(|e| {
-        //         error!(
-        //             "failed to filter settlement (consultant_id: {}, current_date_time: {}): {}",
-        //             consultant_id, current_date_time, e
-        //         );
-        //         unexpected_err_resp()
-        //     })?;
-        // // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
-        // // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
-        // // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
-        // Ok(models
-        //     .into_iter()
-        //     .map(|m| PaymentInfo {
-        //         fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-        //         platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-        //     })
-        //     .collect::<Vec<PaymentInfo>>())
+        let models = consultation::Entity::find()
+            .filter(consultation::Column::ConsultantId.eq(consultant_id))
+            .find_with_related(Settlement)
+            .filter(settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter settlement (consultant_id: {}, current_date_time: {}): {}",
+                    consultant_id, current_date_time, e
+                );
+                unexpected_err_resp()
+            })?;
+        // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
+        // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
+        // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
+        models
+            .into_iter()
+            .map(|m| {
+                // consultationとsettlementは1対1の設計なので取れない場合は想定外エラーとして扱う
+                let s = m.1.get(0).ok_or_else(|| {
+                    error!(
+                        "failed to find settlement (consultation_id: {})",
+                        m.0.consultation_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                Ok(PaymentInfo {
+                    fee_per_hour_in_yen: s.fee_per_hour_in_yen,
+                    platform_fee_rate_in_percentage: s.platform_fee_rate_in_percentage.clone(),
+                })
+            })
+            .collect::<Result<Vec<PaymentInfo>, ErrResp>>()
     }
 
     async fn filter_valid_stopped_settlement_by_consultant_id(
@@ -203,29 +213,39 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         consultant_id: i64,
         current_date_time: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        todo!()
-        // let models = StoppedSettlement::find()
-        //     .filter(stopped_settlement::Column::ConsultantId.eq(consultant_id))
-        //     .filter(stopped_settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
-        //     .all(&self.pool)
-        //     .await
-        //     .map_err(|e| {
-        //         error!(
-        //             "failed to filter stopped_settlement (consultant_id: {}, current_date_time: {}): {}",
-        //             consultant_id, current_date_time, e
-        //         );
-        //         unexpected_err_resp()
-        //     })?;
-        // // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
-        // // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
-        // // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
-        // Ok(models
-        //     .into_iter()
-        //     .map(|m| PaymentInfo {
-        //         fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-        //         platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-        //     })
-        //     .collect::<Vec<PaymentInfo>>())
+        let models = consultation::Entity::find()
+            .filter(consultation::Column::ConsultantId.eq(consultant_id))
+            .find_with_related(StoppedSettlement)
+            .filter(stopped_settlement::Column::CreditFacilitiesExpiredAt.gt(*current_date_time))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter stopped_settlement (consultant_id: {}, current_date_time: {}): {}",
+                    consultant_id, current_date_time, e
+                );
+                unexpected_err_resp()
+            })?;
+        // 正確な報酬額を得るためには取得したレコードに記載されているcharge_idを使い、
+        // 一つ一つChageオブジェクトをPAYJPから取得して計算をする必要がある。
+        // しかし、PAYJPの流量制限に引っかかりやすくなる危険性を考慮し、レコードのキャシュしてある値を使い報酬を計算する
+        models
+            .into_iter()
+            .map(|m| {
+                // consultationとstopped_settlementは1対1の設計なので取れない場合は想定外エラーとして扱う
+                let ss = m.1.get(0).ok_or_else(|| {
+                    error!(
+                        "failed to find stopped_settlement (consultation_id: {})",
+                        m.0.consultation_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                Ok(PaymentInfo {
+                    fee_per_hour_in_yen: ss.fee_per_hour_in_yen,
+                    platform_fee_rate_in_percentage: ss.platform_fee_rate_in_percentage.clone(),
+                })
+            })
+            .collect::<Result<Vec<PaymentInfo>, ErrResp>>()
     }
 
     async fn filter_receipts_of_the_duration_by_consultant_id(
