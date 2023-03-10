@@ -157,7 +157,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        let converted_results = results
+        results
             .into_iter()
             .map(|m| {
                 let c = m.0;
@@ -181,8 +181,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
                     },
                 })
             })
-            .collect::<Result<Vec<UnratedUser>, ErrResp>>()?;
-        Ok(converted_results)
+            .collect::<Result<Vec<UnratedUser>, ErrResp>>()
     }
 }
 
