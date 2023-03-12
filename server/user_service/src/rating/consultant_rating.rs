@@ -153,7 +153,7 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     // 同じコンサルタントに対する複数のconsultant_ratingの更新が来た場合に備えて
-                    // また、consultant_rating更新中にコンサルタントが自身のアカウントを削除する場合に備えてconsultant_ratingで排他ロックを取得しておく
+                    // また、consultant_rating更新中にコンサルタントが自身のアカウントを削除する場合に備えてuser_accountで排他ロックを取得しておく
                     let consultant_option =
                         find_user_account_by_user_account_id_with_exclusive_lock(
                             txn,
@@ -265,7 +265,43 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         consultant_id: i64,
         averate_rating: f64,
     ) -> Result<(), ErrResp> {
-        todo!()
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    // 管理者がコンサルタントをDisabledにしている途中に
+                    // ユーザーがコンサルタントのratingの更新をした場合に備えて、user_accountで排他ロックを取得しておく
+                    let consultant_option =
+                        find_user_account_by_user_account_id_with_exclusive_lock(
+                            txn,
+                            consultant_id,
+                        )
+                        .await?;
+                    if consultant_option.is_none() {
+                        info!(
+                            "no consultant (consultant_id: {}) found on rating",
+                            consultant_id
+                        );
+                        return Ok(());
+                    }
+                    // TODO: 
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!(
+                        "failed to update_rating_on_document_if_not_disabled: {}",
+                        err_resp_struct
+                    );
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
 
     async fn make_payment_if_needed(&self, consultation_id: i64) -> Result<(), ErrResp> {
