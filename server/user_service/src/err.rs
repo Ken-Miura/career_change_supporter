@@ -144,6 +144,7 @@ pub(crate) enum Code {
     EndOfConsultationDateTimeHasNotPassedYet = 20132,
     NoUserRatingFound = 20133,
     UserAccountHasAlreadyBeenRated = 20134,
+    UserIsNotAvailable = 20135,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
