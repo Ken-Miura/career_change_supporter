@@ -4,17 +4,20 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::Consultation;
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set, TransactionError,
+    TransactionTrait,
+};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::User;
+use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock};
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
@@ -145,7 +148,75 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        todo!()
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    // 同じコンサルタントに対する複数のconsultant_ratingの更新が来た場合に備えて
+                    // また、consultant_rating更新中にコンサルタントが自身のアカウントを削除する場合に備えてconsultant_ratingで排他ロックを取得しておく
+                    let consultant_option =
+                        find_user_account_by_user_account_id_with_exclusive_lock(
+                            txn,
+                            consultant_id,
+                        )
+                        .await?;
+                    if consultant_option.is_none() {
+                        info!(
+                            "no consultant (consultant_id: {}) found on rating",
+                            consultant_id
+                        );
+                        return Ok(());
+                    }
+                    let model_option =
+                        entity::consultant_rating::Entity::find_by_id(consultant_rating_id)
+                            .one(txn)
+                            .await
+                            .map_err(|e| {
+                                error!(
+                                "failed to find consultant_rating (consultant_rating_id: {}): {}",
+                                consultant_rating_id, e
+                            );
+                                ErrRespStruct {
+                                    err_resp: unexpected_err_resp(),
+                                }
+                            })?;
+                    let model = match model_option {
+                        Some(m) => m,
+                        None => {
+                            error!(
+                                "no consultant_rating (consultant_rating_id: {}) found on rating",
+                                consultant_rating_id
+                            );
+                            return Err(ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            });
+                        }
+                    };
+                    if model.rating.is_some() {
+                        return Err(ErrRespStruct {
+                            err_resp: (
+                                StatusCode::BAD_REQUEST,
+                                Json(ApiError {
+                                    code: Code::ConsultantHasAlreadyBeenRated as u32,
+                                }),
+                            ),
+                        });
+                    }
+                    update_consultant_rating(model, txn, rating, current_date_time).await?;
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to update_consultant_rating: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
 
     async fn filter_consultant_rating_by_consultant_id(
@@ -168,6 +239,28 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
     }
 }
 
+async fn update_consultant_rating(
+    model: entity::consultant_rating::Model,
+    txn: &DatabaseTransaction,
+    rating: i16,
+    current_date_time: DateTime<FixedOffset>,
+) -> Result<(), ErrRespStruct> {
+    let consultant_rating_id = model.consultant_rating_id;
+    let mut active_model: entity::consultant_rating::ActiveModel = model.into();
+    active_model.rating = Set(Some(rating));
+    active_model.rated_at = Set(Some(current_date_time));
+    let _ = active_model.update(txn).await.map_err(|e| {
+        error!(
+            "failed to update consultant_rating (consultant_rating_id: {}, rating: {}, current_date_time: {}): {}",
+            consultant_rating_id, rating, current_date_time, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
+}
+
 async fn handle_consultant_rating(
     account_id: i64,
     consultant_rating_id: i64,
@@ -187,11 +280,14 @@ async fn handle_consultant_rating(
         current_date_time,
     )?;
 
-    // consultant_ratingを更新する
-    //   コンサルタントの存在チェック＋ロック -> 仮に存在しない場合はそれ以降の操作は何もしないで成功で終わらせる
-    //   consultant_ratingの取得＋ロック
-    //   consultant_ratingのratingがNULLであることを確認 -> NULLでないなら既に評価済を示すエラーを返す
-    //   consultant_ratingのratingに値を入れる
+    op.update_consultant_rating(
+        cl.consultant_id,
+        consultant_rating_id,
+        rating,
+        *current_date_time,
+    )
+    .await?;
+
     // コンサルタントのDisabledチェック -> Disabledなら何もしない。DisabledでないならOpenSearchにconsultant_ratingの集計結果を投入
     // pay.jpのchargeの更新
     //   settlementテーブルからreceiptテーブルに移す -> settlementテーブルがなければ既に定期ツールが処理済のため、そのままOKを返す

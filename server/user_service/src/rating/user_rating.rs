@@ -130,7 +130,7 @@ impl UserRatingOperation for UserRatingOperationImpl {
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     // 同じユーザーに対する複数のuser_ratingの更新が来た場合に備えて
-                    // また、user_rating更新中ににユーザーが自身のアカウントを削除する場合に備えてuser_accountで排他ロックを取得しておく
+                    // また、user_rating更新中にユーザーが自身のアカウントを削除する場合に備えてuser_accountで排他ロックを取得しておく
                     let user_account_option =
                         find_user_account_by_user_account_id_with_exclusive_lock(
                             txn,
