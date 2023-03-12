@@ -10,6 +10,13 @@ pub(crate) mod consultant_rating;
 pub(crate) mod unrated_items;
 pub(crate) mod user_rating;
 
+#[derive(Clone, Debug)]
+struct ConsultationInfo {
+    user_account_id: i64,
+    consultant_id: i64,
+    consultation_date_time_in_jst: DateTime<FixedOffset>,
+}
+
 fn ensure_rating_id_is_positive(rating_id: i64) -> Result<(), ErrResp> {
     if !rating_id.is_positive() {
         return Err((

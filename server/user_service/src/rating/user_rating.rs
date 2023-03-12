@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use entity::prelude::Consultation;
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set, TransactionError,
     TransactionTrait,
@@ -19,7 +20,7 @@ use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
-    ensure_rating_is_in_valid_range,
+    ensure_rating_is_in_valid_range, ConsultationInfo,
 };
 
 pub(crate) async fn post_user_rating(
@@ -54,10 +55,10 @@ trait UserRatingOperation {
 
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
 
-    async fn find_user_rating_by_user_rating_id(
+    async fn find_consultation_info_from_user_rating(
         &self,
         user_rating_id: i64,
-    ) -> Result<Option<UserRating>, ErrResp>;
+    ) -> Result<Option<ConsultationInfo>, ErrResp>;
 
     async fn update_user_rating(
         &self,
@@ -66,13 +67,6 @@ trait UserRatingOperation {
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
-}
-
-#[derive(Clone, Debug)]
-struct UserRating {
-    user_account_id: i64,
-    consultant_id: i64,
-    consultation_date_time_in_jst: DateTime<FixedOffset>,
 }
 
 struct UserRatingOperationImpl {
@@ -90,25 +84,39 @@ impl UserRatingOperation for UserRatingOperationImpl {
         util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
     }
 
-    async fn find_user_rating_by_user_rating_id(
+    async fn find_consultation_info_from_user_rating(
         &self,
         user_rating_id: i64,
-    ) -> Result<Option<UserRating>, ErrResp> {
+    ) -> Result<Option<ConsultationInfo>, ErrResp> {
         let model = entity::user_rating::Entity::find_by_id(user_rating_id)
+            .find_also_related(Consultation)
             .one(&self.pool)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find user_rating (user_rating_id: {}): {}",
+                    "failed to find user_rating and consultation (user_rating_id: {}): {}",
                     user_rating_id, e
                 );
                 unexpected_err_resp()
             })?;
-        Ok(model.map(|m| UserRating {
-            user_account_id: m.user_account_id,
-            consultant_id: m.consultant_id,
-            consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
-        }))
+        let converted_result = model.map(|m| {
+            let c = m.1.ok_or_else(|| {
+                error!(
+                    "failed to find consultation (user_rating_id: {}, consultation_id: {})",
+                    user_rating_id, m.0.consultation_id
+                );
+                unexpected_err_resp()
+            })?;
+            Ok(ConsultationInfo {
+                user_account_id: c.user_account_id,
+                consultant_id: c.consultant_id,
+                consultation_date_time_in_jst: c.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+            })
+        });
+        Ok(match converted_result {
+            Some(r) => Some(r?),
+            None => None,
+        })
     }
 
     async fn update_user_rating(
@@ -223,15 +231,15 @@ async fn handle_user_rating(
     ensure_identity_exists(consultant_id, &op).await?;
     ensure_consultant_is_available(consultant_id, &op).await?;
 
-    let ur = get_user_rating_by_user_rating_id(user_rating_id, &op).await?;
-    ensure_consultant_ids_are_same(consultant_id, ur.consultant_id)?;
+    let cl = get_consultation_info_from_user_rating(user_rating_id, &op).await?;
+    ensure_consultant_ids_are_same(consultant_id, cl.consultant_id)?;
     ensure_end_of_consultation_date_time_has_passed(
-        &ur.consultation_date_time_in_jst,
+        &cl.consultation_date_time_in_jst,
         current_date_time,
     )?;
 
     op.update_user_rating(
-        ur.user_account_id,
+        cl.user_account_id,
         user_rating_id,
         rating,
         *current_date_time,
@@ -278,15 +286,15 @@ async fn ensure_consultant_is_available(
     Ok(())
 }
 
-async fn get_user_rating_by_user_rating_id(
+async fn get_consultation_info_from_user_rating(
     user_rating_id: i64,
     op: &impl UserRatingOperation,
-) -> Result<UserRating, ErrResp> {
-    let ur = op
-        .find_user_rating_by_user_rating_id(user_rating_id)
+) -> Result<ConsultationInfo, ErrResp> {
+    let cl = op
+        .find_consultation_info_from_user_rating(user_rating_id)
         .await?;
-    match ur {
-        Some(u) => Ok(u),
+    match cl {
+        Some(c) => Ok(c),
         None => Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -325,7 +333,7 @@ mod tests {
 
     use crate::err::Code;
 
-    use super::{handle_user_rating, UserRating, UserRatingOperation, UserRatingResult};
+    use super::{handle_user_rating, ConsultationInfo, UserRatingOperation, UserRatingResult};
 
     #[derive(Debug)]
     struct TestCase {
@@ -348,7 +356,7 @@ mod tests {
         account_id: i64,
         consultant_available: bool,
         user_rating_id: i64,
-        user_rating: UserRating,
+        user_rating: ConsultationInfo,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
         already_exists: bool,
@@ -374,10 +382,10 @@ mod tests {
             Ok(true)
         }
 
-        async fn find_user_rating_by_user_rating_id(
+        async fn find_consultation_info_from_user_rating(
             &self,
             user_rating_id: i64,
-        ) -> Result<Option<UserRating>, ErrResp> {
+        ) -> Result<Option<ConsultationInfo>, ErrResp> {
             if self.user_rating_id != user_rating_id {
                 return Ok(None);
             }
@@ -430,7 +438,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -453,7 +461,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -481,7 +489,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -509,7 +517,7 @@ mod tests {
                         account_id: consultant_id + 97,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -537,7 +545,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: false,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -565,7 +573,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id: user_rating_id + 3,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -593,7 +601,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id: consultant_id + 60,
                             consultation_date_time_in_jst,
@@ -621,7 +629,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst: current_date_time, // consultation_date_time_in_jst == current_date_time => まだミーティング時間中
@@ -649,7 +657,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: UserRating {
+                        user_rating: ConsultationInfo {
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,

@@ -388,10 +388,12 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     let req =
                         get_consultation_req_with_exclusive_lock(consultation_req_id, txn).await?;
 
-                    create_consultation(&req, &meeting_date_time, room_name.as_str(), txn).await?;
-                    create_user_rating(&req, &meeting_date_time, txn).await?;
-                    create_settlement(&req, &meeting_date_time, txn).await?;
-                    create_consultant_rating(&req, &meeting_date_time, txn).await?;
+                    let consultation_id =
+                        create_consultation(&req, &meeting_date_time, room_name.as_str(), txn)
+                            .await?;
+                    create_user_rating(consultation_id, txn).await?;
+                    create_settlement(consultation_id, &req, txn).await?;
+                    create_consultant_rating(consultation_id, txn).await?;
 
                     delete_consultation_req_by_consultation_req_id(req.consultation_req_id, txn)
                         .await?;
@@ -479,7 +481,7 @@ async fn create_consultation(
     meeting_date_time: &DateTime<FixedOffset>,
     room_name: &str,
     txn: &DatabaseTransaction,
-) -> Result<(), ErrRespStruct> {
+) -> Result<i64, ErrRespStruct> {
     let active_model = consultation::ActiveModel {
         consultation_id: NotSet,
         user_account_id: Set(req.user_account_id),
@@ -489,32 +491,31 @@ async fn create_consultation(
         user_account_entered_at: NotSet,
         consultant_entered_at: NotSet,
     };
-    let _ = active_model.insert(txn).await.map_err(|e| {
+    let result = active_model.insert(txn).await.map_err(|e| {
         error!("failed to insert consultation (user_account_id: {}, consultant_id: {}, meeting_at: {}, room_name: {}, charge_id: {}): {}", 
             req.user_account_id, req.consultant_id, meeting_date_time, room_name, req.charge_id, e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
     })?;
-    Ok(())
+    Ok(result.consultation_id)
 }
 
 async fn create_user_rating(
-    req: &consultation_req::Model,
-    meeting_date_time: &DateTime<FixedOffset>,
+    consultation_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = user_rating::ActiveModel {
         user_rating_id: NotSet,
-        user_account_id: Set(req.user_account_id),
-        consultant_id: Set(req.consultant_id),
-        meeting_at: Set(*meeting_date_time),
+        consultation_id: Set(consultation_id),
         rating: NotSet,
         rated_at: NotSet,
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
-        error!("failed to insert user_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}", 
-            req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
+        error!(
+            "failed to insert user_rating (consultation_id: {}): {}",
+            consultation_id, e
+        );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
@@ -523,23 +524,23 @@ async fn create_user_rating(
 }
 
 async fn create_settlement(
+    consultation_id: i64,
     req: &consultation_req::Model,
-    meeting_date_time: &DateTime<FixedOffset>,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = settlement::ActiveModel {
         settlement_id: NotSet,
-        user_account_id: Set(req.user_account_id),
-        consultant_id: Set(req.consultant_id),
-        meeting_at: Set(*meeting_date_time),
+        consultation_id: Set(consultation_id),
         charge_id: Set(req.charge_id.clone()),
         fee_per_hour_in_yen: Set(req.fee_per_hour_in_yen),
         platform_fee_rate_in_percentage: Set(req.platform_fee_rate_in_percentage.clone()),
         credit_facilities_expired_at: Set(req.credit_facilities_expired_at),
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
-        error!("failed to insert settlement (user_account_id: {}, consultant_id: {}, meeting_at: {}, req: {:?}): {}",
-            req.user_account_id, req.consultant_id, meeting_date_time, req, e);
+        error!(
+            "failed to insert settlement (consultation_id: {}, req: {:?}): {}",
+            consultation_id, req, e
+        );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
@@ -548,22 +549,20 @@ async fn create_settlement(
 }
 
 async fn create_consultant_rating(
-    req: &consultation_req::Model,
-    meeting_date_time: &DateTime<FixedOffset>,
+    consultation_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = consultant_rating::ActiveModel {
         consultant_rating_id: NotSet,
-        user_account_id: Set(req.user_account_id),
-        consultant_id: Set(req.consultant_id),
-        meeting_at: Set(*meeting_date_time),
-        charge_id: Set(req.charge_id.clone()),
+        consultation_id: Set(consultation_id),
         rating: NotSet,
         rated_at: NotSet,
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
-        error!("failed to insert consultant_rating (user_account_id: {}, consultant_id: {}, meeting_at: {}, charge_id: {}): {}", 
-            req.user_account_id, req.consultant_id, meeting_date_time, req.charge_id, e);
+        error!(
+            "failed to insert consultant_rating (consultation_id: {}): {}",
+            consultation_id, e
+        );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
