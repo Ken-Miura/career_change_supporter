@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::util::session::User;
 
+use super::ConsultationInfo;
+
 pub(crate) async fn post_consultant_rating(
     User { account_id }: User,
     State(pool): State<DatabaseConnection>,
@@ -37,10 +39,10 @@ trait ConsultantRatingOperation {
         user_account_id: i64,
     ) -> Result<bool, ErrResp>;
 
-    async fn find_consultant_rating_by_consultant_rating_id(
+    async fn find_consultation_info_from_consultant_rating(
         &self,
         consultant_rating_id: i64,
-    ) -> Result<Option<ConsultantRating>, ErrResp>;
+    ) -> Result<Option<ConsultationInfo>, ErrResp>;
 
     async fn update_consultant_rating(
         &self,
@@ -53,23 +55,15 @@ trait ConsultantRatingOperation {
     async fn filter_consultant_rating_by_consultant_id(
         &self,
         consultant_id: i64,
-    ) -> Result<Vec<Option<i16>>, ErrResp>;
+    ) -> Result<Vec<i16>, ErrResp>;
 
     async fn update_rating_on_document_if_needed(
         &self,
         consultant_id: i64,
-        averate_rating: i16,
+        averate_rating: f64,
     ) -> Result<(), ErrResp>;
 
-    async fn make_payment_if_needed(&self, charge_id: &str) -> Result<(), ErrResp>;
-}
-
-#[derive(Clone, Debug)]
-struct ConsultantRating {
-    consultant_id: i64,
-    user_account_id: i64,
-    consultation_date_time_in_jst: DateTime<FixedOffset>,
-    charge_id: String,
+    async fn make_payment_if_needed(&self, consultation_id: i64) -> Result<(), ErrResp>;
 }
 
 async fn handle_consultant_rating(
