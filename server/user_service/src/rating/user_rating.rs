@@ -306,12 +306,12 @@ async fn get_consultation_info_from_user_rating(
 
 fn ensure_consultant_ids_are_same(
     consultant_id: i64,
-    consultant_id_in_user_rating: i64,
+    consultant_id_in_consultation_info: i64,
 ) -> Result<(), ErrResp> {
-    if consultant_id != consultant_id_in_user_rating {
+    if consultant_id != consultant_id_in_consultation_info {
         error!(
-            "consultant_id ({}) and consultant_id_in_user_rating ({}) are not same",
-            consultant_id, consultant_id_in_user_rating
+            "consultant_id ({}) and consultant_id_in_consultation_info ({}) are not same",
+            consultant_id, consultant_id_in_consultation_info
         );
         return Err((
             StatusCode::BAD_REQUEST,

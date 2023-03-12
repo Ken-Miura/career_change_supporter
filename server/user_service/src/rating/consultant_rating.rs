@@ -16,7 +16,10 @@ use crate::util;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::User;
 
-use super::{ensure_rating_id_is_positive, ensure_rating_is_in_valid_range, ConsultationInfo};
+use super::{
+    ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
+    ensure_rating_is_in_valid_range, ConsultationInfo,
+};
 
 pub(crate) async fn post_consultant_rating(
     User { account_id }: User,
@@ -177,9 +180,13 @@ async fn handle_consultant_rating(
     ensure_identity_exists(account_id, &op).await?;
     ensure_user_account_is_available(account_id, &op).await?;
 
-    // consultant_rating_idでconsultant_ratingを取得
-    // consultant_ratingのユーザーとaccount_idが一致していることを確認する
-    // consultant_ratingにある相談時間とcurrent_date_timeを用いて評価を実施可能かチェックする
+    let cl = get_consultation_info_from_consultation_rating(consultant_rating_id, &op).await?;
+    ensure_user_account_ids_are_same(account_id, cl.user_account_id)?;
+    ensure_end_of_consultation_date_time_has_passed(
+        &cl.consultation_date_time_in_jst,
+        current_date_time,
+    )?;
+
     // consultant_ratingを更新する
     //   コンサルタントの存在チェック＋ロック -> 仮に存在しない場合はそれ以降の操作は何もしないで成功で終わらせる
     //   consultant_ratingの取得＋ロック
@@ -225,6 +232,43 @@ async fn ensure_user_account_is_available(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::UserIsNotAvailable as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+async fn get_consultation_info_from_consultation_rating(
+    consultation_rating_id: i64,
+    op: &impl ConsultantRatingOperation,
+) -> Result<ConsultationInfo, ErrResp> {
+    let cl = op
+        .find_consultation_info_from_consultant_rating(consultation_rating_id)
+        .await?;
+    match cl {
+        Some(c) => Ok(c),
+        None => Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoConsultationRatingFound as u32,
+            }),
+        )),
+    }
+}
+
+fn ensure_user_account_ids_are_same(
+    user_account_id: i64,
+    user_account_id_in_consultation_info: i64,
+) -> Result<(), ErrResp> {
+    if user_account_id != user_account_id_in_consultation_info {
+        error!(
+            "user_account_id ({}) and user_account_id_in_consultation_info ({}) are not same",
+            user_account_id, user_account_id_in_consultation_info
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoConsultationRatingFound as u32,
             }),
         ));
     }
