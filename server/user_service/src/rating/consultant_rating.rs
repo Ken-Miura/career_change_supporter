@@ -5,11 +5,12 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
-use entity::prelude::Consultation;
+use entity::prelude::{ConsultantRating, Consultation};
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set, TransactionError,
-    TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
+    QueryFilter, Set, TransactionError, TransactionTrait,
 };
+use entity::{consultant_rating, consultation};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
@@ -223,7 +224,40 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         &self,
         consultant_id: i64,
     ) -> Result<Vec<i16>, ErrResp> {
-        todo!()
+        let models = consultation::Entity::find()
+            .filter(consultation::Column::ConsultantId.eq(consultant_id))
+            .find_with_related(ConsultantRating)
+            .filter(consultant_rating::Column::Rating.is_not_null())
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter consultant_rating (consultant_id: {}): {}",
+                    consultant_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        models
+            .into_iter()
+            .map(|m| {
+                // consultationとconsultant_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
+                let cr = m.1.get(0).ok_or_else(|| {
+                    error!(
+                        "failed to find consultant_rating (consultation_id: {})",
+                        m.0.consultation_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                let r = cr.rating.ok_or_else(|| {
+                    error!(
+                        "rating is null (consultant_rating_id: {}, consultant_id: {})",
+                        cr.consultant_rating_id, m.0.consultant_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                Ok(r)
+            })
+            .collect::<Result<Vec<i16>, ErrResp>>()
     }
 
     async fn update_rating_on_document_if_needed(
@@ -288,6 +322,9 @@ async fn handle_consultant_rating(
     )
     .await?;
 
+    let ratings = op
+        .filter_consultant_rating_by_consultant_id(cl.consultant_id)
+        .await?;
     // コンサルタントのDisabledチェック -> Disabledなら何もしない。DisabledでないならOpenSearchにconsultant_ratingの集計結果を投入
     // pay.jpのchargeの更新
     //   settlementテーブルからreceiptテーブルに移す -> settlementテーブルがなければ既に定期ツールが処理済のため、そのままOKを返す
