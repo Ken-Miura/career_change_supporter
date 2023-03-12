@@ -79,7 +79,7 @@ trait ConsultantRatingOperation {
         consultant_id: i64,
     ) -> Result<Vec<i16>, ErrResp>;
 
-    async fn update_rating_on_document_if_needed(
+    async fn update_rating_on_document_if_not_disabled(
         &self,
         consultant_id: i64,
         averate_rating: f64,
@@ -260,7 +260,7 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
             .collect::<Result<Vec<i16>, ErrResp>>()
     }
 
-    async fn update_rating_on_document_if_needed(
+    async fn update_rating_on_document_if_not_disabled(
         &self,
         consultant_id: i64,
         averate_rating: f64,
