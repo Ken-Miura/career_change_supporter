@@ -1,10 +1,11 @@
 // Copyright 2023 Ken Miura
 
+use async_session::serde_json::json;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::opensearch::INDEX_NAME;
+use common::opensearch::{update_document, INDEX_NAME};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::{ConsultantRating, Consultation};
 use entity::sea_orm::{
@@ -364,7 +365,22 @@ async fn update_rating_info_on_document(
     num_of_rated: i32,
     client: OpenSearch,
 ) -> Result<(), ErrRespStruct> {
-    todo!()
+    let script = json!({
+        "doc": {
+            "rating": averate_rating,
+            "num_of_rated": num_of_rated
+        }
+    });
+    update_document(index_name, document_id, &script, &client)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to update rating info into document (document_id: {}, averate_rating: {}, num_of_rated: {})",
+                document_id, averate_rating, num_of_rated
+            );
+            ErrRespStruct { err_resp: e }
+        })?;
+    Ok(())
 }
 
 async fn handle_consultant_rating(
