@@ -17,6 +17,7 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::disabled_check::DisabledCheckOperationImpl;
+use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
 use crate::util::session::User;
 use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock};
 
@@ -83,6 +84,7 @@ trait ConsultantRatingOperation {
         &self,
         consultant_id: i64,
         averate_rating: f64,
+        num_of_rated: i32,
     ) -> Result<(), ErrResp>;
 
     async fn make_payment_if_needed(&self, consultation_id: i64) -> Result<(), ErrResp>;
@@ -264,6 +266,7 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         &self,
         consultant_id: i64,
         averate_rating: f64,
+        num_of_rated: i32,
     ) -> Result<(), ErrResp> {
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -290,6 +293,21 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                         info!("do not update rating on document because consultant (consultant_id: {}) is disabled", consultant_id);
                         return Ok(());
                     }
+
+                    let doc_option = find_document_model_by_user_account_id_with_shared_lock(txn, consultant_id).await?;
+                    let doc = match doc_option {
+                        Some(d) => d,
+                        None => {
+                            // アカウントを排他ロックし、Disabledでないことを確認済みのため、documentが存在しないことはないはず。従ってエラーログとして記録する。
+                            // 一方で、ユーザーにまでこのエラーを返すのは適切でないため、Okとして処理する。
+                            // エラーを返すのが適切ではないと考えたのは次の通り
+                            // - このエラーを解消しないとユーザーは正しく操作を終了できないわけではない
+                            // - 偶発的に起きた問題の場合、次回の評価時に正しく平均評価が反映される
+                            error!("no document found on rate update(consultant_id: {})", consultant_id);
+                            return Ok(());
+                        }
+                    };
+
                     // TODO:
                     Ok(())
                 })
@@ -368,8 +386,9 @@ async fn handle_consultant_rating(
     let ratings = op
         .filter_consultant_rating_by_consultant_id(cl.consultant_id)
         .await?;
+    let num_of_rated = ratings.len() as i32;
     let average_rating = calculate_average_rating(ratings);
-    op.update_rating_on_document_if_not_disabled(cl.consultant_id, average_rating)
+    op.update_rating_on_document_if_not_disabled(cl.consultant_id, average_rating, num_of_rated)
         .await?;
 
     // pay.jpのchargeの更新
