@@ -4,6 +4,7 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
+use common::opensearch::INDEX_NAME;
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::{ConsultantRating, Consultation};
 use entity::sea_orm::{
@@ -268,6 +269,7 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         averate_rating: f64,
         num_of_rated: i32,
     ) -> Result<(), ErrResp> {
+        let index_client = self.index_client.clone();
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
@@ -307,8 +309,7 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                             return Ok(());
                         }
                     };
-
-                    // TODO:
+                    update_rating_info_on_document(INDEX_NAME, doc.document_id.to_string().as_str(), averate_rating, num_of_rated, index_client).await?;
                     Ok(())
                 })
             })
@@ -354,6 +355,16 @@ async fn update_consultant_rating(
         }
     })?;
     Ok(())
+}
+
+async fn update_rating_info_on_document(
+    index_name: &str,
+    document_id: &str,
+    averate_rating: f64,
+    num_of_rated: i32,
+    client: OpenSearch,
+) -> Result<(), ErrRespStruct> {
+    todo!()
 }
 
 async fn handle_consultant_rating(
