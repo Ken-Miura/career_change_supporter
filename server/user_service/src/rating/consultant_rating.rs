@@ -276,14 +276,21 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                             consultant_id,
                         )
                         .await?;
-                    if consultant_option.is_none() {
-                        info!(
-                            "no consultant (consultant_id: {}) found on rating",
-                            consultant_id
-                        );
+                    let consultant = match consultant_option {
+                        Some(c) => c,
+                        None => {
+                            info!(
+                                "no consultant (consultant_id: {}) found on rating",
+                                consultant_id
+                            );
+                            return Ok(());
+                        }
+                    };
+                    if consultant.disabled_at.is_some() {
+                        info!("do not update rating on document because consultant (consultant_id: {}) is disabled", consultant_id);
                         return Ok(());
                     }
-                    // TODO: 
+                    // TODO:
                     Ok(())
                 })
             })
@@ -361,7 +368,10 @@ async fn handle_consultant_rating(
     let ratings = op
         .filter_consultant_rating_by_consultant_id(cl.consultant_id)
         .await?;
-    // コンサルタントのDisabledチェック -> Disabledなら何もしない。DisabledでないならOpenSearchにconsultant_ratingの集計結果を投入
+    let average_rating = calculate_average_rating(ratings);
+    op.update_rating_on_document_if_not_disabled(cl.consultant_id, average_rating)
+        .await?;
+
     // pay.jpのchargeの更新
     //   settlementテーブルからreceiptテーブルに移す -> settlementテーブルがなければ既に定期ツールが処理済のため、そのままOKを返す
     //   pay.jpにcharge更新のリクエスト
@@ -442,4 +452,13 @@ fn ensure_user_account_ids_are_same(
         ));
     }
     Ok(())
+}
+
+fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
+    let size = ratings.len();
+    let mut sum = 0;
+    for rating in ratings {
+        sum += rating as usize
+    }
+    (sum / size) as f64
 }
