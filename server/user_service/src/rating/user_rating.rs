@@ -108,6 +108,7 @@ impl UserRatingOperation for UserRatingOperationImpl {
                 unexpected_err_resp()
             })?;
             Ok(ConsultationInfo {
+                consultation_id: c.consultation_id,
                 user_account_id: c.user_account_id,
                 consultant_id: c.consultant_id,
                 consultation_date_time_in_jst: c.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
@@ -419,6 +420,7 @@ mod tests {
         let consultant_id = 5123;
         let user_rating_id = 51604;
         let rating = 3;
+        let consultation_id = 515;
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 5, 17, 53, 12)
             .unwrap();
@@ -439,6 +441,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -462,6 +465,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -490,6 +494,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -518,6 +523,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -546,6 +552,7 @@ mod tests {
                         consultant_available: false,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -574,6 +581,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id: user_rating_id + 3,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -602,6 +610,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id: consultant_id + 60,
                             consultation_date_time_in_jst,
@@ -630,6 +639,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst: current_date_time, // consultation_date_time_in_jst == current_date_time => まだミーティング時間中
@@ -658,6 +668,7 @@ mod tests {
                         consultant_available: true,
                         user_rating_id,
                         user_rating: ConsultationInfo {
+                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,

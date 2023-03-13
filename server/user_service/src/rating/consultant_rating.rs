@@ -135,6 +135,7 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                 unexpected_err_resp()
             })?;
             Ok(ConsultationInfo {
+                consultation_id: c.consultation_id,
                 user_account_id: c.user_account_id,
                 consultant_id: c.consultant_id,
                 consultation_date_time_in_jst: c.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
@@ -332,6 +333,9 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
     }
 
     async fn make_payment_if_needed(&self, consultation_id: i64) -> Result<(), ErrResp> {
+        // pay.jpのchargeの更新
+        //   settlementテーブルからreceiptテーブルに移す -> settlementテーブルがなければ既に定期ツールが処理済のため、そのままOKを返す
+        //   pay.jpにcharge更新のリクエスト
         todo!()
     }
 }
@@ -418,10 +422,9 @@ async fn handle_consultant_rating(
     op.update_rating_on_document_if_not_disabled(cl.consultant_id, average_rating, num_of_rated)
         .await?;
 
-    // pay.jpのchargeの更新
-    //   settlementテーブルからreceiptテーブルに移す -> settlementテーブルがなければ既に定期ツールが処理済のため、そのままOKを返す
-    //   pay.jpにcharge更新のリクエスト
-    todo!()
+    op.make_payment_if_needed(cl.consultation_id).await?;
+
+    Ok((StatusCode::OK, Json(ConsultantRatingResult {})))
 }
 
 async fn ensure_identity_exists(

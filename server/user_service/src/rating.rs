@@ -12,6 +12,7 @@ pub(crate) mod user_rating;
 
 #[derive(Clone, Debug)]
 struct ConsultationInfo {
+    consultation_id: i64,
     user_account_id: i64,
     consultant_id: i64,
     consultation_date_time_in_jst: DateTime<FixedOffset>,
