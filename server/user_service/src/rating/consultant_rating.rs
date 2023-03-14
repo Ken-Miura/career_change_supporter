@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::opensearch::{update_document, INDEX_NAME};
+use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::{ConsultantRating, Consultation};
 use entity::sea_orm::ActiveValue::NotSet;
@@ -21,8 +22,9 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
+use crate::util::request_consultation::convert_payment_err_to_err_resp;
 use crate::util::session::User;
-use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock};
+use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock, ACCESS_INFO};
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
@@ -363,6 +365,20 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                     };
                     let charge_id = stl.charge_id.clone();
                     insert_receipt(txn, stl, current_date_time).await?;
+
+                    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
+                    let _ = charge_op
+                        .capture_the_charge(charge_id.as_str())
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to capture the charge (charge_id: {}): {}",
+                                charge_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: convert_payment_err_to_err_resp(&e),
+                            }
+                        })?;
                     Ok(())
                 })
             })

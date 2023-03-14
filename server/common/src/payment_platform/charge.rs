@@ -71,6 +71,11 @@ pub trait ChargeOperation {
 
     /// [返金する](https://pay.jp/docs/api/#%E8%BF%94%E9%87%91%E3%81%99%E3%82%8B)
     async fn refund(&self, charge_id: &str, query: RefundQuery) -> Result<Charge, Error>;
+
+    /// [支払い処理を確定する](https://pay.jp/docs/api/#%E6%94%AF%E6%89%95%E3%81%84%E5%87%A6%E7%90%86%E3%82%92%E7%A2%BA%E5%AE%9A%E3%81%99%E3%82%8B)
+    ///
+    /// 上記APIの仕様では、払う料金の一部を指定して支払い確定ができる。しかし、本サービスでは利用しないため、そのパラメータを指定可能なAPIにはしない。
+    async fn capture_the_charge(&self, charge_id: &str) -> Result<Charge, Error>;
 }
 
 /// [支払いリストを取得](https://pay.jp/docs/api/?shell#%E6%94%AF%E6%89%95%E3%81%84%E3%83%AA%E3%82%B9%E3%83%88%E3%82%92%E5%8F%96%E5%BE%97)の際に渡すクエリ
@@ -738,6 +743,34 @@ impl<'a> ChargeOperation for ChargeOperationImpl<'a> {
         let client = reqwest::Client::new();
         let client = with_querystring(client.post(operation_url), &query)?;
         let resp = client
+            .basic_auth(username, Some(password))
+            .send()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        let status_code = resp.status();
+        if status_code.is_client_error() || status_code.is_server_error() {
+            let err = resp
+                .json::<ErrorInfo>()
+                .await
+                .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+            return Err(Error::ApiError(Box::new(err)));
+        };
+        let charge = resp
+            .json::<Charge>()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        return Ok(charge);
+    }
+
+    async fn capture_the_charge(&self, charge_id: &str) -> Result<Charge, Error> {
+        tracing::info!("capture_the_charge: charge_id={}", charge_id);
+        let operation_url =
+            self.access_info.base_url() + CHARGES_OPERATION_PATH + "/" + charge_id + "/capture";
+        let username = self.access_info.username();
+        let password = self.access_info.password();
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(operation_url)
             .basic_auth(username, Some(password))
             .send()
             .await
