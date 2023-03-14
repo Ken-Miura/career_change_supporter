@@ -10,9 +10,9 @@ use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::{ConsultantRating, Consultation};
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
-    QueryFilter, Set, TransactionError, TransactionTrait,
+    QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
-use entity::{consultant_rating, consultation};
+use entity::{consultant_rating, consultation, settlement};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
@@ -341,10 +341,41 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         consultation_id: i64,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        // pay.jpのchargeの更新
-        //   settlementテーブルからreceiptテーブルに移す -> settlementテーブルがなければ既に定期ツールが処理済のため、そのままOKを返す
-        //   pay.jpにcharge更新のリクエスト
-        todo!()
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let settlement_option = find_settlement_by_consultation_id_with_exclusive_lock(
+                        txn,
+                        consultation_id,
+                    )
+                    .await?;
+                    let stl = match settlement_option {
+                        Some(s) => s,
+                        None => {
+                            // 特定の期間ユーザーが評価をせず、定期実行ツールによって自動決済されている場合、既にsettlementはない
+                            info!(
+                                "no settlement found (consultation_id: {}) on rating",
+                                consultation_id
+                            );
+                            return Ok(());
+                        }
+                    };
+                    
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to make_payment_if_needed: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
 }
 
@@ -393,6 +424,26 @@ async fn update_rating_info_on_document(
             ErrRespStruct { err_resp: e }
         })?;
     Ok(())
+}
+
+async fn find_settlement_by_consultation_id_with_exclusive_lock(
+    txn: &DatabaseTransaction,
+    consultation_id: i64,
+) -> Result<Option<settlement::Model>, ErrRespStruct> {
+    let model = entity::prelude::Settlement::find_by_id(consultation_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find settlement (consultation_id): {}): {}",
+                consultation_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model)
 }
 
 async fn handle_consultant_rating(
