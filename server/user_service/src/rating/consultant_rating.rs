@@ -89,7 +89,11 @@ trait ConsultantRatingOperation {
         num_of_rated: i32,
     ) -> Result<(), ErrResp>;
 
-    async fn make_payment_if_needed(&self, consultation_id: i64) -> Result<(), ErrResp>;
+    async fn make_payment_if_needed(
+        &self,
+        consultation_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct ConsultantRatingOperationImpl {
@@ -332,7 +336,11 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         Ok(())
     }
 
-    async fn make_payment_if_needed(&self, consultation_id: i64) -> Result<(), ErrResp> {
+    async fn make_payment_if_needed(
+        &self,
+        consultation_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
         // pay.jpのchargeの更新
         //   settlementテーブルからreceiptテーブルに移す -> settlementテーブルがなければ既に定期ツールが処理済のため、そのままOKを返す
         //   pay.jpにcharge更新のリクエスト
@@ -422,7 +430,8 @@ async fn handle_consultant_rating(
     op.update_rating_on_document_if_not_disabled(cl.consultant_id, average_rating, num_of_rated)
         .await?;
 
-    op.make_payment_if_needed(cl.consultation_id).await?;
+    op.make_payment_if_needed(cl.consultation_id, *current_date_time)
+        .await?;
 
     Ok((StatusCode::OK, Json(ConsultantRatingResult {})))
 }
