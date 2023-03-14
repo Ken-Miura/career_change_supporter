@@ -8,11 +8,12 @@ use chrono::{DateTime, FixedOffset, Utc};
 use common::opensearch::{update_document, INDEX_NAME};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::{ConsultantRating, Consultation};
+use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
     QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
-use entity::{consultant_rating, consultation, settlement};
+use entity::{consultant_rating, consultation, receipt, settlement};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
@@ -360,7 +361,8 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                             return Ok(());
                         }
                     };
-                    
+                    let charge_id = stl.charge_id.clone();
+                    insert_receipt(txn, stl, current_date_time).await?;
                     Ok(())
                 })
             })
@@ -444,6 +446,32 @@ async fn find_settlement_by_consultation_id_with_exclusive_lock(
             }
         })?;
     Ok(model)
+}
+
+async fn insert_receipt(
+    txn: &DatabaseTransaction,
+    model: settlement::Model,
+    current_date_time: DateTime<FixedOffset>,
+) -> Result<(), ErrRespStruct> {
+    let consultation_id = model.consultation_id;
+    let active_model = receipt::ActiveModel {
+        receipt_id: NotSet,
+        consultation_id: Set(model.consultation_id),
+        charge_id: Set(model.charge_id),
+        fee_per_hour_in_yen: Set(model.fee_per_hour_in_yen),
+        platform_fee_rate_in_percentage: Set(model.platform_fee_rate_in_percentage),
+        settled_at: Set(current_date_time),
+    };
+    let _ = active_model.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert receipt (consultation_id: {}): {}",
+            consultation_id, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 async fn handle_consultant_rating(
