@@ -13,8 +13,7 @@ mod fee_per_hour_in_yen;
 mod identity;
 mod login;
 mod logout;
-mod password_change_req;
-mod password_update;
+mod password;
 mod profile;
 mod rating;
 mod refresh;
@@ -41,8 +40,8 @@ use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
 use crate::login::post_login;
 use crate::logout::post_logout;
-use crate::password_change_req::post_password_change_req;
-use crate::password_update::post_password_update;
+use crate::password::change_req::post_password_change_req;
+use crate::password::update::post_password_update;
 use crate::profile::get_profile;
 use crate::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,

@@ -338,7 +338,7 @@ mod tests {
 
     use crate::{
         err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired},
-        password_update::{
+        password::update::{
             create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
             PasswordUpdateResult, SUBJECT,
         },
