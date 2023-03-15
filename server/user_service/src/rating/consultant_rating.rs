@@ -615,3 +615,124 @@ fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
     }
     (sum / size) as f64
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::rating::ConsultationInfo;
+
+    use super::{handle_consultant_rating, ConsultantRatingOperation, ConsultantRatingResult};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<ConsultantRatingResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        consultant_rating_id: i64,
+        rating: i16,
+        current_date_time: DateTime<FixedOffset>,
+        op: ConsultantRatingOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct ConsultantRatingOperationMock {}
+
+    #[async_trait]
+    impl ConsultantRatingOperation for ConsultantRatingOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn check_if_user_account_is_available(
+            &self,
+            user_account_id: i64,
+        ) -> Result<bool, ErrResp> {
+            todo!()
+        }
+
+        async fn find_consultation_info_from_consultant_rating(
+            &self,
+            consultant_rating_id: i64,
+        ) -> Result<Option<ConsultationInfo>, ErrResp> {
+            todo!()
+        }
+
+        async fn update_consultant_rating(
+            &self,
+            consultant_id: i64,
+            consultant_rating_id: i64,
+            rating: i16,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+
+        async fn filter_consultant_rating_by_consultant_id(
+            &self,
+            consultant_id: i64,
+        ) -> Result<Vec<i16>, ErrResp> {
+            todo!()
+        }
+
+        async fn update_rating_on_document_if_not_disabled(
+            &self,
+            consultant_id: i64,
+            averate_rating: f64,
+            num_of_rated: i32,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+
+        async fn make_payment_if_needed(
+            &self,
+            consultation_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_consultant_rating_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let consultant_rating_id = test_case.input.consultant_rating_id;
+            let rating = test_case.input.rating;
+            let current_date_time = test_case.input.current_date_time;
+            let op = test_case.input.op.clone();
+
+            let result = handle_consultant_rating(
+                account_id,
+                consultant_rating_id,
+                rating,
+                &current_date_time,
+                op,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
