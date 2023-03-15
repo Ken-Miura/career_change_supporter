@@ -956,7 +956,7 @@ mod tests {
     use common::{ApiError, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::consultation_request_acceptance::{
+    use crate::consultation_request::acceptance::{
         create_text_for_consultant, create_text_for_user, CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT,
     };
     use crate::err::{unexpected_err_resp, Code};

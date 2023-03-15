@@ -123,7 +123,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        consultation_requests::NUM_OF_CONSULTATION_REQUESTS,
+        consultation_request::list::NUM_OF_CONSULTATION_REQUESTS,
         util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     };
 

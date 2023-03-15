@@ -12,9 +12,9 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
 import { createYearList } from '@/util/personalized/request-consultation/YearList'
 import { createMonthList } from '@/util/personalized/request-consultation/MonthList'
-import { postRequestConsultation } from '@/util/personalized/request-consultation/PostRequestConsultation'
+import { postBeginRequestConsultation } from '@/util/personalized/request-consultation/PostBeginRequestConsultation'
 import { postFinishRequestConsultation } from '@/util/personalized/request-consultation/PostFinishRequestConsultation'
-import { PostRequestConsultationResp } from '@/util/personalized/request-consultation/PostRequestConsultationResp'
+import { PostBeginRequestConsultationResp } from '@/util/personalized/request-consultation/PostBeginRequestConsultationResp'
 import { PostFinishRequestConsultationResp } from '@/util/personalized/request-consultation/PostFinishRequestConsultationResp'
 
 let routeParam = ''
@@ -40,7 +40,7 @@ jest.mock('@/util/personalized/request-consultation/useGetFeePerHourInYenForAppl
 }))
 
 const requestConsultationDoneMock = ref(true)
-const startRequestConsultationMock = jest.fn()
+const beginRequestConsultationMock = jest.fn()
 const finishRequestConsultationMock = jest.fn()
 const disabledMock = ref(false)
 const disableBtnMock = jest.fn()
@@ -48,7 +48,7 @@ const enableBtnMock = jest.fn()
 jest.mock('@/util/personalized/request-consultation/useRequestConsultationDone', () => ({
   useRequestConsultationDone: () => ({
     requestConsultationDone: requestConsultationDoneMock,
-    startRequestConsultation: startRequestConsultationMock,
+    beginRequestConsultation: beginRequestConsultationMock,
     finishRequestConsultation: finishRequestConsultationMock,
     disabled: disabledMock,
     disableBtn: disableBtnMock,
@@ -162,8 +162,8 @@ jest.mock('@/util/personalized/request-consultation/CurrentDateTime', () => ({
   }
 }))
 
-jest.mock('@/util/personalized/request-consultation/PostRequestConsultation')
-const postRequestConsultationMock = postRequestConsultation as jest.MockedFunction<typeof postRequestConsultation>
+jest.mock('@/util/personalized/request-consultation/PostBeginRequestConsultation')
+const postRequestConsultationMock = postBeginRequestConsultation as jest.MockedFunction<typeof postBeginRequestConsultation>
 
 jest.mock('@/util/personalized/request-consultation/PostFinishRequestConsultation')
 const postFinishRequestConsultationMock = postFinishRequestConsultation as jest.MockedFunction<typeof postFinishRequestConsultation>
@@ -175,7 +175,7 @@ describe('RequestConsultationPage.vue', () => {
     getFeePerHourInYenForApplicationDoneMock.value = true
     getFeePerHourInYenForApplicationFuncMock.mockReset()
     requestConsultationDoneMock.value = true
-    startRequestConsultationMock.mockReset()
+    beginRequestConsultationMock.mockReset()
     finishRequestConsultationMock.mockReset()
     disabledMock.value = false
     disableBtnMock.mockReset()
@@ -484,7 +484,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -542,7 +542,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -599,7 +599,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -656,7 +656,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -713,7 +713,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -770,7 +770,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -834,7 +834,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -898,7 +898,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -962,7 +962,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -1026,7 +1026,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
@@ -1084,12 +1084,12 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(0)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(0)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
-  it(`displays ${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} when ${Code.UNAUTHORIZED} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} when ${Code.UNAUTHORIZED} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1143,12 +1143,12 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
-  it(`displays ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE} when ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE} when ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1202,12 +1202,12 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
-  it(`displays ${Message.REACH_PAYMENT_PLATFORM_RATE_LIMIT_MESSAGE} when ${Code.REACH_PAYMENT_PLATFORM_RATE_LIMIT} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.REACH_PAYMENT_PLATFORM_RATE_LIMIT_MESSAGE} when ${Code.REACH_PAYMENT_PLATFORM_RATE_LIMIT} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(429, ApiError.create(Code.REACH_PAYMENT_PLATFORM_RATE_LIMIT))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1261,12 +1261,12 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
-  it(`displays ${Message.FEE_PER_HOUR_IN_YEN_WAS_UPDATED_MESSAGE} when ${Code.FEE_PER_HOUR_IN_YEN_WAS_UPDATED} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.FEE_PER_HOUR_IN_YEN_WAS_UPDATED_MESSAGE} when ${Code.FEE_PER_HOUR_IN_YEN_WAS_UPDATED} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.FEE_PER_HOUR_IN_YEN_WAS_UPDATED))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1320,12 +1320,12 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
-  it(`displays ${Message.ACCOUNT_DISABLED_MESSAGE} when ${Code.ACCOUNT_DISABLED} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.ACCOUNT_DISABLED_MESSAGE} when ${Code.ACCOUNT_DISABLED} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ACCOUNT_DISABLED))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1379,14 +1379,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   // 通常操作で発生し得ないが、ユーザーが無理やりリクエストを偽造することで可能
   // そのため、仕様を示す意味でテストを記載
-  it(`displays ${Message.NON_POSITIVE_CONSULTANT_ID_MESSAGE} when ${Code.NON_POSITIVE_CONSULTANT_ID} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.NON_POSITIVE_CONSULTANT_ID_MESSAGE} when ${Code.NON_POSITIVE_CONSULTANT_ID} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NON_POSITIVE_CONSULTANT_ID))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1440,14 +1440,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   // 通常操作で発生し得ないが、ユーザーが無理やりリクエストを偽造することで可能
   // そのため、仕様を示す意味でテストを記載
-  it(`displays ${Message.DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE} when ${Code.DUPLICATE_DATE_TIME_CANDIDATES} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE} when ${Code.DUPLICATE_DATE_TIME_CANDIDATES} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.DUPLICATE_DATE_TIME_CANDIDATES))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1501,14 +1501,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   // 通常操作で発生し得ないが、ユーザーが無理やりリクエストを偽造することで可能
   // そのため、仕様を示す意味でテストを記載
-  it(`displays ${Message.ILLEGAL_CONSULTATION_DATE_TIME_MESSAGE} when ${Code.ILLEGAL_CONSULTATION_DATE_TIME} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.ILLEGAL_CONSULTATION_DATE_TIME_MESSAGE} when ${Code.ILLEGAL_CONSULTATION_DATE_TIME} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CONSULTATION_DATE_TIME))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1562,14 +1562,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   // 通常操作で発生し得ないが、ユーザーが無理やりリクエストを偽造することで可能
   // そのため、仕様を示す意味でテストを記載
-  it(`displays ${Message.ILLEGAL_CONSULTATION_HOUR_MESSAGE} when ${Code.ILLEGAL_CONSULTATION_HOUR} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.ILLEGAL_CONSULTATION_HOUR_MESSAGE} when ${Code.ILLEGAL_CONSULTATION_HOUR} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ILLEGAL_CONSULTATION_HOUR))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1623,14 +1623,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   // 通常操作で発生し得ないが、ユーザーが無理やりリクエストを偽造することで可能
   // そのため、仕様を示す意味でテストを記載
-  it(`displays ${Message.INVALID_CONSULTATION_DATE_TIME_MESSAGE} when ${Code.INVALID_CONSULTATION_DATE_TIME} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.INVALID_CONSULTATION_DATE_TIME_MESSAGE} when ${Code.INVALID_CONSULTATION_DATE_TIME} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_CONSULTATION_DATE_TIME))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1684,14 +1684,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   // 通常操作で発生し得ないが、ユーザーが無理やりリクエストを偽造することで可能
   // そのため、仕様を示す意味でテストを記載
-  it(`displays ${Message.NO_IDENTITY_REGISTERED_MESSAGE} when ${Code.NO_IDENTITY_REGISTERED} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.NO_IDENTITY_REGISTERED_MESSAGE} when ${Code.NO_IDENTITY_REGISTERED} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_IDENTITY_REGISTERED))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1745,14 +1745,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   // 通常操作で発生し得ないが、ユーザーが無理やりリクエストを偽造することで可能
   // そのため、仕様を示す意味でテストを記載
-  it(`displays ${Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE} when ${Code.CONSULTANT_IS_NOT_AVAILABLE} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE} when ${Code.CONSULTANT_IS_NOT_AVAILABLE} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.CONSULTANT_IS_NOT_AVAILABLE))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1806,12 +1806,12 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
-  it(`displays ${Message.EXCEED_MAX_ANNUAL_REWARDS_MESSAGE} when ${Code.EXCEED_MAX_ANNUAL_REWARDS} is returned on postRequestConsultation`, async () => {
+  it(`displays ${Message.EXCEED_MAX_ANNUAL_REWARDS_MESSAGE} when ${Code.EXCEED_MAX_ANNUAL_REWARDS} is returned on postBeginRequestConsultation`, async () => {
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.EXCEED_MAX_ANNUAL_REWARDS))
     postRequestConsultationMock.mockResolvedValue(apiErrResp)
     payJpMock = createPayJpMockObject
@@ -1865,13 +1865,13 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   it(`displays ${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} when ${Code.UNAUTHORIZED} is returned on postFinishRequestConsultation`, async () => {
-    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    const rcResp = PostBeginRequestConsultationResp.create(dummyChargeId)
     postRequestConsultationMock.mockResolvedValue(rcResp)
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     postFinishRequestConsultationMock.mockResolvedValue(apiErrResp)
@@ -1926,14 +1926,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   it(`displays ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE} when ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on postFinishRequestConsultation`, async () => {
-    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    const rcResp = PostBeginRequestConsultationResp.create(dummyChargeId)
     postRequestConsultationMock.mockResolvedValue(rcResp)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
     postFinishRequestConsultationMock.mockResolvedValue(apiErrResp)
@@ -1988,14 +1988,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   it(`displays ${Message.NO_IDENTITY_REGISTERED_MESSAGE} when ${Code.NO_IDENTITY_REGISTERED} is returned on postFinishRequestConsultation`, async () => {
-    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    const rcResp = PostBeginRequestConsultationResp.create(dummyChargeId)
     postRequestConsultationMock.mockResolvedValue(rcResp)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_IDENTITY_REGISTERED))
     postFinishRequestConsultationMock.mockResolvedValue(apiErrResp)
@@ -2050,14 +2050,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   it(`displays ${Message.ACCOUNT_DISABLED_MESSAGE} when ${Code.ACCOUNT_DISABLED} is returned on postFinishRequestConsultation`, async () => {
-    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    const rcResp = PostBeginRequestConsultationResp.create(dummyChargeId)
     postRequestConsultationMock.mockResolvedValue(rcResp)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ACCOUNT_DISABLED))
     postFinishRequestConsultationMock.mockResolvedValue(apiErrResp)
@@ -2112,14 +2112,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   it(`displays ${Message.CONSULTANT_IS_NOT_AVAILABLE_MESSAGE} when ${Code.CONSULTANT_IS_NOT_AVAILABLE} is returned on postFinishRequestConsultation`, async () => {
-    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    const rcResp = PostBeginRequestConsultationResp.create(dummyChargeId)
     postRequestConsultationMock.mockResolvedValue(rcResp)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.CONSULTANT_IS_NOT_AVAILABLE))
     postFinishRequestConsultationMock.mockResolvedValue(apiErrResp)
@@ -2174,14 +2174,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   it(`displays ${Message.THREE_D_SECURE_ERROR_MESSAGE} when ${Code.THREE_D_SECURE_ERROR} is returned on postFinishRequestConsultation`, async () => {
-    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    const rcResp = PostBeginRequestConsultationResp.create(dummyChargeId)
     postRequestConsultationMock.mockResolvedValue(rcResp)
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.THREE_D_SECURE_ERROR))
     postFinishRequestConsultationMock.mockResolvedValue(apiErrResp)
@@ -2236,14 +2236,14 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(0)
   })
 
   it('moves to /request-consultation-success when request finishes successfully', async () => {
-    const rcResp = PostRequestConsultationResp.create(dummyChargeId)
+    const rcResp = PostBeginRequestConsultationResp.create(dummyChargeId)
     postRequestConsultationMock.mockResolvedValue(rcResp)
     const frcResp = PostFinishRequestConsultationResp.create()
     postFinishRequestConsultationMock.mockResolvedValue(frcResp)
@@ -2294,7 +2294,7 @@ describe('RequestConsultationPage.vue', () => {
 
     expect(disableBtnMock).toHaveBeenCalledTimes(1)
     expect(enableBtnMock).toHaveBeenCalledTimes(1)
-    expect(startRequestConsultationMock).toHaveBeenCalledTimes(1)
+    expect(beginRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(postRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(finishRequestConsultationMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledTimes(1)

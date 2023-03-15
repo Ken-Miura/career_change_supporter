@@ -914,7 +914,9 @@ mod tests {
     use crate::err::Code::NoNameFound;
     use crate::err::Code::NotJpegExtension;
     use crate::err::Code::{self, DataParseFailure};
-    use crate::identity::{IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
+    use crate::personal_info::profile::identity::{
+        IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
+    };
     use crate::util::tests::SendMailMock;
     use async_session::serde_json;
     use axum::http::StatusCode;
@@ -930,7 +932,8 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        identity::convert_jpeg_to_png, util::validator::identity_validator::MIN_AGE_REQUIREMENT,
+        personal_info::profile::identity::convert_jpeg_to_png,
+        util::validator::identity_validator::MIN_AGE_REQUIREMENT,
     };
 
     use super::{

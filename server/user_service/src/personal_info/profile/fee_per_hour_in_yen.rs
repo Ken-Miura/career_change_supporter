@@ -252,7 +252,7 @@ mod tests {
 
     use crate::{
         err::Code,
-        fee_per_hour_in_yen::{
+        personal_info::profile::fee_per_hour_in_yen::{
             FeePerHourInYenResult, MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
         },
     };

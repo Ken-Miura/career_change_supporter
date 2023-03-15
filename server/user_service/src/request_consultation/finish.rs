@@ -703,7 +703,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::finish_request_consultation::extract_candidates_date_time_in_jst;
+    use crate::request_consultation::finish::extract_candidates_date_time_in_jst;
     use crate::util::charge_metadata_key::{
         KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,

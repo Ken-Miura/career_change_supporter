@@ -229,7 +229,7 @@ mod tests {
 
     use crate::{
         err::Code::ReachPasswordChangeReqLimit,
-        password_change_req::{
+        password::change_req::{
             create_text, handle_password_change_req, MAX_NUM_OF_PWD_CHANGE_REQ, SUBJECT,
         },
         util::tests::SendMailMock,

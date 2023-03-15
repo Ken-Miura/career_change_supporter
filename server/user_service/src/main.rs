@@ -2,63 +2,52 @@
 
 mod accounts;
 mod agreement;
-mod bank_account;
-mod career;
-mod consultant_detail;
-mod consultants_search;
-mod consultation_request_acceptance;
-mod consultation_request_detail;
-mod consultation_request_rejection;
-mod consultation_requests;
+
+mod consultant;
+mod consultation_request;
 mod consultation_room;
 mod consultations;
 mod err;
-mod fee_per_hour_in_yen;
-mod fee_per_hour_in_yen_for_application;
-mod finish_request_consultation;
-mod identity;
 mod login;
 mod logout;
-mod password_change_req;
-mod password_update;
-mod profile;
+mod password;
+mod personal_info;
 mod rating;
 mod refresh;
 mod request_consultation;
-mod rewards;
 mod temp_accounts;
 mod util;
 
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
-use crate::bank_account::post_bank_account;
-use crate::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
-use crate::career::{delete, get, post};
-use crate::consultant_detail::get_consultant_detail;
-use crate::consultants_search::post_consultants_search;
-use crate::consultation_request_acceptance::post_consultation_request_acceptance;
-use crate::consultation_request_detail::get_consultation_request_detail;
-use crate::consultation_request_rejection::post_consultation_request_rejection;
-use crate::consultation_requests::get_consultation_requests;
+use crate::consultant::detail::get_consultant_detail;
+use crate::consultant::search::post_consultants_search;
+use crate::consultation_request::acceptance::post_consultation_request_acceptance;
+use crate::consultation_request::detail::get_consultation_request_detail;
+use crate::consultation_request::list::get_consultation_requests;
+use crate::consultation_request::rejection::post_consultation_request_rejection;
 use crate::consultation_room::consultant_side_info::get_consultant_side_info;
 use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
-use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
-use crate::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
-use crate::finish_request_consultation::post_finish_request_consultation;
-use crate::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
 use crate::login::post_login;
 use crate::logout::post_logout;
-use crate::password_change_req::post_password_change_req;
-use crate::password_update::post_password_update;
-use crate::profile::get_profile;
+use crate::password::change_req::post_password_change_req;
+use crate::password::update::post_password_update;
+use crate::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
+use crate::personal_info::profile::career::{delete, get, post};
+use crate::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
+use crate::personal_info::profile::get_profile;
+use crate::personal_info::profile::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
+use crate::personal_info::rewards::bank_account::post_bank_account;
+use crate::personal_info::rewards::get_reward;
 use crate::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,
 };
 use crate::refresh::get_refresh;
-use crate::request_consultation::post_request_consultation;
-use crate::rewards::get_reward;
+use crate::request_consultation::begin::post_begin_request_consultation;
+use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
+use crate::request_consultation::finish::post_finish_request_consultation;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
@@ -233,7 +222,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultants-search", post(post_consultants_search))
                 .route("/consultant-detail", get(get_consultant_detail))
                 .route("/fee-per-hour-in-yen-for-application", get(get_fee_per_hour_in_yen_for_application))
-                .route("/request-consultation", post(post_request_consultation))
+                .route("/begin-request-consultation", post(post_begin_request_consultation))
                 .route("/finish-request-consultation", post(post_finish_request_consultation))
                 .route("/consultation-requests", get(get_consultation_requests))
                 .route("/consultation-request-detail", get(get_consultation_request_detail))

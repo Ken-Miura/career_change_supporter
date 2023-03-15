@@ -1,4 +1,6 @@
-// Copyright 2021 Ken Miura
+// Copyright 2023 Ken Miura
+
+pub(crate) mod bank_account;
 
 use axum::async_trait;
 use axum::{extract::State, http::StatusCode, Json};
@@ -407,7 +409,7 @@ mod tests {
     };
 
     use crate::err::Code;
-    use crate::rewards::{handle_reward_req, Transfer};
+    use crate::personal_info::rewards::{handle_reward_req, Transfer};
     use crate::util::bank_account::BankAccount;
     use crate::util::rewards::{
         create_start_and_end_date_time_of_current_month,
