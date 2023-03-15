@@ -11,7 +11,6 @@ mod consultations;
 mod err;
 mod fee_per_hour_in_yen;
 mod fee_per_hour_in_yen_for_application;
-mod finish_request_consultation;
 mod identity;
 mod login;
 mod logout;
@@ -41,7 +40,6 @@ use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
 use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
-use crate::finish_request_consultation::post_finish_request_consultation;
 use crate::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
 use crate::login::post_login;
 use crate::logout::post_logout;
@@ -53,7 +51,8 @@ use crate::rating::{
     user_rating::post_user_rating,
 };
 use crate::refresh::get_refresh;
-use crate::request_consultation::post_request_consultation;
+use crate::request_consultation::begin::post_request_consultation;
+use crate::request_consultation::finish::post_finish_request_consultation;
 use crate::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
