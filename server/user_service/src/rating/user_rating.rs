@@ -357,7 +357,7 @@ mod tests {
         account_id: i64,
         consultant_available: bool,
         user_rating_id: i64,
-        user_rating: ConsultationInfo,
+        consultation_info: ConsultationInfo,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
         already_exists: bool,
@@ -390,7 +390,7 @@ mod tests {
             if self.user_rating_id != user_rating_id {
                 return Ok(None);
             }
-            Ok(Some(self.user_rating.clone()))
+            Ok(Some(self.consultation_info.clone()))
         }
 
         async fn update_user_rating(
@@ -408,7 +408,7 @@ mod tests {
                     }),
                 ));
             }
-            assert_eq!(self.user_rating.user_account_id, user_account_id);
+            assert_eq!(self.consultation_info.user_account_id, user_account_id);
             assert_eq!(self.user_rating_id, user_rating_id);
             assert_eq!(self.rating, rating);
             assert_eq!(self.current_date_time, current_date_time);
@@ -440,7 +440,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,
@@ -464,7 +464,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,
@@ -493,7 +493,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,
@@ -522,7 +522,7 @@ mod tests {
                         account_id: consultant_id + 97,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,
@@ -551,7 +551,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: false,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,
@@ -580,7 +580,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id: user_rating_id + 3,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,
@@ -609,7 +609,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id: consultant_id + 60,
@@ -638,7 +638,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,
@@ -667,7 +667,7 @@ mod tests {
                         account_id: consultant_id,
                         consultant_available: true,
                         user_rating_id,
-                        user_rating: ConsultationInfo {
+                        consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
                             consultant_id,

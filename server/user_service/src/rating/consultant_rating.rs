@@ -618,12 +618,14 @@ fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use common::{ApiError, ErrResp, RespResult};
     use once_cell::sync::Lazy;
 
-    use crate::rating::ConsultationInfo;
+    use crate::rating::consultant_rating::calculate_average_rating;
+    use crate::{err::Code, rating::ConsultationInfo};
 
     use super::{handle_consultant_rating, ConsultantRatingOperation, ConsultantRatingResult};
 
@@ -644,26 +646,45 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct ConsultantRatingOperationMock {}
+    struct ConsultantRatingOperationMock {
+        account_id: i64,
+        user_account_available: bool,
+        consultant_rating_id: i64,
+        consultation_info: ConsultationInfo,
+        rating: i16,
+        current_date_time: DateTime<FixedOffset>,
+        already_exists: bool,
+        ratings: Vec<i16>,
+    }
 
     #[async_trait]
     impl ConsultantRatingOperation for ConsultantRatingOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            todo!()
+            if self.account_id != account_id {
+                return Ok(false);
+            }
+            Ok(true)
         }
 
         async fn check_if_user_account_is_available(
             &self,
             user_account_id: i64,
         ) -> Result<bool, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, user_account_id);
+            if !self.user_account_available {
+                return Ok(false);
+            }
+            Ok(true)
         }
 
         async fn find_consultation_info_from_consultant_rating(
             &self,
             consultant_rating_id: i64,
         ) -> Result<Option<ConsultationInfo>, ErrResp> {
-            todo!()
+            if self.consultant_rating_id != consultant_rating_id {
+                return Ok(None);
+            }
+            Ok(Some(self.consultation_info.clone()))
         }
 
         async fn update_consultant_rating(
@@ -673,14 +694,27 @@ mod tests {
             rating: i16,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            todo!()
+            if self.already_exists {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultantHasAlreadyBeenRated as u32,
+                    }),
+                ));
+            }
+            assert_eq!(self.consultation_info.consultant_id, consultant_id);
+            assert_eq!(self.consultant_rating_id, consultant_rating_id);
+            assert_eq!(self.rating, rating);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
         }
 
         async fn filter_consultant_rating_by_consultant_id(
             &self,
             consultant_id: i64,
         ) -> Result<Vec<i16>, ErrResp> {
-            todo!()
+            assert_eq!(self.consultation_info.consultant_id, consultant_id);
+            Ok(self.ratings.clone())
         }
 
         async fn update_rating_on_document_if_not_disabled(
@@ -689,7 +723,13 @@ mod tests {
             averate_rating: f64,
             num_of_rated: i32,
         ) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.consultation_info.consultant_id, consultant_id);
+            let ratings = self.ratings.clone();
+            assert_eq!(ratings.len() as i32, num_of_rated);
+            let average = calculate_average_rating(ratings);
+            let diff = (averate_rating - average).abs();
+            assert!(diff < f64::EPSILON);
+            Ok(())
         }
 
         async fn make_payment_if_needed(
@@ -697,7 +737,9 @@ mod tests {
             consultation_id: i64,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.consultation_info.consultation_id, consultation_id);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
         }
     }
 
