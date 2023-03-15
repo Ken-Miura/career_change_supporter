@@ -4,7 +4,7 @@ use std::{collections::HashSet, fmt::Display};
 
 use once_cell::sync::Lazy;
 
-use crate::consultants_search::SortParam;
+use crate::consultant::consultants_search::SortParam;
 
 static KEY_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     let mut set: HashSet<String> = HashSet::with_capacity(2);
@@ -53,7 +53,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        consultants_search::SortParam,
+        consultant::consultants_search::SortParam,
         util::validator::tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
     };
 

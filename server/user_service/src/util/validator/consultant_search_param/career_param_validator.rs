@@ -5,7 +5,7 @@ use std::{collections::HashSet, error::Error, fmt::Display};
 use once_cell::sync::Lazy;
 
 use crate::{
-    consultants_search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
+    consultant::consultants_search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
     util::{
         validator::MAX_ANNUAL_INCOME_IN_MAN_YEN,
         years_of_service_period::{
@@ -479,7 +479,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        consultants_search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
+        consultant::consultants_search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
         util::validator::{
             consultant_search_param::career_param_validator::{
                 validate_career_param, validate_years_of_service,

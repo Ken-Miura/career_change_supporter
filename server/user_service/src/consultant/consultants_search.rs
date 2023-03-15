@@ -13,18 +13,13 @@ use tracing::{error, info};
 
 use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
-use crate::util::{self, consultation_request::round_to_one_decimal_places};
-use crate::{
-    err::Code,
-    util::{
-        session::User,
-        validator::consultant_search_param::{
-            career_param_validator::{validate_career_param, CareerParamValidationError},
-            fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param,
-            sort_param_validator::validate_sort_param,
-        },
-    },
+use crate::util::validator::consultant_search_param::{
+    career_param_validator::{validate_career_param, CareerParamValidationError},
+    fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param,
+    sort_param_validator::validate_sort_param,
 };
+use crate::util::{self, consultation_request::round_to_one_decimal_places};
+use crate::{err::Code, util::session::User};
 
 pub(crate) const VALID_SIZE: i64 = 20;
 
