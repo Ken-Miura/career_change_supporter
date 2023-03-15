@@ -3,7 +3,7 @@
 use std::fmt::Display;
 
 use crate::{
-    consultant::consultants_search::FeePerHourInYenParam,
+    consultant::search::FeePerHourInYenParam,
     util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
 };
 
@@ -89,7 +89,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        consultant::consultants_search::FeePerHourInYenParam,
+        consultant::search::FeePerHourInYenParam,
         util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
     };
 

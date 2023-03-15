@@ -1,2 +1,2 @@
-pub(super) mod consultant_detail;
-pub(super) mod consultants_search;
+pub(super) mod detail;
+pub(super) mod search;
