@@ -3,18 +3,15 @@
 mod accounts;
 mod agreement;
 mod bank_account;
-mod career;
 mod consultant;
 mod consultation_request;
 mod consultation_room;
 mod consultations;
 mod err;
-mod fee_per_hour_in_yen;
-mod identity;
 mod login;
 mod logout;
 mod password;
-mod profile;
+mod profile_info;
 mod rating;
 mod refresh;
 mod request_consultation;
@@ -25,8 +22,6 @@ mod util;
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
 use crate::bank_account::post_bank_account;
-use crate::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
-use crate::career::{delete, get, post};
 use crate::consultant::detail::get_consultant_detail;
 use crate::consultant::search::post_consultants_search;
 use crate::consultation_request::acceptance::post_consultation_request_acceptance;
@@ -36,13 +31,15 @@ use crate::consultation_request::rejection::post_consultation_request_rejection;
 use crate::consultation_room::consultant_side_info::get_consultant_side_info;
 use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
-use crate::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
-use crate::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::password::change_req::post_password_change_req;
 use crate::password::update::post_password_update;
-use crate::profile::get_profile;
+use crate::profile_info::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
+use crate::profile_info::career::{delete, get, post};
+use crate::profile_info::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
+use crate::profile_info::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
+use crate::profile_info::profile::get_profile;
 use crate::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,
