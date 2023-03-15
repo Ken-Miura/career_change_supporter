@@ -1,10 +1,10 @@
-export class PostRequestConsultationResp {
+export class PostBeginRequestConsultationResp {
   // createからアクセスしているため、意味のないコンストラクタではない
   // eslint-disable-next-line
   private constructor (private readonly chargeId: string) {}
 
-  public static create (chargeId: string): PostRequestConsultationResp {
-    return new PostRequestConsultationResp(chargeId)
+  public static create (chargeId: string): PostBeginRequestConsultationResp {
+    return new PostBeginRequestConsultationResp(chargeId)
   }
 
   public getChargeId (): string {

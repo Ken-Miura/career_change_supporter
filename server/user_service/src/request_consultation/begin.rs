@@ -42,18 +42,18 @@ use crate::{
     util::{self, session::User, ACCESS_INFO},
 };
 
-pub(crate) async fn post_request_consultation(
+pub(crate) async fn post_begin_request_consultation(
     User { account_id }: User,
     State(pool): State<DatabaseConnection>,
-    Json(param): Json<RequestConsultationParam>,
+    Json(param): Json<BeginRequestConsultationParam>,
 ) -> RespResult<RequestConsultationResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = RequestConsultationOperationImpl { pool };
-    handle_request_consultation(account_id, param, &current_date_time, op).await
+    handle_begin_request_consultation(account_id, param, &current_date_time, op).await
 }
 
 #[derive(Clone, Deserialize, Debug)]
-pub(crate) struct RequestConsultationParam {
+pub(crate) struct BeginRequestConsultationParam {
     pub(crate) consultant_id: i64,
     pub(crate) fee_per_hour_in_yen: i32,
     pub(crate) card_token: String,
@@ -273,18 +273,18 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
     }
 }
 
-async fn handle_request_consultation(
+async fn handle_begin_request_consultation(
     account_id: i64,
-    request_consultation_param: RequestConsultationParam,
+    begin_request_consultation_param: BeginRequestConsultationParam,
     current_date_time: &DateTime<FixedOffset>,
     op: impl RequestConsultationOperation,
 ) -> RespResult<RequestConsultationResult> {
-    let consultant_id = request_consultation_param.consultant_id;
+    let consultant_id = begin_request_consultation_param.consultant_id;
     validate_consultant_id_is_positive(consultant_id)?;
     validate_candidates(
-        &request_consultation_param.first_candidate_in_jst,
-        &request_consultation_param.second_candidate_in_jst,
-        &request_consultation_param.third_candidate_in_jst,
+        &begin_request_consultation_param.first_candidate_in_jst,
+        &begin_request_consultation_param.second_candidate_in_jst,
+        &begin_request_consultation_param.third_candidate_in_jst,
         current_date_time,
     )?;
     validate_user_account_is_available(account_id, &op).await?;
@@ -292,10 +292,10 @@ async fn handle_request_consultation(
     validate_consultant_is_available(consultant_id, &op).await?;
 
     let fee_per_hour_in_yen = get_fee_per_hour_in_yen(consultant_id, &op).await?;
-    if fee_per_hour_in_yen != request_consultation_param.fee_per_hour_in_yen {
+    if fee_per_hour_in_yen != begin_request_consultation_param.fee_per_hour_in_yen {
         error!(
             "fee_per_hour_in_yen was updated (user's request: {}, consultant's fee: {})",
-            request_consultation_param.fee_per_hour_in_yen, fee_per_hour_in_yen
+            begin_request_consultation_param.fee_per_hour_in_yen, fee_per_hour_in_yen
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -314,12 +314,12 @@ async fn handle_request_consultation(
     .await?;
 
     let price = (fee_per_hour_in_yen, "jpy".to_string());
-    let card = request_consultation_param.card_token.as_str();
+    let card = begin_request_consultation_param.card_token.as_str();
     let metadata = generate_metadata(
         consultant_id,
-        &request_consultation_param.first_candidate_in_jst,
-        &request_consultation_param.second_candidate_in_jst,
-        &request_consultation_param.third_candidate_in_jst,
+        &begin_request_consultation_param.first_candidate_in_jst,
+        &begin_request_consultation_param.second_candidate_in_jst,
+        &begin_request_consultation_param.third_candidate_in_jst,
     )?;
     let tenant_id = get_tenant_id(consultant_id, &op).await?;
     let create_charge = CreateCharge::build()
@@ -697,8 +697,8 @@ mod tests {
     };
 
     use super::{
-        handle_request_consultation, RequestConsultationOperation, RequestConsultationParam,
-        RequestConsultationResult,
+        handle_begin_request_consultation, BeginRequestConsultationParam,
+        RequestConsultationOperation, RequestConsultationResult,
     };
 
     #[derive(Debug)]
@@ -711,7 +711,7 @@ mod tests {
     #[derive(Debug)]
     struct Input {
         account_id: i64,
-        param: RequestConsultationParam,
+        param: BeginRequestConsultationParam,
         current_date_time: DateTime<FixedOffset>,
         req_op: RequestConsultationOperationMock,
     }
@@ -854,7 +854,7 @@ mod tests {
                 name: "success case 1".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 4000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -932,7 +932,7 @@ mod tests {
                 name: "consultant id is negative".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: -1,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1017,7 +1017,7 @@ mod tests {
                 name: "first_candidate_in_jst IllegalConsultationDateTime".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1102,7 +1102,7 @@ mod tests {
                 name: "first_candidate_in_jst IllegalConsultationHour".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1187,7 +1187,7 @@ mod tests {
                 name: "first_candidate_in_jst InvalidConsultationDateTime".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1272,7 +1272,7 @@ mod tests {
                 name: "second_candidate_in_jst IllegalConsultationDateTime".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1357,7 +1357,7 @@ mod tests {
                 name: "second_candidate_in_jst IllegalConsultationHour".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1442,7 +1442,7 @@ mod tests {
                 name: "second_candidate_in_jst InvalidConsultationDateTime".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1527,7 +1527,7 @@ mod tests {
                 name: "third_candidate_in_jst IllegalConsultationDateTime".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1612,7 +1612,7 @@ mod tests {
                 name: "third_candidate_in_jst IllegalConsultationHour".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1697,7 +1697,7 @@ mod tests {
                 name: "third_candidate_in_jst InvalidConsultationDateTime".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1782,7 +1782,7 @@ mod tests {
                 name: "first_candidate_in_jst == second_candidate_in_jst".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1867,7 +1867,7 @@ mod tests {
                 name: "second_candidate_in_jst == third_candidate_in_jst".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -1952,7 +1952,7 @@ mod tests {
                 name: "third_candidate_in_jst == first_candidate_in_jst".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -2037,7 +2037,7 @@ mod tests {
                 name: "fail AccountDisabled".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -2122,7 +2122,7 @@ mod tests {
                 name: "fail NoIdentityRegistered".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -2207,7 +2207,7 @@ mod tests {
                 name: "fail ConsultantIsNotAvailable".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -2292,7 +2292,7 @@ mod tests {
                 name: "fail FeePerHourInYenWasUpdated".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -2377,7 +2377,7 @@ mod tests {
                 name: "fail ExceedMaxAnnualRewards".to_string(),
                 input: Input {
                     account_id: 1,
-                    param: RequestConsultationParam {
+                    param: BeginRequestConsultationParam {
                         consultant_id: 2,
                         fee_per_hour_in_yen: 5000,
                         card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
@@ -2518,7 +2518,8 @@ mod tests {
             let req_op = test_case.input.req_op.clone();
 
             let resp =
-                handle_request_consultation(account_id, param, &current_date_time, req_op).await;
+                handle_begin_request_consultation(account_id, param, &current_date_time, req_op)
+                    .await;
 
             let message = format!("test case \"{}\" failed", test_case.name.clone());
             if test_case.expected.is_ok() {

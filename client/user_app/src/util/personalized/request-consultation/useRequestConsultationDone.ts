@@ -3,7 +3,7 @@ import { ref } from 'vue'
 // eslint-disable-next-line
 export function useRequestConsultationDone () {
   const requestConsultationDone = ref(true)
-  const startRequestConsultation = () => {
+  const beginRequestConsultation = () => {
     requestConsultationDone.value = false
   }
   const finishRequestConsultation = () => {
@@ -18,7 +18,7 @@ export function useRequestConsultationDone () {
   }
   return {
     requestConsultationDone,
-    startRequestConsultation,
+    beginRequestConsultation,
     finishRequestConsultation,
     disabled,
     disableBtn,

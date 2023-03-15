@@ -45,7 +45,7 @@ use crate::rating::{
     user_rating::post_user_rating,
 };
 use crate::refresh::get_refresh;
-use crate::request_consultation::begin::post_request_consultation;
+use crate::request_consultation::begin::post_begin_request_consultation;
 use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::request_consultation::finish::post_finish_request_consultation;
 use crate::temp_accounts::post_temp_accounts;
@@ -222,7 +222,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultants-search", post(post_consultants_search))
                 .route("/consultant-detail", get(get_consultant_detail))
                 .route("/fee-per-hour-in-yen-for-application", get(get_fee_per_hour_in_yen_for_application))
-                .route("/request-consultation", post(post_request_consultation))
+                .route("/begin-request-consultation", post(post_begin_request_consultation))
                 .route("/finish-request-consultation", post(post_finish_request_consultation))
                 .route("/consultation-requests", get(get_consultation_requests))
                 .route("/consultation-request-detail", get(get_consultation_request_detail))

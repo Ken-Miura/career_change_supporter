@@ -1,9 +1,9 @@
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { ConsultationRequest } from './ConsultationRequest'
-import { PostRequestConsultationResp } from './PostRequestConsultationResp'
+import { PostBeginRequestConsultationResp } from './PostBeginRequestConsultationResp'
 
-export async function postRequestConsultation (consultationRequest: ConsultationRequest): Promise<PostRequestConsultationResp | ApiErrorResp> {
-  const response = await fetch('/api/request-consultation', {
+export async function postBeginRequestConsultation (consultationRequest: ConsultationRequest): Promise<PostBeginRequestConsultationResp | ApiErrorResp> {
+  const response = await fetch('/api/begin-request-consultation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(consultationRequest)
@@ -14,5 +14,5 @@ export async function postRequestConsultation (consultationRequest: Consultation
   }
   // eslint-disable-next-line
   const result = await response.json() as { charge_id: string }
-  return PostRequestConsultationResp.create(result.charge_id)
+  return PostBeginRequestConsultationResp.create(result.charge_id)
 }

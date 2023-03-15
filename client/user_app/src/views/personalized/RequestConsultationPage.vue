@@ -170,8 +170,8 @@ import { useRequestConsultationDone } from '@/util/personalized/request-consulta
 import { postFinishRequestConsultation } from '@/util/personalized/request-consultation/PostFinishRequestConsultation'
 import { useCandidate } from '@/util/personalized/request-consultation/useCandidate'
 import { ConsultationRequest } from '@/util/personalized/request-consultation/ConsultationRequest'
-import { postRequestConsultation } from '@/util/personalized/request-consultation/PostRequestConsultation'
-import { PostRequestConsultationResp } from '@/util/personalized/request-consultation/PostRequestConsultationResp'
+import { postBeginRequestConsultation } from '@/util/personalized/request-consultation/PostBeginRequestConsultation'
+import { PostBeginRequestConsultationResp } from '@/util/personalized/request-consultation/PostBeginRequestConsultationResp'
 import { checkIfCandidateIsInValidRange } from '@/util/personalized/request-consultation/CheckIfCandidateIsInValidRange'
 
 export default defineComponent({
@@ -209,7 +209,7 @@ export default defineComponent({
     const feePerHourInYen = ref(0 as number)
     const {
       requestConsultationDone,
-      startRequestConsultation,
+      beginRequestConsultation,
       finishRequestConsultation,
       disabled,
       disableBtn,
@@ -327,7 +327,7 @@ export default defineComponent({
         }
 
         try {
-          startRequestConsultation()
+          beginRequestConsultation()
           const req = {
             consultant_id: parseInt(consultantId),
             fee_per_hour_in_yen: feePerHourInYen.value,
@@ -352,8 +352,8 @@ export default defineComponent({
             }
           } as ConsultationRequest
           try {
-            const response = await postRequestConsultation(req)
-            if (!(response instanceof PostRequestConsultationResp)) {
+            const response = await postBeginRequestConsultation(req)
+            if (!(response instanceof PostBeginRequestConsultationResp)) {
               if (!(response instanceof ApiErrorResp)) {
                 throw new Error(`unexpected result on getting request detail: ${response}`)
               }
