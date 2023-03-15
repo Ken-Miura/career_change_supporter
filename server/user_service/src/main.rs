@@ -2,7 +2,7 @@
 
 mod accounts;
 mod agreement;
-mod bank_account;
+
 mod consultant;
 mod consultation_request;
 mod consultation_room;
@@ -15,13 +15,12 @@ mod profile_info;
 mod rating;
 mod refresh;
 mod request_consultation;
-mod rewards;
+mod rewards_info;
 mod temp_accounts;
 mod util;
 
 use crate::accounts::post_accounts;
 use crate::agreement::post_agreement;
-use crate::bank_account::post_bank_account;
 use crate::consultant::detail::get_consultant_detail;
 use crate::consultant::search::post_consultants_search;
 use crate::consultation_request::acceptance::post_consultation_request_acceptance;
@@ -48,7 +47,8 @@ use crate::refresh::get_refresh;
 use crate::request_consultation::begin::post_request_consultation;
 use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::request_consultation::finish::post_finish_request_consultation;
-use crate::rewards::get_reward;
+use crate::rewards_info::bank_account::post_bank_account;
+use crate::rewards_info::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;

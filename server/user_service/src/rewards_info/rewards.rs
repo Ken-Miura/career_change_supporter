@@ -407,7 +407,7 @@ mod tests {
     };
 
     use crate::err::Code;
-    use crate::rewards::{handle_reward_req, Transfer};
+    use crate::rewards_info::rewards::{handle_reward_req, Transfer};
     use crate::util::bank_account::BankAccount;
     use crate::util::rewards::{
         create_start_and_end_date_time_of_current_month,
