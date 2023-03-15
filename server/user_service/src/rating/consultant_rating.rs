@@ -618,10 +618,12 @@ fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
 
 #[cfg(test)]
 mod tests {
+    use std::vec;
+
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset};
-    use common::{ApiError, ErrResp, RespResult};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::rating::consultant_rating::calculate_average_rating;
@@ -743,7 +745,45 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = 166;
+        let consultant_rating_id = 5701;
+        let rating = 4;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 16, 17, 53, 12)
+            .unwrap();
+        let consultation_id = 515;
+        let user_account_id = account_id;
+        let consultant_id = user_account_id + 9761;
+        let consultation_date_time_in_jst = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 13, 10, 0, 0)
+            .unwrap();
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input {
+                account_id,
+                consultant_rating_id,
+                rating,
+                current_date_time,
+                op: ConsultantRatingOperationMock {
+                    account_id,
+                    user_account_available: true,
+                    consultant_rating_id,
+                    consultation_info: ConsultationInfo {
+                        consultation_id,
+                        user_account_id,
+                        consultant_id,
+                        consultation_date_time_in_jst,
+                    },
+                    rating,
+                    current_date_time,
+                    already_exists: false,
+                    ratings: vec![rating],
+                },
+            },
+            expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_consultant_rating_tests() {
