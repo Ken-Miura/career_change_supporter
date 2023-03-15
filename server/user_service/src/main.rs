@@ -11,11 +11,10 @@ mod err;
 mod login;
 mod logout;
 mod password;
-mod profile_info;
+mod personal_info;
 mod rating;
 mod refresh;
 mod request_consultation;
-mod rewards_info;
 mod temp_accounts;
 mod util;
 
@@ -34,11 +33,13 @@ use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::password::change_req::post_password_change_req;
 use crate::password::update::post_password_update;
-use crate::profile_info::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
-use crate::profile_info::career::{delete, get, post};
-use crate::profile_info::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
-use crate::profile_info::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
-use crate::profile_info::profile::get_profile;
+use crate::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
+use crate::personal_info::profile::career::{delete, get, post};
+use crate::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
+use crate::personal_info::profile::get_profile;
+use crate::personal_info::profile::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
+use crate::personal_info::rewards::bank_account::post_bank_account;
+use crate::personal_info::rewards::get_reward;
 use crate::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,
@@ -47,8 +48,6 @@ use crate::refresh::get_refresh;
 use crate::request_consultation::begin::post_request_consultation;
 use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::request_consultation::finish::post_finish_request_consultation;
-use crate::rewards_info::bank_account::post_bank_account;
-use crate::rewards_info::rewards::get_reward;
 use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;

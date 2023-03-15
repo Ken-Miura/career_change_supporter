@@ -619,7 +619,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::rewards_info::bank_account::BankAccountResult;
+    use crate::personal_info::rewards::bank_account::BankAccountResult;
     use crate::util::bank_account::BankAccount;
 
     use super::{handle_bank_account_req, BankAccountRegisterReq, SubmitBankAccountOperation};
