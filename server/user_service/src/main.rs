@@ -31,6 +31,7 @@ use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
 use crate::login::post_login;
 use crate::logout::post_logout;
+use crate::news::get_news;
 use crate::password::change_req::post_password_change_req;
 use crate::password::update::post_password_update;
 use crate::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
@@ -233,6 +234,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/unrated-items", get(get_unrated_items))
                 .route("/consultant-rating", post(post_consultant_rating))
                 .route("/user-rating", post(post_user_rating))
+                .route("/news", get(get_news))
                 .with_state(state),
         )
         .layer(
