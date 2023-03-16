@@ -1,8 +1,7 @@
 // Copyright 2021 Ken Miura
 
-mod accounts;
+mod account;
 mod agreement;
-
 mod consultant;
 mod consultation_request;
 mod consultation_room;
@@ -15,10 +14,10 @@ mod personal_info;
 mod rating;
 mod refresh;
 mod request_consultation;
-mod temp_accounts;
 mod util;
 
-use crate::accounts::post_accounts;
+use crate::account::accounts::post_accounts;
+use crate::account::temp_accounts::post_temp_accounts;
 use crate::agreement::post_agreement;
 use crate::consultant::detail::get_consultant_detail;
 use crate::consultant::search::post_consultants_search;
@@ -48,7 +47,6 @@ use crate::refresh::get_refresh;
 use crate::request_consultation::begin::post_begin_request_consultation;
 use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::request_consultation::finish::post_finish_request_consultation;
-use crate::temp_accounts::post_temp_accounts;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
 use async_redis_session::RedisSessionStore;

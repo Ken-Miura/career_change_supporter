@@ -23,9 +23,9 @@ use serde::Deserialize;
 use serde::Serialize;
 use tracing::{error, info};
 
+use crate::account::temp_accounts::TempAccount;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
-use crate::temp_accounts::TempAccount;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通知", WEB_SITE_NAME));
 
@@ -273,8 +273,8 @@ mod tests {
 
     use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
     use crate::{
-        accounts::{create_text, handle_accounts_req, AccountsResult, SUBJECT},
-        temp_accounts::TempAccount,
+        account::accounts::{create_text, handle_accounts_req, AccountsResult, SUBJECT},
+        account::temp_accounts::TempAccount,
         util::tests::SendMailMock,
     };
 
