@@ -582,7 +582,7 @@ async fn get_consultation_info_from_consultation_rating(
         None => Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::NoConsultationRatingFound as u32,
+                code: Code::NoConsultantRatingFound as u32,
             }),
         )),
     }
@@ -600,7 +600,7 @@ fn ensure_user_account_ids_are_same(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::NoConsultationRatingFound as u32,
+                code: Code::NoConsultantRatingFound as u32,
             }),
         ));
     }
@@ -951,6 +951,36 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::UserIsNotAvailable as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail NoConsultantRatingFound (really not found)".to_string(),
+                input: Input {
+                    account_id,
+                    consultant_rating_id,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        account_id,
+                        user_account_available: true,
+                        consultant_rating_id: consultant_rating_id + 68,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![rating],
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoConsultantRatingFound as u32,
                     }),
                 )),
             },

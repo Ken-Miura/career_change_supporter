@@ -145,7 +145,7 @@ pub(crate) enum Code {
     NoUserRatingFound = 20133,
     UserAccountHasAlreadyBeenRated = 20134,
     UserIsNotAvailable = 20135,
-    NoConsultationRatingFound = 20136,
+    NoConsultantRatingFound = 20136,
     ConsultantHasAlreadyBeenRated = 20137,
 }
 
