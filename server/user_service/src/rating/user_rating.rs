@@ -280,7 +280,7 @@ async fn ensure_consultant_is_available(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::ConsultantIsNotAvailable as u32,
+                code: Code::AccountIsNotAvailable as u32,
             }),
         ));
     }
@@ -541,7 +541,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail ConsultantIsNotAvailable".to_string(),
+                name: "fail AccountIsNotAvailable".to_string(),
                 input: Input {
                     consultant_id,
                     user_rating_id,
@@ -565,7 +565,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::ConsultantIsNotAvailable as u32,
+                        code: Code::AccountIsNotAvailable as u32,
                     }),
                 )),
             },

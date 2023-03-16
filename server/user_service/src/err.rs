@@ -144,7 +144,7 @@ pub(crate) enum Code {
     EndOfConsultationDateTimeHasNotPassedYet = 20132,
     NoUserRatingFound = 20133,
     UserAccountHasAlreadyBeenRated = 20134,
-    UserIsNotAvailable = 20135,
+    AccountIsNotAvailable = 20135,
     NoConsultantRatingFound = 20136,
     ConsultantHasAlreadyBeenRated = 20137,
 }
