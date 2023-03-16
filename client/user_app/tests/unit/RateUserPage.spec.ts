@@ -447,6 +447,43 @@ describe('RateUserPage.vue', () => {
     expect(resultMessage).toContain(`${Message.NO_USER_RATING_FOUND_MESSAGE} (${Code.NO_USER_RATING_FOUND})`)
   })
 
+  it(`displays ${Message.ACCOUNT_IS_NOT_AVAILABLE_MESSAGE} if ${Code.ACCOUNT_IS_NOT_AVAILABLE} is returned`, async () => {
+    userRatingId = '21'
+    userId = '701'
+    year = '2023'
+    month = '3'
+    day = '3'
+    hour = '21'
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.ACCOUNT_IS_NOT_AVAILABLE))
+    postUserRatingFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RateUserPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const rate = 4
+    const rateSelect = wrapper.find('[data-test="rating-value"]').find('select')
+    await rateSelect.setValue(rate)
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('click')
+
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(`${Message.ACCOUNT_IS_NOT_AVAILABLE_MESSAGE} (${Code.ACCOUNT_IS_NOT_AVAILABLE})`)
+  })
+
   it(`displays ${Message.USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE} if ${Code.USER_ACCOUNT_HAS_ALREADY_BEEN_RATED} is returned`, async () => {
     userRatingId = '21'
     userId = '701'
