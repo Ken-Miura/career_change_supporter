@@ -1143,36 +1143,33 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.maintenance (
-                  maintenance_id BIGSERIAL PRIMARY KEY,
-                  maintenance_start_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  maintenance_end_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  description TEXT NOT NULL,
-                  CHECK (maintenance_end_at > maintenance_start_at)
+                r"CREATE TABLE ccs_schema.news (
+                  news_id BIGSERIAL PRIMARY KEY,
+                  title TEXT NOT NULL,
+                  body TEXT NOT NULL,
+                  published_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.maintenance To user_app;"))
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.news To user_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(
-                r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.maintenance To admin_app;",
-            ))
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.news To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(
-                r"GRANT USAGE ON SEQUENCE ccs_schema.maintenance_maintenance_id_seq TO admin_app;",
-            ))
+            .execute(sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.news_news_id_seq TO admin_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX maintenance_maintenance_end_at_idx ON ccs_schema.maintenance (maintenance_end_at);",
-            ))
+            .execute(
+                sql.stmt(r"CREATE INDEX news_published_at_idx ON ccs_schema.news (published_at);"),
+            )
             .await
             .map(|_| ())?;
 
