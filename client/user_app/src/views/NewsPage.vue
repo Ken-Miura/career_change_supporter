@@ -18,6 +18,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'InformationPage'
+  name: 'NewsPage'
 })
 </script>

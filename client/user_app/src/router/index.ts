@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
-import InformationPage from '../views/InformationPage.vue'
+import NewsPage from '../views/NewsPage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ProfilePage from '../views/personalized/ProfilePage.vue'
 import IdentityPage from '../views/personalized/IdentityPage.vue'
@@ -102,9 +102,9 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/personalized/TermsOfUsePage.vue')
   },
   {
-    path: '/information',
-    name: 'InformationPage',
-    component: InformationPage
+    path: '/news',
+    name: 'NewsPage',
+    component: NewsPage
   },
   {
     path: '/published-terms-of-use',
