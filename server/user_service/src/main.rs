@@ -9,6 +9,7 @@ mod consultations;
 mod err;
 mod login;
 mod logout;
+mod news;
 mod password;
 mod personal_info;
 mod rating;
