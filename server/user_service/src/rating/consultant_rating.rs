@@ -758,31 +758,63 @@ mod tests {
         let consultation_date_time_in_jst = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 13, 10, 0, 0)
             .unwrap();
-        vec![TestCase {
-            name: "success".to_string(),
-            input: Input {
-                account_id,
-                consultant_rating_id,
-                rating,
-                current_date_time,
-                op: ConsultantRatingOperationMock {
+        vec![
+            TestCase {
+                name: "success".to_string(),
+                input: Input {
                     account_id,
-                    user_account_available: true,
                     consultant_rating_id,
-                    consultation_info: ConsultationInfo {
-                        consultation_id,
-                        user_account_id,
-                        consultant_id,
-                        consultation_date_time_in_jst,
-                    },
                     rating,
                     current_date_time,
-                    already_exists: false,
-                    ratings: vec![rating],
+                    op: ConsultantRatingOperationMock {
+                        account_id,
+                        user_account_available: true,
+                        consultant_rating_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![rating],
+                    },
                 },
+                expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
             },
-            expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
-        }]
+            TestCase {
+                name: "fail RatingIdIsNotPositive".to_string(),
+                input: Input {
+                    account_id,
+                    consultant_rating_id: -1,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        account_id,
+                        user_account_available: true,
+                        consultant_rating_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![rating],
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::RatingIdIsNotPositive as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
