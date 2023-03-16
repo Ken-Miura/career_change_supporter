@@ -984,6 +984,36 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail NoConsultantRatingFound (user account id does not match)".to_string(),
+                input: Input {
+                    account_id,
+                    consultant_rating_id,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        account_id,
+                        user_account_available: true,
+                        consultant_rating_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id: user_account_id + 65010,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![rating],
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoConsultantRatingFound as u32,
+                    }),
+                )),
+            },
         ]
     });
 
