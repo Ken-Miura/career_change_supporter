@@ -193,6 +193,9 @@ export namespace Message {
     export const END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET_MESSAGE = 'まだ相談が終わっていません'
     export const NO_USER_RATING_FOUND_MESSAGE = '不正な評価対象です'
     export const USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE = '既に評価済です'
+    export const USER_IS_NOT_AVAILABLE_MESSAGE = 'アカウントが存在しない、または無効化されています' // 操作者が評価を行うときに発生するメッセージなので、操作者自身のアカウントを示すエラーメッセージとなる
+    export const NO_CONSULTANT_RATING_FOUND_MESSAGE = `${NO_USER_RATING_FOUND_MESSAGE}`
+    export const CONSULTANT_HAS_ALREADY_BEEN_RATED_MESSAGE = `${USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE}`
     export const RATE_SUCCESS_MESSAGE = '評価を行いました'
     // TODO: SkyWay関連のメッセージの修正
     const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と表示されたメッセージをお問い合わせからご連絡下さい'
