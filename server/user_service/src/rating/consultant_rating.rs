@@ -1014,6 +1014,66 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail EndOfConsultationDateTimeHasNotPassedYet".to_string(),
+                input: Input {
+                    account_id,
+                    consultant_rating_id,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        account_id,
+                        user_account_available: true,
+                        consultant_rating_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst: current_date_time, // consultation_date_time_in_jst == current_date_time => まだミーティング時間中,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![rating],
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::EndOfConsultationDateTimeHasNotPassedYet as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail ConsultantHasAlreadyBeenRated".to_string(),
+                input: Input {
+                    account_id,
+                    consultant_rating_id,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        account_id,
+                        user_account_available: true,
+                        consultant_rating_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: true,
+                        ratings: vec![rating],
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ConsultantHasAlreadyBeenRated as u32,
+                    }),
+                )),
+            },
         ]
     });
 
