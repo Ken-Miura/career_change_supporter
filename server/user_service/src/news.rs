@@ -3,6 +3,7 @@
 use axum::extract::State;
 use axum::{async_trait, Json};
 use chrono::{DateTime, Datelike, FixedOffset, Utc};
+use common::util::Ymd;
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use hyper::StatusCode;
@@ -28,14 +29,7 @@ pub(crate) struct NewsResult {
 pub(crate) struct News {
     title: String,
     body: String,
-    published_date_in_jst: PublishedDate,
-}
-
-#[derive(Clone, Debug, Serialize, PartialEq)]
-pub(crate) struct PublishedDate {
-    year: i32,
-    month: u32,
-    day: u32,
+    published_date_in_jst: Ymd,
 }
 
 #[async_trait]
@@ -72,7 +66,7 @@ impl NewsOperation for NewsOperationImpl {
                 News {
                     title: m.title,
                     body: m.body,
-                    published_date_in_jst: PublishedDate {
+                    published_date_in_jst: Ymd {
                         year: pd.year(),
                         month: pd.month(),
                         day: pd.day(),
