@@ -1178,6 +1178,38 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.news (
+                  news_id BIGSERIAL PRIMARY KEY,
+                  title TEXT NOT NULL,
+                  body TEXT NOT NULL,
+                  published_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.news To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.news To admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.news_news_id_seq TO admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"CREATE INDEX news_published_at_idx ON ccs_schema.news (published_at);"),
+            )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.admin_account (
                     admin_account_id BIGSERIAL PRIMARY KEY,
                     email_address ccs_schema.email_address NOT NULL UNIQUE,
