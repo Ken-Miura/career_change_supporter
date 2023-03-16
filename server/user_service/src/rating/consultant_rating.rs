@@ -660,6 +660,7 @@ mod tests {
         current_date_time: DateTime<FixedOffset>,
         already_exists: bool,
         ratings: Vec<i16>,
+        over_capacity: bool,
     }
 
     #[async_trait]
@@ -744,6 +745,14 @@ mod tests {
         ) -> Result<(), ErrResp> {
             assert_eq!(self.consultation_info.consultation_id, consultation_id);
             assert_eq!(self.current_date_time, current_date_time);
+            if self.over_capacity {
+                return Err((
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
+                    }),
+                ));
+            };
             Ok(())
         }
     }
@@ -761,6 +770,7 @@ mod tests {
         let consultation_date_time_in_jst = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 13, 10, 0, 0)
             .unwrap();
+        let over_capacity = false;
         vec![
             TestCase {
                 name: "success 1".to_string(),
@@ -783,6 +793,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
@@ -808,6 +819,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating + 3],
+                        over_capacity,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
@@ -833,6 +845,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating + 3 + 2],
+                        over_capacity,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
@@ -858,6 +871,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -888,6 +902,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -918,6 +933,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -948,6 +964,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -978,6 +995,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -1008,6 +1026,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -1038,6 +1057,7 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -1068,12 +1088,47 @@ mod tests {
                         current_date_time,
                         already_exists: true,
                         ratings: vec![rating],
+                        over_capacity,
                     },
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::ConsultantHasAlreadyBeenRated as u32,
+                    }),
+                )),
+            },
+            // https://pay.jp/docs/api/#error
+            // にあるエラーの内、返される可能性が有り、かつユーザーが対応可能なエラーはover_capacityのみ
+            // そのエラーに対応するエラーコードのテストを仕様としてテストコードの形で残す
+            TestCase {
+                name: "fail ReachPaymentPlatformRateLimit".to_string(),
+                input: Input {
+                    account_id,
+                    consultant_rating_id,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        account_id,
+                        user_account_available: true,
+                        consultant_rating_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![rating],
+                        over_capacity: true,
+                    },
+                },
+                expected: Err((
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ApiError {
+                        code: Code::ReachPaymentPlatformRateLimit as u32,
                     }),
                 )),
             },
