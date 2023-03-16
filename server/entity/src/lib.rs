@@ -19,6 +19,7 @@ pub mod deleted_user_account;
 pub mod document;
 pub mod identity;
 pub mod maintenance;
+pub mod news;
 pub mod pwd_change_req;
 pub mod receipt;
 pub mod refund;
