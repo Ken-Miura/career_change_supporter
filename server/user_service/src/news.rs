@@ -2,11 +2,14 @@
 
 use axum::extract::State;
 use axum::{async_trait, Json};
-use chrono::{DateTime, FixedOffset, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use hyper::StatusCode;
 use serde::Serialize;
+use tracing::error;
+
+use crate::err::unexpected_err_resp;
 
 const NEWS_RETRIEVAL_CRITERIA_IN_DAYS: i64 = 180;
 
@@ -54,7 +57,29 @@ impl NewsOperation for NewsOperationImpl {
         &self,
         criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<News>, ErrResp> {
-        todo!();
+        let results = entity::news::Entity::find()
+            .filter(entity::news::Column::PublishedAt.gt(criteria))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!("failed to filter news (criteria: {}): {}", criteria, e);
+                unexpected_err_resp()
+            })?;
+        Ok(results
+            .into_iter()
+            .map(|m| {
+                let pd = m.published_at.with_timezone(&(*JAPANESE_TIME_ZONE));
+                News {
+                    title: m.title,
+                    body: m.body,
+                    published_date_in_jst: PublishedDate {
+                        year: pd.year(),
+                        month: pd.month(),
+                        day: pd.day(),
+                    },
+                }
+            })
+            .collect())
     }
 }
 
