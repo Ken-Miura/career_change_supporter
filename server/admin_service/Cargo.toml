@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 async-redis-session = "0.2.2"
 async-session = "3.0.0"
-axum = { version = "0.6.9", features = ["headers", "json", "multipart"] }
-axum-extra = { version = "0.6.0", features = ["cookie", "cookie-signed"] }
+axum = { version = "0.6.11", features = ["headers", "json", "multipart"] }
+axum-extra = { version = "0.7.1", features = ["cookie", "cookie-signed"] }
 chrono = "0.4.23"
 common = { path = "../common" }
 dotenv = "0.15.0"
