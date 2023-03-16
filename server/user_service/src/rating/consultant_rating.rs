@@ -236,6 +236,9 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         &self,
         consultant_id: i64,
     ) -> Result<Vec<i16>, ErrResp> {
+        // 評価するためには相談が必要 => 相談のためにはユーザー、コンサルタントの同意が必要
+        // そのため、評価数がメモリ容量を圧迫するほど貯まるとは考えづらく、複数回に分けてフェッチするような実装とはしていない
+        // NOTE: 実際に問題（特定のコンサルタントへの評価に時間がかかる問題）が発生した際、ここを確認して必要なら修正する
         let models = consultation::Entity::find()
             .filter(consultation::Column::ConsultantId.eq(consultant_id))
             .find_with_related(ConsultantRating)
