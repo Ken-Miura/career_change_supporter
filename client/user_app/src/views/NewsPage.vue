@@ -11,8 +11,8 @@
       </div>
       <main v-else>
         <div v-if="!errMessage" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">お知らせ</h3>
-          <div class="mt-6 ml-2 text-xl" v-if="newsArray.length === 0">お知らせはありません</div>
+          <h3 data-test="news-label" class="font-bold text-2xl">お知らせ</h3>
+          <div data-test="no-news-found" class="mt-6 ml-2 text-xl" v-if="newsArray.length === 0">お知らせはありません</div>
           <div v-else>
             <ul>
               <li v-for="news in newsArray" v-bind:key="news.news_id">

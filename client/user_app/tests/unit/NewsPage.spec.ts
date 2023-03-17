@@ -4,6 +4,8 @@ import NewsPage from '@/views/NewsPage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
+import { GetNewResp } from '@/util/news/GetNewResp'
+import { NewsResult } from '@/util/news/NewsResult'
 
 const getNewsDoneMock = ref(true)
 const getNewsFuncMock = jest.fn()
@@ -56,5 +58,23 @@ describe('NewsPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it('displays お知らせはありません when there is no news', async () => {
+    const resp = GetNewResp.create({ news_array: [] } as NewsResult)
+    getNewsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(NewsPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const newsLabel = wrapper.find('[data-test="news-label"]')
+    expect(newsLabel.text()).toContain('お知らせ')
+    const noNewsFound = wrapper.find('[data-test="no-news-found"]')
+    expect(noNewsFound.text()).toContain('お知らせはありません')
   })
 })
