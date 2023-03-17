@@ -4,16 +4,21 @@ import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
 import { Message } from '@/util/Message'
-import { login } from '@/util/login/Login'
 import { LoginResp } from '@/util/login/LoginResp'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 
-jest.mock('@/util/login/Login')
-const loginMock = login as jest.MockedFunction<typeof login>
+const loginDoneMock = ref(true)
+const loginFuncMock = jest.fn()
+jest.mock('@/util/login/useLogin', () => ({
+  useLogin: () => ({
+    loginDone: loginDoneMock,
+    loginFunc: loginFuncMock
+  })
+}))
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -30,8 +35,9 @@ const PWD = 'abcdABCD1234'
 
 describe('LoginPage.vue', () => {
   beforeEach(() => {
+    loginDoneMock.value = true
+    loginFuncMock.mockReset()
     routerPushMock.mockClear()
-    loginMock.mockReset()
     refreshMock.mockReset()
   })
 
@@ -138,7 +144,7 @@ describe('LoginPage.vue', () => {
   it('moves to profile when login is successful', async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
-    loginMock.mockResolvedValue(LoginResp.create())
+    loginFuncMock.mockResolvedValue(LoginResp.create())
 
     const wrapper = mount(LoginPage, {
       global: {
@@ -166,7 +172,7 @@ describe('LoginPage.vue', () => {
   it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
-    loginMock.mockResolvedValue(ApiErrorResp.create(401, ApiError.create(Code.EMAIL_OR_PWD_INCORRECT)))
+    loginFuncMock.mockResolvedValue(ApiErrorResp.create(401, ApiError.create(Code.EMAIL_OR_PWD_INCORRECT)))
 
     const wrapper = mount(LoginPage, {
       global: {
@@ -200,7 +206,7 @@ describe('LoginPage.vue', () => {
   it(`displays alert message ${Message.ACCOUNT_DISABLED_MESSAGE} when account is disabled`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
-    loginMock.mockResolvedValue(ApiErrorResp.create(400, ApiError.create(Code.ACCOUNT_DISABLED)))
+    loginFuncMock.mockResolvedValue(ApiErrorResp.create(400, ApiError.create(Code.ACCOUNT_DISABLED)))
 
     const wrapper = mount(LoginPage, {
       global: {

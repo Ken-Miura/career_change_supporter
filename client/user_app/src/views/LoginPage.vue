@@ -5,7 +5,10 @@
         <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <div v-if="!loginDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
         <h3 class="font-bold text-2xl">ログイン</h3>
       </section>
@@ -38,21 +41,24 @@ import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
-import { login } from '@/util/login/Login'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { useLogin } from '@/util/login/useLogin'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
 export default defineComponent({
   name: 'LoginPage',
   components: {
     EmailAddressInput,
     PasswordInput,
-    AlertMessage
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const router = useRouter()
     const isHidden = ref(true)
     const errorMessage = ref('')
+
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -75,15 +81,21 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
     const {
       form,
       setEmailAddress,
       setPassword
     } =
     useCredentil()
+    const {
+      loginDone,
+      loginFunc
+    } = useLogin()
+
     const loginHandler = async () => {
       try {
-        const result = await login(form.emailAddress, form.password)
+        const result = await loginFunc(form.emailAddress, form.password)
         if (result instanceof LoginResp) {
           await router.push('/profile')
         } else if (result instanceof ApiErrorResp) {
@@ -103,7 +115,8 @@ export default defineComponent({
       setPassword,
       isHidden,
       errorMessage,
-      loginHandler
+      loginHandler,
+      loginDone
     }
   }
 })
