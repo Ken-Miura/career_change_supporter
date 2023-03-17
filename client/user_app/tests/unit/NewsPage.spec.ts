@@ -121,12 +121,45 @@ describe('NewsPage.vue', () => {
 
     const newsLabel = wrapper.find('[data-test="news-label"]')
     expect(newsLabel.text()).toContain('お知らせ')
+
     const noNewsFound = wrapper.find('[data-test="no-news-found"]')
     expect(noNewsFound.exists()).toBe(false)
+
     const news1Elem = wrapper.find(`[data-test="news-id-${news1.news_id}"]`)
     const title1 = news1Elem.find('[data-test="title"]')
     expect(title1.text()).toContain(`${news1.title}`)
     const body1 = news1Elem.find('[data-test="body"]')
     expect(body1.text()).toContain(`${news1.body}`)
+  })
+
+  it('displays 2 news', async () => {
+    const resp = GetNewResp.create({ news_array: [news1, news2] } as NewsResult)
+    getNewsFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(NewsPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const newsLabel = wrapper.find('[data-test="news-label"]')
+    expect(newsLabel.text()).toContain('お知らせ')
+
+    const noNewsFound = wrapper.find('[data-test="no-news-found"]')
+    expect(noNewsFound.exists()).toBe(false)
+
+    const news1Elem = wrapper.find(`[data-test="news-id-${news1.news_id}"]`)
+    const title1 = news1Elem.find('[data-test="title"]')
+    expect(title1.text()).toContain(`${news1.title}`)
+    const body1 = news1Elem.find('[data-test="body"]')
+    expect(body1.text()).toContain(`${news1.body}`)
+
+    const news2Elem = wrapper.find(`[data-test="news-id-${news2.news_id}"]`)
+    const title2 = news2Elem.find('[data-test="title"]')
+    expect(title2.text()).toContain(`${news2.title}`)
+    const body2 = news2Elem.find('[data-test="body"]')
+    expect(body2.text()).toContain(`${news2.body}`)
   })
 })
