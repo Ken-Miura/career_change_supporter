@@ -1,8 +1,9 @@
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
 import NewsPage from '@/views/NewsPage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
+import { Message } from '@/util/Message'
 
 const getNewsDoneMock = ref(true)
 const getNewsFuncMock = jest.fn()
@@ -34,5 +35,26 @@ describe('NewsPage.vue', () => {
     expect(waitingCircles.length).toBe(1)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(0)
+  })
+
+  it('displays AlertMessage when error has happened', async () => {
+    const errDetail = 'connection error'
+    getNewsFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(NewsPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    expect(alertMessage).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
