@@ -97,7 +97,7 @@ mod tests {
     use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
     use hyper::StatusCode;
 
-    use crate::news::NewsResult;
+    use crate::news::{NewsResult, NEWS_RETRIEVAL_CRITERIA_IN_DAYS};
 
     use super::{handle_news, News, NewsOperation};
 
@@ -240,5 +240,29 @@ mod tests {
                 ]
             }
         );
+    }
+
+    #[tokio::test]
+    async fn handle_news_does_not_return_old_news() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let news_id = 1;
+        let title = "title".to_string();
+        let body = r"line1
+        line2
+        line3"
+            .to_string();
+        let pd = current_date_time - chrono::Duration::days(NEWS_RETRIEVAL_CRITERIA_IN_DAYS);
+        let op = NewsOperationMock {
+            news_array: vec![(news_id, title.clone(), body.clone(), pd)],
+        };
+
+        let result = handle_news(&current_date_time, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(result.1 .0, NewsResult { news_array: vec![] });
     }
 }
