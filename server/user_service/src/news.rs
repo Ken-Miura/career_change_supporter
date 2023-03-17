@@ -88,3 +88,60 @@ async fn handle_news(
     let news_array = op.filter_news_by_criteria(criteria).await?;
     Ok((StatusCode::OK, Json(NewsResult { news_array })))
 }
+
+#[cfg(test)]
+mod tests {
+
+    use axum::async_trait;
+    use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
+    use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
+    use hyper::StatusCode;
+
+    use crate::news::NewsResult;
+
+    use super::{handle_news, News, NewsOperation};
+
+    struct NewsOperationMock {
+        news_array: Vec<(i64, String, String, DateTime<FixedOffset>)>,
+    }
+
+    #[async_trait]
+    impl NewsOperation for NewsOperationMock {
+        async fn filter_news_by_criteria(
+            &self,
+            criteria: DateTime<FixedOffset>,
+        ) -> Result<Vec<News>, ErrResp> {
+            Ok(self
+                .news_array
+                .clone()
+                .into_iter()
+                .filter(|n| n.3 > criteria)
+                .map(|m| News {
+                    news_id: m.0,
+                    title: m.1,
+                    body: m.2,
+                    published_date_in_jst: Ymd {
+                        year: m.3.year(),
+                        month: m.3.month(),
+                        day: m.3.day(),
+                    },
+                })
+                .collect::<Vec<News>>())
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_news_empty_result() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = NewsOperationMock { news_array: vec![] };
+
+        let result = handle_news(&current_date_time, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(result.1 .0, NewsResult { news_array: vec![] });
+    }
+}
