@@ -12,17 +12,20 @@
       <main v-else>
         <div v-if="!errMessage" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">お知らせ</h3>
-          <div v-if="newsArray.length === 0">お知らせはありません。</div>
+          <div class="mt-6 ml-2 text-xl" v-if="newsArray.length === 0">お知らせはありません</div>
           <div v-else>
             <ul>
               <li v-for="news in newsArray" v-bind:key="news.news_id">
-                {{ news }}
+                <div class="mt-6 ml-2">
+                  <h2 class="font-bold text-xl">{{ news.published_date_in_jst.year }}年{{ news.published_date_in_jst.month }}月{{ news.published_date_in_jst.day }}日 【{{ news.title }}】</h2>
+                  <p class="mt-2 ml-4 text-xl whitespace-pre-wrap">{{ news.body }}</p>
+                </div>
               </li>
             </ul>
           </div>
         </div>
         <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <AlertMessage class="mt-6" v-bind:message="errMessage"/>
+          <AlertMessage v-bind:message="errMessage"/>
         </div>
       </main>
     </div>
