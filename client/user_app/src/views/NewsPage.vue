@@ -16,9 +16,9 @@
           <div v-else>
             <ul>
               <li v-for="news in newsArray" v-bind:key="news.news_id">
-                <div class="mt-6 ml-2">
-                  <h2 class="font-bold text-xl">{{ news.published_date_in_jst.year }}年{{ news.published_date_in_jst.month }}月{{ news.published_date_in_jst.day }}日 【{{ news.title }}】</h2>
-                  <p class="mt-2 ml-4 text-xl whitespace-pre-wrap">{{ news.body }}</p>
+                <div v-bind:data-test="'news-id-' + news.news_id" class="mt-6 ml-2">
+                  <h2 data-test="title" class="font-bold text-xl">{{ news.published_date_in_jst.year }}年{{ news.published_date_in_jst.month }}月{{ news.published_date_in_jst.day }}日 【{{ news.title }}】</h2>
+                  <p data-test="body" class="mt-2 ml-4 text-xl whitespace-pre-wrap">{{ news.body }}</p>
                 </div>
               </li>
             </ul>
