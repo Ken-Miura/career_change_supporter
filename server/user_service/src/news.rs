@@ -181,4 +181,64 @@ mod tests {
             }
         );
     }
+
+    #[tokio::test]
+    async fn handle_news_2_results() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let news_id1 = 1;
+        let title1 = "title1".to_string();
+        let body1 = r"line1
+        line2
+        line3"
+            .to_string();
+        let pd1 = current_date_time - chrono::Duration::days(1);
+        let news_id2 = 2;
+        let title2 = "title2".to_string();
+        let body2 = r"line
+        line
+        line"
+            .to_string();
+        let pd2 = current_date_time - chrono::Duration::days(2);
+        let op = NewsOperationMock {
+            news_array: vec![
+                (news_id1, title1.clone(), body1.clone(), pd1),
+                (news_id2, title2.clone(), body2.clone(), pd2),
+            ],
+        };
+
+        let result = handle_news(&current_date_time, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(
+            result.1 .0,
+            NewsResult {
+                news_array: vec![
+                    News {
+                        news_id: news_id1,
+                        title: title1,
+                        body: body1,
+                        published_date_in_jst: Ymd {
+                            year: pd1.year(),
+                            month: pd1.month(),
+                            day: pd1.day()
+                        }
+                    },
+                    News {
+                        news_id: news_id2,
+                        title: title2,
+                        body: body2,
+                        published_date_in_jst: Ymd {
+                            year: pd2.year(),
+                            month: pd2.month(),
+                            day: pd2.day()
+                        }
+                    }
+                ]
+            }
+        );
+    }
 }
