@@ -144,4 +144,41 @@ mod tests {
         assert_eq!(result.0, StatusCode::OK);
         assert_eq!(result.1 .0, NewsResult { news_array: vec![] });
     }
+
+    #[tokio::test]
+    async fn handle_news_1_result() {
+        let news_id = 1;
+        let title = "title".to_string();
+        let body = r"line1
+        line2
+        line3"
+            .to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = NewsOperationMock {
+            news_array: vec![(news_id, title.clone(), body.clone(), current_date_time)],
+        };
+
+        let result = handle_news(&current_date_time, op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(
+            result.1 .0,
+            NewsResult {
+                news_array: vec![News {
+                    news_id,
+                    title,
+                    body,
+                    published_date_in_jst: Ymd {
+                        year: current_date_time.year(),
+                        month: current_date_time.month(),
+                        day: current_date_time.day()
+                    }
+                }]
+            }
+        );
+    }
 }
