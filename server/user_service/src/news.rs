@@ -5,7 +5,7 @@ use axum::{async_trait, Json};
 use chrono::{DateTime, Datelike, FixedOffset, Utc};
 use common::util::Ymd;
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 use hyper::StatusCode;
 use serde::Serialize;
 use tracing::error;
@@ -27,6 +27,7 @@ pub(crate) struct NewsResult {
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct News {
+    news_id: i64,
     title: String,
     body: String,
     published_date_in_jst: Ymd,
@@ -53,6 +54,7 @@ impl NewsOperation for NewsOperationImpl {
     ) -> Result<Vec<News>, ErrResp> {
         let results = entity::news::Entity::find()
             .filter(entity::news::Column::PublishedAt.gt(criteria))
+            .order_by_desc(entity::news::Column::PublishedAt)
             .all(&self.pool)
             .await
             .map_err(|e| {
@@ -64,6 +66,7 @@ impl NewsOperation for NewsOperationImpl {
             .map(|m| {
                 let pd = m.published_at.with_timezone(&(*JAPANESE_TIME_ZONE));
                 News {
+                    news_id: m.news_id,
                     title: m.title,
                     body: m.body,
                     published_date_in_jst: Ymd {
