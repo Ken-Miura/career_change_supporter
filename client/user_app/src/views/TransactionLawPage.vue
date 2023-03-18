@@ -25,7 +25,7 @@
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">相談料と手数料</h2>
-        <p class="ml-2 text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザーの詳細に記載されています。相談を受け付けるユーザーに対して、以下の手数料が課されます。</p>
+        <p class="ml-2 text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザー（コンサルタント）の詳細に記載されています。コンサルタントに対して、以下の手数料が課されます。</p>
         <ol class="list-disc ml-8 text-lg">
           <li>プラットフォーム利用料：相談１回につき、相談料の{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント</li>
           <li>報酬の入金口座への振込手数料：{{ TRANSFER_FEE_IN_YEN }}円</li>
