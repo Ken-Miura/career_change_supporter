@@ -5,7 +5,10 @@
         <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="flex justify-center flex-col bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <div v-if="!updatePasswordDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else class="flex justify-center flex-col bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
         <h3 class="font-bold text-2xl">パスワード変更</h3>
       </section>
@@ -29,7 +32,6 @@ import { defineComponent, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PasswordInput from '@/components/PasswordInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
-import { updatePassword } from '@/util/password/UpdatePassword'
 import { UpdatePasswordResp } from '@/util/password/UpdatePasswordResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
@@ -37,12 +39,15 @@ import { createErrorMessage } from '@/util/Error'
 import { useStore } from 'vuex'
 import { SET_PASSWORD_UPDATE_RESULT_MESSAGE } from '@/store/mutationTypes'
 import { useCredentil } from '@/components/useCredential'
+import { useUpdatePassword } from '@/util/password/useUpdatePassword'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
 export default defineComponent({
   name: 'PasswordUpdatePage',
   components: {
     PasswordInput,
-    AlertMessage
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const router = useRouter()
@@ -56,6 +61,11 @@ export default defineComponent({
     useCredentil()
     const isHidden = ref(true)
     const errorMessage = ref('')
+    const {
+      updatePasswordDone,
+      updatePasswordFunc
+    } = useUpdatePassword()
+
     const updatePasswordHandler = async () => {
       const query = router.currentRoute.value.query
       const pwdChangeReqId = query['pwd-change-req-id'] as string | null | undefined
@@ -71,7 +81,7 @@ export default defineComponent({
       }
       let message: string
       try {
-        const result = await updatePassword(pwdChangeReqId, form.password)
+        const result = await updatePasswordFunc(pwdChangeReqId, form.password)
         if (result instanceof UpdatePasswordResp) {
           message = Message.PASSWORD_CHANGED_MESSAGE
         } else if (result instanceof ApiErrorResp) {
@@ -85,7 +95,7 @@ export default defineComponent({
       store.commit(SET_PASSWORD_UPDATE_RESULT_MESSAGE, message)
       await router.push('/password-update-result')
     }
-    return { form, setPassword, setPasswordConfirmation, isHidden, errorMessage, updatePasswordHandler }
+    return { form, setPassword, setPasswordConfirmation, isHidden, errorMessage, updatePasswordHandler, updatePasswordDone }
   }
 })
 </script>

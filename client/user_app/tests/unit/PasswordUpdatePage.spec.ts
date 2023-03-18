@@ -8,10 +8,17 @@ import { Code } from '@/util/Error'
 import { SET_PASSWORD_UPDATE_RESULT_MESSAGE } from '@/store/mutationTypes'
 import PasswordInput from '@/components/PasswordInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
-jest.mock('@/util/password/UpdatePassword')
-const updatePasswordMock = updatePassword as jest.MockedFunction<typeof updatePassword>
+const updatePasswordDoneMock = ref(true)
+const updatePasswordFuncMock = jest.fn()
+jest.mock('@/util/password/useUpdatePassword', () => ({
+  useUpdatePassword: () => ({
+    updatePasswordDone: updatePasswordDoneMock,
+    updatePasswordFunc: updatePasswordFuncMock
+  })
+}))
 
 const routerPushMock = jest.fn()
 // TODO: クエリパラメータを含むrouterをより良い方法でモック化できる場合、そちらに改善する
@@ -36,7 +43,8 @@ const DIFFERENT_PWD = '1234abcdABCD'
 
 describe('PasswordUpdatePage.vue', () => {
   beforeEach(() => {
-    updatePasswordMock.mockReset()
+    updatePasswordDoneMock.value = true
+    updatePasswordFuncMock.mockReset()
     queryObject = null
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
@@ -69,8 +77,29 @@ describe('PasswordUpdatePage.vue', () => {
     expect(classes).toContain('hidden')
   })
 
+  it('displays header and WaitingCircle, no AlertMessage while requesting', async () => {
+    updatePasswordDoneMock.value = false
+    updatePasswordFuncMock.mockResolvedValue(UpdatePasswordResp.create())
+    queryObject = { 'pwd-change-req-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
+
+    const wrapper = mount(PasswordUpdatePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const headers = wrapper.findAll('header')
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+  })
+
   it(`moves to PasswordUpdateResultPage with ${Message.PASSWORD_CHANGED_MESSAGE} when password is passed`, async () => {
-    updatePasswordMock.mockResolvedValue(UpdatePasswordResp.create())
+    updatePasswordFuncMock.mockResolvedValue(UpdatePasswordResp.create())
     queryObject = { 'pwd-change-req-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
     const wrapper = mount(PasswordUpdatePage, {
       global: {
@@ -96,7 +125,7 @@ describe('PasswordUpdatePage.vue', () => {
   })
 
   it(`displays alert message ${Message.INVALID_QUERY_PARAM} when query has no pwd-change-req-id`, async () => {
-    updatePasswordMock.mockResolvedValue(UpdatePasswordResp.create())
+    updatePasswordFuncMock.mockResolvedValue(UpdatePasswordResp.create())
     queryObject = { 'pwd-change': 'bc999c52f1cc4801bfd9216cdebc0763' }
     const wrapper = mount(PasswordUpdatePage, {
       global: {
@@ -125,7 +154,7 @@ describe('PasswordUpdatePage.vue', () => {
   })
 
   it(`displays alert message ${Message.PASSWORD_CONFIRMATION_FAILED} when password and password confirmatin are different`, async () => {
-    updatePasswordMock.mockResolvedValue(UpdatePasswordResp.create())
+    updatePasswordFuncMock.mockResolvedValue(UpdatePasswordResp.create())
     queryObject = { 'pwd-change-req-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
     const wrapper = mount(PasswordUpdatePage, {
       global: {
@@ -155,7 +184,7 @@ describe('PasswordUpdatePage.vue', () => {
 
   it(`moves PasswordUpdateResultPage with ${Message.INVALID_UUID_FORMAT_MESSAGE} when invalid uuid format is passed`, async () => {
     const apiErr = ApiError.create(Code.INVALID_UUID_FORMAT)
-    updatePasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    updatePasswordFuncMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'pwd-change-req-id': /* 31桁 */ 'bc999c52f1cc4801bfd9216cdebc076' }
     const wrapper = mount(PasswordUpdatePage, {
       global: {
@@ -181,7 +210,7 @@ describe('PasswordUpdatePage.vue', () => {
 
   it(`moves to PasswordUpdateResultPage with ${Message.NO_ACCOUNT_FOUND_MESSAGE} when account does not exist`, async () => {
     const apiErr = ApiError.create(Code.NO_ACCOUNT_FOUND)
-    updatePasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    updatePasswordFuncMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'pwd-change-req-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
     const wrapper = mount(PasswordUpdatePage, {
       global: {
@@ -207,7 +236,7 @@ describe('PasswordUpdatePage.vue', () => {
 
   it(`moves to PasswordUpdateResultPage with ${Message.NO_PWD_CHANGE_REQ_FOUND_MESSAGE} when password change request is not found`, async () => {
     const apiErr = ApiError.create(Code.NO_PWD_CHANGE_REQ_FOUND)
-    updatePasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    updatePasswordFuncMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'pwd-change-req-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
     const wrapper = mount(PasswordUpdatePage, {
       global: {
@@ -233,7 +262,7 @@ describe('PasswordUpdatePage.vue', () => {
 
   it(`moves to ApplyNewPasswordResultPage with ${Message.PWD_CHANGE_REQ_EXPIRED_MESSAGE} when new password has already expired`, async () => {
     const apiErr = ApiError.create(Code.PWD_CHANGE_REQ_EXPIRED)
-    updatePasswordMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
+    updatePasswordFuncMock.mockResolvedValue(ApiErrorResp.create(400, apiErr))
     queryObject = { 'pwd-change-req-id': 'bc999c52f1cc4801bfd9216cdebc0763' }
     const wrapper = mount(PasswordUpdatePage, {
       global: {

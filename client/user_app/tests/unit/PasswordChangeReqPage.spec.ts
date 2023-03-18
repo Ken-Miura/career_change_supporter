@@ -7,6 +7,7 @@ import { Message } from '@/util/Message'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { nextTick, ref } from 'vue'
 import { Code } from '@/util/Error'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
 const createPwdChangeReqDoneMock = ref(true)
 const createPwdChangeReqFuncMock = jest.fn()
@@ -59,6 +60,26 @@ describe('PasswordChangeReqPage.vue', () => {
     const alertMessage = wrapper.findComponent(AlertMessage)
     const classes = alertMessage.classes()
     expect(classes).toContain('hidden')
+  })
+
+  it('displays header and WaitingCircle, no AlertMessage while requesting', async () => {
+    createPwdChangeReqDoneMock.value = false
+    createPwdChangeReqFuncMock.mockResolvedValue(CreatePwdChangeReqResp.create())
+
+    const wrapper = mount(PasswordChangeReqPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const headers = wrapper.findAll('header')
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
   })
 
   it('moves to PasswordChangeReqResultPage when email address is passed', async () => {
