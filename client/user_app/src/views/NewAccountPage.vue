@@ -5,7 +5,10 @@
         <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <div v-if="!createTempAccountDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
         <h3 class="font-bold text-2xl">新規登録</h3>
       </section>
@@ -33,17 +36,19 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import { useCredentil } from '@/components/useCredential'
 import { useRouter } from 'vue-router'
 import { ApiErrorResp } from '@/util/ApiError'
-import { createTempAccount } from '@/util/temp-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/temp-account/CreateTempAccountResp'
 import { createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
+import WaitingCircle from '@/components/WaitingCircle.vue'
+import { useCreateTempAccount } from '@/util/temp-account/useCreateTempAccount'
 
 export default defineComponent({
   name: 'NewAccountPage',
   components: {
     EmailAddressInput,
     PasswordInput,
-    AlertMessage
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const router = useRouter()
@@ -57,6 +62,11 @@ export default defineComponent({
     useCredentil()
     const isHidden = ref(true)
     const errorMessage = ref('')
+    const {
+      createTempAccountDone,
+      createTempAccountFunc
+    } = useCreateTempAccount()
+
     const createTempAccountHandler = async () => {
       if (!passwordsAreSame.value) {
         isHidden.value = false
@@ -68,7 +78,7 @@ export default defineComponent({
         // 1. システムは、一時アカウントを作成し、ユーザーにメールを送信する
         // 2. ユーザーは、メールに記載してあるURLにアクセスし、アカウントを新規作成する
         // 下記の関数では1の機能を提供する
-        const result = await createTempAccount(form.emailAddress, form.password)
+        const result = await createTempAccountFunc(form.emailAddress, form.password)
         if (result instanceof CreateTempAccountResp) {
           await router.push('/temp-account-creation-result')
           return
@@ -90,7 +100,8 @@ export default defineComponent({
       setPasswordConfirmation,
       isHidden,
       errorMessage,
-      createTempAccountHandler
+      createTempAccountHandler,
+      createTempAccountDone
     }
   }
 })

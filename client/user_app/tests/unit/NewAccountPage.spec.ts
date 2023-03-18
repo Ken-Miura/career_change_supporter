@@ -3,15 +3,21 @@ import NewAccountPage from '@/views/NewAccountPage.vue'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
-import { createTempAccount } from '@/util/temp-account/CreateTempAccount'
 import { CreateTempAccountResp } from '@/util/temp-account/CreateTempAccountResp'
 import { Message } from '@/util/Message'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { Code } from '@/util/Error'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
-jest.mock('@/util/temp-account/CreateTempAccount')
-const createTempAccountMock = createTempAccount as jest.MockedFunction<typeof createTempAccount>
+const createTempAccountDoneMock = ref(true)
+const createTempAccountFuncMock = jest.fn()
+jest.mock('@/util/temp-account/useCreateTempAccount', () => ({
+  useCreateTempAccount: () => ({
+    createTempAccountDone: createTempAccountDoneMock,
+    createTempAccountFunc: createTempAccountFuncMock
+  })
+}))
 
 // 参考: https://stackoverflow.com/questions/68763693/vue-routers-injection-fails-during-a-jest-unit-test
 const routerPushMock = jest.fn()
@@ -28,7 +34,8 @@ const DIFFERENT_PWD = '1234abcdABCD'
 describe('NewAccountPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
-    createTempAccountMock.mockReset()
+    createTempAccountDoneMock.value = true
+    createTempAccountFuncMock.mockReset()
   })
 
   it('has one EmailAddressInput, two PasswordInputs and one AlertMessage', () => {
@@ -60,8 +67,28 @@ describe('NewAccountPage.vue', () => {
     expect(classes).toContain('hidden')
   })
 
+  it('displays header and WaitingCircle, no AlertMessage while requesting', async () => {
+    createTempAccountDoneMock.value = false
+    createTempAccountFuncMock.mockResolvedValue(CreateTempAccountResp.create())
+
+    const wrapper = mount(NewAccountPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const headers = wrapper.findAll('header')
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+  })
+
   it('moves to TempAccountCreationResultPage when email address and password are passed', async () => {
-    createTempAccountMock.mockResolvedValue(CreateTempAccountResp.create())
+    createTempAccountFuncMock.mockResolvedValue(CreateTempAccountResp.create())
 
     const wrapper = mount(NewAccountPage, {
       global: {
@@ -91,7 +118,7 @@ describe('NewAccountPage.vue', () => {
   it(`displays alert message ${Message.REACH_TEMP_ACCOUNTS_LIMIT_MESSAGE} when reach new account limit`, async () => {
     const apiErr = ApiError.create(Code.REACH_TEMP_ACCOUNTS_LIMIT)
     const apiErrorResp = ApiErrorResp.create(400, apiErr)
-    createTempAccountMock.mockResolvedValue(apiErrorResp)
+    createTempAccountFuncMock.mockResolvedValue(apiErrorResp)
 
     const wrapper = mount(NewAccountPage, {
       global: {
@@ -127,7 +154,7 @@ describe('NewAccountPage.vue', () => {
   it('does not move TempAccountCreationResultPage when password and password confirm are different', async () => {
     const apiErr = ApiError.create(Code.REACH_TEMP_ACCOUNTS_LIMIT)
     const apiErrorResp = ApiErrorResp.create(400, apiErr)
-    createTempAccountMock.mockResolvedValue(apiErrorResp)
+    createTempAccountFuncMock.mockResolvedValue(apiErrorResp)
 
     const wrapper = mount(NewAccountPage, {
       global: {
@@ -156,7 +183,7 @@ describe('NewAccountPage.vue', () => {
 
   it(`displays alert message ${Message.TEMP_ACCOUNT_CREATION_FAILED} when connection error happened`, async () => {
     const errDetail = 'connection error'
-    createTempAccountMock.mockRejectedValue(new Error(errDetail))
+    createTempAccountFuncMock.mockRejectedValue(new Error(errDetail))
 
     const wrapper = mount(NewAccountPage, {
       global: {
