@@ -2,15 +2,20 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import PasswordChangeReqPage from '@/views/PasswordChangeReqPage.vue'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
-import { createPwdChangeReq } from '@/util/password/CreatePwdChangeReq'
 import { CreatePwdChangeReqResp } from '@/util/password/CreatePwdChangeReqResp'
 import { Message } from '@/util/Message'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { Code } from '@/util/Error'
 
-jest.mock('@/util/password/CreatePwdChangeReq')
-const createPwdChangeReqMock = createPwdChangeReq as jest.MockedFunction<typeof createPwdChangeReq>
+const createPwdChangeReqDoneMock = ref(true)
+const createPwdChangeReqFuncMock = jest.fn()
+jest.mock('@/util/password/useCreatePwdChangeReq', () => ({
+  useCreatePwdChangeReq: () => ({
+    createPwdChangeReqDone: createPwdChangeReqDoneMock,
+    createPwdChangeReqFunc: createPwdChangeReqFuncMock
+  })
+}))
 
 // 参考: https://stackoverflow.com/questions/68763693/vue-routers-injection-fails-during-a-jest-unit-test
 const routerPushMock = jest.fn()
@@ -25,7 +30,8 @@ const EMAIL_ADDRESS = 'test@example.com'
 describe('PasswordChangeReqPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
-    createPwdChangeReqMock.mockReset()
+    createPwdChangeReqDoneMock.value = true
+    createPwdChangeReqFuncMock.mockReset()
   })
 
   it('has one EmailAddressInput and one AlertMessage', () => {
@@ -56,7 +62,7 @@ describe('PasswordChangeReqPage.vue', () => {
   })
 
   it('moves to PasswordChangeReqResultPage when email address is passed', async () => {
-    createPwdChangeReqMock.mockResolvedValue(CreatePwdChangeReqResp.create())
+    createPwdChangeReqFuncMock.mockResolvedValue(CreatePwdChangeReqResp.create())
 
     const wrapper = mount(PasswordChangeReqPage, {
       global: {
@@ -80,7 +86,7 @@ describe('PasswordChangeReqPage.vue', () => {
   it(`displays alert message ${Message.REACH_PASSWORD_CHANGE_REQ_LIMIT_MESSAGE} when reach password change request limit`, async () => {
     const apiErr = ApiError.create(Code.REACH_PASSWORD_CHANGE_REQ_LIMIT)
     const apiErrorResp = ApiErrorResp.create(400, apiErr)
-    createPwdChangeReqMock.mockResolvedValue(apiErrorResp)
+    createPwdChangeReqFuncMock.mockResolvedValue(apiErrorResp)
 
     const wrapper = mount(PasswordChangeReqPage, {
       global: {
@@ -109,7 +115,7 @@ describe('PasswordChangeReqPage.vue', () => {
 
   it(`displays alert message ${Message.PASSWORD_CHANGE_REQUEST_FAILED} when connection error happened`, async () => {
     const errDetail = 'connection error'
-    createPwdChangeReqMock.mockRejectedValue(new Error(errDetail))
+    createPwdChangeReqFuncMock.mockRejectedValue(new Error(errDetail))
 
     const wrapper = mount(PasswordChangeReqPage, {
       global: {

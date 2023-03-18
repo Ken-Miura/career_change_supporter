@@ -5,7 +5,10 @@
         <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <div v-if="!createPwdChangeReqDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
         <h3 class="font-bold text-2xl">パスワード変更依頼</h3>
       </section>
@@ -32,14 +35,16 @@ import { useRouter } from 'vue-router'
 import { useCredentil } from '@/components/useCredential'
 import { createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
-import { createPwdChangeReq } from '@/util/password/CreatePwdChangeReq'
 import { CreatePwdChangeReqResp } from '@/util/password/CreatePwdChangeReqResp'
+import { useCreatePwdChangeReq } from '@/util/password/useCreatePwdChangeReq'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
 export default defineComponent({
   name: 'PasswordChangeReqPage',
   components: {
     EmailAddressInput,
-    AlertMessage
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const router = useRouter()
@@ -50,9 +55,14 @@ export default defineComponent({
     useCredentil()
     const isHidden = ref(true)
     const errorMessage = ref('')
+    const {
+      createPwdChangeReqDone,
+      createPwdChangeReqFunc
+    } = useCreatePwdChangeReq()
+
     const createPwdChangeReqHandler = async () => {
       try {
-        const result = await createPwdChangeReq(form.emailAddress)
+        const result = await createPwdChangeReqFunc(form.emailAddress)
         if (result instanceof CreatePwdChangeReqResp) {
           await router.push('/password-change-req-result')
           return
@@ -72,7 +82,8 @@ export default defineComponent({
       setEmailAddress,
       isHidden,
       errorMessage,
-      createPwdChangeReqHandler
+      createPwdChangeReqHandler,
+      createPwdChangeReqDone
     }
   }
 })
