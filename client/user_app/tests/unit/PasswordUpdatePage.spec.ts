@@ -1,5 +1,4 @@
 import PasswordUpdatePage from '@/views/PasswordUpdatePage.vue'
-import { updatePassword } from '@/util/password/UpdatePassword'
 import { mount, RouterLinkStub } from '@vue/test-utils'
 import { UpdatePasswordResp } from '@/util/password/UpdatePasswordResp'
 import { Message } from '@/util/Message'
