@@ -26,6 +26,16 @@
           <div class="mt-2">テスト</div>
           <img class="mt-2" v-bind:src="imageRef" />
         </div>
+        <div>
+          <div class="pt-3 rounded bg-gray-200">
+            <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">コード</label>
+            <input v-model="codeInput" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+          </div>
+          <button v-on:click="submitCode" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">コード送信</button>
+        </div>
+        <div v-if="status">
+          {{ status }}
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
@@ -107,6 +117,19 @@ export default defineComponent({
       imageRef.value = `data:image/png;base64,${result.qr}`
     })
 
+    const codeInput = ref('')
+    const status = ref(null as number | null)
+
+    const submitCode = async () => {
+      const data = { code: codeInput.value }
+      const resp = await fetch('/api/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(data)
+      })
+      status.value = resp.status
+    }
+
     return {
       form,
       setEmailAddress,
@@ -116,7 +139,10 @@ export default defineComponent({
       errorMessage,
       createTempAccountHandler,
       createTempAccountDone,
-      imageRef
+      imageRef,
+      codeInput,
+      submitCode,
+      status
     }
   }
 })

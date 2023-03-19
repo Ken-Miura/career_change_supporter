@@ -237,6 +237,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/user-rating", post(post_user_rating))
                 .route("/news", get(get_news))
                 .route("/mfa", get(crate::mfa::mfa))
+                .route("/check", post(crate::mfa::check))
                 .with_state(state),
         )
         .layer(
