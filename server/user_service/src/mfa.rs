@@ -10,7 +10,8 @@ use crate::err::unexpected_err_resp;
 // "TestSecretSuperSecret"
 // セットアップキーのキーは、下記のBase32エンコード済のものを使う
 // アカウント名は任意。キーの種類は時間ベースとなる。
-const SECRET: &str = "KRSXG5CTMVRXEZLUKN2XAZLSKNSWG4TFOQ";
+// const SECRET: &str = "KRSXG5CTMVRXEZLUKN2XAZLSKNSWG4TFOQ";
+const SECRET: &str = "HALE44XE2X7GXLL5TQTP522T3TQ3INXT";
 
 pub(crate) async fn mfa(State(pool): State<DatabaseConnection>) -> RespResult<MfaResult> {
     let totp = TOTP::new(
@@ -25,6 +26,19 @@ pub(crate) async fn mfa(State(pool): State<DatabaseConnection>) -> RespResult<Mf
     .unwrap();
     let code = totp.get_qr().expect("failed to get Ok");
     println!("{}", code);
+
+    let secret = Secret::generate_secret();
+    let secret = secret.to_encoded();
+    match secret {
+        Secret::Raw(_) => println!("!!!!!!!!!!!!!!RAW!!!!!!!!!!!!!!"),
+        Secret::Encoded(e) => {
+            println!("!!!!!!!!!!!!!!Encoded!!!!!!!!!!!!!!");
+            println!("------------------");
+            println!("{}", e);
+            println!("------------------");
+        }
+    }
+
     Ok((StatusCode::OK, Json(MfaResult { qr: code })))
 }
 

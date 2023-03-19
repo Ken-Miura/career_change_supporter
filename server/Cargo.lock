@@ -3896,6 +3896,7 @@ dependencies = [
  "hmac 0.12.1",
  "image",
  "qrcodegen",
+ "rand",
  "sha1 0.10.5",
  "sha2 0.10.6",
  "url",
