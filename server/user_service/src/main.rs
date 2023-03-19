@@ -9,6 +9,7 @@ mod consultations;
 mod err;
 mod login;
 mod logout;
+mod mfa;
 mod news;
 mod password;
 mod personal_info;
@@ -235,6 +236,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultant-rating", post(post_consultant_rating))
                 .route("/user-rating", post(post_user_rating))
                 .route("/news", get(get_news))
+                .route("/mfa", get(crate::mfa::mfa))
                 .with_state(state),
         )
         .layer(

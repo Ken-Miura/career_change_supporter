@@ -21,6 +21,12 @@
           <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
         </form>
       </section>
+      <div>
+        <div class="m-2 text-2xl">
+          <div class="mt-2">テスト</div>
+          <img class="mt-2" v-bind:src="imageRef" />
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
@@ -29,7 +35,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -93,6 +99,14 @@ export default defineComponent({
         errorMessage.value = `${Message.TEMP_ACCOUNT_CREATION_FAILED}: ${e}`
       }
     }
+
+    const imageRef = ref('')
+    onMounted(async () => {
+      const resp = await fetch('/api/mfa')
+      const result = await resp.json() as { qr: string }
+      imageRef.value = `data:image/png;base64,${result.qr}`
+    })
+
     return {
       form,
       setEmailAddress,
@@ -101,7 +115,8 @@ export default defineComponent({
       isHidden,
       errorMessage,
       createTempAccountHandler,
-      createTempAccountDone
+      createTempAccountDone,
+      imageRef
     }
   }
 })
