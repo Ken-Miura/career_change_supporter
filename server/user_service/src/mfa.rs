@@ -7,6 +7,9 @@ use totp_rs::{Algorithm, Secret, TOTP};
 
 use crate::err::unexpected_err_resp;
 
+// "TestSecretSuperSecret"
+// セットアップキーのキーは、下記のBase32エンコード済のものを使う
+// アカウント名は任意。キーの種類は時間ベースとなる。
 const SECRET: &str = "KRSXG5CTMVRXEZLUKN2XAZLSKNSWG4TFOQ";
 
 pub(crate) async fn mfa(State(pool): State<DatabaseConnection>) -> RespResult<MfaResult> {
