@@ -15,6 +15,7 @@ pub use super::deleted_user_account::Entity as DeletedUserAccount;
 pub use super::document::Entity as Document;
 pub use super::identity::Entity as Identity;
 pub use super::maintenance::Entity as Maintenance;
+pub use super::mfa_info::Entity as MfaInfo;
 pub use super::news::Entity as News;
 pub use super::pwd_change_req::Entity as PwdChangeReq;
 pub use super::receipt::Entity as Receipt;
@@ -24,6 +25,7 @@ pub use super::rejected_create_identity_req::Entity as RejectedCreateIdentityReq
 pub use super::rejected_update_identity_req::Entity as RejectedUpdateIdentityReq;
 pub use super::settlement::Entity as Settlement;
 pub use super::stopped_settlement::Entity as StoppedSettlement;
+pub use super::temp_mfa_secret::Entity as TempMfaSecret;
 pub use super::tenant::Entity as Tenant;
 pub use super::terms_of_use::Entity as TermsOfUse;
 pub use super::update_identity_req::Entity as UpdateIdentityReq;
