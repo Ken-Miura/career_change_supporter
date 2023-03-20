@@ -63,6 +63,7 @@ impl MigrationTrait for Migration {
             hashed_password BYTEA NOT NULL,
             last_login_time TIMESTAMP WITH TIME ZONE,
             created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            mfa_enabled_at TIMESTAMP WITH TIME ZONE,
             disabled_at TIMESTAMP WITH TIME ZONE
           );"))
         .await
@@ -200,6 +201,65 @@ impl MigrationTrait for Migration {
         // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
             .execute(sql.stmt(r"GRANT SELECT, DELETE ON ccs_schema.pwd_change_req To admin_app;"))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.temp_mfa_secret (
+                temp_mfa_secret_id BIGSERIAL PRIMARY KEY,
+                user_account_id BIGINT NOT NULL,
+                base32_encoded_secret TEXT NOT NULL,
+                expired_at TIMESTAMP WITH TIME ZONE NOT NULL
+              );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.temp_mfa_secret To user_app;"))
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, DELETE ON ccs_schema.temp_mfa_secret To admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.temp_mfa_secret_temp_mfa_secret_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX temp_mfa_secret_user_account_id_idx ON ccs_schema.temp_mfa_secret (user_account_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX temp_mfa_secret_expired_at_idx ON ccs_schema.temp_mfa_secret (expired_at);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.mfa_info (
+                user_account_id BIGINT PRIMARY KEY,
+                base32_encoded_secret TEXT NOT NULL,
+                recovery_code TEXT NOT NULL
+              );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT, DELETE ON ccs_schema.mfa_info To user_app;"))
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, DELETE ON ccs_schema.mfa_info To admin_app;"))
             .await
             .map(|_| ())?;
 
