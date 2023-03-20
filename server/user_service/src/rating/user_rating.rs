@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::User;
 use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock};
 
@@ -53,8 +52,6 @@ pub(crate) struct UserRatingResult {}
 trait UserRatingOperation {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
 
-    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
-
     async fn find_consultation_info_from_user_rating(
         &self,
         user_rating_id: i64,
@@ -77,11 +74,6 @@ struct UserRatingOperationImpl {
 impl UserRatingOperation for UserRatingOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
         util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
-    async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        let op = DisabledCheckOperationImpl::new(&self.pool);
-        util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
     }
 
     async fn find_consultation_info_from_user_rating(
@@ -230,7 +222,6 @@ async fn handle_user_rating(
     ensure_rating_id_is_positive(user_rating_id)?;
     ensure_rating_is_in_valid_range(rating)?;
     ensure_identity_exists(consultant_id, &op).await?;
-    ensure_consultant_is_available(consultant_id, &op).await?;
 
     let cl = get_consultation_info_from_user_rating(user_rating_id, &op).await?;
     ensure_consultant_ids_are_same(consultant_id, cl.consultant_id)?;
@@ -261,26 +252,6 @@ async fn ensure_identity_exists(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
-}
-
-async fn ensure_consultant_is_available(
-    consultant_id: i64,
-    op: &impl UserRatingOperation,
-) -> Result<(), ErrResp> {
-    let available = op.check_if_consultant_is_available(consultant_id).await?;
-    if !available {
-        error!(
-            "consultant is not available (consultant_id: {})",
-            consultant_id
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::AccountIsNotAvailable as u32,
             }),
         ));
     }
@@ -355,7 +326,6 @@ mod tests {
     #[derive(Clone, Debug)]
     struct UserRatingOperationMock {
         account_id: i64,
-        consultant_available: bool,
         user_rating_id: i64,
         consultation_info: ConsultationInfo,
         rating: i16,
@@ -367,17 +337,6 @@ mod tests {
     impl UserRatingOperation for UserRatingOperationMock {
         async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
             if self.account_id != account_id {
-                return Ok(false);
-            }
-            Ok(true)
-        }
-
-        async fn check_if_consultant_is_available(
-            &self,
-            consultant_id: i64,
-        ) -> Result<bool, ErrResp> {
-            assert_eq!(self.account_id, consultant_id);
-            if !self.consultant_available {
                 return Ok(false);
             }
             Ok(true)
@@ -438,7 +397,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id,
-                        consultant_available: true,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -462,7 +420,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id,
-                        consultant_available: true,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -491,7 +448,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id,
-                        consultant_available: true,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -520,7 +476,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id + 97,
-                        consultant_available: true,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -541,35 +496,6 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail AccountIsNotAvailable".to_string(),
-                input: Input {
-                    consultant_id,
-                    user_rating_id,
-                    rating,
-                    current_date_time,
-                    op: UserRatingOperationMock {
-                        account_id: consultant_id,
-                        consultant_available: false,
-                        user_rating_id,
-                        consultation_info: ConsultationInfo {
-                            consultation_id,
-                            user_account_id,
-                            consultant_id,
-                            consultation_date_time_in_jst,
-                        },
-                        rating,
-                        current_date_time,
-                        already_exists: false,
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::AccountIsNotAvailable as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "fail NoUserRatingFound (really not found)".to_string(),
                 input: Input {
                     consultant_id,
@@ -578,7 +504,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id,
-                        consultant_available: true,
                         user_rating_id: user_rating_id + 3,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -607,7 +532,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id,
-                        consultant_available: true,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -636,7 +560,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id,
-                        consultant_available: true,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -665,7 +588,6 @@ mod tests {
                     current_date_time,
                     op: UserRatingOperationMock {
                         account_id: consultant_id,
-                        consultant_available: true,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,

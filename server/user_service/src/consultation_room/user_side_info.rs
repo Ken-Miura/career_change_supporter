@@ -82,8 +82,9 @@ async fn handle_user_side_info(
     validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_user_account_id_is_valid(result.user_account_id, account_id)?;
+    // 操作者（ユーザー）のアカウントが無効化されているかどうかはリクエストがこの関数に来る前のUser構造体内で既にチェック済
+    // 従って、アカウントが無効化されているかどうかは相談相手のみ確認する
     let _ = get_consultant_if_available(result.consultant_id, &op).await?;
-    let _ = get_user_account_if_available(result.user_account_id, &op).await?;
     ensure_consultation_room_can_be_opened(
         current_date_time,
         &result.consultation_date_time_in_jst,
@@ -129,12 +130,6 @@ trait UserSideInfoOperation {
         consultant_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp>;
 
-    /// ユーザーが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
-    async fn get_user_account_if_available(
-        &self,
-        user_account_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp>;
-
     async fn update_user_account_entered_at_if_needed(
         &self,
         consultation_id: i64,
@@ -164,14 +159,6 @@ impl UserSideInfoOperation for UserSideInfoOperationImpl {
         consultant_id: i64,
     ) -> Result<Option<UserAccount>, ErrResp> {
         util::available_user_account::get_if_user_account_is_available(&self.pool, consultant_id)
-            .await
-    }
-
-    async fn get_user_account_if_available(
-        &self,
-        user_account_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp> {
-        util::available_user_account::get_if_user_account_is_available(&self.pool, user_account_id)
             .await
     }
 
@@ -278,23 +265,7 @@ async fn get_consultant_if_available(
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::ConsultantIsNotAvailableOnConsultationRoom as u32,
-            }),
-        )
-    })
-}
-
-async fn get_user_account_if_available(
-    user_account_id: i64,
-    op: &impl UserSideInfoOperation,
-) -> Result<UserAccount, ErrResp> {
-    let user = op.get_user_account_if_available(user_account_id).await?;
-    user.ok_or_else(|| {
-        error!("user ({}) is not available", user_account_id);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::UserIsNotAvailableOnConsultationRoom as u32,
+                code: Code::TheOtherPersonAccountIsNotAvailable as u32,
             }),
         )
     })
@@ -365,7 +336,6 @@ mod tests {
         consultation_id: i64,
         consultation: Consultation,
         consultant: UserAccount,
-        user_account: UserAccount,
         current_date_time: DateTime<FixedOffset>,
     }
 
@@ -398,17 +368,6 @@ mod tests {
             Ok(Some(self.consultant.clone()))
         }
 
-        async fn get_user_account_if_available(
-            &self,
-            user_account_id: i64,
-        ) -> Result<Option<UserAccount>, ErrResp> {
-            assert_eq!(self.account_id, user_account_id);
-            if self.user_account.disabled_at.is_some() {
-                return Ok(None);
-            }
-            Ok(Some(self.user_account.clone()))
-        }
-
         async fn update_user_account_entered_at_if_needed(
             &self,
             consultation_id: i64,
@@ -427,7 +386,6 @@ mod tests {
         let consultation_date_time_in_jst =
             *CURRENT_DATE_TIME + Duration::minutes(LEEWAY_IN_MINUTES); // LEEWAY_IN_MINUTES分前丁度はミーティングルームへ入れる
         let consultant_email_address = "test0@test.com";
-        let user_account_email_address = "test1@test.com";
         vec![
             TestCase {
                 name: "success case 1".to_string(),
@@ -452,10 +410,6 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -494,10 +448,6 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -539,10 +489,6 @@ mod tests {
                             email_address: consultant_email_address.to_string(),
                             disabled_at: None,
                         },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: None,
-                        },
                         current_date_time: *CURRENT_DATE_TIME,
                     },
                 },
@@ -579,10 +525,6 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -622,10 +564,6 @@ mod tests {
                             email_address: consultant_email_address.to_string(),
                             disabled_at: None,
                         },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: None,
-                        },
                         current_date_time: *CURRENT_DATE_TIME,
                     },
                 },
@@ -659,10 +597,6 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -700,10 +634,6 @@ mod tests {
                             email_address: consultant_email_address.to_string(),
                             disabled_at: None,
                         },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: None,
-                        },
                         current_date_time: *CURRENT_DATE_TIME,
                     },
                 },
@@ -737,10 +667,6 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -778,10 +704,6 @@ mod tests {
                             email_address: consultant_email_address.to_string(),
                             disabled_at: None,
                         },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: None,
-                        },
                         current_date_time: *CURRENT_DATE_TIME,
                     },
                 },
@@ -817,10 +739,6 @@ mod tests {
                             email_address: consultant_email_address.to_string(),
                             disabled_at: None,
                         },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: None,
-                        },
                         current_date_time: *CURRENT_DATE_TIME,
                     },
                 },
@@ -832,7 +750,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail ConsultantIsNotAvailableOnConsultationRoom".to_string(),
+                name: "fail TheOtherPersonAccountIsNotAvailable".to_string(),
                 input: Input {
                     account_id: account_id_of_user,
                     consultation_id,
@@ -860,60 +778,13 @@ mod tests {
                                     .unwrap(),
                             ),
                         },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: None,
-                        },
                         current_date_time: *CURRENT_DATE_TIME,
                     },
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::ConsultantIsNotAvailableOnConsultationRoom as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail UserIsNotAvailableOnConsultationRoom".to_string(),
-                input: Input {
-                    account_id: account_id_of_user,
-                    consultation_id,
-                    current_date_time: *CURRENT_DATE_TIME,
-                    identification: SkyWayIdentification {
-                        application_id: DUMMY_APPLICATION_ID.to_string(),
-                        secret: DUMMY_SECRET.to_string(),
-                    },
-                    token_id: TOKEN_ID.to_string(),
-                    audio_test_done: true,
-                    op: UserSideInfoOperationMock {
-                        account_id: account_id_of_user,
-                        consultation_id,
-                        consultation: Consultation {
-                            user_account_id: account_id_of_user,
-                            consultant_id: account_id_of_consultant,
-                            consultation_date_time_in_jst,
-                            room_name: ROOM_NAME.to_string(),
-                        },
-                        consultant: UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: Some(
-                                JAPANESE_TIME_ZONE
-                                    .with_ymd_and_hms(2023, 1, 30, 6, 2, 30)
-                                    .unwrap(),
-                            ),
-                        },
-                        current_date_time: *CURRENT_DATE_TIME,
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::UserIsNotAvailableOnConsultationRoom as u32,
+                        code: Code::TheOtherPersonAccountIsNotAvailable as u32,
                     }),
                 )),
             },
@@ -942,10 +813,6 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -983,10 +850,6 @@ mod tests {
                         },
                         consultant: UserAccount {
                             email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,

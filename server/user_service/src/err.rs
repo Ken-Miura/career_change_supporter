@@ -147,6 +147,7 @@ pub(crate) enum Code {
     AccountIsNotAvailable = 20135,
     NoConsultantRatingFound = 20136,
     ConsultantHasAlreadyBeenRated = 20137,
+    TheOtherPersonAccountIsNotAvailable = 20138, // UserIsNotAvailableOnConsultationRoomとConsultantIsNotAvailableOnConsultationRoomの代わり。TODO: クライアント側も対応する
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
