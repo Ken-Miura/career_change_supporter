@@ -9,6 +9,7 @@ mod consultations;
 mod err;
 mod login;
 mod logout;
+mod mfa;
 mod news;
 mod password;
 mod personal_info;
@@ -31,6 +32,7 @@ use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
 use crate::login::post_login;
 use crate::logout::post_logout;
+use crate::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::news::get_news;
 use crate::password::change_req::post_password_change_req;
 use crate::password::update::post_password_update;
@@ -235,6 +237,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultant-rating", post(post_consultant_rating))
                 .route("/user-rating", post(post_user_rating))
                 .route("/news", get(get_news))
+                .route("/temp-mfa-secret", post(post_temp_mfa_secret))
                 .with_state(state),
         )
         .layer(
