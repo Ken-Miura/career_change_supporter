@@ -939,6 +939,8 @@ describe('ConsultantListPage.vue', () => {
 
     const consultants = wrapper.find('[data-test="consultants-area"]')
     expect(consultants.text()).not.toContain('コンサルタントID')
+    const noConsultantsFound = consultants.find('[data-test="no-consultants-found"]')
+    expect(noConsultantsFound.text()).toContain('条件に該当するコンサルタントは見つかりませんでした。')
 
     const pageMoveButtons = wrapper.find('[data-test="page-move-buttons"]')
     expect(pageMoveButtons.exists()).toBe(false)
