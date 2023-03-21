@@ -39,7 +39,7 @@ use crate::util::validator::consultation_date_time_validator::{
 };
 use crate::{
     err::unexpected_err_resp,
-    util::{self, session::User, ACCESS_INFO},
+    util::{self, session::user::User, ACCESS_INFO},
 };
 
 pub(crate) async fn post_begin_request_consultation(

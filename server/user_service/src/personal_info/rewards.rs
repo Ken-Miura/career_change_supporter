@@ -28,7 +28,7 @@ use crate::util::rewards::{
 use crate::util::{self};
 use crate::{
     err::{self, unexpected_err_resp},
-    util::{bank_account::BankAccount, session::User, ACCESS_INFO},
+    util::{bank_account::BankAccount, session::user::User, ACCESS_INFO},
 };
 
 const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;

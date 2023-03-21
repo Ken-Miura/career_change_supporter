@@ -20,7 +20,7 @@ use uuid::Uuid;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
 use crate::util::available_user_account::UserAccount;
-use crate::util::session::User;
+use crate::util::session::user::User;
 
 use super::{
     create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,

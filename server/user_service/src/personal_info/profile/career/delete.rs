@@ -18,7 +18,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
-use crate::util::session::User;
+use crate::util::session::user::User;
 
 pub(crate) async fn career(
     User { account_id }: User,

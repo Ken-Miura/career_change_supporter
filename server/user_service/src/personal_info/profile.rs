@@ -16,7 +16,7 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code::NoAccountFound},
-    util::session::User,
+    util::session::user::User,
 };
 
 pub(crate) async fn get_profile(

@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::{
     self, consultation_request::consultation_req_exists,
     consultation_request::round_to_one_decimal_places, consultation_request::ConsultationRequest,

@@ -27,7 +27,7 @@ use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::{
     self, available_user_account::UserAccount, consultation_request::consultation_req_exists,
     consultation_request::ConsultationRequest,

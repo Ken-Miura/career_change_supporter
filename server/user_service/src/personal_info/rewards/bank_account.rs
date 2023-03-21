@@ -37,7 +37,7 @@ use crate::{
     err::Code,
     util::{
         bank_account::BankAccount,
-        session::User,
+        session::user::User,
         validator::bank_account_validator::{validate_bank_account, BankAccountValidationError},
     },
 };

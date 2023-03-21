@@ -29,7 +29,7 @@ use crate::util::charge_metadata_key::{
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::{self, request_consultation::convert_payment_err_to_err_resp, ACCESS_INFO};
 
 static CONSULTANT_MAIL_SUBJECT: Lazy<String> =

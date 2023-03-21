@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock};
 
 use super::{

@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::{
     self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,

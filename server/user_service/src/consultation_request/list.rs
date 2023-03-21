@@ -24,7 +24,7 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
-use crate::util::session::User;
+use crate::util::session::user::User;
 
 const NUM_OF_CONSULTATION_REQUESTS: u64 = 20;
 

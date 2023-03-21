@@ -1,11 +1,9 @@
 // Copyright 2021 Ken Miura
 
-use async_redis_session::RedisSessionStore;
 use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
-use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
 use common::ApiError;
 use common::ErrResp;
@@ -21,35 +19,18 @@ use tracing::error;
 use tracing::info;
 
 use crate::err::unexpected_err_resp;
-use crate::err::Code::{AlreadyAgreedTermsOfUse, Unauthorized};
-use crate::util::session::SESSION_ID_COOKIE_NAME;
-use crate::util::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
-use crate::util::{session::get_user_by_session_id, terms_of_use::TERMS_OF_USE_VERSION};
+use crate::err::Code::AlreadyAgreedTermsOfUse;
+use crate::util::session::agreement_unchecked_user::AgreementUncheckedUser;
+use crate::util::terms_of_use::TERMS_OF_USE_VERSION;
 
 /// ユーザーが利用規約に同意したことを記録する
 pub(crate) async fn post_agreement(
-    jar: SignedCookieJar,
-    State(store): State<RedisSessionStore>,
+    AgreementUncheckedUser { account_id }: AgreementUncheckedUser,
     State(pool): State<DatabaseConnection>,
 ) -> Result<StatusCode, ErrResp> {
-    let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
-    let session_id = if let Some(s) = option_cookie {
-        s.value().to_string()
-    } else {
-        info!("no sessoin cookie found");
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            Json(ApiError {
-                code: Unauthorized as u32,
-            }),
-        ));
-    };
-    let op = RefreshOperationImpl {};
-    let user = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
     let op = AgreementOperationImpl::new(pool);
     let agreed_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let result =
-        handle_agreement_req(user.account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
+    let result = handle_agreement_req(account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
     Ok(result)
 }
 

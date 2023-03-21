@@ -15,7 +15,7 @@ use crate::{
     err::unexpected_err_resp,
     util::{
         request_consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE},
-        session::User,
+        session::user::User,
     },
 };
 

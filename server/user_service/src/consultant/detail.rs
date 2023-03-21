@@ -13,7 +13,7 @@ use tracing::{error, info};
 
 use crate::err::Code;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::years_of_service_period::{
     VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
     VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,

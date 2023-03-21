@@ -12,7 +12,7 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
-use crate::util::session::User;
+use crate::util::session::user::User;
 
 pub(crate) async fn get_fee_per_hour_in_yen_for_application(
     User { account_id }: User,

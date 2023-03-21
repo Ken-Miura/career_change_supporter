@@ -1,15 +1,17 @@
 // Copyright 2021 Ken Miura
 
 use async_session::{Session, SessionStore};
-use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::{http::StatusCode, Json};
 use axum_extra::extract::SignedCookieJar;
 use common::{ApiError, AppState, ErrResp};
-use serde::Deserialize;
 use std::time::Duration;
 use tracing::{error, info};
+
+pub(crate) mod agreement_unchecked_user;
+pub(crate) mod user;
+pub(crate) mod verified_user;
 
 use crate::err::{
     unexpected_err_resp,
@@ -30,75 +32,86 @@ const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
-/// ユーザーの情報にアクセスするためのID
-///
-/// ハンドラ関数内でユーザーの情報にアクセスしたい場合、原則としてこの型をパラメータとして受け付ける。
-/// このパラメータに含むIDを用いて、データベースからユーザー情報を取得できる。
-/// この型をパラメータとして受け付けると、ハンドラ関数の処理に入る前に下記の前処理を実施する。
-/// <ul>
-///   <li>ログインセッションが有効であることを確認</li>
-///   <li>アカウントが無効でないこと</li>
-///   <li>利用規約に同意済みである確認</li>
-/// </ul>
-#[derive(Deserialize, Clone, Debug)]
-pub(crate) struct User {
-    pub(crate) account_id: i64,
-}
-
-#[async_trait]
-impl<S> FromRequestParts<S> for User
+async fn get_agreement_unchecked_user_account_id_from_request_parts<S>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<i64, ErrResp>
 where
     AppState: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = ErrResp;
+    let signed_cookies = SignedCookieJar::<AppState>::from_request_parts(parts, state)
+        .await
+        .map_err(|e| {
+            error!("failed to get cookies: {:?}", e);
+            unexpected_err_resp()
+        })?;
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+    let session_id = match option_cookie {
+        Some(s) => s.value().to_string(),
+        None => {
+            info!("no sessoin cookie found");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Unauthorized as u32,
+                }),
+            ));
+        }
+    };
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let signed_cookies = SignedCookieJar::<AppState>::from_request_parts(parts, state)
-            .await
-            .map_err(|e| {
-                error!("failed to get cookies: {:?}", e);
-                unexpected_err_resp()
-            })?;
-        let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
-        let session_id = match option_cookie {
-            Some(s) => s.value().to_string(),
-            None => {
-                info!("no sessoin cookie found");
-                return Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError {
-                        code: Unauthorized as u32,
-                    }),
-                ));
-            }
-        };
+    let app_state = AppState::from_ref(state);
 
-        let app_state = AppState::from_ref(state);
+    let store = app_state.store;
+    let op = RefreshOperationImpl {};
+    let user_account_id =
+        get_user_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
 
-        let store = app_state.store;
-        let op = RefreshOperationImpl {};
-        let user = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
+    let pool = app_state.pool;
+    let disabled_check_op = DisabledCheckOperationImpl::new(&pool);
+    ensure_account_is_not_disabled(user_account_id, disabled_check_op).await?;
 
-        let pool = app_state.pool;
-        let disabled_check_op = DisabledCheckOperationImpl::new(&pool);
-        let _ = ensure_account_is_not_disabled(user.account_id, disabled_check_op).await?;
-
-        let terms_of_use_op = TermsOfUseLoadOperationImpl::new(&pool);
-        let _ = check_if_user_has_already_agreed(
-            user.account_id,
-            *TERMS_OF_USE_VERSION,
-            terms_of_use_op,
-        )
-        .await?;
-
-        Ok(user)
-    }
+    Ok(user_account_id)
 }
 
-/// session_idを使いstoreから、Userを取得する。<br>
-/// Userを取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
-/// Userの取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
+async fn get_user_account_id_from_request_parts<S>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<i64, ErrResp>
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
+    let user_account_id =
+        get_agreement_unchecked_user_account_id_from_request_parts(parts, state).await?;
+
+    let app_state = AppState::from_ref(state);
+    let terms_of_use_op = TermsOfUseLoadOperationImpl::new(&app_state.pool);
+    check_if_user_has_already_agreed(user_account_id, *TERMS_OF_USE_VERSION, terms_of_use_op)
+        .await?;
+
+    Ok(user_account_id)
+}
+
+async fn get_verified_user_account_id_from_request_parts<S>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<i64, ErrResp>
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
+    let user_account_id = get_user_account_id_from_request_parts(parts, state).await?;
+
+    let app_state = AppState::from_ref(state);
+    // TODO: identity check
+
+    Ok(user_account_id)
+}
+
+/// session_idを使い、storeからユーザーを一意に識別する値を取得する。<br>
+/// この値を取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
+/// 取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
 /// <br>
 /// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
 /// リニューアルタイムアウトが必要になった場合は、セッションを保存しているキャッシュシステムの定期再起動により実装する。<br>
@@ -107,21 +120,18 @@ where
 ///   著名なフレームワークにおいてもアイドルタイムアウトが一般的で、アブソリュートタイムアウトは実装されていない
 ///     1. <https://stackoverflow.com/questions/62964012/how-to-set-absolute-session-timeout-for-a-spring-session>
 ///     2. <https://www.webdevqa.jp.net/ja/authentication/%E3%82%BB%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E7%B5%B6%E5%AF%BE%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E3%81%AF%E3%81%A9%E3%82%8C%E3%81%8F%E3%82%89%E3%81%84%E3%81%AE%E9%95%B7%E3%81%95%E3%81%A7%E3%81%99%E3%81%8B%EF%BC%9F/l968265546/>
-/// # NOTE
-/// Userを利用するときは、原則としてハンドラのパラメータにUserを指定する方法を選択する（前記方法だと利用規約の同意しているかの確認も同時に行うため）
-/// 本関数は、Userの情報を使いたいが、利用規約の同意を確認したくないケース（ex. ユーザーから利用規約の同意を得るケース）のみに利用する<br>
 /// <br>
 /// # Errors
 /// 下記の場合、ステータスコード401、エラーコード[Unauthorized]を返す<br>
 /// <ul>
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
-pub(crate) async fn get_user_by_session_id(
+async fn get_user_account_id_by_session_id(
     session_id: String,
     store: &impl SessionStore,
     op: impl RefreshOperation,
     expiry: Duration,
-) -> Result<User, ErrResp> {
+) -> Result<i64, ErrResp> {
     let option_session = store.load_session(session_id.clone()).await.map_err(|e| {
         error!("failed to load session: {}", e);
         unexpected_err_resp()
@@ -151,14 +161,14 @@ pub(crate) async fn get_user_by_session_id(
         error!("failed to store session: {}", e);
         unexpected_err_resp()
     })?;
-    Ok(User { account_id })
+    Ok(account_id)
 }
 
-pub(crate) trait RefreshOperation {
+trait RefreshOperation {
     fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration);
 }
 
-pub(crate) struct RefreshOperationImpl {}
+struct RefreshOperationImpl {}
 
 impl RefreshOperation for RefreshOperationImpl {
     fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration) {
@@ -237,7 +247,9 @@ pub(crate) mod tests {
         err,
         util::{
             disabled_check::DisabledCheckOperation,
-            session::{get_user_by_session_id, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
+            session::{
+                get_user_account_id_by_session_id, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
+            },
             terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
         },
     };
@@ -287,7 +299,7 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn get_user_by_session_id_success() {
+    async fn get_user_account_id_by_session_id_success() {
         let store = MemoryStore::new();
         let user_account_id = 15001;
         let session_id = prepare_session(user_account_id, &store).await;
@@ -296,21 +308,22 @@ pub(crate) mod tests {
         let op = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
-        let user = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
-            .await
-            .expect("failed to get Ok");
+        let result =
+            get_user_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
+                .await
+                .expect("failed to get Ok");
 
-        // get_user_by_session_idが何らかの副作用でセッションを破棄していないか確認
+        // get_user_account_id_by_session_idが何らかの副作用でセッションを破棄していないか確認
         // 補足説明:
         // 実際の運用ではセッションに有効期限をもたせるので、
-        // get_user_by_session_idの後にセッションの有効期限が切れて0になることもあり得る。
+        // get_user_account_id_by_session_idの後にセッションの有効期限が切れて0になることもあり得る。
         // しかし、テストケースではセッションに有効期限を持たせていないため、暗黙のうちに0になる心配はない。
         assert_eq!(1, store.count().await);
-        assert_eq!(user_account_id, user.account_id);
+        assert_eq!(user_account_id, result);
     }
 
     #[tokio::test]
-    async fn get_user_by_session_id_fail_session_already_expired() {
+    async fn get_user_account_id_by_session_id_fail_session_already_expired() {
         let user_account_id = 10002;
         let store = MemoryStore::new();
         let session_id = prepare_session(user_account_id, &store).await;
@@ -321,9 +334,10 @@ pub(crate) mod tests {
         let op = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
-        let result = get_user_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
-            .await
-            .expect_err("failed to get Err");
+        let result =
+            get_user_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
+                .await
+                .expect_err("failed to get Err");
 
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);

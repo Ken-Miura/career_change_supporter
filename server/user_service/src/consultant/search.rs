@@ -19,7 +19,7 @@ use crate::util::validator::consultant_search_param::{
     sort_param_validator::validate_sort_param,
 };
 use crate::util::{self, consultation_request::round_to_one_decimal_places};
-use crate::{err::Code, util::session::User};
+use crate::{err::Code, util::session::user::User};
 
 pub(crate) const VALID_SIZE: i64 = 20;
 

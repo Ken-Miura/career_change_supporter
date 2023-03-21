@@ -17,7 +17,7 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::{
     self,
     document_operation::{

@@ -5,7 +5,7 @@ use common::RespResult;
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::util::session::User;
+use crate::util::session::user::User;
 
 pub(crate) async fn post_temp_mfa_secret(
     User { account_id }: User,

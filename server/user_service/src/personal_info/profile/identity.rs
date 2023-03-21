@@ -36,7 +36,7 @@ use uuid::Uuid;
 use crate::{
     err::{self, unexpected_err_resp, Code},
     util::{
-        session::User,
+        session::user::User,
         validator::{
             file_name_validator::validate_extension_is_jpeg,
             identity_validator::{validate_identity, IdentityValidationError},

@@ -22,7 +22,7 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
 use crate::util::request_consultation::convert_payment_err_to_err_resp;
-use crate::util::session::User;
+use crate::util::session::user::User;
 use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock, ACCESS_INFO};
 
 use super::{
