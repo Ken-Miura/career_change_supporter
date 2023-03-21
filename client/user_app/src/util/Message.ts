@@ -153,15 +153,12 @@ export namespace Message {
     export const NO_CONSULTATION_REQ_FOUND_MESSAGE = '相談申し込みが見つかりませんでした'
     export const INVALID_CANDIDATE_MESSAGE = '不正な相談日時候補です'
     export const USER_DOES_NOT_CHECK_CONFIRMATION_ITEMS_MESSAGE = '確認事項がチェックされていません'
-    export const CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE = 'アカウントが存在しない、または無効化されています' // 操作者が相談申し込みを受けるときに発生するメッセージなので、操作者自身のアカウントを示すエラーメッセージとなる
-    export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ACCEPTANCE_MESSAGE = '相談申し込み者のユーザーが存在しない、または無効化されています'
+    export const THE_OTHER_PERSON_ACCOUNT_IS_NOT_AVAILABLE_MESSAGE = '相談相手のアカウントが存在しない、または無効化されています'
     export const USER_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '選択された相談開始日時に関して、相談申し込み者が既に別の予定を確定させています。他の相談開始日時を選択して下さい'
     export const CONSULTANT_HAS_SAME_MEETING_DATE_TIME_MESSAGE = '選択された相談開始日時には既に相談予定が存在します。他の相談開始日時を選択して下さい' // 操作者が相談申し込みを受けるときに発生するメッセージなので、操作者自身の誤りを示すエラーメッセージとなる
     export const MEETING_DATE_TIME_OVERLAPS_MAINTENANCE_MESSAGE = '相談開始日時がメンテナンスと重なっています。他の相談開始日時を選択して下さい'
     export const NON_POSITIVE_CONSULTATION_ID_MESSAGE = '不正な相談室番号です'
     export const NO_CONSULTATION_FOUND_MESSAGE = '指定された相談は見つかりませんでした'
-    export const CONSULTANT_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'コンサルタントのアカウントが存在しない、または無効化されています'
-    export const USER_IS_NOT_AVAILABLE_ON_CONSULTATION_ROOM_MESSAGE = 'ユーザーのアカウントが存在しない、または無効化されています'
     export const CONSULTATION_ROOM_HAS_NOT_OPENED_YET_MESSAGE = `相談室がまだ開かれていません。相談室は相談開始時刻の${LEEWAY_IN_MINUTES}分前から入室可能になります`
     export const AUDIO_TEST_IS_NOT_DONE_MESSAGE = '音声入出力テストで使用中の環境に問題がない旨のチェックがされていません'
     export const CONSULTATION_ROOM_HAS_ALREADY_CLOSED_MESSAGE = '相談室が既に閉じられています'
@@ -193,7 +190,6 @@ export namespace Message {
     export const END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET_MESSAGE = 'まだ相談が終わっていません'
     export const NO_USER_RATING_FOUND_MESSAGE = '不正な評価対象です'
     export const USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE = '既に評価済です'
-    export const ACCOUNT_IS_NOT_AVAILABLE_MESSAGE = 'アカウントが存在しない、または無効化されています'
     export const NO_CONSULTANT_RATING_FOUND_MESSAGE = `${NO_USER_RATING_FOUND_MESSAGE}`
     export const CONSULTANT_HAS_ALREADY_BEEN_RATED_MESSAGE = `${USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE}`
     export const RATE_SUCCESS_MESSAGE = '評価を行いました'
