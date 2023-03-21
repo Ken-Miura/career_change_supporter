@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::user::User;
+use crate::util::session::verified_user::VerifiedUser;
 use crate::util::{
     self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
@@ -28,7 +28,7 @@ static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み拒否通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_consultation_request_rejection(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestRejectionParam>,
 ) -> RespResult<ConsultationRequestRejectionResult> {
@@ -58,7 +58,6 @@ async fn handle_consultation_request_rejection(
     send_mail: impl SendMail,
 ) -> RespResult<ConsultationRequestRejectionResult> {
     validate_consultation_req_id_is_positive(consultation_req_id)?;
-    validate_identity_exists(user_account_id, &op).await?;
 
     let req = op
         .find_consultation_req_by_consultation_req_id(consultation_req_id)
@@ -93,7 +92,6 @@ async fn handle_consultation_request_rejection(
 
 #[async_trait]
 trait ConsultationRequestRejection {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn find_consultation_req_by_consultation_req_id(
         &self,
         consultation_req_id: i64,
@@ -116,10 +114,6 @@ struct ConsultationRequestRejectionImpl {
 
 #[async_trait]
 impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn find_consultation_req_by_consultation_req_id(
         &self,
         consultation_req_id: i64,
@@ -174,23 +168,6 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
             })?;
         Ok(model_option.map(|m| m.email_address))
     }
-}
-
-async fn validate_identity_exists(
-    account_id: i64,
-    op: &impl ConsultationRequestRejection,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 fn validate_consultation_req_for_delete(
@@ -288,7 +265,6 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct ConsultationRequestRejectionMock {
-        account_id_of_consultant: i64,
         consultation_req_id: i64,
         consultation_req: Option<ConsultationRequest>,
         too_many_requests: bool,
@@ -298,13 +274,6 @@ mod tests {
 
     #[async_trait]
     impl ConsultationRequestRejection for ConsultationRequestRejectionMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id_of_consultant != account_id {
-                return Ok(false);
-            };
-            Ok(true)
-        }
-
         async fn find_consultation_req_by_consultation_req_id(
             &self,
             consultation_req_id: i64,
@@ -369,7 +338,6 @@ mod tests {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: false,
@@ -391,7 +359,6 @@ mod tests {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: true,
@@ -413,7 +380,6 @@ mod tests {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: false,
@@ -436,7 +402,6 @@ mod tests {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: true,
@@ -458,7 +423,6 @@ mod tests {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id: 0,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: false,
@@ -485,9 +449,8 @@ mod tests {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id: -1,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
-                        consultation_req: Some(dummy_consultation_req.clone()),
+                        consultation_req: Some(dummy_consultation_req),
                         too_many_requests: false,
                         account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
@@ -507,39 +470,11 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NoIdentityRegistered".to_string(),
-                input: Input {
-                    user_account_id: account_id_of_consultant + 1,
-                    consultation_req_id,
-                    op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
-                        consultation_req_id,
-                        consultation_req: Some(dummy_consultation_req),
-                        too_many_requests: false,
-                        account_id_of_user,
-                        user_email_address: Some(user_email_address.clone()),
-                    },
-                    smtp_client: SendMailMock::new(
-                        user_email_address.clone(),
-                        SYSTEM_EMAIL_ADDRESS.to_string(),
-                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
-                        mail_text.clone(),
-                    ),
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "fail NoConsultationReqFound (no consultation request found)".to_string(),
                 input: Input {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
                         consultation_req: None,
                         too_many_requests: false,
@@ -566,7 +501,6 @@ mod tests {
                     user_account_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
-                        account_id_of_consultant,
                         consultation_req_id,
                         consultation_req: Some(create_dummy_consultation_req(
                             consultation_req_id,

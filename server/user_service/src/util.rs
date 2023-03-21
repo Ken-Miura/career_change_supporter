@@ -7,7 +7,7 @@ pub(crate) mod consultation_request;
 pub(crate) mod disabled_check;
 pub(crate) mod document_operation;
 pub(crate) mod fee_per_hour_in_yen_range;
-pub(crate) mod identity_checker;
+pub(crate) mod identity_check;
 pub(crate) mod image_converter;
 pub(crate) mod multipart;
 pub(crate) mod optional_env_var;

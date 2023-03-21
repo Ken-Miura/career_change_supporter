@@ -6,11 +6,13 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use common::opensearch::{search_documents, Sort, INDEX_NAME};
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
-use entity::sea_orm::DatabaseConnection;
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
+use crate::err::Code;
+use crate::util::consultation_request::round_to_one_decimal_places;
+use crate::util::session::verified_user::VerifiedUser;
 use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
 use crate::util::validator::consultant_search_param::{
@@ -18,18 +20,15 @@ use crate::util::validator::consultant_search_param::{
     fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param,
     sort_param_validator::validate_sort_param,
 };
-use crate::util::{self, consultation_request::round_to_one_decimal_places};
-use crate::{err::Code, util::session::user::User};
 
 pub(crate) const VALID_SIZE: i64 = 20;
 
 pub(crate) async fn post_consultants_search(
-    User { account_id }: User,
-    State(pool): State<DatabaseConnection>,
+    VerifiedUser { account_id }: VerifiedUser,
     State(index_client): State<OpenSearch>,
     Json(req): Json<ConsultantSearchParam>,
 ) -> RespResult<ConsultantsSearchResult> {
-    let op = ConsultantsSearchOperationImpl { pool, index_client };
+    let op = ConsultantsSearchOperationImpl { index_client };
     handle_consultants_search(account_id, req, op).await
 }
 
@@ -147,16 +146,6 @@ async fn handle_consultants_search(
             }),
         ));
     }
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
 
     info!(
         "query param (account_id: {}, career_param: {:?}, fee_per_hour_in_yen_param: {:?}, sort_param: {:?})",
@@ -180,8 +169,6 @@ async fn handle_consultants_search(
 
 #[async_trait]
 trait ConsultantsSearchOperation {
-    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn search_documents(
         &self,
         index_name: &str,
@@ -193,16 +180,11 @@ trait ConsultantsSearchOperation {
 }
 
 struct ConsultantsSearchOperationImpl {
-    pool: DatabaseConnection,
     index_client: OpenSearch,
 }
 
 #[async_trait]
 impl ConsultantsSearchOperation for ConsultantsSearchOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn search_documents(
         &self,
         index_name: &str,
@@ -967,19 +949,11 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct ConsultantsSearchOperationMock {
-        account_id: i64,
         query_result: Value,
     }
 
     #[async_trait]
     impl ConsultantsSearchOperation for ConsultantsSearchOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            };
-            Ok(true)
-        }
-
         async fn search_documents(
             &self,
             _index_name: &str,
@@ -1045,7 +1019,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 1,
                         query_result: json!({
                           "took" : 2,
                           "timed_out" : false,
@@ -1148,7 +1121,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 1,
                         query_result: json!({
                           "took" : 2,
                           "timed_out" : false,
@@ -1251,7 +1223,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1296,7 +1267,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1341,7 +1311,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1386,7 +1355,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1431,7 +1399,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1476,7 +1443,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1521,7 +1487,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1566,7 +1531,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1611,7 +1575,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1656,7 +1619,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1701,7 +1663,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1746,7 +1707,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1791,7 +1751,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1836,7 +1795,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1881,7 +1839,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1926,7 +1883,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -1971,7 +1927,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2016,7 +1971,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2061,7 +2015,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2106,7 +2059,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 2,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2154,7 +2106,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 1,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2202,7 +2153,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 1,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2247,7 +2197,6 @@ mod tests {
                         size: 20,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 1,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2292,7 +2241,6 @@ mod tests {
                         size: 21,
                     },
                     op: ConsultantsSearchOperationMock {
-                        account_id: 1,
                         query_result: create_empty_result(),
                     },
                 },
@@ -2300,51 +2248,6 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::InvalidConsultantSearchParamSize as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "no identity registered".to_string(),
-                input: Input {
-                    account_id: 1,
-                    param: ConsultantSearchParam {
-                        career_param: CareerParam {
-                            company_name: None,
-                            department_name: None,
-                            office: None,
-                            years_of_service: YearsOfServiceParam {
-                                equal_or_more: None,
-                                less_than: None,
-                            },
-                            employed: None,
-                            contract_type: None,
-                            profession: None,
-                            annual_income_in_man_yen: AnnualInComeInManYenParam {
-                                equal_or_more: None,
-                                equal_or_less: None,
-                            },
-                            is_manager: None,
-                            position_name: None,
-                            is_new_graduate: None,
-                            note: None,
-                        },
-                        fee_per_hour_in_yen_param: FeePerHourInYenParam {
-                            equal_or_more: None,
-                            equal_or_less: None,
-                        },
-                        sort_param: None,
-                        from: 0,
-                        size: 20,
-                    },
-                    op: ConsultantsSearchOperationMock {
-                        account_id: 2,
-                        query_result: create_empty_result(),
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
                     }),
                 )),
             },

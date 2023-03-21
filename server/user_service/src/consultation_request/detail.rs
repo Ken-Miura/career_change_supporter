@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::user::User;
+use crate::util::session::verified_user::VerifiedUser;
 use crate::util::{
     self, consultation_request::consultation_req_exists,
     consultation_request::round_to_one_decimal_places, consultation_request::ConsultationRequest,
@@ -22,7 +22,7 @@ use crate::util::{
 };
 
 pub(crate) async fn get_consultation_request_detail(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     query: Query<ConsultationRequestDetailQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultationRequestDetail> {
@@ -57,7 +57,6 @@ async fn handle_consultation_request_detail(
     op: impl ConsultationRequestDetailOperation,
 ) -> RespResult<ConsultationRequestDetail> {
     validate_consultation_req_id_is_positive(consultation_req_id)?;
-    validate_identity_exists(user_account_id, &op).await?;
 
     let req = op
         .find_consultation_req_by_consultation_req_id(consultation_req_id)
@@ -101,7 +100,6 @@ async fn handle_consultation_request_detail(
 
 #[async_trait]
 trait ConsultationRequestDetailOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn find_consultation_req_by_consultation_req_id(
         &self,
         consultation_req_id: i64,
@@ -118,10 +116,6 @@ struct ConsultationRequestDetailOperationImpl {
 
 #[async_trait]
 impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn find_consultation_req_by_consultation_req_id(
         &self,
         consultation_req_id: i64,
@@ -172,23 +166,6 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
             })
             .collect::<Result<Vec<i16>, ErrResp>>()
     }
-}
-
-async fn validate_identity_exists(
-    account_id: i64,
-    op: &impl ConsultationRequestDetailOperation,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 fn validate_consultation_req_for_reference(
@@ -276,7 +253,6 @@ mod tests {
             account_id_of_user: i64,
             consultation_req_id: i64,
             current_date_time: DateTime<FixedOffset>,
-            identity_exists: bool,
             req: Option<ConsultationRequest>,
             user_ratings: Vec<i16>,
         ) -> Self {
@@ -285,10 +261,8 @@ mod tests {
                 consultation_req_id,
                 current_date_time,
                 op: ConsultationRequestDetailOperationMock {
-                    account_id_of_consultant,
                     account_id_of_user,
                     consultation_req_id,
-                    identity_exists,
                     req,
                     user_ratings,
                 },
@@ -298,21 +272,14 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct ConsultationRequestDetailOperationMock {
-        account_id_of_consultant: i64,
         account_id_of_user: i64,
         consultation_req_id: i64,
-        identity_exists: bool,
         req: Option<ConsultationRequest>,
         user_ratings: Vec<i16>,
     }
 
     #[async_trait]
     impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            assert_eq!(self.account_id_of_consultant, account_id);
-            Ok(self.identity_exists)
-        }
-
         async fn find_consultation_req_by_consultation_req_id(
             &self,
             consultation_req_id: i64,
@@ -346,7 +313,6 @@ mod tests {
                     account_id_of_user,
                     consultation_req_id,
                     current_date_time,
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
@@ -396,7 +362,6 @@ mod tests {
                     account_id_of_user,
                     consultation_req_id,
                     current_date_time,
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
@@ -446,7 +411,6 @@ mod tests {
                     account_id_of_user,
                     consultation_req_id,
                     current_date_time,
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
@@ -496,7 +460,6 @@ mod tests {
                     account_id_of_user,
                     consultation_req_id,
                     current_date_time,
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
@@ -546,7 +509,6 @@ mod tests {
                     account_id_of_user,
                     0,
                     current_date_time,
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id: -1,
                         user_account_id: account_id_of_user,
@@ -574,7 +536,6 @@ mod tests {
                     account_id_of_user,
                     -1,
                     current_date_time,
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id: -1,
                         user_account_id: account_id_of_user,
@@ -596,41 +557,12 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NoIdentityRegistered".to_string(),
-                input: Input::new(
-                    account_id_of_consultant,
-                    account_id_of_user,
-                    consultation_req_id,
-                    current_date_time,
-                    false,
-                    Some(ConsultationRequest {
-                        consultation_req_id,
-                        user_account_id: account_id_of_user,
-                        consultant_id: account_id_of_consultant,
-                        fee_per_hour_in_yen,
-                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 7, 0, 0).unwrap(),
-                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 5, 23, 0, 0).unwrap(),
-                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
-                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
-                    }),
-                    vec![5, 2, 3],
-                ),
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "fail NoConsultationReqFound (no consultation request found)".to_string(),
                 input: Input::new(
                     account_id_of_consultant,
                     account_id_of_user,
                     consultation_req_id,
                     current_date_time,
-                    true,
                     None,
                     vec![5, 2, 3],
                 ),
@@ -648,7 +580,6 @@ mod tests {
                     account_id_of_user,
                     consultation_req_id,
                     current_date_time,
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
@@ -676,7 +607,6 @@ mod tests {
                     account_id_of_user,
                     consultation_req_id,
                     JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 1, 0, 0).unwrap(),
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,
@@ -704,7 +634,6 @@ mod tests {
                     account_id_of_user,
                     consultation_req_id,
                     JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 0, 59, 59).unwrap(),
-                    true,
                     Some(ConsultationRequest {
                         consultation_req_id,
                         user_account_id: account_id_of_user,

@@ -8,8 +8,8 @@ use serde::Serialize;
 use crate::util::session::user::User;
 
 pub(crate) async fn post_temp_mfa_secret(
-    User { account_id }: User,
-    State(pool): State<DatabaseConnection>,
+    User { account_id: _ }: User,
+    State(_pool): State<DatabaseConnection>,
 ) -> RespResult<PostTempMfaSecretResult> {
     // 既にMFAが有効かどうか確認
     // temp_mfa_secretが最大数作られていないか確認

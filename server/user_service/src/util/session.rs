@@ -13,12 +13,11 @@ pub(crate) mod agreement_unchecked_user;
 pub(crate) mod user;
 pub(crate) mod verified_user;
 
-use crate::err::{
-    unexpected_err_resp,
-    Code::{NoAccountFound, NotTermsOfUseAgreedYet, Unauthorized},
-};
+use crate::err::unexpected_err_resp;
+use crate::err::Code;
 
 use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
+use super::identity_check::{IdentityCheckOperation, IdentityCheckOperationImpl};
 use super::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
@@ -54,7 +53,7 @@ where
             return Err((
                 StatusCode::UNAUTHORIZED,
                 Json(ApiError {
-                    code: Unauthorized as u32,
+                    code: Code::Unauthorized as u32,
                 }),
             ));
         }
@@ -104,7 +103,8 @@ where
     let user_account_id = get_user_account_id_from_request_parts(parts, state).await?;
 
     let app_state = AppState::from_ref(state);
-    // TODO: identity check
+    let op = IdentityCheckOperationImpl::new(&app_state.pool);
+    ensure_identity_exists(user_account_id, &op).await?;
 
     Ok(user_account_id)
 }
@@ -143,7 +143,7 @@ async fn get_user_account_id_by_session_id(
             return Err((
                 StatusCode::UNAUTHORIZED,
                 Json(ApiError {
-                    code: Unauthorized as u32,
+                    code: Code::Unauthorized as u32,
                 }),
             ));
         }
@@ -190,7 +190,7 @@ async fn check_if_user_has_already_agreed(
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: NotTermsOfUseAgreedYet as u32,
+                code: Code::NotTermsOfUseAgreedYet as u32,
             }),
         )
     })?;
@@ -219,7 +219,7 @@ async fn ensure_account_is_not_disabled(
             return Err((
                 StatusCode::UNAUTHORIZED,
                 Json(ApiError {
-                    code: Unauthorized as u32,
+                    code: Code::Unauthorized as u32,
                 }),
             ));
         };
@@ -229,10 +229,27 @@ async fn ensure_account_is_not_disabled(
         Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: NoAccountFound as u32,
+                code: Code::NoAccountFound as u32,
             }),
         ))
     }
+}
+
+async fn ensure_identity_exists(
+    account_id: i64,
+    op: &impl IdentityCheckOperation,
+) -> Result<(), ErrResp> {
+    let identity_exists = op.check_if_identity_exists(account_id).await?;
+    if !identity_exists {
+        error!("identity is not registered (account_id: {})", account_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoIdentityRegistered as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 /// テストコードで共通で使うコードをまとめるモジュール

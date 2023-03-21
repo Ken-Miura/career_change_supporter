@@ -16,17 +16,14 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
-use crate::util::session::user::User;
-use crate::util::{
-    self,
-    document_operation::{
-        find_document_model_by_user_account_id_with_shared_lock, insert_document,
-    },
+use crate::util::document_operation::{
+    find_document_model_by_user_account_id_with_shared_lock, insert_document,
 };
+use crate::util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
+use crate::util::session::verified_user::VerifiedUser;
 
 pub(crate) async fn post_fee_per_hour_in_yen(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
     Json(fee): Json<Fee>,
@@ -49,16 +46,6 @@ async fn handle_fee_per_hour_in_yen_req(
     fee_per_hour_in_yen: i32,
     op: impl SubmitFeePerHourInYenOperation,
 ) -> RespResult<FeePerHourInYenResult> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
     if !(MIN_FEE_PER_HOUR_IN_YEN..=MAX_FEE_PER_HOUR_IN_YEN).contains(&fee_per_hour_in_yen) {
         error!(
             "illegal fee per hour in yen (account id: {}, fee:{}, min fee: {}, max fee: {})",
@@ -78,8 +65,6 @@ async fn handle_fee_per_hour_in_yen_req(
 
 #[async_trait]
 trait SubmitFeePerHourInYenOperation {
-    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn submit_fee_per_hour_in_yen(
         &self,
         account_id: i64,
@@ -94,10 +79,6 @@ struct SubmitFeePerHourInYenOperationImpl {
 
 #[async_trait]
 impl SubmitFeePerHourInYenOperation for SubmitFeePerHourInYenOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn submit_fee_per_hour_in_yen(
         &self,
         account_id: i64,
@@ -262,15 +243,10 @@ mod tests {
     struct SubmitFeePerHourInYenOperationMock {
         account_id: i64,
         fee_per_hour_in_yen: i32,
-        identity_exists: bool,
     }
 
     #[async_trait]
     impl SubmitFeePerHourInYenOperation for SubmitFeePerHourInYenOperationMock {
-        async fn check_if_identity_exists(&self, _account_id: i64) -> Result<bool, ErrResp> {
-            Ok(self.identity_exists)
-        }
-
         async fn submit_fee_per_hour_in_yen(
             &self,
             account_id: i64,
@@ -289,7 +265,6 @@ mod tests {
         let op = SubmitFeePerHourInYenOperationMock {
             account_id,
             fee_per_hour_in_yen,
-            identity_exists: true,
         };
 
         let result = handle_fee_per_hour_in_yen_req(account_id, fee_per_hour_in_yen, op).await;
@@ -306,7 +281,6 @@ mod tests {
         let op = SubmitFeePerHourInYenOperationMock {
             account_id,
             fee_per_hour_in_yen,
-            identity_exists: true,
         };
 
         let result = handle_fee_per_hour_in_yen_req(account_id, fee_per_hour_in_yen, op).await;
@@ -323,7 +297,6 @@ mod tests {
         let op = SubmitFeePerHourInYenOperationMock {
             account_id,
             fee_per_hour_in_yen,
-            identity_exists: true,
         };
 
         let result = handle_fee_per_hour_in_yen_req(account_id, fee_per_hour_in_yen, op).await;
@@ -334,30 +307,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_fee_per_hour_in_yen_req_fail_no_identity_registered() {
-        let account_id = 4151;
-        let fee_per_hour_in_yen = 4500;
-        let op = SubmitFeePerHourInYenOperationMock {
-            account_id,
-            fee_per_hour_in_yen,
-            identity_exists: false,
-        };
-
-        let result = handle_fee_per_hour_in_yen_req(account_id, fee_per_hour_in_yen, op).await;
-
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(Code::NoIdentityRegistered as u32, resp.1 .0.code);
-    }
-
-    #[tokio::test]
     async fn handle_fee_per_hour_in_yen_req_fail_illegal_fee_per_hour_in_yen1() {
         let account_id = 4151;
         let fee_per_hour_in_yen = MIN_FEE_PER_HOUR_IN_YEN - 1;
         let op = SubmitFeePerHourInYenOperationMock {
             account_id,
             fee_per_hour_in_yen,
-            identity_exists: true,
         };
 
         let result = handle_fee_per_hour_in_yen_req(account_id, fee_per_hour_in_yen, op).await;
@@ -374,7 +329,6 @@ mod tests {
         let op = SubmitFeePerHourInYenOperationMock {
             account_id,
             fee_per_hour_in_yen,
-            identity_exists: true,
         };
 
         let result = handle_fee_per_hour_in_yen_req(account_id, fee_per_hour_in_yen, op).await;

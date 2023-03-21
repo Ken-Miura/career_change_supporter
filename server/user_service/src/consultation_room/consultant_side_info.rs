@@ -20,7 +20,7 @@ use uuid::Uuid;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
 use crate::util::available_user_account::UserAccount;
-use crate::util::session::user::User;
+use crate::util::session::verified_user::VerifiedUser;
 
 use super::{
     create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,
@@ -30,7 +30,7 @@ use super::{
 };
 
 pub(crate) async fn get_consultant_side_info(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     query: Query<ConsultantSideInfoQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultantSideInfoResult> {
@@ -79,7 +79,6 @@ async fn handle_consultant_side_info(
 ) -> RespResult<ConsultantSideInfoResult> {
     validate_consultation_id_is_positive(consultation_id)?;
     ensure_audio_test_is_done(audio_test_done)?;
-    validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_consultant_id_is_valid(result.consultant_id, account_id)?;
     // 操作者（コンサルタント）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
@@ -117,8 +116,6 @@ async fn handle_consultant_side_info(
 
 #[async_trait]
 trait ConsultantSideInfoOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-
     async fn find_consultation_by_consultation_id(
         &self,
         consultation_id: i64,
@@ -143,10 +140,6 @@ struct ConsultantSideInfoOperationImpl {
 
 #[async_trait]
 impl ConsultantSideInfoOperation for ConsultantSideInfoOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn find_consultation_by_consultation_id(
         &self,
         consultation_id: i64,
@@ -194,23 +187,6 @@ impl ConsultantSideInfoOperation for ConsultantSideInfoOperationImpl {
             })?;
         Ok(())
     }
-}
-
-async fn validate_identity_exists(
-    account_id: i64,
-    op: &impl ConsultantSideInfoOperation,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 async fn get_consultation_by_consultation_id(
@@ -333,7 +309,6 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct ConsultantSideInfoOperationMock {
-        account_id: i64,
         consultation_id: i64,
         consultation: Consultation,
         user_account: UserAccount,
@@ -342,13 +317,6 @@ mod tests {
 
     #[async_trait]
     impl ConsultantSideInfoOperation for ConsultantSideInfoOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            }
-            Ok(true)
-        }
-
         async fn find_consultation_by_consultation_id(
             &self,
             consultation_id: i64,
@@ -401,7 +369,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -439,7 +406,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -477,7 +443,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -515,7 +480,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -553,7 +517,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id: 0,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -588,7 +551,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id: -1,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -623,7 +585,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: false,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -646,41 +607,6 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NoIdentityRegistered".to_string(),
-                input: Input {
-                    account_id: account_id_of_consultant,
-                    consultation_id,
-                    current_date_time: *CURRENT_DATE_TIME,
-                    identification: SkyWayIdentification {
-                        application_id: DUMMY_APPLICATION_ID.to_string(),
-                        secret: DUMMY_SECRET.to_string(),
-                    },
-                    token_id: TOKEN_ID.to_string(),
-                    audio_test_done: true,
-                    op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant + 1,
-                        consultation_id,
-                        consultation: Consultation {
-                            user_account_id: account_id_of_user,
-                            consultant_id: account_id_of_consultant,
-                            consultation_date_time_in_jst,
-                            room_name: ROOM_NAME.to_string(),
-                        },
-                        user_account: UserAccount {
-                            email_address: user_account_email_address.to_string(),
-                            disabled_at: None,
-                        },
-                        current_date_time: *CURRENT_DATE_TIME,
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "fail NoConsultationFound (really not found)".to_string(),
                 input: Input {
                     account_id: account_id_of_consultant,
@@ -693,7 +619,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id: consultation_id + 1,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -728,7 +653,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -763,7 +687,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -802,7 +725,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,
@@ -839,7 +761,6 @@ mod tests {
                     token_id: TOKEN_ID.to_string(),
                     audio_test_done: true,
                     op: ConsultantSideInfoOperationMock {
-                        account_id: account_id_of_consultant,
                         consultation_id,
                         consultation: Consultation {
                             user_account_id: account_id_of_user,

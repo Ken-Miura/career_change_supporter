@@ -34,16 +34,17 @@ use crate::util::request_consultation::{convert_payment_err_to_err_resp, Consult
 use crate::util::rewards::{
     calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
+use crate::util::session::verified_user::VerifiedUser;
 use crate::util::validator::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
 use crate::{
     err::unexpected_err_resp,
-    util::{self, session::user::User, ACCESS_INFO},
+    util::{self, ACCESS_INFO},
 };
 
 pub(crate) async fn post_begin_request_consultation(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<BeginRequestConsultationParam>,
 ) -> RespResult<RequestConsultationResult> {
@@ -69,8 +70,6 @@ pub(crate) struct RequestConsultationResult {
 
 #[async_trait]
 trait RequestConsultationOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -112,10 +111,6 @@ struct RequestConsultationOperationImpl {
 
 #[async_trait]
 impl RequestConsultationOperation for RequestConsultationOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
         let op = DisabledCheckOperationImpl::new(&self.pool);
         util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
@@ -274,7 +269,6 @@ async fn handle_begin_request_consultation(
         &begin_request_consultation_param.third_candidate_in_jst,
         current_date_time,
     )?;
-    validate_identity_exists(account_id, &op).await?;
     // 操作者（ユーザー）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
     // 従って、アカウントが無効化されているかどうかは相談申し込みの相手のみ確認する
     validate_consultant_is_available(consultant_id, &op).await?;
@@ -418,23 +412,6 @@ fn convert_consultation_date_time_validation_err(
             }),
         ),
     }
-}
-
-async fn validate_identity_exists(
-    account_id: i64,
-    op: &impl RequestConsultationOperation,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 async fn validate_consultant_is_available(
@@ -684,7 +661,6 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct RequestConsultationOperationMock {
-        account_id: i64,
         consultant_id: i64,
         fee_per_hour_in_yen: Option<i32>,
         tenant_id: Option<String>,
@@ -701,13 +677,6 @@ mod tests {
 
     #[async_trait]
     impl RequestConsultationOperation for RequestConsultationOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            };
-            Ok(true)
-        }
-
         async fn check_if_consultant_is_available(
             &self,
             consultant_id: i64,
@@ -839,7 +808,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(4000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -916,7 +884,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: -1,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1000,7 +967,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1084,7 +1050,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1168,7 +1133,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 1)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1252,7 +1216,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1336,7 +1299,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1420,7 +1382,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 6, 59, 59)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1504,7 +1465,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1588,7 +1548,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1672,7 +1631,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 1)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1756,7 +1714,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1840,7 +1797,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1924,7 +1880,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -1978,90 +1933,6 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NoIdentityRegistered".to_string(),
-                input: Input {
-                    account_id: 1,
-                    param: BeginRequestConsultationParam {
-                        consultant_id: 2,
-                        fee_per_hour_in_yen: 5000,
-                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-                        first_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 11,
-                            day: 14,
-                            hour: 21,
-                        },
-                        second_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 11,
-                            day: 4,
-                            hour: 18,
-                        },
-                        third_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 11,
-                            day: 20,
-                            hour: 21,
-                        },
-                    },
-                    current_date_time: JAPANESE_TIME_ZONE
-                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
-                        .unwrap(),
-                    req_op: RequestConsultationOperationMock {
-                        account_id: 3,
-                        consultant_id: 2,
-                        fee_per_hour_in_yen: Some(5000),
-                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
-                            .unwrap(),
-                        first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 14, 21, 0, 0)
-                            .unwrap(),
-                        second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
-                            .unwrap(),
-                        third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
-                            .unwrap(),
-                        settlement_payments: vec![PaymentInfo {
-                            fee_per_hour_in_yen: 5000,
-                            platform_fee_rate_in_percentage: "30.0".to_string(),
-                        }],
-                        stopped_settlement_payments: vec![PaymentInfo {
-                            fee_per_hour_in_yen: 5000,
-                            platform_fee_rate_in_percentage: "30.0".to_string(),
-                        }],
-                        receipt_payments: vec![
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                        ],
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "fail ConsultantIsNotAvailable".to_string(),
                 input: Input {
                     account_id: 1,
@@ -2092,7 +1963,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 3,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -2176,7 +2046,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(6000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
@@ -2260,7 +2129,6 @@ mod tests {
                         .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
                         .unwrap(),
                     req_op: RequestConsultationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: Some(5000),
                         tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),

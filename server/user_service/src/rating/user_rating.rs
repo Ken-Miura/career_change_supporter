@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::user::User;
-use crate::util::{self, find_user_account_by_user_account_id_with_exclusive_lock};
+use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
+use crate::util::session::verified_user::VerifiedUser;
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
@@ -23,7 +23,7 @@ use super::{
 };
 
 pub(crate) async fn post_user_rating(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(req): Json<UserRatingParam>,
 ) -> RespResult<UserRatingResult> {
@@ -50,8 +50,6 @@ pub(crate) struct UserRatingResult {}
 
 #[async_trait]
 trait UserRatingOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-
     async fn find_consultation_info_from_user_rating(
         &self,
         user_rating_id: i64,
@@ -72,10 +70,6 @@ struct UserRatingOperationImpl {
 
 #[async_trait]
 impl UserRatingOperation for UserRatingOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn find_consultation_info_from_user_rating(
         &self,
         user_rating_id: i64,
@@ -221,7 +215,6 @@ async fn handle_user_rating(
 ) -> RespResult<UserRatingResult> {
     ensure_rating_id_is_positive(user_rating_id)?;
     ensure_rating_is_in_valid_range(rating)?;
-    ensure_identity_exists(consultant_id, &op).await?;
 
     let cl = get_consultation_info_from_user_rating(user_rating_id, &op).await?;
     ensure_consultant_ids_are_same(consultant_id, cl.consultant_id)?;
@@ -239,23 +232,6 @@ async fn handle_user_rating(
     .await?;
 
     Ok((StatusCode::OK, Json(UserRatingResult {})))
-}
-
-async fn ensure_identity_exists(
-    account_id: i64,
-    op: &impl UserRatingOperation,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 async fn get_consultation_info_from_user_rating(
@@ -325,7 +301,6 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct UserRatingOperationMock {
-        account_id: i64,
         user_rating_id: i64,
         consultation_info: ConsultationInfo,
         rating: i16,
@@ -335,13 +310,6 @@ mod tests {
 
     #[async_trait]
     impl UserRatingOperation for UserRatingOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            }
-            Ok(true)
-        }
-
         async fn find_consultation_info_from_user_rating(
             &self,
             user_rating_id: i64,
@@ -396,7 +364,6 @@ mod tests {
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        account_id: consultant_id,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -419,7 +386,6 @@ mod tests {
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        account_id: consultant_id,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -447,7 +413,6 @@ mod tests {
                     rating: 0,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        account_id: consultant_id,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -468,34 +433,6 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NoIdentityRegistered".to_string(),
-                input: Input {
-                    consultant_id,
-                    user_rating_id,
-                    rating,
-                    current_date_time,
-                    op: UserRatingOperationMock {
-                        account_id: consultant_id + 97,
-                        user_rating_id,
-                        consultation_info: ConsultationInfo {
-                            consultation_id,
-                            user_account_id,
-                            consultant_id,
-                            consultation_date_time_in_jst,
-                        },
-                        rating,
-                        current_date_time,
-                        already_exists: false,
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "fail NoUserRatingFound (really not found)".to_string(),
                 input: Input {
                     consultant_id,
@@ -503,7 +440,6 @@ mod tests {
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        account_id: consultant_id,
                         user_rating_id: user_rating_id + 3,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -531,7 +467,6 @@ mod tests {
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        account_id: consultant_id,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -559,7 +494,6 @@ mod tests {
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        account_id: consultant_id,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
@@ -587,7 +521,6 @@ mod tests {
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        account_id: consultant_id,
                         user_rating_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,

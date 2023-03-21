@@ -29,7 +29,7 @@ use crate::util::charge_metadata_key::{
 use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
-use crate::util::session::user::User;
+use crate::util::session::verified_user::VerifiedUser;
 use crate::util::{self, request_consultation::convert_payment_err_to_err_resp, ACCESS_INFO};
 
 static CONSULTANT_MAIL_SUBJECT: Lazy<String> =
@@ -38,7 +38,7 @@ static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_finish_request_consultation(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<FinishRequestConsultationParam>,
 ) -> RespResult<FinishRequestConsultationResult> {
@@ -74,7 +74,6 @@ async fn handle_finish_request_consultation(
     op: impl FinishRequestConsultationOperation,
     send_mail: impl SendMail,
 ) -> RespResult<FinishRequestConsultationResult> {
-    validate_identity_exists(account_id, &op).await?;
     let charge = op.get_charge_by_charge_id(charge_id.clone()).await?;
     let consultant_id = extract_consultant_id(&charge)?;
     // 操作者（ユーザー）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
@@ -126,23 +125,6 @@ async fn handle_finish_request_consultation(
     .await?;
 
     Ok((StatusCode::OK, Json(FinishRequestConsultationResult {})))
-}
-
-async fn validate_identity_exists(
-    account_id: i64,
-    op: &impl FinishRequestConsultationOperation,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 fn extract_consultant_id(charge: &Charge) -> Result<i64, ErrResp> {
@@ -475,7 +457,6 @@ fn extract_candidate_expression_in_japanese(
 
 #[async_trait]
 trait FinishRequestConsultationOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp>;
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn create_request_consultation(
@@ -502,10 +483,6 @@ struct FinishRequestConsultationOperationImpl {
 
 #[async_trait]
 impl FinishRequestConsultationOperation for FinishRequestConsultationOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp> {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
         let charge = charge_op
@@ -713,13 +690,6 @@ mod tests {
 
     #[async_trait]
     impl FinishRequestConsultationOperation for FinishRequestConsultationOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            };
-            Ok(true)
-        }
-
         async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp> {
             assert_eq!(self.charge_id, charge_id);
             Ok(self.charge.clone())
@@ -868,47 +838,6 @@ mod tests {
                     smtp_client: SendMailMock {},
                 },
                 expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
-            },
-            TestCase {
-                name: "fail NoIdentityRegistered".to_string(),
-                input: Input {
-                    account_id: 1,
-                    charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                    op: FinishRequestConsultationOperationMock {
-                        account_id: 3,
-                        charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                        charge: create_dummy_charge(
-                            "ch_fa990a4c10672a93053a774730b0a",
-                            5000,
-                            "verified",
-                            create_metadata(
-                                2,
-                                JAPANESE_TIME_ZONE
-                                    .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
-                                    .unwrap(),
-                                JAPANESE_TIME_ZONE
-                                    .with_ymd_and_hms(2022, 11, 4, 23, 0, 0)
-                                    .unwrap(),
-                                JAPANESE_TIME_ZONE
-                                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
-                                    .unwrap(),
-                            ),
-                        ),
-                        consultant_id: 2,
-                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
-                            .unwrap(),
-                        user_account_email_address: "test0@test.com".to_string(),
-                        consultant_email_address: "test1@test.com".to_string(),
-                    },
-                    smtp_client: SendMailMock {},
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
             },
             TestCase {
                 name: "fail ConsultantIsNotAvailable".to_string(),

@@ -12,16 +12,16 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
-use crate::util::session::user::User;
+use crate::util::session::verified_user::VerifiedUser;
 
 pub(crate) async fn get_fee_per_hour_in_yen_for_application(
-    User { account_id }: User,
+    VerifiedUser { account_id: _ }: VerifiedUser,
     query: Query<FeePerHourInYenForApplicationQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<FeePerHourInYenForApplication> {
     let query = query.0;
     let op = FeePerHourInYenForApplicationOperationImpl { pool };
-    handle_fee_per_hour_in_yen_for_application(account_id, query.consultant_id, op).await
+    handle_fee_per_hour_in_yen_for_application(query.consultant_id, op).await
 }
 
 #[derive(Deserialize)]
@@ -36,7 +36,6 @@ pub(crate) struct FeePerHourInYenForApplication {
 
 #[async_trait]
 trait FeePerHourInYenForApplicationOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn find_fee_per_hour_in_yen_by_consultant_id(
         &self,
@@ -50,10 +49,6 @@ struct FeePerHourInYenForApplicationOperationImpl {
 
 #[async_trait]
 impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
         let op = DisabledCheckOperationImpl::new(&self.pool);
         util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
@@ -78,7 +73,6 @@ impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOpe
 }
 
 async fn handle_fee_per_hour_in_yen_for_application(
-    account_id: i64,
     consultant_id: i64,
     op: impl FeePerHourInYenForApplicationOperation,
 ) -> RespResult<FeePerHourInYenForApplication> {
@@ -88,16 +82,6 @@ async fn handle_fee_per_hour_in_yen_for_application(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::NonPositiveConsultantId as u32,
-            }),
-        ));
-    }
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
             }),
         ));
     }
@@ -148,20 +132,12 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct FeePerHourInYenForApplicationOperationMock {
-        account_id: i64,
         consultant_id: i64,
         fee_per_hour_in_yen: i32,
     }
 
     #[async_trait]
     impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            };
-            Ok(true)
-        }
-
         async fn check_if_consultant_is_available(
             &self,
             consultant_id: i64,
@@ -189,7 +165,6 @@ mod tests {
 
     #[derive(Debug)]
     struct Input {
-        account_id: i64,
         consultant_id: i64,
         op: FeePerHourInYenForApplicationOperationMock,
     }
@@ -199,10 +174,8 @@ mod tests {
             TestCase {
                 name: "consultant id is not positive".to_string(),
                 input: Input {
-                    account_id: 1,
                     consultant_id: 0,
                     op: FeePerHourInYenForApplicationOperationMock {
-                        account_id: 1,
                         consultant_id: 0,
                         fee_per_hour_in_yen: 3000,
                     },
@@ -215,30 +188,10 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "no identity found".to_string(),
-                input: Input {
-                    account_id: 1,
-                    consultant_id: 3,
-                    op: FeePerHourInYenForApplicationOperationMock {
-                        account_id: 2,
-                        consultant_id: 3,
-                        fee_per_hour_in_yen: 3000,
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "no counsultant found".to_string(),
                 input: Input {
-                    account_id: 1,
                     consultant_id: 2,
                     op: FeePerHourInYenForApplicationOperationMock {
-                        account_id: 1,
                         consultant_id: 3,
                         fee_per_hour_in_yen: 10000,
                     },
@@ -253,10 +206,8 @@ mod tests {
             TestCase {
                 name: "succeed in getting fee_per_hour_in_yen".to_string(),
                 input: Input {
-                    account_id: 1,
                     consultant_id: 2,
                     op: FeePerHourInYenForApplicationOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         fee_per_hour_in_yen: 25000,
                     },
@@ -275,7 +226,6 @@ mod tests {
     async fn test_handle_fee_per_hour_in_yen_for_application() {
         for test_case in TEST_CASE_SET.iter() {
             let result = handle_fee_per_hour_in_yen_for_application(
-                test_case.input.account_id,
                 test_case.input.consultant_id,
                 test_case.input.op.clone(),
             )

@@ -27,7 +27,7 @@ use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::user::User;
+use crate::util::session::verified_user::VerifiedUser;
 use crate::util::{
     self, available_user_account::UserAccount, consultation_request::consultation_req_exists,
     consultation_request::ConsultationRequest,
@@ -39,7 +39,7 @@ static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_consultation_request_acceptance(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestAcceptanceParam>,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
@@ -95,7 +95,6 @@ async fn handle_consultation_request_acceptance(
     validate_user_checked_confirmation_items(param.user_checked, user_account_id)?;
     let consultation_req_id = param.consultation_req_id;
     validate_consultation_req_id_is_positive(consultation_req_id)?;
-    validate_identity_exists(user_account_id, &op).await?;
 
     let req = op
         .find_consultation_req_by_consultation_req_id(consultation_req_id)
@@ -165,8 +164,6 @@ async fn handle_consultation_request_acceptance(
 
 #[async_trait]
 trait ConsultationRequestAcceptanceOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-
     async fn find_consultation_req_by_consultation_req_id(
         &self,
         consultation_req_id: i64,
@@ -235,10 +232,6 @@ struct ConsultationRequestAcceptanceOperationImpl {
 
 #[async_trait]
 impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn find_consultation_req_by_consultation_req_id(
         &self,
         consultation_req_id: i64,
@@ -623,23 +616,6 @@ fn validate_user_checked_confirmation_items(
     Ok(())
 }
 
-async fn validate_identity_exists(
-    account_id: i64,
-    op: &impl ConsultationRequestAcceptanceOperation,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
-}
-
 fn validate_consultation_req_for_acceptance(
     consultation_req: &ConsultationRequest,
     consultant_id: i64,
@@ -993,7 +969,6 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct ConsultationRequestAcceptanceOperationMock {
-        account_id: i64,
         consultation_req: ConsultationRequest,
         consultant: Option<UserAccount>,
         user: Option<UserAccount>,
@@ -1010,13 +985,6 @@ mod tests {
 
     #[async_trait]
     impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            }
-            Ok(true)
-        }
-
         async fn find_consultation_req_by_consultation_req_id(
             &self,
             consultation_req_id: i64,
@@ -1157,7 +1125,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1208,7 +1175,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1259,7 +1225,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1310,7 +1275,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1361,7 +1325,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1416,7 +1379,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1471,7 +1433,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1527,7 +1488,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1583,7 +1543,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1639,7 +1598,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id: 0,
                             user_account_id,
@@ -1695,7 +1653,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id: -1,
                             user_account_id,
@@ -1740,62 +1697,6 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail NoIdentityRegistered".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant + 1,
-                        consultation_req: ConsultationRequest {
-                            consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                        },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
-                        current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
-                        room_name: room_name.to_string(),
-                    },
-                    send_mail: send_mail.clone(),
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "fail NoConsultationReqFound case 1".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
@@ -1807,7 +1708,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id: consultation_req_id + 1,
                             user_account_id,
@@ -1863,7 +1763,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1919,7 +1818,6 @@ mod tests {
                     current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap(),
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -1984,7 +1882,6 @@ mod tests {
                     current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 1).unwrap(),
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2049,7 +1946,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2102,7 +1998,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2155,7 +2050,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2211,7 +2105,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2267,7 +2160,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2323,7 +2215,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2379,7 +2270,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2439,7 +2329,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,
@@ -2499,7 +2388,6 @@ mod tests {
                     current_date_time,
                     room_name: room_name.to_string(),
                     op: ConsultationRequestAcceptanceOperationMock {
-                        account_id: user_account_id_of_consultant,
                         consultation_req: ConsultationRequest {
                             consultation_req_id,
                             user_account_id,

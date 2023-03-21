@@ -13,7 +13,7 @@ use tracing::{error, info};
 
 use crate::err::Code;
 use crate::util::disabled_check::DisabledCheckOperationImpl;
-use crate::util::session::user::User;
+use crate::util::session::verified_user::VerifiedUser;
 use crate::util::years_of_service_period::{
     VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
     VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
@@ -33,7 +33,7 @@ const YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE_LESS_THAN_TWENTY_YEARS: &str =
 const YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE: &str = "TWENTY_YEARS_OR_MORE";
 
 pub(crate) async fn get_consultant_detail(
-    User { account_id }: User,
+    VerifiedUser { account_id }: VerifiedUser,
     query: Query<ConsultantDetailQuery>,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
@@ -75,7 +75,6 @@ pub(crate) struct ConsultantCareerDetail {
 
 #[async_trait]
 trait ConsultantDetailOperation {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
     async fn search_consultant(&self, index_name: &str, query: &Value) -> Result<Value, ErrResp>;
 }
@@ -87,10 +86,6 @@ struct ConsultantDetailOperationImpl {
 
 #[async_trait]
 impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
         let op = DisabledCheckOperationImpl::new(&self.pool);
         util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
@@ -113,16 +108,6 @@ async fn handle_consultant_detail(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::NonPositiveConsultantId as u32,
-            }),
-        ));
-    }
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
             }),
         ));
     }
@@ -435,20 +420,12 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct ConsultantDetailOperationMock {
-        account_id: i64,
         consultant_id: i64,
         query_result: Value,
     }
 
     #[async_trait]
     impl ConsultantDetailOperation for ConsultantDetailOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            };
-            Ok(true)
-        }
-
         async fn check_if_consultant_is_available(
             &self,
             consultant_id: i64,
@@ -490,7 +467,6 @@ mod tests {
                     account_id: 1,
                     consultant_id: 0,
                     op: ConsultantDetailOperationMock {
-                        account_id: 1,
                         consultant_id: 1,
                         query_result: json!({
                           "took" : 6,
@@ -520,47 +496,11 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "no identity found".to_string(),
-                input: Input {
-                    account_id: 1,
-                    consultant_id: 2,
-                    op: ConsultantDetailOperationMock {
-                        account_id: 3,
-                        consultant_id: 2,
-                        query_result: json!({
-                          "took" : 6,
-                          "timed_out" : false,
-                          "_shards" : {
-                            "total" : 1,
-                            "successful" : 1,
-                            "skipped" : 0,
-                            "failed" : 0
-                          },
-                          "hits" : {
-                            "total" : {
-                              "value" : 0,
-                              "relation" : "eq"
-                            },
-                            "max_score" : null,
-                            "hits" : [ ]
-                          }
-                        }),
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoIdentityRegistered as u32,
-                    }),
-                )),
-            },
-            TestCase {
                 name: "no counsultant found 1".to_string(),
                 input: Input {
                     account_id: 3,
                     consultant_id: 4,
                     op: ConsultantDetailOperationMock {
-                        account_id: 3,
                         consultant_id: 5,
                         query_result: json!({
                           "took" : 5,
@@ -625,7 +565,6 @@ mod tests {
                     account_id: 1,
                     consultant_id: 2,
                     op: ConsultantDetailOperationMock {
-                        account_id: 1,
                         consultant_id: 2,
                         query_result: json!({
                           "took" : 6,
@@ -660,7 +599,6 @@ mod tests {
                     account_id: 1,
                     consultant_id: 3,
                     op: ConsultantDetailOperationMock {
-                        account_id: 1,
                         consultant_id: 3,
                         query_result: json!({
                           "took" : 5,
@@ -744,7 +682,6 @@ mod tests {
                     account_id: 1,
                     consultant_id: 5,
                     op: ConsultantDetailOperationMock {
-                        account_id: 1,
                         consultant_id: 5,
                         query_result: json!({
                           "took" : 6,
@@ -828,7 +765,6 @@ mod tests {
                     account_id: 1,
                     consultant_id: 5,
                     op: ConsultantDetailOperationMock {
-                        account_id: 1,
                         consultant_id: 5,
                         query_result: json!({
                           "took" : 6,
@@ -1128,7 +1064,6 @@ mod tests {
                     account_id: 1,
                     consultant_id: 5,
                     op: ConsultantDetailOperationMock {
-                        account_id: 1,
                         consultant_id: 5,
                         query_result: json!({
                           "took" : 6,
