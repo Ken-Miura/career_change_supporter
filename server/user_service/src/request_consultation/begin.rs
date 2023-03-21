@@ -71,11 +71,6 @@ pub(crate) struct RequestConsultationResult {
 trait RequestConsultationOperation {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
 
-    async fn check_if_user_account_is_available(
-        &self,
-        user_account_id: i64,
-    ) -> Result<bool, ErrResp>;
-
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(
@@ -119,14 +114,6 @@ struct RequestConsultationOperationImpl {
 impl RequestConsultationOperation for RequestConsultationOperationImpl {
     async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
         util::identity_checker::check_if_identity_exists(&self.pool, account_id).await
-    }
-
-    async fn check_if_user_account_is_available(
-        &self,
-        user_account_id: i64,
-    ) -> Result<bool, ErrResp> {
-        let op = DisabledCheckOperationImpl::new(&self.pool);
-        util::disabled_check::check_if_user_account_is_available(user_account_id, op).await
     }
 
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
@@ -287,8 +274,9 @@ async fn handle_begin_request_consultation(
         &begin_request_consultation_param.third_candidate_in_jst,
         current_date_time,
     )?;
-    validate_user_account_is_available(account_id, &op).await?;
     validate_identity_exists(account_id, &op).await?;
+    // 操作者（ユーザー）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
+    // 従って、アカウントが無効化されているかどうかは相談申し込みの相手のみ確認する
     validate_consultant_is_available(consultant_id, &op).await?;
 
     let fee_per_hour_in_yen = get_fee_per_hour_in_yen(consultant_id, &op).await?;
@@ -430,28 +418,6 @@ fn convert_consultation_date_time_validation_err(
             }),
         ),
     }
-}
-
-async fn validate_user_account_is_available(
-    user_account_id: i64,
-    op: &impl RequestConsultationOperation,
-) -> Result<(), ErrResp> {
-    let user_account_available = op
-        .check_if_user_account_is_available(user_account_id)
-        .await?;
-    if !user_account_available {
-        error!(
-            "user account is not available (user_account_id: {})",
-            user_account_id
-        );
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::AccountDisabled as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 async fn validate_identity_exists(
@@ -728,7 +694,6 @@ mod tests {
         first_candidate_in_jst: DateTime<FixedOffset>,
         second_candidate_in_jst: DateTime<FixedOffset>,
         third_candidate_in_jst: DateTime<FixedOffset>,
-        user_account_is_available: bool,
         settlement_payments: Vec<PaymentInfo>,
         stopped_settlement_payments: Vec<PaymentInfo>,
         receipt_payments: Vec<PaymentInfo>,
@@ -741,13 +706,6 @@ mod tests {
                 return Ok(false);
             };
             Ok(true)
-        }
-
-        async fn check_if_user_account_is_available(
-            &self,
-            _user_account_id: i64,
-        ) -> Result<bool, ErrResp> {
-            Ok(self.user_account_is_available)
         }
 
         async fn check_if_consultant_is_available(
@@ -899,7 +857,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -977,7 +934,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1062,7 +1018,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1147,7 +1102,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1232,7 +1186,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1317,7 +1270,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1402,7 +1354,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1487,7 +1438,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 12, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1572,7 +1522,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 21, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1657,7 +1606,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 6, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1742,7 +1690,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1827,7 +1774,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 4, 7, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1912,7 +1858,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -1997,7 +1942,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -2030,91 +1974,6 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::DuplicateDateTimeCandidates as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail AccountDisabled".to_string(),
-                input: Input {
-                    account_id: 1,
-                    param: BeginRequestConsultationParam {
-                        consultant_id: 2,
-                        fee_per_hour_in_yen: 5000,
-                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-                        first_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 11,
-                            day: 14,
-                            hour: 21,
-                        },
-                        second_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 11,
-                            day: 4,
-                            hour: 18,
-                        },
-                        third_candidate_in_jst: ConsultationDateTime {
-                            year: 2022,
-                            month: 11,
-                            day: 20,
-                            hour: 21,
-                        },
-                    },
-                    current_date_time: JAPANESE_TIME_ZONE
-                        .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
-                        .unwrap(),
-                    req_op: RequestConsultationOperationMock {
-                        account_id: 1,
-                        consultant_id: 2,
-                        fee_per_hour_in_yen: Some(5000),
-                        tenant_id: Some("32ac9a3c14bf4404b0ef6941a95934ec".to_string()),
-                        card_token: "tok_76e202b409f3da51a0706605ac81".to_string(),
-                        charge: create_dummy_charge("ch_fa990a4c10672a93053a774730b0a"),
-                        current_date_time: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
-                            .unwrap(),
-                        first_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 14, 21, 0, 0)
-                            .unwrap(),
-                        second_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 4, 18, 0, 0)
-                            .unwrap(),
-                        third_candidate_in_jst: JAPANESE_TIME_ZONE
-                            .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
-                            .unwrap(),
-                        user_account_is_available: false,
-                        settlement_payments: vec![PaymentInfo {
-                            fee_per_hour_in_yen: 5000,
-                            platform_fee_rate_in_percentage: "30.0".to_string(),
-                        }],
-                        stopped_settlement_payments: vec![PaymentInfo {
-                            fee_per_hour_in_yen: 5000,
-                            platform_fee_rate_in_percentage: "30.0".to_string(),
-                        }],
-                        receipt_payments: vec![
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                            PaymentInfo {
-                                fee_per_hour_in_yen: 5000,
-                                platform_fee_rate_in_percentage: "30.0".to_string(),
-                            },
-                        ],
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::AccountDisabled as u32,
                     }),
                 )),
             },
@@ -2167,7 +2026,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -2252,7 +2110,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -2337,7 +2194,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments: vec![PaymentInfo {
                             fee_per_hour_in_yen: 5000,
                             platform_fee_rate_in_percentage: "30.0".to_string(),
@@ -2422,7 +2278,6 @@ mod tests {
                         third_candidate_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 20, 21, 0, 0)
                             .unwrap(),
-                        user_account_is_available: true,
                         settlement_payments:
                             create_payments_that_has_reward_over_one_third_of_max_rewards(),
                         stopped_settlement_payments:

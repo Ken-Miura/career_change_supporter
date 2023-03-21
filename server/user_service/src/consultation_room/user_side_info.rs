@@ -82,7 +82,7 @@ async fn handle_user_side_info(
     validate_identity_exists(account_id, &op).await?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_user_account_id_is_valid(result.user_account_id, account_id)?;
-    // 操作者（ユーザー）のアカウントが無効化されているかどうかはリクエストがこの関数に来る前のUser構造体内で既にチェック済
+    // 操作者（ユーザー）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
     // 従って、アカウントが無効化されているかどうかは相談相手のみ確認する
     let _ = get_consultant_if_available(result.consultant_id, &op).await?;
     ensure_consultation_room_can_be_opened(

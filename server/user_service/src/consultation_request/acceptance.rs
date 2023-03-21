@@ -103,6 +103,8 @@ async fn handle_consultation_request_acceptance(
     let req = consultation_req_exists(req, consultation_req_id)?;
     validate_consultation_req_for_acceptance(&req, user_account_id, current_date_time)?;
 
+    // 操作者（コンサルタント）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
+    // 従って、本来はこの箇所で無効化されているかのチェックは不要だが、メールアドレスが欲しいため、その際についでにチェックしている
     let consultant = get_consultant_if_available(req.consultant_id, &op).await?;
     let user = get_user_account_if_available(req.user_account_id, &op).await?;
 
@@ -677,12 +679,13 @@ async fn get_consultant_if_available(
     op: &impl ConsultationRequestAcceptanceOperation,
 ) -> Result<UserAccount, ErrResp> {
     let consultant = op.get_consultant_if_available(consultant_id).await?;
+    // アカウントが存在しない、または無効化されている際は[Code::Unauthorized]を返してログイン画面へ遷移させる
     consultant.ok_or_else(|| {
-        error!("consultant ({}) is not available", consultant_id);
+        error!("consultant ({}) is not found or disabled", consultant_id);
         (
-            StatusCode::BAD_REQUEST,
+            StatusCode::UNAUTHORIZED,
             Json(ApiError {
-                code: Code::ConsultantIsNotAvailableOnConsultationAcceptance as u32,
+                code: Code::Unauthorized as u32,
             }),
         )
     })
@@ -698,7 +701,7 @@ async fn get_user_account_if_available(
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::UserIsNotAvailableOnConsultationAcceptance as u32,
+                code: Code::TheOtherPersonAccountIsNotAvailable as u32,
             }),
         )
     })
@@ -2035,7 +2038,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail ConsultantIsNotAvailableOnConsultationAcceptance".to_string(),
+                name: "fail Unauthorized (consultant is not found or disabled)".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
                     param: ConsultationRequestAcceptanceParam {
@@ -2081,14 +2084,14 @@ mod tests {
                     send_mail: send_mail.clone(),
                 },
                 expected: Err((
-                    StatusCode::BAD_REQUEST,
+                    StatusCode::UNAUTHORIZED,
                     Json(ApiError {
-                        code: Code::ConsultantIsNotAvailableOnConsultationAcceptance as u32,
+                        code: Code::Unauthorized as u32,
                     }),
                 )),
             },
             TestCase {
-                name: "fail UserIsNotAvailableOnConsultationAcceptance".to_string(),
+                name: "fail TheOtherPersonAccountIsNotAvailable".to_string(),
                 input: Input {
                     user_account_id: user_account_id_of_consultant,
                     param: ConsultationRequestAcceptanceParam {
@@ -2136,7 +2139,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::UserIsNotAvailableOnConsultationAcceptance as u32,
+                        code: Code::TheOtherPersonAccountIsNotAvailable as u32,
                     }),
                 )),
             },
