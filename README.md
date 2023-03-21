@@ -4,6 +4,7 @@
 定期処理で対応する予定の処理を実装する
 - 期限切れのtemp_accountレコードの削除
 - 期限切れのpwd_change_reqレコードの削除
+- 期限切れのtemp_mfa_secretレコードの削除
 - 相談開始日時の候補すべてが現在時刻を超えてしまっているconsultation_reqの削除
 - deleted_user_accountに紐づくidentity、career、tenant、consulting_fee、create_identity_request、update_identity_request、create_career_requestの削除
 
