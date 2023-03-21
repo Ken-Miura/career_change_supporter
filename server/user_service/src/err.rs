@@ -127,7 +127,7 @@ pub(crate) enum Code {
     NoConsultationReqFound = 20115,
     InvalidCandidate = 20116,
     UserDoesNotCheckConfirmationItems = 20117,
-    TheOtherPersonAccountIsNotAvailable = 20118, // TODO: クライアント側の修正
+    TheOtherPersonAccountIsNotAvailable = 20118,
     UserHasSameMeetingDateTime = 20119,
     ConsultantHasSameMeetingDateTime = 20120,
     MeetingDateTimeOverlapsMaintenance = 20121,
@@ -143,11 +143,6 @@ pub(crate) enum Code {
     UserAccountHasAlreadyBeenRated = 20131,
     NoConsultantRatingFound = 20132,
     ConsultantHasAlreadyBeenRated = 20133,
-    ConsultantIsNotAvailableOnConsultationAcceptance = 1,
-    UserIsNotAvailableOnConsultationAcceptance = 2,
-    ConsultantIsNotAvailableOnConsultationRoom = 3,
-    UserIsNotAvailableOnConsultationRoom = 4,
-    AccountIsNotAvailable = 5,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
