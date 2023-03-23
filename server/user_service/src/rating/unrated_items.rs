@@ -28,12 +28,12 @@ const MAX_NUM_OF_UNRATED_CONSULTANTS: u64 = 20;
 const MAX_NUM_OF_UNRATED_USERS: u64 = 20;
 
 pub(crate) async fn get_unrated_items(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<UnratedItemsResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = UnratedItemsOperationImpl { pool };
-    handle_unrated_items(account_id, &current_date_time, op).await
+    handle_unrated_items(user_info.account_id, &current_date_time, op).await
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

@@ -38,7 +38,7 @@ static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_finish_request_consultation(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<FinishRequestConsultationParam>,
 ) -> RespResult<FinishRequestConsultationResult> {
@@ -50,7 +50,7 @@ pub(crate) async fn post_finish_request_consultation(
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_finish_request_consultation(account_id, charge_id, op, smtp_client).await
+    handle_finish_request_consultation(user_info.account_id, charge_id, op, smtp_client).await
 }
 
 #[derive(Deserialize)]

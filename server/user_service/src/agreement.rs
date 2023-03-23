@@ -25,12 +25,18 @@ use crate::util::terms_of_use::TERMS_OF_USE_VERSION;
 
 /// ユーザーが利用規約に同意したことを記録する
 pub(crate) async fn post_agreement(
-    AgreementUncheckedUser { account_id }: AgreementUncheckedUser,
+    AgreementUncheckedUser { user_info }: AgreementUncheckedUser,
     State(pool): State<DatabaseConnection>,
 ) -> Result<StatusCode, ErrResp> {
     let op = AgreementOperationImpl::new(pool);
     let agreed_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let result = handle_agreement_req(account_id, *TERMS_OF_USE_VERSION, &agreed_time, op).await?;
+    let result = handle_agreement_req(
+        user_info.account_id,
+        *TERMS_OF_USE_VERSION,
+        &agreed_time,
+        op,
+    )
+    .await?;
     Ok(result)
 }
 

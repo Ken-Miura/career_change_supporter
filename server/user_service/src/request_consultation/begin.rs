@@ -44,13 +44,13 @@ use crate::{
 };
 
 pub(crate) async fn post_begin_request_consultation(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<BeginRequestConsultationParam>,
 ) -> RespResult<RequestConsultationResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = RequestConsultationOperationImpl { pool };
-    handle_begin_request_consultation(account_id, param, &current_date_time, op).await
+    handle_begin_request_consultation(user_info.account_id, param, &current_date_time, op).await
 }
 
 #[derive(Clone, Deserialize, Debug)]

@@ -31,10 +31,10 @@ const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
-async fn get_agreement_unchecked_user_account_id_from_request_parts<S>(
+async fn get_agreement_unchecked_user_info_from_request_parts<S>(
     parts: &mut Parts,
     state: &S,
-) -> Result<i64, ErrResp>
+) -> Result<UserInfo, ErrResp>
 where
     AppState: FromRef<S>,
     S: Send + Sync,
@@ -71,43 +71,42 @@ where
     let find_user_op = FindUserInfoOperationImpl::new(pool);
     let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;
 
-    Ok(user_account_id)
+    Ok(user_info)
 }
 
-async fn get_user_account_id_from_request_parts<S>(
+async fn get_user_info_from_request_parts<S>(
     parts: &mut Parts,
     state: &S,
-) -> Result<i64, ErrResp>
+) -> Result<UserInfo, ErrResp>
 where
     AppState: FromRef<S>,
     S: Send + Sync,
 {
-    let user_account_id =
-        get_agreement_unchecked_user_account_id_from_request_parts(parts, state).await?;
+    let user_info = get_agreement_unchecked_user_info_from_request_parts(parts, state).await?;
 
     let app_state = AppState::from_ref(state);
     let terms_of_use_op = TermsOfUseLoadOperationImpl::new(&app_state.pool);
-    check_if_user_has_already_agreed(user_account_id, *TERMS_OF_USE_VERSION, terms_of_use_op)
+    check_if_user_has_already_agreed(user_info.account_id, *TERMS_OF_USE_VERSION, terms_of_use_op)
         .await?;
 
-    Ok(user_account_id)
+    Ok(user_info)
 }
 
-async fn get_verified_user_account_id_from_request_parts<S>(
+async fn get_verified_user_info_from_request_parts<S>(
     parts: &mut Parts,
     state: &S,
-) -> Result<i64, ErrResp>
+) -> Result<UserInfo, ErrResp>
 where
     AppState: FromRef<S>,
     S: Send + Sync,
 {
-    let user_account_id = get_user_account_id_from_request_parts(parts, state).await?;
+    let user_info = get_user_info_from_request_parts(parts, state).await?;
 
     let app_state = AppState::from_ref(state);
     let op = IdentityCheckOperationImpl::new(&app_state.pool);
-    ensure_identity_exists(user_account_id, &op).await?;
+    ensure_identity_exists(user_info.account_id, &op).await?;
 
-    Ok(user_account_id)
+    Ok(user_info)
 }
 
 /// session_idを使い、storeからユーザーを一意に識別する値を取得する。<br>

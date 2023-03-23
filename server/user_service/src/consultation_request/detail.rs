@@ -22,15 +22,20 @@ use crate::util::{
 };
 
 pub(crate) async fn get_consultation_request_detail(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     query: Query<ConsultationRequestDetailQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultationRequestDetail> {
     let consultation_req_id = query.consultation_req_id;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = ConsultationRequestDetailOperationImpl { pool };
-    handle_consultation_request_detail(account_id, consultation_req_id, &current_date_time, op)
-        .await
+    handle_consultation_request_detail(
+        user_info.account_id,
+        consultation_req_id,
+        &current_date_time,
+        op,
+    )
+    .await
 }
 
 #[derive(Deserialize)]

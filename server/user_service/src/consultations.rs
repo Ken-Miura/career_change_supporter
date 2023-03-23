@@ -20,12 +20,12 @@ use crate::{
 };
 
 pub(crate) async fn get_consultations(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultationsResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = ConsultationsOperationImpl { pool };
-    handle_consultations(account_id, &current_date_time, op).await
+    handle_consultations(user_info.account_id, &current_date_time, op).await
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

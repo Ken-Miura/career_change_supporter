@@ -15,7 +15,7 @@ use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
 
 pub(crate) async fn get_fee_per_hour_in_yen_for_application(
-    VerifiedUser { account_id: _ }: VerifiedUser,
+    VerifiedUser { user_info: _ }: VerifiedUser,
     query: Query<FeePerHourInYenForApplicationQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<FeePerHourInYenForApplication> {

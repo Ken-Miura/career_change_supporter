@@ -23,13 +23,13 @@ use crate::util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PE
 use crate::util::session::verified_user::VerifiedUser;
 
 pub(crate) async fn post_fee_per_hour_in_yen(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
     Json(fee): Json<Fee>,
 ) -> RespResult<FeePerHourInYenResult> {
     let op = SubmitFeePerHourInYenOperationImpl { pool, index_client };
-    handle_fee_per_hour_in_yen_req(account_id, fee.fee_per_hour_in_yen, op).await
+    handle_fee_per_hour_in_yen_req(user_info.account_id, fee.fee_per_hour_in_yen, op).await
 }
 
 #[derive(Deserialize)]

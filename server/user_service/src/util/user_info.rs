@@ -4,11 +4,12 @@ use axum::async_trait;
 use chrono::{DateTime, FixedOffset};
 use common::ErrResp;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use serde::Deserialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct UserInfo {
     pub(crate) account_id: i64,
     pub(crate) email_address: String,

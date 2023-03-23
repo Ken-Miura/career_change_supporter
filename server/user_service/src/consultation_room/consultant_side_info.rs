@@ -30,7 +30,7 @@ use super::{
 };
 
 pub(crate) async fn get_consultant_side_info(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     query: Query<ConsultantSideInfoQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultantSideInfoResult> {
@@ -44,7 +44,7 @@ pub(crate) async fn get_consultant_side_info(
     let token_id = Uuid::new_v4().to_string();
     let op = ConsultantSideInfoOperationImpl { pool };
     handle_consultant_side_info(
-        account_id,
+        user_info.account_id,
         consultation_id,
         &current_date_time,
         identification,

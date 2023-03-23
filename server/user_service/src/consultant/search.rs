@@ -24,12 +24,12 @@ use crate::util::validator::consultant_search_param::{
 pub(crate) const VALID_SIZE: i64 = 20;
 
 pub(crate) async fn post_consultants_search(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(index_client): State<OpenSearch>,
     Json(req): Json<ConsultantSearchParam>,
 ) -> RespResult<ConsultantsSearchResult> {
     let op = ConsultantsSearchOperationImpl { index_client };
-    handle_consultants_search(account_id, req, op).await
+    handle_consultants_search(user_info.account_id, req, op).await
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -14,13 +14,19 @@ use tracing::error;
 use crate::{err::unexpected_err_resp, util::session::user::User};
 
 pub(crate) async fn post_temp_mfa_secret(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<PostTempMfaSecretResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let base32_encoded_secret = "".to_string();
     let op = TempMfaSecretResultOperationImpl { pool };
-    handle_temp_mfp_secret(account_id, base32_encoded_secret, current_date_time, op).await
+    handle_temp_mfp_secret(
+        user_info.account_id,
+        base32_encoded_secret,
+        current_date_time,
+        op,
+    )
+    .await
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

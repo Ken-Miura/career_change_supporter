@@ -28,7 +28,7 @@ static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み拒否通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_consultation_request_rejection(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestRejectionParam>,
 ) -> RespResult<ConsultationRequestRejectionResult> {
@@ -40,7 +40,13 @@ pub(crate) async fn post_consultation_request_rejection(
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_consultation_request_rejection(account_id, consultation_req_id, op, smtp_client).await
+    handle_consultation_request_rejection(
+        user_info.account_id,
+        consultation_req_id,
+        op,
+        smtp_client,
+    )
+    .await
 }
 
 #[derive(Deserialize)]

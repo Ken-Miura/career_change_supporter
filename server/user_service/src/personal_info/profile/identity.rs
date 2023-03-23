@@ -48,7 +48,7 @@ use crate::{
 pub(crate) const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 
 pub(crate) async fn post_identity(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
     multipart: Multipart,
 ) -> RespResult<IdentityResult> {
@@ -72,7 +72,7 @@ pub(crate) async fn post_identity(
     let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let submitted_identity = SubmittedIdentity {
-        account_id,
+        account_id: user_info.account_id,
         identity,
         identity_image1: (image1_file_name_without_ext, identity_image1),
         identity_image2: identity_image2_option.map(|image| (image2_file_name_without_ext, image)),

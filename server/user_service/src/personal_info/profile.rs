@@ -20,11 +20,11 @@ use crate::{
 };
 
 pub(crate) async fn get_profile(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ProfileResult> {
     let profile_op = ProfileOperationImpl::new(pool);
-    handle_profile_req(account_id, profile_op).await
+    handle_profile_req(user_info.account_id, profile_op).await
 }
 
 async fn handle_profile_req(

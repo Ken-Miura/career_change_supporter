@@ -16,13 +16,13 @@ use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::user::User;
 
 pub(crate) async fn career(
-    User { account_id }: User,
+    User { user_info }: User,
     param: Query<GetCareerQueryParam>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<Career> {
     let param = param.0;
     let op = GetCareerOperationImpl::new(pool);
-    handle_career_req(account_id, param.career_id, op).await
+    handle_career_req(user_info.account_id, param.career_id, op).await
 }
 
 #[derive(Deserialize)]

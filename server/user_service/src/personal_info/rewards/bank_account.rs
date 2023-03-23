@@ -61,7 +61,7 @@ const PAYJP_FEE_INCLUDED: bool = true;
 const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 
 pub(crate) async fn post_bank_account(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
     Json(bank_account_register_req): Json<BankAccountRegisterReq>,
@@ -69,7 +69,7 @@ pub(crate) async fn post_bank_account(
     let bank_account = bank_account_register_req.bank_account;
     let non_profit_objective = bank_account_register_req.non_profit_objective;
     let op = SubmitBankAccountOperationImpl { pool, index_client };
-    handle_bank_account_req(account_id, bank_account, non_profit_objective, op).await
+    handle_bank_account_req(user_info.account_id, bank_account, non_profit_objective, op).await
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]

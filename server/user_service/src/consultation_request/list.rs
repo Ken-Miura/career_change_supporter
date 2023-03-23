@@ -29,12 +29,12 @@ use crate::util::session::user::User;
 const NUM_OF_CONSULTATION_REQUESTS: u64 = 20;
 
 pub(crate) async fn get_consultation_requests(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ConsultationRequestsResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = ConsultationRequestsOperationImpl { pool };
-    handle_consultation_requests(account_id, &current_date_time, op).await
+    handle_consultation_requests(user_info.account_id, &current_date_time, op).await
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

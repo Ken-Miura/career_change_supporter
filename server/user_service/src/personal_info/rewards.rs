@@ -34,7 +34,7 @@ use crate::{
 const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
 
 pub(crate) async fn get_reward(
-    User { account_id }: User,
+    User { user_info }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<RewardResult> {
     let reward_op = RewardOperationImpl::new(pool);
@@ -42,7 +42,7 @@ pub(crate) async fn get_reward(
     let current_datetime = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let tenant_transfer_op = TenantTransferOperationImpl::new(&ACCESS_INFO);
     handle_reward_req(
-        account_id,
+        user_info.account_id,
         reward_op,
         tenant_op,
         current_datetime,

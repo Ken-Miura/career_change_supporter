@@ -23,14 +23,14 @@ use super::{
 };
 
 pub(crate) async fn post_user_rating(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(req): Json<UserRatingParam>,
 ) -> RespResult<UserRatingResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = UserRatingOperationImpl { pool };
     handle_user_rating(
-        account_id,
+        user_info.account_id,
         req.user_rating_id,
         req.rating,
         &current_date_time,

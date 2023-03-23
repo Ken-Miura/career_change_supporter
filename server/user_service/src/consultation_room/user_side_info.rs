@@ -30,7 +30,7 @@ use super::{
 };
 
 pub(crate) async fn get_user_side_info(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     query: Query<UserSideInfoQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<UserSideInfoResult> {
@@ -44,7 +44,7 @@ pub(crate) async fn get_user_side_info(
     let token_id = Uuid::new_v4().to_string();
     let op = UserSideInfoOperationImpl { pool };
     handle_user_side_info(
-        account_id,
+        user_info.account_id,
         consultation_id,
         &current_date_time,
         identification,
