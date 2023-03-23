@@ -25,6 +25,7 @@ regex = "1.7.1"
 rust_decimal = "1.28.0"
 serde = { version = "1.0.152", features = ["derive"] }
 tokio = { version = "1.25.0", features = ["full"] }
+totp-rs = { version = "4.2.0", features = ["qr", "gen_secret"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["trace"] }
 tracing = "0.1.37"
