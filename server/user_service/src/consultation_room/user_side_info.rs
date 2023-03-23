@@ -19,8 +19,8 @@ use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
-use crate::util::available_user_account::UserAccount;
 use crate::util::session::verified_user::VerifiedUser;
+use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 
 use super::{
     create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,
@@ -121,11 +121,10 @@ trait UserSideInfoOperation {
         consultation_id: i64,
     ) -> Result<Option<Consultation>, ErrResp>;
 
-    /// コンサルタントが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
     async fn get_consultant_if_available(
         &self,
         consultant_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp>;
+    ) -> Result<Option<UserInfo>, ErrResp>;
 
     async fn update_user_account_entered_at_if_needed(
         &self,
@@ -150,8 +149,9 @@ impl UserSideInfoOperation for UserSideInfoOperationImpl {
     async fn get_consultant_if_available(
         &self,
         consultant_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp> {
-        util::available_user_account::get_if_user_account_is_available(&self.pool, consultant_id)
+    ) -> Result<Option<UserInfo>, ErrResp> {
+        let op = FindUserInfoOperationImpl::new(&self.pool);
+        util::the_other_person_account::get_the_other_person_info_if_available(consultant_id, &op)
             .await
     }
 
@@ -234,7 +234,7 @@ fn ensure_user_account_id_is_valid(
 async fn get_consultant_if_available(
     consultant_id: i64,
     op: &impl UserSideInfoOperation,
-) -> Result<UserAccount, ErrResp> {
+) -> Result<UserInfo, ErrResp> {
     let consultant = op.get_consultant_if_available(consultant_id).await?;
     consultant.ok_or_else(|| {
         error!("consultant ({}) is not available", consultant_id);
@@ -276,15 +276,13 @@ mod tests {
     use crate::consultation_room::tests::{
         DUMMY_APPLICATION_ID, DUMMY_SECRET, ROOM_NAME, TOKEN, TOKEN_ID,
     };
+    use crate::consultation_room::{
+        tests::{CURRENT_DATE_TIME, MEMBER_NAME},
+        Consultation, SkyWayIdentification, LEEWAY_IN_MINUTES,
+    };
     use crate::err::Code;
     use crate::util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
-    use crate::{
-        consultation_room::{
-            tests::{CURRENT_DATE_TIME, MEMBER_NAME},
-            Consultation, SkyWayIdentification, LEEWAY_IN_MINUTES,
-        },
-        util::available_user_account::UserAccount,
-    };
+    use crate::util::user_info::UserInfo;
 
     use super::{handle_user_side_info, UserSideInfoOperation, UserSideInfoResult};
 
@@ -310,7 +308,7 @@ mod tests {
     struct UserSideInfoOperationMock {
         consultation_id: i64,
         consultation: Consultation,
-        consultant: UserAccount,
+        consultant: UserInfo,
         current_date_time: DateTime<FixedOffset>,
     }
 
@@ -328,8 +326,11 @@ mod tests {
 
         async fn get_consultant_if_available(
             &self,
-            _consultant_id: i64,
-        ) -> Result<Option<UserAccount>, ErrResp> {
+            consultant_id: i64,
+        ) -> Result<Option<UserInfo>, ErrResp> {
+            if self.consultant.account_id != consultant_id {
+                return Ok(None);
+            }
             if self.consultant.disabled_at.is_some() {
                 return Ok(None);
             }
@@ -375,8 +376,10 @@ mod tests {
                             consultation_date_time_in_jst,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -412,8 +415,10 @@ mod tests {
                             consultation_date_time_in_jst: *CURRENT_DATE_TIME,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -450,8 +455,10 @@ mod tests {
                                 - Duration::minutes(10), // 現在時刻が相談開始時刻を過ぎていることを表したいだけで10分は適当な数字
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -487,8 +494,10 @@ mod tests {
                                 - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64), // 相談終了時刻丁度は許容
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -523,8 +532,10 @@ mod tests {
                             consultation_date_time_in_jst,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -557,8 +568,10 @@ mod tests {
                             consultation_date_time_in_jst,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -591,8 +604,10 @@ mod tests {
                             consultation_date_time_in_jst,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -625,8 +640,10 @@ mod tests {
                             consultation_date_time_in_jst,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -659,8 +676,10 @@ mod tests {
                             consultation_date_time_in_jst,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -674,7 +693,8 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail TheOtherPersonAccountIsNotAvailable".to_string(),
+                name: "fail TheOtherPersonAccountIsNotAvailable (consultant account not found)"
+                    .to_string(),
                 input: Input {
                     account_id: account_id_of_user,
                     consultation_id,
@@ -693,8 +713,47 @@ mod tests {
                             consultation_date_time_in_jst,
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant + 326,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::TheOtherPersonAccountIsNotAvailable as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail TheOtherPersonAccountIsNotAvailable (consultant account disabled)"
+                    .to_string(),
+                input: Input {
+                    account_id: account_id_of_user,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: UserSideInfoOperationMock {
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
+                            email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: Some(
                                 JAPANESE_TIME_ZONE
                                     .with_ymd_and_hms(2022, 12, 20, 21, 32, 21)
@@ -733,8 +792,10 @@ mod tests {
                                 + Duration::seconds(1),
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
@@ -769,8 +830,10 @@ mod tests {
                                 - Duration::seconds(1),
                             room_name: ROOM_NAME.to_string(),
                         },
-                        consultant: UserAccount {
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
                             email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,

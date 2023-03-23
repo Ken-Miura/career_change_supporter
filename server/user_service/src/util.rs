@@ -1,10 +1,9 @@
 // Copyright 2021 Ken Miura
 
-pub(crate) mod available_user_account;
 pub(crate) mod bank_account;
 pub(crate) mod charge_metadata_key;
+pub(crate) mod consultant_disabled_check;
 pub(crate) mod consultation_request;
-pub(crate) mod disabled_check;
 pub(crate) mod document_operation;
 pub(crate) mod fee_per_hour_in_yen_range;
 pub(crate) mod identity_check;
@@ -16,6 +15,7 @@ pub(crate) mod request_consultation;
 pub(crate) mod rewards;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
+pub(crate) mod the_other_person_account;
 pub(crate) mod user_info;
 pub(crate) mod validator;
 pub(crate) mod years_of_service_period;
@@ -27,10 +27,10 @@ use common::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
-    ErrResp, ErrRespStruct,
+    ErrRespStruct,
 };
 use entity::{
-    sea_orm::{DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect},
+    sea_orm::{DatabaseTransaction, EntityTrait, QuerySelect},
     user_account,
 };
 use once_cell::sync::Lazy;
@@ -63,23 +63,6 @@ pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     let access_info = AccessInfo::new(url_without_path, username, password);
     access_info.expect("failed to get Ok")
 });
-
-async fn find_user_account_by_user_account_id(
-    pool: &DatabaseConnection,
-    user_account_id: i64,
-) -> Result<Option<user_account::Model>, ErrResp> {
-    let model = entity::prelude::UserAccount::find_by_id(user_account_id)
-        .one(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find user_account (user_account_id): {}): {}",
-                user_account_id, e
-            );
-            unexpected_err_resp()
-        })?;
-    Ok(model)
-}
 
 pub(crate) async fn find_user_account_by_user_account_id_with_exclusive_lock(
     txn: &DatabaseTransaction,

@@ -17,19 +17,19 @@ pub(crate) struct UserInfo {
 }
 
 #[async_trait]
-pub(super) trait FindUserInfoOperation {
+pub(crate) trait FindUserInfoOperation {
     async fn find_user_info_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Option<UserInfo>, ErrResp>;
 }
 
-pub(super) struct FindUserInfoOperationImpl<'a> {
+pub(crate) struct FindUserInfoOperationImpl<'a> {
     pool: &'a DatabaseConnection,
 }
 
 impl<'a> FindUserInfoOperationImpl<'a> {
-    pub(super) fn new(pool: &'a DatabaseConnection) -> Self {
+    pub(crate) fn new(pool: &'a DatabaseConnection) -> Self {
         Self { pool }
     }
 }
