@@ -145,6 +145,7 @@ pub(crate) enum Code {
     ConsultantHasAlreadyBeenRated = 20133,
     MfaHasAlreadyBeenEnabled = 20134,
     ReachTempMfaSecretLimit = 20135,
+    NoTempMfaSecretFound = 20136,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

@@ -10,13 +10,15 @@ use entity::sea_orm::{
     PaginatorTrait, QueryFilter, Set,
 };
 use serde::Serialize;
+use totp_rs::Secret;
 use tracing::error;
 
 use crate::err::Code;
-use crate::mfa::create_totp;
+use crate::mfa::ensure_mfa_is_not_enabled;
 use crate::{err::unexpected_err_resp, util::session::user::User};
 
-const MAX_NUM_OF_TEMP_MFA_SECRETS: u64 = 8;
+use super::MAX_NUM_OF_TEMP_MFA_SECRETS;
+
 const VALID_PERIOD_IN_MINUTE: i64 = 15;
 
 pub(crate) async fn post_temp_mfa_secret(
@@ -24,7 +26,7 @@ pub(crate) async fn post_temp_mfa_secret(
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<PostTempMfaSecretResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let base32_encoded_secret = "".to_string();
+    let base32_encoded_secret = generate_base32_encoded_secret()?;
     let op = TempMfaSecretResultOperationImpl { pool };
     handle_temp_mfp_secret(
         user_info.account_id,
@@ -37,11 +39,17 @@ pub(crate) async fn post_temp_mfa_secret(
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
-pub(crate) struct PostTempMfaSecretResult {
-    // QRコード
-    base64_encoded_image: String,
-    // QRコードを読み込めない場合に使うシークレットキー
-    base32_encoded_secret: String,
+pub(crate) struct PostTempMfaSecretResult {}
+
+fn generate_base32_encoded_secret() -> Result<String, ErrResp> {
+    let secret = Secret::generate_secret().to_encoded();
+    match secret {
+        Secret::Raw(raw_secret) => {
+            error!("Secret::Raw is unexpected (value: {:?})", raw_secret);
+            Err(unexpected_err_resp())
+        }
+        Secret::Encoded(base32_encoded_secret) => Ok(base32_encoded_secret),
+    }
 }
 
 async fn handle_temp_mfp_secret(
@@ -55,35 +63,11 @@ async fn handle_temp_mfp_secret(
     ensure_temp_mfa_secre_does_not_reach_max_count(account_id, MAX_NUM_OF_TEMP_MFA_SECRETS, &op)
         .await?;
 
-    let totp = create_totp(account_id, base32_encoded_secret.clone())?;
-    let qr_code = totp.get_qr().map_err(|e| {
-        error!("failed to create QR code (base64 encoded png img): {}", e);
-        unexpected_err_resp()
-    })?;
-
     let expiry_date_time = current_date_time + chrono::Duration::minutes(VALID_PERIOD_IN_MINUTE);
     op.create_temp_mfa_secret(account_id, base32_encoded_secret.clone(), expiry_date_time)
         .await?;
 
-    Ok((
-        StatusCode::OK,
-        Json(PostTempMfaSecretResult {
-            base64_encoded_image: qr_code,
-            base32_encoded_secret,
-        }),
-    ))
-}
-
-fn ensure_mfa_is_not_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
-    if mfa_enabled {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::MfaHasAlreadyBeenEnabled as u32,
-            }),
-        ));
-    }
-    Ok(())
+    Ok((StatusCode::OK, Json(PostTempMfaSecretResult {})))
 }
 
 async fn ensure_temp_mfa_secre_does_not_reach_max_count(
@@ -160,4 +144,15 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::generate_base32_encoded_secret;
+
+    #[test]
+    fn generate_base32_encoded_secret_finish_successfully() {
+        // 出力される文字列は、シードを受け付けるパラメータがなく、完全ランダムなため入出力を指定したテストの記述は出来ない
+        // ただ、関数の実行にあたって、Errが返されたり、panicが発生したりせず無事に完了することは確かめておく
+        let _ = generate_base32_encoded_secret().expect("failed to get Ok");
+    }
+
+    // TODO: Add test
+}

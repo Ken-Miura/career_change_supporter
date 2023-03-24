@@ -2,12 +2,13 @@
 
 use std::env;
 
-use common::ErrResp;
+use axum::{http::StatusCode, Json};
+use common::{ApiError, ErrResp};
 use once_cell::sync::Lazy;
 use totp_rs::{Algorithm, Secret, TOTP};
 use tracing::error;
 
-use crate::err::unexpected_err_resp;
+use crate::err::{unexpected_err_resp, Code};
 
 pub(crate) mod temp_secret;
 
@@ -47,6 +48,18 @@ fn create_totp(account_id: i64, base32_encoded_secret: String) -> Result<TOTP, E
         unexpected_err_resp()
     })?;
     Ok(totp)
+}
+
+fn ensure_mfa_is_not_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
+    if mfa_enabled {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::MfaHasAlreadyBeenEnabled as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
