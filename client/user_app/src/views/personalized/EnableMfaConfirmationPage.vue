@@ -5,7 +5,10 @@
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div v-if="errMessageOnOpen" class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <AlertMessage v-bind:message="errMessageOnOpen"/>
+      </div>
+      <div v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-xl">下記の手順を実施して二段階認証を有効化して下さい。</h3>
         <ol class="mt-4 ml-6 list-decimal font-bold text-xl">
           <li class="mt-2">認証アプリを起動し、QRコードを読み込んで下さい。</li>
@@ -22,8 +25,8 @@
             <button type="submit" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">送信</button>
           </form>
         </ol>
-        <div v-if="errMessage">
-          <AlertMessage class="mt-4 ml-6" v-bind:message="errMessage"/>
+        <div v-if="errMessageOnSubmit">
+          <AlertMessage class="mt-4 ml-6" v-bind:message="errMessageOnSubmit"/>
         </div>
       </div>
     </main>
@@ -61,7 +64,8 @@ export default defineComponent({
     const base32EncodedSecret = ref('')
     const passCode = ref('')
 
-    const errMessage = ref(null as string | null)
+    const errMessageOnOpen = ref(null as string | null)
+    const errMessageOnSubmit = ref(null as string | null)
 
     const {
       getTempMfaSecretDone,
@@ -83,14 +87,14 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          errMessage.value = createErrorMessage(resp.getApiError().getCode())
+          errMessageOnOpen.value = createErrorMessage(resp.getApiError().getCode())
           return
         }
         const tmpMfaSecret = resp.getTempMfaSecret()
         base64EncodedImage.value = tmpMfaSecret.base64_encoded_image
         base32EncodedSecret.value = tmpMfaSecret.base32_encoded_secret
       } catch (e) {
-        errMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        errMessageOnOpen.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
 
@@ -104,7 +108,8 @@ export default defineComponent({
       base32EncodedSecret,
       passCode,
       submitPassCodeToEnableMfa,
-      errMessage
+      errMessageOnOpen,
+      errMessageOnSubmit
     }
   }
 })
