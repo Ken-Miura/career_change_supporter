@@ -5,16 +5,11 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import CareerDetailPage from '@/views/personalized/CareerDetailPage.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import { DeleteCareerResp } from '@/util/personalized/career-deletion-confirm/DeleteCareerResp'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { Message } from '@/util/Message'
 import { GetCareerResp } from '@/util/personalized/career-detail/GetCareerResp'
 import { Career } from '@/util/personalized/Career'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
-
-jest.mock('@/util/personalized/refresh/Refresh')
-const refreshMock = refresh as jest.MockedFunction<typeof refresh>
 
 const getCareerDoneMock = ref(true)
 const getCareerFuncMock = jest.fn()
@@ -83,14 +78,12 @@ const career2 = {
 describe('CareerDetailPage.vue', () => {
   beforeEach(() => {
     routeParam = '1'
-    refreshMock.mockReset()
     getCareerDoneMock.value = true
     getCareerFuncMock.mockReset()
     routerPushMock.mockClear()
   })
 
   it('has WaitingCircle and TheHeader while waiting response', async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     getCareerDoneMock.value = false
     const resp = DeleteCareerResp.create()
     getCareerFuncMock.mockResolvedValue(resp)
@@ -111,67 +104,7 @@ describe('CareerDetailPage.vue', () => {
     // mainが出ていないことまで確認しない。
   })
 
-  it('displays AlertMessage when error has happened on refresh', async () => {
-    const errDetail = 'connection error'
-    refreshMock.mockRejectedValue(new Error(errDetail))
-    const resp = GetCareerResp.create(career1)
-    getCareerFuncMock.mockResolvedValue(resp)
-    const wrapper = mount(CareerDetailPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    const alertMessages = wrapper.findAllComponents(AlertMessage)
-    expect(alertMessages.length).toBe(1)
-    const alertMessage = alertMessages[0]
-    expect(alertMessage).not.toContain('hidden')
-    const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
-    expect(resultMessage).toContain(errDetail)
-  })
-
-  it(`moves to login if refresh returns ${Code.UNAUTHORIZED}`, async () => {
-    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
-    refreshMock.mockResolvedValue(apiErrResp)
-    const resp = GetCareerResp.create(career1)
-    getCareerFuncMock.mockResolvedValue(resp)
-    mount(CareerDetailPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/login')
-  })
-
-  it(`moves to terms-of-use if refresh returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
-    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
-    refreshMock.mockResolvedValue(apiErrResp)
-    const resp = GetCareerResp.create(career1)
-    getCareerFuncMock.mockResolvedValue(resp)
-    mount(CareerDetailPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
-  })
-
   it('displays Career', async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     const resp = GetCareerResp.create(career2)
     getCareerFuncMock.mockResolvedValue(resp)
     const wrapper = mount(CareerDetailPage, {
@@ -213,7 +146,6 @@ describe('CareerDetailPage.vue', () => {
   })
 
   it(`displays ${Message.NO_CAREER_TO_HANDLE_FOUND_MESSAGE} if ${Code.NO_CAREER_TO_HANDLE_FOUND} is returned`, async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_CAREER_TO_HANDLE_FOUND))
     getCareerFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(CareerDetailPage, {
@@ -235,7 +167,6 @@ describe('CareerDetailPage.vue', () => {
   })
 
   it('displays AlertMessage when error has happened on getCareer', async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     const errDetail = 'connection error'
     getCareerFuncMock.mockRejectedValue(new Error(errDetail))
     const wrapper = mount(CareerDetailPage, {
@@ -257,7 +188,6 @@ describe('CareerDetailPage.vue', () => {
   })
 
   it(`moves to login if getCareer returns ${Code.UNAUTHORIZED}`, async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     getCareerFuncMock.mockResolvedValue(apiErrResp)
     mount(CareerDetailPage, {
@@ -274,7 +204,6 @@ describe('CareerDetailPage.vue', () => {
   })
 
   it(`moves to terms-of-use if getCareer returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
-    refreshMock.mockResolvedValue(RefreshResp.create())
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
     getCareerFuncMock.mockResolvedValue(apiErrResp)
     mount(CareerDetailPage, {
@@ -292,7 +221,6 @@ describe('CareerDetailPage.vue', () => {
 
   it('moves to CareerDeletionConfirmPage if button is clicked', async () => {
     routeParam = '4321'
-    refreshMock.mockResolvedValue(RefreshResp.create())
     const resp = GetCareerResp.create(career1)
     getCareerFuncMock.mockResolvedValue(resp)
     const wrapper = mount(CareerDetailPage, {

@@ -52,8 +52,6 @@ import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { useGetCareer } from '@/util/personalized/career-detail/useGetCareer'
@@ -81,25 +79,9 @@ export default defineComponent({
       getCareerDone,
       getCareerFunc
     } = useGetCareer()
+
     onMounted(async () => {
       try {
-        const resp = await refresh()
-        if (!(resp instanceof RefreshResp)) {
-          if (!(resp instanceof ApiErrorResp)) {
-            throw new Error(`unexpected result on getting request detail: ${resp}`)
-          }
-          const code = resp.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
-            return
-          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('/terms-of-use')
-            return
-          }
-          error.exists = true
-          error.message = createErrorMessage(resp.getApiError().getCode())
-          return
-        }
         const response = await getCareerFunc(parseInt(careerId))
         if (!(response instanceof GetCareerResp)) {
           if (!(response instanceof ApiErrorResp)) {
