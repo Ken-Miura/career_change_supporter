@@ -8,48 +8,41 @@ use axum::async_trait;
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::Datelike;
 use common::util::{Identity, Ymd};
-use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
-use entity::prelude::{ConsultingFee, UserAccount};
+use common::{ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
+use entity::prelude::ConsultingFee;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
 use serde::Serialize;
 use tracing::error;
 
-use crate::{
-    err::{unexpected_err_resp, Code::NoAccountFound},
-    util::session::user::User,
-};
+use crate::{err::unexpected_err_resp, util::session::user::User};
 
 pub(crate) async fn get_profile(
     User { user_info }: User,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<ProfileResult> {
+    let account_id = user_info.account_id;
+    let email_address = user_info.email_address;
+    let mfa_enabled = user_info.mfa_enabled_at.is_some();
     let profile_op = ProfileOperationImpl::new(pool);
-    handle_profile_req(user_info.account_id, profile_op).await
+    handle_profile_req(account_id, email_address, mfa_enabled, profile_op).await
 }
 
 async fn handle_profile_req(
     account_id: i64,
+    email_address: String,
+    mfa_enabled: bool,
     profile_op: impl ProfileOperation,
 ) -> RespResult<ProfileResult> {
-    let email_address_option = profile_op
-        .find_email_address_by_account_id(account_id)
-        .await?;
-    let email_address = email_address_option.ok_or_else(|| {
-        error!("no email address (account id: {}) found", account_id);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: NoAccountFound as u32,
-            }),
-        )
-    })?;
     let identity_option = profile_op.find_identity_by_account_id(account_id).await?;
     let identity = match identity_option {
         Some(i) => i,
         None => {
             return Ok((
                 StatusCode::OK,
-                Json(ProfileResult::email_address(email_address).finish()),
+                Json(
+                    ProfileResult::email_address_and_mfa_enabled(email_address, mfa_enabled)
+                        .finish(),
+                ),
             ));
         }
     };
@@ -62,13 +55,22 @@ async fn handle_profile_req(
     Ok((
         StatusCode::OK,
         Json(
-            ProfileResult::email_address(email_address)
+            ProfileResult::email_address_and_mfa_enabled(email_address, mfa_enabled)
                 .identity(Some(identity))
                 .career_descriptions(career_descriptions)
                 .fee_per_hour_in_yen(fee_per_hour_in_yen)
                 .finish(),
         ),
     ))
+}
+
+#[derive(Serialize, Debug)]
+pub(crate) struct ProfileResult {
+    pub(crate) email_address: String,
+    pub(crate) identity: Option<Identity>,
+    pub(crate) career_descriptions: Vec<CareerDescription>,
+    pub(crate) fee_per_hour_in_yen: Option<i32>,
+    pub(crate) mfa_enabled: bool,
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq)]
@@ -80,21 +82,17 @@ pub(crate) struct CareerDescription {
     pub career_end_date: Option<Ymd>,
 }
 
-#[derive(Serialize, Debug)]
-pub(crate) struct ProfileResult {
-    pub(crate) email_address: String,
-    pub(crate) identity: Option<Identity>,
-    pub(crate) career_descriptions: Vec<CareerDescription>,
-    pub(crate) fee_per_hour_in_yen: Option<i32>,
-}
-
 impl ProfileResult {
-    fn email_address(email_address: String) -> ProfileResultBuilder {
+    fn email_address_and_mfa_enabled(
+        email_address: String,
+        mfa_enabled: bool,
+    ) -> ProfileResultBuilder {
         ProfileResultBuilder {
             email_address,
             identity: None,
             career_descriptions: vec![],
             fee_per_hour_in_yen: None,
+            mfa_enabled,
         }
     }
 }
@@ -104,6 +102,7 @@ struct ProfileResultBuilder {
     identity: Option<Identity>,
     career_descriptions: Vec<CareerDescription>,
     fee_per_hour_in_yen: Option<i32>,
+    mfa_enabled: bool,
 }
 
 impl ProfileResultBuilder {
@@ -131,24 +130,23 @@ impl ProfileResultBuilder {
             identity: self.identity,
             career_descriptions: self.career_descriptions,
             fee_per_hour_in_yen: self.fee_per_hour_in_yen,
+            mfa_enabled: self.mfa_enabled,
         }
     }
 }
 
 #[async_trait]
 trait ProfileOperation {
-    async fn find_email_address_by_account_id(
-        &self,
-        account_id: i64,
-    ) -> Result<Option<String>, ErrResp>;
     async fn find_identity_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
+
     async fn filter_career_descriptions_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Vec<CareerDescription>, ErrResp>;
+
     async fn find_fee_per_hour_in_yen_by_account_id(
         &self,
         account_id: i64,
@@ -167,23 +165,6 @@ impl ProfileOperationImpl {
 
 #[async_trait]
 impl ProfileOperation for ProfileOperationImpl {
-    async fn find_email_address_by_account_id(
-        &self,
-        account_id: i64,
-    ) -> Result<Option<String>, ErrResp> {
-        let model = UserAccount::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_account (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| m.email_address))
-    }
-
     async fn find_identity_by_account_id(
         &self,
         account_id: i64,
@@ -296,7 +277,6 @@ mod tests {
     use common::ErrResp;
     use common::MAX_NUM_OF_CAREER_PER_USER_ACCOUNT;
 
-    use crate::err::Code::NoAccountFound;
     use crate::util::fee_per_hour_in_yen_range::MAX_FEE_PER_HOUR_IN_YEN;
     use crate::util::fee_per_hour_in_yen_range::MIN_FEE_PER_HOUR_IN_YEN;
     use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
@@ -305,7 +285,6 @@ mod tests {
     use super::{handle_profile_req, ProfileOperation};
 
     struct ProfileOperationMock {
-        email_address_option: Option<String>,
         identity_option: Option<Identity>,
         career_descriptions: Vec<CareerDescription>,
         fee_per_hour_in_yen_option: Option<i32>,
@@ -313,13 +292,6 @@ mod tests {
 
     #[async_trait]
     impl ProfileOperation for ProfileOperationMock {
-        async fn find_email_address_by_account_id(
-            &self,
-            _account_id: i64,
-        ) -> Result<Option<String>, ErrResp> {
-            Ok(self.email_address_option.clone())
-        }
-
         async fn find_identity_by_account_id(
             &self,
             _account_id: i64,
@@ -406,15 +378,14 @@ mod tests {
     async fn handle_profile_req_success_return_profile_when_there_is_no_identity() {
         let account_id = 51351;
         let email_address = "profile.test@test.com".to_string();
-        let email_address_option = Some(email_address.clone());
+        let mfa_enabled = false;
         let profile_op = ProfileOperationMock {
-            email_address_option,
             identity_option: None,
             career_descriptions: vec![],
             fee_per_hour_in_yen_option: None,
         };
 
-        let result = handle_profile_req(account_id, profile_op)
+        let result = handle_profile_req(account_id, email_address.clone(), mfa_enabled, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -424,13 +395,39 @@ mod tests {
         let career_descriptions: Vec<CareerDescription> = vec![];
         assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
+        assert_eq!(mfa_enabled, result.1 .0.mfa_enabled);
+    }
+
+    #[tokio::test]
+    async fn handle_profile_req_success_return_profile_when_there_is_no_identity_with_mfa_enabled_true(
+    ) {
+        let account_id = 51351;
+        let email_address = "profile.test@test.com".to_string();
+        let mfa_enabled = true;
+        let profile_op = ProfileOperationMock {
+            identity_option: None,
+            career_descriptions: vec![],
+            fee_per_hour_in_yen_option: None,
+        };
+
+        let result = handle_profile_req(account_id, email_address.clone(), mfa_enabled, profile_op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(StatusCode::OK, result.0);
+        assert_eq!(email_address, result.1 .0.email_address);
+        assert_eq!(None, result.1 .0.identity);
+        let career_descriptions: Vec<CareerDescription> = vec![];
+        assert_eq!(career_descriptions, result.1 .0.career_descriptions);
+        assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
+        assert_eq!(mfa_enabled, result.1 .0.mfa_enabled);
     }
 
     #[tokio::test]
     async fn handle_profile_req_success_return_profile_with_identity_1career_description_fee() {
         let account_id = 51351;
         let email_address = "profile.test@test.com".to_string();
-        let email_address_option = Some(email_address.clone());
+        let mfa_enabled = false;
 
         let current_date = NaiveDate::from_ymd_opt(2022, 2, 25).expect("failed to get NaiveDate");
         let date_of_birth = Ymd {
@@ -449,13 +446,12 @@ mod tests {
         let fee_per_hour_in_yen_option = Some(fee_per_hour_in_yen);
 
         let profile_op = ProfileOperationMock {
-            email_address_option,
             identity_option: Some(identity.clone()),
             career_descriptions: career_descriptions.clone(),
             fee_per_hour_in_yen_option,
         };
 
-        let result = handle_profile_req(account_id, profile_op)
+        let result = handle_profile_req(account_id, email_address.clone(), mfa_enabled, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -464,6 +460,7 @@ mod tests {
         assert_eq!(Some(identity), result.1 .0.identity);
         assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(fee_per_hour_in_yen_option, result.1 .0.fee_per_hour_in_yen);
+        assert_eq!(mfa_enabled, result.1 .0.mfa_enabled);
     }
 
     #[tokio::test]
@@ -471,7 +468,7 @@ mod tests {
     ) {
         let account_id = 51351;
         let email_address = "profile.test@test.com".to_string();
-        let email_address_option = Some(email_address.clone());
+        let mfa_enabled = false;
 
         let current_date = NaiveDate::from_ymd_opt(2022, 2, 25).expect("failed to get NaiveDate");
         let date_of_birth = Ymd {
@@ -489,13 +486,12 @@ mod tests {
         let fee_per_hour_in_yen_option = Some(fee_per_hour_in_yen);
 
         let profile_op = ProfileOperationMock {
-            email_address_option,
             identity_option: Some(identity.clone()),
             career_descriptions: career_descriptions.clone(),
             fee_per_hour_in_yen_option,
         };
 
-        let result = handle_profile_req(account_id, profile_op)
+        let result = handle_profile_req(account_id, email_address.clone(), mfa_enabled, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -504,6 +500,7 @@ mod tests {
         assert_eq!(Some(identity), result.1 .0.identity);
         assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(fee_per_hour_in_yen_option, result.1 .0.fee_per_hour_in_yen);
+        assert_eq!(mfa_enabled, result.1 .0.mfa_enabled);
     }
 
     #[tokio::test]
@@ -511,7 +508,7 @@ mod tests {
     ) {
         let account_id = 51351;
         let email_address = "profile.test@test.com".to_string();
-        let email_address_option = Some(email_address.clone());
+        let mfa_enabled = false;
 
         let current_date = NaiveDate::from_ymd_opt(2022, 2, 25).expect("failed to get NaiveDate");
         let date_of_birth = Ymd {
@@ -523,13 +520,12 @@ mod tests {
         validate_identity(&identity, &current_date).expect("failed to get Ok");
 
         let profile_op = ProfileOperationMock {
-            email_address_option,
             identity_option: Some(identity.clone()),
             career_descriptions: vec![],
             fee_per_hour_in_yen_option: None,
         };
 
-        let result = handle_profile_req(account_id, profile_op)
+        let result = handle_profile_req(account_id, email_address.clone(), mfa_enabled, profile_op)
             .await
             .expect("failed to get Ok");
 
@@ -539,23 +535,6 @@ mod tests {
         let career_descriptions: Vec<CareerDescription> = vec![];
         assert_eq!(career_descriptions, result.1 .0.career_descriptions);
         assert_eq!(None, result.1 .0.fee_per_hour_in_yen);
-    }
-
-    #[tokio::test]
-    async fn handle_profile_req_fail_return_no_email_address_found() {
-        let non_existing_id = 51351;
-        let profile_op = ProfileOperationMock {
-            email_address_option: None,
-            identity_option: None,
-            career_descriptions: vec![],
-            fee_per_hour_in_yen_option: None,
-        };
-
-        let result = handle_profile_req(non_existing_id, profile_op)
-            .await
-            .expect_err("failed to get Err");
-
-        assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(NoAccountFound as u32, result.1.code);
+        assert_eq!(mfa_enabled, result.1 .0.mfa_enabled);
     }
 }
