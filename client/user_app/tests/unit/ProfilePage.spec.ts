@@ -54,7 +54,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -164,7 +165,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -183,13 +185,14 @@ describe('ProfilePage.vue', () => {
     expect(headers.length).toBe(1)
   })
 
-  it('displays email address after api call finishes', async () => {
+  it('displays email address and mfa enabled setting after api call finishes', async () => {
     const profile = {
       /* eslint-disable camelcase */
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: true
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -210,6 +213,50 @@ describe('ProfilePage.vue', () => {
     expect(message).toContain('Eメールアドレス')
     expect(message).toContain('登録したEメールアドレスです。他のユーザーに公開されることはありません。')
     expect(message).toContain(`${profile.email_address}`)
+
+    const mfaDiv = wrapper.find('[data-test="mfa"]')
+    expect(mfaDiv.exists()).toBe(true)
+    expect(mfaDiv.text()).toContain('二段階認証設定')
+    expect(mfaDiv.text()).toContain('二段階認証の設定です。他のユーザーに公開されることはありません。')
+    const mfaStatusDiv = wrapper.find('[data-test="mfa-status"]')
+    expect(mfaStatusDiv.text()).toContain('有効')
+  })
+
+  it('displays email address and mfa disabled setting after api call finishes', async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      career_descriptions: [],
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const emailAddressDiv = wrapper.find('[data-test="email-address"]')
+    expect(emailAddressDiv.exists()).toBe(true)
+    const message = emailAddressDiv.text()
+    expect(message).toContain('Eメールアドレス')
+    expect(message).toContain('登録したEメールアドレスです。他のユーザーに公開されることはありません。')
+    expect(message).toContain(`${profile.email_address}`)
+
+    const mfaDiv = wrapper.find('[data-test="mfa"]')
+    expect(mfaDiv.exists()).toBe(true)
+    expect(mfaDiv.text()).toContain('二段階認証設定')
+    expect(mfaDiv.text()).toContain('二段階認証の設定です。他のユーザーに公開されることはありません。')
+    const mfaStatusDiv = wrapper.find('[data-test="mfa-status"]')
+    expect(mfaStatusDiv.text()).toContain('無効')
   })
 
   it(', if no setting information found, displays that', async () => {
@@ -218,7 +265,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -273,7 +321,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -351,7 +400,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity,
       career_descriptions: [careerDescription],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -405,7 +455,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity,
       career_descriptions: careerDescriptions,
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -455,7 +506,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity,
       career_descriptions: [],
-      fee_per_hour_in_yen: feePerHourInYen
+      fee_per_hour_in_yen: feePerHourInYen,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -482,7 +534,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -527,7 +580,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
       /* eslint-enable camelcase */
     }
     identityMock = identity
@@ -590,7 +644,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity,
       career_descriptions: [careerDescription],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
     /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -637,7 +692,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
       /* eslint-enable camelcase */
     }
     identityMock = identity
@@ -665,7 +721,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
       /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -692,7 +749,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
       /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -724,7 +782,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
       /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)
@@ -751,7 +810,8 @@ describe('ProfilePage.vue', () => {
       email_address: 'test@test.com',
       identity: null,
       career_descriptions: [],
-      fee_per_hour_in_yen: null
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
       /* eslint-enable camelcase */
     }
     const resp = GetProfileResp.create(profile)

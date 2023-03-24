@@ -7,5 +7,6 @@ export type Profile = {
     identity: Identity | null,
     career_descriptions: CareerDescription[],
     fee_per_hour_in_yen: number | null,
+    mfa_enabled: boolean
     /* eslint-enable camelcase */
 }
