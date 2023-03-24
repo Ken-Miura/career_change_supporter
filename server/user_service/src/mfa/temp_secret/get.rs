@@ -134,6 +134,7 @@ fn get_latest_temp_mfa_secret(
         error!("there are no temp_mfa_secrets");
         unexpected_err_resp()
     })?;
+    // TODO: デバッグ後削除
     info!(
         "returns temp_mfa_secret_id ({}) expired at {}",
         secret.temp_mfa_secret_id, secret.expired_at
