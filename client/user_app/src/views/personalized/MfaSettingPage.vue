@@ -25,19 +25,27 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref } from 'vue'
+import { computed, defineComponent, onMounted, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { toBoolean } from '@/util/ToBoolean'
+import { refresh } from '@/util/personalized/refresh/Refresh'
+import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Code, createErrorMessage } from '@/util/Error'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
   name: 'MfaSettingPage',
   components: {
-    TheHeader
+    TheHeader,
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
+    const router = useRouter()
     const route = useRoute()
     const query = route.query
     const queryResult = toBoolean(query['mfa-enabled'] as string)
@@ -54,6 +62,28 @@ export default defineComponent({
         return '無効化する'
       } else {
         return '有効化する'
+      }
+    })
+
+    onMounted(async () => {
+      try {
+        const resp = await refresh()
+        if (!(resp instanceof RefreshResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            await router.push('/terms-of-use')
+            return
+          }
+          errMessage.value = createErrorMessage(resp.getApiError().getCode())
+        }
+      } catch (e) {
+        errMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
 
