@@ -8,7 +8,7 @@ use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use entity::sea_orm::{QueryOrder, QuerySelect};
 use serde::Serialize;
-use tracing::{error, info};
+use tracing::error;
 
 use crate::err::Code;
 use crate::mfa::{create_totp, ensure_mfa_is_not_enabled};
@@ -78,9 +78,7 @@ trait TempMfaSecretResultOperation {
 
 #[derive(Clone)]
 struct TempMfaSecret {
-    temp_mfa_secret_id: i64,
     base32_encoded_secret: String,
-    expired_at: DateTime<FixedOffset>,
 }
 
 struct TempMfaSecretResultOperationImpl {
@@ -96,7 +94,7 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
     ) -> Result<Vec<TempMfaSecret>, ErrResp> {
         let models = entity::temp_mfa_secret::Entity::find()
             .filter(entity::temp_mfa_secret::Column::UserAccountId.eq(account_id))
-            .filter(entity::temp_mfa_secret::Column::ExpiredAt.lt(current_date_time))
+            .filter(entity::temp_mfa_secret::Column::ExpiredAt.gt(current_date_time))
             .limit(MAX_NUM_OF_TEMP_MFA_SECRETS)
             .order_by_desc(entity::temp_mfa_secret::Column::ExpiredAt)
             .all(&self.pool)
@@ -111,9 +109,7 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
         Ok(models
             .into_iter()
             .map(|m| TempMfaSecret {
-                temp_mfa_secret_id: m.temp_mfa_secret_id,
                 base32_encoded_secret: m.base32_encoded_secret,
-                expired_at: m.expired_at,
             })
             .collect::<Vec<TempMfaSecret>>())
     }
@@ -134,11 +130,6 @@ fn get_latest_temp_mfa_secret(
         error!("there are no temp_mfa_secrets");
         unexpected_err_resp()
     })?;
-    // TODO: デバッグ後削除
-    info!(
-        "returns temp_mfa_secret_id ({}) expired at {}",
-        secret.temp_mfa_secret_id, secret.expired_at
-    );
     Ok(secret.clone())
 }
 

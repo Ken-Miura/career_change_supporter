@@ -37,6 +37,7 @@ import RateUserPage from '../views/personalized/RateUserPage.vue'
 import RateConsultantPage from '../views/personalized/RateConsultantPage.vue'
 import RateSuccessPage from '../views/personalized/RateSuccessPage.vue'
 import MfaSettingPage from '../views/personalized/MfaSettingPage.vue'
+import EnableMfaConfirmationPage from '../views/personalized/EnableMfaConfirmationPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -157,6 +158,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/mfa-setting',
     name: 'MfaSettingPage',
     component: MfaSettingPage
+  },
+  {
+    path: '/enable-mfa-confirmation',
+    name: 'EnableMfaConfirmationPage',
+    component: EnableMfaConfirmationPage
   },
   {
     path: '/submit-fee-per-hour-in-yen-success',
