@@ -8,7 +8,7 @@ use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use entity::sea_orm::{QueryOrder, QuerySelect};
 use serde::Serialize;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::Code;
 use crate::mfa::{create_totp, ensure_mfa_is_not_enabled};
@@ -50,18 +50,9 @@ async fn handle_temp_mfp_secret(
     let temp_mfa_secrets = op
         .filter_temp_mfa_secret_order_by_dsc(account_id, current_date_time)
         .await?;
-    if temp_mfa_secrets.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoTempMfaSecretFound as u32,
-            }),
-        ));
-    }
-    let secret = temp_mfa_secrets.get(0);
+    let temp_mfa_secret = get_latest_temp_mfa_secret(temp_mfa_secrets)?;
 
-    let base32_encoded_secret = "".to_string();
-    let totp = create_totp(account_id, base32_encoded_secret.clone())?;
+    let totp = create_totp(account_id, temp_mfa_secret.base32_encoded_secret.clone())?;
     let qr_code = totp.get_qr().map_err(|e| {
         error!("failed to create QR code (base64 encoded png img): {}", e);
         unexpected_err_resp()
@@ -71,7 +62,7 @@ async fn handle_temp_mfp_secret(
         StatusCode::OK,
         Json(GetTempMfaSecretResult {
             base64_encoded_image: qr_code,
-            base32_encoded_secret,
+            base32_encoded_secret: temp_mfa_secret.base32_encoded_secret,
         }),
     ))
 }
@@ -85,9 +76,9 @@ trait TempMfaSecretResultOperation {
     ) -> Result<Vec<TempMfaSecret>, ErrResp>;
 }
 
+#[derive(Clone)]
 struct TempMfaSecret {
     temp_mfa_secret_id: i64,
-    user_account_id: i64,
     base32_encoded_secret: String,
     expired_at: DateTime<FixedOffset>,
 }
@@ -121,12 +112,33 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
             .into_iter()
             .map(|m| TempMfaSecret {
                 temp_mfa_secret_id: m.temp_mfa_secret_id,
-                user_account_id: m.user_account_id,
                 base32_encoded_secret: m.base32_encoded_secret,
                 expired_at: m.expired_at,
             })
             .collect::<Vec<TempMfaSecret>>())
     }
+}
+
+fn get_latest_temp_mfa_secret(
+    temp_mfa_secrets: Vec<TempMfaSecret>,
+) -> Result<TempMfaSecret, ErrResp> {
+    if temp_mfa_secrets.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoTempMfaSecretFound as u32,
+            }),
+        ));
+    }
+    let secret = temp_mfa_secrets.get(0).ok_or_else(|| {
+        error!("there are no temp_mfa_secrets");
+        unexpected_err_resp()
+    })?;
+    info!(
+        "returns temp_mfa_secret_id ({}) expired at {}",
+        secret.temp_mfa_secret_id, secret.expired_at
+    );
+    Ok(secret.clone())
 }
 
 #[cfg(test)]
