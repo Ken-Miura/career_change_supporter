@@ -13,6 +13,7 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::err::Code;
+use crate::mfa::create_totp;
 use crate::{err::unexpected_err_resp, util::session::user::User};
 
 const MAX_NUM_OF_TEMP_MFA_SECRETS: u64 = 8;
@@ -46,7 +47,7 @@ pub(crate) struct PostTempMfaSecretResult {
 async fn handle_temp_mfp_secret(
     account_id: i64,
     mfa_enabled: bool,
-    _base32_encoded_secret: String,
+    base32_encoded_secret: String,
     current_date_time: DateTime<FixedOffset>,
     op: impl TempMfaSecretResultOperation,
 ) -> RespResult<PostTempMfaSecretResult> {
@@ -54,9 +55,23 @@ async fn handle_temp_mfp_secret(
     ensure_temp_mfa_secre_does_not_reach_max_count(account_id, MAX_NUM_OF_TEMP_MFA_SECRETS, &op)
         .await?;
 
-    let _expiry_date_time = current_date_time + chrono::Duration::minutes(VALID_PERIOD_IN_MINUTE);
-    // temp_mfa_secretを作成
-    todo!()
+    let totp = create_totp(account_id, base32_encoded_secret.clone())?;
+    let qr_code = totp.get_qr().map_err(|e| {
+        error!("failed to create QR code (base64 encoded png img): {}", e);
+        unexpected_err_resp()
+    })?;
+
+    let expiry_date_time = current_date_time + chrono::Duration::minutes(VALID_PERIOD_IN_MINUTE);
+    op.create_temp_mfa_secret(account_id, base32_encoded_secret.clone(), expiry_date_time)
+        .await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(PostTempMfaSecretResult {
+            base64_encoded_image: qr_code,
+            base32_encoded_secret,
+        }),
+    ))
 }
 
 fn ensure_mfa_is_not_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
@@ -96,7 +111,7 @@ trait TempMfaSecretResultOperation {
         &self,
         account_id: i64,
         base32_encoded_secret: String,
-        current_date_time: DateTime<FixedOffset>,
+        expiry_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
