@@ -12,7 +12,8 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <button data-test="delete-career-button" v-on:click="deleteCareer" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を削除する</button>
+          <p data-test="delete-confirm-label" class="text-xl">遷移前に表示していた職務経歴を削除します。削除後は元に戻せないためご注意下さい。</p>
+          <button data-test="delete-career-button" v-on:click="deleteCareer" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を削除する</button>
         </div>
       </div>
     </main>
@@ -55,6 +56,7 @@ export default defineComponent({
       deleteCareerDone,
       deleteCareerFunc
     } = useDeleteCareer()
+
     onMounted(async () => {
       try {
         const resp = await refresh()

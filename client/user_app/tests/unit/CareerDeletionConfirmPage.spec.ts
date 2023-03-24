@@ -181,6 +181,23 @@ describe('CareerDeletionConfirmPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
+  it('displays confirmation label on opening', async () => {
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    deleteCareerFuncMock.mockResolvedValue(DeleteCareerResp.create())
+    const wrapper = mount(CareerDeletionConfirmPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const deleteConfirmationLabel = wrapper.find('[data-test="delete-confirm-label"]')
+    expect(deleteConfirmationLabel.exists()).toBe(true)
+    expect(deleteConfirmationLabel.text()).toContain('遷移前に表示していた職務経歴を削除します。削除後は元に戻せないためご注意下さい。')
+  })
+
   it('moves to delete-career-success on clicking button', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     deleteCareerFuncMock.mockResolvedValue(DeleteCareerResp.create())
