@@ -158,3 +158,6 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {}

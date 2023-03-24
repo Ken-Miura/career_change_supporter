@@ -48,3 +48,6 @@ fn create_totp(account_id: i64, base32_encoded_secret: String) -> Result<TOTP, E
     })?;
     Ok(totp)
 }
+
+#[cfg(test)]
+mod tests {}
