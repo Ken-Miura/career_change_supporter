@@ -11,13 +11,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { defineComponent, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
-import { refresh } from '@/util/personalized/refresh/Refresh'
-import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
-import { ApiErrorResp } from '@/util/ApiError'
-import { Code } from '@/util/Error'
 
 export default defineComponent({
   name: 'DeleteAccountConfirmationPage',
@@ -26,29 +21,6 @@ export default defineComponent({
   },
   setup () {
     const message = ref('アカウント削除確認用テストページ')
-    const router = useRouter()
-    onMounted(async () => {
-      try {
-        const resp = await refresh()
-        if (resp instanceof RefreshResp) {
-          // セッションが存在し、利用規約に同意済のため、ログイン後のページを表示可能
-          // TODO: 正常系の処理
-        } else if (resp instanceof ApiErrorResp) {
-          const code = resp.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
-            return
-          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('/terms-of-use')
-            return
-          }
-          // TODO: エラー処理
-        }
-      } catch (e) {
-        // TODO: エラー処理
-      }
-      console.log('TODO: 実装後削除')
-    })
     return { message }
   }
 })
