@@ -836,6 +836,66 @@ describe('ProfilePage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(`${Message.NO_IDENTITY_FOUND}`)
   })
+
+  it('moves to MfaSettingPage when "設定を変更する" is pushed (mfa-enabled=false)', async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      career_descriptions: [],
+      fee_per_hour_in_yen: null,
+      mfa_enabled: false
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="move-to-mfa-setting-page-button"]')
+    expect(button.exists()).toBe(true)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith(`/mfa-setting?mfa-enabled=${profile.mfa_enabled}`)
+  })
+
+  it('moves to MfaSettingPage when "設定を変更する" is pushed (mfa-enabled=true)', async () => {
+    const profile = {
+      /* eslint-disable camelcase */
+      email_address: 'test@test.com',
+      identity: null,
+      career_descriptions: [],
+      fee_per_hour_in_yen: null,
+      mfa_enabled: true
+    /* eslint-enable camelcase */
+    }
+    const resp = GetProfileResp.create(profile)
+    getProfileFuncMock.mockResolvedValue(resp)
+    getProfileDoneMock.value = true
+    const wrapper = mount(ProfilePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="move-to-mfa-setting-page-button"]')
+    expect(button.exists()).toBe(true)
+    await button.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith(`/mfa-setting?mfa-enabled=${profile.mfa_enabled}`)
+  })
 })
 
 function createMaxNumDummyCareerDescriptions (): CareerDescription[] {

@@ -84,7 +84,7 @@
           <h3 class="font-bold text-2xl">二段階認証設定</h3>
           <p class="mt-2 text-lg">二段階認証の設定です。他のユーザーに公開されることはありません。</p>
           <div data-test="mfa-status" class="flex justify-end">
-            <p v-if="mfaStatus" class="m-4 mr-10 text-3xl">有効</p>
+            <p v-if="mfaEnabled" class="m-4 mr-10 text-3xl">有効</p>
             <p v-else class="m-4 mr-10 text-3xl">無効</p>
           </div>
           <button data-test="move-to-mfa-setting-page-button" v-on:click="moveToMfaSettingPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">設定を変更する</button>
@@ -135,7 +135,7 @@ export default defineComponent({
     const feePerHourInYen = ref(0 as number | null)
     const canEditFeePerHourInYen = ref(true)
     const canEditFeePerHourInYenErrMessage = ref('')
-    const mfaStatus = ref(false)
+    const mfaEnabled = ref(false)
     const router = useRouter()
     const store = useStore()
     const errorExists = ref(false)
@@ -150,7 +150,7 @@ export default defineComponent({
           identity.value = profile.identity
           careerDescriptions.value = profile.career_descriptions
           feePerHourInYen.value = profile.fee_per_hour_in_yen
-          mfaStatus.value = profile.mfa_enabled
+          mfaEnabled.value = profile.mfa_enabled
           /* eslint-enable camelcase */
           store.commit(SET_IDENTITY, profile.identity)
           store.commit(SET_FEE_PER_HOUR_IN_YEN, profile.fee_per_hour_in_yen)
@@ -203,7 +203,7 @@ export default defineComponent({
     }
 
     const moveToMfaSettingPage = async () => {
-      console.log(`${mfaStatus.value}`)
+      await router.push(`/mfa-setting?mfa-enabled=${mfaEnabled.value}`)
     }
 
     const moveToDeleteAccountConfirmationPage = async () => {
@@ -229,7 +229,7 @@ export default defineComponent({
       moveToDeleteAccountConfirmationPage,
       MAX_CAREER_NUM,
       PLATFORM_FEE_IN_PERCENTAGE,
-      mfaStatus,
+      mfaEnabled,
       moveToMfaSettingPage
     }
   }

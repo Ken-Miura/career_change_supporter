@@ -36,6 +36,7 @@ import ConsultantSideConsultationPage from '../views/personalized/ConsultantSide
 import RateUserPage from '../views/personalized/RateUserPage.vue'
 import RateConsultantPage from '../views/personalized/RateConsultantPage.vue'
 import RateSuccessPage from '../views/personalized/RateSuccessPage.vue'
+import MfaSettingPage from '../views/personalized/MfaSettingPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -151,6 +152,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/fee-per-hour-in-yen',
     name: 'FeePerHourInYenPage',
     component: FeePerHourInYenPage
+  },
+  {
+    path: '/mfa-setting',
+    name: 'MfaSettingPage',
+    component: MfaSettingPage
   },
   {
     path: '/submit-fee-per-hour-in-yen-success',
