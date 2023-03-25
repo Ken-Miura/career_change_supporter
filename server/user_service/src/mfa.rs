@@ -10,6 +10,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 
+pub(crate) mod setting_change;
 pub(crate) mod temp_secret;
 
 const PASS_CODE_DIGITS: usize = 6;

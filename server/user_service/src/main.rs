@@ -32,6 +32,7 @@ use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
 use crate::login::post_login;
 use crate::logout::post_logout;
+use crate::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
 use crate::mfa::temp_secret::get::get_temp_mfa_secret;
 use crate::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::news::get_news;
@@ -241,6 +242,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/user-rating", post(post_user_rating))
                 .route("/news", get(get_news))
                 .route("/temp-mfa-secret", post(post_temp_mfa_secret).get(get_temp_mfa_secret))
+                .route("/enable-mfa-req", post(post_enable_mfa_req))
                 .with_state(state),
         )
         .layer(
