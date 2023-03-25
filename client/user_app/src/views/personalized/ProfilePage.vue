@@ -82,7 +82,6 @@
         </div>
         <div data-test="mfa" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">二段階認証設定</h3>
-          <p class="mt-2 text-lg">二段階認証の設定です。他のユーザーに公開されることはありません。</p>
           <div data-test="mfa-status" class="flex justify-end">
             <p v-if="mfaEnabled" class="m-4 mr-10 text-3xl">有効</p>
             <p v-else class="m-4 mr-10 text-3xl">無効</p>
