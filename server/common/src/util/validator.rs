@@ -4,6 +4,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 pub mod email_address_validator;
+pub mod pass_code_validator;
 pub mod password_validator;
 pub mod uuid_validator;
 

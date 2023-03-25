@@ -4,11 +4,15 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use common::util::validator::pass_code_validator::validate_pass_code;
+use common::util::validator::uuid_validator::validate_uuid;
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 use uuid::Uuid;
 
+use crate::err::{unexpected_err_resp, Code};
 use crate::mfa::{
     ensure_mfa_is_not_enabled, filter_temp_mfa_secret_order_by_dsc, verify_pass_code,
 };
@@ -55,7 +59,20 @@ async fn handle_enable_mfa_req(
     recovery_code: String,
     op: impl EnableMfaReqOperation,
 ) -> RespResult<EnableMfaReqResult> {
-    // pass codeのvalidation
+    validate_pass_code(pass_code.as_str()).map_err(|e| {
+        error!("invalid pass code format: {}", e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidPassCode as u32,
+            }),
+        )
+    })?;
+    validate_uuid(recovery_code.as_str()).map_err(|e| {
+        // recovery_codeは自身で生成する値ため、問題が発生する場合はunexpected_err_resp
+        error!("failed to validate recovery_code: {}", e);
+        unexpected_err_resp()
+    })?;
     ensure_mfa_is_not_enabled(mfa_enabled)?;
 
     let temp_mfa_secrets = op
