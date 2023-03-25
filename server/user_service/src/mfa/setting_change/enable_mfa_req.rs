@@ -163,6 +163,11 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
 
                     // 設定が有効化されたら見えなくなるため、temp_mfa_secretの削除は実施しない
                     // temp_mfa_secretの削除は定期実行処理に任せる
+                    // 補足:
+                    // 有効化 -> 無効化を短期間で実施後、temp_mfa_secretを直接取得するAPIを叩くと、短い期間の間以前設定した秘密鍵が見えることがある
+                    // しかし、下記の理由から問題ないと判断した。
+                    // - 見えるのは短い期間のみ、かつログイン済みのユーザーに対してのみ
+                    // - 見えるのは有効化 -> 無効化のタイミングで既に廃棄された秘密鍵
 
                     let mfa_info_active_model = entity::mfa_info::ActiveModel {
                         user_account_id: Set(account_id),
