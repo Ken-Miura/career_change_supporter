@@ -146,6 +146,7 @@ pub(crate) enum Code {
     MfaHasAlreadyBeenEnabled = 20134,
     ReachTempMfaSecretLimit = 20135,
     NoTempMfaSecretFound = 20136,
+    PassCodeDoesNotMatch = 20137,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

@@ -1,6 +1,5 @@
 // Copyright 2023 Ken Miura
 
-use async_session::log::error;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
@@ -10,8 +9,9 @@ use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::err::unexpected_err_resp;
-use crate::mfa::{create_totp, ensure_mfa_is_not_enabled, filter_temp_mfa_secret_order_by_dsc};
+use crate::mfa::{
+    ensure_mfa_is_not_enabled, filter_temp_mfa_secret_order_by_dsc, verify_pass_code,
+};
 use crate::mfa::{get_latest_temp_mfa_secret, TempMfaSecret};
 use crate::util::session::user::User;
 
@@ -55,6 +55,7 @@ async fn handle_enable_mfa_req(
     recovery_code: String,
     op: impl EnableMfaReqOperation,
 ) -> RespResult<EnableMfaReqResult> {
+    // pass codeのvalidation
     ensure_mfa_is_not_enabled(mfa_enabled)?;
 
     let temp_mfa_secrets = op
@@ -62,9 +63,13 @@ async fn handle_enable_mfa_req(
         .await?;
     let temp_mfa_secret = get_latest_temp_mfa_secret(temp_mfa_secrets)?;
 
-    let totp = create_totp(account_id, temp_mfa_secret.base32_encoded_secret.clone())?;
-    let ts = create_timestamp(&current_date_time)?;
-    let is_valid = totp.check(pass_code.as_str(), ts);
+    verify_pass_code(
+        account_id,
+        &temp_mfa_secret.base32_encoded_secret,
+        &current_date_time,
+        &pass_code,
+    )?;
+
     // 設定を有効化する
     //   トランザクション内で以下を実施
     //   UserAccountの値の変更
@@ -95,17 +100,4 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
     ) -> Result<Vec<TempMfaSecret>, ErrResp> {
         filter_temp_mfa_secret_order_by_dsc(account_id, current_date_time, &self.pool).await
     }
-}
-
-fn create_timestamp(current_date_time: &DateTime<FixedOffset>) -> Result<u64, ErrResp> {
-    // chronoのタイムスタンプはi64のため、他のタイムスタンプでよく使われるu64に変換する必要がある
-    // https://github.com/chronotope/chrono/issues/326
-    // 上記によると、chronoのタイムスタンプがi64であるのはUTC 1970年1月1日午前0時より前の時間を表すため。
-    // 従って、現代に生きる我々にとってi64の値が負の値になることはなく、u64へのキャストが失敗することはない。
-    let chrono_ts = current_date_time.timestamp();
-    let ts = u64::try_from(current_date_time.timestamp()).map_err(|e| {
-        error!("failed to convert {} to type u64: {}", chrono_ts, e);
-        unexpected_err_resp()
-    })?;
-    Ok(ts)
 }

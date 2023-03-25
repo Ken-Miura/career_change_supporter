@@ -119,5 +119,43 @@ fn get_latest_temp_mfa_secret(
     Ok(secret.clone())
 }
 
+pub(crate) fn verify_pass_code(
+    account_id: i64,
+    base32_encoded_secret: &str,
+    current_date_time: &DateTime<FixedOffset>,
+    pass_code: &str,
+) -> Result<(), ErrResp> {
+    let totp = create_totp(account_id, base32_encoded_secret.to_string())?;
+    let ts = create_timestamp(current_date_time)?;
+    let is_valid = totp.check(pass_code, ts);
+    if !is_valid {
+        error!(
+            "failed to check pass code (account_id: {}, current_date_time: {})",
+            account_id, current_date_time
+        );
+        // TODO: UNAUTHORIZEDとどちらを使うか検討する
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PassCodeDoesNotMatch as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+fn create_timestamp(current_date_time: &DateTime<FixedOffset>) -> Result<u64, ErrResp> {
+    // chronoのタイムスタンプはi64のため、他のタイムスタンプでよく使われるu64に変換する必要がある
+    // https://github.com/chronotope/chrono/issues/326
+    // 上記によると、chronoのタイムスタンプがi64であるのはUTC 1970年1月1日午前0時より前の時間を表すため。
+    // 従って、現代に生きる我々にとってi64の値が負の値になることはなく、u64へのキャストが失敗することはない。
+    let chrono_ts = current_date_time.timestamp();
+    let ts = u64::try_from(current_date_time.timestamp()).map_err(|e| {
+        error!("failed to convert {} to type u64: {}", chrono_ts, e);
+        unexpected_err_resp()
+    })?;
+    Ok(ts)
+}
+
 #[cfg(test)]
 mod tests {}
