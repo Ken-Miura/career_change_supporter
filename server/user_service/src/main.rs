@@ -82,7 +82,7 @@ use consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
-use mfa::KEY_TO_TOTP_ISSUER;
+use mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
@@ -122,7 +122,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_OPENSEARCH_PASSWORD.to_string(),
         KEY_TO_SKY_WAY_APPLICATION_ID.to_string(),
         KEY_TO_SKY_WAY_SECRET_KEY.to_string(),
-        KEY_TO_TOTP_ISSUER.to_string(),
+        KEY_TO_USER_TOTP_ISSUER.to_string(),
     ]
 });
 

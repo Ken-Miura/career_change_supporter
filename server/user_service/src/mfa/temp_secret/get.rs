@@ -4,14 +4,14 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
+use common::mfa::generate_base64_encoded_qr_code;
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
-use tracing::error;
 
-use crate::mfa::{create_totp, ensure_mfa_is_not_enabled, get_latest_temp_mfa_secret};
+use crate::mfa::{ensure_mfa_is_not_enabled, get_latest_temp_mfa_secret, USER_TOTP_ISSUER};
 use crate::mfa::{filter_temp_mfa_secret_order_by_dsc, TempMfaSecret};
-use crate::{err::unexpected_err_resp, util::session::user::User};
+use crate::util::session::user::User;
 
 pub(crate) async fn get_temp_mfa_secret(
     User { user_info }: User,
@@ -49,11 +49,11 @@ async fn handle_temp_mfp_secret(
         .await?;
     let temp_mfa_secret = get_latest_temp_mfa_secret(temp_mfa_secrets)?;
 
-    let totp = create_totp(account_id, temp_mfa_secret.base32_encoded_secret.clone())?;
-    let qr_code = totp.get_qr().map_err(|e| {
-        error!("failed to create QR code (base64 encoded png img): {}", e);
-        unexpected_err_resp()
-    })?;
+    let qr_code = generate_base64_encoded_qr_code(
+        account_id,
+        temp_mfa_secret.base32_encoded_secret.as_str(),
+        USER_TOTP_ISSUER.as_str(),
+    )?;
 
     Ok((
         StatusCode::OK,

@@ -4,13 +4,13 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
+use common::mfa::generate_base32_encoded_secret;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
     PaginatorTrait, QueryFilter, Set,
 };
 use serde::Serialize;
-use totp_rs::Secret;
 use tracing::error;
 
 use crate::err::Code;
@@ -38,17 +38,6 @@ pub(crate) async fn post_temp_mfa_secret(
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct PostTempMfaSecretResult {}
-
-fn generate_base32_encoded_secret() -> Result<String, ErrResp> {
-    let secret = Secret::generate_secret().to_encoded();
-    match secret {
-        Secret::Raw(raw_secret) => {
-            error!("Secret::Raw is unexpected (value: {:?})", raw_secret);
-            Err(unexpected_err_resp())
-        }
-        Secret::Encoded(base32_encoded_secret) => Ok(base32_encoded_secret),
-    }
-}
 
 async fn handle_temp_mfp_secret(
     account_id: i64,
@@ -143,14 +132,5 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use super::generate_base32_encoded_secret;
-
-    #[test]
-    fn generate_base32_encoded_secret_finish_successfully() {
-        // 出力される文字列は、シードを受け付けるパラメータがなく、完全ランダムなため入出力を指定したテストの記述は出来ない
-        // ただ、関数の実行にあたって、Errが返されたり、panicが発生したりせず無事に完了することは確かめておく
-        let _ = generate_base32_encoded_secret().expect("failed to get Ok");
-    }
-
     // TODO: Add test
 }

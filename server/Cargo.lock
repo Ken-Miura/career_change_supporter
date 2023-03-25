@@ -1170,6 +1170,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs",
+ "totp-rs",
  "tracing",
 ]
 
@@ -4104,7 +4105,6 @@ dependencies = [
  "rust_decimal",
  "serde",
  "tokio",
- "totp-rs",
  "tower",
  "tower-http",
  "tracing",
