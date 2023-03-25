@@ -248,7 +248,7 @@ impl MigrationTrait for Migration {
                 r"CREATE TABLE ccs_schema.mfa_info (
                 user_account_id BIGINT PRIMARY KEY,
                 base32_encoded_secret TEXT NOT NULL,
-                recovery_code TEXT NOT NULL
+                hashed_recovery_code BYTEA NOT NULL
               );",
             ))
             .await
