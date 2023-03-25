@@ -5,6 +5,8 @@ use std::{error::Error, fmt::Display, string::FromUtf8Error};
 use bcrypt::BcryptError;
 
 // TODO: リリース前に値を調整する (パスワードのストレッチングが2^BCRYPT_COST回実行される)
+// https://security.stackexchange.com/questions/17207/recommended-of-rounds-for-bcrypt
+// を参考に250ms以上計算にかかる値を選択する
 const BCRYPT_COST: u32 = 7;
 
 /// Hash given password string.
