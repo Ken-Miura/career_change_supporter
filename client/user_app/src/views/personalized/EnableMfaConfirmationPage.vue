@@ -99,7 +99,7 @@ export default defineComponent({
     })
 
     const submitPassCodeToEnableMfa = async () => {
-      console.log('submitPassCodeToEnableMfa')
+      console.log(`submitPassCodeToEnableMfa: ${passCode.value}`)
     }
 
     return {
