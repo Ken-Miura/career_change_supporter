@@ -14,10 +14,8 @@ use totp_rs::Secret;
 use tracing::error;
 
 use crate::err::Code;
-use crate::mfa::ensure_mfa_is_not_enabled;
+use crate::mfa::{ensure_mfa_is_not_enabled, MAX_NUM_OF_TEMP_MFA_SECRETS};
 use crate::{err::unexpected_err_resp, util::session::user::User};
-
-use super::MAX_NUM_OF_TEMP_MFA_SECRETS;
 
 const VALID_PERIOD_IN_MINUTE: i64 = 15;
 

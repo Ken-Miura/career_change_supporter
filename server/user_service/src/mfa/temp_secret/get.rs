@@ -4,17 +4,14 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
-use entity::sea_orm::{QueryOrder, QuerySelect};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 use tracing::error;
 
-use crate::err::Code;
-use crate::mfa::{create_totp, ensure_mfa_is_not_enabled};
+use crate::mfa::{create_totp, ensure_mfa_is_not_enabled, get_latest_temp_mfa_secret};
+use crate::mfa::{filter_temp_mfa_secret_order_by_dsc, TempMfaSecret};
 use crate::{err::unexpected_err_resp, util::session::user::User};
-
-use super::MAX_NUM_OF_TEMP_MFA_SECRETS;
 
 pub(crate) async fn get_temp_mfa_secret(
     User { user_info }: User,
@@ -76,11 +73,6 @@ trait TempMfaSecretResultOperation {
     ) -> Result<Vec<TempMfaSecret>, ErrResp>;
 }
 
-#[derive(Clone)]
-struct TempMfaSecret {
-    base32_encoded_secret: String,
-}
-
 struct TempMfaSecretResultOperationImpl {
     pool: DatabaseConnection,
 }
@@ -92,45 +84,8 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
         account_id: i64,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<TempMfaSecret>, ErrResp> {
-        let models = entity::temp_mfa_secret::Entity::find()
-            .filter(entity::temp_mfa_secret::Column::UserAccountId.eq(account_id))
-            .filter(entity::temp_mfa_secret::Column::ExpiredAt.gt(current_date_time))
-            .limit(MAX_NUM_OF_TEMP_MFA_SECRETS)
-            .order_by_desc(entity::temp_mfa_secret::Column::ExpiredAt)
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter temp_mfa_secret (account_id: {}, current_date_time: {}): {}",
-                    account_id, current_date_time, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(models
-            .into_iter()
-            .map(|m| TempMfaSecret {
-                base32_encoded_secret: m.base32_encoded_secret,
-            })
-            .collect::<Vec<TempMfaSecret>>())
+        filter_temp_mfa_secret_order_by_dsc(account_id, current_date_time, &self.pool).await
     }
-}
-
-fn get_latest_temp_mfa_secret(
-    temp_mfa_secrets: Vec<TempMfaSecret>,
-) -> Result<TempMfaSecret, ErrResp> {
-    if temp_mfa_secrets.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoTempMfaSecretFound as u32,
-            }),
-        ));
-    }
-    let secret = temp_mfa_secrets.get(0).ok_or_else(|| {
-        error!("there are no temp_mfa_secrets");
-        unexpected_err_resp()
-    })?;
-    Ok(secret.clone())
 }
 
 #[cfg(test)]
