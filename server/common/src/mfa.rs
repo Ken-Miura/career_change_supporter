@@ -1,12 +1,24 @@
 // Copyright 2023 Ken Miura
 
+use std::{error::Error, fmt::Display, string::FromUtf8Error};
+
 use axum::http::StatusCode;
 use axum::Json;
+use bcrypt::BcryptError;
 use chrono::{DateTime, FixedOffset};
 use totp_rs::{Algorithm, Secret, TOTP};
 use tracing::error;
 
 use crate::{err::Code, ApiError, ErrResp};
+
+// TODO: リリース前に値を調整する (パスコードのストレッチングが2^BCRYPT_COST回実行される)
+// https://security.stackexchange.com/questions/17207/recommended-of-rounds-for-bcrypt
+// を参考に250ms以上計算にかかる値を選択する
+const BCRYPT_COST: u32 = 7;
+
+const PASS_CODE_DIGITS: usize = 6;
+const SKEW: u8 = 1;
+const ONE_STEP_IN_SECOND: u64 = 30;
 
 /// Base32でエンコードされた秘密鍵を生成する
 pub fn generate_base32_encoded_secret() -> Result<String, ErrResp> {
@@ -24,10 +36,6 @@ pub fn generate_base32_encoded_secret() -> Result<String, ErrResp> {
         Secret::Encoded(base32_encoded_secret) => Ok(base32_encoded_secret),
     }
 }
-
-const PASS_CODE_DIGITS: usize = 6;
-const SKEW: u8 = 1;
-const ONE_STEP_IN_SECOND: u64 = 30;
 
 fn create_totp(
     account_id: i64,
@@ -114,6 +122,53 @@ fn create_timestamp(current_date_time: &DateTime<FixedOffset>) -> Result<u64, Er
     })?;
     Ok(ts)
 }
+
+/// Hash given recovery code string.
+pub fn hash_recovery_code(recovery_code: &str) -> Result<Vec<u8>, RecoveryCodeHandlingError> {
+    let hashed_recovery_code = bcrypt::hash(recovery_code, BCRYPT_COST)?;
+    let binary = hashed_recovery_code.as_bytes();
+    Ok(Vec::from(binary))
+}
+
+/// Check if recovery code given matches hashed one.
+pub fn is_recovery_code_match(
+    recovery_code: &str,
+    hashed_recovery_code: &[u8],
+) -> Result<bool, RecoveryCodeHandlingError> {
+    let hashed_recovery_code_str = String::from_utf8(Vec::from(hashed_recovery_code))?;
+    let is_match = bcrypt::verify(recovery_code, &hashed_recovery_code_str)?;
+    Ok(is_match)
+}
+
+impl From<BcryptError> for RecoveryCodeHandlingError {
+    fn from(e: BcryptError) -> Self {
+        RecoveryCodeHandlingError::UnexpectedError(Box::new(e))
+    }
+}
+
+impl From<FromUtf8Error> for RecoveryCodeHandlingError {
+    fn from(e: FromUtf8Error) -> Self {
+        RecoveryCodeHandlingError::UnexpectedError(Box::new(e))
+    }
+}
+
+/// Error related to [hash_recovery_code()] and [is_recovery_code_match()]
+#[derive(Debug)]
+pub enum RecoveryCodeHandlingError {
+    UnexpectedError(Box<dyn Error + Send + Sync + 'static>),
+}
+
+impl Display for RecoveryCodeHandlingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RecoveryCodeHandlingError::UnexpectedError(e) => {
+                write!(f, "failed to handle recovery code: {}", e)
+            }
+        }
+    }
+}
+
+impl Error for RecoveryCodeHandlingError {}
 
 #[cfg(test)]
 mod tests {
