@@ -5,7 +5,10 @@
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div v-if="errMessageOnOpen" class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <AlertMessage v-bind:message="errMessageOnOpen"/>
+      </div>
+      <div v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 data-test="mfa-setting-label" class="font-bold text-2xl">二段回認証設定</h3>
         <p data-test="mfa-setting-description" class="mt-4 ml-2 text-xl">二段回認証の設定を変更します。本サービスにおける二段階認証には認証アプリを利用します。二段階認証を有効化するためには、事前にスマートフォンにGoogle Authenticator (<a class="hover:underline" href="https://apps.apple.com/jp/app/google-authenticator/id388497605">iOS版リンク</a>、<a class="hover:underline" href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=ja&gl=US">Android OS版リンク</a>) またはそれに準ずる認証アプリをインストールして下さい。</p>
         <div class="mt-2 ml-4 grid grid-cols-3">
@@ -13,8 +16,8 @@
           <p data-test="mfa-enabled-value" class="mt-4 justify-self-center text-xl col-span-1">{{ mfaStatus }}</p>
         </div>
         <button data-test="change-mfa-setting-button" v-on:click="changeMfaSetting" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">{{ mfaBtnLabel }}</button>
-        <div v-if="errMessage">
-          <AlertMessage class="mt-6" v-bind:message="errMessage"/>
+        <div v-if="errMessageOnSubmit">
+          <AlertMessage class="mt-6" v-bind:message="errMessageOnSubmit"/>
         </div>
       </div>
     </main>
@@ -66,6 +69,8 @@ export default defineComponent({
         return '有効化する'
       }
     })
+    const errMessageOnOpen = ref(null as string | null)
+    const errMessageOnSubmit = ref(null as string | null)
 
     const {
       postTempMfaSecretDone,
@@ -87,10 +92,10 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          errMessage.value = createErrorMessage(resp.getApiError().getCode())
+          errMessageOnOpen.value = createErrorMessage(resp.getApiError().getCode())
         }
       } catch (e) {
-        errMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        errMessageOnOpen.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
 
@@ -109,12 +114,12 @@ export default defineComponent({
             await router.push('/terms-of-use')
             return
           }
-          errMessage.value = createErrorMessage(resp.getApiError().getCode())
+          errMessageOnSubmit.value = createErrorMessage(resp.getApiError().getCode())
           return
         }
         await router.push('/enable-mfa-confirmation')
       } catch (e) {
-        errMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        errMessageOnSubmit.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -126,14 +131,13 @@ export default defineComponent({
       }
     }
 
-    const errMessage = ref(null as string | null)
-
     return {
       postTempMfaSecretDone,
       mfaStatus,
       mfaBtnLabel,
       changeMfaSetting,
-      errMessage
+      errMessageOnOpen,
+      errMessageOnSubmit
     }
   }
 })
