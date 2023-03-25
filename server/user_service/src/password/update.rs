@@ -9,11 +9,11 @@ use axum::Json;
 use axum_extra::extract::SignedCookieJar;
 use chrono::DateTime;
 use chrono::{Duration, FixedOffset};
+use common::password::hash_password;
 use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
     SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
 };
-use common::util::hash_password;
 use common::util::validator::{
     password_validator::validate_password, uuid_validator::validate_uuid,
 };
@@ -324,13 +324,11 @@ mod tests {
     use axum::http::StatusCode;
     use chrono::{Duration, TimeZone};
     use common::{
+        password::is_password_match,
         smtp::SYSTEM_EMAIL_ADDRESS,
-        util::{
-            is_password_match,
-            validator::{
-                email_address_validator::validate_email_address,
-                password_validator::validate_password, uuid_validator::validate_uuid,
-            },
+        util::validator::{
+            email_address_validator::validate_email_address, password_validator::validate_password,
+            uuid_validator::validate_uuid,
         },
         ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
     };

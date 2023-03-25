@@ -3,6 +3,7 @@
 pub mod err;
 pub mod mfa;
 pub mod opensearch;
+pub mod password;
 pub mod payment_platform;
 pub mod redis;
 pub mod smtp;

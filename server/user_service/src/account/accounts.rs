@@ -259,13 +259,11 @@ mod tests {
     use axum::http::StatusCode;
     use chrono::{DateTime, Duration, FixedOffset, TimeZone};
     use common::{
+        password::hash_password,
         smtp::SYSTEM_EMAIL_ADDRESS,
-        util::{
-            hash_password,
-            validator::{
-                email_address_validator::validate_email_address,
-                password_validator::validate_password, uuid_validator::validate_uuid,
-            },
+        util::validator::{
+            email_address_validator::validate_email_address, password_validator::validate_password,
+            uuid_validator::validate_uuid,
         },
         ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR,
     };
