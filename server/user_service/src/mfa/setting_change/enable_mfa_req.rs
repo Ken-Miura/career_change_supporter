@@ -1,6 +1,7 @@
 // Copyright 2023 Ken Miura
 
 use axum::async_trait;
+use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{RespResult, JAPANESE_TIME_ZONE};
@@ -50,7 +51,16 @@ async fn handle_enable_mfa_req(
     recovery_code: String,
     op: impl EnableMfaReqOperation,
 ) -> RespResult<EnableMfaReqResult> {
-    todo!()
+    // MFAが有効化されていないことを確認する
+    // temp_mfa_secretを取得する
+    // 取得したtemp_mfa_secretからTOTPインスタンスを生成
+    // TOTPインスタンスを用いてpass_codeをチェック
+    // 設定を有効化する
+    //   トランザクション内で以下を実施
+    //   UserAccountの値の変更
+    //   temp_mfa_secretの削除
+    //   mfa_infoの挿入
+    Ok((StatusCode::OK, Json(EnableMfaReqResult { recovery_code })))
 }
 
 #[async_trait]
