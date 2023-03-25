@@ -6,6 +6,7 @@ use chrono::{DateTime, FixedOffset, Utc};
 use common::{RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::util::session::user::User;
 
@@ -18,8 +19,17 @@ pub(crate) async fn post_enable_mfa_req(
     let mfa_enabled = user_info.mfa_enabled_at.is_some();
     let pass_code = enable_mfa_req.pass_code;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    let uuid = Uuid::new_v4().simple().to_string();
     let op = EnableMfaReqOperationImpl { pool };
-    handle_enable_mfa_req(account_id, mfa_enabled, pass_code, current_date_time, op).await
+    handle_enable_mfa_req(
+        account_id,
+        mfa_enabled,
+        pass_code,
+        current_date_time,
+        uuid,
+        op,
+    )
+    .await
 }
 
 #[derive(Deserialize)]
@@ -37,6 +47,7 @@ async fn handle_enable_mfa_req(
     mfa_enabled: bool,
     pass_code: String,
     current_date_time: DateTime<FixedOffset>,
+    recovery_code: String,
     op: impl EnableMfaReqOperation,
 ) -> RespResult<EnableMfaReqResult> {
     todo!()
