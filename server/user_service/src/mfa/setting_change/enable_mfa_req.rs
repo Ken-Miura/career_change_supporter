@@ -58,7 +58,7 @@ async fn handle_enable_mfa_req(
     // 設定を有効化する
     //   トランザクション内で以下を実施
     //   UserAccountの値の変更
-    //   temp_mfa_secretの削除
+    //   temp_mfa_secretの削除 -> どうせユーザーには期限が過ぎたら見えなくなる、かつ定期削除が入るので削除処理はいらない？
     //   mfa_infoの挿入
     Ok((StatusCode::OK, Json(EnableMfaReqResult { recovery_code })))
 }
