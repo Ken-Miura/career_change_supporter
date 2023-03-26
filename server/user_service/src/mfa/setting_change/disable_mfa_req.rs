@@ -67,13 +67,6 @@ impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
                         }
                     })?;
 
-                    // temp_mfa_secretの削除は実施せず、temp_mfa_secretの削除は定期実行処理に任せる
-                    // 補足:
-                    // 有効化 -> 無効化を短期間で実施後、temp_mfa_secretを直接取得するAPIを叩くと、短い期間の間以前設定した秘密鍵が見えることがある
-                    // しかし、下記の理由から問題ないと判断した。
-                    // - 見えるのは短い期間のみ、かつログイン済みのユーザーに対してのみ
-                    // - 見えるのは有効化 -> 無効化のタイミングで既に廃棄された秘密鍵
-
                     let _ = entity::mfa_info::Entity::delete_by_id(account_id).exec(txn).await.map_err(|e|{
                         error!(
                             "failed to delete mfa_info (user_account_id: {}): {}",

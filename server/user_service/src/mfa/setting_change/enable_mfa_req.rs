@@ -82,7 +82,7 @@ async fn handle_enable_mfa_req(
     let temp_mfa_secrets = op
         .filter_temp_mfa_secret_order_by_dsc(account_id, current_date_time)
         .await?;
-    let temp_mfa_secret = get_latest_temp_mfa_secret(temp_mfa_secrets)?;
+    let temp_mfa_secret = get_latest_temp_mfa_secret(temp_mfa_secrets.clone())?;
 
     verify_pass_code(
         account_id,
@@ -95,6 +95,13 @@ async fn handle_enable_mfa_req(
         error!("failed to hash recovery code: {}", e);
         unexpected_err_resp()
     })?;
+
+    // 二段階認証を有効にするということは、temp_mfa_secretは不要になるということなので削除しておく
+    // 最大でもMAX_NUM_OF_TEMP_MFA_SECRETSしかないため、イテレーションしても問題ない
+    for tms in temp_mfa_secrets {
+        op.delete_temp_mfa_secret_by_temp_mfa_secret_id(tms.temp_mfa_secret_id)
+            .await?;
+    }
 
     op.enable_mfa(
         account_id,
@@ -114,6 +121,11 @@ trait EnableMfaReqOperation {
         account_id: i64,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<TempMfaSecret>, ErrResp>;
+
+    async fn delete_temp_mfa_secret_by_temp_mfa_secret_id(
+        &self,
+        temp_mfa_secret_id: i64,
+    ) -> Result<(), ErrResp>;
 
     async fn enable_mfa(
         &self,
@@ -138,6 +150,23 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
         filter_temp_mfa_secret_order_by_dsc(account_id, current_date_time, &self.pool).await
     }
 
+    async fn delete_temp_mfa_secret_by_temp_mfa_secret_id(
+        &self,
+        temp_mfa_secret_id: i64,
+    ) -> Result<(), ErrResp> {
+        let _ = entity::temp_mfa_secret::Entity::delete_by_id(temp_mfa_secret_id)
+            .exec(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to delete temp_mfa_secret (temp_mfa_secret_id: {}): {}",
+                    temp_mfa_secret_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(())
+    }
+
     async fn enable_mfa(
         &self,
         account_id: i64,
@@ -160,14 +189,6 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
                             err_resp: unexpected_err_resp(),
                         }
                     })?;
-
-                    // 設定が有効化されたら見えなくなるため、temp_mfa_secretの削除は実施しない
-                    // temp_mfa_secretの削除は定期実行処理に任せる
-                    // 補足:
-                    // 有効化 -> 無効化を短期間で実施後、temp_mfa_secretを直接取得するAPIを叩くと、短い期間の間以前設定した秘密鍵が見えることがある
-                    // しかし、下記の理由から問題ないと判断した。
-                    // - 見えるのは短い期間のみ、かつログイン済みのユーザーに対してのみ
-                    // - 見えるのは有効化 -> 無効化のタイミングで既に廃棄された秘密鍵
 
                     let mfa_info_active_model = entity::mfa_info::ActiveModel {
                         user_account_id: Set(account_id),

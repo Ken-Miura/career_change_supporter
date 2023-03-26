@@ -16,6 +16,8 @@ use crate::err::{unexpected_err_resp, Code};
 pub(crate) mod setting_change;
 pub(crate) mod temp_secret;
 
+const MAX_NUM_OF_TEMP_MFA_SECRETS: u64 = 8;
+
 pub(crate) const KEY_TO_USER_TOTP_ISSUER: &str = "USER_TOTP_ISSUER";
 static USER_TOTP_ISSUER: Lazy<String> = Lazy::new(|| {
     let issuer = env::var(KEY_TO_USER_TOTP_ISSUER).unwrap_or_else(|_| {
@@ -42,10 +44,9 @@ fn ensure_mfa_is_not_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
     Ok(())
 }
 
-const MAX_NUM_OF_TEMP_MFA_SECRETS: u64 = 8;
-
 #[derive(Clone)]
 struct TempMfaSecret {
+    temp_mfa_secret_id: i64,
     base32_encoded_secret: String,
 }
 
@@ -71,6 +72,7 @@ async fn filter_temp_mfa_secret_order_by_dsc(
     Ok(models
         .into_iter()
         .map(|m| TempMfaSecret {
+            temp_mfa_secret_id: m.temp_mfa_secret_id,
             base32_encoded_secret: m.base32_encoded_secret,
         })
         .collect::<Vec<TempMfaSecret>>())
