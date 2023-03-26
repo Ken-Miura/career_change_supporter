@@ -76,7 +76,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(r"GRANT UPDATE (hashed_password, last_login_time) ON ccs_schema.user_account To user_app;"),
+                sql.stmt(r"GRANT UPDATE (hashed_password, last_login_time, mfa_enabled_at) ON ccs_schema.user_account To user_app;"),
             )
             .await
             .map(|_| ())?;
@@ -86,7 +86,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(r"GRANT UPDATE (disabled_at) ON ccs_schema.user_account To admin_app;"),
+                sql.stmt(r"GRANT UPDATE (mfa_enabled_at, disabled_at) ON ccs_schema.user_account To admin_app;"),
             )
             .await
             .map(|_| ())?;
@@ -216,7 +216,11 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT, DELETE ON ccs_schema.temp_mfa_secret To user_app;"))
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, INSERT, DELETE ON ccs_schema.temp_mfa_secret To user_app;",
+                ),
+            )
             .await
             .map(|_| ())?;
         // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
