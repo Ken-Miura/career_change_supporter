@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getTempMfaSecretDone" class="m-6">
+    <div v-if="!(getTempMfaSecretDone && postEnableMfaReqDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -47,6 +47,10 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { useGetTempMfaSecret } from '@/util/personalized/enable-mfa-confirmation/useGetTempMfaSecret'
 import { GetTempMfaSecretResp } from '@/util/personalized/enable-mfa-confirmation/GetTempMfaSecretResp'
+import { usePostEnableMfaReq } from '@/util/personalized/enable-mfa-confirmation/usePostEnableMfaReq'
+import { PostEnableMfaReqResp } from '@/util/personalized/enable-mfa-confirmation/PostEnableMfaReqResp'
+import { useStore } from 'vuex'
+import { SET_RECOVERY_CODE } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'EnableMfaConfirmationPage',
@@ -57,6 +61,7 @@ export default defineComponent({
   },
   setup () {
     const router = useRouter()
+    const store = useStore()
     const base64EncodedImage = ref('')
     const base64EncodedImageUrl = computed(() => {
       return `data:image/png;base64,${base64EncodedImage.value}`
@@ -71,6 +76,11 @@ export default defineComponent({
       getTempMfaSecretDone,
       getTempMfaSecretFunc
     } = useGetTempMfaSecret()
+
+    const {
+      postEnableMfaReqDone,
+      postEnableMfaReqFunc
+    } = usePostEnableMfaReq()
 
     onMounted(async () => {
       try {
@@ -99,7 +109,31 @@ export default defineComponent({
     })
 
     const submitPassCodeToEnableMfa = async () => {
-      console.log(`submitPassCodeToEnableMfa: ${passCode.value}`)
+      try {
+        const resp = await postEnableMfaReqFunc(passCode.value)
+        if (!(resp instanceof PostEnableMfaReqResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            // 二段階認証の設定を変更する画面からログイン画面へ急に遷移するとユーザーを混乱させるのでメッセージ表示にする
+            errMessageOnSubmit.value = Message.UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            // 二段階認証の設定を変更する画面から利用規約画面へ急に遷移するとユーザーを混乱させるのでメッセージ表示にする
+            errMessageOnSubmit.value = Message.NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE
+            return
+          }
+          errMessageOnSubmit.value = createErrorMessage(resp.getApiError().getCode())
+          return
+        }
+        const recoveryCode = resp.getRecoveryCode()
+        store.commit(SET_RECOVERY_CODE, recoveryCode)
+        await router.push('/enable-mfa-success')
+      } catch (e) {
+        errMessageOnSubmit.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     return {
@@ -109,7 +143,8 @@ export default defineComponent({
       passCode,
       submitPassCodeToEnableMfa,
       errMessageOnOpen,
-      errMessageOnSubmit
+      errMessageOnSubmit,
+      postEnableMfaReqDone
     }
   }
 })

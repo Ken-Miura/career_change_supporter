@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!postTempMfaSecretDone" class="m-6">
+    <div v-if="!(postTempMfaSecretDone && postDisableMfaReqDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -41,6 +41,8 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { usePostTempMfaSecret } from '@/util/personalized/mfa-setting/usePostTempMfaSecret'
 import { PostTempMfaSecretResp } from '@/util/personalized/mfa-setting/PostTempMfaSecretResp'
+import { usePostDisableMfaReq } from '@/util/personalized/mfa-setting/usePostDisableMfaReq'
+import { PostDisableMfaReqResp } from '@/util/personalized/mfa-setting/PostDisableMfaReqResp'
 
 export default defineComponent({
   name: 'MfaSettingPage',
@@ -77,6 +79,11 @@ export default defineComponent({
       postTempMfaSecretFunc
     } = usePostTempMfaSecret()
 
+    const {
+      postDisableMfaReqDone,
+      postDisableMfaReqFunc
+    } = usePostDisableMfaReq()
+
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -108,10 +115,12 @@ export default defineComponent({
           }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
+            // 二段階認証の設定を変更する画面からログイン画面へ急に遷移するとユーザーを混乱させるのでメッセージ表示にする
+            errMessageOnSubmit.value = Message.UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('/terms-of-use')
+            // 二段階認証の設定を変更する画面から利用規約画面へ急に遷移するとユーザーを混乱させるのでメッセージ表示にする
+            errMessageOnSubmit.value = Message.NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE
             return
           }
           errMessageOnSubmit.value = createErrorMessage(resp.getApiError().getCode())
@@ -123,9 +132,35 @@ export default defineComponent({
       }
     }
 
+    const disableMfa = async () => {
+      try {
+        const resp = await postDisableMfaReqFunc()
+        if (!(resp instanceof PostDisableMfaReqResp)) {
+          if (!(resp instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${resp}`)
+          }
+          const code = resp.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            // 二段階認証の設定を変更する画面からログイン画面へ急に遷移するとユーザーを混乱させるのでメッセージ表示にする
+            errMessageOnSubmit.value = Message.UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            // 二段階認証の設定を変更する画面から利用規約画面へ急に遷移するとユーザーを混乱させるのでメッセージ表示にする
+            errMessageOnSubmit.value = Message.NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE
+            return
+          }
+          errMessageOnSubmit.value = createErrorMessage(resp.getApiError().getCode())
+          return
+        }
+        await router.push('/disable-mfa-success')
+      } catch (e) {
+        errMessageOnSubmit.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     const changeMfaSetting = async () => {
       if (mfaEnabled.value) {
-        console.log('TODO: 無効化')
+        await disableMfa()
       } else {
         await enableMfa()
       }
@@ -137,7 +172,8 @@ export default defineComponent({
       mfaBtnLabel,
       changeMfaSetting,
       errMessageOnOpen,
-      errMessageOnSubmit
+      errMessageOnSubmit,
+      postDisableMfaReqDone
     }
   }
 })

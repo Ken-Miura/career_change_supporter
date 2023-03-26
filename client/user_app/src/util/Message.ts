@@ -193,6 +193,9 @@ export namespace Message {
     export const NO_CONSULTANT_RATING_FOUND_MESSAGE = `${NO_USER_RATING_FOUND_MESSAGE}`
     export const CONSULTANT_HAS_ALREADY_BEEN_RATED_MESSAGE = `${USER_ACCOUNT_HAS_ALREADY_BEEN_RATED_MESSAGE}`
     export const RATE_SUCCESS_MESSAGE = '評価を行いました'
+    export const UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE = 'セッションの有効期限が切れています。ログアウトし、再ログイン後、設定をして下さい'
+    export const NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE = '利用規約への同意が必要です。ログアウトし、再ログインすると利用規約への同意画面が表示されるので、利用規約同意後に設定をして下さい'
+    export const DISABLE_MFA_SUCCESS_MESSAGE = '二段階認証を無効化しました'
     // TODO: SkyWay関連のメッセージの修正
     const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と表示されたメッセージをお問い合わせからご連絡下さい'
     export const SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED = `${SKY_WAY_UNEXPECTED_ERROR}: SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED`
