@@ -9,12 +9,7 @@ use chrono::{DateTime, FixedOffset};
 use totp_rs::{Algorithm, Secret, TOTP};
 use tracing::error;
 
-use crate::{err::Code, ApiError, ErrResp};
-
-// TODO: リリース前に値を調整する (パスコードのストレッチングが2^BCRYPT_COST回実行される)
-// https://security.stackexchange.com/questions/17207/recommended-of-rounds-for-bcrypt
-// を参考に250ms以上計算にかかる値を選択する
-const BCRYPT_COST: u32 = 7;
+use crate::{err::Code, ApiError, ErrResp, BCRYPT_COST};
 
 const PASS_CODE_DIGITS: usize = 6;
 const SKEW: u8 = 1;
