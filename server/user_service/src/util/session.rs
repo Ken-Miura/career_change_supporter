@@ -25,6 +25,7 @@ use super::user_info::{FindUserInfoOperation, FindUserInfoOperationImpl, UserInf
 
 pub(crate) const SESSION_ID_COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
+pub(crate) const KEY_TO_AUTHENTICATED: &str = "authenticated";
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 
 /// セッションの有効期限
