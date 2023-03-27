@@ -59,6 +59,28 @@ async fn handle_login_req(
     op: impl LoginOperation,
     store: impl SessionStore,
 ) -> Result<String, ErrResp> {
+    let account = find_account_by_email_address(email_addr, password, &op).await?;
+    verify_password(email_addr, password, &account.hashed_password)?;
+
+    ensure_account_is_not_disabled(account.user_account_id, email_addr, account.disabled).await?;
+
+    let user_account_id = account.user_account_id;
+    let session = create_session(user_account_id, &op)?;
+    let session_id = store_session(user_account_id, session, &store).await?;
+
+    op.update_last_login(user_account_id, login_time).await?;
+    info!(
+        "{} (account id: {}) logged-in at {}",
+        email_addr, user_account_id, login_time
+    );
+    Ok(session_id)
+}
+
+async fn find_account_by_email_address(
+    email_addr: &str,
+    password: &str,
+    op: &impl LoginOperation,
+) -> Result<Account, ErrResp> {
     let accounts = op.filter_account_by_email_addr(email_addr).await?;
     let num = accounts.len();
     if num > 1 {
@@ -79,7 +101,15 @@ async fn handle_login_req(
             }),
         )
     })?;
-    let matched = is_password_match(password, &account.hashed_password).map_err(|e| {
+    Ok(account)
+}
+
+fn verify_password(
+    email_addr: &str,
+    password: &str,
+    hashed_password: &[u8],
+) -> Result<(), ErrResp> {
+    let matched = is_password_match(password, hashed_password).map_err(|e| {
         error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
@@ -95,10 +125,18 @@ async fn handle_login_req(
             }),
         ));
     }
-    if account.disabled {
+    Ok(())
+}
+
+async fn ensure_account_is_not_disabled(
+    account_id: i64,
+    email_addr: &str,
+    disabled: bool,
+) -> Result<(), ErrResp> {
+    if disabled {
         error!(
             "disabled account (account id: {}, email address: {})",
-            account.user_account_id, email_addr
+            account_id, email_addr
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -107,8 +145,10 @@ async fn handle_login_req(
             }),
         ));
     };
+    Ok(())
+}
 
-    let user_account_id = account.user_account_id;
+fn create_session(user_account_id: i64, op: &impl LoginOperation) -> Result<Session, ErrResp> {
     let mut session = Session::new();
     session
         .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
@@ -120,6 +160,14 @@ async fn handle_login_req(
             unexpected_err_resp()
         })?;
     op.set_login_session_expiry(&mut session);
+    Ok(session)
+}
+
+async fn store_session(
+    user_account_id: i64,
+    session: Session,
+    store: &impl SessionStore,
+) -> Result<String, ErrResp> {
     let option = store.store_session(session).await.map_err(|e| {
         error!(
             "failed to store session for account id ({}): {}",
@@ -137,11 +185,6 @@ async fn handle_login_req(
             return Err(unexpected_err_resp());
         }
     };
-    op.update_last_login(user_account_id, login_time).await?;
-    info!(
-        "{} (account id: {}) logged-in at {}",
-        email_addr, user_account_id, login_time
-    );
     Ok(session_id)
 }
 
