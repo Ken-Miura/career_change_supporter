@@ -50,17 +50,13 @@ pub(crate) async fn post_login(
         handle_login_req(&email_addr, &password, &current_date_time, op, store).await?;
 
     let session_id = session_id_and_login_status.0;
-    let ls = session_id_and_login_status.1;
-
     let cookie = create_session_cookie(
         SESSION_ID_COOKIE_NAME.to_string(),
         session_id,
         ROOT_PATH.to_string(),
     );
-    let login_status = match ls {
-        LoginStatus::Finish => "finish".to_string(),
-        LoginStatus::NeedMoreVerification => "need_more_verification".to_string(),
-    };
+    let login_status = session_id_and_login_status.1;
+
     Ok((
         StatusCode::OK,
         jar.add(cookie),
@@ -70,9 +66,10 @@ pub(crate) async fn post_login(
 
 #[derive(Serialize, Debug)]
 pub(crate) struct LoginResult {
-    login_status: String,
+    login_status: LoginStatus,
 }
 
+#[derive(Serialize, Debug)]
 enum LoginStatus {
     Finish,
     NeedMoreVerification,
