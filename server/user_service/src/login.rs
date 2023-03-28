@@ -24,8 +24,9 @@ use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
+use crate::util::login_status::LoginStatus;
 use crate::util::session::{
-    KEY_TO_AUTHENTICATED, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME,
+    KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME,
 };
 use crate::util::ROOT_PATH;
 
@@ -69,12 +70,6 @@ pub(crate) struct LoginResult {
     login_status: LoginStatus,
 }
 
-#[derive(Serialize, Debug)]
-enum LoginStatus {
-    Finish,
-    NeedMoreVerification,
-}
-
 async fn handle_login_req(
     email_addr: &str,
     password: &str,
@@ -88,21 +83,20 @@ async fn handle_login_req(
     ensure_account_is_not_disabled(account.user_account_id, email_addr, account.disabled).await?;
 
     let user_account_id = account.user_account_id;
-    // 二段階認証が有効化されている場合、ユーザー名とパスワードだけでは認証は終わらないため、authenticatedはfalseとなる。
-    // 逆に無効化されている場合、ユーザー名とパスワードだけでは認証は終わるのでauthenticatedはtrueとなる。
-    let authenticated = !account.mfa_enabled;
-    let session = create_session(user_account_id, authenticated, &op)?;
+    let login_status = login_status_from(account.mfa_enabled);
+    let session = create_session(user_account_id, login_status.clone(), &op)?;
     let session_id = store_session(user_account_id, session, &store).await?;
 
-    update_last_login_if_necessary(user_account_id, login_time, authenticated, email_addr, &op)
-        .await?;
+    update_last_login_if_necessary(
+        user_account_id,
+        login_time,
+        login_status.clone(),
+        email_addr,
+        &op,
+    )
+    .await?;
 
-    let result = if authenticated {
-        (session_id, LoginStatus::Finish)
-    } else {
-        (session_id, LoginStatus::NeedMoreVerification)
-    };
-    Ok(result)
+    Ok((session_id, login_status))
 }
 
 async fn find_account_by_email_address(
@@ -177,9 +171,19 @@ async fn ensure_account_is_not_disabled(
     Ok(())
 }
 
+fn login_status_from(mfa_enabled: bool) -> LoginStatus {
+    // 二段階認証が有効化されている場合、ユーザー名とパスワードだけでは認証は終わらないため、NeedMoreVerificationとなる。
+    // 逆に無効化されている場合、ユーザー名とパスワードだけでは認証は終わるのでFinishとなる。
+    if mfa_enabled {
+        LoginStatus::NeedMoreVerification
+    } else {
+        LoginStatus::Finish
+    }
+}
+
 fn create_session(
     user_account_id: i64,
-    authenticated: bool,
+    login_status: LoginStatus,
     op: &impl LoginOperation,
 ) -> Result<Session, ErrResp> {
     let mut session = Session::new();
@@ -194,13 +198,11 @@ fn create_session(
             unexpected_err_resp()
         })?;
 
+    let ls = String::from(login_status);
     session
-        .insert(KEY_TO_AUTHENTICATED, authenticated)
+        .insert(KEY_TO_LOGIN_STATUS, ls.clone())
         .map_err(|e| {
-            error!(
-                "failed to insert authenticated ({}) into session: {}",
-                authenticated, e
-            );
+            error!("failed to insert login_status ({}) into session: {}", ls, e);
             unexpected_err_resp()
         })?;
 
@@ -236,22 +238,25 @@ async fn store_session(
 async fn update_last_login_if_necessary(
     user_account_id: i64,
     login_time: &DateTime<FixedOffset>,
-    authenticated: bool,
+    login_status: LoginStatus,
     email_addr: &str,
     op: &impl LoginOperation,
 ) -> Result<(), ErrResp> {
-    if authenticated {
-        op.update_last_login(user_account_id, login_time).await?;
-        info!(
-            "{} (account id: {}) logged-in at {}",
-            email_addr, user_account_id, login_time
-        );
-    } else {
-        info!(
-            "{} (account id: {}) tried login at {} (MFA is enabled, so authentication has not been done yet)",
-            email_addr, user_account_id, login_time
-        );
-    }
+    match login_status {
+        LoginStatus::Finish => {
+            op.update_last_login(user_account_id, login_time).await?;
+            info!(
+                "{} (account id: {}) logged-in at {}",
+                email_addr, user_account_id, login_time
+            );
+        }
+        LoginStatus::NeedMoreVerification => {
+            info!(
+                "{} (account id: {}) tried login at {} (MFA is enabled, so authentication has not been done yet)",
+                email_addr, user_account_id, login_time
+            );
+        }
+    };
     Ok(())
 }
 
