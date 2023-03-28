@@ -113,7 +113,7 @@ where
 
 /// session_idを使い、storeからユーザーを一意に識別する値を取得する。<br>
 /// この値を取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
-/// 取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
+/// 取得に成功した後、ログイン処理が完了の状態に限り、セッションの有効期間がexpiryだけ延長される（※）<br>
 /// <br>
 /// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
 /// リニューアルタイムアウトが必要になった場合は、セッションを保存しているキャッシュシステムの定期再起動により実装する。<br>
@@ -370,6 +370,29 @@ pub(crate) mod tests {
         // しかし、テストケースではセッションに有効期限を持たせていないため、暗黙のうちに0になる心配はない。
         assert_eq!(1, store.count().await);
         assert_eq!(user_account_id, result);
+    }
+
+    #[tokio::test]
+    async fn get_user_account_id_by_session_id_fail_login_seq_han_not_finished_yet() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let op = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
+        let result =
+            get_user_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
+                .await
+                .expect_err("failed to get Err");
+
+        // get_user_account_id_by_session_idが何らかの副作用でセッションを破棄していないか確認
+        // + ログイン処理がまだ途中である値を示している場合、エラーは返すがそのエラーに遭遇したことによりセッションを破棄するような処理はしない
+        assert_eq!(1, store.count().await);
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
     }
 
     #[tokio::test]
