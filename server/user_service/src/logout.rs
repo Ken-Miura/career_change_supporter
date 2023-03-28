@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use async_redis_session::RedisSessionStore;
-use async_session::SessionStore;
+use async_session::{Session, SessionStore};
 use axum::{extract::State, http::StatusCode};
 use axum_extra::extract::{cookie::Cookie, SignedCookieJar};
 use common::ErrResp;
@@ -9,7 +9,7 @@ use tracing::{error, info};
 
 use crate::{
     err::unexpected_err_resp,
-    util::session::{KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
+    util::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
 };
 
 /// ログアウトを行う
@@ -58,24 +58,23 @@ async fn handle_logout_req<'a>(
             return Ok(());
         }
     };
-    let account_id_option = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
-        Some(id) => {
-            info!("user (account id: {}) logged out", id);
-            Some(id)
-        }
-        None => {
-            info!("someone logged out");
-            None
-        }
-    };
+
+    record_logout_info(&session);
+
     store.destroy_session(session).await.map_err(|e| {
-        error!(
-            "failed to destroy session (account id: {:?}): {}",
-            account_id_option, e
-        );
+        error!("failed to destroy session: {}", e);
         unexpected_err_resp()
     })?;
     Ok(())
+}
+
+fn record_logout_info(session: &Session) {
+    let account_id = session.get::<i64>(KEY_TO_USER_ACCOUNT_ID);
+    let login_status = session.get::<String>(KEY_TO_LOGIN_STATUS);
+    info!(
+        "user logged out: session info (account_id: {:?}, login_status: {:?})",
+        account_id, login_status
+    );
 }
 
 #[cfg(test)]
