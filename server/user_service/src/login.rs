@@ -346,200 +346,219 @@ impl LoginOperation for LoginOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    // use async_session::MemoryStore;
-    // use async_session::Session;
-    // use async_session::SessionStore;
-    // use axum::async_trait;
-    // use axum::http::StatusCode;
-    // use chrono::DateTime;
-    // use chrono::FixedOffset;
-    // use chrono::TimeZone;
-    // use common::password::hash_password;
-    // use common::util::validator::email_address_validator::validate_email_address;
-    // use common::util::validator::password_validator::validate_password;
-    // use common::ErrResp;
-    // use common::JAPANESE_TIME_ZONE;
+    use async_session::MemoryStore;
+    use async_session::Session;
+    use async_session::SessionStore;
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use chrono::DateTime;
+    use chrono::FixedOffset;
+    use chrono::TimeZone;
+    use common::password::hash_password;
+    use common::util::validator::email_address_validator::validate_email_address;
+    use common::util::validator::password_validator::validate_password;
+    use common::ErrResp;
+    use common::JAPANESE_TIME_ZONE;
 
-    // use crate::login::handle_login_req;
-    // use crate::util::session::KEY_TO_USER_ACCOUNT_ID;
+    use crate::login::handle_login_req;
+    use crate::util::login_status::LoginStatus;
+    use crate::util::session::KEY_TO_LOGIN_STATUS;
+    use crate::util::session::KEY_TO_USER_ACCOUNT_ID;
 
-    // use super::Account;
-    // use super::LoginOperation;
-    // use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
+    use super::Account;
+    use super::LoginOperation;
+    use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
 
-    // struct LoginOperationMock<'a> {
-    //     account: Account,
-    //     email_addr: &'a str,
-    //     login_time: &'a DateTime<FixedOffset>,
-    // }
+    struct LoginOperationMock<'a> {
+        account: Account,
+        email_addr: &'a str,
+        login_time: &'a DateTime<FixedOffset>,
+    }
 
-    // impl<'a> LoginOperationMock<'a> {
-    //     fn new(
-    //         account: Account,
-    //         email_addr: &'a str,
-    //         login_time: &'a DateTime<FixedOffset>,
-    //     ) -> Self {
-    //         Self {
-    //             account,
-    //             email_addr,
-    //             login_time,
-    //         }
-    //     }
-    // }
+    impl<'a> LoginOperationMock<'a> {
+        fn new(
+            account: Account,
+            email_addr: &'a str,
+            login_time: &'a DateTime<FixedOffset>,
+        ) -> Self {
+            Self {
+                account,
+                email_addr,
+                login_time,
+            }
+        }
+    }
 
-    // #[async_trait]
-    // impl<'a> LoginOperation for LoginOperationMock<'a> {
-    //     async fn filter_account_by_email_addr(
-    //         &self,
-    //         email_addr: &str,
-    //     ) -> Result<Vec<Account>, ErrResp> {
-    //         if self.email_addr == email_addr {
-    //             Ok(vec![self.account.clone()])
-    //         } else {
-    //             Ok(vec![])
-    //         }
-    //     }
+    #[async_trait]
+    impl<'a> LoginOperation for LoginOperationMock<'a> {
+        async fn filter_account_by_email_addr(
+            &self,
+            email_addr: &str,
+        ) -> Result<Vec<Account>, ErrResp> {
+            if self.email_addr == email_addr {
+                Ok(vec![self.account.clone()])
+            } else {
+                Ok(vec![])
+            }
+        }
 
-    //     fn set_login_session_expiry(&self, _session: &mut Session) {
-    //         // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
-    //     }
+        fn set_login_session_expiry(&self, _session: &mut Session) {
+            // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
+        }
 
-    //     async fn update_last_login(
-    //         &self,
-    //         account_id: i64,
-    //         login_time: &DateTime<FixedOffset>,
-    //     ) -> Result<(), ErrResp> {
-    //         assert_eq!(self.account.user_account_id, account_id);
-    //         assert_eq!(self.login_time, login_time);
-    //         Ok(())
-    //     }
-    // }
+        async fn update_last_login(
+            &self,
+            account_id: i64,
+            login_time: &DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            if self.account.mfa_enabled {
+                panic!("mfa_enabled is true, but update_last_login is called");
+            }
+            assert_eq!(self.account.user_account_id, account_id);
+            assert_eq!(self.login_time, login_time);
+            Ok(())
+        }
+    }
 
-    // #[tokio::test]
-    // async fn handle_login_req_success() {
-    //     let id = 1102;
-    //     let email_addr = "test@example.com";
-    //     let pwd = "1234567890abcdABCD";
-    //     validate_email_address(email_addr).expect("failed to get Ok");
-    //     validate_password(pwd).expect("failed to get Ok");
-    //     let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-    //     let creation_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
-    //         .unwrap();
-    //     let last_login = creation_time + chrono::Duration::days(1);
-    //     let account = Account {
-    //         user_account_id: id,
-    //         hashed_password: hashed_pwd,
-    //         disabled: false,
-    //     };
-    //     let store = MemoryStore::new();
-    //     let current_date_time = last_login + chrono::Duration::days(1);
-    //     let op = LoginOperationMock::new(account, email_addr, &current_date_time);
+    #[tokio::test]
+    async fn handle_login_req_success() {
+        let id = 1102;
+        let email_addr = "test@example.com";
+        let pwd = "1234567890abcdABCD";
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            hashed_password: hashed_pwd,
+            disabled: false,
+            mfa_enabled: false,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
 
-    //     let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
+        let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
 
-    //     let session_id = result.expect("failed to get Ok");
-    //     let session = store
-    //         .load_session(session_id)
-    //         .await
-    //         .expect("failed to get Ok")
-    //         .expect("failed to get value");
-    //     let actual_id = session
-    //         .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
-    //         .expect("failed to get value");
-    //     assert_eq!(id, actual_id);
-    // }
+        let session_id_and_login_status = result.expect("failed to get Ok");
+        let session_id = session_id_and_login_status.0;
+        let login_status = session_id_and_login_status.1;
 
-    // #[tokio::test]
-    // async fn handle_login_req_fail_no_email_addr_found() {
-    //     let id = 1102;
-    //     let email_addr1 = "test1@example.com";
-    //     let email_addr2 = "test2@example.com";
-    //     let pwd = "1234567890abcdABCD";
-    //     validate_email_address(email_addr1).expect("failed to get Ok");
-    //     validate_email_address(email_addr2).expect("failed to get Ok");
-    //     validate_password(pwd).expect("failed to get Ok");
-    //     let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-    //     let creation_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
-    //         .unwrap();
-    //     let last_login = creation_time + chrono::Duration::days(1);
-    //     let account = Account {
-    //         user_account_id: id,
-    //         hashed_password: hashed_pwd,
-    //         disabled: false,
-    //     };
-    //     let store = MemoryStore::new();
-    //     let current_date_time = last_login + chrono::Duration::days(1);
-    //     let op = LoginOperationMock::new(account, email_addr1, &current_date_time);
+        let session = store
+            .load_session(session_id)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
 
-    //     let result =
-    //         handle_login_req(email_addr2, pwd, &current_date_time, op, store.clone()).await;
+        let actual_id = session
+            .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+            .expect("failed to get value");
+        assert_eq!(id, actual_id);
 
-    //     let resp = result.expect_err("failed to get Err");
-    //     assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
-    //     assert_eq!(EmailOrPwdIncorrect as u32, resp.1.code);
-    //     assert_eq!(0, store.count().await);
-    // }
+        assert_eq!(login_status.clone(), LoginStatus::Finish);
+        let actual_login_status = session
+            .get::<String>(KEY_TO_LOGIN_STATUS)
+            .expect("failed to get value");
+        assert_eq!(String::from(login_status), actual_login_status);
+    }
 
-    // #[tokio::test]
-    // async fn handle_login_req_fail_incorrect_password() {
-    //     let id = 1102;
-    //     let email_addr = "test1@example.com";
-    //     let pwd1 = "1234567890abcdABCD";
-    //     let pwd2 = "bbbbbbbbbC";
-    //     validate_email_address(email_addr).expect("failed to get Ok");
-    //     validate_password(pwd1).expect("failed to get Ok");
-    //     validate_password(pwd2).expect("failed to get Ok");
-    //     let hashed_pwd = hash_password(pwd1).expect("failed to hash pwd");
-    //     let creation_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
-    //         .unwrap();
-    //     let last_login = creation_time + chrono::Duration::days(1);
-    //     let account = Account {
-    //         user_account_id: id,
-    //         hashed_password: hashed_pwd,
-    //         disabled: false,
-    //     };
-    //     let store = MemoryStore::new();
-    //     let current_date_time = last_login + chrono::Duration::days(1);
-    //     let op = LoginOperationMock::new(account, email_addr, &current_date_time);
+    #[tokio::test]
+    async fn handle_login_req_fail_no_email_addr_found() {
+        let id = 1102;
+        let email_addr1 = "test1@example.com";
+        let email_addr2 = "test2@example.com";
+        let pwd = "1234567890abcdABCD";
+        validate_email_address(email_addr1).expect("failed to get Ok");
+        validate_email_address(email_addr2).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            hashed_password: hashed_pwd,
+            disabled: false,
+            mfa_enabled: false,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, email_addr1, &current_date_time);
 
-    //     let result =
-    //         handle_login_req(email_addr, pwd2, &current_date_time, op, store.clone()).await;
+        let result =
+            handle_login_req(email_addr2, pwd, &current_date_time, op, store.clone()).await;
 
-    //     let resp = result.expect_err("failed to get Err");
-    //     assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
-    //     assert_eq!(EmailOrPwdIncorrect as u32, resp.1.code);
-    //     assert_eq!(0, store.count().await);
-    // }
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
+        assert_eq!(EmailOrPwdIncorrect as u32, resp.1.code);
+        assert_eq!(0, store.count().await);
+    }
 
-    // #[tokio::test]
-    // async fn handle_login_req_fail_account_disabled() {
-    //     let id = 1102;
-    //     let email_addr = "test1@example.com";
-    //     let pwd = "1234567890abcdABCD";
-    //     validate_email_address(email_addr).expect("failed to get Ok");
-    //     validate_password(pwd).expect("failed to get Ok");
-    //     let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
-    //     let creation_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
-    //         .unwrap();
-    //     let last_login = creation_time + chrono::Duration::days(1);
-    //     let account = Account {
-    //         user_account_id: id,
-    //         hashed_password: hashed_pwd,
-    //         disabled: true,
-    //     };
-    //     let store = MemoryStore::new();
-    //     let current_date_time = last_login + chrono::Duration::days(1);
-    //     let op = LoginOperationMock::new(account, email_addr, &current_date_time);
+    #[tokio::test]
+    async fn handle_login_req_fail_incorrect_password() {
+        let id = 1102;
+        let email_addr = "test1@example.com";
+        let pwd1 = "1234567890abcdABCD";
+        let pwd2 = "bbbbbbbbbC";
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd1).expect("failed to get Ok");
+        validate_password(pwd2).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd1).expect("failed to hash pwd");
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            hashed_password: hashed_pwd,
+            disabled: false,
+            mfa_enabled: false,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
 
-    //     let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
+        let result =
+            handle_login_req(email_addr, pwd2, &current_date_time, op, store.clone()).await;
 
-    //     let resp = result.expect_err("failed to get Err");
-    //     assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-    //     assert_eq!(AccountDisabled as u32, resp.1.code);
-    //     assert_eq!(0, store.count().await);
-    // }
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
+        assert_eq!(EmailOrPwdIncorrect as u32, resp.1.code);
+        assert_eq!(0, store.count().await);
+    }
+
+    #[tokio::test]
+    async fn handle_login_req_fail_account_disabled() {
+        let id = 1102;
+        let email_addr = "test1@example.com";
+        let pwd = "1234567890abcdABCD";
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            hashed_password: hashed_pwd,
+            disabled: true,
+            mfa_enabled: false,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
+
+        let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(AccountDisabled as u32, resp.1.code);
+        assert_eq!(0, store.count().await);
+    }
 }

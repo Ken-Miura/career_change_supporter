@@ -5,7 +5,7 @@ use serde::Serialize;
 const LOGIN_STATUS_FINISH: &str = "Finish";
 const LOGIN_STATUS_NEED_MORE_VERIFICATION: &str = "NeedMoreVerification";
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) enum LoginStatus {
     Finish,
     NeedMoreVerification,
