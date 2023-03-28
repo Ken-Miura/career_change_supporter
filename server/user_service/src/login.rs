@@ -31,7 +31,7 @@ use crate::util::session::{
 use crate::util::ROOT_PATH;
 
 /// ログインを行う<br>
-/// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookieをセットして応答する<br>
+/// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookie、ログイン処理の状態（完了、または二段階目の認証が必要）をセットして応答する<br>
 /// <br>
 /// # Errors
 /// - email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
