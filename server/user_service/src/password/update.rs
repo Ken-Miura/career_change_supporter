@@ -340,7 +340,7 @@ mod tests {
             create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
             PasswordUpdateResult, SUBJECT,
         },
-        util::{session::tests::prepare_session, tests::SendMailMock},
+        util::{login_status::LoginStatus, session::tests::prepare_session, tests::SendMailMock},
     };
 
     use super::{destroy_session_if_exists, PasswordUpdateOperation};
@@ -708,7 +708,22 @@ mod tests {
     async fn destroy_session_if_exists_destorys_session() {
         let store = MemoryStore::new();
         let user_account_id = 15001;
-        let session_id = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
+        assert_eq!(1, store.count().await);
+
+        destroy_session_if_exists(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+    }
+
+    #[tokio::test]
+    async fn destroy_session_if_exists_destorys_session_during_mfa_login_sequence() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
         assert_eq!(1, store.count().await);
 
         destroy_session_if_exists(&session_id, &store)

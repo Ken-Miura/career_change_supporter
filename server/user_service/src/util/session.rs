@@ -256,6 +256,7 @@ pub(crate) mod tests {
         err::Code,
         util::{
             identity_check::IdentityCheckOperation,
+            login_status::LoginStatus,
             session::{
                 get_user_account_id_by_session_id, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
             },
@@ -266,15 +267,22 @@ pub(crate) mod tests {
 
     use super::{
         check_if_user_has_already_agreed, ensure_identity_exists, get_user_info_if_available,
-        RefreshOperation,
+        RefreshOperation, KEY_TO_LOGIN_STATUS,
     };
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
-    pub(crate) async fn prepare_session(user_account_id: i64, store: &impl SessionStore) -> String {
+    pub(crate) async fn prepare_session(
+        user_account_id: i64,
+        login_status: LoginStatus,
+        store: &impl SessionStore,
+    ) -> String {
         let mut session = Session::new();
         // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
         session
             .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        session
+            .insert(KEY_TO_LOGIN_STATUS, String::from(login_status))
             .expect("failed to get Ok");
         store
             .store_session(session)
@@ -313,7 +321,7 @@ pub(crate) mod tests {
     async fn get_user_account_id_by_session_id_success() {
         let store = MemoryStore::new();
         let user_account_id = 15001;
-        let session_id = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
         assert_eq!(1, store.count().await);
 
         let op = RefreshOperationMock {
@@ -337,7 +345,7 @@ pub(crate) mod tests {
     async fn get_user_account_id_by_session_id_fail_session_already_expired() {
         let user_account_id = 10002;
         let store = MemoryStore::new();
-        let session_id = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
         // リクエストのプリプロセス前ににセッションを削除
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);

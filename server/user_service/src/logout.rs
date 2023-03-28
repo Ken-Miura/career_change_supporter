@@ -83,14 +83,33 @@ mod tests {
 
     use crate::{
         logout::handle_logout_req,
-        util::session::tests::{prepare_session, remove_session_from_store},
+        util::{
+            login_status::LoginStatus,
+            session::tests::{prepare_session, remove_session_from_store},
+        },
     };
 
     #[tokio::test]
     async fn handle_logout_req_success_session_alive() {
         let store = MemoryStore::new();
         let user_account_id = 203;
-        let session_id = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
+        assert_eq!(1, store.count().await);
+
+        handle_logout_req(session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+    }
+
+    // 通常のUI操作でこのパターンが発生することはないが、テストして問題ないことは確認しておく
+    #[tokio::test]
+    async fn handle_logout_req_success_session_alive_during_mfa_login_sequence() {
+        let store = MemoryStore::new();
+        let user_account_id = 203;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
         assert_eq!(1, store.count().await);
 
         handle_logout_req(session_id, &store)
@@ -104,7 +123,7 @@ mod tests {
     async fn handle_logout_req_success_session_already_expired() {
         let store = MemoryStore::new();
         let user_account_id = 203;
-        let session_id = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
         // ログアウト前にセッションを削除
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);
