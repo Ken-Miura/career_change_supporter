@@ -17,6 +17,7 @@ use crate::err::unexpected_err_resp;
 use crate::err::Code;
 
 use super::identity_check::{IdentityCheckOperation, IdentityCheckOperationImpl};
+use super::login_status::LoginStatus;
 use super::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
@@ -125,6 +126,7 @@ where
 /// # Errors
 /// 下記の場合、ステータスコード401、エラーコード[Unauthorized]を返す<br>
 /// <ul>
+///   <li>セッション内に存在するログイン処理の状態が完了以外を示すの場合</li>
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
 async fn get_user_account_id_by_session_id(
@@ -156,6 +158,14 @@ async fn get_user_account_id_by_session_id(
             return Err(unexpected_err_resp());
         }
     };
+    let login_status = match session.get::<String>(KEY_TO_LOGIN_STATUS) {
+        Some(ls) => ls,
+        None => {
+            error!("failed to get login status from session");
+            return Err(unexpected_err_resp());
+        }
+    };
+    ensure_login_seq_has_already_finished(account_id, login_status)?;
     op.set_login_session_expiry(&mut session, expiry);
     // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
     let _ = store.store_session(session).await.map_err(|e| {
@@ -163,6 +173,27 @@ async fn get_user_account_id_by_session_id(
         unexpected_err_resp()
     })?;
     Ok(account_id)
+}
+
+fn ensure_login_seq_has_already_finished(
+    accound_id: i64,
+    login_status: String,
+) -> Result<(), ErrResp> {
+    match LoginStatus::from(login_status) {
+        LoginStatus::Finish => Ok(()),
+        LoginStatus::NeedMoreVerification => {
+            error!(
+                "accound_id ({}) has not finished login sequence yet",
+                accound_id
+            );
+            Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ))
+        }
+    }
 }
 
 trait RefreshOperation {
