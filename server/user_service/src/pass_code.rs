@@ -13,6 +13,14 @@ pub(crate) async fn post_pass_code(
     State(store): State<RedisSessionStore>,
     Json(req): Json<PassCodeReq>,
 ) -> Result<(StatusCode, SignedCookieJar), ErrResp> {
+    // セッションを取得する。なければUnauthirized
+    // セッション内のアカウントIDからUserInfoを取得
+    // Disabledチェック
+    // 二段階認証の有効化チェック（シークレットが存在することを前提とした処理をするために事前チェックは必要）
+    // セッション内のLoginStatusのチェック（Finishなら何もせずに早期リターン。いらないかも）
+    // シークレット、現在時刻に対してパスコードが一致するか確認
+    // セッションのLoginStatusを更新（セッションの期限も更新する）
+    // 最終ログイン時刻を更新
     todo!()
 }
 
