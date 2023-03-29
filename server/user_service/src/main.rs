@@ -11,6 +11,7 @@ mod login;
 mod logout;
 mod mfa;
 mod news;
+mod pass_code;
 mod password;
 mod personal_info;
 mod rating;
@@ -37,6 +38,7 @@ use crate::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
 use crate::mfa::temp_secret::get::get_temp_mfa_secret;
 use crate::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::news::get_news;
+use crate::pass_code::post_pass_code;
 use crate::password::change_req::post_password_change_req;
 use crate::password::update::post_password_update;
 use crate::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
@@ -245,6 +247,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/temp-mfa-secret", post(post_temp_mfa_secret).get(get_temp_mfa_secret))
                 .route("/enable-mfa-req", post(post_enable_mfa_req))
                 .route("/disable-mfa-req", post(post_disable_mfa_req))
+                .route("/pass-code", post(post_pass_code))
                 .with_state(state),
         )
         .layer(
