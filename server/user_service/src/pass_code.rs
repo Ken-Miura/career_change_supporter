@@ -12,7 +12,7 @@ pub(crate) async fn post_pass_code(
     State(pool): State<DatabaseConnection>,
     State(store): State<RedisSessionStore>,
     Json(req): Json<PassCodeReq>,
-) -> Result<(StatusCode, SignedCookieJar), ErrResp> {
+) -> Result<StatusCode, ErrResp> {
     // セッションを取得する。なければUnauthirized
     // セッション内のアカウントIDからUserInfoを取得
     // Disabledチェック
@@ -21,6 +21,7 @@ pub(crate) async fn post_pass_code(
     // シークレット、現在時刻に対してパスコードが一致するか確認
     // セッションのLoginStatusを更新（セッションの期限も更新する）
     // 最終ログイン時刻を更新
+    // NOTE: Sessionは更新するが、Cookieを更新するわけではない。従ってSignedCookieJarをハンドラのレスポンスに含める必要はないように見える。要確認
     todo!()
 }
 
