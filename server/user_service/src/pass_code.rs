@@ -3,16 +3,32 @@
 use async_redis_session::RedisSessionStore;
 use axum::{extract::State, http::StatusCode, Json};
 use axum_extra::extract::SignedCookieJar;
-use common::ErrResp;
+use common::{ApiError, RespResult};
 use entity::sea_orm::DatabaseConnection;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use tracing::error;
+
+use crate::{err::Code, util::session::SESSION_ID_COOKIE_NAME};
 
 pub(crate) async fn post_pass_code(
     jar: SignedCookieJar,
     State(pool): State<DatabaseConnection>,
     State(store): State<RedisSessionStore>,
     Json(req): Json<PassCodeReq>,
-) -> Result<StatusCode, ErrResp> {
+) -> RespResult<PassCodeReqResult> {
+    let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
+    let session_id = match option_cookie {
+        Some(s) => s.value().to_string(),
+        None => {
+            error!("no sessoin cookie found on pass code req");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ));
+        }
+    };
     // セッションを取得する。なければUnauthirized
     // セッション内のアカウントIDからUserInfoを取得
     // Disabledチェック
@@ -29,3 +45,6 @@ pub(crate) async fn post_pass_code(
 pub(crate) struct PassCodeReq {
     pass_code: String,
 }
+
+#[derive(Serialize)]
+pub(crate) struct PassCodeReqResult {}
