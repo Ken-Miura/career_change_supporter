@@ -15,6 +15,7 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
+    mfa::{ensure_mfa_is_enabled, verify_pass_code},
     util::{
         login_status::LoginStatus,
         session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
@@ -22,7 +23,7 @@ use crate::{
     },
 };
 
-use super::ensure_mfa_is_enabled;
+use super::{get_mfa_info_by_account_id, MfaInfo};
 
 pub(crate) async fn post_pass_code(
     jar: SignedCookieJar,
@@ -67,6 +68,8 @@ pub(crate) struct PassCodeReqResult {}
 #[async_trait]
 trait PassCodeOperation {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp>;
+
+    async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp>;
 }
 
 struct PassCodeOperationImpl {
@@ -79,6 +82,10 @@ impl PassCodeOperation for PassCodeOperationImpl {
         let op = FindUserInfoOperationImpl::new(&self.pool);
         let user_info = crate::util::get_user_info_if_available(account_id, &op).await?;
         Ok(user_info)
+    }
+
+    async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
+        get_mfa_info_by_account_id(account_id, &self.pool).await
     }
 }
 
@@ -110,7 +117,14 @@ async fn handle_pass_code_req(
         );
         return Ok((StatusCode::OK, Json(PassCodeReqResult {})));
     };
-    // シークレット、現在時刻に対してパスコードが一致するか確認
+
+    let mi = op.get_mfa_info_by_account_id(account_id).await?;
+    verify_pass_code(
+        account_id,
+        &mi.base32_encoded_secret,
+        current_date_time,
+        pass_code,
+    )?;
     // セッションのLoginStatusを更新（セッションの期限も更新する）
     // 最終ログイン時刻を更新
     todo!()

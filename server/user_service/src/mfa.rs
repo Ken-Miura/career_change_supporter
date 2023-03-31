@@ -13,7 +13,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 
-pub(crate) mod pass_code;
+pub(crate) mod mfa_request;
 pub(crate) mod setting_change;
 pub(crate) mod temp_secret;
 
