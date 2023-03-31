@@ -16,13 +16,14 @@ pub(crate) mod verified_user;
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
 
+use super::get_user_info_if_available;
 use super::identity_check::{IdentityCheckOperation, IdentityCheckOperationImpl};
 use super::login_status::LoginStatus;
 use super::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
-use super::user_info::{FindUserInfoOperation, FindUserInfoOperationImpl, UserInfo};
+use super::user_info::{FindUserInfoOperationImpl, UserInfo};
 
 pub(crate) const SESSION_ID_COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
@@ -208,34 +209,6 @@ impl RefreshOperation for RefreshOperationImpl {
     }
 }
 
-async fn get_user_info_if_available(
-    account_id: i64,
-    op: &impl FindUserInfoOperation,
-) -> Result<UserInfo, ErrResp> {
-    let user = op.find_user_info_by_account_id(account_id).await?;
-    let user = user.ok_or_else(|| {
-        error!("no account (account id: {}) found", account_id);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoAccountFound as u32,
-            }),
-        )
-    })?;
-    if user.disabled_at.is_some() {
-        error!("account (account id: {}) is disabled", account_id);
-        // セッションチェックの際に無効化を検出した際は、Unauthorizedを返すことでログイン画面へ遷移させる
-        // ログイン画面でログインしようとした際に無効化を知らせるメッセージを表示
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            Json(ApiError {
-                code: Code::Unauthorized as u32,
-            }),
-        ));
-    }
-    Ok(user)
-}
-
 async fn check_if_user_has_already_agreed(
     account_id: i64,
     terms_of_use_version: i32,
@@ -280,8 +253,7 @@ pub(crate) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
     use axum::async_trait;
     use axum::http::StatusCode;
-    use chrono::TimeZone;
-    use common::{ErrResp, JAPANESE_TIME_ZONE};
+    use common::ErrResp;
 
     use crate::{
         err::Code,
@@ -292,13 +264,12 @@ pub(crate) mod tests {
                 get_user_account_id_by_session_id, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
             },
             terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
-            user_info::{FindUserInfoOperation, UserInfo},
         },
     };
 
     use super::{
-        check_if_user_has_already_agreed, ensure_identity_exists, get_user_info_if_available,
-        RefreshOperation, KEY_TO_LOGIN_STATUS,
+        check_if_user_has_already_agreed, ensure_identity_exists, RefreshOperation,
+        KEY_TO_LOGIN_STATUS,
     };
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
@@ -413,95 +384,6 @@ pub(crate) mod tests {
                 .expect_err("failed to get Err");
 
         assert_eq!(0, store.count().await);
-        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
-    }
-
-    struct FindUserInfoOperationMock<'a> {
-        user_info: &'a UserInfo,
-    }
-
-    #[async_trait]
-    impl<'a> FindUserInfoOperation for FindUserInfoOperationMock<'a> {
-        async fn find_user_info_by_account_id(
-            &self,
-            account_id: i64,
-        ) -> Result<Option<UserInfo>, ErrResp> {
-            if self.user_info.account_id != account_id {
-                return Ok(None);
-            }
-            Ok(Some(self.user_info.clone()))
-        }
-    }
-
-    #[tokio::test]
-    async fn get_user_info_if_available_success() {
-        let user_info = UserInfo {
-            account_id: 2345,
-            email_address: "test@test.com".to_string(),
-            mfa_enabled_at: None,
-            disabled_at: None,
-        };
-        let op_mock = FindUserInfoOperationMock {
-            user_info: &user_info,
-        };
-
-        let result = get_user_info_if_available(user_info.account_id, &op_mock)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(user_info, result);
-    }
-
-    #[tokio::test]
-    async fn get_user_info_if_available_fail_no_account_found() {
-        let user_info = UserInfo {
-            account_id: 2345,
-            email_address: "test@test.com".to_string(),
-            mfa_enabled_at: Some(
-                JAPANESE_TIME_ZONE
-                    .with_ymd_and_hms(2021, 12, 31, 23, 59, 59)
-                    .unwrap(),
-            ),
-            disabled_at: None,
-        };
-        let op_mock = FindUserInfoOperationMock {
-            user_info: &user_info,
-        };
-
-        let other_account_id = user_info.account_id + 51051;
-        let result = get_user_info_if_available(other_account_id, &op_mock)
-            .await
-            .expect_err("failed to get Err");
-
-        assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(Code::NoAccountFound as u32, result.1 .0.code);
-    }
-
-    #[tokio::test]
-    async fn get_user_info_if_available_fail_account_disabled() {
-        let user_info = UserInfo {
-            account_id: 2345,
-            email_address: "test@test.com".to_string(),
-            mfa_enabled_at: Some(
-                JAPANESE_TIME_ZONE
-                    .with_ymd_and_hms(2021, 12, 31, 23, 59, 59)
-                    .unwrap(),
-            ),
-            disabled_at: Some(
-                JAPANESE_TIME_ZONE
-                    .with_ymd_and_hms(2022, 1, 3, 23, 59, 59)
-                    .unwrap(),
-            ),
-        };
-        let op_mock = FindUserInfoOperationMock {
-            user_info: &user_info,
-        };
-
-        let result = get_user_info_if_available(user_info.account_id, &op_mock)
-            .await
-            .expect_err("failed to get Err");
-
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
         assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
     }

@@ -13,6 +13,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 
+pub(crate) mod pass_code;
 pub(crate) mod setting_change;
 pub(crate) mod temp_secret;
 
@@ -38,6 +39,18 @@ fn ensure_mfa_is_not_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::MfaHasAlreadyBeenEnabled as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+fn ensure_mfa_is_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
+    if !mfa_enabled {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::MfaIsNotEnabled as u32,
             }),
         ));
     }

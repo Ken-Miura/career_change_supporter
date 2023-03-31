@@ -3,14 +3,15 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
+use common::{ErrResp, ErrRespStruct, RespResult};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
 use serde::Serialize;
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::err::unexpected_err_resp;
+use crate::mfa::ensure_mfa_is_enabled;
 use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::user::User;
 
@@ -105,16 +106,4 @@ impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
             })?;
         Ok(())
     }
-}
-
-fn ensure_mfa_is_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
-    if !mfa_enabled {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::MfaIsNotEnabled as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
