@@ -3,11 +3,16 @@
 pub(crate) mod pass_code;
 pub(crate) mod recovery_code;
 
-use common::ErrResp;
+use async_session::{Session, SessionStore};
+use axum::{http::StatusCode, Json};
+use common::{ApiError, ErrResp};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use tracing::error;
 
-use crate::err::unexpected_err_resp;
+use crate::{
+    err::{unexpected_err_resp, Code},
+    util::session::KEY_TO_USER_ACCOUNT_ID,
+};
 
 struct MfaInfo {
     base32_encoded_secret: String,
@@ -36,4 +41,41 @@ async fn get_mfa_info_by_account_id(
         base32_encoded_secret: mi.base32_encoded_secret,
         hashed_recovery_code: mi.hashed_recovery_code,
     })
+}
+
+async fn get_session_by_session_id(
+    session_id: &str,
+    store: &impl SessionStore,
+) -> Result<Session, ErrResp> {
+    let option_session = store
+        .load_session(session_id.to_string())
+        .await
+        .map_err(|e| {
+            error!("failed to load session: {}", e);
+            unexpected_err_resp()
+        })?;
+    let session = match option_session {
+        Some(s) => s,
+        None => {
+            error!("no session found");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ));
+        }
+    };
+    Ok(session)
+}
+
+fn get_account_id_from_session(session: &Session) -> Result<i64, ErrResp> {
+    let account_id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
+        Some(id) => id,
+        None => {
+            error!("failed to get account id from session");
+            return Err(unexpected_err_resp());
+        }
+    };
+    Ok(account_id)
 }

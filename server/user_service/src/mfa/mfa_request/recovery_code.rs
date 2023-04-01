@@ -10,13 +10,18 @@ use axum::{extract::State, Json};
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
 use common::util::validator::uuid_validator::validate_uuid;
-use common::{ApiError, RespResult, JAPANESE_TIME_ZONE};
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
+use crate::mfa::ensure_mfa_is_enabled;
+use crate::mfa::mfa_request::get_session_by_session_id;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
+use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 use crate::{err::Code, util::session::SESSION_ID_COOKIE_NAME};
+
+use super::get_account_id_from_session;
 
 pub(crate) async fn post_recovery_code(
     jar: SignedCookieJar,
@@ -62,7 +67,9 @@ pub(crate) struct RecoveryCodeReq {
 pub(crate) struct RecoveryCodeReqResult {}
 
 #[async_trait]
-trait RecoveryCodeOperation {}
+trait RecoveryCodeOperation {
+    async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp>;
+}
 
 struct RecoveryCodeOperationImpl {
     pool: DatabaseConnection,
@@ -70,7 +77,13 @@ struct RecoveryCodeOperationImpl {
 }
 
 #[async_trait]
-impl RecoveryCodeOperation for RecoveryCodeOperationImpl {}
+impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
+    async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
+        let op = FindUserInfoOperationImpl::new(&self.pool);
+        let user_info = crate::util::get_user_info_if_available(account_id, &op).await?;
+        Ok(user_info)
+    }
+}
 
 async fn handle_recovery_code(
     session_id: &str,
@@ -88,10 +101,10 @@ async fn handle_recovery_code(
             }),
         )
     })?;
-    // セッションIDでセッションを取得
-    // セッションからアカウントIDを取得
-    // アカウントIDからUserInfo取得（取得の際にDisabledチェック)
-    // 二段階認証が有効化されていることを確認
+    let mut session = get_session_by_session_id(session_id, store).await?;
+    let account_id = get_account_id_from_session(&session)?;
+    let user_info = op.get_user_info_if_available(account_id).await?;
+    ensure_mfa_is_enabled(user_info.mfa_enabled_at.is_some())?;
     // (LoginStatusのチェックはしない。既にFinishでも処理は続行させる。二段階認証を無効化する処理を含むので)
     // アカウントIDからMfaInfoを取得
     // リカバリーコードを比較

@@ -15,21 +15,19 @@ use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
+use crate::mfa::mfa_request::get_session_by_session_id;
 use crate::{
     err::{unexpected_err_resp, Code},
     mfa::{ensure_mfa_is_enabled, verify_pass_code},
     util::{
         login_status::LoginStatus,
-        session::{
-            KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
-            SESSION_ID_COOKIE_NAME,
-        },
+        session::{KEY_TO_LOGIN_STATUS, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME},
         update_last_login,
         user_info::{FindUserInfoOperationImpl, UserInfo},
     },
 };
 
-use super::{get_mfa_info_by_account_id, MfaInfo};
+use super::{get_account_id_from_session, get_mfa_info_by_account_id, MfaInfo};
 
 pub(crate) async fn post_pass_code(
     jar: SignedCookieJar,
@@ -161,43 +159,6 @@ async fn handle_pass_code_req(
     op.update_last_login(account_id, current_date_time).await?;
 
     Ok((StatusCode::OK, Json(PassCodeReqResult {})))
-}
-
-async fn get_session_by_session_id(
-    session_id: &str,
-    store: &impl SessionStore,
-) -> Result<Session, ErrResp> {
-    let option_session = store
-        .load_session(session_id.to_string())
-        .await
-        .map_err(|e| {
-            error!("failed to load session: {}", e);
-            unexpected_err_resp()
-        })?;
-    let session = match option_session {
-        Some(s) => s,
-        None => {
-            error!("no session found on pass code req");
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(ApiError {
-                    code: Code::Unauthorized as u32,
-                }),
-            ));
-        }
-    };
-    Ok(session)
-}
-
-fn get_account_id_from_session(session: &Session) -> Result<i64, ErrResp> {
-    let account_id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
-        Some(id) => id,
-        None => {
-            error!("failed to get account id from session");
-            return Err(unexpected_err_resp());
-        }
-    };
-    Ok(account_id)
 }
 
 fn get_login_status_from_session(session: &Session) -> Result<LoginStatus, ErrResp> {
