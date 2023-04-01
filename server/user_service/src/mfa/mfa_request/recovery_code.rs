@@ -114,7 +114,7 @@ async fn handle_recovery_code(
     let user_info = op.get_user_info_if_available(account_id).await?;
     ensure_mfa_is_enabled(user_info.mfa_enabled_at.is_some())?;
 
-    // 二段階認証を無効化する処理を含む
+    // この関数は二段階認証を無効化する処理を含む
     // 従って（post_pass_codeはFinishの場合に早期リターンしてログイン成功扱いする一方で）LoginStatusの値によらずに処理は続行する
 
     let mi = op.get_mfa_info_by_account_id(account_id).await?;
