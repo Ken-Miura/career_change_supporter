@@ -15,9 +15,7 @@ use common::util::create_session_cookie;
 use common::{ApiError, ErrResp};
 use common::{ValidCred, JAPANESE_TIME_ZONE};
 use entity::prelude::UserAccount;
-use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
-};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use entity::user_account;
 use serde::Serialize;
 use tracing::{error, info};
@@ -28,7 +26,7 @@ use crate::util::login_status::LoginStatus;
 use crate::util::session::{
     KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME,
 };
-use crate::util::ROOT_PATH;
+use crate::util::{update_last_login, ROOT_PATH};
 
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookie、ログイン処理の状態（完了、または二段階目の認証が必要）をセットして応答する<br>
@@ -328,19 +326,7 @@ impl LoginOperation for LoginOperationImpl {
         account_id: i64,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        let account_model = user_account::ActiveModel {
-            user_account_id: Set(account_id),
-            last_login_time: Set(Some(*login_time)),
-            ..Default::default()
-        };
-        let _ = account_model.update(&self.pool).await.map_err(|e| {
-            error!(
-                "failed to update user_account (user_account_id: {}): {}",
-                account_id, e
-            );
-            unexpected_err_resp()
-        })?;
-        Ok(())
+        update_last_login(account_id, login_time, &self.pool).await
     }
 }
 

@@ -25,6 +25,7 @@ use std::env::var;
 
 use axum::http::StatusCode;
 use axum::Json;
+use chrono::{DateTime, FixedOffset};
 use common::{
     payment_platform::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
@@ -33,7 +34,9 @@ use common::{
     ApiError, ErrResp, ErrRespStruct,
 };
 use entity::{
-    sea_orm::{DatabaseTransaction, EntityTrait, QuerySelect},
+    sea_orm::{
+        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
+    },
     user_account,
 };
 use once_cell::sync::Lazy;
@@ -115,6 +118,26 @@ pub(crate) async fn get_user_info_if_available(
         ));
     }
     Ok(user)
+}
+
+pub(crate) async fn update_last_login(
+    account_id: i64,
+    login_time: &DateTime<FixedOffset>,
+    pool: &DatabaseConnection,
+) -> Result<(), ErrResp> {
+    let user_account_model = entity::user_account::ActiveModel {
+        user_account_id: Set(account_id),
+        last_login_time: Set(Some(*login_time)),
+        ..Default::default()
+    };
+    let _ = user_account_model.update(pool).await.map_err(|e| {
+        error!(
+            "failed to update user_account (user_account_id: {}): {}",
+            account_id, e
+        );
+        unexpected_err_resp()
+    })?;
+    Ok(())
 }
 
 /// 通常のテストコードに加え、共通で使うモックをまとめる

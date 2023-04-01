@@ -1,5 +1,7 @@
 // Copyright 2023 Ken Miura
 
+use std::time::Duration;
+
 use async_redis_session::RedisSessionStore;
 use async_session::{log::info, Session, SessionStore};
 use axum::{async_trait, extract::State, http::StatusCode, Json};
@@ -18,7 +20,11 @@ use crate::{
     mfa::{ensure_mfa_is_enabled, verify_pass_code},
     util::{
         login_status::LoginStatus,
-        session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
+        session::{
+            KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
+            SESSION_ID_COOKIE_NAME,
+        },
+        update_last_login,
         user_info::{FindUserInfoOperationImpl, UserInfo},
     },
 };
@@ -45,7 +51,10 @@ pub(crate) async fn post_pass_code(
         }
     };
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let op = PassCodeOperationImpl { pool };
+    let op = PassCodeOperationImpl {
+        pool,
+        expiry: LOGIN_SESSION_EXPIRY,
+    };
 
     handle_pass_code_req(
         session_id.as_str(),
@@ -70,10 +79,19 @@ trait PassCodeOperation {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp>;
 
     async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp>;
+
+    fn set_login_session_expiry(&self, session: &mut Session);
+
+    async fn update_last_login(
+        &self,
+        account_id: i64,
+        login_time: &DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct PassCodeOperationImpl {
     pool: DatabaseConnection,
+    expiry: Duration,
 }
 
 #[async_trait]
@@ -86,6 +104,18 @@ impl PassCodeOperation for PassCodeOperationImpl {
 
     async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
         get_mfa_info_by_account_id(account_id, &self.pool).await
+    }
+
+    fn set_login_session_expiry(&self, session: &mut Session) {
+        session.expire_in(self.expiry);
+    }
+
+    async fn update_last_login(
+        &self,
+        account_id: i64,
+        login_time: &DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        update_last_login(account_id, login_time, &self.pool).await
     }
 }
 
@@ -105,7 +135,7 @@ async fn handle_pass_code_req(
             }),
         )
     })?;
-    let session = get_session_by_session_id(session_id, store).await?;
+    let mut session = get_session_by_session_id(session_id, store).await?;
     let account_id = get_account_id_from_session(&session)?;
     let user_info = op.get_user_info_if_available(account_id).await?;
     ensure_mfa_is_enabled(user_info.mfa_enabled_at.is_some())?;
@@ -125,9 +155,12 @@ async fn handle_pass_code_req(
         current_date_time,
         pass_code,
     )?;
-    // セッションのLoginStatusを更新（セッションの期限も更新する）
-    // 最終ログイン時刻を更新
-    todo!()
+
+    update_login_status(&mut session, ls)?;
+    op.set_login_session_expiry(&mut session);
+    op.update_last_login(account_id, current_date_time).await?;
+
+    Ok((StatusCode::OK, Json(PassCodeReqResult {})))
 }
 
 async fn get_session_by_session_id(
@@ -176,4 +209,18 @@ fn get_login_status_from_session(session: &Session) -> Result<LoginStatus, ErrRe
         }
     };
     Ok(LoginStatus::from(login_status))
+}
+
+fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), ErrResp> {
+    session
+        .insert(KEY_TO_LOGIN_STATUS, ls.clone())
+        .map_err(|e| {
+            error!(
+                "failed to insert login_status ({}) into session: {}",
+                String::from(ls),
+                e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(())
 }
