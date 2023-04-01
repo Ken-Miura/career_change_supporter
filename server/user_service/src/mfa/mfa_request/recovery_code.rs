@@ -9,6 +9,7 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
+use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
@@ -78,7 +79,15 @@ async fn handle_recovery_code(
     op: &impl RecoveryCodeOperation,
     store: &impl SessionStore,
 ) -> RespResult<RecoveryCodeReqResult> {
-    // リカバリーコードのvalidation
+    validate_uuid(recovery_code).map_err(|e| {
+        error!("failed to validate {}: {}", recovery_code, e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: common::err::Code::InvalidUuidFormat as u32,
+            }),
+        )
+    })?;
     // セッションIDでセッションを取得
     // セッションからアカウントIDを取得
     // アカウントIDからUserInfo取得（取得の際にDisabledチェック)
