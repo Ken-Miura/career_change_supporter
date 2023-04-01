@@ -30,6 +30,18 @@ pub(crate) async fn post_recovery_code(
             ));
         }
     };
+    // リカバリーコードのvalidation
+    // セッションIDでセッションを取得
+    // セッションからアカウントIDを取得
+    // アカウントIDからUserInfo取得（取得の際にDisabledチェック)
+    // 二段階認証が有効化されていることを確認
+    // (LoginStatusのチェックはしない。既にFinishでも処理は続行させる。二段階認証を無効化する処理を含むので)
+    // アカウントIDからMfaInfoを取得
+    // リカバリーコードを比較
+    // 二段階認証の設定を削除し、無効化する
+    // セッション内のLoginStatusを更新
+    // セッション内のexpiryを更新
+    // ログイン日時を更新
     todo!()
 }
 
