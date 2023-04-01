@@ -36,6 +36,10 @@ import ConsultantSideConsultationPage from '../views/personalized/ConsultantSide
 import RateUserPage from '../views/personalized/RateUserPage.vue'
 import RateConsultantPage from '../views/personalized/RateConsultantPage.vue'
 import RateSuccessPage from '../views/personalized/RateSuccessPage.vue'
+import MfaSettingPage from '../views/personalized/MfaSettingPage.vue'
+import EnableMfaConfirmationPage from '../views/personalized/EnableMfaConfirmationPage.vue'
+import EnableMfaSuccessPage from '../views/personalized/EnableMfaSuccessPage.vue'
+import DisableMfaSuccessPage from '../views/personalized/DisableMfaSuccessPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -151,6 +155,26 @@ const routes: Array<RouteRecordRaw> = [
     path: '/fee-per-hour-in-yen',
     name: 'FeePerHourInYenPage',
     component: FeePerHourInYenPage
+  },
+  {
+    path: '/mfa-setting',
+    name: 'MfaSettingPage',
+    component: MfaSettingPage
+  },
+  {
+    path: '/enable-mfa-confirmation',
+    name: 'EnableMfaConfirmationPage',
+    component: EnableMfaConfirmationPage
+  },
+  {
+    path: '/enable-mfa-success',
+    name: 'EnableMfaSuccessPage',
+    component: EnableMfaSuccessPage
+  },
+  {
+    path: '/disable-mfa-success',
+    name: 'DisableMfaSuccessPage',
+    component: DisableMfaSuccessPage
   },
   {
     path: '/submit-fee-per-hour-in-yen-success',

@@ -11,11 +11,11 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util;
-use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::verified_user::VerifiedUser;
+use crate::util::user_info::FindUserInfoOperationImpl;
 
 pub(crate) async fn get_fee_per_hour_in_yen_for_application(
-    VerifiedUser { account_id: _ }: VerifiedUser,
+    VerifiedUser { user_info: _ }: VerifiedUser,
     query: Query<FeePerHourInYenForApplicationQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<FeePerHourInYenForApplication> {
@@ -50,8 +50,8 @@ struct FeePerHourInYenForApplicationOperationImpl {
 #[async_trait]
 impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOperationImpl {
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        let op = DisabledCheckOperationImpl::new(&self.pool);
-        util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
+        let op = FindUserInfoOperationImpl::new(&self.pool);
+        util::consultant_disabled_check::check_if_consultant_is_available(consultant_id, &op).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(

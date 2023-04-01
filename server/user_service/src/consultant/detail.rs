@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
-use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::session::verified_user::VerifiedUser;
+use crate::util::user_info::FindUserInfoOperationImpl;
 use crate::util::years_of_service_period::{
     VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
     VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
@@ -33,14 +33,14 @@ const YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE_LESS_THAN_TWENTY_YEARS: &str =
 const YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE: &str = "TWENTY_YEARS_OR_MORE";
 
 pub(crate) async fn get_consultant_detail(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     query: Query<ConsultantDetailQuery>,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
 ) -> RespResult<ConsultantDetail> {
     let query = query.0;
     let op = ConsultantDetailOperationImpl { pool, index_client };
-    handle_consultant_detail(account_id, query.consultant_id, op).await
+    handle_consultant_detail(user_info.account_id, query.consultant_id, op).await
 }
 
 #[derive(Deserialize)]
@@ -87,8 +87,8 @@ struct ConsultantDetailOperationImpl {
 #[async_trait]
 impl ConsultantDetailOperation for ConsultantDetailOperationImpl {
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        let op = DisabledCheckOperationImpl::new(&self.pool);
-        util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
+        let op = FindUserInfoOperationImpl::new(&self.pool);
+        util::consultant_disabled_check::check_if_consultant_is_available(consultant_id, &op).await
     }
 
     async fn search_consultant(&self, index_name: &str, query: &Value) -> Result<Value, ErrResp> {

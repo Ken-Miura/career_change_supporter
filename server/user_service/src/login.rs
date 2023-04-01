@@ -10,23 +10,26 @@ use axum::http::StatusCode;
 use axum::Json;
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
-use common::util::{create_session_cookie, is_password_match};
+use common::password::is_password_match;
+use common::util::create_session_cookie;
 use common::{ApiError, ErrResp};
 use common::{ValidCred, JAPANESE_TIME_ZONE};
 use entity::prelude::UserAccount;
-use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
-};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use entity::user_account;
+use serde::Serialize;
 use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
-use crate::util::session::{KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
-use crate::util::ROOT_PATH;
+use crate::util::login_status::LoginStatus;
+use crate::util::session::{
+    KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME,
+};
+use crate::util::{update_last_login, ROOT_PATH};
 
 /// ログインを行う<br>
-/// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookieをセットして応答する<br>
+/// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookie、ログイン処理の状態（完了、または二段階目の認証が必要）をセットして応答する<br>
 /// <br>
 /// # Errors
 /// - email addressもしくはpasswordが正しくない場合、ステータスコード401、エラーコード[EmailOrPwdIncorrect]を返す<br>
@@ -36,19 +39,33 @@ pub(crate) async fn post_login(
     State(pool): State<DatabaseConnection>,
     State(store): State<RedisSessionStore>,
     ValidCred(cred): ValidCred,
-) -> Result<(StatusCode, SignedCookieJar), ErrResp> {
+) -> Result<(StatusCode, SignedCookieJar, Json<LoginResult>), ErrResp> {
     let email_addr = cred.email_address;
     let password = cred.password;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = LoginOperationImpl::new(pool, LOGIN_SESSION_EXPIRY);
-    let session_id =
+
+    let session_id_and_login_status =
         handle_login_req(&email_addr, &password, &current_date_time, op, store).await?;
+
+    let session_id = session_id_and_login_status.0;
     let cookie = create_session_cookie(
         SESSION_ID_COOKIE_NAME.to_string(),
         session_id,
         ROOT_PATH.to_string(),
     );
-    Ok((StatusCode::OK, jar.add(cookie)))
+    let login_status = session_id_and_login_status.1;
+
+    Ok((
+        StatusCode::OK,
+        jar.add(cookie),
+        Json(LoginResult { login_status }),
+    ))
+}
+
+#[derive(Serialize, Debug)]
+pub(crate) struct LoginResult {
+    login_status: LoginStatus,
 }
 
 async fn handle_login_req(
@@ -57,7 +74,34 @@ async fn handle_login_req(
     login_time: &DateTime<FixedOffset>,
     op: impl LoginOperation,
     store: impl SessionStore,
-) -> Result<String, ErrResp> {
+) -> Result<(String, LoginStatus), ErrResp> {
+    let account = find_account_by_email_address(email_addr, password, &op).await?;
+    verify_password(email_addr, password, &account.hashed_password)?;
+
+    ensure_account_is_not_disabled(account.user_account_id, email_addr, account.disabled).await?;
+
+    let user_account_id = account.user_account_id;
+    let login_status = login_status_from(account.mfa_enabled);
+    let session = create_session(user_account_id, login_status.clone(), &op)?;
+    let session_id = store_session(user_account_id, session, &store).await?;
+
+    update_last_login_if_necessary(
+        user_account_id,
+        login_time,
+        login_status.clone(),
+        email_addr,
+        &op,
+    )
+    .await?;
+
+    Ok((session_id, login_status))
+}
+
+async fn find_account_by_email_address(
+    email_addr: &str,
+    password: &str,
+    op: &impl LoginOperation,
+) -> Result<Account, ErrResp> {
     let accounts = op.filter_account_by_email_addr(email_addr).await?;
     let num = accounts.len();
     if num > 1 {
@@ -78,7 +122,15 @@ async fn handle_login_req(
             }),
         )
     })?;
-    let matched = is_password_match(password, &account.hashed_password).map_err(|e| {
+    Ok(account)
+}
+
+fn verify_password(
+    email_addr: &str,
+    password: &str,
+    hashed_password: &[u8],
+) -> Result<(), ErrResp> {
+    let matched = is_password_match(password, hashed_password).map_err(|e| {
         error!("failed to handle password: {}", e);
         unexpected_err_resp()
     })?;
@@ -94,10 +146,18 @@ async fn handle_login_req(
             }),
         ));
     }
-    if account.disabled {
+    Ok(())
+}
+
+async fn ensure_account_is_not_disabled(
+    account_id: i64,
+    email_addr: &str,
+    disabled: bool,
+) -> Result<(), ErrResp> {
+    if disabled {
         error!(
             "disabled account (account id: {}, email address: {})",
-            account.user_account_id, email_addr
+            account_id, email_addr
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -106,9 +166,26 @@ async fn handle_login_req(
             }),
         ));
     };
+    Ok(())
+}
 
-    let user_account_id = account.user_account_id;
+fn login_status_from(mfa_enabled: bool) -> LoginStatus {
+    // 二段階認証が有効化されている場合、ユーザー名とパスワードだけでは認証は終わらないため、NeedMoreVerificationとなる。
+    // 逆に無効化されている場合、ユーザー名とパスワードだけでは認証は終わるのでFinishとなる。
+    if mfa_enabled {
+        LoginStatus::NeedMoreVerification
+    } else {
+        LoginStatus::Finish
+    }
+}
+
+fn create_session(
+    user_account_id: i64,
+    login_status: LoginStatus,
+    op: &impl LoginOperation,
+) -> Result<Session, ErrResp> {
     let mut session = Session::new();
+
     session
         .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
         .map_err(|e| {
@@ -118,7 +195,24 @@ async fn handle_login_req(
             );
             unexpected_err_resp()
         })?;
+
+    let ls = String::from(login_status);
+    session
+        .insert(KEY_TO_LOGIN_STATUS, ls.clone())
+        .map_err(|e| {
+            error!("failed to insert login_status ({}) into session: {}", ls, e);
+            unexpected_err_resp()
+        })?;
+
     op.set_login_session_expiry(&mut session);
+    Ok(session)
+}
+
+async fn store_session(
+    user_account_id: i64,
+    session: Session,
+    store: &impl SessionStore,
+) -> Result<String, ErrResp> {
     let option = store.store_session(session).await.map_err(|e| {
         error!(
             "failed to store session for account id ({}): {}",
@@ -136,12 +230,32 @@ async fn handle_login_req(
             return Err(unexpected_err_resp());
         }
     };
-    op.update_last_login(user_account_id, login_time).await?;
-    info!(
-        "{} (account id: {}) logged-in at {}",
-        email_addr, user_account_id, login_time
-    );
     Ok(session_id)
+}
+
+async fn update_last_login_if_necessary(
+    user_account_id: i64,
+    login_time: &DateTime<FixedOffset>,
+    login_status: LoginStatus,
+    email_addr: &str,
+    op: &impl LoginOperation,
+) -> Result<(), ErrResp> {
+    match login_status {
+        LoginStatus::Finish => {
+            op.update_last_login(user_account_id, login_time).await?;
+            info!(
+                "{} (account id: {}) logged-in at {}",
+                email_addr, user_account_id, login_time
+            );
+        }
+        LoginStatus::NeedMoreVerification => {
+            info!(
+                "{} (account id: {}) tried login at {} (MFA is enabled, so authentication has not been done yet)",
+                email_addr, user_account_id, login_time
+            );
+        }
+    };
+    Ok(())
 }
 
 #[async_trait]
@@ -161,6 +275,7 @@ struct Account {
     user_account_id: i64,
     hashed_password: Vec<u8>,
     disabled: bool,
+    mfa_enabled: bool,
 }
 
 struct LoginOperationImpl {
@@ -197,6 +312,7 @@ impl LoginOperation for LoginOperationImpl {
                 user_account_id: model.user_account_id,
                 hashed_password: model.hashed_password.clone(),
                 disabled: model.disabled_at.is_some(),
+                mfa_enabled: model.mfa_enabled_at.is_some(),
             })
             .collect::<Vec<Account>>())
     }
@@ -210,19 +326,7 @@ impl LoginOperation for LoginOperationImpl {
         account_id: i64,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        let account_model = user_account::ActiveModel {
-            user_account_id: Set(account_id),
-            last_login_time: Set(Some(*login_time)),
-            ..Default::default()
-        };
-        let _ = account_model.update(&self.pool).await.map_err(|e| {
-            error!(
-                "failed to update user_account (user_account_id: {}): {}",
-                account_id, e
-            );
-            unexpected_err_resp()
-        })?;
-        Ok(())
+        update_last_login(account_id, login_time, &self.pool).await
     }
 }
 
@@ -236,13 +340,15 @@ mod tests {
     use chrono::DateTime;
     use chrono::FixedOffset;
     use chrono::TimeZone;
-    use common::util::hash_password;
+    use common::password::hash_password;
     use common::util::validator::email_address_validator::validate_email_address;
     use common::util::validator::password_validator::validate_password;
     use common::ErrResp;
     use common::JAPANESE_TIME_ZONE;
 
     use crate::login::handle_login_req;
+    use crate::util::login_status::LoginStatus;
+    use crate::util::session::KEY_TO_LOGIN_STATUS;
     use crate::util::session::KEY_TO_USER_ACCOUNT_ID;
 
     use super::Account;
@@ -291,6 +397,9 @@ mod tests {
             account_id: i64,
             login_time: &DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
+            if self.account.mfa_enabled {
+                panic!("mfa_enabled is true, but update_last_login is called");
+            }
             assert_eq!(self.account.user_account_id, account_id);
             assert_eq!(self.login_time, login_time);
             Ok(())
@@ -313,6 +422,7 @@ mod tests {
             user_account_id: id,
             hashed_password: hashed_pwd,
             disabled: false,
+            mfa_enabled: false,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
@@ -320,16 +430,72 @@ mod tests {
 
         let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
 
-        let session_id = result.expect("failed to get Ok");
+        let session_id_and_login_status = result.expect("failed to get Ok");
+        let session_id = session_id_and_login_status.0;
+        let login_status = session_id_and_login_status.1;
+
         let session = store
             .load_session(session_id)
             .await
             .expect("failed to get Ok")
             .expect("failed to get value");
+
         let actual_id = session
             .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
             .expect("failed to get value");
         assert_eq!(id, actual_id);
+
+        assert_eq!(login_status.clone(), LoginStatus::Finish);
+        let actual_login_status = session
+            .get::<String>(KEY_TO_LOGIN_STATUS)
+            .expect("failed to get value");
+        assert_eq!(String::from(login_status), actual_login_status);
+    }
+
+    #[tokio::test]
+    async fn handle_login_req_success_mfa_enabled() {
+        let id = 1102;
+        let email_addr = "test@example.com";
+        let pwd = "1234567890abcdABCD";
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            user_account_id: id,
+            hashed_password: hashed_pwd,
+            disabled: false,
+            mfa_enabled: true,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
+
+        let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
+
+        let session_id_and_login_status = result.expect("failed to get Ok");
+        let session_id = session_id_and_login_status.0;
+        let login_status = session_id_and_login_status.1;
+
+        let session = store
+            .load_session(session_id)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+
+        let actual_id = session
+            .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+            .expect("failed to get value");
+        assert_eq!(id, actual_id);
+
+        assert_eq!(login_status.clone(), LoginStatus::NeedMoreVerification);
+        let actual_login_status = session
+            .get::<String>(KEY_TO_LOGIN_STATUS)
+            .expect("failed to get value");
+        assert_eq!(String::from(login_status), actual_login_status);
     }
 
     #[tokio::test]
@@ -350,6 +516,7 @@ mod tests {
             user_account_id: id,
             hashed_password: hashed_pwd,
             disabled: false,
+            mfa_enabled: false,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
@@ -382,6 +549,7 @@ mod tests {
             user_account_id: id,
             hashed_password: hashed_pwd,
             disabled: false,
+            mfa_enabled: false,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);
@@ -412,6 +580,7 @@ mod tests {
             user_account_id: id,
             hashed_password: hashed_pwd,
             disabled: true,
+            mfa_enabled: false,
         };
         let store = MemoryStore::new();
         let current_date_time = last_login + chrono::Duration::days(1);

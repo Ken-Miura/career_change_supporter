@@ -16,25 +16,28 @@ pub(crate) mod verified_user;
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
 
-use super::disabled_check::{DisabledCheckOperation, DisabledCheckOperationImpl};
+use super::get_user_info_if_available;
 use super::identity_check::{IdentityCheckOperation, IdentityCheckOperationImpl};
+use super::login_status::LoginStatus;
 use super::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
+use super::user_info::{FindUserInfoOperationImpl, UserInfo};
 
 pub(crate) const SESSION_ID_COOKIE_NAME: &str = "session_id";
 pub(crate) const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
+pub(crate) const KEY_TO_LOGIN_STATUS: &str = "login_status";
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 
 /// セッションの有効期限
 pub(crate) const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
-async fn get_agreement_unchecked_user_account_id_from_request_parts<S>(
+async fn get_agreement_unchecked_user_info_from_request_parts<S>(
     parts: &mut Parts,
     state: &S,
-) -> Result<i64, ErrResp>
+) -> Result<UserInfo, ErrResp>
 where
     AppState: FromRef<S>,
     S: Send + Sync,
@@ -62,56 +65,56 @@ where
     let app_state = AppState::from_ref(state);
 
     let store = app_state.store;
-    let op = RefreshOperationImpl {};
+    let refresh_op = RefreshOperationImpl {};
     let user_account_id =
-        get_user_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
+        get_user_account_id_by_session_id(session_id, &store, refresh_op, LOGIN_SESSION_EXPIRY)
+            .await?;
 
-    let pool = app_state.pool;
-    let disabled_check_op = DisabledCheckOperationImpl::new(&pool);
-    ensure_account_is_not_disabled(user_account_id, disabled_check_op).await?;
+    let pool = &app_state.pool;
+    let find_user_op = FindUserInfoOperationImpl::new(pool);
+    let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;
 
-    Ok(user_account_id)
+    Ok(user_info)
 }
 
-async fn get_user_account_id_from_request_parts<S>(
+async fn get_user_info_from_request_parts<S>(
     parts: &mut Parts,
     state: &S,
-) -> Result<i64, ErrResp>
+) -> Result<UserInfo, ErrResp>
 where
     AppState: FromRef<S>,
     S: Send + Sync,
 {
-    let user_account_id =
-        get_agreement_unchecked_user_account_id_from_request_parts(parts, state).await?;
+    let user_info = get_agreement_unchecked_user_info_from_request_parts(parts, state).await?;
 
     let app_state = AppState::from_ref(state);
     let terms_of_use_op = TermsOfUseLoadOperationImpl::new(&app_state.pool);
-    check_if_user_has_already_agreed(user_account_id, *TERMS_OF_USE_VERSION, terms_of_use_op)
+    check_if_user_has_already_agreed(user_info.account_id, *TERMS_OF_USE_VERSION, terms_of_use_op)
         .await?;
 
-    Ok(user_account_id)
+    Ok(user_info)
 }
 
-async fn get_verified_user_account_id_from_request_parts<S>(
+async fn get_verified_user_info_from_request_parts<S>(
     parts: &mut Parts,
     state: &S,
-) -> Result<i64, ErrResp>
+) -> Result<UserInfo, ErrResp>
 where
     AppState: FromRef<S>,
     S: Send + Sync,
 {
-    let user_account_id = get_user_account_id_from_request_parts(parts, state).await?;
+    let user_info = get_user_info_from_request_parts(parts, state).await?;
 
     let app_state = AppState::from_ref(state);
     let op = IdentityCheckOperationImpl::new(&app_state.pool);
-    ensure_identity_exists(user_account_id, &op).await?;
+    ensure_identity_exists(user_info.account_id, &op).await?;
 
-    Ok(user_account_id)
+    Ok(user_info)
 }
 
 /// session_idを使い、storeからユーザーを一意に識別する値を取得する。<br>
 /// この値を取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
-/// 取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
+/// 取得に成功した後、ログイン処理が完了の状態に限り、セッションの有効期間がexpiryだけ延長される（※）<br>
 /// <br>
 /// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
 /// リニューアルタイムアウトが必要になった場合は、セッションを保存しているキャッシュシステムの定期再起動により実装する。<br>
@@ -124,6 +127,7 @@ where
 /// # Errors
 /// 下記の場合、ステータスコード401、エラーコード[Unauthorized]を返す<br>
 /// <ul>
+///   <li>セッション内に存在するログイン処理の状態が完了以外を示す場合</li>
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
 async fn get_user_account_id_by_session_id(
@@ -155,6 +159,14 @@ async fn get_user_account_id_by_session_id(
             return Err(unexpected_err_resp());
         }
     };
+    let login_status = match session.get::<String>(KEY_TO_LOGIN_STATUS) {
+        Some(ls) => ls,
+        None => {
+            error!("failed to get login status from session");
+            return Err(unexpected_err_resp());
+        }
+    };
+    ensure_login_seq_has_already_finished(account_id, login_status)?;
     op.set_login_session_expiry(&mut session, expiry);
     // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
     let _ = store.store_session(session).await.map_err(|e| {
@@ -162,6 +174,27 @@ async fn get_user_account_id_by_session_id(
         unexpected_err_resp()
     })?;
     Ok(account_id)
+}
+
+fn ensure_login_seq_has_already_finished(
+    accound_id: i64,
+    login_status: String,
+) -> Result<(), ErrResp> {
+    match LoginStatus::from(login_status) {
+        LoginStatus::Finish => Ok(()),
+        LoginStatus::NeedMoreVerification => {
+            error!(
+                "accound_id ({}) has not finished login sequence yet",
+                accound_id
+            );
+            Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ))
+        }
+    }
 }
 
 trait RefreshOperation {
@@ -197,44 +230,6 @@ async fn check_if_user_has_already_agreed(
     Ok(())
 }
 
-async fn ensure_account_is_not_disabled(
-    account_id: i64,
-    op: impl DisabledCheckOperation,
-) -> Result<(), ErrResp> {
-    let result = op
-        .check_if_account_is_disabled(account_id)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to check if account is disabled (status code: {}, code: {})",
-                e.0, e.1 .0.code
-            );
-            unexpected_err_resp()
-        })?;
-    if let Some(disabled) = result {
-        if disabled {
-            error!("account (account id: {}) is disabled", account_id);
-            // セッションチェックの際に無効化を検出した際は、Unauthorizedを返すことでログイン画面へ遷移させる
-            // ログイン画面でログインしようとした際に無効化を知らせるメッセージを表示
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(ApiError {
-                    code: Code::Unauthorized as u32,
-                }),
-            ));
-        };
-        Ok(())
-    } else {
-        error!("no account (account id: {}) found", account_id);
-        Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoAccountFound as u32,
-            }),
-        ))
-    }
-}
-
 async fn ensure_identity_exists(
     account_id: i64,
     op: &impl IdentityCheckOperation,
@@ -261,9 +256,10 @@ pub(crate) mod tests {
     use common::ErrResp;
 
     use crate::{
-        err,
+        err::Code,
         util::{
-            disabled_check::DisabledCheckOperation,
+            identity_check::IdentityCheckOperation,
+            login_status::LoginStatus,
             session::{
                 get_user_account_id_by_session_id, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
             },
@@ -272,15 +268,23 @@ pub(crate) mod tests {
     };
 
     use super::{
-        check_if_user_has_already_agreed, ensure_account_is_not_disabled, RefreshOperation,
+        check_if_user_has_already_agreed, ensure_identity_exists, RefreshOperation,
+        KEY_TO_LOGIN_STATUS,
     };
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
-    pub(crate) async fn prepare_session(user_account_id: i64, store: &impl SessionStore) -> String {
+    pub(crate) async fn prepare_session(
+        user_account_id: i64,
+        login_status: LoginStatus,
+        store: &impl SessionStore,
+    ) -> String {
         let mut session = Session::new();
         // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
         session
             .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        session
+            .insert(KEY_TO_LOGIN_STATUS, String::from(login_status))
             .expect("failed to get Ok");
         store
             .store_session(session)
@@ -319,7 +323,7 @@ pub(crate) mod tests {
     async fn get_user_account_id_by_session_id_success() {
         let store = MemoryStore::new();
         let user_account_id = 15001;
-        let session_id = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
         assert_eq!(1, store.count().await);
 
         let op = RefreshOperationMock {
@@ -340,10 +344,33 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
+    async fn get_user_account_id_by_session_id_fail_login_seq_han_not_finished_yet() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let op = RefreshOperationMock {
+            expiry: LOGIN_SESSION_EXPIRY,
+        };
+        let result =
+            get_user_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
+                .await
+                .expect_err("failed to get Err");
+
+        // get_user_account_id_by_session_idが何らかの副作用でセッションを破棄していないか確認
+        // + ログイン処理がまだ途中である値を示している場合、エラーは返すがそのエラーに遭遇したことによりセッションを破棄するような処理はしない
+        assert_eq!(1, store.count().await);
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
+    }
+
+    #[tokio::test]
     async fn get_user_account_id_by_session_id_fail_session_already_expired() {
         let user_account_id = 10002;
         let store = MemoryStore::new();
-        let session_id = prepare_session(user_account_id, &store).await;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
         // リクエストのプリプロセス前ににセッションを削除
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);
@@ -358,7 +385,7 @@ pub(crate) mod tests {
 
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err::Code::Unauthorized as u32, result.1 .0.code);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
     }
 
     struct TermsOfUseLoadOperationMock {
@@ -409,72 +436,44 @@ pub(crate) mod tests {
             .expect_err("failed to get Err");
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(err::Code::NotTermsOfUseAgreedYet as u32, result.1 .0.code);
+        assert_eq!(Code::NotTermsOfUseAgreedYet as u32, result.1 .0.code);
     }
 
-    struct DisabledCheckOperationMock {
+    struct IdentityCheckOperationMock {
         account_id: i64,
-        no_account_found: bool,
-        account_disabled: bool,
     }
 
     #[async_trait]
-    impl DisabledCheckOperation for DisabledCheckOperationMock {
-        async fn check_if_account_is_disabled(
-            &self,
-            account_id: i64,
-        ) -> Result<Option<bool>, ErrResp> {
-            assert_eq!(self.account_id, account_id);
-            if self.no_account_found {
-                return Ok(None);
+    impl IdentityCheckOperation for IdentityCheckOperationMock {
+        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+            if self.account_id != account_id {
+                return Ok(false);
             }
-            Ok(Some(self.account_disabled))
+            Ok(true)
         }
     }
 
     #[tokio::test]
-    async fn ensure_account_is_not_disabled_success() {
-        let account_id = 2345;
-        let op_mock = DisabledCheckOperationMock {
-            account_id,
-            no_account_found: false,
-            account_disabled: false,
-        };
+    async fn ensure_identity_exists_success() {
+        let account_id = 670;
+        let op = IdentityCheckOperationMock { account_id };
 
-        let result = ensure_account_is_not_disabled(account_id, op_mock).await;
+        let result = ensure_identity_exists(account_id, &op).await;
 
-        result.expect("failed to get Ok");
+        result.expect("failed to get Ok")
     }
 
     #[tokio::test]
-    async fn ensure_account_is_not_disabled_fail_no_account_found() {
-        let account_id = 2345;
-        let op_mock = DisabledCheckOperationMock {
-            account_id,
-            no_account_found: true,
-            account_disabled: false,
-        };
+    async fn ensure_identity_exists_fail_identity_is_not_registered() {
+        let account_id = 670;
+        let op = IdentityCheckOperationMock { account_id };
+        let other_account_id = account_id + 51;
 
-        let result = ensure_account_is_not_disabled(account_id, op_mock).await;
+        let result = ensure_identity_exists(other_account_id, &op)
+            .await
+            .expect_err("failed to get Err");
 
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(err::Code::NoAccountFound as u32, resp.1 .0.code);
-    }
-
-    #[tokio::test]
-    async fn ensure_account_is_not_disabled_fail_unauthorized() {
-        let account_id = 2345;
-        let op_mock = DisabledCheckOperationMock {
-            account_id,
-            no_account_found: false,
-            account_disabled: true,
-        };
-
-        let result = ensure_account_is_not_disabled(account_id, op_mock).await;
-
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(StatusCode::UNAUTHORIZED, resp.0);
-        assert_eq!(err::Code::Unauthorized as u32, resp.1 .0.code);
+        assert_eq!(StatusCode::BAD_REQUEST, result.0);
+        assert_eq!(Code::NoIdentityRegistered as u32, result.1 .0.code);
     }
 }

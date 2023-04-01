@@ -80,6 +80,14 @@
           <button data-test="move-to-fee-per-hour-in-yen-page-button" v-on:click="moveToFeePerHourInYenPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditFeePerHourInYen }]" v-bind:message="canEditFeePerHourInYenErrMessage"/>
         </div>
+        <div data-test="mfa" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">二段階認証設定</h3>
+          <div data-test="mfa-status" class="flex justify-end">
+            <p v-if="mfaEnabled" class="m-4 mr-10 text-3xl">有効</p>
+            <p v-else class="m-4 mr-10 text-3xl">無効</p>
+          </div>
+          <button data-test="move-to-mfa-setting-page-button" v-on:click="moveToMfaSettingPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">設定を変更する</button>
+        </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <button data-test="move-to-delete-account-confirmation-page-button" v-on:click="moveToDeleteAccountConfirmationPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
         </div>
@@ -126,6 +134,7 @@ export default defineComponent({
     const feePerHourInYen = ref(0 as number | null)
     const canEditFeePerHourInYen = ref(true)
     const canEditFeePerHourInYenErrMessage = ref('')
+    const mfaEnabled = ref(false)
     const router = useRouter()
     const store = useStore()
     const errorExists = ref(false)
@@ -140,6 +149,7 @@ export default defineComponent({
           identity.value = profile.identity
           careerDescriptions.value = profile.career_descriptions
           feePerHourInYen.value = profile.fee_per_hour_in_yen
+          mfaEnabled.value = profile.mfa_enabled
           /* eslint-enable camelcase */
           store.commit(SET_IDENTITY, profile.identity)
           store.commit(SET_FEE_PER_HOUR_IN_YEN, profile.fee_per_hour_in_yen)
@@ -162,9 +172,11 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
     const moveToIdentityPage = async () => {
       await router.push('/identity')
     }
+
     const moveToAddCareerPage = async () => {
       const identity = store.state.identity
       if (identity === null) {
@@ -174,9 +186,11 @@ export default defineComponent({
       }
       await router.push('/careers')
     }
+
     const moveToCareerDetailPage = async (careerId: number) => {
       await router.push({ name: 'CareerDetailPage', params: { career_id: careerId } })
     }
+
     const moveToFeePerHourInYenPage = async () => {
       const identity = store.state.identity
       if (identity === null) {
@@ -186,9 +200,15 @@ export default defineComponent({
       }
       await router.push('/fee-per-hour-in-yen')
     }
+
+    const moveToMfaSettingPage = async () => {
+      await router.push(`/mfa-setting?mfa-enabled=${mfaEnabled.value}`)
+    }
+
     const moveToDeleteAccountConfirmationPage = async () => {
       await router.push('/delete-account-confirmation')
     }
+
     return {
       getProfileDone,
       emailAddress,
@@ -207,7 +227,9 @@ export default defineComponent({
       moveToFeePerHourInYenPage,
       moveToDeleteAccountConfirmationPage,
       MAX_CAREER_NUM,
-      PLATFORM_FEE_IN_PERCENTAGE
+      PLATFORM_FEE_IN_PERCENTAGE,
+      mfaEnabled,
+      moveToMfaSettingPage
     }
   }
 })

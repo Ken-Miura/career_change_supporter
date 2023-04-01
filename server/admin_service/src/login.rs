@@ -10,7 +10,8 @@ use axum::http::StatusCode;
 use axum::Json;
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
-use common::util::{create_session_cookie, is_password_match};
+use common::password::is_password_match;
+use common::util::create_session_cookie;
 use common::{ApiError, ErrResp};
 use common::{ValidCred, JAPANESE_TIME_ZONE};
 use entity::admin_account;
@@ -222,7 +223,7 @@ mod tests {
     use chrono::DateTime;
     use chrono::FixedOffset;
     use chrono::TimeZone;
-    use common::util::hash_password;
+    use common::password::hash_password;
     use common::util::validator::email_address_validator::validate_email_address;
     use common::util::validator::password_validator::validate_password;
     use common::ErrResp;

@@ -32,6 +32,11 @@ use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
 use crate::login::post_login;
 use crate::logout::post_logout;
+use crate::mfa::mfa_request::pass_code::post_pass_code;
+use crate::mfa::mfa_request::recovery_code::post_recovery_code;
+use crate::mfa::setting_change::disable_mfa_req::post_disable_mfa_req;
+use crate::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
+use crate::mfa::temp_secret::get::get_temp_mfa_secret;
 use crate::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::news::get_news;
 use crate::password::change_req::post_password_change_req;
@@ -80,6 +85,7 @@ use consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
+use mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
@@ -119,6 +125,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_OPENSEARCH_PASSWORD.to_string(),
         KEY_TO_SKY_WAY_APPLICATION_ID.to_string(),
         KEY_TO_SKY_WAY_SECRET_KEY.to_string(),
+        KEY_TO_USER_TOTP_ISSUER.to_string(),
     ]
 });
 
@@ -237,7 +244,11 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/consultant-rating", post(post_consultant_rating))
                 .route("/user-rating", post(post_user_rating))
                 .route("/news", get(get_news))
-                .route("/temp-mfa-secret", post(post_temp_mfa_secret))
+                .route("/temp-mfa-secret", post(post_temp_mfa_secret).get(get_temp_mfa_secret))
+                .route("/enable-mfa-req", post(post_enable_mfa_req))
+                .route("/disable-mfa-req", post(post_disable_mfa_req))
+                .route("/pass-code", post(post_pass_code))
+                .route("/recovery-code", post(post_recovery_code))
                 .with_state(state),
         )
         .layer(

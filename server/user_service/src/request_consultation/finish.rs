@@ -26,10 +26,10 @@ use crate::util::charge_metadata_key::{
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
-use crate::util::disabled_check::DisabledCheckOperationImpl;
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::util::session::verified_user::VerifiedUser;
+use crate::util::user_info::FindUserInfoOperationImpl;
 use crate::util::{self, request_consultation::convert_payment_err_to_err_resp, ACCESS_INFO};
 
 static CONSULTANT_MAIL_SUBJECT: Lazy<String> =
@@ -38,7 +38,7 @@ static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_finish_request_consultation(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<FinishRequestConsultationParam>,
 ) -> RespResult<FinishRequestConsultationResult> {
@@ -50,7 +50,7 @@ pub(crate) async fn post_finish_request_consultation(
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_finish_request_consultation(account_id, charge_id, op, smtp_client).await
+    handle_finish_request_consultation(user_info.account_id, charge_id, op, smtp_client).await
 }
 
 #[derive(Deserialize)]
@@ -496,8 +496,8 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
     }
 
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
-        let op = DisabledCheckOperationImpl::new(&self.pool);
-        util::disabled_check::check_if_user_account_is_available(consultant_id, op).await
+        let op = FindUserInfoOperationImpl::new(&self.pool);
+        util::consultant_disabled_check::check_if_consultant_is_available(consultant_id, &op).await
     }
 
     async fn create_request_consultation(

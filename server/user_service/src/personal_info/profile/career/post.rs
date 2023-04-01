@@ -46,7 +46,7 @@ use crate::{
 pub(crate) const MAX_CAREER_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 
 pub(crate) async fn career(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     multipart: Multipart,
 ) -> RespResult<CareerResult> {
@@ -64,7 +64,7 @@ pub(crate) async fn career(
     let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let submitted_career = SubmittedCareer {
-        account_id,
+        account_id: user_info.account_id,
         career,
         career_image1: (image1_file_name_without_ext, career_image1),
         career_image2: career_image2_option.map(|image| (image2_file_name_without_ext, image)),

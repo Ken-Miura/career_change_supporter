@@ -31,7 +31,7 @@ use super::{
 };
 
 pub(crate) async fn post_consultant_rating(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
     Json(req): Json<ConsultantRatingParam>,
@@ -39,7 +39,7 @@ pub(crate) async fn post_consultant_rating(
     let op = ConsultantRatingOperationImpl { pool, index_client };
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     handle_consultant_rating(
-        account_id,
+        user_info.account_id,
         req.consultant_rating_id,
         req.rating,
         &current_date_time,

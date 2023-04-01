@@ -28,9 +28,9 @@ use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::verified_user::VerifiedUser;
+use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 use crate::util::{
-    self, available_user_account::UserAccount, consultation_request::consultation_req_exists,
-    consultation_request::ConsultationRequest,
+    self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
 };
@@ -39,7 +39,7 @@ static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_consultation_request_acceptance(
-    VerifiedUser { account_id }: VerifiedUser,
+    VerifiedUser { user_info }: VerifiedUser,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestAcceptanceParam>,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
@@ -53,7 +53,8 @@ pub(crate) async fn post_consultation_request_acceptance(
         SMTP_PASSWORD.to_string(),
     );
     handle_consultation_request_acceptance(
-        account_id,
+        user_info.account_id,
+        user_info.email_address,
         &param,
         &current_date_time,
         room_name,
@@ -74,7 +75,8 @@ pub(crate) struct ConsultationRequestAcceptanceParam {
 pub(crate) struct ConsultationRequestAcceptanceResult {}
 
 async fn handle_consultation_request_acceptance(
-    user_account_id: i64,
+    consultant_id: i64,
+    consultant_email_address: String,
     param: &ConsultationRequestAcceptanceParam,
     current_date_time: &DateTime<FixedOffset>,
     room_name: String,
@@ -90,9 +92,9 @@ async fn handle_consultation_request_acceptance(
     validate_picked_candidate(picked_candidate)?;
     info!(
         "consultant (consultant id: {}) picked candidate: {}",
-        user_account_id, picked_candidate
+        consultant_id, picked_candidate
     );
-    validate_user_checked_confirmation_items(param.user_checked, user_account_id)?;
+    validate_user_checked_confirmation_items(param.user_checked, consultant_id)?;
     let consultation_req_id = param.consultation_req_id;
     validate_consultation_req_id_is_positive(consultation_req_id)?;
 
@@ -100,11 +102,10 @@ async fn handle_consultation_request_acceptance(
         .find_consultation_req_by_consultation_req_id(consultation_req_id)
         .await?;
     let req = consultation_req_exists(req, consultation_req_id)?;
-    validate_consultation_req_for_acceptance(&req, user_account_id, current_date_time)?;
+    validate_consultation_req_for_acceptance(&req, consultant_id, current_date_time)?;
 
     // 操作者（コンサルタント）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
-    // 従って、本来はこの箇所で無効化されているかのチェックは不要だが、メールアドレスが欲しいため、その際についでにチェックしている
-    let consultant = get_consultant_if_available(req.consultant_id, &op).await?;
+    // 従って、アカウントが無効化されているかどうかはユーザーのみ確認する
     let user = get_user_account_if_available(req.user_account_id, &op).await?;
 
     let meeting_date_time = select_meeting_date_time(
@@ -147,7 +148,7 @@ async fn handle_consultation_request_acceptance(
     let result = send_mail_to_consultant(
         req.consultation_req_id,
         &consultation,
-        consultant.email_address.as_str(),
+        consultant_email_address.as_str(),
         &send_mail,
     )
     .await;
@@ -155,7 +156,7 @@ async fn handle_consultation_request_acceptance(
     if result.is_err() {
         warn!(
             "failed to send email to consultant (consultation_req_id: {}, consultation: {:?}, email_address: {}, result: {:?})",
-            req.consultation_req_id, consultation, consultant.email_address, result
+            req.consultation_req_id, consultation, consultant_email_address, result
         );
     }
 
@@ -169,17 +170,10 @@ trait ConsultationRequestAcceptanceOperation {
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
 
-    /// コンサルタントが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
-    async fn get_consultant_if_available(
-        &self,
-        consultant_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp>;
-
-    /// ユーザーが利用可能な場合（UserAccountが存在し、かつdisabled_atがNULLである場合）、[UserAccount]を返す
     async fn get_user_account_if_available(
         &self,
         user_account_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp>;
+    ) -> Result<Option<UserInfo>, ErrResp>;
 
     async fn count_user_side_consultation_by_user_account_id(
         &self,
@@ -243,19 +237,12 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         .await
     }
 
-    async fn get_consultant_if_available(
-        &self,
-        consultant_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp> {
-        util::available_user_account::get_if_user_account_is_available(&self.pool, consultant_id)
-            .await
-    }
-
     async fn get_user_account_if_available(
         &self,
         user_account_id: i64,
-    ) -> Result<Option<UserAccount>, ErrResp> {
-        util::available_user_account::get_if_user_account_is_available(&self.pool, user_account_id)
+    ) -> Result<Option<UserInfo>, ErrResp> {
+        let op = FindUserInfoOperationImpl::new(&self.pool);
+        util::the_other_person_account::get_the_other_person_info_if_available(user_account_id, &op)
             .await
     }
 
@@ -650,27 +637,10 @@ fn validate_consultation_req_for_acceptance(
     Ok(())
 }
 
-async fn get_consultant_if_available(
-    consultant_id: i64,
-    op: &impl ConsultationRequestAcceptanceOperation,
-) -> Result<UserAccount, ErrResp> {
-    let consultant = op.get_consultant_if_available(consultant_id).await?;
-    // アカウントが存在しない、または無効化されている際は[Code::Unauthorized]を返してログイン画面へ遷移させる
-    consultant.ok_or_else(|| {
-        error!("consultant ({}) is not found or disabled", consultant_id);
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(ApiError {
-                code: Code::Unauthorized as u32,
-            }),
-        )
-    })
-}
-
 async fn get_user_account_if_available(
     user_account_id: i64,
     op: &impl ConsultationRequestAcceptanceOperation,
-) -> Result<UserAccount, ErrResp> {
+) -> Result<UserInfo, ErrResp> {
     let user = op.get_user_account_if_available(user_account_id).await?;
     user.ok_or_else(|| {
         error!("user ({}) is not available", user_account_id);
@@ -939,10 +909,9 @@ mod tests {
         create_text_for_consultant, create_text_for_user, CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT,
     };
     use crate::err::{unexpected_err_resp, Code};
+    use crate::util::consultation_request::ConsultationRequest;
     use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
-    use crate::util::{
-        available_user_account::UserAccount, consultation_request::ConsultationRequest,
-    };
+    use crate::util::user_info::UserInfo;
 
     use super::{
         handle_consultation_request_acceptance, AcceptedConsultation,
@@ -960,6 +929,7 @@ mod tests {
     #[derive(Debug)]
     struct Input {
         user_account_id: i64,
+        email_address: String,
         param: ConsultationRequestAcceptanceParam,
         current_date_time: DateTime<FixedOffset>,
         room_name: String,
@@ -970,8 +940,7 @@ mod tests {
     #[derive(Clone, Debug)]
     struct ConsultationRequestAcceptanceOperationMock {
         consultation_req: ConsultationRequest,
-        consultant: Option<UserAccount>,
-        user: Option<UserAccount>,
+        user: Option<UserInfo>,
         meeting_date_time: DateTime<FixedOffset>,
         cnt_user_side_consultation_by_user_account_id: u64,
         cnt_consultant_side_consultation_by_user_account_id: u64,
@@ -995,18 +964,10 @@ mod tests {
             Ok(Some(self.consultation_req.clone()))
         }
 
-        async fn get_consultant_if_available(
-            &self,
-            consultant_id: i64,
-        ) -> Result<Option<UserAccount>, ErrResp> {
-            assert_eq!(self.consultation_req.consultant_id, consultant_id);
-            Ok(self.consultant.clone())
-        }
-
         async fn get_user_account_if_available(
             &self,
             user_account_id: i64,
-        ) -> Result<Option<UserAccount>, ErrResp> {
+        ) -> Result<Option<UserInfo>, ErrResp> {
             assert_eq!(self.consultation_req.user_account_id, user_account_id);
             Ok(self.user.clone())
         }
@@ -1113,1335 +1074,1259 @@ mod tests {
         let send_mail = SendMailMock { fail: false };
         let room_name = "ce0cda1b7a934b3ea7a12001b56cf4e4";
         vec![
-            TestCase {
-                name: "success case (first choise is picked)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "success case (first choise is picked)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
                 },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
-            },
-            TestCase {
-                name: "success case (second choise is picked)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate: 2,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "success case (second choise is picked)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate: 2,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
                 },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
-            },
-            TestCase {
-                name: "success case (third choise is picked)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate: 3,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "success case (third choise is picked)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate: 3,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
                 },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
-            },
-            TestCase {
-                name: "success case (ignore send mail failed)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "success case (ignore send mail failed)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: SendMailMock { fail: true },
                     },
-                    send_mail: SendMailMock { fail: true },
+                    expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
                 },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
-            },
-            TestCase {
-                name: "success case (no maintenance overlapped case 1)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "success case (no maintenance overlapped case 1)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 21, 0, 0).unwrap(),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
-                            description: "テスト".to_string(),
-                        }],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![Maintenance {
+                                maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 21, 0, 0).unwrap(),
+                                maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
+                                description: "テスト".to_string(),
+                            }],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
                 },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
-            },
-            TestCase {
-                name: "success case (no maintenance overlapped case 2)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "success case (no maintenance overlapped case 2)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 4, 0, 0).unwrap(),
-                            description: "テスト".to_string(),
-                        }],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![Maintenance {
+                                maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
+                                maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 4, 0, 0).unwrap(),
+                                description: "テスト".to_string(),
+                            }],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
                 },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestAcceptanceResult {}))),
-            },
-            TestCase {
-                name: "invalid candidate case 1".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate: 0,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "invalid candidate case 1".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate: 0,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::InvalidCandidate as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidCandidate as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "invalid candidate case 2".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate: 4,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "invalid candidate case 2".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate: 4,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::InvalidCandidate as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidCandidate as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail UserDoesNotCheckConfirmationItems".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked: false,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail UserDoesNotCheckConfirmationItems".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked: false,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::UserDoesNotCheckConfirmationItems as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::UserDoesNotCheckConfirmationItems as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail NonPositiveConsultationReqId case 1".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id: 0,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail NonPositiveConsultationReqId case 1".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id: 0,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id: 0,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::NonPositiveConsultationReqId as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NonPositiveConsultationReqId as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail NonPositiveConsultationReqId case 2".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id: -1,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail NonPositiveConsultationReqId case 2".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id: -1,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
-                    },
-                    send_mail: send_mail.clone(),
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NonPositiveConsultationReqId as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail NoConsultationReqFound case 1".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
-                            consultation_req_id: consultation_req_id + 1,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id: -1,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
-                        current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
-                        room_name: room_name.to_string(),
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::NonPositiveConsultationReqId as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoConsultationReqFound as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail NoConsultationReqFound case 2".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail NoConsultationReqFound case 1".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant + 1,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id: consultation_req_id + 1,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::NoConsultationReqFound as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoConsultationReqFound as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail NoConsultationReqFound case 3".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap(),
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail NoConsultationReqFound case 2".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
-                                + Duration::hours(
-                                    *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
-                                ),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
-                                + Duration::hours(
-                                    *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
-                                ),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
-                                + Duration::hours(
-                                    *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
-                                ),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant + 1,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::NoConsultationReqFound as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoConsultationReqFound as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail NoConsultationReqFound case 4".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 1).unwrap(),
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail NoConsultationReqFound case 3".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
-                                + Duration::hours(
-                                    *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
-                                ),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
-                                + Duration::hours(
-                                    *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
-                                ),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
-                        current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
-                                + Duration::hours(
-                                    *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
-                                ),
-                        },
+                        current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap(),
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
+                                    + Duration::hours(
+                                        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                    ),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
+                                    + Duration::hours(
+                                        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                    ),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
+                                    + Duration::hours(
+                                        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                    ),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::NoConsultationReqFound as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::NoConsultationReqFound as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail Unauthorized (consultant is not found or disabled)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail NoConsultationReqFound case 4".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: None,
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
-                        current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
+                        current_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 1).unwrap(),
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
+                                    + Duration::hours(
+                                        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                    ),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
+                                    + Duration::hours(
+                                        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                    ),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
+                                    + Duration::hours(
+                                        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                    ),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::NoConsultationReqFound as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError {
-                        code: Code::Unauthorized as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail TheOtherPersonAccountIsNotAvailable".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail TheOtherPersonAccountIsNotAvailable".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: None,
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: None,
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::TheOtherPersonAccountIsNotAvailable as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::TheOtherPersonAccountIsNotAvailable as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail UserHasSameMeetingDateTime (user has already other meeting as user at the time)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail UserHasSameMeetingDateTime (user has already other meeting as user at the time)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 1,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 1,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::UserHasSameMeetingDateTime as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::UserHasSameMeetingDateTime as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail UserHasSameMeetingDateTime (user has already other meeting as consultant at the time)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail UserHasSameMeetingDateTime (user has already other meeting as consultant at the time)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 1,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 1,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::UserHasSameMeetingDateTime as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::UserHasSameMeetingDateTime as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail ConsultantHasSameMeetingDateTime (consultant has already other meeting as consultant at the time)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail ConsultantHasSameMeetingDateTime (consultant has already other meeting as consultant at the time)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 1,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 1,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::ConsultantHasSameMeetingDateTime as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::ConsultantHasSameMeetingDateTime as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail ConsultantHasSameMeetingDateTime (consultant has already other meeting as user at the time)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail ConsultantHasSameMeetingDateTime (consultant has already other meeting as user at the time)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 1,
                         current_date_time,
-                        maintenance_info: vec![],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 1,
+                            current_date_time,
+                            maintenance_info: vec![],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::ConsultantHasSameMeetingDateTime as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::ConsultantHasSameMeetingDateTime as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail MeetingDateTimeOverlapsMaintenance case 1 (overlap)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail MeetingDateTimeOverlapsMaintenance case 1 (overlap)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 30, 0).unwrap(),
-                            description: "テスト".to_string(),
-                        }],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![Maintenance {
+                                maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
+                                maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 30, 0).unwrap(),
+                                description: "テスト".to_string(),
+                            }],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::MeetingDateTimeOverlapsMaintenance as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::MeetingDateTimeOverlapsMaintenance as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail MeetingDateTimeOverlapsMaintenance case 2 (end overlaps)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail MeetingDateTimeOverlapsMaintenance case 2 (end overlaps)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            description: "テスト".to_string(),
-                        }],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![Maintenance {
+                                maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
+                                maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                description: "テスト".to_string(),
+                            }],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail: send_mail.clone(),
                     },
-                    send_mail: send_mail.clone(),
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::MeetingDateTimeOverlapsMaintenance as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::MeetingDateTimeOverlapsMaintenance as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail MeetingDateTimeOverlapsMaintenance case 3 (start overlaps)".to_string(),
-                input: Input {
-                    user_account_id: user_account_id_of_consultant,
-                    param: ConsultationRequestAcceptanceParam {
-                        consultation_req_id,
-                        picked_candidate,
-                        user_checked,
-                    },
-                    current_date_time,
-                    room_name: room_name.to_string(),
-                    op: ConsultationRequestAcceptanceOperationMock {
-                        consultation_req: ConsultationRequest {
+                TestCase {
+                    name: "fail MeetingDateTimeOverlapsMaintenance case 3 (start overlaps)".to_string(),
+                    input: Input {
+                        user_account_id: user_account_id_of_consultant,
+                        email_address: consultant_email_address.to_string(),
+                        param: ConsultationRequestAcceptanceParam {
                             consultation_req_id,
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
-                            third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-                            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            picked_candidate,
+                            user_checked,
                         },
-                        consultant: Some(UserAccount {
-                            email_address: consultant_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        user: Some(UserAccount {
-                            email_address: user_email_address.to_string(),
-                            disabled_at: None,
-                        }),
-                        meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        cnt_user_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_user_account_id: 0,
-                        cnt_consultant_side_consultation_by_consultant_id: 0,
-                        cnt_user_side_consultation_by_consultant_id: 0,
                         current_date_time,
-                        maintenance_info: vec![Maintenance {
-                            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
-                            description: "テスト".to_string(),
-                        }],
-                        consultation: AcceptedConsultation {
-                            user_account_id,
-                            consultant_id: user_account_id_of_consultant,
-                            fee_per_hour_in_yen,
-                            consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                        },
                         room_name: room_name.to_string(),
+                        op: ConsultationRequestAcceptanceOperationMock {
+                            consultation_req: ConsultationRequest {
+                                consultation_req_id,
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
+                                third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                                latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
+                            },
+                            user: Some(UserInfo {
+                                account_id: user_account_id,
+                                email_address: user_email_address.to_string(),
+                                mfa_enabled_at: None,
+                                disabled_at: None,
+                            }),
+                            meeting_date_time: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            cnt_user_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_user_account_id: 0,
+                            cnt_consultant_side_consultation_by_consultant_id: 0,
+                            cnt_user_side_consultation_by_consultant_id: 0,
+                            current_date_time,
+                            maintenance_info: vec![Maintenance {
+                                maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                                maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
+                                description: "テスト".to_string(),
+                            }],
+                            consultation: AcceptedConsultation {
+                                user_account_id,
+                                consultant_id: user_account_id_of_consultant,
+                                fee_per_hour_in_yen,
+                                consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
+                            },
+                            room_name: room_name.to_string(),
+                        },
+                        send_mail,
                     },
-                    send_mail,
+                    expected: Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError {
+                            code: Code::MeetingDateTimeOverlapsMaintenance as u32,
+                        }),
+                    )),
                 },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::MeetingDateTimeOverlapsMaintenance as u32,
-                    }),
-                )),
-            },
-        ]
+            ]
     });
 
     #[tokio::test]
     async fn handle_consultation_request_acceptance_tests() {
         for test_case in TEST_CASE_SET.iter() {
             let account_id = test_case.input.user_account_id;
+            let email_address = test_case.input.email_address.clone();
             let param = test_case.input.param.clone();
             let current_date_time = test_case.input.current_date_time;
             let room_name = test_case.input.room_name.clone();
@@ -2450,6 +2335,7 @@ mod tests {
 
             let result = handle_consultation_request_acceptance(
                 account_id,
+                email_address,
                 &param,
                 &current_date_time,
                 room_name,

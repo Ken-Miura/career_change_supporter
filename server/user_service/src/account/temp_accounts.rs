@@ -4,8 +4,8 @@ use axum::async_trait;
 use axum::extract::State;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
+use common::password::hash_password;
 use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-use common::util::hash_password;
 use common::{
     smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME},
     ErrResp, RespResult, ValidCred,
@@ -201,9 +201,9 @@ pub(crate) struct TempAccount {
 #[cfg(test)]
 mod tests {
 
-    use common::util::{
-        is_password_match,
-        validator::{
+    use common::{
+        password::is_password_match,
+        util::validator::{
             email_address_validator::validate_email_address, password_validator::validate_password,
         },
     };

@@ -17,10 +17,10 @@ use crate::util::session::user::User;
 /// # Errors
 /// - ログインセッションが存在しない場合、ステータスコード401、エラーコード[crate::err::Code::Unauthorized]を返す
 /// - 利用規約にまだ同意していない場合、ステータスコード400、エラーコード[crate::err::Code::NotTermsOfUseAgreedYet]を返す
-pub(crate) async fn get_refresh(User { account_id }: User) -> Result<StatusCode, ErrResp> {
+pub(crate) async fn get_refresh(User { user_info }: User) -> Result<StatusCode, ErrResp> {
     // NOTE:
     // User構造体を受け取る際のリクエストのプリプロセスで認証 (ログインセッションの延長) と利用規約の同意を実施済
     // そのため、ここまで到達した場合、OKを返すのみで良い
-    info!("refresh (account id: {})", account_id);
+    info!("refresh (account id: {})", user_info.account_id);
     Ok(StatusCode::OK)
 }

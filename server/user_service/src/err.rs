@@ -143,6 +143,12 @@ pub(crate) enum Code {
     UserAccountHasAlreadyBeenRated = 20131,
     NoConsultantRatingFound = 20132,
     ConsultantHasAlreadyBeenRated = 20133,
+    MfaHasAlreadyBeenEnabled = 20134,
+    ReachTempMfaSecretLimit = 20135,
+    NoTempMfaSecretFound = 20136,
+    InvalidPassCode = 20137,
+    PassCodeDoesNotMatch = 20138,
+    MfaIsNotEnabled = 20139,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
