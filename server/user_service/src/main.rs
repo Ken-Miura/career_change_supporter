@@ -33,6 +33,7 @@ use crate::consultations::get_consultations;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::mfa::mfa_request::pass_code::post_pass_code;
+use crate::mfa::mfa_request::recovery_code::post_recovery_code;
 use crate::mfa::setting_change::disable_mfa_req::post_disable_mfa_req;
 use crate::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
 use crate::mfa::temp_secret::get::get_temp_mfa_secret;
@@ -247,6 +248,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/enable-mfa-req", post(post_enable_mfa_req))
                 .route("/disable-mfa-req", post(post_disable_mfa_req))
                 .route("/pass-code", post(post_pass_code))
+                .route("/recovery-code", post(post_recovery_code))
                 .with_state(state),
         )
         .layer(

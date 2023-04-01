@@ -1,6 +1,7 @@
 // Copyright 2023 Ken Miura
 
 pub(crate) mod pass_code;
+pub(crate) mod recovery_code;
 
 use common::ErrResp;
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
