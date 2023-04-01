@@ -9,19 +9,21 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
+use common::mfa::is_recovery_code_match;
 use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
+use crate::err::unexpected_err_resp;
 use crate::mfa::ensure_mfa_is_enabled;
 use crate::mfa::mfa_request::get_session_by_session_id;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 use crate::{err::Code, util::session::SESSION_ID_COOKIE_NAME};
 
-use super::get_account_id_from_session;
+use super::{get_account_id_from_session, get_mfa_info_by_account_id, MfaInfo};
 
 pub(crate) async fn post_recovery_code(
     jar: SignedCookieJar,
@@ -69,6 +71,8 @@ pub(crate) struct RecoveryCodeReqResult {}
 #[async_trait]
 trait RecoveryCodeOperation {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp>;
+
+    async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp>;
 }
 
 struct RecoveryCodeOperationImpl {
@@ -82,6 +86,10 @@ impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
         let op = FindUserInfoOperationImpl::new(&self.pool);
         let user_info = crate::util::get_user_info_if_available(account_id, &op).await?;
         Ok(user_info)
+    }
+
+    async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
+        get_mfa_info_by_account_id(account_id, &self.pool).await
     }
 }
 
@@ -105,12 +113,32 @@ async fn handle_recovery_code(
     let account_id = get_account_id_from_session(&session)?;
     let user_info = op.get_user_info_if_available(account_id).await?;
     ensure_mfa_is_enabled(user_info.mfa_enabled_at.is_some())?;
-    // (LoginStatusのチェックはしない。既にFinishでも処理は続行させる。二段階認証を無効化する処理を含むので)
-    // アカウントIDからMfaInfoを取得
-    // リカバリーコードを比較
+
+    // 二段階認証を無効化する処理を含む
+    // 従って（post_pass_codeはFinishの場合に早期リターンしてログイン成功扱いする一方で）LoginStatusの値によらずに処理は続行する
+
+    let mi = op.get_mfa_info_by_account_id(account_id).await?;
+    verify_recovery_code(recovery_code, &mi.hashed_recovery_code)?;
+
     // 二段階認証の設定を削除し、無効化する
     // セッション内のLoginStatusを更新
     // セッション内のexpiryを更新
     // ログイン日時を更新
     todo!()
+}
+
+fn verify_recovery_code(recovery_code: &str, hashed_recovery_code: &[u8]) -> Result<(), ErrResp> {
+    let matched = is_recovery_code_match(recovery_code, hashed_recovery_code).map_err(|e| {
+        error!("failed is_recovery_code_match: {}", e);
+        unexpected_err_resp()
+    })?;
+    if !matched {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::RecoveryCodeDoesNotMatch as u32,
+            }),
+        ));
+    }
+    Ok(())
 }

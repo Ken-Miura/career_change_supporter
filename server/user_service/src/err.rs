@@ -149,6 +149,7 @@ pub(crate) enum Code {
     InvalidPassCode = 20137,
     PassCodeDoesNotMatch = 20138,
     MfaIsNotEnabled = 20139,
+    RecoveryCodeDoesNotMatch = 20140,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
