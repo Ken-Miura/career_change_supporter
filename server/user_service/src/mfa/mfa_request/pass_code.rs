@@ -22,12 +22,13 @@ use crate::{
     util::{
         login_status::LoginStatus,
         session::{KEY_TO_LOGIN_STATUS, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME},
-        update_last_login,
         user_info::{FindUserInfoOperationImpl, UserInfo},
     },
 };
 
-use super::{get_account_id_from_session, get_mfa_info_by_account_id, MfaInfo};
+use super::{
+    get_account_id_from_session, get_mfa_info_by_account_id, update_login_status, MfaInfo,
+};
 
 pub(crate) async fn post_pass_code(
     jar: SignedCookieJar,
@@ -113,7 +114,7 @@ impl PassCodeOperation for PassCodeOperationImpl {
         account_id: i64,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        update_last_login(account_id, login_time, &self.pool).await
+        crate::util::update_last_login(account_id, login_time, &self.pool).await
     }
 }
 
@@ -154,7 +155,7 @@ async fn handle_pass_code_req(
         pass_code,
     )?;
 
-    update_login_status(&mut session, ls)?;
+    update_login_status(&mut session, LoginStatus::Finish)?;
     op.set_login_session_expiry(&mut session);
     op.update_last_login(account_id, current_date_time).await?;
 
@@ -170,18 +171,4 @@ fn get_login_status_from_session(session: &Session) -> Result<LoginStatus, ErrRe
         }
     };
     Ok(LoginStatus::from(login_status))
-}
-
-fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), ErrResp> {
-    session
-        .insert(KEY_TO_LOGIN_STATUS, ls.clone())
-        .map_err(|e| {
-            error!(
-                "failed to insert login_status ({}) into session: {}",
-                String::from(ls),
-                e
-            );
-            unexpected_err_resp()
-        })?;
-    Ok(())
 }

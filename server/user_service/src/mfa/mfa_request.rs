@@ -11,7 +11,10 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::session::KEY_TO_USER_ACCOUNT_ID,
+    util::{
+        login_status::LoginStatus,
+        session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
+    },
 };
 
 struct MfaInfo {
@@ -78,4 +81,18 @@ fn get_account_id_from_session(session: &Session) -> Result<i64, ErrResp> {
         }
     };
     Ok(account_id)
+}
+
+fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), ErrResp> {
+    session
+        .insert(KEY_TO_LOGIN_STATUS, ls.clone())
+        .map_err(|e| {
+            error!(
+                "failed to insert login_status ({}) into session: {}",
+                String::from(ls),
+                e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(())
 }

@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use async_redis_session::RedisSessionStore;
-use async_session::SessionStore;
+use async_session::{Session, SessionStore};
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
@@ -19,11 +19,14 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 use crate::mfa::ensure_mfa_is_enabled;
 use crate::mfa::mfa_request::get_session_by_session_id;
+use crate::util::login_status::LoginStatus;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 use crate::{err::Code, util::session::SESSION_ID_COOKIE_NAME};
 
-use super::{get_account_id_from_session, get_mfa_info_by_account_id, MfaInfo};
+use super::{
+    get_account_id_from_session, get_mfa_info_by_account_id, update_login_status, MfaInfo,
+};
 
 pub(crate) async fn post_recovery_code(
     jar: SignedCookieJar,
@@ -73,6 +76,16 @@ trait RecoveryCodeOperation {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp>;
 
     async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp>;
+
+    async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp>;
+
+    fn set_login_session_expiry(&self, session: &mut Session);
+
+    async fn update_last_login(
+        &self,
+        account_id: i64,
+        login_time: &DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct RecoveryCodeOperationImpl {
@@ -90,6 +103,22 @@ impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
 
     async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
         get_mfa_info_by_account_id(account_id, &self.pool).await
+    }
+
+    async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
+        crate::mfa::disable_mfa(account_id, &self.pool).await
+    }
+
+    fn set_login_session_expiry(&self, session: &mut Session) {
+        session.expire_in(self.expiry);
+    }
+
+    async fn update_last_login(
+        &self,
+        account_id: i64,
+        login_time: &DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        crate::util::update_last_login(account_id, login_time, &self.pool).await
     }
 }
 
@@ -120,11 +149,13 @@ async fn handle_recovery_code(
     let mi = op.get_mfa_info_by_account_id(account_id).await?;
     verify_recovery_code(recovery_code, &mi.hashed_recovery_code)?;
 
-    // 二段階認証の設定を削除し、無効化する
-    // セッション内のLoginStatusを更新
-    // セッション内のexpiryを更新
-    // ログイン日時を更新
-    todo!()
+    op.disable_mfa(account_id).await?;
+
+    update_login_status(&mut session, LoginStatus::Finish)?;
+    op.set_login_session_expiry(&mut session);
+    op.update_last_login(account_id, current_date_time).await?;
+
+    Ok((StatusCode::OK, Json(RecoveryCodeReqResult {})))
 }
 
 fn verify_recovery_code(recovery_code: &str, hashed_recovery_code: &[u8]) -> Result<(), ErrResp> {

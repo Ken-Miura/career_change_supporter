@@ -3,16 +3,11 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use common::{ErrResp, ErrRespStruct, RespResult};
-use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
-};
+use common::{ErrResp, RespResult};
+use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
-use tracing::error;
 
-use crate::err::unexpected_err_resp;
 use crate::mfa::ensure_mfa_is_enabled;
-use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::user::User;
 
 pub(crate) async fn post_disable_mfa_req(
@@ -52,58 +47,6 @@ struct DisableMfaReqOperationImpl {
 #[async_trait]
 impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
     async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
-        self.pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let user_model =
-                        find_user_account_by_user_account_id_with_exclusive_lock(txn, account_id)
-                            .await?;
-                    let user_model = user_model.ok_or_else(|| {
-                        error!(
-                            "failed to find user_account (user_account_id: {})",
-                            account_id
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
-                    let _ = entity::mfa_info::Entity::delete_by_id(account_id).exec(txn).await.map_err(|e|{
-                        error!(
-                            "failed to delete mfa_info (user_account_id: {}): {}",
-                            account_id, e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
-                    let mut user_active_model: entity::user_account::ActiveModel = user_model.into();
-                    user_active_model.mfa_enabled_at = Set(None);
-                    let _ = user_active_model.update(txn).await.map_err(|e| {
-                        error!(
-                            "failed to update mfa_enabled_at in user_account (user_account_id: {}): {}",
-                            account_id, e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("connection error: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to disable_mfa: {}", err_resp_struct);
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
+        crate::mfa::disable_mfa(account_id, &self.pool).await
     }
 }
