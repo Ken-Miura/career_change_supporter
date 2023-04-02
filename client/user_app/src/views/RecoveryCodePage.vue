@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <div v-if="!postPassCodeDone" class="m-6">
+    <div v-if="!postRecoveryCodeDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
@@ -15,7 +15,10 @@
       <p class="mt-2 ml-2">二段階認証設定時に保存したリカバリーコードを入力して下さい。リカバリーコードによるログイン後、二段階認証の設定は無効化されますので、適宜再設定を行うようお願いします。</p>
       <section class="mt-6">
         <form class="flex flex-col" @submit.prevent="recoveryCodeHandler">
-          <PassCodeInput class="mb-6" @on-pass-code-updated="setPassCode" label="コード"/>
+          <div class="mt-2 mb-6 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
+            <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">リカバリーコード</label>
+            <input v-model="recoveryCode" type="text" pattern="[a-zA-Z0-9]{32}" title="半角英数字のみの32桁でご入力下さい。" required minlength="32" maxlength="32" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+          </div>
           <div class="flex justify-end">
             <router-link to="/mfa" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">認証アプリ（パスコード）を用いたログイン</router-link>
           </div>
@@ -34,21 +37,18 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import PassCodeInput from '@/components/PassCodeInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { useRouter } from 'vue-router'
 import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { usePassCode } from '@/components/usePassCode'
-import { usePostPassCode } from '@/util/mfa/usePostPassCode'
-import { PostPassCodeResp } from '@/util/mfa/PostPassCodeResp'
+import { usePostRecoveryCode } from '@/util/mfa/usePostRecoveryCode'
+import { PostRecoveryCodeResp } from '@/util/mfa/PostRecoveryCodeResp'
 
 export default defineComponent({
   name: 'RecoveryCodePage',
   components: {
-    PassCodeInput,
     AlertMessage,
     WaitingCircle
   },
@@ -56,20 +56,17 @@ export default defineComponent({
     const router = useRouter()
     const errorMessage = ref(null as string | null)
 
-    const {
-      passCode,
-      setPassCode
-    } = usePassCode()
+    const recoveryCode = ref('')
 
     const {
-      postPassCodeDone,
-      postPassCodeFunc
-    } = usePostPassCode()
+      postRecoveryCodeDone,
+      postRecoveryCodeFunc
+    } = usePostRecoveryCode()
 
     const recoveryCodeHandler = async () => {
       try {
-        const resp = await postPassCodeFunc(passCode.value)
-        if (!(resp instanceof PostPassCodeResp)) {
+        const resp = await postRecoveryCodeFunc(recoveryCode.value)
+        if (!(resp instanceof PostRecoveryCodeResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
           }
@@ -88,9 +85,9 @@ export default defineComponent({
     }
 
     return {
-      postPassCodeDone,
+      postRecoveryCodeDone,
       recoveryCodeHandler,
-      setPassCode,
+      recoveryCode,
       errorMessage
     }
   }
