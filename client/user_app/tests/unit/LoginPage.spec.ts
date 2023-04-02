@@ -195,6 +195,35 @@ describe('LoginPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/profile')
   })
 
+  it('moves to mfa when login is successful and mfa is enabled', async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshMock.mockResolvedValue(apiErrResp)
+    const ls = { login_status: 'NeedMoreVerification' } as LoginResult
+    loginFuncMock.mockResolvedValue(LoginResp.create(ls))
+
+    const wrapper = mount(LoginPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddressInput)
+    const emailAddrInput = emailAddr.find('input')
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
+
+    const pwd = wrapper.findComponent(PasswordInput)
+    const pwdInput = pwd.find('input')
+    await pwdInput.setValue(PWD)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/mfa')
+  })
+
   it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
