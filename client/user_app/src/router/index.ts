@@ -40,6 +40,7 @@ import MfaSettingPage from '../views/personalized/MfaSettingPage.vue'
 import EnableMfaConfirmationPage from '../views/personalized/EnableMfaConfirmationPage.vue'
 import EnableMfaSuccessPage from '../views/personalized/EnableMfaSuccessPage.vue'
 import DisableMfaSuccessPage from '../views/personalized/DisableMfaSuccessPage.vue'
+import MfaPage from '../views/MfaPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -56,6 +57,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/login',
     name: 'LoginPage',
     component: LoginPage
+  },
+  {
+    path: '/mfa',
+    name: 'MfaPage',
+    component: MfaPage
   },
   {
     path: '/new-account',

@@ -96,13 +96,21 @@ export default defineComponent({
     const loginHandler = async () => {
       try {
         const result = await loginFunc(form.emailAddress, form.password)
-        if (result instanceof LoginResp) {
-          await router.push('/profile')
-        } else if (result instanceof ApiErrorResp) {
+        if (!(result instanceof LoginResp)) {
+          if (!(result instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result: ${result}`)
+          }
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())
+          return
+        }
+        const ls = result.getLoginResult()
+        if (ls.login_status === 'Finish') {
+          await router.push('/profile')
+        } else if (ls.login_status === 'NeedMoreVerification') {
+          await router.push('/mfa')
         } else {
-          throw new Error(`unexpected result: ${result}`)
+          throw new Error(`unexpected login_status: ${ls}`)
         }
       } catch (e) {
         isHidden.value = false

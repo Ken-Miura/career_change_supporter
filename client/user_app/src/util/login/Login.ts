@@ -1,5 +1,6 @@
 import { ApiErrorResp, ApiError } from '../ApiError'
 import { LoginResp } from './LoginResp'
+import { LoginResult } from './LoginResult'
 
 export async function login (emailAddress: string, password: string): Promise<LoginResp | ApiErrorResp> {
   // eslint-disable-next-line
@@ -13,5 +14,6 @@ export async function login (emailAddress: string, password: string): Promise<Lo
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  return LoginResp.create()
+  const result = await response.json() as LoginResult
+  return LoginResp.create(result)
 }

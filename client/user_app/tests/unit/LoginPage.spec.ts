@@ -11,6 +11,7 @@ import { nextTick, ref } from 'vue'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import WaitingCircle from '@/components/WaitingCircle.vue'
+import { LoginResult } from '@/util/login/LoginResult'
 
 const loginDoneMock = ref(true)
 const loginFuncMock = jest.fn()
@@ -146,7 +147,8 @@ describe('LoginPage.vue', () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
     loginDoneMock.value = false
-    loginFuncMock.mockResolvedValue(LoginResp.create())
+    const ls = { login_status: 'Finish' } as LoginResult
+    loginFuncMock.mockResolvedValue(LoginResp.create(ls))
 
     const wrapper = mount(LoginPage, {
       global: {
@@ -167,7 +169,8 @@ describe('LoginPage.vue', () => {
   it('moves to profile when login is successful', async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
-    loginFuncMock.mockResolvedValue(LoginResp.create())
+    const ls = { login_status: 'Finish' } as LoginResult
+    loginFuncMock.mockResolvedValue(LoginResp.create(ls))
 
     const wrapper = mount(LoginPage, {
       global: {
