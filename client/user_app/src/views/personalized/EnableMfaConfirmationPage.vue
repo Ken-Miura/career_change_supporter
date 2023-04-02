@@ -19,9 +19,7 @@
           <p class="mt-2 ml-2 text-lg">{{ base32EncodedSecret }}</p>
           <li class="mt-4">認証アプリに表示された数値を入力して、下記の送信を押して下さい。</li>
           <form @submit.prevent="submitPassCodeToEnableMfa">
-            <div class="mt-2 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
-              <input v-model="passCode" type="text" inputmode="numeric" pattern="[0-9]{6}" title="半角数字のみの6桁でご入力下さい。" required minlength="6" maxlength="6" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
-            </div>
+            <PassCodeInput @on-pass-code-updated="setPassCode"/>
             <button type="submit" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">送信</button>
           </form>
         </ol>
@@ -51,13 +49,16 @@ import { usePostEnableMfaReq } from '@/util/personalized/enable-mfa-confirmation
 import { PostEnableMfaReqResp } from '@/util/personalized/enable-mfa-confirmation/PostEnableMfaReqResp'
 import { useStore } from 'vuex'
 import { SET_RECOVERY_CODE } from '@/store/mutationTypes'
+import { usePassCode } from '@/components/usePassCode'
+import PassCodeInput from '@/components/PassCodeInput.vue'
 
 export default defineComponent({
   name: 'EnableMfaConfirmationPage',
   components: {
     TheHeader,
     AlertMessage,
-    WaitingCircle
+    WaitingCircle,
+    PassCodeInput
   },
   setup () {
     const router = useRouter()
@@ -67,7 +68,6 @@ export default defineComponent({
       return `data:image/png;base64,${base64EncodedImage.value}`
     })
     const base32EncodedSecret = ref('')
-    const passCode = ref('')
 
     const errMessageOnOpen = ref(null as string | null)
     const errMessageOnSubmit = ref(null as string | null)
@@ -81,6 +81,11 @@ export default defineComponent({
       postEnableMfaReqDone,
       postEnableMfaReqFunc
     } = usePostEnableMfaReq()
+
+    const {
+      passCode,
+      setPassCode
+    } = usePassCode()
 
     onMounted(async () => {
       try {
@@ -144,7 +149,8 @@ export default defineComponent({
       submitPassCodeToEnableMfa,
       errMessageOnOpen,
       errMessageOnSubmit,
-      postEnableMfaReqDone
+      postEnableMfaReqDone,
+      setPassCode
     }
   }
 })
