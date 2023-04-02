@@ -41,6 +41,7 @@ import EnableMfaConfirmationPage from '../views/personalized/EnableMfaConfirmati
 import EnableMfaSuccessPage from '../views/personalized/EnableMfaSuccessPage.vue'
 import DisableMfaSuccessPage from '../views/personalized/DisableMfaSuccessPage.vue'
 import MfaPage from '../views/MfaPage.vue'
+import RecoveryCodePage from '../views/RecoveryCodePage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -62,6 +63,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/mfa',
     name: 'MfaPage',
     component: MfaPage
+  },
+  {
+    path: '/recovery-code',
+    name: 'RecoveryCodePage',
+    component: RecoveryCodePage
   },
   {
     path: '/new-account',

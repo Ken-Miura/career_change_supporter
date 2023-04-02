@@ -12,12 +12,12 @@
       <section>
         <h3 class="font-bold text-2xl">ログイン</h3>
       </section>
-      <p class="mt-2 ml-2">認証アプリに表示されているパスコード（6桁の数字）を入力して下さい。</p>
+      <p class="mt-2 ml-2">二段階認証設定時に保存したリカバリーコードを入力して下さい。リカバリーコードによるログイン後、二段階認証の設定は無効化されますので、適宜再設定を行うようお願いします。</p>
       <section class="mt-6">
-        <form class="flex flex-col" @submit.prevent="passCodeHandler">
-          <PassCodeInput class="mb-6" @on-pass-code-updated="setPassCode" label="パスコード"/>
+        <form class="flex flex-col" @submit.prevent="recoveryCodeHandler">
+          <PassCodeInput class="mb-6" @on-pass-code-updated="setPassCode" label="コード"/>
           <div class="flex justify-end">
-            <router-link to="/recovery-code" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">リカバリーコードを用いたログイン</router-link>
+            <router-link to="/mfa" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">認証アプリ（パスコード）を用いたログイン</router-link>
           </div>
           <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ログイン</button>
           <div v-if="errorMessage" class="mt-6">
@@ -46,7 +46,7 @@ import { usePostPassCode } from '@/util/mfa/usePostPassCode'
 import { PostPassCodeResp } from '@/util/mfa/PostPassCodeResp'
 
 export default defineComponent({
-  name: 'MfaPage',
+  name: 'RecoveryCodePage',
   components: {
     PassCodeInput,
     AlertMessage,
@@ -66,7 +66,7 @@ export default defineComponent({
       postPassCodeFunc
     } = usePostPassCode()
 
-    const passCodeHandler = async () => {
+    const recoveryCodeHandler = async () => {
       try {
         const resp = await postPassCodeFunc(passCode.value)
         if (!(resp instanceof PostPassCodeResp)) {
@@ -89,7 +89,7 @@ export default defineComponent({
 
     return {
       postPassCodeDone,
-      passCodeHandler,
+      recoveryCodeHandler,
       setPassCode,
       errorMessage
     }
