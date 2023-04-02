@@ -157,6 +157,11 @@ async fn handle_pass_code_req(
 
     update_login_status(&mut session, LoginStatus::Finish)?;
     op.set_login_session_expiry(&mut session);
+    let _ = store.store_session(session).await.map_err(|e| {
+        error!("failed to store session: {}", e);
+        unexpected_err_resp()
+    })?;
+
     op.update_last_login(account_id, current_date_time).await?;
 
     Ok((StatusCode::OK, Json(PassCodeReqResult {})))

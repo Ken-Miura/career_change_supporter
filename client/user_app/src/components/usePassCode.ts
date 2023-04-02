@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 // eslint-disable-next-line
 export function usePassCode () {
