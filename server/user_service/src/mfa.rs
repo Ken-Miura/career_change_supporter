@@ -199,4 +199,25 @@ async fn disable_mfa(account_id: i64, pool: &DatabaseConnection) -> Result<(), E
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use axum::http::StatusCode;
+
+    use crate::err::Code;
+
+    use super::ensure_mfa_is_not_enabled;
+
+    #[test]
+    fn ensure_mfa_is_not_enabled_success() {
+        let mfa_enabled = false;
+        ensure_mfa_is_not_enabled(mfa_enabled).expect("failed to get Ok");
+    }
+
+    #[test]
+    fn ensure_mfa_is_not_enabled_error() {
+        let mfa_enabled = true;
+        let result = ensure_mfa_is_not_enabled(mfa_enabled).expect_err("failed to get Err");
+
+        assert_eq!(StatusCode::BAD_REQUEST, result.0);
+        assert_eq!(Code::MfaHasAlreadyBeenEnabled as u32, result.1.code);
+    }
+}
