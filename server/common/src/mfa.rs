@@ -167,6 +167,11 @@ impl Error for RecoveryCodeHandlingError {}
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        mfa::{hash_recovery_code, is_recovery_code_match},
+        util::validator::uuid_validator::validate_uuid,
+    };
+
     use super::generate_base32_encoded_secret;
 
     #[test]
@@ -177,4 +182,38 @@ mod tests {
     }
 
     // TODO: Add test
+
+    #[test]
+    fn handle_pass_code_match_case() {
+        let recovery_code = "b0ccdbcfc70446e89ff62a3a42bbb153";
+        validate_uuid(recovery_code).expect("failed to get Ok");
+
+        let hashed_recovery_code = hash_recovery_code(recovery_code).expect("failed to get Ok");
+        let result =
+            is_recovery_code_match(recovery_code, &hashed_recovery_code).expect("failed to get Ok");
+
+        assert!(
+            result,
+            "recovery_code: {}, hashed_recovery_code: {:?}",
+            recovery_code, hashed_recovery_code
+        );
+    }
+
+    #[test]
+    fn handle_recovery_code_non_match_case() {
+        let recovery_code1 = "b0ccdbcfc70446e89ff62a3a42bbb153";
+        let recovery_code2 = "c0a7698276404eb7af1924d57b1844b0";
+        validate_uuid(recovery_code1).expect("failed to get Ok");
+        validate_uuid(recovery_code1).expect("failed to get Ok");
+
+        let hashed_recovery_code = hash_recovery_code(recovery_code1).expect("failed to get Ok");
+        let result = is_recovery_code_match(recovery_code2, &hashed_recovery_code)
+            .expect("failed to get Ok");
+
+        assert!(
+            !result,
+            "recovery_code1: {}, hashed_recovery_code: {:?}, recovery_code2: {}",
+            recovery_code1, hashed_recovery_code, recovery_code2
+        );
+    }
 }
