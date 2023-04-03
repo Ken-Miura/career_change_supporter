@@ -210,6 +210,32 @@ mod tests {
     }
 
     #[test]
+    fn handle_pass_code_not_match_case() {
+        let account_id = 413;
+        let base32_encoded_secret1 = "7GRCVBFZ73L6NM5VTBKN7SBS4652NTIK";
+        let base32_encoded_secret2 = "HU7YU2643SZJMWFW5MUOMWNMHSGLA3S6";
+        let issuer = "Issuer";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 3, 14, 5, 59)
+            .unwrap();
+        let totp =
+            create_totp(account_id, base32_encoded_secret1, issuer).expect("failed to get Ok");
+        let pass_code =
+            totp.generate(u64::try_from(current_date_time.timestamp()).expect("failed to get Ok"));
+
+        let result = check_if_pass_code_matches(
+            account_id,
+            base32_encoded_secret2,
+            issuer,
+            &current_date_time,
+            pass_code.as_str(),
+        )
+        .expect("failed to get Ok");
+
+        assert!(!result);
+    }
+
+    #[test]
     fn handle_recovery_code_match_case() {
         let recovery_code = "b0ccdbcfc70446e89ff62a3a42bbb153";
         validate_uuid(recovery_code).expect("failed to get Ok");
