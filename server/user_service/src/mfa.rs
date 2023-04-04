@@ -303,4 +303,27 @@ mod tests {
         )
         .expect("failed to get Ok");
     }
+
+    #[test]
+    fn verify_pass_code_fail_incorrect_pass_code() {
+        let account_id = 413;
+        let base32_encoded_secret = "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD";
+        let issuer = "Issuer";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+            .unwrap();
+        let pass_code = "123456";
+
+        let result = verify_pass_code(
+            account_id,
+            base32_encoded_secret,
+            issuer,
+            &current_date_time,
+            pass_code,
+        )
+        .expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(result.1.code, Code::PassCodeDoesNotMatch as u32);
+    }
 }
