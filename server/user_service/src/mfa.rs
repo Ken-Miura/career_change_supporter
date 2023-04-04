@@ -61,7 +61,7 @@ fn ensure_mfa_is_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
     Ok(())
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct TempMfaSecret {
     temp_mfa_secret_id: i64,
     base32_encoded_secret: String,
@@ -205,7 +205,7 @@ mod tests {
 
     use crate::err::Code;
 
-    use super::{ensure_mfa_is_enabled, ensure_mfa_is_not_enabled};
+    use super::{ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, get_latest_temp_mfa_secret};
 
     #[test]
     fn ensure_mfa_is_not_enabled_success() {
@@ -235,5 +235,16 @@ mod tests {
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
         assert_eq!(Code::MfaIsNotEnabled as u32, result.1.code);
+    }
+
+    #[test]
+    fn get_latest_temp_mfa_secret_empty_case() {
+        let temp_secrets = vec![];
+
+        let result = get_latest_temp_mfa_secret(temp_secrets);
+
+        let err_resp = result.expect_err("failed to get Err");
+        assert_eq!(err_resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(err_resp.1.code, Code::NoTempMfaSecretFound as u32);
     }
 }
