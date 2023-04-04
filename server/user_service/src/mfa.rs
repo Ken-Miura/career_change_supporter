@@ -202,10 +202,15 @@ async fn disable_mfa(account_id: i64, pool: &DatabaseConnection) -> Result<(), E
 #[cfg(test)]
 mod tests {
     use axum::http::StatusCode;
+    use chrono::TimeZone;
+    use common::JAPANESE_TIME_ZONE;
 
     use crate::{err::Code, mfa::TempMfaSecret};
 
-    use super::{ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret};
+    use super::{
+        ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret,
+        verify_pass_code,
+    };
 
     #[test]
     fn ensure_mfa_is_not_enabled_success() {
@@ -276,5 +281,26 @@ mod tests {
         let result = extract_first_temp_mfa_secret(temp_secrets).expect("failed to get Ok");
 
         assert_eq!(result, temp_mfa_secret2);
+    }
+
+    #[test]
+    fn verify_pass_code_match_case() {
+        let account_id = 413;
+        let base32_encoded_secret = "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD";
+        let issuer = "Issuer";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+            .unwrap();
+        // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
+        let pass_code = "540940";
+
+        verify_pass_code(
+            account_id,
+            base32_encoded_secret,
+            issuer,
+            &current_date_time,
+            pass_code,
+        )
+        .expect("failed to get Ok");
     }
 }
