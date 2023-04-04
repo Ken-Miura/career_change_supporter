@@ -61,7 +61,7 @@ fn ensure_mfa_is_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
     Ok(())
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct TempMfaSecret {
     temp_mfa_secret_id: i64,
     base32_encoded_secret: String,
@@ -203,7 +203,7 @@ async fn disable_mfa(account_id: i64, pool: &DatabaseConnection) -> Result<(), E
 mod tests {
     use axum::http::StatusCode;
 
-    use crate::err::Code;
+    use crate::{err::Code, mfa::TempMfaSecret};
 
     use super::{ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret};
 
@@ -246,5 +246,35 @@ mod tests {
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(err_resp.0, StatusCode::BAD_REQUEST);
         assert_eq!(err_resp.1.code, Code::NoTempMfaSecretFound as u32);
+    }
+
+    #[test]
+    fn extract_first_temp_mfa_secret_1_temp_mfa_secret() {
+        let temp_mfa_secret = TempMfaSecret {
+            temp_mfa_secret_id: 1,
+            base32_encoded_secret: "7GRCVBFZ73L6NM5VTBKN7SBS4652NTIK".to_string(),
+        };
+        let temp_secrets = vec![temp_mfa_secret.clone()];
+
+        let result = extract_first_temp_mfa_secret(temp_secrets).expect("failed to get Ok");
+
+        assert_eq!(result, temp_mfa_secret);
+    }
+
+    #[test]
+    fn extract_first_temp_mfa_secret_2_temp_mfa_secrets() {
+        let temp_mfa_secret1 = TempMfaSecret {
+            temp_mfa_secret_id: 1,
+            base32_encoded_secret: "7GRCVBFZ73L6NM5VTBKN7SBS4652NTIK".to_string(),
+        };
+        let temp_mfa_secret2 = TempMfaSecret {
+            temp_mfa_secret_id: 2,
+            base32_encoded_secret: "HU7YU2643SZJMWFW5MUOMWNMHSGLA3S6".to_string(),
+        };
+        let temp_secrets = vec![temp_mfa_secret2.clone(), temp_mfa_secret1];
+
+        let result = extract_first_temp_mfa_secret(temp_secrets).expect("failed to get Ok");
+
+        assert_eq!(result, temp_mfa_secret2);
     }
 }
