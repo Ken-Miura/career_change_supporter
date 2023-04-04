@@ -20,7 +20,7 @@ use crate::mfa::{
     ensure_mfa_is_not_enabled, filter_temp_mfa_secret_order_by_dsc, verify_pass_code,
     USER_TOTP_ISSUER,
 };
-use crate::mfa::{get_latest_temp_mfa_secret, TempMfaSecret};
+use crate::mfa::{extract_first_temp_mfa_secret, TempMfaSecret};
 use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::user::User;
 
@@ -83,7 +83,8 @@ async fn handle_enable_mfa_req(
     let temp_mfa_secrets = op
         .filter_temp_mfa_secret_order_by_dsc(account_id, current_date_time)
         .await?;
-    let temp_mfa_secret = get_latest_temp_mfa_secret(temp_mfa_secrets.clone())?;
+    // temp_mfa_secretsが登録された日付に降順でソートされているため、1つ目のエントリが最新
+    let temp_mfa_secret = extract_first_temp_mfa_secret(temp_mfa_secrets.clone())?;
 
     verify_pass_code(
         account_id,

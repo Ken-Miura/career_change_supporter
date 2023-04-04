@@ -9,7 +9,7 @@ use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::mfa::{ensure_mfa_is_not_enabled, get_latest_temp_mfa_secret, USER_TOTP_ISSUER};
+use crate::mfa::{ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret, USER_TOTP_ISSUER};
 use crate::mfa::{filter_temp_mfa_secret_order_by_dsc, TempMfaSecret};
 use crate::util::session::user::User;
 
@@ -47,7 +47,8 @@ async fn handle_temp_mfp_secret(
     let temp_mfa_secrets = op
         .filter_temp_mfa_secret_order_by_dsc(account_id, current_date_time)
         .await?;
-    let temp_mfa_secret = get_latest_temp_mfa_secret(temp_mfa_secrets)?;
+    // temp_mfa_secretsが登録された日付に降順でソートされているため、1つ目のエントリが最新
+    let temp_mfa_secret = extract_first_temp_mfa_secret(temp_mfa_secrets)?;
 
     let qr_code = generate_base64_encoded_qr_code(
         account_id,

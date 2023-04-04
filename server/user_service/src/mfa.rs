@@ -95,7 +95,7 @@ async fn filter_temp_mfa_secret_order_by_dsc(
         .collect::<Vec<TempMfaSecret>>())
 }
 
-fn get_latest_temp_mfa_secret(
+fn extract_first_temp_mfa_secret(
     temp_mfa_secrets: Vec<TempMfaSecret>,
 ) -> Result<TempMfaSecret, ErrResp> {
     if temp_mfa_secrets.is_empty() {
@@ -205,7 +205,7 @@ mod tests {
 
     use crate::err::Code;
 
-    use super::{ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, get_latest_temp_mfa_secret};
+    use super::{ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret};
 
     #[test]
     fn ensure_mfa_is_not_enabled_success() {
@@ -238,10 +238,10 @@ mod tests {
     }
 
     #[test]
-    fn get_latest_temp_mfa_secret_empty_case() {
+    fn extract_first_temp_mfa_secret_empty_case() {
         let temp_secrets = vec![];
 
-        let result = get_latest_temp_mfa_secret(temp_secrets);
+        let result = extract_first_temp_mfa_secret(temp_secrets);
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(err_resp.0, StatusCode::BAD_REQUEST);
