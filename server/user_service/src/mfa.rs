@@ -116,13 +116,14 @@ fn get_latest_temp_mfa_secret(
 pub(crate) fn verify_pass_code(
     account_id: i64,
     base32_encoded_secret: &str,
+    issuer: &str,
     current_date_time: &DateTime<FixedOffset>,
     pass_code: &str,
 ) -> Result<(), ErrResp> {
     let matched = check_if_pass_code_matches(
         account_id,
         base32_encoded_secret,
-        USER_TOTP_ISSUER.as_str(),
+        issuer,
         current_date_time,
         pass_code,
     )?;

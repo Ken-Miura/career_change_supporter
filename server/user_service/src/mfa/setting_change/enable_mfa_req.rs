@@ -18,6 +18,7 @@ use uuid::Uuid;
 use crate::err::{unexpected_err_resp, Code};
 use crate::mfa::{
     ensure_mfa_is_not_enabled, filter_temp_mfa_secret_order_by_dsc, verify_pass_code,
+    USER_TOTP_ISSUER,
 };
 use crate::mfa::{get_latest_temp_mfa_secret, TempMfaSecret};
 use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
@@ -87,6 +88,7 @@ async fn handle_enable_mfa_req(
     verify_pass_code(
         account_id,
         &temp_mfa_secret.base32_encoded_secret,
+        USER_TOTP_ISSUER.as_str(),
         &current_date_time,
         &pass_code,
     )?;

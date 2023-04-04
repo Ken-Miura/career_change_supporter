@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::mfa::mfa_request::get_session_by_session_id;
+use crate::mfa::USER_TOTP_ISSUER;
 use crate::{
     err::{unexpected_err_resp, Code},
     mfa::{ensure_mfa_is_enabled, verify_pass_code},
@@ -151,6 +152,7 @@ async fn handle_pass_code_req(
     verify_pass_code(
         account_id,
         &mi.base32_encoded_secret,
+        USER_TOTP_ISSUER.as_str(),
         current_date_time,
         pass_code,
     )?;
