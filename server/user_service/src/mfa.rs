@@ -284,7 +284,7 @@ mod tests {
     }
 
     #[test]
-    fn verify_pass_code_match_case() {
+    fn verify_pass_code_success() {
         let account_id = 413;
         let base32_encoded_secret = "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD";
         let issuer = "Issuer";
