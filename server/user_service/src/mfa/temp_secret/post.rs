@@ -132,5 +132,80 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    // TODO: Add test
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use super::{handle_temp_mfp_secret, PostTempMfaSecretResult, TempMfaSecretResultOperation};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<PostTempMfaSecretResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        mfa_enabled: bool,
+        base32_encoded_secret: String,
+        current_date_time: DateTime<FixedOffset>,
+        op: TempMfaSecretResultOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct TempMfaSecretResultOperationMock {}
+
+    #[async_trait]
+    impl TempMfaSecretResultOperation for TempMfaSecretResultOperationMock {
+        async fn count_temp_mfa_secret(&self, account_id: i64) -> Result<u64, ErrResp> {
+            todo!()
+        }
+
+        async fn create_temp_mfa_secret(
+            &self,
+            account_id: i64,
+            base32_encoded_secret: String,
+            expiry_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_temp_mfp_secret_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let mfa_enabled = test_case.input.mfa_enabled;
+            let base32_encoded_secret = test_case.input.base32_encoded_secret.clone();
+            let current_date_time = test_case.input.current_date_time;
+            let op = test_case.input.op.clone();
+
+            let result = handle_temp_mfp_secret(
+                account_id,
+                mfa_enabled,
+                base32_encoded_secret,
+                current_date_time,
+                op,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
 }
