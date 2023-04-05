@@ -104,7 +104,7 @@ mod tests {
 
     use crate::{
         err::Code,
-        mfa::mfa_request::get_session_by_session_id,
+        mfa::mfa_request::{get_session_by_session_id, update_login_status},
         util::{
             login_status::LoginStatus,
             session::{
@@ -204,5 +204,32 @@ mod tests {
         let result = get_account_id_from_session(&session).expect("failed to get Ok");
 
         assert_eq!(result, user_account_id);
+    }
+
+    #[test]
+    fn update_login_status_success() {
+        let user_account_id = 5115;
+        let mut session = Session::new();
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        session
+            .insert(
+                KEY_TO_LOGIN_STATUS,
+                String::from(LoginStatus::NeedMoreVerification),
+            )
+            .expect("failed to get Ok");
+
+        update_login_status(&mut session, LoginStatus::Finish).expect("failed to get Ok");
+
+        let result1 = session
+            .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+            .expect("failed to get Ok");
+        let result2 = session
+            .get::<String>(KEY_TO_LOGIN_STATUS)
+            .expect("failed to get Ok");
+        assert_eq!(result1, user_account_id);
+        assert_eq!(result2, String::from(LoginStatus::Finish));
     }
 }
