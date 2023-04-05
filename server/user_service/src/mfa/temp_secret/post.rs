@@ -132,9 +132,10 @@ impl TempMfaSecretResultOperation for TempMfaSecretResultOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::mfa::temp_secret::post::VALID_PERIOD_IN_MINUTE;
@@ -211,7 +212,26 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = 1616;
+        let mfa_enabled = false;
+        let base32_encoded_secret = "7GRCVBFZ73L6NM5VTBKN7SBS4652NTIK".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+            .unwrap();
+        let count = 0;
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input::new(
+                account_id,
+                mfa_enabled,
+                base32_encoded_secret,
+                current_date_time,
+                count,
+            ),
+            expected: Ok((StatusCode::OK, Json(PostTempMfaSecretResult {}))),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_temp_mfp_secret_tests() {
