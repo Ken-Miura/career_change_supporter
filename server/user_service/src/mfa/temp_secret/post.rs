@@ -137,6 +137,8 @@ mod tests {
     use common::{ErrResp, RespResult};
     use once_cell::sync::Lazy;
 
+    use crate::mfa::temp_secret::post::VALID_PERIOD_IN_MINUTE;
+
     use super::{handle_temp_mfp_secret, PostTempMfaSecretResult, TempMfaSecretResultOperation};
 
     #[derive(Debug)]
@@ -155,13 +157,42 @@ mod tests {
         op: TempMfaSecretResultOperationMock,
     }
 
+    impl Input {
+        fn new(
+            account_id: i64,
+            mfa_enabled: bool,
+            base32_encoded_secret: String,
+            current_date_time: DateTime<FixedOffset>,
+            count: u64,
+        ) -> Self {
+            Input {
+                account_id,
+                mfa_enabled,
+                base32_encoded_secret: base32_encoded_secret.clone(),
+                current_date_time,
+                op: TempMfaSecretResultOperationMock {
+                    account_id,
+                    base32_encoded_secret,
+                    current_date_time,
+                    count,
+                },
+            }
+        }
+    }
+
     #[derive(Clone, Debug)]
-    struct TempMfaSecretResultOperationMock {}
+    struct TempMfaSecretResultOperationMock {
+        account_id: i64,
+        base32_encoded_secret: String,
+        current_date_time: DateTime<FixedOffset>,
+        count: u64,
+    }
 
     #[async_trait]
     impl TempMfaSecretResultOperation for TempMfaSecretResultOperationMock {
         async fn count_temp_mfa_secret(&self, account_id: i64) -> Result<u64, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            Ok(self.count)
         }
 
         async fn create_temp_mfa_secret(
@@ -170,7 +201,13 @@ mod tests {
             base32_encoded_secret: String,
             expiry_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.base32_encoded_secret, base32_encoded_secret);
+            assert_eq!(
+                self.current_date_time + chrono::Duration::minutes(VALID_PERIOD_IN_MINUTE),
+                expiry_date_time
+            );
+            Ok(())
         }
     }
 
