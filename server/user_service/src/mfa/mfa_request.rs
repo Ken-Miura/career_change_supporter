@@ -100,12 +100,17 @@ fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), Err
 #[cfg(test)]
 mod tests {
     use async_session::MemoryStore;
+    use axum::http::StatusCode;
 
     use crate::{
+        err::Code,
         mfa::mfa_request::get_session_by_session_id,
         util::{
             login_status::LoginStatus,
-            session::{tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
+            session::{
+                tests::{prepare_session, remove_session_from_store},
+                KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID,
+            },
         },
     };
 
@@ -160,5 +165,24 @@ mod tests {
                 .get::<String>(KEY_TO_LOGIN_STATUS)
                 .expect("failed to get Ok")
         );
+    }
+
+    #[tokio::test]
+    async fn get_session_by_session_id_fail() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        // リクエストのプリプロセス前ににセッションを削除
+        remove_session_from_store(&session_id, &store).await;
+        assert_eq!(0, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(0, store.count().await);
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
     }
 }
