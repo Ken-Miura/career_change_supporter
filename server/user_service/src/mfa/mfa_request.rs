@@ -99,7 +99,7 @@ fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), Err
 
 #[cfg(test)]
 mod tests {
-    use async_session::MemoryStore;
+    use async_session::{MemoryStore, Session};
     use axum::http::StatusCode;
 
     use crate::{
@@ -113,6 +113,8 @@ mod tests {
             },
         },
     };
+
+    use super::get_account_id_from_session;
 
     #[tokio::test]
     async fn get_session_by_session_id_success1() {
@@ -184,5 +186,23 @@ mod tests {
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
         assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
+    }
+
+    #[test]
+    fn get_account_id_from_session_success() {
+        let user_account_id = 5115;
+        let login_status = LoginStatus::NeedMoreVerification;
+        let mut session = Session::new();
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        session
+            .insert(KEY_TO_LOGIN_STATUS, String::from(login_status))
+            .expect("failed to get Ok");
+
+        let result = get_account_id_from_session(&session).expect("failed to get Ok");
+
+        assert_eq!(result, user_account_id);
     }
 }
