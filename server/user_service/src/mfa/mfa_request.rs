@@ -96,3 +96,43 @@ fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), Err
         })?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use async_session::MemoryStore;
+
+    use crate::{
+        mfa::mfa_request::get_session_by_session_id,
+        util::{
+            login_status::LoginStatus,
+            session::{tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
+        },
+    };
+
+    #[tokio::test]
+    async fn get_session_by_session_id_success() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(1, store.count().await);
+        assert_eq!(
+            user_account_id,
+            result
+                .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                .expect("failed to get Ok")
+        );
+        assert_eq!(
+            String::from(LoginStatus::NeedMoreVerification),
+            result
+                .get::<String>(KEY_TO_LOGIN_STATUS)
+                .expect("failed to get Ok")
+        );
+    }
+}
