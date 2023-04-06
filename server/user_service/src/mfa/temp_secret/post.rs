@@ -266,7 +266,7 @@ mod tests {
                 input: Input::new(
                     account_id,
                     mfa_enabled,
-                    base32_encoded_secret.clone(),
+                    base32_encoded_secret,
                     current_date_time,
                     MAX_NUM_OF_TEMP_MFA_SECRETS,
                 ),
