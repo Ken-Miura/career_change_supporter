@@ -38,6 +38,7 @@ pub(crate) async fn post_enable_mfa_req(
     handle_enable_mfa_req(
         account_id,
         mfa_enabled,
+        USER_TOTP_ISSUER.as_str(),
         pass_code,
         current_date_time,
         uuid,
@@ -59,6 +60,7 @@ pub(crate) struct EnableMfaReqResult {
 async fn handle_enable_mfa_req(
     account_id: i64,
     mfa_enabled: bool,
+    issuer: &str,
     pass_code: String,
     current_date_time: DateTime<FixedOffset>,
     recovery_code: String,
@@ -89,7 +91,7 @@ async fn handle_enable_mfa_req(
     verify_pass_code(
         account_id,
         &temp_mfa_secret.base32_encoded_secret,
-        USER_TOTP_ISSUER.as_str(),
+        issuer,
         &current_date_time,
         &pass_code,
     )?;
@@ -237,3 +239,6 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {}
