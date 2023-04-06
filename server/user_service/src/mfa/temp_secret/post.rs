@@ -135,9 +135,10 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::mfa::temp_secret::post::VALID_PERIOD_IN_MINUTE;
 
     use super::{handle_temp_mfp_secret, PostTempMfaSecretResult, TempMfaSecretResultOperation};
@@ -220,17 +221,35 @@ mod tests {
             .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
             .unwrap();
         let count = 0;
-        vec![TestCase {
-            name: "success".to_string(),
-            input: Input::new(
-                account_id,
-                mfa_enabled,
-                base32_encoded_secret,
-                current_date_time,
-                count,
-            ),
-            expected: Ok((StatusCode::OK, Json(PostTempMfaSecretResult {}))),
-        }]
+        vec![
+            TestCase {
+                name: "success".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    base32_encoded_secret.clone(),
+                    current_date_time,
+                    count,
+                ),
+                expected: Ok((StatusCode::OK, Json(PostTempMfaSecretResult {}))),
+            },
+            TestCase {
+                name: "fail MfaHasAlreadyBeenEnabled".to_string(),
+                input: Input::new(
+                    account_id,
+                    true,
+                    base32_encoded_secret.clone(),
+                    current_date_time,
+                    count,
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::MfaHasAlreadyBeenEnabled as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
