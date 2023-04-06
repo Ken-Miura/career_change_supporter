@@ -140,6 +140,7 @@ mod tests {
 
     use crate::err::Code;
     use crate::mfa::temp_secret::post::VALID_PERIOD_IN_MINUTE;
+    use crate::mfa::MAX_NUM_OF_TEMP_MFA_SECRETS;
 
     use super::{handle_temp_mfp_secret, PostTempMfaSecretResult, TempMfaSecretResultOperation};
 
@@ -230,6 +231,17 @@ mod tests {
                     base32_encoded_secret.clone(),
                     current_date_time,
                     count,
+                ),
+                expected: Ok((StatusCode::OK, Json(PostTempMfaSecretResult {}))),
+            },
+            TestCase {
+                name: "success existing num of temp mfa secrets equal to MAX_NUM_OF_TEMP_MFA_SECRETS - 1".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    base32_encoded_secret.clone(),
+                    current_date_time,
+                    MAX_NUM_OF_TEMP_MFA_SECRETS - 1,
                 ),
                 expected: Ok((StatusCode::OK, Json(PostTempMfaSecretResult {}))),
             },
