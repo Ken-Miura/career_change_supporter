@@ -203,6 +203,22 @@ mod tests {
                     code: Code::MfaHasAlreadyBeenEnabled as u32,
                 }),
             )),
+        },
+        TestCase {
+            name: "fail NoTempMfaSecretFound".to_string(),
+            input: Input::new(
+                account_id,
+                mfa_enabled,
+                issuer,
+                current_date_time,
+                vec![],
+            ),
+            expected: Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::NoTempMfaSecretFound as u32,
+                }),
+            )),
         }]
     });
 
