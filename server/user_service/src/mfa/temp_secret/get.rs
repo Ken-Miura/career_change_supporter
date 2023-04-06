@@ -115,8 +115,32 @@ mod tests {
         op: TempMfaSecretResultOperationMock,
     }
 
+    impl Input {
+        fn new(
+            account_id: i64,
+            mfa_enabled: bool,
+            current_date_time: DateTime<FixedOffset>,
+            temp_mfa_secrets: Vec<TempMfaSecret>,
+        ) -> Self {
+            Input {
+                account_id,
+                mfa_enabled,
+                current_date_time,
+                op: TempMfaSecretResultOperationMock {
+                    account_id,
+                    current_date_time,
+                    temp_mfa_secrets,
+                },
+            }
+        }
+    }
+
     #[derive(Clone, Debug)]
-    struct TempMfaSecretResultOperationMock {}
+    struct TempMfaSecretResultOperationMock {
+        account_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+        temp_mfa_secrets: Vec<TempMfaSecret>,
+    }
 
     #[async_trait]
     impl TempMfaSecretResultOperation for TempMfaSecretResultOperationMock {
@@ -125,7 +149,9 @@ mod tests {
             account_id: i64,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<Vec<TempMfaSecret>, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(self.temp_mfa_secrets.clone())
         }
     }
 
