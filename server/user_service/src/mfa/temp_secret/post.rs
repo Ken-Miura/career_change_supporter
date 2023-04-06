@@ -261,6 +261,22 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail ReachTempMfaSecretLimit (existing num of temp mfa secrets equal to MAX_NUM_OF_TEMP_MFA_SECRETS)".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    base32_encoded_secret.clone(),
+                    current_date_time,
+                    MAX_NUM_OF_TEMP_MFA_SECRETS,
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ReachTempMfaSecretLimit as u32,
+                    }),
+                )),
+            },
         ]
     });
 
