@@ -452,6 +452,24 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail PassCodeDoesNotMatch".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    issuer.to_string(),
+                    "123456".to_string(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    vec![tms.clone()],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PassCodeDoesNotMatch as u32,
+                    }),
+                )),
+            },
         ]
     });
 
