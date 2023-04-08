@@ -53,7 +53,8 @@ impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
     use common::{ErrResp, RespResult};
     use once_cell::sync::Lazy;
 
@@ -96,7 +97,15 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = 51321;
+        let mfa_enabled = true;
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input::new(account_id, mfa_enabled),
+            expected: Ok((StatusCode::OK, Json(DisableMfaReqResult {}))),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_disable_mfa_req_tests() {
