@@ -360,8 +360,12 @@ mod tests {
             .unwrap();
         let base32_encoded_secret = "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD";
         let tms = TempMfaSecret {
-            temp_mfa_secret_id: 1,
+            temp_mfa_secret_id: 2,
             base32_encoded_secret: base32_encoded_secret.to_string(),
+        };
+        let tms_dummy = TempMfaSecret {
+            temp_mfa_secret_id: 1,
+            base32_encoded_secret: "GKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYE".to_string(),
         };
         // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
         let pass_code = "540940";
@@ -377,6 +381,24 @@ mod tests {
                     current_date_time,
                     recovery_code.to_string(),
                     vec![tms.clone()],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(EnableMfaReqResult {
+                        recovery_code: recovery_code.to_string(),
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success 2 existing temp mfa secrets".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    issuer.to_string(),
+                    pass_code.to_string(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    vec![tms.clone(), tms_dummy],
                 ),
                 expected: Ok((
                     StatusCode::OK,
@@ -461,7 +483,7 @@ mod tests {
                     "123456".to_string(),
                     current_date_time,
                     recovery_code.to_string(),
-                    vec![tms.clone()],
+                    vec![tms],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
