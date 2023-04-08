@@ -270,7 +270,11 @@ mod tests {
     }
 
     #[derive(Clone, Debug)]
-    struct EnableMfaReqOperationMock {}
+    struct EnableMfaReqOperationMock {
+        account_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+        temp_mfa_secrets: Vec<TempMfaSecret>,
+    }
 
     #[async_trait]
     impl EnableMfaReqOperation for EnableMfaReqOperationMock {
@@ -279,14 +283,21 @@ mod tests {
             account_id: i64,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<Vec<TempMfaSecret>, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(self.temp_mfa_secrets.clone())
         }
 
         async fn delete_temp_mfa_secret_by_temp_mfa_secret_id(
             &self,
             temp_mfa_secret_id: i64,
         ) -> Result<(), ErrResp> {
-            todo!()
+            for tms in self.temp_mfa_secrets.clone() {
+                if tms.temp_mfa_secret_id == temp_mfa_secret_id {
+                    return Ok(());
+                }
+            }
+            panic!("never reach here")
         }
 
         async fn enable_mfa(
@@ -296,6 +307,10 @@ mod tests {
             hashed_recovery_code: Vec<u8>,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.current_date_time, current_date_time);
+            let tms = self.temp_mfa_secrets.get(0).expect("failed to get Ok");
+            assert_eq!(tms.base32_encoded_secret, base32_encoded_secret);
             todo!()
         }
     }
