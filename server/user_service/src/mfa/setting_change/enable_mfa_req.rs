@@ -245,9 +245,11 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::ApiError;
     use common::{mfa::is_recovery_code_match, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::err::{unexpected_err_resp, Code};
     use crate::mfa::TempMfaSecret;
 
     use super::{handle_enable_mfa_req, EnableMfaReqOperation, EnableMfaReqResult};
@@ -364,24 +366,57 @@ mod tests {
         // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
         let pass_code = "540940";
 
-        vec![TestCase {
-            name: "success".to_string(),
-            input: Input::new(
-                account_id,
-                mfa_enabled,
-                issuer.to_string(),
-                pass_code.to_string(),
-                current_date_time,
-                recovery_code.to_string(),
-                vec![tms],
-            ),
-            expected: Ok((
-                StatusCode::OK,
-                Json(EnableMfaReqResult {
-                    recovery_code: recovery_code.to_string(),
-                }),
-            )),
-        }]
+        vec![
+            TestCase {
+                name: "success".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    issuer.to_string(),
+                    pass_code.to_string(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    vec![tms.clone()],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(EnableMfaReqResult {
+                        recovery_code: recovery_code.to_string(),
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail InvalidPassCode".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    issuer.to_string(),
+                    "abc1234".to_string(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    vec![tms.clone()],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidPassCode as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail unexpected_err_resp (invalid recovery code)".to_string(),
+                input: Input::new(
+                    account_id,
+                    mfa_enabled,
+                    issuer.to_string(),
+                    pass_code.to_string(),
+                    current_date_time,
+                    "abcd1234".to_string(),
+                    vec![tms.clone()],
+                ),
+                expected: Err(unexpected_err_resp()),
+            },
+        ]
     });
 
     #[tokio::test]
