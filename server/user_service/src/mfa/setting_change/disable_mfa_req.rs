@@ -50,3 +50,75 @@ impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
         crate::mfa::disable_mfa(account_id, &self.pool).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::async_trait;
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use super::{handle_disable_mfa_req, DisableMfaReqOperation, DisableMfaReqResult};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<DisableMfaReqResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        mfa_enabled: bool,
+        op: DisableMfaReqOperationMock,
+    }
+
+    impl Input {
+        fn new(account_id: i64, mfa_enabled: bool) -> Self {
+            Input {
+                account_id,
+                mfa_enabled,
+                op: DisableMfaReqOperationMock { account_id },
+            }
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct DisableMfaReqOperationMock {
+        account_id: i64,
+    }
+
+    #[async_trait]
+    impl DisableMfaReqOperation for DisableMfaReqOperationMock {
+        async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            Ok(())
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_disable_mfa_req_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let mfa_enabled = test_case.input.mfa_enabled;
+            let op = test_case.input.op.clone();
+
+            let result = handle_disable_mfa_req(account_id, mfa_enabled, op).await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
