@@ -416,6 +416,24 @@ mod tests {
                 ),
                 expected: Err(unexpected_err_resp()),
             },
+            TestCase {
+                name: "fail MfaHasAlreadyBeenEnabled".to_string(),
+                input: Input::new(
+                    account_id,
+                    true,
+                    issuer.to_string(),
+                    pass_code.to_string(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    vec![tms.clone()],
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::MfaHasAlreadyBeenEnabled as u32,
+                    }),
+                )),
+            },
         ]
     });
 
