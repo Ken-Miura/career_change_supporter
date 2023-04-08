@@ -241,4 +241,101 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::mfa::TempMfaSecret;
+
+    use super::{handle_enable_mfa_req, EnableMfaReqOperation, EnableMfaReqResult};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<EnableMfaReqResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        account_id: i64,
+        mfa_enabled: bool,
+        issuer: String,
+        pass_code: String,
+        current_date_time: DateTime<FixedOffset>,
+        recovery_code: String,
+        op: EnableMfaReqOperationMock,
+    }
+
+    #[derive(Clone, Debug)]
+    struct EnableMfaReqOperationMock {}
+
+    #[async_trait]
+    impl EnableMfaReqOperation for EnableMfaReqOperationMock {
+        async fn filter_temp_mfa_secret_order_by_dsc(
+            &self,
+            account_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<Vec<TempMfaSecret>, ErrResp> {
+            todo!()
+        }
+
+        async fn delete_temp_mfa_secret_by_temp_mfa_secret_id(
+            &self,
+            temp_mfa_secret_id: i64,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+
+        async fn enable_mfa(
+            &self,
+            account_id: i64,
+            base32_encoded_secret: String,
+            hashed_recovery_code: Vec<u8>,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_enable_mfa_req_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let account_id = test_case.input.account_id;
+            let mfa_enabled = test_case.input.mfa_enabled;
+            let issuer = test_case.input.issuer.clone();
+            let pass_code = test_case.input.pass_code.clone();
+            let current_date_time = test_case.input.current_date_time;
+            let recovery_code = test_case.input.recovery_code.clone();
+            let op = test_case.input.op.clone();
+
+            let result = handle_enable_mfa_req(
+                account_id,
+                mfa_enabled,
+                issuer.as_str(),
+                pass_code,
+                current_date_time,
+                recovery_code,
+                op,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+            }
+        }
+    }
+}
