@@ -242,9 +242,10 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{mfa::is_recovery_code_match, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::mfa::TempMfaSecret;
@@ -269,11 +270,39 @@ mod tests {
         op: EnableMfaReqOperationMock,
     }
 
+    impl Input {
+        fn new(
+            account_id: i64,
+            mfa_enabled: bool,
+            issuer: String,
+            pass_code: String,
+            current_date_time: DateTime<FixedOffset>,
+            recovery_code: String,
+            temp_mfa_secrets: Vec<TempMfaSecret>,
+        ) -> Self {
+            Input {
+                account_id,
+                mfa_enabled,
+                issuer,
+                pass_code,
+                current_date_time,
+                recovery_code: recovery_code.clone(),
+                op: EnableMfaReqOperationMock {
+                    account_id,
+                    current_date_time,
+                    temp_mfa_secrets,
+                    recovery_code,
+                },
+            }
+        }
+    }
+
     #[derive(Clone, Debug)]
     struct EnableMfaReqOperationMock {
         account_id: i64,
         current_date_time: DateTime<FixedOffset>,
         temp_mfa_secrets: Vec<TempMfaSecret>,
+        recovery_code: String,
     }
 
     #[async_trait]
@@ -311,11 +340,49 @@ mod tests {
             assert_eq!(self.current_date_time, current_date_time);
             let tms = self.temp_mfa_secrets.get(0).expect("failed to get Ok");
             assert_eq!(tms.base32_encoded_secret, base32_encoded_secret);
-            todo!()
+            let matched =
+                is_recovery_code_match(self.recovery_code.as_str(), &hashed_recovery_code)
+                    .expect("failed to get Err");
+            assert!(matched);
+            Ok(())
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let account_id = 413;
+        let mfa_enabled = false;
+        let issuer = "Issuer";
+        let recovery_code = "03d4f41cef6c4763aa8c918f0d1b5c4d";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+            .unwrap();
+        let base32_encoded_secret = "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD";
+        let tms = TempMfaSecret {
+            temp_mfa_secret_id: 1,
+            base32_encoded_secret: base32_encoded_secret.to_string(),
+        };
+        // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
+        let pass_code = "540940";
+
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input::new(
+                account_id,
+                mfa_enabled,
+                issuer.to_string(),
+                pass_code.to_string(),
+                current_date_time,
+                recovery_code.to_string(),
+                vec![tms],
+            ),
+            expected: Ok((
+                StatusCode::OK,
+                Json(EnableMfaReqResult {
+                    recovery_code: recovery_code.to_string(),
+                }),
+            )),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_enable_mfa_req_tests() {
