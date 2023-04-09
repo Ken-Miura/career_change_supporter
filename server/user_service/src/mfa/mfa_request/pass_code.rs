@@ -28,7 +28,8 @@ use crate::{
 };
 
 use super::{
-    get_account_id_from_session, get_mfa_info_by_account_id, update_login_status, MfaInfo,
+    extract_session_id_from_cookie, get_account_id_from_session, get_mfa_info_by_account_id,
+    update_login_status, MfaInfo,
 };
 
 pub(crate) async fn post_pass_code(
@@ -38,18 +39,7 @@ pub(crate) async fn post_pass_code(
     Json(req): Json<PassCodeReq>,
 ) -> RespResult<PassCodeReqResult> {
     let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
-    let session_id = match option_cookie {
-        Some(s) => s.value().to_string(),
-        None => {
-            error!("no sessoin cookie found on pass code req");
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(ApiError {
-                    code: Code::Unauthorized as u32,
-                }),
-            ));
-        }
-    };
+    let session_id = extract_session_id_from_cookie(option_cookie)?;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = PassCodeOperationImpl {
         pool,

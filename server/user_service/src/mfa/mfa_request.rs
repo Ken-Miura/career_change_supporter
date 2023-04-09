@@ -5,6 +5,7 @@ pub(crate) mod recovery_code;
 
 use async_session::{Session, SessionStore};
 use axum::{http::StatusCode, Json};
+use axum_extra::extract::cookie::Cookie;
 use common::{ApiError, ErrResp};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use tracing::error;
@@ -16,6 +17,22 @@ use crate::{
         session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
     },
 };
+
+fn extract_session_id_from_cookie(cookie: Option<Cookie>) -> Result<String, ErrResp> {
+    let session_id = match cookie {
+        Some(s) => s.value().to_string(),
+        None => {
+            error!("no sessoin cookie found");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ));
+        }
+    };
+    Ok(session_id)
+}
 
 struct MfaInfo {
     base32_encoded_secret: String,
