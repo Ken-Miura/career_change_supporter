@@ -34,6 +34,7 @@ fn extract_session_id_from_cookie(cookie: Option<Cookie>) -> Result<String, ErrR
     Ok(session_id)
 }
 
+#[derive(Clone, Debug)]
 struct MfaInfo {
     base32_encoded_secret: String,
     hashed_recovery_code: Vec<u8>,

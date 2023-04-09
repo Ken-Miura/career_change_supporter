@@ -198,21 +198,53 @@ mod tests {
         store: MemoryStore,
     }
 
+    impl Input {
+        fn new(
+            session_id: String,
+            current_date_time: DateTime<FixedOffset>,
+            pass_code: String,
+            account_id: i64,
+            user_info: UserInfo,
+            mfa_info: MfaInfo,
+            store: MemoryStore,
+        ) -> Self {
+            Input {
+                session_id,
+                current_date_time,
+                pass_code,
+                op: PassCodeOperationMock {
+                    account_id,
+                    user_info,
+                    mfa_info,
+                    login_time: current_date_time,
+                },
+                store,
+            }
+        }
+    }
+
     #[derive(Clone, Debug)]
-    struct PassCodeOperationMock {}
+    struct PassCodeOperationMock {
+        account_id: i64,
+        user_info: UserInfo,
+        mfa_info: MfaInfo,
+        login_time: DateTime<FixedOffset>,
+    }
 
     #[async_trait]
     impl PassCodeOperation for PassCodeOperationMock {
         async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            Ok(self.user_info.clone())
         }
 
         async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            Ok(self.mfa_info.clone())
         }
 
-        fn set_login_session_expiry(&self, session: &mut Session) {
-            todo!()
+        fn set_login_session_expiry(&self, _session: &mut Session) {
+            // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
         }
 
         async fn update_last_login(
@@ -220,7 +252,9 @@ mod tests {
             account_id: i64,
             login_time: &DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.login_time, *login_time);
+            Ok(())
         }
     }
 
