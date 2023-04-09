@@ -118,6 +118,7 @@ fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), Err
 mod tests {
     use async_session::{MemoryStore, Session};
     use axum::http::StatusCode;
+    use axum_extra::extract::cookie::Cookie;
 
     use crate::{
         err::Code,
@@ -126,12 +127,22 @@ mod tests {
             login_status::LoginStatus,
             session::{
                 tests::{prepare_session, remove_session_from_store},
-                KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID,
+                KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME,
             },
         },
     };
 
     use super::{extract_session_id_from_cookie, get_account_id_from_session};
+
+    #[test]
+    fn extract_session_id_from_cookie_success() {
+        let value = "4d/UQZs+7mY0kF16rdf8qb07y2TzyHM2LCooSqBJB4GuF5LHw8h5jFLoJmbR3wYbwpy9bGQB2DExLM4lxvD62A==";
+        let cookie = Cookie::build(SESSION_ID_COOKIE_NAME, value).finish();
+
+        let result = extract_session_id_from_cookie(Some(cookie)).expect("failed to get Ok");
+
+        assert_eq!(result, value);
+    }
 
     #[test]
     fn extract_session_id_from_cookie_fail() {
