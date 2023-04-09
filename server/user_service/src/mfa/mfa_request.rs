@@ -131,7 +131,14 @@ mod tests {
         },
     };
 
-    use super::get_account_id_from_session;
+    use super::{extract_session_id_from_cookie, get_account_id_from_session};
+
+    #[test]
+    fn extract_session_id_from_cookie_fail() {
+        let result = extract_session_id_from_cookie(None).expect_err("failed to get Err");
+        assert_eq!(result.0, StatusCode::UNAUTHORIZED);
+        assert_eq!(result.1.code, Code::Unauthorized as u32);
+    }
 
     #[tokio::test]
     async fn get_session_by_session_id_success1() {
