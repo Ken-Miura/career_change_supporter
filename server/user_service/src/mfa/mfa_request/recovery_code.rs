@@ -201,6 +201,29 @@ mod tests {
         op: RecoveryCodeOperationMock,
     }
 
+    impl Input {
+        fn new(
+            session_exists: bool,
+            ls: LoginStatus,
+            current_date_time: DateTime<FixedOffset>,
+            recovery_code: String,
+            user_info: UserInfo,
+            mfa_info: MfaInfo,
+        ) -> Self {
+            Input {
+                session_exists,
+                ls,
+                current_date_time,
+                recovery_code,
+                op: RecoveryCodeOperationMock {
+                    user_info,
+                    mfa_info,
+                    login_time: current_date_time,
+                },
+            }
+        }
+    }
+
     #[derive(Debug, Clone)]
     struct RecoveryCodeOperationMock {
         user_info: UserInfo,
