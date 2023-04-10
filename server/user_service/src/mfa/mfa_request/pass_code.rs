@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use async_redis_session::RedisSessionStore;
-use async_session::{log::info, Session, SessionStore};
+use async_session::{Session, SessionStore};
 use axum::{async_trait, extract::State, http::StatusCode, Json};
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
@@ -22,7 +22,7 @@ use crate::{
     mfa::{ensure_mfa_is_enabled, verify_pass_code},
     util::{
         login_status::LoginStatus,
-        session::{KEY_TO_LOGIN_STATUS, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME},
+        session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME},
         user_info::{FindUserInfoOperationImpl, UserInfo},
     },
 };
@@ -131,14 +131,6 @@ async fn handle_pass_code_req(
     let account_id = get_account_id_from_session(&session)?;
     let user_info = op.get_user_info_if_available(account_id).await?;
     ensure_mfa_is_enabled(user_info.mfa_enabled_at.is_some())?;
-    let ls = get_login_status_from_session(&session)?;
-    if ls == LoginStatus::Finish {
-        info!(
-            "LoginStatus has already been Finish (account_id: {})",
-            account_id
-        );
-        return Ok((StatusCode::OK, Json(PassCodeReqResult {})));
-    };
 
     let mi = op.get_mfa_info_by_account_id(account_id).await?;
     verify_pass_code(
@@ -159,17 +151,6 @@ async fn handle_pass_code_req(
     op.update_last_login(account_id, current_date_time).await?;
 
     Ok((StatusCode::OK, Json(PassCodeReqResult {})))
-}
-
-fn get_login_status_from_session(session: &Session) -> Result<LoginStatus, ErrResp> {
-    let login_status = match session.get::<String>(KEY_TO_LOGIN_STATUS) {
-        Some(ls) => ls,
-        None => {
-            error!("failed to get login status from session");
-            return Err(unexpected_err_resp());
-        }
-    };
-    Ok(LoginStatus::from(login_status))
 }
 
 #[cfg(test)]
@@ -242,6 +223,8 @@ mod tests {
     #[async_trait]
     impl PassCodeOperation for PassCodeOperationMock {
         async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
+            // セッションがない場合や無効化されている場合はエラーとなる。
+            // その動作はこの実装で実際に呼び出している関数のテストでされているのでここでは実施しない。
             assert_eq!(self.user_info.account_id, account_id);
             Ok(self.user_info.clone())
         }
@@ -334,6 +317,29 @@ mod tests {
                     StatusCode::UNAUTHORIZED,
                     Json(ApiError {
                         code: Code::Unauthorized as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail MfaIsNotEnabled".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls.clone(),
+                    current_date_time,
+                    pass_code.to_string(),
+                    issuer.to_string(),
+                    UserInfo {
+                        account_id: 413,
+                        email_address: "test@test.com".to_string(),
+                        mfa_enabled_at: None,
+                        disabled_at: None,
+                    },
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::MfaIsNotEnabled as u32,
                     }),
                 )),
             },
