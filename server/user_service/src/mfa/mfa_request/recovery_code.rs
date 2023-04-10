@@ -168,3 +168,6 @@ fn verify_recovery_code(recovery_code: &str, hashed_recovery_code: &[u8]) -> Res
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {}

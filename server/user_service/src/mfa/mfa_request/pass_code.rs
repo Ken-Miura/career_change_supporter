@@ -155,7 +155,7 @@ async fn handle_pass_code_req(
 
 #[cfg(test)]
 mod tests {
-    use async_session::{MemoryStore, Session};
+    use async_session::{MemoryStore, Session, SessionStore};
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
@@ -167,6 +167,7 @@ mod tests {
     use crate::err::Code;
     use crate::util::login_status::LoginStatus;
     use crate::util::session::tests::prepare_session;
+    use crate::util::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
     use crate::{mfa::mfa_request::MfaInfo, util::user_info::UserInfo};
 
     use super::{handle_pass_code_req, PassCodeOperation, PassCodeReqResult};
@@ -400,11 +401,40 @@ mod tests {
                 let expected = test_case.expected.as_ref().expect("failed to get Ok");
                 assert_eq!(expected.0, resp.0, "{}", message);
                 assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+
+                let session = store
+                    .load_session(session_id.to_string())
+                    .await
+                    .expect("failed to get Ok")
+                    .expect("failed to get value");
+                let result1 = session
+                    .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                    .expect("failed to get Ok");
+                assert_eq!(result1, test_case.input.op.user_info.account_id);
+                let result2 = session
+                    .get::<String>(KEY_TO_LOGIN_STATUS)
+                    .expect("failed to get Ok");
+                assert_eq!(result2, String::from(LoginStatus::Finish));
             } else {
                 let resp = result.expect_err("failed to get Err");
                 let expected = test_case.expected.as_ref().expect_err("failed to get Err");
                 assert_eq!(expected.0, resp.0, "{}", message);
                 assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+
+                let option_session = store
+                    .load_session(session_id.to_string())
+                    .await
+                    .expect("failed to get Ok");
+                if let Some(session) = option_session {
+                    let result1 = session
+                        .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                        .expect("failed to get Ok");
+                    assert_eq!(result1, test_case.input.op.user_info.account_id);
+                    let result2 = session
+                        .get::<String>(KEY_TO_LOGIN_STATUS)
+                        .expect("failed to get Ok");
+                    assert_ne!(result2, String::from(LoginStatus::Finish));
+                }
             }
         }
     }
