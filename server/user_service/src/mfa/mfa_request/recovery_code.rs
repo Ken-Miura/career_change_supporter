@@ -176,6 +176,7 @@ mod tests {
     use common::{mfa::hash_recovery_code, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::{
         mfa::mfa_request::MfaInfo,
         util::{
@@ -312,6 +313,23 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: common::err::Code::InvalidUuidFormat as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail Unauthorized".to_string(),
+                input: Input::new(
+                    false,
+                    ls.clone(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    user_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError {
+                        code: Code::Unauthorized as u32,
                     }),
                 )),
             },
