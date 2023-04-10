@@ -58,7 +58,7 @@ pub(crate) struct RecoveryCodeReq {
     recovery_code: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct RecoveryCodeReqResult {}
 
 #[async_trait]
@@ -167,4 +167,143 @@ fn verify_recovery_code(recovery_code: &str, hashed_recovery_code: &[u8]) -> Res
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use async_session::{MemoryStore, Session, SessionStore};
+    use axum::async_trait;
+    use chrono::{DateTime, FixedOffset};
+    use common::{ErrResp, RespResult};
+    use once_cell::sync::Lazy;
+
+    use crate::{
+        mfa::mfa_request::MfaInfo,
+        util::{
+            login_status::LoginStatus,
+            session::{tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
+            user_info::UserInfo,
+        },
+    };
+
+    use super::{handle_recovery_code, RecoveryCodeOperation, RecoveryCodeReqResult};
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<RecoveryCodeReqResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        session_exists: bool,
+        ls: LoginStatus,
+        current_date_time: DateTime<FixedOffset>,
+        recovery_code: String,
+        op: RecoveryCodeOperationMock,
+    }
+
+    #[derive(Debug, Clone)]
+    struct RecoveryCodeOperationMock {
+        user_info: UserInfo,
+    }
+
+    #[async_trait]
+    impl RecoveryCodeOperation for RecoveryCodeOperationMock {
+        async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
+            todo!()
+        }
+
+        async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
+            todo!()
+        }
+
+        async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
+            todo!()
+        }
+
+        fn set_login_session_expiry(&self, session: &mut Session) {
+            todo!()
+        }
+
+        async fn update_last_login(
+            &self,
+            account_id: i64,
+            login_time: &DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            todo!()
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+
+    #[tokio::test]
+    async fn handle_recovery_code_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let current_date_time = test_case.input.current_date_time;
+            let recovery_code = test_case.input.recovery_code.clone();
+            let op = test_case.input.op.clone();
+            let store = MemoryStore::new();
+            let session_id = if test_case.input.session_exists {
+                prepare_session(
+                    test_case.input.op.user_info.account_id,
+                    test_case.input.ls.clone(),
+                    &store,
+                )
+                .await
+            } else {
+                // 適当なセッションIDをSessionStoreに入れずに用意する
+                "4d/UQZs+7mY0kF16rdf8qb07y2TzyHM2LCooSqBJB4GuF5LHw8h5jFLoJmbR3wYbwpy9bGQB2DExLM4lxvD62A==".to_string()
+            };
+
+            let result = handle_recovery_code(
+                session_id.as_str(),
+                &current_date_time,
+                recovery_code.as_str(),
+                &op,
+                &store,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+
+                let session = store
+                    .load_session(session_id.to_string())
+                    .await
+                    .expect("failed to get Ok")
+                    .expect("failed to get value");
+                let result1 = session
+                    .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                    .expect("failed to get Ok");
+                assert_eq!(result1, test_case.input.op.user_info.account_id);
+                let result2 = session
+                    .get::<String>(KEY_TO_LOGIN_STATUS)
+                    .expect("failed to get Ok");
+                assert_eq!(result2, String::from(LoginStatus::Finish));
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+
+                let option_session = store
+                    .load_session(session_id.to_string())
+                    .await
+                    .expect("failed to get Ok");
+                if let Some(session) = option_session {
+                    let result1 = session
+                        .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                        .expect("failed to get Ok");
+                    assert_eq!(result1, test_case.input.op.user_info.account_id);
+                    let result2 = session
+                        .get::<String>(KEY_TO_LOGIN_STATUS)
+                        .expect("failed to get Ok");
+                    assert_ne!(result2, String::from(LoginStatus::Finish));
+                }
+            }
+        }
+    }
+}
