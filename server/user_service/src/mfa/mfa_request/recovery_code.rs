@@ -169,9 +169,10 @@ fn verify_recovery_code(recovery_code: &str, hashed_recovery_code: &[u8]) -> Res
 #[cfg(test)]
 mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{mfa::hash_recovery_code, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::{
@@ -265,7 +266,37 @@ mod tests {
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let session_exists = true;
+        let ls = LoginStatus::NeedMoreVerification;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+            .unwrap();
+        let user_info = UserInfo {
+            account_id: 413,
+            email_address: "test@test.com".to_string(),
+            mfa_enabled_at: Some(current_date_time - chrono::Duration::days(3)),
+            disabled_at: None,
+        };
+        let recovery_code = "41ae5398f71c424e910d85734c204f1e";
+        let mfa_info = MfaInfo {
+            base32_encoded_secret: "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD".to_string(),
+            hashed_recovery_code: hash_recovery_code(recovery_code).expect("failed to get Ok"),
+        };
+
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input::new(
+                session_exists,
+                ls,
+                current_date_time,
+                recovery_code.to_string(),
+                user_info.clone(),
+                mfa_info.clone(),
+            ),
+            expected: Ok((StatusCode::OK, Json(RecoveryCodeReqResult {}))),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_recovery_code_tests() {
