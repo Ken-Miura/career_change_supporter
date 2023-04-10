@@ -179,9 +179,11 @@ mod tests {
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
     use common::mfa::hash_recovery_code;
+    use common::ApiError;
     use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::err::Code;
     use crate::util::login_status::LoginStatus;
     use crate::util::session::tests::prepare_session;
     use crate::{mfa::mfa_request::MfaInfo, util::user_info::UserInfo};
@@ -280,18 +282,38 @@ mod tests {
         // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
         let pass_code = "540940";
         let issuer = "Issuer";
-        vec![TestCase {
-            name: "success".to_string(),
-            input: Input::new(
-                ls,
-                current_date_time,
-                pass_code.to_string(),
-                issuer.to_string(),
-                user_info.clone(),
-                mfa_info.clone(),
-            ),
-            expected: Ok((StatusCode::OK, Json(PassCodeReqResult {}))),
-        }]
+
+        vec![
+            TestCase {
+                name: "success".to_string(),
+                input: Input::new(
+                    ls.clone(),
+                    current_date_time,
+                    pass_code.to_string(),
+                    issuer.to_string(),
+                    user_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Ok((StatusCode::OK, Json(PassCodeReqResult {}))),
+            },
+            TestCase {
+                name: "fail InvalidPassCode".to_string(),
+                input: Input::new(
+                    ls.clone(),
+                    current_date_time,
+                    "Acd#%&".to_string(),
+                    issuer.to_string(),
+                    user_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidPassCode as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
