@@ -124,7 +124,7 @@ async fn handle_recovery_code(
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: common::err::Code::InvalidUuidFormat as u32,
+                code: Code::InvalidRecoveryCode as u32,
             }),
         )
     })?;
@@ -300,7 +300,7 @@ mod tests {
                 expected: Ok((StatusCode::OK, Json(RecoveryCodeReqResult {}))),
             },
             TestCase {
-                name: "fail InvalidUuidFormat".to_string(),
+                name: "fail InvalidRecoveryCode".to_string(),
                 input: Input::new(
                     session_exists,
                     ls.clone(),
@@ -312,7 +312,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: common::err::Code::InvalidUuidFormat as u32,
+                        code: Code::InvalidRecoveryCode as u32,
                     }),
                 )),
             },

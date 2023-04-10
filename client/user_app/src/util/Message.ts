@@ -8,7 +8,7 @@ const RETRY_REQUEST = '通信環境を確認し、一定時間後に再度お試
 // namespaceは、非推奨ではないため、代替可能な手段ができるまで利用
 // eslint-disable-next-line
 export namespace Message {
-    // サーバのエラーコードと対応するエラーメッセージはサフィックスに_MESSAGEをつけ、対応しないものはつけない
+    // サーバのエラーコードと対応するエラーメッセージはそのコード名のサフィックスに_MESSAGEをつけたものとする
     export const PASSWORD_CONFIRMATION_FAILED = 'パスワードと確認用パスワードが一致していません'
     export const TEMP_ACCOUNT_CREATION_FAILED = `新規登録に失敗しました。${RETRY_REQUEST}`
     export const UNEXPECTED_ERR = `予期せぬエラーが発生しました。${RETRY_REQUEST}`
@@ -196,6 +196,14 @@ export namespace Message {
     export const UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE = 'セッションの有効期限が切れています。ログアウトし、再ログイン後、設定をして下さい'
     export const NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE = '利用規約への同意が必要です。ログアウトし、再ログインすると利用規約への同意画面が表示されるので、利用規約同意後に設定をして下さい'
     export const DISABLE_MFA_SUCCESS_MESSAGE = '二段階認証を無効化しました'
+    export const MFA_HAS_ALREADY_BEEN_ENABLED_MESSAGE = '二段階認証が既に有効になっています'
+    export const REACH_TEMP_MFA_SECRET_LIMIT_MESSAGE = '一定期間内に試行可能な回数の上限に達しました。時間を置いた後、再度お試し下さい'
+    export const NO_TEMP_MFA_SECRET_FOUND_MESSAGE = '有効期限が過ぎています。再度二段階認証の設定をやり直して下さい'
+    export const INVALID_PASS_CODE_MESSAGE = '不正な形式のパスコードです'
+    export const PASS_CODE_DOES_NOT_MATCH_MESSAGE = 'パスコードが正しくありません'
+    export const MFA_IS_NOT_ENABLED_MESSAGE = '二段階認証が有効になっていません'
+    export const INVALID_RECOVERY_CODE_MESSAGE = '不正な形式のリカバリーコードです'
+    export const RECOVERY_CODE_DOES_NOT_MATCH_MESSAGE = 'リカバリーコードが正しくありません'
     // TODO: SkyWay関連のメッセージの修正
     const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と表示されたメッセージをお問い合わせからご連絡下さい'
     export const SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED = `${SKY_WAY_UNEXPECTED_ERROR}: SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED`
