@@ -199,6 +199,7 @@ mod tests {
 
     #[derive(Debug)]
     struct Input {
+        session_exists: bool,
         ls: LoginStatus,
         current_date_time: DateTime<FixedOffset>,
         pass_code: String,
@@ -208,6 +209,7 @@ mod tests {
 
     impl Input {
         fn new(
+            session_exists: bool,
             ls: LoginStatus,
             current_date_time: DateTime<FixedOffset>,
             pass_code: String,
@@ -216,6 +218,7 @@ mod tests {
             mfa_info: MfaInfo,
         ) -> Self {
             Input {
+                session_exists,
                 ls,
                 current_date_time,
                 pass_code,
@@ -264,6 +267,7 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let session_exists = true;
         let ls = LoginStatus::NeedMoreVerification;
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
@@ -287,6 +291,7 @@ mod tests {
             TestCase {
                 name: "success".to_string(),
                 input: Input::new(
+                    session_exists,
                     ls.clone(),
                     current_date_time,
                     pass_code.to_string(),
@@ -299,6 +304,7 @@ mod tests {
             TestCase {
                 name: "fail InvalidPassCode".to_string(),
                 input: Input::new(
+                    session_exists,
                     ls.clone(),
                     current_date_time,
                     "Acd#%&".to_string(),
@@ -313,6 +319,24 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail Unauthorized (no session found)".to_string(),
+                input: Input::new(
+                    false,
+                    ls.clone(),
+                    current_date_time,
+                    pass_code.to_string(),
+                    issuer.to_string(),
+                    user_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError {
+                        code: Code::Unauthorized as u32,
+                    }),
+                )),
+            },
         ]
     });
 
@@ -324,12 +348,17 @@ mod tests {
             let issuer = test_case.input.issuer.clone();
             let op = test_case.input.op.clone();
             let store = MemoryStore::new();
-            let session_id = prepare_session(
-                test_case.input.op.user_info.account_id,
-                test_case.input.ls.clone(),
-                &store,
-            )
-            .await;
+            let session_id = if test_case.input.session_exists {
+                prepare_session(
+                    test_case.input.op.user_info.account_id,
+                    test_case.input.ls.clone(),
+                    &store,
+                )
+                .await
+            } else {
+                // 適当なセッションIDをSessionStoreに入れずに用意する
+                "4d/UQZs+7mY0kF16rdf8qb07y2TzyHM2LCooSqBJB4GuF5LHw8h5jFLoJmbR3wYbwpy9bGQB2DExLM4lxvD62A==".to_string()
+            };
 
             let result = handle_pass_code_req(
                 session_id.as_str(),
