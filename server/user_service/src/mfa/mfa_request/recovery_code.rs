@@ -333,6 +333,45 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail MfaIsNotEnabled".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls.clone(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    UserInfo {
+                        account_id: 413,
+                        email_address: "test@test.com".to_string(),
+                        mfa_enabled_at: None,
+                        disabled_at: None,
+                    },
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::MfaIsNotEnabled as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail RecoveryCodeDoesNotMatch".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls,
+                    current_date_time,
+                    "51ae5398f71c424e910d85734c204f1f".to_string(),
+                    user_info,
+                    mfa_info,
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::RecoveryCodeDoesNotMatch as u32,
+                    }),
+                )),
+            },
         ]
     });
 
