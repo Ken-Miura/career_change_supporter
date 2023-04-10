@@ -50,6 +50,7 @@ pub(crate) async fn post_pass_code(
         session_id.as_str(),
         &current_date_time,
         req.pass_code.as_str(),
+        USER_TOTP_ISSUER.as_str(),
         &op,
         &store,
     )
@@ -113,6 +114,7 @@ async fn handle_pass_code_req(
     session_id: &str,
     current_date_time: &DateTime<FixedOffset>,
     pass_code: &str,
+    issuer: &str,
     op: &impl PassCodeOperation,
     store: &impl SessionStore,
 ) -> RespResult<PassCodeReqResult> {
@@ -142,7 +144,7 @@ async fn handle_pass_code_req(
     verify_pass_code(
         account_id,
         &mi.base32_encoded_secret,
-        USER_TOTP_ISSUER.as_str(),
+        issuer,
         current_date_time,
         pass_code,
     )?;
@@ -173,11 +175,15 @@ fn get_login_status_from_session(session: &Session) -> Result<LoginStatus, ErrRe
 #[cfg(test)]
 mod tests {
     use async_session::{MemoryStore, Session};
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{ErrResp, RespResult};
+    use axum::http::StatusCode;
+    use axum::{async_trait, Json};
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::mfa::hash_recovery_code;
+    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
+    use crate::util::login_status::LoginStatus;
+    use crate::util::session::tests::prepare_session;
     use crate::{mfa::mfa_request::MfaInfo, util::user_info::UserInfo};
 
     use super::{handle_pass_code_req, PassCodeOperation, PassCodeReqResult};
@@ -191,41 +197,38 @@ mod tests {
 
     #[derive(Debug)]
     struct Input {
-        session_id: String,
+        ls: LoginStatus,
         current_date_time: DateTime<FixedOffset>,
         pass_code: String,
+        issuer: String,
         op: PassCodeOperationMock,
-        store: MemoryStore,
     }
 
     impl Input {
         fn new(
-            session_id: String,
+            ls: LoginStatus,
             current_date_time: DateTime<FixedOffset>,
             pass_code: String,
-            account_id: i64,
+            issuer: String,
             user_info: UserInfo,
             mfa_info: MfaInfo,
-            store: MemoryStore,
         ) -> Self {
             Input {
-                session_id,
+                ls,
                 current_date_time,
                 pass_code,
+                issuer,
                 op: PassCodeOperationMock {
-                    account_id,
                     user_info,
                     mfa_info,
                     login_time: current_date_time,
                 },
-                store,
             }
         }
     }
 
     #[derive(Clone, Debug)]
     struct PassCodeOperationMock {
-        account_id: i64,
         user_info: UserInfo,
         mfa_info: MfaInfo,
         login_time: DateTime<FixedOffset>,
@@ -234,12 +237,12 @@ mod tests {
     #[async_trait]
     impl PassCodeOperation for PassCodeOperationMock {
         async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
-            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.user_info.account_id, account_id);
             Ok(self.user_info.clone())
         }
 
         async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
-            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.user_info.account_id, account_id);
             Ok(self.mfa_info.clone())
         }
 
@@ -252,27 +255,65 @@ mod tests {
             account_id: i64,
             login_time: &DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            assert_eq!(self.account_id, account_id);
+            assert_eq!(self.user_info.account_id, account_id);
             assert_eq!(self.login_time, *login_time);
             Ok(())
         }
     }
 
-    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| vec![]);
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let ls = LoginStatus::NeedMoreVerification;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+            .unwrap();
+        let user_info = UserInfo {
+            account_id: 413,
+            email_address: "test@test.com".to_string(),
+            mfa_enabled_at: Some(current_date_time - chrono::Duration::days(3)),
+            disabled_at: None,
+        };
+        let mfa_info = MfaInfo {
+            base32_encoded_secret: "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD".to_string(),
+            hashed_recovery_code: hash_recovery_code("41ae5398f71c424e910d85734c204f1e")
+                .expect("failed to get Ok"),
+        };
+        // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
+        let pass_code = "540940";
+        let issuer = "Issuer";
+        vec![TestCase {
+            name: "success".to_string(),
+            input: Input::new(
+                ls,
+                current_date_time,
+                pass_code.to_string(),
+                issuer.to_string(),
+                user_info.clone(),
+                mfa_info.clone(),
+            ),
+            expected: Ok((StatusCode::OK, Json(PassCodeReqResult {}))),
+        }]
+    });
 
     #[tokio::test]
     async fn handle_pass_code_req_tests() {
         for test_case in TEST_CASE_SET.iter() {
-            let session_id = test_case.input.session_id.clone();
             let current_date_time = test_case.input.current_date_time;
             let pass_code = test_case.input.pass_code.clone();
+            let issuer = test_case.input.issuer.clone();
             let op = test_case.input.op.clone();
-            let store = test_case.input.store.clone();
+            let store = MemoryStore::new();
+            let session_id = prepare_session(
+                test_case.input.op.user_info.account_id,
+                test_case.input.ls.clone(),
+                &store,
+            )
+            .await;
 
             let result = handle_pass_code_req(
                 session_id.as_str(),
                 &current_date_time,
                 pass_code.as_str(),
+                issuer.as_str(),
                 &op,
                 &store,
             )
