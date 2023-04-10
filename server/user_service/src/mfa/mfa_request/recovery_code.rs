@@ -204,24 +204,31 @@ mod tests {
     #[derive(Debug, Clone)]
     struct RecoveryCodeOperationMock {
         user_info: UserInfo,
+        mfa_info: MfaInfo,
+        login_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
     impl RecoveryCodeOperation for RecoveryCodeOperationMock {
         async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
-            todo!()
+            // セッションがない場合や無効化されている場合はエラーとなる。
+            // その動作はこの実装で実際に呼び出している関数のテストでされているのでここでは実施しない。
+            assert_eq!(self.user_info.account_id, account_id);
+            Ok(self.user_info.clone())
         }
 
         async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
-            todo!()
+            assert_eq!(self.user_info.account_id, account_id);
+            Ok(self.mfa_info.clone())
         }
 
         async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.user_info.account_id, account_id);
+            Ok(())
         }
 
-        fn set_login_session_expiry(&self, session: &mut Session) {
-            todo!()
+        fn set_login_session_expiry(&self, _session: &mut Session) {
+            // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
         }
 
         async fn update_last_login(
@@ -229,7 +236,9 @@ mod tests {
             account_id: i64,
             login_time: &DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            todo!()
+            assert_eq!(self.user_info.account_id, account_id);
+            assert_eq!(self.login_time, *login_time);
+            Ok(())
         }
     }
 
