@@ -347,12 +347,12 @@ mod tests {
                 name: "fail PassCodeDoesNotMatch".to_string(),
                 input: Input::new(
                     session_exists,
-                    ls.clone(),
+                    ls,
                     current_date_time,
                     "123456".to_string(),
                     issuer.to_string(),
-                    user_info.clone(),
-                    mfa_info.clone(),
+                    user_info,
+                    mfa_info,
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
