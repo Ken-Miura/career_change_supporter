@@ -172,6 +172,7 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::ApiError;
     use common::{mfa::hash_recovery_code, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
@@ -284,18 +285,37 @@ mod tests {
             hashed_recovery_code: hash_recovery_code(recovery_code).expect("failed to get Ok"),
         };
 
-        vec![TestCase {
-            name: "success".to_string(),
-            input: Input::new(
-                session_exists,
-                ls,
-                current_date_time,
-                recovery_code.to_string(),
-                user_info.clone(),
-                mfa_info.clone(),
-            ),
-            expected: Ok((StatusCode::OK, Json(RecoveryCodeReqResult {}))),
-        }]
+        vec![
+            TestCase {
+                name: "success".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls.clone(),
+                    current_date_time,
+                    recovery_code.to_string(),
+                    user_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Ok((StatusCode::OK, Json(RecoveryCodeReqResult {}))),
+            },
+            TestCase {
+                name: "fail InvalidUuidFormat".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls.clone(),
+                    current_date_time,
+                    "abcdEFGH1234!\"#$".to_string(),
+                    user_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: common::err::Code::InvalidUuidFormat as u32,
+                    }),
+                )),
+            },
+        ]
     });
 
     #[tokio::test]
