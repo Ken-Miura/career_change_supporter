@@ -212,7 +212,63 @@ describe('MfaSettingPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
-  it(`displays ${Message.MFA_HAS_ALREADY_BEEN_ENABLED_MESSAGE} if ${Code.MFA_HAS_ALREADY_BEEN_ENABLED} is returned`, async () => {
+  it(`displays ${Message.UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE} if ${Code.UNAUTHORIZED} is returned when 有効化する is clicked`, async () => {
+    mfaEnabled = 'false'
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postTempMfaSecretFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const changeMfaSettingButton = wrapper.find('[data-test="change-mfa-setting-button"]')
+    await changeMfaSettingButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE)
+  })
+
+  it(`displays ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE} if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned when 有効化する is clicked`, async () => {
+    mfaEnabled = 'false'
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    postTempMfaSecretFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const changeMfaSettingButton = wrapper.find('[data-test="change-mfa-setting-button"]')
+    await changeMfaSettingButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE)
+  })
+
+  it(`displays ${Message.MFA_HAS_ALREADY_BEEN_ENABLED_MESSAGE} if ${Code.MFA_HAS_ALREADY_BEEN_ENABLED} is returned when 有効化する is clicked`, async () => {
     mfaEnabled = 'false'
     refreshMock.mockResolvedValue(RefreshResp.create())
     const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.MFA_HAS_ALREADY_BEEN_ENABLED))
