@@ -9,6 +9,7 @@ import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
 import { Message } from '@/util/Message'
+import { PostTempMfaSecretResp } from '@/util/personalized/mfa-setting/PostTempMfaSecretResp'
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -208,5 +209,26 @@ describe('MfaSettingPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it('moves enable-mfa-confirmation if 有効化する is clicked', async () => {
+    mfaEnabled = 'false'
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    postTempMfaSecretFuncMock.mockResolvedValue(PostTempMfaSecretResp.create())
+    const wrapper = mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const changeMfaSettingButton = wrapper.find('[data-test="change-mfa-setting-button"]')
+    await changeMfaSettingButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/enable-mfa-confirmation')
   })
 })
