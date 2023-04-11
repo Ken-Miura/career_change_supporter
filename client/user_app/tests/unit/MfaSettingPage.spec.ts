@@ -6,6 +6,9 @@ import MfaSettingPage from '@/views/personalized/MfaSettingPage.vue'
 import { ref } from 'vue'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
+import { Message } from '@/util/Message'
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -150,5 +153,60 @@ describe('MfaSettingPage.vue', () => {
     expect(mfaEnabledValue.text()).toContain('有効')
     const changeMfaSettingButton = wrapper.find('[data-test="change-mfa-setting-button"]')
     expect(changeMfaSettingButton.text()).toContain('無効化する')
+  })
+
+  it(`moves to login if ${Code.UNAUTHORIZED} is returned on opening page`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshMock.mockResolvedValue(apiErrResp)
+    mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`moves to terms-of-use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on opening page`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    refreshMock.mockResolvedValue(apiErrResp)
+    mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happened`, async () => {
+    const errDetail = 'connection error'
+    refreshMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
