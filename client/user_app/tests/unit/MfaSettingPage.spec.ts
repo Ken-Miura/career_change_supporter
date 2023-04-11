@@ -326,6 +326,35 @@ describe('MfaSettingPage.vue', () => {
     expect(resultMessage).toContain(Code.MFA_HAS_ALREADY_BEEN_ENABLED.toString())
   })
 
+  it(`displays ${Message.REACH_TEMP_MFA_SECRET_LIMIT_MESSAGE} if ${Code.REACH_TEMP_MFA_SECRET_LIMIT} is returned when 有効化する is clicked`, async () => {
+    mfaEnabled = 'false'
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.REACH_TEMP_MFA_SECRET_LIMIT))
+    postTempMfaSecretFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const changeMfaSettingButton = wrapper.find('[data-test="change-mfa-setting-button"]')
+    await changeMfaSettingButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.REACH_TEMP_MFA_SECRET_LIMIT_MESSAGE)
+    expect(resultMessage).toContain(Code.REACH_TEMP_MFA_SECRET_LIMIT.toString())
+  })
+
   it('moves enable-mfa-confirmation if 有効化する is clicked', async () => {
     mfaEnabled = 'false'
     refreshMock.mockResolvedValue(RefreshResp.create())
