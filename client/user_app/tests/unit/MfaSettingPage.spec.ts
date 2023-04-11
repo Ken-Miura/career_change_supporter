@@ -396,4 +396,33 @@ describe('MfaSettingPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/disable-mfa-success')
   })
+
+  it(`displays ${Message.MFA_IS_NOT_ENABLED_MESSAGE} if ${Code.MFA_IS_NOT_ENABLED} is returned when 無効化する is clicked`, async () => {
+    mfaEnabled = 'true'
+    refreshMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.MFA_IS_NOT_ENABLED))
+    postDisableMfaReqFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(MfaSettingPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const changeMfaSettingButton = wrapper.find('[data-test="change-mfa-setting-button"]')
+    await changeMfaSettingButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.MFA_IS_NOT_ENABLED_MESSAGE)
+    expect(resultMessage).toContain(Code.MFA_IS_NOT_ENABLED.toString())
+  })
 })
