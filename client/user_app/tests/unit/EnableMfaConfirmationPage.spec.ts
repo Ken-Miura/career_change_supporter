@@ -1,4 +1,8 @@
+import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
+import EnableMfaConfirmationPage from '@/views/personalized/EnableMfaConfirmationPage.vue'
+import { GetTempMfaSecretResp } from '@/util/personalized/enable-mfa-confirmation/GetTempMfaSecretResp'
+import { TempMfaSecret } from '@/util/personalized/enable-mfa-confirmation/TempMfaSecret'
 
 const getTempMfaSecretDoneMock = ref(true)
 const getTempMfaSecretFuncMock = jest.fn()
@@ -36,6 +40,11 @@ jest.mock('vuex', () => ({
   })
 }))
 
+const tempMfaSecret = {
+  base64_encoded_image: '',
+  base32_encoded_secret: ''
+} as TempMfaSecret
+
 describe('EnableMfaConfirmationPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -45,7 +54,16 @@ describe('EnableMfaConfirmationPage.vue', () => {
     postEnableMfaReqFuncMock.mockReset()
   })
 
-  it('', async () => {
-    console.log('test')
+  it('test', async () => {
+    const resp = GetTempMfaSecretResp.create(tempMfaSecret)
+    getTempMfaSecretFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
   })
 })
