@@ -25,6 +25,17 @@ jest.mock('vue-router', () => ({
   })
 }))
 
+const recoveryCodeMock = null as string | null
+const storeCommitMock = jest.fn()
+jest.mock('vuex', () => ({
+  useStore: () => ({
+    commit: storeCommitMock,
+    state: {
+      recoveryCode: recoveryCodeMock
+    }
+  })
+}))
+
 describe('EnableMfaConfirmationPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
