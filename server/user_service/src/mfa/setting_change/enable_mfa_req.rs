@@ -390,7 +390,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "success 2 existing temp mfa secrets".to_string(),
+                name: "success (2 existing temp mfa secrets)".to_string(),
                 input: Input::new(
                     account_id,
                     mfa_enabled,
