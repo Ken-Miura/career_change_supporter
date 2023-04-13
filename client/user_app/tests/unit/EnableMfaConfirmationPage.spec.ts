@@ -413,4 +413,109 @@ describe('EnableMfaConfirmationPage.vue', () => {
     expect(resultMessage).toContain(Message.INVALID_PASS_CODE_MESSAGE)
     expect(resultMessage).toContain(Code.INVALID_PASS_CODE.toString())
   })
+
+  it(`displays alert message ${Message.MFA_HAS_ALREADY_BEEN_ENABLED_MESSAGE} if ${Code.MFA_HAS_ALREADY_BEEN_ENABLED} is returned on submitting pass code`, async () => {
+    const resp1 = GetTempMfaSecretResp.create(tempMfaSecret)
+    getTempMfaSecretFuncMock.mockResolvedValue(resp1)
+    const resp2 = ApiErrorResp.create(400, ApiError.create(Code.MFA_HAS_ALREADY_BEEN_ENABLED))
+    postEnableMfaReqFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.MFA_HAS_ALREADY_BEEN_ENABLED_MESSAGE)
+    expect(resultMessage).toContain(Code.MFA_HAS_ALREADY_BEEN_ENABLED.toString())
+  })
+
+  it(`displays alert message ${Message.NO_TEMP_MFA_SECRET_FOUND_MESSAGE} if ${Code.NO_TEMP_MFA_SECRET_FOUND} is returned on submitting pass code`, async () => {
+    const resp1 = GetTempMfaSecretResp.create(tempMfaSecret)
+    getTempMfaSecretFuncMock.mockResolvedValue(resp1)
+    const resp2 = ApiErrorResp.create(400, ApiError.create(Code.NO_TEMP_MFA_SECRET_FOUND))
+    postEnableMfaReqFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_TEMP_MFA_SECRET_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_TEMP_MFA_SECRET_FOUND.toString())
+  })
+
+  it(`displays alert message ${Message.PASS_CODE_DOES_NOT_MATCH_MESSAGE} if ${Code.PASS_CODE_DOES_NOT_MATCH} is returned on submitting pass code`, async () => {
+    const resp1 = GetTempMfaSecretResp.create(tempMfaSecret)
+    getTempMfaSecretFuncMock.mockResolvedValue(resp1)
+    const resp2 = ApiErrorResp.create(400, ApiError.create(Code.PASS_CODE_DOES_NOT_MATCH))
+    postEnableMfaReqFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.PASS_CODE_DOES_NOT_MATCH_MESSAGE)
+    expect(resultMessage).toContain(Code.PASS_CODE_DOES_NOT_MATCH.toString())
+  })
 })
