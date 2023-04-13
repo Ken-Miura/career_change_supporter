@@ -196,6 +196,56 @@ describe('EnableMfaConfirmationPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
+  it(`displays alert message ${Message.MFA_HAS_ALREADY_BEEN_ENABLED_MESSAGE} if ${Code.MFA_HAS_ALREADY_BEEN_ENABLED} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(400, ApiError.create(Code.MFA_HAS_ALREADY_BEEN_ENABLED))
+    getTempMfaSecretFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.MFA_HAS_ALREADY_BEEN_ENABLED_MESSAGE)
+    expect(resultMessage).toContain(Code.MFA_HAS_ALREADY_BEEN_ENABLED.toString())
+  })
+
+  it(`displays alert message ${Message.NO_TEMP_MFA_SECRET_FOUND_MESSAGE} if ${Code.NO_TEMP_MFA_SECRET_FOUND} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(400, ApiError.create(Code.NO_TEMP_MFA_SECRET_FOUND))
+    getTempMfaSecretFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_TEMP_MFA_SECRET_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_TEMP_MFA_SECRET_FOUND.toString())
+  })
+
   it('stores recoversy code and moves enable-mfa-success if pass code submission is successful', async () => {
     const resp1 = GetTempMfaSecretResp.create(tempMfaSecret)
     getTempMfaSecretFuncMock.mockResolvedValue(resp1)
