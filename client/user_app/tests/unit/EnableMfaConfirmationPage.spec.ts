@@ -10,6 +10,8 @@ import PassCodeInput from '@/components/PassCodeInput.vue'
 import { SET_RECOVERY_CODE } from '@/store/mutationTypes'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Message } from '@/util/Message'
+import AlertMessage from '@/components/AlertMessage.vue'
 
 const getTempMfaSecretDoneMock = ref(true)
 const getTempMfaSecretFuncMock = jest.fn()
@@ -167,6 +169,31 @@ describe('EnableMfaConfirmationPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
+  })
+
+  it(`displays alert message ${Message.UNEXPECTED_ERR} when connection error happened on opening page`, async () => {
+    const errDetail = 'connection error'
+    getTempMfaSecretFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 
   it('stores recoversy code and moves enable-mfa-success if pass code submission is successful', async () => {
