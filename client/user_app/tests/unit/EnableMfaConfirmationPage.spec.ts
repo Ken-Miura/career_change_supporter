@@ -78,7 +78,8 @@ describe('EnableMfaConfirmationPage.vue', () => {
     // mainが出ていないことまで確認しない。
   })
 
-  it('test', async () => {
+  it('has WaitingCircle and TheHeader while calling postEnableMfaReq', async () => {
+    postEnableMfaReqDoneMock.value = false
     const resp = GetTempMfaSecretResp.create(tempMfaSecret)
     getTempMfaSecretFuncMock.mockResolvedValue(resp)
     const wrapper = mount(EnableMfaConfirmationPage, {
@@ -89,5 +90,12 @@ describe('EnableMfaConfirmationPage.vue', () => {
       }
     })
     await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
   })
 })
