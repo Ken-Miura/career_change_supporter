@@ -308,4 +308,38 @@ describe('EnableMfaConfirmationPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNAUTHORIZED_ON_MFA_SETTING_OPERATION_MESSAGE)
   })
+
+  it(`displays alert message ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE} if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on submitting pass code`, async () => {
+    const resp1 = GetTempMfaSecretResp.create(tempMfaSecret)
+    getTempMfaSecretFuncMock.mockResolvedValue(resp1)
+    const resp2 = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    postEnableMfaReqFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NOT_TERMS_OF_USE_AGREED_YET_ON_MFA_SETTING_OPERATION_MESSAGE)
+  })
 })
