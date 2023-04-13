@@ -5,6 +5,9 @@ import { GetTempMfaSecretResp } from '@/util/personalized/enable-mfa-confirmatio
 import { TempMfaSecret } from '@/util/personalized/enable-mfa-confirmation/TempMfaSecret'
 import TheHeader from '@/components/TheHeader.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
+import { PostEnableMfaReqResp } from '@/util/personalized/enable-mfa-confirmation/PostEnableMfaReqResp'
+import PassCodeInput from '@/components/PassCodeInput.vue'
+import { SET_RECOVERY_CODE } from '@/store/mutationTypes'
 
 const getTempMfaSecretDoneMock = ref(true)
 const getTempMfaSecretFuncMock = jest.fn()
@@ -51,6 +54,7 @@ const tempMfaSecret = {
 describe('EnableMfaConfirmationPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
+    storeCommitMock.mockClear()
     getTempMfaSecretDoneMock.value = true
     getTempMfaSecretFuncMock.mockReset()
     postEnableMfaReqDoneMock.value = true
@@ -125,5 +129,34 @@ describe('EnableMfaConfirmationPage.vue', () => {
     expect(passCodeLabel.text()).toContain('認証アプリに表示された数値を入力して、下記の送信を押して下さい。')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     expect(submitButton.text()).toContain('送信')
+  })
+
+  it('stores recoversy code and moves enable-mfa-success if pass code submission is successful', async () => {
+    const resp1 = GetTempMfaSecretResp.create(tempMfaSecret)
+    getTempMfaSecretFuncMock.mockResolvedValue(resp1)
+    const recoveryCode = 'c85e1bb9a3bc4df2a14174569f2bc41d'
+    const resp2 = PostEnableMfaReqResp.create(recoveryCode)
+    postEnableMfaReqFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeComponent.find('input')
+    await passCodeInput.setValue('123456') // resp2で成功のレスポンスが返ってくるようモックしてあるのでパスコードの値は適当でいい
+
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    await submitButton.trigger('submit')
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenCalledWith(SET_RECOVERY_CODE, recoveryCode)
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/enable-mfa-success')
   })
 })
