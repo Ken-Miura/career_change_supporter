@@ -9,18 +9,18 @@
         <AlertMessage v-bind:message="errMessageOnOpen"/>
       </div>
       <div v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-xl">下記の手順を実施して二段階認証を有効化して下さい。</h3>
+        <h3 data-test="description" class="font-bold text-xl">下記の手順を実施して二段階認証を有効化して下さい。</h3>
         <ol class="mt-4 ml-6 list-decimal font-bold text-xl">
-          <li class="mt-2">認証アプリを起動し、QRコードを読み込んで下さい。</li>
+          <li data-test="qr-code-label" class="mt-2">認証アプリを起動し、QRコードを読み込んで下さい。</li>
           <div class="flex justify-center w-full">
-            <img class="mt-2" v-bind:src="base64EncodedImageUrl" />
+            <img data-test="qr-code-value" class="mt-2" v-bind:src="base64EncodedImageUrl" />
           </div>
-          <p class="mt-2 text-lg">QRコードが読み込めない場合、次の文字列をキーとして手動で入力して下さい。</p>
-          <p class="mt-2 ml-2 text-lg">{{ base32EncodedSecret }}</p>
-          <li class="mt-4">認証アプリに表示された数値を入力して、下記の送信を押して下さい。</li>
+          <p data-test="secret-label" class="mt-2 text-lg">QRコードが読み込めない場合、次の文字列をキーとして手動で入力して下さい。</p>
+          <p data-test="secret-value" class="mt-2 ml-2 text-lg">{{ base32EncodedSecret }}</p>
+          <li data-test="pass-code-label" class="mt-4">認証アプリに表示された数値を入力して、下記の送信を押して下さい。</li>
           <form @submit.prevent="submitPassCodeToEnableMfa">
             <PassCodeInput @on-pass-code-updated="setPassCode"/>
-            <button type="submit" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">送信</button>
+            <button data-test="submit-button" type="submit" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">送信</button>
           </form>
         </ol>
         <div v-if="errMessageOnSubmit">

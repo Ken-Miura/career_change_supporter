@@ -98,4 +98,32 @@ describe('EnableMfaConfirmationPage.vue', () => {
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
   })
+
+  it('displays QR code and secret', async () => {
+    const resp = GetTempMfaSecretResp.create(tempMfaSecret)
+    getTempMfaSecretFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const description = wrapper.find('[data-test="description"]')
+    expect(description.text()).toContain('下記の手順を実施して二段階認証を有効化して下さい。')
+    const qrCodeLabel = wrapper.find('[data-test="qr-code-label"]')
+    expect(qrCodeLabel.text()).toContain('認証アプリを起動し、QRコードを読み込んで下さい。')
+    const qrCodeValue = wrapper.find('[data-test="qr-code-value"]')
+    expect(qrCodeValue.attributes('src')).toContain(`data:image/png;base64,${tempMfaSecret.base64_encoded_image}`)
+    const secretLabel = wrapper.find('[data-test="secret-label"]')
+    expect(secretLabel.text()).toContain('QRコードが読み込めない場合、次の文字列をキーとして手動で入力して下さい。')
+    const secretValue = wrapper.find('[data-test="secret-value"]')
+    expect(secretValue.text()).toContain(`${tempMfaSecret.base32_encoded_secret}`)
+    const passCodeLabel = wrapper.find('[data-test="pass-code-label"]')
+    expect(passCodeLabel.text()).toContain('認証アプリに表示された数値を入力して、下記の送信を押して下さい。')
+    const submitButton = wrapper.find('[data-test="submit-button"]')
+    expect(submitButton.text()).toContain('送信')
+  })
 })
