@@ -457,7 +457,7 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail MfaHasAlreadyBeenEnabled".to_string(),
+                name: "fail NoTempMfaSecretFound".to_string(),
                 input: Input::new(
                     account_id,
                     mfa_enabled,
