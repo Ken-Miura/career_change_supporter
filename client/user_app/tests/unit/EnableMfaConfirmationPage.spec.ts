@@ -8,6 +8,8 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import { PostEnableMfaReqResp } from '@/util/personalized/enable-mfa-confirmation/PostEnableMfaReqResp'
 import PassCodeInput from '@/components/PassCodeInput.vue'
 import { SET_RECOVERY_CODE } from '@/store/mutationTypes'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 const getTempMfaSecretDoneMock = ref(true)
 const getTempMfaSecretFuncMock = jest.fn()
@@ -129,6 +131,42 @@ describe('EnableMfaConfirmationPage.vue', () => {
     expect(passCodeLabel.text()).toContain('認証アプリに表示された数値を入力して、下記の送信を押して下さい。')
     const submitButton = wrapper.find('[data-test="submit-button"]')
     expect(submitButton.text()).toContain('送信')
+  })
+
+  it(`moves login if ${Code.UNAUTHORIZED} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    getTempMfaSecretFuncMock.mockResolvedValue(resp)
+    mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`moves terms-of-use if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned on opening page`, async () => {
+    const resp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    getTempMfaSecretFuncMock.mockResolvedValue(resp)
+    mount(EnableMfaConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(storeCommitMock).toHaveBeenCalledTimes(0)
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
   it('stores recoversy code and moves enable-mfa-success if pass code submission is successful', async () => {
