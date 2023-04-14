@@ -1,6 +1,13 @@
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import EnableMfaSuccessPage from '@/views/personalized/EnableMfaSuccessPage.vue'
 
+const routerPushMock = jest.fn()
+jest.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: routerPushMock
+  })
+}))
+
 let recoveryCodeMock = null as string | null
 jest.mock('vuex', () => ({
   useStore: () => ({
@@ -12,6 +19,7 @@ jest.mock('vuex', () => ({
 
 describe('EnableMfaSuccessPage.vue', () => {
   beforeEach(() => {
+    routerPushMock.mockClear()
     recoveryCodeMock = null
   })
 

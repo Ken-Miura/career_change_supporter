@@ -242,7 +242,7 @@ describe('EnableMfaConfirmationPage.vue', () => {
     expect(resultMessage).toContain(Code.NO_TEMP_MFA_SECRET_FOUND.toString())
   })
 
-  it('stores recoversy code and moves enable-mfa-success if pass code submission is successful', async () => {
+  it('stores recovery code and moves enable-mfa-success if pass code submission is successful', async () => {
     const resp1 = GetTempMfaSecretResp.create(tempMfaSecret)
     getTempMfaSecretFuncMock.mockResolvedValue(resp1)
     const recoveryCode = 'c85e1bb9a3bc4df2a14174569f2bc41d'

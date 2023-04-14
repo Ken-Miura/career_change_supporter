@@ -2,7 +2,7 @@
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
     <header class="max-w-lg mx-auto">
       <router-link to="/">
-        <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
+        <h1 data-test="header" class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
     <div v-if="!postPassCodeDone" class="m-6">
@@ -10,16 +10,16 @@
     </div>
     <main v-else class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
-        <h3 class="font-bold text-2xl">ログイン</h3>
+        <h3 data-test="login-label" class="font-bold text-2xl">ログイン</h3>
       </section>
-      <p class="mt-2 ml-2">認証アプリに表示されているパスコード（6桁の数字）を入力して下さい。</p>
+      <p data-test="login-description" class="mt-2 ml-2">認証アプリに表示されているパスコード（6桁の数字）を入力して下さい。</p>
       <section class="mt-6">
         <form class="flex flex-col" @submit.prevent="passCodeHandler">
           <PassCodeInput class="mb-6" @on-pass-code-updated="setPassCode" label="パスコード"/>
           <div class="flex justify-end">
-            <router-link to="/recovery-code" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">リカバリーコードを用いたログイン</router-link>
+            <router-link data-test="recovery-code-label" to="/recovery-code" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">リカバリーコードを用いたログイン</router-link>
           </div>
-          <button class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ログイン</button>
+          <button data-test="login-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ログイン</button>
           <div v-if="errorMessage" class="mt-6">
             <AlertMessage v-bind:message="errorMessage"/>
           </div>
