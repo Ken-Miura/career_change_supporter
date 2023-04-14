@@ -7,8 +7,8 @@
         <p data-test="description" class="mt-4 text-lg text-center">認証アプリを含んだ端末を紛失した際に利用するリカバリーコードを下記に記載します。端末の紛失に備えて<span class=" text-red-500">下記のリカバリーコードをコピー&ペーストし、安全な場所に保管して下さい。</span></p>
         <p data-test="recovery-code" v-if="recoveryCode" class="mt-4 font-bold text-xl text-center">{{ recoveryCode }}</p>
         <div v-else>
-          <p class="mt-4 font-bold text-xl text-center">リカバリーコードを表示できません</p>
-          <p class="mt-2 text-lg text-center">リカバリーコードは一度しか表示されません。リカバリーコードをコピー&ペーストして保管していない場合、二段階認証を無効化し、再度有効化する手順を実施して下さい。</p>
+          <p data-test="no-recovery-code-found-label" class="mt-4 font-bold text-xl text-center">リカバリーコードを表示できません</p>
+          <p data-test="no-recovery-code-found-value" class="mt-2 text-lg text-center">リカバリーコードは一度しか表示されません。リカバリーコードをコピー&ペーストして保管していない場合、二段階認証を無効化し、再度有効化する手順を実施して下さい。</p>
         </div>
       </div>
     </main>
