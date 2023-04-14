@@ -2,6 +2,7 @@ import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import MfaPage from '@/views/MfaPage.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -37,6 +38,9 @@ describe('MfaPage.vue', () => {
     })
     await flushPromises()
 
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+
     const header = wrapper.find('[data-test="header"]')
     expect(header.text()).toContain('就職先・転職先を見極めるためのサイト')
     const waitingCircles = wrapper.findAllComponents(WaitingCircle)
@@ -52,6 +56,9 @@ describe('MfaPage.vue', () => {
       }
     })
     await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
 
     const header = wrapper.find('[data-test="header"]')
     expect(header.text()).toContain('就職先・転職先を見極めるためのサイト')

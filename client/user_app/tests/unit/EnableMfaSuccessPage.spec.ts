@@ -1,6 +1,7 @@
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import EnableMfaSuccessPage from '@/views/personalized/EnableMfaSuccessPage.vue'
 
+// このページ自体では使っていないが、依存しているコンポーネントのTheHeaderが使っているのでモック化しておく
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
   useRouter: () => ({
