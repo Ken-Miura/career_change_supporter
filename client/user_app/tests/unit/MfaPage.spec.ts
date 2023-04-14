@@ -1,4 +1,7 @@
+import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
+import MfaPage from '@/views/MfaPage.vue'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -23,7 +26,18 @@ describe('MfaPage.vue', () => {
     postPassCodeFuncMock.mockReset()
   })
 
-  it('test', async () => {
-    console.log('test')
+  it('has WaitingCircle while calling postPassCode', async () => {
+    postPassCodeDoneMock.value = false
+    const wrapper = mount(MfaPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
   })
 })
