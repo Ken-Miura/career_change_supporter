@@ -16,8 +16,8 @@
       <section class="mt-6">
         <form class="flex flex-col" @submit.prevent="passCodeHandler">
           <PassCodeInput class="mb-6" @on-pass-code-updated="setPassCode" label="パスコード"/>
-          <div class="flex justify-end">
-            <router-link data-test="recovery-code-label" to="/recovery-code" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">リカバリーコードを用いたログイン</router-link>
+          <div data-test="recovery-code-link-area" class="flex justify-end">
+            <router-link to="/recovery-code" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">リカバリーコードを用いたログイン</router-link>
           </div>
           <button data-test="login-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">ログイン</button>
           <div v-if="errorMessage" class="mt-6">

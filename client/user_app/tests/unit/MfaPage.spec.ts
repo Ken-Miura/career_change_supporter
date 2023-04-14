@@ -62,12 +62,18 @@ describe('MfaPage.vue', () => {
 
     const header = wrapper.find('[data-test="header"]')
     expect(header.text()).toContain('就職先・転職先を見極めるためのサイト')
+
     const loginLabel = wrapper.find('[data-test="login-label"]')
     expect(loginLabel.text()).toContain('ログイン')
+
     const loginDescription = wrapper.find('[data-test="login-description"]')
     expect(loginDescription.text()).toContain('認証アプリに表示されているパスコード（6桁の数字）を入力して下さい。')
-    const recoveryCodeLabel = wrapper.find('[data-test="recovery-code-label"]')
-    expect(recoveryCodeLabel.text()).toContain('リカバリーコードを用いたログイン')
+
+    const recoveryCodeLinkArea = wrapper.find('[data-test="recovery-code-link-area"]')
+    const recoveryCodeRouterLink = recoveryCodeLinkArea.findComponent(RouterLinkStub)
+    expect(recoveryCodeRouterLink.text()).toContain('リカバリーコードを用いたログイン')
+    expect(recoveryCodeRouterLink.props().to).toBe('/recovery-code')
+
     const loginButton = wrapper.find('[data-test="login-button"]')
     expect(loginButton.text()).toContain('ログイン')
   })
