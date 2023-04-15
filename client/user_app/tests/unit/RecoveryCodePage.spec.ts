@@ -185,4 +185,91 @@ describe('RecoveryCodePage.vue', () => {
     expect(resultMessage).toContain(Message.INVALID_RECOVERY_CODE_MESSAGE)
     expect(resultMessage).toContain(Code.INVALID_RECOVERY_CODE.toString())
   })
+
+  it(`displays alert message ${Message.MFA_IS_NOT_ENABLED_MESSAGE} if ${Code.MFA_IS_NOT_ENABLED} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.MFA_IS_NOT_ENABLED))
+    postRecoveryCodeFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RecoveryCodePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const recoveryCodeInput = wrapper.find('[data-test="recovery-code-input"]')
+    await recoveryCodeInput.setValue('8fa6557546aa49eabe5e18b5214b9369')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.MFA_IS_NOT_ENABLED_MESSAGE)
+    expect(resultMessage).toContain(Code.MFA_IS_NOT_ENABLED.toString())
+  })
+
+  it(`displays alert message ${Message.RECOVERY_CODE_DOES_NOT_MATCH_MESSAGE} if ${Code.RECOVERY_CODE_DOES_NOT_MATCH} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.RECOVERY_CODE_DOES_NOT_MATCH))
+    postRecoveryCodeFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RecoveryCodePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const recoveryCodeInput = wrapper.find('[data-test="recovery-code-input"]')
+    await recoveryCodeInput.setValue('8fa6557546aa49eabe5e18b5214b9369')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.RECOVERY_CODE_DOES_NOT_MATCH_MESSAGE)
+    expect(resultMessage).toContain(Code.RECOVERY_CODE_DOES_NOT_MATCH.toString())
+  })
+
+  it(`displays alert message ${Message.NO_ACCOUNT_FOUND_MESSAGE} if ${Code.NO_ACCOUNT_FOUND} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_ACCOUNT_FOUND))
+    postRecoveryCodeFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RecoveryCodePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const recoveryCodeInput = wrapper.find('[data-test="recovery-code-input"]')
+    await recoveryCodeInput.setValue('8fa6557546aa49eabe5e18b5214b9369')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_ACCOUNT_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_ACCOUNT_FOUND.toString())
+  })
 })
