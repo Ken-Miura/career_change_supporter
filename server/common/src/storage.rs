@@ -2,7 +2,7 @@
 
 use std::{env::var, error::Error};
 
-use aws_sdk_s3::{types::ByteStream, Client};
+use aws_sdk_s3::{primitives::ByteStream, Client};
 use once_cell::sync::Lazy;
 
 pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
