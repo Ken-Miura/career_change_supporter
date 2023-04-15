@@ -7,6 +7,7 @@ import PassCodeInput from '@/components/PassCodeInput.vue'
 import { PostPassCodeResp } from '@/util/mfa/PostPassCodeResp'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
+import { Message } from '@/util/Message'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -128,5 +129,35 @@ describe('MfaPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`displays alert message ${Message.LOGIN_FAILED} when connection error happened`, async () => {
+    const errDetail = 'connection error'
+    postPassCodeFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(MfaPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeInputComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeInputComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.LOGIN_FAILED)
+    expect(resultMessage).toContain(errDetail)
   })
 })
