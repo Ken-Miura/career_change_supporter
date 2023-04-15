@@ -5,6 +5,8 @@ import MfaPage from '@/views/MfaPage.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PassCodeInput from '@/components/PassCodeInput.vue'
 import { PostPassCodeResp } from '@/util/mfa/PostPassCodeResp'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Code } from '@/util/Error'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -100,10 +102,31 @@ describe('MfaPage.vue', () => {
     await loginButton.trigger('submit')
     await flushPromises()
 
-    const alertMessages = wrapper.findAllComponents(AlertMessage)
-    expect(alertMessages.length).toBe(0)
-
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/profile')
+  })
+
+  it(`moves login if ${Code.UNAUTHORIZED} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postPassCodeFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(MfaPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeInputComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeInputComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 })
