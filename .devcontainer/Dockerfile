@@ -25,7 +25,7 @@ ENV HOME=/home/${USERNAME}
 RUN mkdir ${HOME}/workspace
 WORKDIR ${HOME}/workspace
 
-ARG RUST_VERSION=1.65.0
+ARG RUST_VERSION=1.68.2
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
 ENV PATH=${PATH}:${HOME}/.cargo/bin
 ARG SEA_ORM_CLI_VERSION=0.11.2
