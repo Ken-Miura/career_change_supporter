@@ -6,6 +6,7 @@ import RecoveryCodePage from '@/views/RecoveryCodePage.vue'
 import { PostRecoveryCodeResp } from '@/util/mfa/PostRecoveryCodeResp'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { Message } from '@/util/Message'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -125,5 +126,34 @@ describe('RecoveryCodePage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/login')
+  })
+
+  it(`displays alert message ${Message.LOGIN_FAILED} when connection error happened`, async () => {
+    const errDetail = 'connection error'
+    postRecoveryCodeFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(RecoveryCodePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const recoveryCodeInput = wrapper.find('[data-test="recovery-code-input"]')
+    await recoveryCodeInput.setValue('8fa6557546aa49eabe5e18b5214b9369')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.LOGIN_FAILED)
+    expect(resultMessage).toContain(errDetail)
   })
 })
