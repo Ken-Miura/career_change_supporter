@@ -17,7 +17,7 @@
         <form class="flex flex-col" @submit.prevent="recoveryCodeHandler">
           <div class="mt-2 mb-6 w-full justify-self-start col-span-6 pt-3 pl-2 rounded bg-gray-200">
             <label class="block text-gray-700 text-sm font-bold mb-2 ml-3">リカバリーコード</label>
-            <input v-model="recoveryCode" type="text" pattern="[a-zA-Z0-9]{32}" title="半角英数字のみの32桁でご入力下さい。" required minlength="32" maxlength="32" class="text-xl text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+            <input data-test="recovery-code-input" v-model="recoveryCode" type="text" pattern="[a-zA-Z0-9]{32}" title="半角英数字のみの32桁でご入力下さい。" required minlength="32" maxlength="32" class="text-xl text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
           </div>
           <div data-test="pass-code-link-area" class="flex justify-end">
             <router-link to="/mfa" class="text-sm text-gray-600 hover:text-gray-700 hover:underline mb-6">認証アプリ（パスコード）を用いたログイン</router-link>
