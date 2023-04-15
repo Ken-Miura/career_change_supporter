@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import MfaPage from '@/views/MfaPage.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
+import PassCodeInput from '@/components/PassCodeInput.vue'
+import { PostPassCodeResp } from '@/util/mfa/PostPassCodeResp'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -76,5 +78,32 @@ describe('MfaPage.vue', () => {
 
     const loginButton = wrapper.find('[data-test="login-button"]')
     expect(loginButton.text()).toContain('ログイン')
+  })
+
+  it('moves profile if pass code check is successfull', async () => {
+    const resp = PostPassCodeResp.create()
+    postPassCodeFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(MfaPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeInputComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeInputComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/profile')
   })
 })
