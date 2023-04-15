@@ -12,7 +12,7 @@ aws-sdk-s3 = "0.26.0"
 axum = { version = "0.6.15", features = ["macros"] }
 axum-extra = { version = "0.7.3", features = ["cookie", "cookie-signed"] }
 bcrypt = "0.14.0"
-chrono = "0.4.23"
+chrono = "0.4.24"
 entity = { path = "../entity" }
 http = "0.2.8"
 http-body = "0.4.5"

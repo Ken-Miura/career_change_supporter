@@ -666,7 +666,7 @@ mod tests {
                 Err((
                     err.0,
                     Json(ApiError {
-                        code: err.1.code as u32,
+                        code: err.1.code,
                     }),
                 ))
             } else {
