@@ -250,4 +250,34 @@ describe('MfaPage.vue', () => {
     expect(resultMessage).toContain(Message.PASS_CODE_DOES_NOT_MATCH_MESSAGE)
     expect(resultMessage).toContain(Code.PASS_CODE_DOES_NOT_MATCH.toString())
   })
+
+  it(`displays alert message ${Message.NO_ACCOUNT_FOUND_MESSAGE} if ${Code.NO_ACCOUNT_FOUND} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_ACCOUNT_FOUND))
+    postPassCodeFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(MfaPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const passCodeInputComponent = wrapper.findComponent(PassCodeInput)
+    const passCodeInput = passCodeInputComponent.find('input')
+    await passCodeInput.setValue('123456')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NO_ACCOUNT_FOUND_MESSAGE)
+    expect(resultMessage).toContain(Code.NO_ACCOUNT_FOUND.toString())
+  })
 })
