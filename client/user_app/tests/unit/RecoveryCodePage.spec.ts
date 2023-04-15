@@ -156,4 +156,33 @@ describe('RecoveryCodePage.vue', () => {
     expect(resultMessage).toContain(Message.LOGIN_FAILED)
     expect(resultMessage).toContain(errDetail)
   })
+
+  it(`displays alert message ${Message.INVALID_RECOVERY_CODE_MESSAGE} if ${Code.INVALID_RECOVERY_CODE} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.INVALID_RECOVERY_CODE))
+    postRecoveryCodeFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RecoveryCodePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const recoveryCodeInput = wrapper.find('[data-test="recovery-code-input"]')
+    await recoveryCodeInput.setValue('8fa6557546aa49eabe5e18b5214b9369')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+
+    const alertMessage = wrapper.findComponent(AlertMessage)
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.INVALID_RECOVERY_CODE_MESSAGE)
+    expect(resultMessage).toContain(Code.INVALID_RECOVERY_CODE.toString())
+  })
 })
