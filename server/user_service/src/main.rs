@@ -19,6 +19,7 @@ mod request_consultation;
 mod util;
 
 use crate::account::accounts::post_accounts;
+use crate::account::delete_accounts::delete_accounts;
 use crate::account::temp_accounts::post_temp_accounts;
 use crate::agreement::post_agreement;
 use crate::consultant::detail::get_consultant_detail;
@@ -215,7 +216,7 @@ async fn main_internal(num_of_cpus: u32) {
             ROOT_PATH,
             Router::new()
                 .route("/temp-accounts", post(post_temp_accounts))
-                .route("/accounts", post(post_accounts))
+                .route("/accounts", post(post_accounts).delete(delete_accounts))
                 .route("/login", post(post_login))
                 .route("/logout", post(post_logout))
                 .route("/refresh", get(get_refresh))
