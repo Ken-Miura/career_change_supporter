@@ -15,7 +15,7 @@ chrono = "0.4.24"
 common = { path = "../common" }
 dotenv = "0.15.0"
 entity = { path = "../entity" }
-hyper = { version = "0.14.23", features = ["full"] }
+hyper = { version = "0.14.26", features = ["full"] }
 image = "0.24.6"
 jsonwebtoken = "8.2.0"
 num_cpus = "1.15.0"
