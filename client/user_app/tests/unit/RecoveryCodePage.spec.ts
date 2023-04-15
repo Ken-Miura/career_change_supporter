@@ -4,6 +4,8 @@ import WaitingCircle from '@/components/WaitingCircle.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import RecoveryCodePage from '@/views/RecoveryCodePage.vue'
 import { PostRecoveryCodeResp } from '@/util/mfa/PostRecoveryCodeResp'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -100,5 +102,28 @@ describe('RecoveryCodePage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/profile')
+  })
+
+  it(`moves login if ${Code.UNAUTHORIZED} is returned`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    postRecoveryCodeFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(RecoveryCodePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const recoveryCodeInput = wrapper.find('[data-test="recovery-code-input"]')
+    await recoveryCodeInput.setValue('8fa6557546aa49eabe5e18b5214b9369')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    await loginButton.trigger('submit')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/login')
   })
 })
