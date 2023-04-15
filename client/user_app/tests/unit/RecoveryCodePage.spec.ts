@@ -46,4 +46,35 @@ describe('RecoveryCodePage.vue', () => {
     const waitingCircles = wrapper.findAllComponents(WaitingCircle)
     expect(waitingCircles.length).toBe(1)
   })
+
+  it('displays recovery code input', async () => {
+    const wrapper = mount(RecoveryCodePage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+
+    const header = wrapper.find('[data-test="header"]')
+    expect(header.text()).toContain('就職先・転職先を見極めるためのサイト')
+
+    const loginLabel = wrapper.find('[data-test="login-label"]')
+    expect(loginLabel.text()).toContain('ログイン')
+
+    const loginDescription = wrapper.find('[data-test="login-description"]')
+    expect(loginDescription.text()).toContain('二段階認証設定時に保存したリカバリーコードを入力して下さい。リカバリーコードによるログイン後、二段階認証の設定は無効化されますので、適宜再設定を行うようお願いします。')
+
+    const passCodeLinkArea = wrapper.find('[data-test="pass-code-link-area"]')
+    const passCodeRouterLink = passCodeLinkArea.findComponent(RouterLinkStub)
+    expect(passCodeRouterLink.text()).toContain('認証アプリ（パスコード）を用いたログイン')
+    expect(passCodeRouterLink.props().to).toBe('/mfa')
+
+    const loginButton = wrapper.find('[data-test="login-button"]')
+    expect(loginButton.text()).toContain('ログイン')
+  })
 })
