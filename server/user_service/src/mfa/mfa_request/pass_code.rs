@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use async_redis_session::RedisSessionStore;
+use async_fred_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::{async_trait, extract::State, http::StatusCode, Json};
 use axum_extra::extract::SignedCookieJar;

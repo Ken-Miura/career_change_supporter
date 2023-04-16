@@ -59,7 +59,7 @@ use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_pe
 use crate::request_consultation::finish::post_finish_request_consultation;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
-use async_redis_session::RedisSessionStore;
+use async_fred_session::RedisSessionStore;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
@@ -85,6 +85,8 @@ use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
 use consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
+use fred::pool::RedisPool;
+use fred::types::RedisConfig;
 use hyper::{Body, Request};
 use mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;
@@ -174,7 +176,15 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_URL_FOR_REDIS_SERVER
         )
     });
-    let store = RedisSessionStore::new(redis_url).expect("failed to connect redis");
+    let config = RedisConfig::from_url(redis_url.as_str()).expect("failed to create redis config");
+    let rds_pool = RedisPool::new(config, None, None, num_of_cpus as usize)
+        .expect("failed to create redis pool");
+    let _ = rds_pool.connect();
+    rds_pool
+        .wait_for_connect()
+        .await
+        .expect("failed to connect redis");
+    let store = RedisSessionStore::from_pool(rds_pool, None);
 
     let opensearch_url = var(KEY_TO_OPENSEARCH_ENDPOINT_URI).unwrap_or_else(|_| {
         panic!(

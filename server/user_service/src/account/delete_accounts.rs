@@ -9,7 +9,9 @@ use serde::Serialize;
 use crate::util::session::user::User;
 
 pub(crate) async fn delete_accounts(
-    User { user_info: _user_info }: User,
+    User {
+        user_info: _user_info,
+    }: User,
     State(_pool): State<DatabaseConnection>,
     State(_index_client): State<OpenSearch>,
 ) -> RespResult<DeleteAccountResult> {

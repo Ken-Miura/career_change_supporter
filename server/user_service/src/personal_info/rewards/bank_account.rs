@@ -663,12 +663,7 @@ mod tests {
             _bank_account: BankAccount,
         ) -> Result<(), ErrResp> {
             if let Some(err) = &self.submit_bank_account_err {
-                Err((
-                    err.0,
-                    Json(ApiError {
-                        code: err.1.code,
-                    }),
-                ))
+                Err((err.0, Json(ApiError { code: err.1.code })))
             } else {
                 Ok(())
             }

@@ -17,7 +17,7 @@ use std::{
 };
 
 use ::opensearch::OpenSearch;
-use async_redis_session::RedisSessionStore;
+use async_fred_session::RedisSessionStore;
 use axum::{
     async_trait,
     body::Body,
