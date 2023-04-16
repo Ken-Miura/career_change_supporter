@@ -177,14 +177,14 @@ async fn main_internal(num_of_cpus: u32) {
         )
     });
     let config = RedisConfig::from_url(redis_url.as_str()).expect("failed to create redis config");
-    let rds_pool = RedisPool::new(config, None, None, num_of_cpus as usize)
+    let redis_pool = RedisPool::new(config, None, None, num_of_cpus as usize)
         .expect("failed to create redis pool");
-    let _ = rds_pool.connect();
-    rds_pool
+    let _ = redis_pool.connect();
+    redis_pool
         .wait_for_connect()
         .await
         .expect("failed to connect redis");
-    let store = RedisSessionStore::from_pool(rds_pool, None);
+    let store = RedisSessionStore::from_pool(redis_pool, None);
 
     let opensearch_url = var(KEY_TO_OPENSEARCH_ENDPOINT_URI).unwrap_or_else(|_| {
         panic!(
