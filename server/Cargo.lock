@@ -4137,7 +4137,6 @@ dependencies = [
  "async-session",
  "axum",
  "axum-extra",
- "bytes",
  "chrono",
  "common",
  "dotenv",
