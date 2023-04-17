@@ -1142,8 +1142,6 @@ dependencies = [
  "bcrypt",
  "chrono",
  "entity",
- "http",
- "http-body",
  "lettre",
  "once_cell",
  "opensearch",

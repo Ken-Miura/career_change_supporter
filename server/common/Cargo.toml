@@ -14,8 +14,6 @@ axum-extra = { version = "0.7.3", features = ["cookie", "cookie-signed"] }
 bcrypt = "0.14.0"
 chrono = "0.4.24"
 entity = { path = "../entity" }
-http = "0.2.9"
-http-body = "0.4.5"
 lettre = { version = "0.10.4", default-features = false, features = ["smtp-transport", "pool", "rustls-tls", "hostname", "builder", "tokio1", "tokio1-rustls-tls"] }
 once_cell = "1.17.1"
 opensearch = "2.0.0"
