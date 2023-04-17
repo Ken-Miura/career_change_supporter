@@ -37,7 +37,6 @@ dependencies = [
  "dotenv",
  "entity",
  "fred",
- "headers",
  "image",
  "num_cpus",
  "once_cell",
