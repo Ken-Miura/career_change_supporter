@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 
 export default defineComponent({
@@ -21,6 +21,18 @@ export default defineComponent({
   },
   setup () {
     const message = ref('アカウント削除確認用テストページ')
+
+    onMounted(async () => {
+      const response = await fetch('/api/accounts', {
+        method: 'DELETE'
+      })
+      if (!response.ok) {
+        message.value = '!response.ok'
+        return
+      }
+      message.value = 'response.ok'
+    })
+
     return { message }
   }
 })
