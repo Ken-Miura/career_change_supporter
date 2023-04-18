@@ -5,9 +5,10 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset};
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
-    ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QueryFilter, QuerySelect,
-    TransactionError, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
+    QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use opensearch::OpenSearch;
 use serde::Serialize;
@@ -38,7 +39,7 @@ pub(crate) struct DeleteAccountsResult {}
 trait DeleteAccountsOperation {
     async fn get_settlement_ids(&self, consultant_id: i64) -> Result<Vec<i64>, ErrResp>;
 
-    /// 役務の提供（ユーザーとの相談）が未実施の支払いに関して、受け取るのを止める
+    /// 役務の提供（ユーザーとの相談）が未実施の支払いに関して、コンサルタント（この削除するアカウント）が受け取るのを止める
     async fn stop_payment(
         &self,
         settlement_id: i64,
@@ -99,6 +100,22 @@ impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
                             return Ok(());
                         }
                     };
+
+                    insert_stopped_settlement(txn, s, stopped_date_time).await?;
+
+                    let _ = entity::settlement::Entity::delete_by_id(settlement_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to delete settlement (settlement_id: {}): {}",
+                                settlement_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+
                     Ok(())
                 })
             })
@@ -137,6 +154,32 @@ async fn find_settlement_by_settlement_id_with_exclusive_lock(
     Ok(model)
 }
 
+async fn insert_stopped_settlement(
+    txn: &DatabaseTransaction,
+    model: entity::settlement::Model,
+    stopped_date_time: DateTime<FixedOffset>,
+) -> Result<(), ErrRespStruct> {
+    let active_model = entity::stopped_settlement::ActiveModel {
+        stopped_settlement_id: NotSet,
+        consultation_id: Set(model.consultation_id),
+        charge_id: Set(model.charge_id.clone()),
+        fee_per_hour_in_yen: Set(model.fee_per_hour_in_yen),
+        platform_fee_rate_in_percentage: Set(model.platform_fee_rate_in_percentage.clone()),
+        credit_facilities_expired_at: Set(model.credit_facilities_expired_at),
+        stopped_at: Set(stopped_date_time),
+    };
+    let _ = active_model.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert stopped_settlement (settlement: {:?}, stopped_date_time: {}): {}",
+            model, stopped_date_time, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
+}
+
 async fn handle_delete_accounts(
     account_id: i64,
     email_address: String,
@@ -145,7 +188,7 @@ async fn handle_delete_accounts(
 ) -> RespResult<DeleteAccountsResult> {
     let settlement_ids = op.get_settlement_ids(account_id).await?;
     for s_id in settlement_ids {
-        //   settlementの排他ロックを取得し、stopped_settlementへ移動
+        op.stop_payment(s_id, current_date_time).await?;
     }
     // user_accountの排他ロック
     //   opensearchから職歴の削除 (documentのデータは後の定期処理で削除する)
