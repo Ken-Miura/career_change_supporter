@@ -431,7 +431,8 @@ async fn find_settlement_by_consultation_id_with_exclusive_lock(
     txn: &DatabaseTransaction,
     consultation_id: i64,
 ) -> Result<Option<settlement::Model>, ErrRespStruct> {
-    let model = entity::prelude::Settlement::find_by_id(consultation_id)
+    let model = entity::prelude::Settlement::find()
+        .filter(entity::settlement::Column::ConsultationId.eq(consultation_id))
         .lock_exclusive()
         .one(txn)
         .await
