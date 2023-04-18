@@ -21,6 +21,7 @@ pub(crate) async fn delete_accounts(
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
 ) -> RespResult<DeleteAccountsResult> {
+    // password updateと同様にセッションの削除が必要
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = DeleteAccountsOperationImpl { pool, index_client };
     handle_delete_accounts(

@@ -12,7 +12,7 @@ use entity::prelude::{ConsultantRating, Consultation};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
-    QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
+    ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use entity::{consultant_rating, consultation, receipt, settlement};
 use opensearch::OpenSearch;
@@ -346,8 +346,19 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                             return Ok(());
                         }
                     };
+
+                    insert_receipt(txn, &stl, current_date_time).await?;
+
                     let charge_id = stl.charge_id.clone();
-                    insert_receipt(txn, stl, current_date_time).await?;
+                    let _ = stl.delete(txn).await.map_err(|e| {
+                        error!(
+                            "failed to delete settlement (consultation_id: {}): {}",
+                            consultation_id, e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
 
                     let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
                     let _ = charge_op
@@ -450,16 +461,16 @@ async fn find_settlement_by_consultation_id_with_exclusive_lock(
 
 async fn insert_receipt(
     txn: &DatabaseTransaction,
-    model: settlement::Model,
+    model: &settlement::Model,
     current_date_time: DateTime<FixedOffset>,
 ) -> Result<(), ErrRespStruct> {
     let consultation_id = model.consultation_id;
     let active_model = receipt::ActiveModel {
         receipt_id: NotSet,
         consultation_id: Set(model.consultation_id),
-        charge_id: Set(model.charge_id),
+        charge_id: Set(model.charge_id.clone()),
         fee_per_hour_in_yen: Set(model.fee_per_hour_in_yen),
-        platform_fee_rate_in_percentage: Set(model.platform_fee_rate_in_percentage),
+        platform_fee_rate_in_percentage: Set(model.platform_fee_rate_in_percentage.clone()),
         settled_at: Set(current_date_time),
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
