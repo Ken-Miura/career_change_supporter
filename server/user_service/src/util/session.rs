@@ -1,6 +1,5 @@
 // Copyright 2021 Ken Miura
 
-use async_fred_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
@@ -117,7 +116,7 @@ where
 
 pub(crate) async fn get_agreement_unchecked_user_info_from_cookie(
     option_cookie: Option<Cookie<'_>>,
-    store: &RedisSessionStore,
+    store: &impl SessionStore,
     pool: &DatabaseConnection,
 ) -> Result<UserInfo, ErrResp> {
     let session_id = match option_cookie {
@@ -146,7 +145,7 @@ pub(crate) async fn get_agreement_unchecked_user_info_from_cookie(
 
 pub(crate) async fn get_user_info_from_cookie(
     option_cookie: Option<Cookie<'_>>,
-    store: &RedisSessionStore,
+    store: &impl SessionStore,
     pool: &DatabaseConnection,
 ) -> Result<UserInfo, ErrResp> {
     let user_info =
@@ -161,7 +160,7 @@ pub(crate) async fn get_user_info_from_cookie(
 
 pub(crate) async fn get_verified_user_info_from_cookie(
     option_cookie: Option<Cookie<'_>>,
-    store: &RedisSessionStore,
+    store: &impl SessionStore,
     pool: &DatabaseConnection,
 ) -> Result<UserInfo, ErrResp> {
     let user_info = get_user_info_from_cookie(option_cookie, store, pool).await?;
@@ -307,6 +306,31 @@ async fn ensure_identity_exists(
     Ok(())
 }
 
+pub(crate) async fn destroy_session_if_exists(
+    session_id: &str,
+    store: &impl SessionStore,
+) -> Result<(), ErrResp> {
+    let option_session = store
+        .load_session(session_id.to_string())
+        .await
+        .map_err(|e| {
+            error!("failed to load session: {}", e);
+            unexpected_err_resp()
+        })?;
+    let session = match option_session {
+        Some(s) => s,
+        None => {
+            info!("no session in session store");
+            return Ok(());
+        }
+    };
+    store.destroy_session(session).await.map_err(|e| {
+        error!("failed to destroy session: {}", e);
+        unexpected_err_resp()
+    })?;
+    Ok(())
+}
+
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 pub(crate) mod tests {
@@ -321,7 +345,8 @@ pub(crate) mod tests {
             identity_check::IdentityCheckOperation,
             login_status::LoginStatus,
             session::{
-                get_user_account_id_by_session_id, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
+                destroy_session_if_exists, get_user_account_id_by_session_id,
+                KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
             },
             terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
         },
@@ -535,5 +560,48 @@ pub(crate) mod tests {
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
         assert_eq!(Code::NoIdentityRegistered as u32, result.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn destroy_session_if_exists_destorys_session() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
+        assert_eq!(1, store.count().await);
+
+        destroy_session_if_exists(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+    }
+
+    #[tokio::test]
+    async fn destroy_session_if_exists_destorys_session_during_mfa_login_sequence() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        assert_eq!(1, store.count().await);
+
+        destroy_session_if_exists(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+    }
+
+    #[tokio::test]
+    async fn destroy_session_if_exists_returns_ok_if_no_session_exists() {
+        let store = MemoryStore::new();
+        // dummy session id
+        let session_id = "KBvGQJJVyQquK5yuEcwlbfJfjNHBMAXIKRnHbVO/0QzBMHLak1xmqhaTbDuscJSeEPL2qwZfTP5BalDDMmR8eA==";
+        assert_eq!(0, store.count().await);
+
+        destroy_session_if_exists(session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
     }
 }

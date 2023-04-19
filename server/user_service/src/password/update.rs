@@ -1,7 +1,6 @@
 // Copyright 2021 Ken Miura
 
 use async_fred_session::RedisSessionStore;
-use async_session::SessionStore;
 use axum::async_trait;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -31,7 +30,7 @@ use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired};
-use crate::util::session::SESSION_ID_COOKIE_NAME;
+use crate::util::session::{destroy_session_if_exists, SESSION_ID_COOKIE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 
@@ -186,31 +185,6 @@ async fn handle_password_update_req(
     Ok((StatusCode::OK, Json(PasswordUpdateResult {})))
 }
 
-async fn destroy_session_if_exists(
-    session_id: &str,
-    store: &impl SessionStore,
-) -> Result<(), ErrResp> {
-    let option_session = store
-        .load_session(session_id.to_string())
-        .await
-        .map_err(|e| {
-            error!("failed to load session: {}", e);
-            unexpected_err_resp()
-        })?;
-    let session = match option_session {
-        Some(s) => s,
-        None => {
-            info!("no session in session store on password update");
-            return Ok(());
-        }
-    };
-    store.destroy_session(session).await.map_err(|e| {
-        error!("failed to destroy session: {}", e);
-        unexpected_err_resp()
-    })?;
-    Ok(())
-}
-
 fn create_text() -> String {
     // TODO: 文面の調整
     format!(
@@ -319,7 +293,6 @@ impl PasswordUpdateOperation for PasswordUpdateOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use async_session::MemoryStore;
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::{Duration, TimeZone};
@@ -340,10 +313,10 @@ mod tests {
             create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
             PasswordUpdateResult, SUBJECT,
         },
-        util::{login_status::LoginStatus, session::tests::prepare_session, tests::SendMailMock},
+        util::tests::SendMailMock,
     };
 
-    use super::{destroy_session_if_exists, PasswordUpdateOperation};
+    use super::PasswordUpdateOperation;
 
     struct PasswordUpdateOperationMock {
         account_id: i64,
@@ -702,48 +675,5 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(common::err::Code::InvalidUuidFormat as u32, resp.1.code);
-    }
-
-    #[tokio::test]
-    async fn destroy_session_if_exists_destorys_session() {
-        let store = MemoryStore::new();
-        let user_account_id = 15001;
-        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
-        assert_eq!(1, store.count().await);
-
-        destroy_session_if_exists(&session_id, &store)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(0, store.count().await);
-    }
-
-    #[tokio::test]
-    async fn destroy_session_if_exists_destorys_session_during_mfa_login_sequence() {
-        let store = MemoryStore::new();
-        let user_account_id = 15001;
-        let session_id =
-            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
-        assert_eq!(1, store.count().await);
-
-        destroy_session_if_exists(&session_id, &store)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(0, store.count().await);
-    }
-
-    #[tokio::test]
-    async fn destroy_session_if_exists_returns_ok_if_no_session_exists() {
-        let store = MemoryStore::new();
-        // dummy session id
-        let session_id = "KBvGQJJVyQquK5yuEcwlbfJfjNHBMAXIKRnHbVO/0QzBMHLak1xmqhaTbDuscJSeEPL2qwZfTP5BalDDMmR8eA==";
-        assert_eq!(0, store.count().await);
-
-        destroy_session_if_exists(session_id, &store)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(0, store.count().await);
     }
 }

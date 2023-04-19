@@ -1,8 +1,11 @@
 // Copyright 2023 Ken Miura
 
+use async_fred_session::RedisSessionStore;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
+use axum_extra::extract::cookie::Cookie;
+use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset};
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::ActiveValue::NotSet;
@@ -14,23 +17,37 @@ use opensearch::OpenSearch;
 use serde::Serialize;
 use tracing::{error, warn};
 
-use crate::{err::unexpected_err_resp, util::session::user::User};
+use crate::err::unexpected_err_resp;
+use crate::util::session::{
+    destroy_session_if_exists, get_user_info_from_cookie, SESSION_ID_COOKIE_NAME,
+};
 
 pub(crate) async fn delete_accounts(
-    User { user_info }: User,
+    jar: SignedCookieJar,
+    State(store): State<RedisSessionStore>,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
-) -> RespResult<DeleteAccountsResult> {
-    // password updateと同様にセッションの削除が必要
+) -> Result<(StatusCode, SignedCookieJar), ErrResp> {
+    let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
+    let user_info = get_user_info_from_cookie(option_cookie.clone(), &store, &pool).await?;
+
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = DeleteAccountsOperationImpl { pool, index_client };
-    handle_delete_accounts(
+    let _ = handle_delete_accounts(
         user_info.account_id,
         user_info.email_address,
         current_date_time,
         &op,
     )
-    .await
+    .await?;
+
+    if let Some(session_id) = option_cookie {
+        destroy_session_if_exists(session_id.value(), &store).await?;
+    }
+    Ok((
+        StatusCode::OK,
+        jar.remove(Cookie::named(SESSION_ID_COOKIE_NAME)),
+    ))
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
