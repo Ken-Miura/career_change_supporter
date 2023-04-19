@@ -1,11 +1,14 @@
 // Copyright 2021 Ken Miura
 
+use async_fred_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::{http::StatusCode, Json};
+use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
 use common::{ApiError, AppState, ErrResp};
+use entity::sea_orm::DatabaseConnection;
 use std::time::Duration;
 use tracing::{error, info};
 
@@ -42,13 +45,81 @@ where
     AppState: FromRef<S>,
     S: Send + Sync,
 {
+    let signed_cookies = extract_singed_jar_from_request_parts(parts, state).await?;
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+
+    let app_state = AppState::from_ref(state);
+    let store = app_state.store;
+    let pool = app_state.pool;
+
+    let user_info =
+        get_agreement_unchecked_user_info_from_cookie(option_cookie, &store, &pool).await?;
+
+    Ok(user_info)
+}
+
+async fn get_user_info_from_request_parts<S>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<UserInfo, ErrResp>
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
+    let signed_cookies = extract_singed_jar_from_request_parts(parts, state).await?;
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+
+    let app_state = AppState::from_ref(state);
+    let store = app_state.store;
+    let pool = app_state.pool;
+
+    let user_info = get_user_info_from_cookie(option_cookie, &store, &pool).await?;
+
+    Ok(user_info)
+}
+
+async fn get_verified_user_info_from_request_parts<S>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<UserInfo, ErrResp>
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
+    let signed_cookies = extract_singed_jar_from_request_parts(parts, state).await?;
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+
+    let app_state = AppState::from_ref(state);
+    let store = app_state.store;
+    let pool = app_state.pool;
+
+    let user_info = get_verified_user_info_from_cookie(option_cookie, &store, &pool).await?;
+
+    Ok(user_info)
+}
+
+async fn extract_singed_jar_from_request_parts<S>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<SignedCookieJar<AppState>, ErrResp>
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
     let signed_cookies = SignedCookieJar::<AppState>::from_request_parts(parts, state)
         .await
         .map_err(|e| {
             error!("failed to get cookies: {:?}", e);
             unexpected_err_resp()
         })?;
-    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+    Ok(signed_cookies)
+}
+
+pub(crate) async fn get_agreement_unchecked_user_info_from_cookie(
+    option_cookie: Option<Cookie<'_>>,
+    store: &RedisSessionStore,
+    pool: &DatabaseConnection,
+) -> Result<UserInfo, ErrResp> {
     let session_id = match option_cookie {
         Some(s) => s.value().to_string(),
         None => {
@@ -62,51 +133,40 @@ where
         }
     };
 
-    let app_state = AppState::from_ref(state);
-
-    let store = app_state.store;
     let refresh_op = RefreshOperationImpl {};
     let user_account_id =
-        get_user_account_id_by_session_id(session_id, &store, refresh_op, LOGIN_SESSION_EXPIRY)
+        get_user_account_id_by_session_id(session_id, store, refresh_op, LOGIN_SESSION_EXPIRY)
             .await?;
 
-    let pool = &app_state.pool;
     let find_user_op = FindUserInfoOperationImpl::new(pool);
     let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;
 
     Ok(user_info)
 }
 
-async fn get_user_info_from_request_parts<S>(
-    parts: &mut Parts,
-    state: &S,
-) -> Result<UserInfo, ErrResp>
-where
-    AppState: FromRef<S>,
-    S: Send + Sync,
-{
-    let user_info = get_agreement_unchecked_user_info_from_request_parts(parts, state).await?;
+pub(crate) async fn get_user_info_from_cookie(
+    option_cookie: Option<Cookie<'_>>,
+    store: &RedisSessionStore,
+    pool: &DatabaseConnection,
+) -> Result<UserInfo, ErrResp> {
+    let user_info =
+        get_agreement_unchecked_user_info_from_cookie(option_cookie, store, pool).await?;
 
-    let app_state = AppState::from_ref(state);
-    let terms_of_use_op = TermsOfUseLoadOperationImpl::new(&app_state.pool);
+    let terms_of_use_op = TermsOfUseLoadOperationImpl::new(pool);
     check_if_user_has_already_agreed(user_info.account_id, *TERMS_OF_USE_VERSION, terms_of_use_op)
         .await?;
 
     Ok(user_info)
 }
 
-async fn get_verified_user_info_from_request_parts<S>(
-    parts: &mut Parts,
-    state: &S,
-) -> Result<UserInfo, ErrResp>
-where
-    AppState: FromRef<S>,
-    S: Send + Sync,
-{
-    let user_info = get_user_info_from_request_parts(parts, state).await?;
+pub(crate) async fn get_verified_user_info_from_cookie(
+    option_cookie: Option<Cookie<'_>>,
+    store: &RedisSessionStore,
+    pool: &DatabaseConnection,
+) -> Result<UserInfo, ErrResp> {
+    let user_info = get_user_info_from_cookie(option_cookie, store, pool).await?;
 
-    let app_state = AppState::from_ref(state);
-    let op = IdentityCheckOperationImpl::new(&app_state.pool);
+    let op = IdentityCheckOperationImpl::new(pool);
     ensure_identity_exists(user_info.account_id, &op).await?;
 
     Ok(user_info)
