@@ -59,6 +59,8 @@ use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_pe
 use crate::request_consultation::finish::post_finish_request_consultation;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
+use async_fred_session::fred::pool::RedisPool;
+use async_fred_session::fred::types::RedisConfig;
 use async_fred_session::RedisSessionStore;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
@@ -85,8 +87,6 @@ use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
 use consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
-use fred::pool::RedisPool;
-use fred::types::RedisConfig;
 use hyper::{Body, Request};
 use mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;

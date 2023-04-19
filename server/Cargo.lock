@@ -36,7 +36,6 @@ dependencies = [
  "common",
  "dotenv",
  "entity",
- "fred",
  "image",
  "num_cpus",
  "once_cell",
@@ -171,9 +170,9 @@ dependencies = [
 
 [[package]]
 name = "async-fred-session"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3d3e8d56000ff431a11a8092c7c78261b4a0a8deb346839168e83b2fdbb1de4"
+checksum = "123b7accbfe20871bdb569e0042aa93ee1c098a4716ba1d4b1492a6adbae054e"
 dependencies = [
  "async-session",
  "fred",
@@ -4139,7 +4138,6 @@ dependencies = [
  "common",
  "dotenv",
  "entity",
- "fred",
  "hyper",
  "image",
  "jsonwebtoken",
