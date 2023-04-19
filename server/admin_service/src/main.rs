@@ -29,7 +29,9 @@ use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::refresh::get_refresh;
 use crate::util::ROOT_PATH;
-use async_redis_session::RedisSessionStore;
+use async_fred_session::fred::pool::RedisPool;
+use async_fred_session::fred::types::RedisConfig;
+use async_fred_session::RedisSessionStore;
 use axum::body::Body;
 use axum::http::Request;
 use axum::routing::{get, post};
@@ -137,7 +139,15 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_URL_FOR_REDIS_SERVER
         )
     });
-    let store = RedisSessionStore::new(redis_url).expect("failed to connect redis");
+    let config = RedisConfig::from_url(redis_url.as_str()).expect("failed to create redis config");
+    let redis_pool = RedisPool::new(config, None, None, num_of_cpus as usize)
+        .expect("failed to create redis pool");
+    let _ = redis_pool.connect();
+    redis_pool
+        .wait_for_connect()
+        .await
+        .expect("failed to connect redis");
+    let store = RedisSessionStore::from_pool(redis_pool, None);
 
     let opensearch_url = var(KEY_TO_OPENSEARCH_ENDPOINT_URI).unwrap_or_else(|_| {
         panic!(

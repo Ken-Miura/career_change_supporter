@@ -1,6 +1,6 @@
 // Copyright 2021 Ken Miura
 
-use async_redis_session::RedisSessionStore;
+use async_fred_session::RedisSessionStore;
 use async_session::SessionStore;
 use axum::{extract::State, http::StatusCode};
 use axum_extra::extract::{cookie::Cookie, SignedCookieJar};

@@ -1,6 +1,7 @@
 // Copyright 2022 Ken Miura
 
 use axum::async_trait;
+use axum::headers::{HeaderMap, HeaderValue};
 use axum::http::StatusCode;
 use axum::{extract::Path, Json};
 use common::{
@@ -9,7 +10,6 @@ use common::{
     util::validator::uuid_validator::validate_uuid,
     ApiError, ErrResp,
 };
-use headers::{HeaderMap, HeaderValue};
 use tracing::error;
 
 use crate::{err::unexpected_err_resp, util::session::Admin};
@@ -72,9 +72,9 @@ mod tests {
     use std::io::Cursor;
 
     use axum::async_trait;
+    use axum::headers::HeaderValue;
     use axum::http::StatusCode;
     use common::{err::Code::InvalidUuidFormat, ErrResp};
-    use headers::HeaderValue;
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
     use super::{get_career_images_internal, DownloadCareerImageOperation};

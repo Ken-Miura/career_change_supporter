@@ -1,8 +1,7 @@
 // Copyright 2022 Ken Miura
 
-use axum::http::StatusCode;
 use axum::Json;
-use bytes::Bytes;
+use axum::{body::Bytes, http::StatusCode};
 use common::{ApiError, ErrResp};
 use image::{ImageError, ImageFormat};
 use std::io::Cursor;
@@ -42,8 +41,7 @@ pub(crate) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrRes
 mod tests {
     use std::io::Cursor;
 
-    use axum::http::StatusCode;
-    use bytes::Bytes;
+    use axum::{body::Bytes, http::StatusCode};
     use image::{ImageBuffer, ImageFormat, ImageOutputFormat, RgbImage};
 
     use crate::{

@@ -11,9 +11,9 @@ use crate::util::{
 };
 use async_session::serde_json;
 use axum::async_trait;
+use axum::body::Bytes;
 use axum::extract::State;
 use axum::{extract::Multipart, http::StatusCode, Json};
-use bytes::Bytes;
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{
     ADMIN_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
@@ -642,9 +642,9 @@ mod tests {
     use std::io::Cursor;
 
     use async_session::serde_json;
+    use axum::body::Bytes;
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
-    use bytes::Bytes;
     use chrono::{DateTime, FixedOffset, Utc};
     use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
     use common::{

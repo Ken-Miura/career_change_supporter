@@ -17,10 +17,10 @@ use std::{
 };
 
 use ::opensearch::OpenSearch;
-use async_redis_session::RedisSessionStore;
+use async_fred_session::RedisSessionStore;
 use axum::{
     async_trait,
-    body::Body,
+    body::{Body, HttpBody},
     extract::FromRequest,
     extract::{self, FromRef},
     http::{Request, StatusCode},
@@ -97,7 +97,7 @@ pub struct ValidCred(pub Credential);
 impl<S, B> FromRequest<S, B> for ValidCred
 where
     S: Send + Sync,
-    B: http_body::Body + Send + 'static,
+    B: HttpBody + Send + 'static,
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
