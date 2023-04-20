@@ -18,6 +18,7 @@ use serde::Serialize;
 use tracing::{error, warn};
 
 use crate::err::unexpected_err_resp;
+use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::{
     destroy_session_if_exists, get_user_info_from_cookie, SESSION_ID_COOKIE_NAME,
 };
@@ -62,6 +63,12 @@ trait DeleteAccountsOperation {
         &self,
         settlement_id: i64,
         stopped_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
+
+    async fn delete_user_account(
+        &self,
+        account_id: i64,
+        deleted_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
@@ -150,6 +157,49 @@ impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
             })?;
         Ok(())
     }
+
+    async fn delete_user_account(
+        &self,
+        account_id: i64,
+        deleted_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    // user_accountの排他ロック
+                    //   opensearchから職歴の削除 (documentのデータは後の定期処理で削除する)
+                    //   user_accountの削除（user_accountからdeleted_user_accountへ移動）
+                    let user_option =
+                        find_user_account_by_user_account_id_with_exclusive_lock(txn, account_id)
+                            .await?;
+                    let user = user_option.ok_or_else(|| {
+                        error!(
+                            "failed to find user_account (user_account_id: {})",
+                            account_id
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
+                    insert_deleted_user_account(txn, &user, deleted_date_time).await?;
+
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to delete_user_account: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
+    }
 }
 
 async fn find_settlement_by_settlement_id_with_exclusive_lock(
@@ -198,6 +248,32 @@ async fn insert_stopped_settlement(
     Ok(())
 }
 
+async fn insert_deleted_user_account(
+    txn: &DatabaseTransaction,
+    model: &entity::user_account::Model,
+    deleted_date_time: DateTime<FixedOffset>,
+) -> Result<(), ErrRespStruct> {
+    let active_model = entity::deleted_user_account::ActiveModel {
+        user_account_id: Set(model.user_account_id),
+        email_address: Set(model.email_address.clone()),
+        hashed_password: Set(model.hashed_password.clone()),
+        last_login_time: Set(model.last_login_time),
+        created_at: Set(model.created_at),
+        disabled_at: Set(model.disabled_at),
+        deleted_at: Set(deleted_date_time),
+    };
+    let _ = active_model.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert deleted_user_account (user_account: {:?}, deleted_date_time: {}): {}",
+            model, deleted_date_time, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
+}
+
 async fn handle_delete_accounts(
     account_id: i64,
     email_address: String,
@@ -208,9 +284,7 @@ async fn handle_delete_accounts(
     for s_id in settlement_ids {
         op.stop_payment(s_id, current_date_time).await?;
     }
-    // user_accountの排他ロック
-    //   opensearchから職歴の削除 (documentのデータは後の定期処理で削除する)
-    //   user_accountの削除（user_accountからdeleted_user_accountへ移動）
+
     // 削除成功のメール通知
     Ok((StatusCode::OK, Json(DeleteAccountsResult {})))
 }
