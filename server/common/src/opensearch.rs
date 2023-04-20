@@ -6,7 +6,7 @@ use axum::{http::StatusCode, Json};
 use opensearch::{
     auth::Credentials,
     http::transport::{SingleNodeConnectionPool, TransportBuilder},
-    IndexParts, OpenSearch, SearchParts, UpdateParts,
+    DeleteParts, IndexParts, OpenSearch, SearchParts, UpdateParts,
 };
 use serde_json::Value;
 use tracing::error;
@@ -162,6 +162,43 @@ pub async fn search_documents(
         ));
     }
     Ok(response_body)
+}
+
+pub async fn delete_document(
+    index_name: &str,
+    document_id: &str,
+    client: &OpenSearch,
+) -> Result<(), ErrResp> {
+    let response = client
+        .delete(DeleteParts::IndexId(index_name, document_id))
+        .send()
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete document (index_name: {}, document_id: {}): {}",
+                index_name, document_id, e
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: Code::UnexpectedErr as u32,
+                }),
+            )
+        })?;
+    let status_code = response.status_code();
+    if !status_code.is_success() {
+        error!(
+            "failed to request document delete (response: {:?})",
+            response
+        );
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                code: Code::UnexpectedErr as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 /// OpenSearchノードへアクセスするためのクライアントを作成する

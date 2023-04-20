@@ -122,12 +122,14 @@ user_accountで共有ロックを取得 -> create_career_reqで排他ロック�
 user_accountで共有ロックを取得 -> create_career_reqで排他ロックを取得
 
 #### user_service
-##### fee_per_hour_in_yen.rs
+##### personal_info/profile/fee_per_hour_in_yen.rs
 consulting_feeで排他ロックを取得 -> documentで共有ロックを取得
-##### career/delete.rs
+##### personal_info/profile/career/delete.rs
 careerで排他ロックを取得 -> documentで共有ロックを取得
 ##### rating/consultant_rating.rs
 user_accountで排他ロックを取得 -> documentで共有ロックを取得
+##### account/delete_accounts.rs
+user_accountで排他ロックを取得 -> documentで排他ロックを取得
 
 ## 検索用インデックスの設計について
 検索用インデックスには、OpenSearchを利用する。検索用インデックスに投入するデータは、DBの値、もしくはその値を加工して生成できる値に限定する（検索用インデックスを一次データの保管場所として採用しない）

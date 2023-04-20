@@ -7,6 +7,7 @@ use axum::{async_trait, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset};
+use common::opensearch::{delete_document, INDEX_NAME};
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
@@ -15,9 +16,10 @@ use entity::sea_orm::{
 };
 use opensearch::OpenSearch;
 use serde::Serialize;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::err::unexpected_err_resp;
+use crate::util::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::{
     destroy_session_if_exists, get_user_info_from_cookie, SESSION_ID_COOKIE_NAME,
@@ -68,6 +70,7 @@ trait DeleteAccountsOperation {
     async fn delete_user_account(
         &self,
         account_id: i64,
+        index_name: String,
         deleted_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
@@ -161,37 +164,28 @@ impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
     async fn delete_user_account(
         &self,
         account_id: i64,
+        index_name: String,
         deleted_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
+        let index_client = self.index_client.clone();
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let user_option =
-                        find_user_account_by_user_account_id_with_exclusive_lock(txn, account_id)
-                            .await?;
-                    let user = user_option.ok_or_else(|| {
-                        error!(
-                            "failed to find user_account (user_account_id: {})",
-                            account_id
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    delete_user_account_with_user_account_exclusive_lock(
+                        txn,
+                        account_id,
+                        deleted_date_time,
+                    )
+                    .await?;
 
-                    insert_deleted_user_account(txn, &user, deleted_date_time).await?;
+                    delete_career_from_index_with_document_exclusive_lock(
+                        txn,
+                        account_id,
+                        index_name,
+                        index_client,
+                    )
+                    .await?;
 
-                    let _ = user.delete(txn).await.map_err(|e| {
-                        error!(
-                            "failed to delete user_account (user_account_id: {}): {}",
-                            account_id, e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
-                    //   opensearchから職歴の削除 (documentのデータは後の定期処理で削除する)
                     Ok(())
                 })
             })
@@ -256,6 +250,37 @@ async fn insert_stopped_settlement(
     Ok(())
 }
 
+async fn delete_user_account_with_user_account_exclusive_lock(
+    txn: &DatabaseTransaction,
+    account_id: i64,
+    deleted_date_time: DateTime<FixedOffset>,
+) -> Result<(), ErrRespStruct> {
+    let user_option =
+        find_user_account_by_user_account_id_with_exclusive_lock(txn, account_id).await?;
+    let user = user_option.ok_or_else(|| {
+        error!(
+            "failed to find user_account (user_account_id: {})",
+            account_id
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+
+    insert_deleted_user_account(txn, &user, deleted_date_time).await?;
+
+    let _ = user.delete(txn).await.map_err(|e| {
+        error!(
+            "failed to delete user_account (user_account_id: {}): {}",
+            account_id, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
+}
+
 async fn insert_deleted_user_account(
     txn: &DatabaseTransaction,
     model: &entity::user_account::Model,
@@ -283,6 +308,49 @@ async fn insert_deleted_user_account(
     Ok(())
 }
 
+async fn delete_career_from_index_with_document_exclusive_lock(
+    txn: &DatabaseTransaction,
+    account_id: i64,
+    index_name: String,
+    index_client: OpenSearch,
+) -> Result<(), ErrRespStruct> {
+    let document_option =
+        find_document_model_by_user_account_id_with_exclusive_lock(txn, account_id).await?;
+    let document = match document_option {
+        Some(d) => d,
+        None => {
+            info!(
+                "no document (career info on Opensearch) found (user accound id: {})",
+                account_id
+            );
+            return Ok(());
+        }
+    };
+
+    let document_id = document.document_id.to_string();
+    let _ = document.delete(txn).await.map_err(|e| {
+        error!(
+            "failed to delete document (user_account_id: {}): {}",
+            account_id, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+
+    delete_document(index_name.as_str(), document_id.as_str(), &index_client).await.map_err(|e|{
+      error!(
+        "failed to delete document (user_account_id: {}, index_name: {}, document_id: {}) from Opensearch",
+        account_id, index_name, document_id
+      );
+      ErrRespStruct {
+        err_resp: e,
+      }
+    })?;
+
+    Ok(())
+}
+
 async fn handle_delete_accounts(
     account_id: i64,
     email_address: String,
@@ -293,7 +361,8 @@ async fn handle_delete_accounts(
     for s_id in settlement_ids {
         op.stop_payment(s_id, current_date_time).await?;
     }
-
+    op.delete_user_account(account_id, INDEX_NAME.to_string(), current_date_time)
+        .await?;
     // 削除成功のメール通知
     Ok((StatusCode::OK, Json(DeleteAccountsResult {})))
 }
