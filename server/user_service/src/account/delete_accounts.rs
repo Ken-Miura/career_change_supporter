@@ -11,7 +11,7 @@ use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
-    QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
+    ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use opensearch::OpenSearch;
 use serde::Serialize;
@@ -166,9 +166,6 @@ impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    // user_accountの排他ロック
-                    //   opensearchから職歴の削除 (documentのデータは後の定期処理で削除する)
-                    //   user_accountの削除（user_accountからdeleted_user_accountへ移動）
                     let user_option =
                         find_user_account_by_user_account_id_with_exclusive_lock(txn, account_id)
                             .await?;
@@ -184,6 +181,17 @@ impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
 
                     insert_deleted_user_account(txn, &user, deleted_date_time).await?;
 
+                    let _ = user.delete(txn).await.map_err(|e| {
+                        error!(
+                            "failed to delete user_account (user_account_id: {}): {}",
+                            account_id, e
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
+                    //   opensearchから職歴の削除 (documentのデータは後の定期処理で削除する)
                     Ok(())
                 })
             })
@@ -259,6 +267,7 @@ async fn insert_deleted_user_account(
         hashed_password: Set(model.hashed_password.clone()),
         last_login_time: Set(model.last_login_time),
         created_at: Set(model.created_at),
+        mfa_enabled_at: Set(model.mfa_enabled_at),
         disabled_at: Set(model.disabled_at),
         deleted_at: Set(deleted_date_time),
     };

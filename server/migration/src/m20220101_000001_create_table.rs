@@ -112,6 +112,7 @@ impl MigrationTrait for Migration {
                 hashed_password BYTEA NOT NULL,
                 last_login_time TIMESTAMP WITH TIME ZONE,
                 created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                mfa_enabled_at TIMESTAMP WITH TIME ZONE,
                 disabled_at TIMESTAMP WITH TIME ZONE,
                 deleted_at TIMESTAMP WITH TIME ZONE NOT NULL
               );",
