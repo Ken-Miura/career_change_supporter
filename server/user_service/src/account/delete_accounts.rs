@@ -335,7 +335,7 @@ async fn delete_career_from_index_with_document_exclusive_lock(
         Some(d) => d,
         None => {
             info!(
-                "no document (career info on Opensearch) found (user accound id: {})",
+                "no document (career info on index) found (user accound id: {})",
                 account_id
             );
             return Ok(());
