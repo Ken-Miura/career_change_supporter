@@ -8,12 +8,17 @@ use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset};
 use common::opensearch::{delete_document, INDEX_NAME};
-use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use common::smtp::{
+    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
+    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
+};
+use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
     ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
+use once_cell::sync::Lazy;
 use opensearch::OpenSearch;
 use serde::Serialize;
 use tracing::{error, info, warn};
@@ -24,6 +29,8 @@ use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::{
     destroy_session_if_exists, get_user_info_from_cookie, SESSION_ID_COOKIE_NAME,
 };
+
+static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] アカウント削除完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn delete_accounts(
     jar: SignedCookieJar,
@@ -36,11 +43,19 @@ pub(crate) async fn delete_accounts(
 
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = DeleteAccountsOperationImpl { pool, index_client };
+    let smtp_client = SmtpClient::new(
+        SMTP_HOST.to_string(),
+        *SMTP_PORT,
+        SMTP_USERNAME.to_string(),
+        SMTP_PASSWORD.to_string(),
+    );
+
     let _ = handle_delete_accounts(
         user_info.account_id,
         user_info.email_address,
         current_date_time,
         &op,
+        &smtp_client,
     )
     .await?;
 
@@ -351,18 +366,44 @@ async fn delete_career_from_index_with_document_exclusive_lock(
     Ok(())
 }
 
+fn create_text() -> String {
+    // TODO: 文面の調整
+    format!(
+        r"アカウントの削除が完了しました。
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+        INQUIRY_EMAIL_ADDRESS
+    )
+}
+
 async fn handle_delete_accounts(
     account_id: i64,
     email_address: String,
     current_date_time: DateTime<FixedOffset>,
     op: &impl DeleteAccountsOperation,
+    send_mail: &impl SendMail,
 ) -> RespResult<DeleteAccountsResult> {
     let settlement_ids = op.get_settlement_ids(account_id).await?;
     for s_id in settlement_ids {
         op.stop_payment(s_id, current_date_time).await?;
     }
+
     op.delete_user_account(account_id, INDEX_NAME.to_string(), current_date_time)
         .await?;
-    // 削除成功のメール通知
+
+    let text = create_text();
+    send_mail
+        .send_mail(&email_address, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text)
+        .await?;
+
+    info!(
+        "deleted account (user account id: {}, email address: {}) at {}",
+        account_id, email_address, current_date_time
+    );
     Ok((StatusCode::OK, Json(DeleteAccountsResult {})))
 }
