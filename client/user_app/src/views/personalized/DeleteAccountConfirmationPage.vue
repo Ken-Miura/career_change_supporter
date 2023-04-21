@@ -51,10 +51,12 @@ export default defineComponent({
           }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
+            // エラーメッセージ表示にする？
+            // await router.push('/login')
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            await router.push('/terms-of-use')
+            // エラーメッセージ表示にする？
+            // await router.push('/terms-of-use')
             return
           }
           refreshErrorMessage.value = createErrorMessage(resp.getApiError().getCode())
