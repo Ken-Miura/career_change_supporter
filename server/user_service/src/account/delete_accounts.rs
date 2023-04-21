@@ -409,4 +409,153 @@ async fn handle_delete_accounts(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use axum::async_trait;
+    use axum::http::StatusCode;
+    use chrono::{DateTime, FixedOffset, TimeZone};
+    use common::{opensearch::INDEX_NAME, smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
+
+    use crate::{
+        account::delete_accounts::{
+            create_text, handle_delete_accounts, DeleteAccountsResult, SUBJECT,
+        },
+        util::tests::SendMailMock,
+    };
+
+    use super::DeleteAccountsOperation;
+
+    struct DeleteAccountsOperationMock {
+        account_id: i64,
+        settlement_ids: Vec<i64>,
+        current_date_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl DeleteAccountsOperation for DeleteAccountsOperationMock {
+        async fn get_settlement_ids(&self, consultant_id: i64) -> Result<Vec<i64>, ErrResp> {
+            assert_eq!(self.account_id, consultant_id);
+            Ok(self.settlement_ids.clone())
+        }
+
+        async fn stop_payment(
+            &self,
+            settlement_id: i64,
+            stopped_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert!(self.settlement_ids.contains(&settlement_id));
+            assert_eq!(self.current_date_time, stopped_date_time);
+            Ok(())
+        }
+
+        async fn delete_user_account(
+            &self,
+            account_id: i64,
+            index_name: String,
+            deleted_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.account_id, account_id);
+            assert_eq!(INDEX_NAME, index_name);
+            assert_eq!(self.current_date_time, deleted_date_time);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_delete_accounts_success_no_settlement() {
+        let account_id = 5517;
+        let email_address = "test0@test.com";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 21, 0, 1, 7)
+            .unwrap();
+        let op = DeleteAccountsOperationMock {
+            account_id,
+            settlement_ids: vec![],
+            current_date_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_delete_accounts(
+            account_id,
+            email_address.to_string(),
+            current_date_time,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(DeleteAccountsResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_delete_accounts_success_1_settlement() {
+        let account_id = 5517;
+        let email_address = "test0@test.com";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 21, 0, 1, 7)
+            .unwrap();
+        let op = DeleteAccountsOperationMock {
+            account_id,
+            settlement_ids: vec![51],
+            current_date_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_delete_accounts(
+            account_id,
+            email_address.to_string(),
+            current_date_time,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(DeleteAccountsResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_delete_accounts_success_2_settlements() {
+        let account_id = 5517;
+        let email_address = "test0@test.com";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 21, 0, 1, 7)
+            .unwrap();
+        let op = DeleteAccountsOperationMock {
+            account_id,
+            settlement_ids: vec![51, 89],
+            current_date_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_delete_accounts(
+            account_id,
+            email_address.to_string(),
+            current_date_time,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(DeleteAccountsResult {}, resp.1 .0);
+    }
+}
