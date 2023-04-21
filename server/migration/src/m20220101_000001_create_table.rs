@@ -1149,7 +1149,11 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.document To user_app;"))
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.document To user_app;",
+                ),
+            )
             .await
             .map(|_| ())?;
         // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる

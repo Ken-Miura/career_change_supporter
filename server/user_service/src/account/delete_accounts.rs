@@ -407,3 +407,6 @@ async fn handle_delete_accounts(
     );
     Ok((StatusCode::OK, Json(DeleteAccountsResult {})))
 }
+
+#[cfg(test)]
+mod tests {}
