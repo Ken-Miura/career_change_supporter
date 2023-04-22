@@ -205,6 +205,8 @@ export namespace Message {
     export const INVALID_RECOVERY_CODE_MESSAGE = '不正な形式のリカバリーコードです'
     export const RECOVERY_CODE_DOES_NOT_MATCH_MESSAGE = 'リカバリーコードが正しくありません'
     export const ACCOUNT_DELETE_IS_NOT_CONFIRMED_MESSAGE = 'アカウント削除の際の確認事項がチェックされていません'
+    export const UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE = 'セッションの有効期限が切れています。ログアウトし、再ログインして下さい'
+    export const NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE = '利用規約への同意が必要です。ログアウトし、再ログインすると利用規約への同意画面が表示されるので、利用規約同意を先に行って下さい'
     // TODO: SkyWay関連のメッセージの修正
     const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と表示されたメッセージをお問い合わせからご連絡下さい'
     export const SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED = `${SKY_WAY_UNEXPECTED_ERROR}: SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED`

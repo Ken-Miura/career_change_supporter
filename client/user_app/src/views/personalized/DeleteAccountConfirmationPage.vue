@@ -85,12 +85,10 @@ export default defineComponent({
           }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            // エラーメッセージ表示にする？
-            // await router.push('/login')
+            refreshErrorMessage.value = Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            // エラーメッセージ表示にする？
-            // await router.push('/terms-of-use')
+            refreshErrorMessage.value = Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE
             return
           }
           refreshErrorMessage.value = createErrorMessage(resp.getApiError().getCode())
@@ -110,12 +108,10 @@ export default defineComponent({
           }
           const code = resp.getApiError().getCode()
           if (code === Code.UNAUTHORIZED) {
-            // エラーメッセージ表示にする？
-            // await router.push('/login')
+            deleteAccountErrorMessage.value = Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE
             return
           } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-            // エラーメッセージ表示にする？
-            // await router.push('/terms-of-use')
+            deleteAccountErrorMessage.value = Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE
             return
           }
           deleteAccountErrorMessage.value = createErrorMessage(resp.getApiError().getCode())
