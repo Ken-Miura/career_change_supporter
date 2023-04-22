@@ -16,7 +16,12 @@
         </div>
         <div class="mt-2 min-w-full justify-self-start col-span-6 rounded bg-gray-200">
           <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
-            <div class="col-span-5">テスト</div>
+            <div class="col-span-5">
+              <ul class="ml-4 space-y-2 list-disc">
+                <li data-test="first-confirmation">未入金の報酬を受け取れなくなる可能性を受け入れます。</li>
+                <li data-test="second-confirmation">受け付け済みの相談を実施しないことにより問題が発生した場合、その責任を負うことを理解しています。</li>
+              </ul>
+            </div>
             <input v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
           </div>
         </div>
