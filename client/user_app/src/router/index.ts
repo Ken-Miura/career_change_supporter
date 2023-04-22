@@ -42,6 +42,7 @@ import EnableMfaSuccessPage from '../views/personalized/EnableMfaSuccessPage.vue
 import DisableMfaSuccessPage from '../views/personalized/DisableMfaSuccessPage.vue'
 import MfaPage from '../views/MfaPage.vue'
 import RecoveryCodePage from '../views/RecoveryCodePage.vue'
+import DeleteAccountSuccessPage from '../views/DeleteAccountSuccessPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -197,6 +198,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/delete-account-confirmation',
     name: 'DeleteAccountConfirmationPage',
     component: DeleteAccountConfirmationPage
+  },
+  {
+    path: '/delete-account-success',
+    name: 'DeleteAccountSuccessPage',
+    component: DeleteAccountSuccessPage
   },
   {
     path: '/reward',
