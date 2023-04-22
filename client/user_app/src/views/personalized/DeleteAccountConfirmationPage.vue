@@ -1,8 +1,30 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <h3 class="font-bold text-lg">test</h3>
+    <div v-if="!(refreshDone && deleteAccountDone)" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else class="flex flex-col justify-center bg-white max-w-xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div v-if="refreshErrorMessage">
+        <AlertMessage class="mt-2" v-bind:message="refreshErrorMessage"/>
+      </div>
+      <div v-else>
+        <h3 class="font-bold text-2xl">アカウントの削除</h3>
+        <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
+          <p>確認事項</p>
+          <p class="mt-2 text-lg">私は下記に記載の内容を理解した上でアカウントの削除を行います。</p>
+        </div>
+        <div class="mt-2 min-w-full justify-self-start col-span-6 rounded bg-gray-200">
+          <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+          <div class="col-span-5">テスト</div>
+            <input v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+          </div>
+        </div>
+        <button v-bind:disabled="!accountDeleteConfirmed" data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">アカウントを削除する</button>
+        <div v-if="deleteAccountErrorMessage">
+          <AlertMessage class="mt-2" v-bind:message="deleteAccountErrorMessage"/>
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>
@@ -13,6 +35,8 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import { useRefresh } from '@/util/personalized/refresh/useRefresh'
 import { ApiErrorResp } from '@/util/ApiError'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
@@ -25,7 +49,9 @@ import { DeleteAccountResp } from '@/util/personalized/delete-account-confirmati
 export default defineComponent({
   name: 'DeleteAccountConfirmationPage',
   components: {
-    TheHeader
+    TheHeader,
+    WaitingCircle,
+    AlertMessage
   },
   setup () {
     const router = useRouter()
@@ -41,6 +67,8 @@ export default defineComponent({
       deleteAccountFunc
     } = useDeleteAccount()
     const deleteAccountErrorMessage = ref(null as string | null)
+
+    const accountDeleteConfirmed = ref(false)
 
     onMounted(async () => {
       try {
@@ -97,7 +125,8 @@ export default defineComponent({
       refreshErrorMessage,
       deleteAccountDone,
       deleteAccountErrorMessage,
-      deleteAccount
+      deleteAccount,
+      accountDeleteConfirmed
     }
   }
 })
