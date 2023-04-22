@@ -1,7 +1,7 @@
 // Copyright 2023 Ken Miura
 
 use async_fred_session::RedisSessionStore;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum_extra::extract::cookie::Cookie;
@@ -20,7 +20,7 @@ use entity::sea_orm::{
 };
 use once_cell::sync::Lazy;
 use opensearch::OpenSearch;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
 
 use crate::err::unexpected_err_resp;
@@ -34,6 +34,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] アカウント削除�
 
 pub(crate) async fn delete_accounts(
     jar: SignedCookieJar,
+    query: Query<DeleteAccountsQuery>,
     State(store): State<RedisSessionStore>,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
@@ -41,6 +42,7 @@ pub(crate) async fn delete_accounts(
     let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
     let user_info = get_user_info_from_cookie(option_cookie.clone(), &store, &pool).await?;
 
+    let account_delete_confirmed = query.0.account_delete_confirmed;
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = DeleteAccountsOperationImpl { pool, index_client };
     let smtp_client = SmtpClient::new(
@@ -53,6 +55,7 @@ pub(crate) async fn delete_accounts(
     let _ = handle_delete_accounts(
         user_info.account_id,
         user_info.email_address,
+        account_delete_confirmed,
         current_date_time,
         &op,
         &smtp_client,
@@ -66,6 +69,11 @@ pub(crate) async fn delete_accounts(
         StatusCode::OK,
         jar.remove(Cookie::named(SESSION_ID_COOKIE_NAME)),
     ))
+}
+
+#[derive(Deserialize)]
+pub(crate) struct DeleteAccountsQuery {
+    pub(crate) account_delete_confirmed: bool,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -384,6 +392,7 @@ Email: {}",
 async fn handle_delete_accounts(
     account_id: i64,
     email_address: String,
+    account_delete_confirmed: bool,
     current_date_time: DateTime<FixedOffset>,
     op: &impl DeleteAccountsOperation,
     send_mail: &impl SendMail,
@@ -482,6 +491,7 @@ mod tests {
         let result = handle_delete_accounts(
             account_id,
             email_address.to_string(),
+            true,
             current_date_time,
             &op,
             &send_mail_mock,
@@ -515,6 +525,7 @@ mod tests {
         let result = handle_delete_accounts(
             account_id,
             email_address.to_string(),
+            true,
             current_date_time,
             &op,
             &send_mail_mock,
@@ -548,6 +559,7 @@ mod tests {
         let result = handle_delete_accounts(
             account_id,
             email_address.to_string(),
+            true,
             current_date_time,
             &op,
             &send_mail_mock,
