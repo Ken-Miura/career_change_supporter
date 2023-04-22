@@ -16,7 +16,7 @@
         </div>
         <div class="mt-2 min-w-full justify-self-start col-span-6 rounded bg-gray-200">
           <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
-          <div class="col-span-5">テスト</div>
+            <div class="col-span-5">テスト</div>
             <input v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
           </div>
         </div>
