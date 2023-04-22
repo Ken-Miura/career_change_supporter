@@ -58,4 +58,24 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
   })
+
+  it('has WaitingCircle while calling deleteAccount', async () => {
+    deleteAccountDoneMock.value = false
+    refreshFuncMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
 })
