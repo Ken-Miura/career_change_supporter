@@ -3,10 +3,10 @@ import { deleteAccount } from './DeleteAccount'
 
 export function useDeleteAccount () {
   const deleteAccountDone = ref(true)
-  const deleteAccountFunc = async () => {
+  const deleteAccountFunc = async (accountDeleteConfirmed: boolean) => {
     try {
       deleteAccountDone.value = false
-      const response = await deleteAccount()
+      const response = await deleteAccount(accountDeleteConfirmed)
       return response
     } finally {
       deleteAccountDone.value = true

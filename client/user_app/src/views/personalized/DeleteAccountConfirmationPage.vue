@@ -20,7 +20,7 @@
             <input v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
           </div>
         </div>
-        <button v-bind:disabled="!accountDeleteConfirmed" data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">アカウントを削除する</button>
+        <button v-on:click="deleteAccount" v-bind:disabled="!accountDeleteConfirmed" data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">アカウントを削除する</button>
         <div v-if="deleteAccountErrorMessage">
           <AlertMessage class="mt-2" v-bind:message="deleteAccountErrorMessage"/>
         </div>
@@ -97,7 +97,7 @@ export default defineComponent({
 
     const deleteAccount = async () => {
       try {
-        const resp = await deleteAccountFunc()
+        const resp = await deleteAccountFunc(false)
         if (!(resp instanceof DeleteAccountResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
