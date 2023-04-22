@@ -12,7 +12,7 @@
         <h3 class="font-bold text-2xl">アカウントの削除</h3>
         <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
           <p>確認事項</p>
-          <p class="mt-2 text-lg">私は下記に記載の内容を理解した上でアカウントの削除を行います。</p>
+          <p class="mt-2 ml-2 text-lg">私は下記に記載の内容を理解した上でアカウントの削除を行います。</p>
         </div>
         <div class="mt-2 min-w-full justify-self-start col-span-6 rounded bg-gray-200">
           <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
@@ -26,8 +26,9 @@
         </div>
       </div>
     </main>
-    <footer class="max-w-lg mx-auto flex justify-center text-white">
-      <router-link to="/" class="hover:underline">トップページへ</router-link>
+    <footer class="max-w-lg mx-auto flex flex-col text-white">
+      <router-link to="/profile" class="hover:underline text-center">プロフィールへ</router-link>
+      <router-link to="/" class="mt-6 hover:underline text-center">トップページへ</router-link>
     </footer>
   </div>
 </template>
