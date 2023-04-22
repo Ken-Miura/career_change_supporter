@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import DeleteAccountConfirmationPage from '@/views/personalized/DeleteAccountConfirmationPage.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -77,5 +78,23 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('displays delete account confirmation information', async () => {
+    refreshFuncMock.mockResolvedValue(RefreshResp.create())
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+
+    const label = wrapper.find('[data-test="label"]')
+    expect(label.text()).toContain('アカウントの削除')
   })
 })

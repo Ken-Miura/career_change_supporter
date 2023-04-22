@@ -9,10 +9,10 @@
         <AlertMessage class="mt-2" v-bind:message="refreshErrorMessage"/>
       </div>
       <div v-else>
-        <h3 class="font-bold text-2xl">アカウントの削除</h3>
+        <h3 data-test="label" class="font-bold text-2xl">アカウントの削除</h3>
         <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
-          <p>確認事項</p>
-          <p class="mt-2 ml-2 text-lg">私は下記に記載の内容を理解した上でアカウントの削除を行います。</p>
+          <p data-test="confirmation-label">確認事項</p>
+          <p data-test="confirmation-description" class="mt-2 ml-2 text-lg">私は下記に記載の内容を理解した上でアカウントの削除を行います。</p>
         </div>
         <div class="mt-2 min-w-full justify-self-start col-span-6 rounded bg-gray-200">
           <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
@@ -25,7 +25,7 @@
             <input v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
           </div>
         </div>
-        <button v-on:click="deleteAccount" v-bind:disabled="!accountDeleteConfirmed" data-test="submit-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">アカウントを削除する</button>
+        <button v-on:click="deleteAccount" v-bind:disabled="!accountDeleteConfirmed" data-test="delete-account-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">アカウントを削除する</button>
         <div v-if="deleteAccountErrorMessage">
           <AlertMessage class="mt-2" v-bind:message="deleteAccountErrorMessage"/>
         </div>
