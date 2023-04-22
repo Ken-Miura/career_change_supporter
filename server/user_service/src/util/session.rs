@@ -236,15 +236,15 @@ async fn get_user_account_id_by_session_id(
 }
 
 fn ensure_login_seq_has_already_finished(
-    accound_id: i64,
+    account_id: i64,
     login_status: String,
 ) -> Result<(), ErrResp> {
     match LoginStatus::from(login_status) {
         LoginStatus::Finish => Ok(()),
         LoginStatus::NeedMoreVerification => {
             error!(
-                "accound_id ({}) has not finished login sequence yet",
-                accound_id
+                "account_id ({}) has not finished login sequence yet",
+                account_id
             );
             Err((
                 StatusCode::UNAUTHORIZED,

@@ -12,7 +12,7 @@ use common::smtp::{
     SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
     SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
 };
-use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
@@ -23,7 +23,7 @@ use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
 
-use crate::err::unexpected_err_resp;
+use crate::err::{unexpected_err_resp, Code};
 use crate::util::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::{
@@ -343,7 +343,7 @@ async fn delete_career_from_index_with_document_exclusive_lock(
         Some(d) => d,
         None => {
             info!(
-                "no document (career info on index) found (user accound id: {})",
+                "no document (career info on index) found (user account id: {})",
                 account_id
             );
             return Ok(());
@@ -397,6 +397,8 @@ async fn handle_delete_accounts(
     op: &impl DeleteAccountsOperation,
     send_mail: &impl SendMail,
 ) -> RespResult<DeleteAccountsResult> {
+    ensure_account_delete_confirmed(account_id, account_delete_confirmed)?;
+
     let settlement_ids = op.get_settlement_ids(account_id).await?;
     for s_id in settlement_ids {
         op.stop_payment(s_id, current_date_time).await?;
@@ -417,6 +419,25 @@ async fn handle_delete_accounts(
     Ok((StatusCode::OK, Json(DeleteAccountsResult {})))
 }
 
+fn ensure_account_delete_confirmed(
+    account_id: i64,
+    account_delete_confirmed: bool,
+) -> Result<(), ErrResp> {
+    if !account_delete_confirmed {
+        error!(
+            "user account (account id: {}) does not check account_delete_confirmed",
+            account_id
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::AccountDeleteIsNotConfirmed as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
@@ -428,6 +449,7 @@ mod tests {
         account::delete_accounts::{
             create_text, handle_delete_accounts, DeleteAccountsResult, SUBJECT,
         },
+        err::Code,
         util::tests::SendMailMock,
     };
 
@@ -569,5 +591,39 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(DeleteAccountsResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn handle_delete_accounts_fail() {
+        let account_id = 5517;
+        let email_address = "test0@test.com";
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 21, 0, 1, 7)
+            .unwrap();
+        let op = DeleteAccountsOperationMock {
+            account_id,
+            settlement_ids: vec![],
+            current_date_time,
+        };
+        let send_mail_mock = SendMailMock::new(
+            email_address.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            SUBJECT.to_string(),
+            create_text(),
+        );
+
+        let result = handle_delete_accounts(
+            account_id,
+            email_address.to_string(),
+            false,
+            current_date_time,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::AccountDeleteIsNotConfirmed as u32, resp.1 .0.code);
     }
 }

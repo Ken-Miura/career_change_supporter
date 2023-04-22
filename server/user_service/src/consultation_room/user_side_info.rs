@@ -218,7 +218,7 @@ fn ensure_user_account_id_is_valid(
 ) -> Result<(), ErrResp> {
     if user_account_id_in_consultation != user_account_id {
         error!(
-            "user_account_id in consultation ({}) is not same as passed user_accound_id ({})",
+            "user_account_id in consultation ({}) is not same as passed user_account_id ({})",
             user_account_id_in_consultation, user_account_id
         );
         return Err((
