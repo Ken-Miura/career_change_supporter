@@ -101,7 +101,7 @@ export default defineComponent({
 
     const deleteAccount = async () => {
       try {
-        const resp = await deleteAccountFunc(false)
+        const resp = await deleteAccountFunc(accountDeleteConfirmed.value)
         if (!(resp instanceof DeleteAccountResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)
