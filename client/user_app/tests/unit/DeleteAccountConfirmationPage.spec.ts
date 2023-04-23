@@ -5,6 +5,9 @@ import TheHeader from '@/components/TheHeader.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import DeleteAccountConfirmationPage from '@/views/personalized/DeleteAccountConfirmationPage.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
+import { Message } from '@/util/Message'
+import { Code } from '@/util/Error'
+import { ApiError, ApiErrorResp } from '@/util/ApiError'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -106,5 +109,27 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     expect(secondConfirmation.text()).toContain('受け付け済みの相談を実施しないことにより問題が発生した場合、その責任を負うことを理解しています。')
     const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
     expect(deleteAccountButton.text()).toContain('アカウントを削除する')
+  })
+
+  it(`displays ${Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE} if ${Code.UNAUTHORIZED} is returned when refresh`, async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE)
   })
 })
