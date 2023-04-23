@@ -132,4 +132,26 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE)
   })
+
+  it(`displays ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE} if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned when refresh`, async () => {
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    refreshFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE)
+  })
 })
