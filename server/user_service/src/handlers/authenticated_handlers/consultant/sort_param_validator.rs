@@ -4,7 +4,7 @@ use std::{collections::HashSet, fmt::Display};
 
 use once_cell::sync::Lazy;
 
-use crate::consultant::search::SortParam;
+use super::search::SortParam;
 
 static KEY_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     let mut set: HashSet<String> = HashSet::with_capacity(2);
@@ -20,7 +20,7 @@ static ORDER_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     set
 });
 
-pub(crate) fn validate_sort_param(sort_param: &SortParam) -> Result<(), SortParamError> {
+pub(super) fn validate_sort_param(sort_param: &SortParam) -> Result<(), SortParamError> {
     if !KEY_SET.contains(sort_param.key.as_str()) {
         return Err(SortParamError::InvalidKey(sort_param.key.clone()));
     }
@@ -32,7 +32,7 @@ pub(crate) fn validate_sort_param(sort_param: &SortParam) -> Result<(), SortPara
 
 /// Error related to [validate_sort_param()]
 #[derive(Debug, PartialEq)]
-pub(crate) enum SortParamError {
+pub(super) enum SortParamError {
     InvalidKey(String),
     InvalidOrder(String),
 }
@@ -52,9 +52,9 @@ impl Display for SortParamError {
 mod tests {
     use once_cell::sync::Lazy;
 
-    use crate::{
+    use crate::handlers::authenticated_handlers::{
         consultant::search::SortParam,
-        util::validator::tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
+        tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
     };
 
     use super::{validate_sort_param, SortParamError};

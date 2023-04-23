@@ -2,12 +2,11 @@
 
 use std::fmt::Display;
 
-use crate::{
-    consultant::search::FeePerHourInYenParam,
-    util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
-};
+use crate::util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
 
-pub(crate) fn validate_fee_per_hour_in_yen_param(
+use super::search::FeePerHourInYenParam;
+
+pub(super) fn validate_fee_per_hour_in_yen_param(
     fee_per_hour_in_yen: &FeePerHourInYenParam,
 ) -> Result<(), FeePerHourInYenParamError> {
     let equal_or_more_option = fee_per_hour_in_yen.equal_or_more;
@@ -45,7 +44,7 @@ pub(crate) fn validate_fee_per_hour_in_yen_param(
 
 /// Error related to [validate_fee_per_hour_in_yen_param()]
 #[derive(Debug, PartialEq)]
-pub(crate) enum FeePerHourInYenParamError {
+pub(super) enum FeePerHourInYenParamError {
     InvalidEqualOrMore {
         value: i32,
         min: i32,
@@ -89,7 +88,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        consultant::search::FeePerHourInYenParam,
+        handlers::authenticated_handlers::consultant::search::FeePerHourInYenParam,
         util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
     };
 

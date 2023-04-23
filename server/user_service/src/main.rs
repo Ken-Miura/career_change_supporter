@@ -2,7 +2,6 @@
 
 mod account;
 mod agreement;
-mod consultant;
 mod consultation_request;
 mod consultation_room;
 mod consultations;
@@ -22,8 +21,6 @@ use crate::account::accounts::post_accounts;
 use crate::account::delete_accounts::delete_accounts;
 use crate::account::temp_accounts::post_temp_accounts;
 use crate::agreement::post_agreement;
-use crate::consultant::detail::get_consultant_detail;
-use crate::consultant::search::post_consultants_search;
 use crate::consultation_request::acceptance::post_consultation_request_acceptance;
 use crate::consultation_request::detail::get_consultation_request_detail;
 use crate::consultation_request::list::get_consultation_requests;
@@ -31,6 +28,8 @@ use crate::consultation_request::rejection::post_consultation_request_rejection;
 use crate::consultation_room::consultant_side_info::get_consultant_side_info;
 use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
+use crate::handlers::authenticated_handlers::consultant::detail::get_consultant_detail;
+use crate::handlers::authenticated_handlers::consultant::search::post_consultants_search;
 use crate::handlers::authenticated_handlers::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
 use crate::handlers::authenticated_handlers::personal_info::profile::career::{delete, get, post};
 use crate::handlers::authenticated_handlers::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;

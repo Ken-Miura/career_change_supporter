@@ -45,32 +45,32 @@ pub(crate) async fn get_consultant_detail(
 
 #[derive(Deserialize)]
 pub(crate) struct ConsultantDetailQuery {
-    pub(crate) consultant_id: i64,
+    consultant_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultantDetail {
-    pub(crate) consultant_id: i64,
-    pub(crate) fee_per_hour_in_yen: i32,
-    pub(crate) rating: Option<String>, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
-    pub(crate) num_of_rated: i32,
-    pub(crate) careers: Vec<ConsultantCareerDetail>,
+    consultant_id: i64,
+    fee_per_hour_in_yen: i32,
+    rating: Option<String>, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
+    num_of_rated: i32,
+    careers: Vec<ConsultantCareerDetail>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultantCareerDetail {
-    pub(crate) company_name: String,
-    pub(crate) department_name: Option<String>,
-    pub(crate) office: Option<String>,
-    pub(crate) years_of_service: String,
-    pub(crate) employed: bool,
-    pub(crate) contract_type: String,
-    pub(crate) profession: Option<String>,
-    pub(crate) annual_income_in_man_yen: Option<i32>,
-    pub(crate) is_manager: bool,
-    pub(crate) position_name: Option<String>,
-    pub(crate) is_new_graduate: bool,
-    pub(crate) note: Option<String>,
+    company_name: String,
+    department_name: Option<String>,
+    office: Option<String>,
+    years_of_service: String,
+    employed: bool,
+    contract_type: String,
+    profession: Option<String>,
+    annual_income_in_man_yen: Option<i32>,
+    is_manager: bool,
+    position_name: Option<String>,
+    is_new_graduate: bool,
+    note: Option<String>,
 }
 
 #[async_trait]

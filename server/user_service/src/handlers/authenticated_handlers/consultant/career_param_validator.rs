@@ -5,16 +5,15 @@ use std::{collections::HashSet, error::Error, fmt::Display};
 use once_cell::sync::Lazy;
 
 use crate::{
-    consultant::search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
-    util::{
-        validator::MAX_ANNUAL_INCOME_IN_MAN_YEN,
-        years_of_service_period::{
-            VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
-            VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
-            VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
-        },
+    handlers::authenticated_handlers::personal_info::profile::career::MAX_ANNUAL_INCOME_IN_MAN_YEN,
+    util::years_of_service_period::{
+        VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
+        VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
+        VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
     },
 };
+
+use super::search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam};
 
 static VALID_YEARS_OF_SERVICE_SET: Lazy<HashSet<i32>> = Lazy::new(|| {
     let mut set: HashSet<i32> = HashSet::with_capacity(5);
@@ -26,7 +25,7 @@ static VALID_YEARS_OF_SERVICE_SET: Lazy<HashSet<i32>> = Lazy::new(|| {
     set
 });
 
-pub(crate) fn validate_career_param(
+pub(super) fn validate_career_param(
     career_param: &CareerParam,
 ) -> Result<(), CareerParamValidationError> {
     if let Some(company_name) = &career_param.company_name {
@@ -57,8 +56,8 @@ pub(crate) fn validate_career_param(
 }
 
 fn validate_company(company_name: &str) -> Result<(), CareerParamValidationError> {
-    crate::util::validator::validate_company_name(company_name).map_err(|e| match e {
-        crate::util::validator::CompanyNameValidationError::InvalidCompanyNameLength {
+    crate::handlers::authenticated_handlers::personal_info::profile::career::validate_company_name(company_name).map_err(|e| match e {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::CompanyNameValidationError::InvalidCompanyNameLength {
             length,
             min_length,
             max_length,
@@ -67,7 +66,7 @@ fn validate_company(company_name: &str) -> Result<(), CareerParamValidationError
             min_length,
             max_length,
         },
-        crate::util::validator::CompanyNameValidationError::IllegalCharInCompanyName(
+        crate::handlers::authenticated_handlers::personal_info::profile::career::CompanyNameValidationError::IllegalCharInCompanyName(
             company_name,
         ) => CareerParamValidationError::IllegalCharInCompanyName(company_name),
     })?;
@@ -75,8 +74,8 @@ fn validate_company(company_name: &str) -> Result<(), CareerParamValidationError
 }
 
 fn validate_department_name(department_name: &str) -> Result<(), CareerParamValidationError> {
-    crate::util::validator::validate_department_name(department_name).map_err(|e| match e {
-        crate::util::validator::DepartmentNameValidationError::InvalidDepartmentNameLength {
+    crate::handlers::authenticated_handlers::personal_info::profile::career::validate_department_name(department_name).map_err(|e| match e {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::DepartmentNameValidationError::InvalidDepartmentNameLength {
             length,
             min_length,
             max_length,
@@ -85,7 +84,7 @@ fn validate_department_name(department_name: &str) -> Result<(), CareerParamVali
             min_length,
             max_length,
         },
-        crate::util::validator::DepartmentNameValidationError::IllegalCharInDepartmentName(
+        crate::handlers::authenticated_handlers::personal_info::profile::career::DepartmentNameValidationError::IllegalCharInDepartmentName(
             department_name,
         ) => CareerParamValidationError::IllegalCharInDepartmentName(department_name),
     })?;
@@ -93,8 +92,8 @@ fn validate_department_name(department_name: &str) -> Result<(), CareerParamVali
 }
 
 fn validate_office(office: &str) -> Result<(), CareerParamValidationError> {
-    crate::util::validator::validate_office(office).map_err(|e| match e {
-        crate::util::validator::OfficeValidationError::InvalidOfficeLength {
+    crate::handlers::authenticated_handlers::personal_info::profile::career::validate_office(office).map_err(|e| match e {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::OfficeValidationError::InvalidOfficeLength {
             length,
             min_length,
             max_length,
@@ -103,7 +102,7 @@ fn validate_office(office: &str) -> Result<(), CareerParamValidationError> {
             min_length,
             max_length,
         },
-        crate::util::validator::OfficeValidationError::IllegalCharInOffice(office) => {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::OfficeValidationError::IllegalCharInOffice(office) => {
             CareerParamValidationError::IllegalCharInOffice(office)
         }
     })?;
@@ -157,8 +156,8 @@ fn validate_years_of_service_less_than(
 }
 
 fn validate_contract_type(contract_type: &str) -> Result<(), CareerParamValidationError> {
-    crate::util::validator::validate_contract_type(contract_type).map_err(|e| match e {
-        crate::util::validator::ContractTypeValidationError::IllegalContractType(contract_type) => {
+    crate::handlers::authenticated_handlers::personal_info::profile::career::validate_contract_type(contract_type).map_err(|e| match e {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::ContractTypeValidationError::IllegalContractType(contract_type) => {
             CareerParamValidationError::IllegalContractType(contract_type)
         }
     })?;
@@ -166,8 +165,8 @@ fn validate_contract_type(contract_type: &str) -> Result<(), CareerParamValidati
 }
 
 fn validate_profession(profession: &str) -> Result<(), CareerParamValidationError> {
-    crate::util::validator::validate_profession(profession).map_err(|e| match e {
-        crate::util::validator::ProfessionValidationError::InvalidProfessionLength {
+    crate::handlers::authenticated_handlers::personal_info::profile::career::validate_profession(profession).map_err(|e| match e {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::ProfessionValidationError::InvalidProfessionLength {
             length,
             min_length,
             max_length,
@@ -176,7 +175,7 @@ fn validate_profession(profession: &str) -> Result<(), CareerParamValidationErro
             min_length,
             max_length,
         },
-        crate::util::validator::ProfessionValidationError::IllegalCharInProfession(profession) => {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::ProfessionValidationError::IllegalCharInProfession(profession) => {
             CareerParamValidationError::IllegalCharInProfession(profession)
         }
     })?;
@@ -219,8 +218,8 @@ fn validate_annual_income_in_man_yen_param(
 }
 
 fn validate_position_name(position_name: &str) -> Result<(), CareerParamValidationError> {
-    crate::util::validator::validate_position_name(position_name).map_err(|e| match e {
-        crate::util::validator::PositionNameValidationError::InvalidPositionNameLength {
+    crate::handlers::authenticated_handlers::personal_info::profile::career::validate_position_name(position_name).map_err(|e| match e {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::PositionNameValidationError::InvalidPositionNameLength {
             length,
             min_length,
             max_length,
@@ -229,7 +228,7 @@ fn validate_position_name(position_name: &str) -> Result<(), CareerParamValidati
             min_length,
             max_length,
         },
-        crate::util::validator::PositionNameValidationError::IllegalCharInPositionName(
+        crate::handlers::authenticated_handlers::personal_info::profile::career::PositionNameValidationError::IllegalCharInPositionName(
             position_name,
         ) => CareerParamValidationError::IllegalCharInPositionName(position_name),
     })?;
@@ -237,8 +236,8 @@ fn validate_position_name(position_name: &str) -> Result<(), CareerParamValidati
 }
 
 fn validate_note(note: &str) -> Result<(), CareerParamValidationError> {
-    crate::util::validator::validate_note(note).map_err(|e| match e {
-        crate::util::validator::NoteValidationError::InvalidNoteLength {
+    crate::handlers::authenticated_handlers::personal_info::profile::career::validate_note(note).map_err(|e| match e {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::NoteValidationError::InvalidNoteLength {
             length,
             min_length,
             max_length,
@@ -247,7 +246,7 @@ fn validate_note(note: &str) -> Result<(), CareerParamValidationError> {
             min_length,
             max_length,
         },
-        crate::util::validator::NoteValidationError::IllegalCharInNote(note) => {
+        crate::handlers::authenticated_handlers::personal_info::profile::career::NoteValidationError::IllegalCharInNote(note) => {
             CareerParamValidationError::IllegalCharInNote(note)
         }
     })?;
@@ -256,7 +255,7 @@ fn validate_note(note: &str) -> Result<(), CareerParamValidationError> {
 
 /// Error related to [validate_career_param()]
 #[derive(Debug, PartialEq)]
-pub(crate) enum CareerParamValidationError {
+pub(super) enum CareerParamValidationError {
     InvalidCompanyNameLength {
         length: usize,
         min_length: usize,
@@ -478,12 +477,12 @@ mod tests {
 
     use once_cell::sync::Lazy;
 
-    use crate::{
-        consultant::search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
-        util::validator::{
-            consultant_search_param::career_param_validator::{
-                validate_career_param, validate_years_of_service,
-            },
+    use crate::handlers::authenticated_handlers::{
+        consultant::{
+            career_param_validator::{validate_career_param, validate_years_of_service},
+            search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
+        },
+        personal_info::profile::career::{
             COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH,
             DEPARTMENT_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN, NOTE_MAX_LENGTH,
             NOTE_MIN_LENGTH, OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH,

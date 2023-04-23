@@ -3,8 +3,10 @@
 use std::error::Error;
 use std::io::Cursor;
 
+use crate::handlers::authenticated_handlers::personal_info::profile::career::career_validator::{
+    validate_career, CareerValidationError,
+};
 use crate::util::session::verified_user::VerifiedUser;
-use crate::util::validator::career_validator::{validate_career, CareerValidationError};
 use crate::util::{
     image_converter::convert_jpeg_to_png, multipart::clone_file_name_if_exists,
     multipart::FileNameAndBinary,

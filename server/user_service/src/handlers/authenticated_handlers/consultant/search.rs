@@ -10,18 +10,18 @@ use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
+use super::career_param_validator::validate_career_param;
+use super::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
+use super::sort_param_validator::SortParamError;
 use crate::err::Code;
+use crate::handlers::authenticated_handlers::consultant::fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param;
+use crate::handlers::authenticated_handlers::consultant::sort_param_validator::validate_sort_param;
 use crate::util::consultation_request::round_to_one_decimal_places;
 use crate::util::session::verified_user::VerifiedUser;
-use crate::util::validator::consultant_search_param::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
-use crate::util::validator::consultant_search_param::sort_param_validator::SortParamError;
-use crate::util::validator::consultant_search_param::{
-    career_param_validator::{validate_career_param, CareerParamValidationError},
-    fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param,
-    sort_param_validator::validate_sort_param,
-};
 
-pub(crate) const VALID_SIZE: i64 = 20;
+use super::career_param_validator::CareerParamValidationError;
+
+const VALID_SIZE: i64 = 20;
 
 pub(crate) async fn post_consultants_search(
     VerifiedUser { user_info }: VerifiedUser,
@@ -34,51 +34,51 @@ pub(crate) async fn post_consultants_search(
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct ConsultantSearchParam {
-    pub career_param: CareerParam,
-    pub fee_per_hour_in_yen_param: FeePerHourInYenParam,
-    pub sort_param: Option<SortParam>,
-    pub from: i64,
-    pub size: i64,
+    career_param: CareerParam,
+    fee_per_hour_in_yen_param: FeePerHourInYenParam,
+    sort_param: Option<SortParam>,
+    from: i64,
+    size: i64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct CareerParam {
-    pub company_name: Option<String>,
-    pub department_name: Option<String>,
-    pub office: Option<String>,
-    pub years_of_service: YearsOfServiceParam,
-    pub employed: Option<bool>,
-    pub contract_type: Option<String>,
-    pub profession: Option<String>,
-    pub annual_income_in_man_yen: AnnualInComeInManYenParam,
-    pub is_manager: Option<bool>,
-    pub position_name: Option<String>,
-    pub is_new_graduate: Option<bool>,
-    pub note: Option<String>,
+    pub(super) company_name: Option<String>,
+    pub(super) department_name: Option<String>,
+    pub(super) office: Option<String>,
+    pub(super) years_of_service: YearsOfServiceParam,
+    pub(super) employed: Option<bool>,
+    pub(super) contract_type: Option<String>,
+    pub(super) profession: Option<String>,
+    pub(super) annual_income_in_man_yen: AnnualInComeInManYenParam,
+    pub(super) is_manager: Option<bool>,
+    pub(super) position_name: Option<String>,
+    pub(super) is_new_graduate: Option<bool>,
+    pub(super) note: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct YearsOfServiceParam {
-    pub equal_or_more: Option<i32>,
-    pub less_than: Option<i32>,
+    pub(super) equal_or_more: Option<i32>,
+    pub(super) less_than: Option<i32>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct AnnualInComeInManYenParam {
-    pub equal_or_more: Option<i32>,
-    pub equal_or_less: Option<i32>,
+    pub(super) equal_or_more: Option<i32>,
+    pub(super) equal_or_less: Option<i32>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct FeePerHourInYenParam {
-    pub equal_or_more: Option<i32>,
-    pub equal_or_less: Option<i32>,
+    pub(super) equal_or_more: Option<i32>,
+    pub(super) equal_or_less: Option<i32>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct SortParam {
-    pub key: String,
-    pub order: String,
+    pub(super) key: String,
+    pub(super) order: String,
 }
 
 #[derive(Serialize, Debug, PartialEq)]
