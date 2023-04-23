@@ -8,6 +8,7 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import { Message } from '@/util/Message'
 import { Code } from '@/util/Error'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
+import { DeleteAccountResp } from '@/util/personalized/delete-account-confirmation/DeleteAccountResp'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -94,6 +95,7 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     })
     await flushPromises()
 
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
     const alertMessages = wrapper.findAllComponents(AlertMessage)
     expect(alertMessages.length).toBe(0)
 
@@ -109,6 +111,8 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     expect(secondConfirmation.text()).toContain('受け付け済みの相談を実施しないことにより問題が発生した場合、その責任を負うことを理解しています。')
     const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
     expect(deleteAccountButton.text()).toContain('アカウントを削除する')
+    const buttonDisabledAttr = deleteAccountButton.attributes('disabled')
+    expect(buttonDisabledAttr).toBeDefined()
   })
 
   it(`displays ${Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE} if ${Code.UNAUTHORIZED} is returned when refresh`, async () => {
@@ -176,5 +180,29 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
     expect(resultMessage).toContain(errDetail)
+  })
+
+  it('moves delete-account-success if account delete is successful', async () => {
+    refreshFuncMock.mockResolvedValue(RefreshResp.create())
+    deleteAccountFuncMock.mockResolvedValue(DeleteAccountResp.create())
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const accountDeleteConfirmed = wrapper.find('[data-test="account-delete-confirmed"]')
+    await accountDeleteConfirmed.setValue(true)
+    await flushPromises()
+
+    const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
+    await deleteAccountButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/delete-account-success')
   })
 })

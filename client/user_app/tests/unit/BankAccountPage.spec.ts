@@ -918,7 +918,7 @@ describe('BankAccountPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
-  it('has', async () => {
+  it('has disabled on submit button on opening page', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
     const resp = PostBankAccountResp.create()
     postBankAccountFuncMock.mockResolvedValue(resp)

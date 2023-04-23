@@ -22,7 +22,7 @@
                 <li data-test="second-confirmation">受け付け済みの相談を実施しないことにより問題が発生した場合、その責任を負うことを理解しています。</li>
               </ul>
             </div>
-            <input v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+            <input data-test="account-delete-confirmed" v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
           </div>
         </div>
         <button v-on:click="deleteAccount" v-bind:disabled="!accountDeleteConfirmed" data-test="delete-account-button" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">アカウントを削除する</button>
@@ -120,6 +120,7 @@ export default defineComponent({
         await router.push('/delete-account-success')
       } catch (e) {
         deleteAccountErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        console.log(deleteAccountErrorMessage.value)
       }
     }
 
