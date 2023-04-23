@@ -58,7 +58,7 @@ pub(crate) struct ConsultationRequestRejectionParam {
 pub(crate) struct ConsultationRequestRejectionResult {}
 
 async fn handle_consultation_request_rejection(
-    user_account_id: i64,
+    consultant_id: i64,
     consultation_req_id: i64,
     op: impl ConsultationRequestRejection,
     send_mail: impl SendMail,
@@ -69,7 +69,7 @@ async fn handle_consultation_request_rejection(
         .find_consultation_req_by_consultation_req_id(consultation_req_id)
         .await?;
     let req = consultation_req_exists(req, consultation_req_id)?;
-    validate_consultation_req_for_delete(&req, user_account_id)?;
+    validate_consultation_req_for_delete(&req, consultant_id)?;
 
     op.delete_consultation_req(req.consultation_req_id).await?;
 
@@ -263,7 +263,7 @@ mod tests {
 
     #[derive(Debug)]
     struct Input {
-        user_account_id: i64,
+        consultant_id: i64,
         consultation_req_id: i64,
         op: ConsultationRequestRejectionMock,
         smtp_client: SendMailMock,
@@ -274,7 +274,7 @@ mod tests {
         consultation_req_id: i64,
         consultation_req: Option<ConsultationRequest>,
         too_many_requests: bool,
-        account_id_of_user: i64,
+        user_account_id: i64,
         user_email_address: Option<String>,
     }
 
@@ -321,7 +321,7 @@ mod tests {
             &self,
             user_account_id: i64,
         ) -> Result<Option<String>, ErrResp> {
-            assert_eq!(self.account_id_of_user, user_account_id);
+            assert_eq!(self.user_account_id, user_account_id);
             Ok(self.user_email_address.clone())
         }
     }
@@ -341,13 +341,13 @@ mod tests {
             TestCase {
                 name: "success case (normal)".to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: false,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
                     smtp_client: SendMailMock::new(
@@ -362,13 +362,13 @@ mod tests {
             TestCase {
                 name: "success case (fail release_credit_facility)".to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: true,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
                     smtp_client: SendMailMock::new(
@@ -383,13 +383,13 @@ mod tests {
             TestCase {
                 name: "success case (no user email address found)".to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: false,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: None,
                     },
                     smtp_client: SendMailMock::new(
@@ -405,13 +405,13 @@ mod tests {
                 name: "success case (fail release_credit_facility and no user email address found)"
                     .to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: true,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: None,
                     },
                     smtp_client: SendMailMock::new(
@@ -426,13 +426,13 @@ mod tests {
             TestCase {
                 name: "fail NonPositiveConsultationReqId (id: 0)".to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id: 0,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
                         too_many_requests: false,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
                     smtp_client: SendMailMock::new(
@@ -452,13 +452,13 @@ mod tests {
             TestCase {
                 name: "fail NonPositiveConsultationReqId (id: -1)".to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id: -1,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req),
                         too_many_requests: false,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
                     smtp_client: SendMailMock::new(
@@ -478,13 +478,13 @@ mod tests {
             TestCase {
                 name: "fail NoConsultationReqFound (no consultation request found)".to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: None,
                         too_many_requests: false,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
                     smtp_client: SendMailMock::new(
@@ -504,7 +504,7 @@ mod tests {
             TestCase {
                 name: "fail NoConsultationReqFound (account id of consultant does not match consultant id)".to_string(),
                 input: Input {
-                    user_account_id: account_id_of_consultant,
+                    consultant_id: account_id_of_consultant,
                     consultation_req_id,
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
@@ -514,7 +514,7 @@ mod tests {
                             account_id_of_user,
                         )),
                         too_many_requests: false,
-                        account_id_of_user,
+                        user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
                     smtp_client: SendMailMock::new(
@@ -563,7 +563,7 @@ mod tests {
     #[tokio::test]
     async fn handle_handle_consultation_request_rejection() {
         for test_case in TEST_CASE_SET.iter() {
-            let account_id = test_case.input.user_account_id;
+            let account_id = test_case.input.consultant_id;
             let consultation_req_id = test_case.input.consultation_req_id;
             let op = test_case.input.op.clone();
             let smtp_client = test_case.input.smtp_client.clone();
