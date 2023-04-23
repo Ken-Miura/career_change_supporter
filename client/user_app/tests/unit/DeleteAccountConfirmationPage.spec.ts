@@ -205,4 +205,66 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     expect(routerPushMock).toHaveBeenCalledWith('/delete-account-success')
   })
+
+  it(`displays ${Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE} if ${Code.UNAUTHORIZED} is returned when account delete`, async () => {
+    refreshFuncMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    deleteAccountFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const accountDeleteConfirmed = wrapper.find('[data-test="account-delete-confirmed"]')
+    await accountDeleteConfirmed.setValue(true)
+    await flushPromises()
+
+    const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
+    await deleteAccountButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNAUTHORIZED_ON_ACCOUNT_DELETE_OPERATION_MESSAGE)
+  })
+
+  it(`displays ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE} if ${Code.NOT_TERMS_OF_USE_AGREED_YET} is returned when account delete`, async () => {
+    refreshFuncMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NOT_TERMS_OF_USE_AGREED_YET))
+    deleteAccountFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const accountDeleteConfirmed = wrapper.find('[data-test="account-delete-confirmed"]')
+    await accountDeleteConfirmed.setValue(true)
+    await flushPromises()
+
+    const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
+    await deleteAccountButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE)
+  })
 })
