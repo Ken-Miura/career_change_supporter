@@ -33,14 +33,10 @@ use crate::util::{
     },
     ACCESS_INFO,
 };
-use crate::{
-    err::Code,
-    util::{
-        bank_account::BankAccount,
-        session::user::User,
-        validator::bank_account_validator::{validate_bank_account, BankAccountValidationError},
-    },
-};
+use crate::{err::Code, util::session::user::User};
+
+use super::bank_account_validator::{validate_bank_account, BankAccountValidationError};
+use super::BankAccount;
 
 static KATAKANA_LOWER_CASE_UPPER_CASE_SET: Lazy<HashSet<(String, String)>> = Lazy::new(|| {
     let mut set: HashSet<(String, String)> = HashSet::with_capacity(10);
@@ -74,8 +70,8 @@ pub(crate) async fn post_bank_account(
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BankAccountRegisterReq {
-    pub(crate) bank_account: BankAccount,
-    pub(crate) non_profit_objective: bool,
+    bank_account: BankAccount,
+    non_profit_objective: bool,
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -619,8 +615,8 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::personal_info::rewards::bank_account::BankAccountResult;
-    use crate::util::bank_account::BankAccount;
+    use crate::handlers::authenticated_handlers::personal_info::rewards::bank_account::BankAccountResult;
+    use crate::handlers::authenticated_handlers::personal_info::rewards::BankAccount;
 
     use super::{handle_bank_account_req, BankAccountRegisterReq, SubmitBankAccountOperation};
 

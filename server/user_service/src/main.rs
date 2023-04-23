@@ -7,12 +7,12 @@ mod consultation_request;
 mod consultation_room;
 mod consultations;
 mod err;
+mod handlers;
 mod login;
 mod logout;
 mod mfa;
 mod news;
 mod password;
-mod personal_info;
 mod rating;
 mod refresh;
 mod request_consultation;
@@ -31,6 +31,15 @@ use crate::consultation_request::rejection::post_consultation_request_rejection;
 use crate::consultation_room::consultant_side_info::get_consultant_side_info;
 use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;
+use crate::handlers::authenticated_handlers::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
+use crate::handlers::authenticated_handlers::personal_info::profile::career::{delete, get, post};
+use crate::handlers::authenticated_handlers::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
+use crate::handlers::authenticated_handlers::personal_info::profile::get_profile;
+use crate::handlers::authenticated_handlers::personal_info::profile::identity::{
+    post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
+};
+use crate::handlers::authenticated_handlers::personal_info::rewards::bank_account::post_bank_account;
+use crate::handlers::authenticated_handlers::personal_info::rewards::get_reward;
 use crate::login::post_login;
 use crate::logout::post_logout;
 use crate::mfa::mfa_request::pass_code::post_pass_code;
@@ -42,13 +51,6 @@ use crate::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::news::get_news;
 use crate::password::change_req::post_password_change_req;
 use crate::password::update::post_password_update;
-use crate::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
-use crate::personal_info::profile::career::{delete, get, post};
-use crate::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
-use crate::personal_info::profile::get_profile;
-use crate::personal_info::profile::identity::{post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES};
-use crate::personal_info::rewards::bank_account::post_bank_account;
-use crate::personal_info::rewards::get_reward;
 use crate::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,

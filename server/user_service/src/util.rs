@@ -1,6 +1,5 @@
 // Copyright 2021 Ken Miura
 
-pub(crate) mod bank_account;
 pub(crate) mod charge_metadata_key;
 pub(crate) mod consultant_disabled_check;
 pub(crate) mod consultation_request;

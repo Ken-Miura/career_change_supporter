@@ -35,14 +35,10 @@ use uuid::Uuid;
 
 use crate::{
     err::{self, unexpected_err_resp, Code},
-    util::{
-        session::user::User,
-        validator::{
-            file_name_validator::validate_extension_is_jpeg,
-            identity_validator::{validate_identity, IdentityValidationError},
-        },
-    },
+    util::{session::user::User, validator::file_name_validator::validate_extension_is_jpeg},
 };
+
+use super::identity_validator::{validate_identity, IdentityValidationError};
 
 /// 身分証の画像ファイルのバイト単位での最大値（4MB）
 pub(crate) const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
@@ -914,9 +910,10 @@ mod tests {
     use crate::err::Code::NoNameFound;
     use crate::err::Code::NotJpegExtension;
     use crate::err::Code::{self, DataParseFailure};
-    use crate::personal_info::profile::identity::{
+    use crate::handlers::authenticated_handlers::personal_info::profile::identity::{
         IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
     };
+    use crate::handlers::authenticated_handlers::personal_info::profile::identity_validator::MIN_AGE_REQUIREMENT;
     use crate::util::tests::SendMailMock;
     use async_session::serde_json;
     use axum::body::Bytes;
@@ -931,10 +928,7 @@ mod tests {
     use serde::Serialize;
     use uuid::Uuid;
 
-    use crate::{
-        personal_info::profile::identity::convert_jpeg_to_png,
-        util::validator::identity_validator::MIN_AGE_REQUIREMENT,
-    };
+    use crate::handlers::authenticated_handlers::personal_info::profile::identity::convert_jpeg_to_png;
 
     use super::{
         create_subject, create_text, handle_identity_req, handle_multipart, IdentityField,

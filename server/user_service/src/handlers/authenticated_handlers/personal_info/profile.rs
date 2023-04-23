@@ -3,6 +3,7 @@
 pub(crate) mod career;
 pub(crate) mod fee_per_hour_in_yen;
 pub(crate) mod identity;
+mod identity_validator;
 
 use axum::async_trait;
 use axum::{extract::State, http::StatusCode, Json};
@@ -277,9 +278,10 @@ mod tests {
     use common::ErrResp;
     use common::MAX_NUM_OF_CAREER_PER_USER_ACCOUNT;
 
+    use crate::handlers::authenticated_handlers::personal_info::profile::identity_validator::validate_identity;
+    use crate::handlers::authenticated_handlers::personal_info::profile::identity_validator::MIN_AGE_REQUIREMENT;
     use crate::util::fee_per_hour_in_yen_range::MAX_FEE_PER_HOUR_IN_YEN;
     use crate::util::fee_per_hour_in_yen_range::MIN_FEE_PER_HOUR_IN_YEN;
-    use crate::util::validator::identity_validator::{validate_identity, MIN_AGE_REQUIREMENT};
 
     use super::CareerDescription;
     use super::{handle_profile_req, ProfileOperation};

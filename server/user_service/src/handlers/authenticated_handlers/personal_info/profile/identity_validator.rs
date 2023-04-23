@@ -10,21 +10,21 @@ use common::util::{
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-pub(crate) const LAST_NAME_MIN_LENGTH: usize = 1;
-pub(crate) const LAST_NAME_MAX_LENGTH: usize = 64;
-pub(crate) const FIRST_NAME_MIN_LENGTH: usize = 1;
-pub(crate) const FIRST_NAME_MAX_LENGTH: usize = 64;
-pub(crate) const LAST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
-pub(crate) const LAST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
-pub(crate) const FIRST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
-pub(crate) const FIRST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
-pub(crate) const MIN_AGE_REQUIREMENT: i32 = 18;
-pub(crate) const CITY_MIN_LENGTH: usize = 1;
-pub(crate) const CITY_MAX_LENGTH: usize = 32;
-pub(crate) const ADDRESS_LINE1_MIN_LENGTH: usize = 1;
-pub(crate) const ADDRESS_LINE1_MAX_LENGTH: usize = 128;
-pub(crate) const ADDRESS_LINE2_MIN_LENGTH: usize = 1;
-pub(crate) const ADDRESS_LINE2_MAX_LENGTH: usize = 128;
+use crate::handlers::authenticated_handlers::personal_info::{
+    FIRST_NAME_MAX_LENGTH, FIRST_NAME_MIN_LENGTH, LAST_NAME_MAX_LENGTH, LAST_NAME_MIN_LENGTH,
+};
+
+pub(super) const LAST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
+pub(super) const LAST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
+pub(super) const FIRST_NAME_FURIGANA_MIN_LENGTH: usize = 1;
+pub(super) const FIRST_NAME_FURIGANA_MAX_LENGTH: usize = 64;
+pub(super) const MIN_AGE_REQUIREMENT: i32 = 18;
+pub(super) const CITY_MIN_LENGTH: usize = 1;
+pub(super) const CITY_MAX_LENGTH: usize = 32;
+pub(super) const ADDRESS_LINE1_MIN_LENGTH: usize = 1;
+pub(super) const ADDRESS_LINE1_MAX_LENGTH: usize = 128;
+pub(super) const ADDRESS_LINE2_MIN_LENGTH: usize = 1;
+pub(super) const ADDRESS_LINE2_MAX_LENGTH: usize = 128;
 
 const NUM_CHAR_REGEXP: &str = r"[0-9]+";
 /// 数字を一つ以上含むケース
@@ -103,7 +103,7 @@ static PREFECTURE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     set
 });
 
-pub(crate) fn validate_identity(
+pub(super) fn validate_identity(
     identity: &Identity,
     current_date: &NaiveDate,
 ) -> Result<(), IdentityValidationError> {
@@ -365,7 +365,7 @@ fn validate_telephone_number(telephone_number: &str) -> Result<(), IdentityValid
 
 /// Error related to [validate_identity()]
 #[derive(Debug, PartialEq)]
-pub(crate) enum IdentityValidationError {
+pub(super) enum IdentityValidationError {
     InvalidLastNameLength {
         length: usize,
         min_length: usize,
@@ -589,20 +589,23 @@ mod tests {
     use common::util::Identity;
     use once_cell::sync::Lazy;
 
-    use crate::util::validator::{
-        identity_validator::{
-            validate_identity, IdentityValidationError, ADDRESS_LINE1_MAX_LENGTH,
-            ADDRESS_LINE1_MIN_LENGTH, ADDRESS_LINE2_MAX_LENGTH, ADDRESS_LINE2_MIN_LENGTH,
-            CITY_MAX_LENGTH, CITY_MIN_LENGTH, FIRST_NAME_FURIGANA_MAX_LENGTH,
-            FIRST_NAME_FURIGANA_MIN_LENGTH, FIRST_NAME_MAX_LENGTH, FIRST_NAME_MIN_LENGTH,
-            LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH, LAST_NAME_MAX_LENGTH,
+    use common::util::Ymd;
+
+    use crate::handlers::authenticated_handlers::{
+        personal_info::{
+            profile::identity_validator::{
+                IdentityValidationError, ADDRESS_LINE1_MAX_LENGTH, ADDRESS_LINE1_MIN_LENGTH,
+                ADDRESS_LINE2_MAX_LENGTH, ADDRESS_LINE2_MIN_LENGTH, CITY_MAX_LENGTH,
+                CITY_MIN_LENGTH, FIRST_NAME_FURIGANA_MAX_LENGTH, FIRST_NAME_FURIGANA_MIN_LENGTH,
+                LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH,
+            },
+            FIRST_NAME_MAX_LENGTH, FIRST_NAME_MIN_LENGTH, LAST_NAME_MAX_LENGTH,
             LAST_NAME_MIN_LENGTH,
         },
         tests::{CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET},
     };
-    use common::util::Ymd;
 
-    use super::PREFECTURE_SET;
+    use super::{validate_identity, PREFECTURE_SET};
 
     static SYMBOL_WITH_OUT_HYPHEN_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(31);

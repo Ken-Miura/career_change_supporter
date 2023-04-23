@@ -5,9 +5,11 @@ use std::{collections::HashSet, error::Error, fmt::Display};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::util::bank_account::BankAccount;
+use crate::handlers::authenticated_handlers::personal_info::{
+    FIRST_NAME_MAX_LENGTH, FIRST_NAME_MIN_LENGTH, LAST_NAME_MAX_LENGTH, LAST_NAME_MIN_LENGTH,
+};
 
-use super::identity_validator;
+use super::BankAccount;
 
 const BANK_CODE_REGEXP: &str = r"^[0-9]{4}$";
 /// 数字を4桁のケース。pay.jpの仕様に合わせ数字4桁とする
@@ -37,7 +39,7 @@ static ACCOUNT_NUMBER_RE: Lazy<Regex> =
 /// 口座名義の長さの最小値
 static ACCOUNT_HOLDER_NAME_MIN_LENGTH: Lazy<usize> = Lazy::new(|| {
     // "セイ＋空白＋メイ"分の長さ
-    identity_validator::LAST_NAME_MIN_LENGTH + 1 + identity_validator::FIRST_NAME_MIN_LENGTH
+    LAST_NAME_MIN_LENGTH + 1 + FIRST_NAME_MIN_LENGTH
 });
 
 /// 口座名義の長さの最大値
@@ -45,8 +47,7 @@ static ACCOUNT_HOLDER_NAME_MIN_LENGTH: Lazy<usize> = Lazy::new(|| {
 /// pay.jpとしては255文字まで受け付ける。しかし、このシステムの入力制限に合わせて数字を調整する。
 static ACCOUNT_HOLDER_NAME_MAX_LENGTH: Lazy<usize> = Lazy::new(|| {
     // "セイ＋空白＋メイ"分の長さ
-    let length =
-        identity_validator::LAST_NAME_MAX_LENGTH + 1 + identity_validator::FIRST_NAME_MAX_LENGTH;
+    let length = LAST_NAME_MAX_LENGTH + 1 + FIRST_NAME_MAX_LENGTH;
     if length > 255 {
         panic!("exceed pay.jp limit")
     }
@@ -63,7 +64,7 @@ static ZENKAKU_KATAKANA_ZENKAKU_SPACE_RE: Lazy<Regex> = Lazy::new(|| {
         .expect("failed to compile zenkaku katakana regexp")
 });
 
-pub(crate) fn validate_bank_account(
+pub(super) fn validate_bank_account(
     bank_account: &BankAccount,
 ) -> Result<(), BankAccountValidationError> {
     validate_bank_code(bank_account.bank_code.as_str())?;
@@ -133,7 +134,7 @@ fn validate_account_holder_name(
 
 /// Error related to [validate_bank_account()]
 #[derive(Debug, PartialEq)]
-pub(crate) enum BankAccountValidationError {
+pub(super) enum BankAccountValidationError {
     InvalidBankCodeFormat(String),
     InvalidBranchCodeFormat(String),
     InvalidAccountType(String),
@@ -198,9 +199,9 @@ impl Error for BankAccountValidationError {}
 
 #[cfg(test)]
 mod tests {
-    use crate::util::{
-        bank_account::BankAccount,
-        validator::tests::{CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET},
+    use crate::handlers::authenticated_handlers::{
+        personal_info::rewards::BankAccount,
+        tests::{CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET},
     };
 
     use super::{

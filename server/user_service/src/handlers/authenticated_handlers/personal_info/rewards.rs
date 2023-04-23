@@ -1,6 +1,7 @@
 // Copyright 2023 Ken Miura
 
 pub(crate) mod bank_account;
+mod bank_account_validator;
 
 use axum::async_trait;
 use axum::{extract::State, http::StatusCode, Json};
@@ -18,7 +19,7 @@ use common::{
     ApiError, ErrResp, RespResult,
 };
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::util::rewards::{
@@ -28,10 +29,19 @@ use crate::util::rewards::{
 use crate::util::{self};
 use crate::{
     err::{self, unexpected_err_resp},
-    util::{bank_account::BankAccount, session::user::User, ACCESS_INFO},
+    util::{session::user::User, ACCESS_INFO},
 };
 
 const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+struct BankAccount {
+    bank_code: String,
+    branch_code: String,
+    account_type: String,
+    account_number: String,
+    account_holder_name: String,
+}
 
 pub(crate) async fn get_reward(
     User { user_info }: User,
@@ -123,10 +133,10 @@ async fn handle_reward_req(
 
 #[derive(Serialize, Debug)]
 pub(crate) struct RewardResult {
-    pub(crate) bank_account: Option<BankAccount>,
-    pub(crate) rewards_of_the_month: Option<i32>, // 一ヶ月の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
-    pub(crate) rewards_of_the_year: Option<i32>, // 1年間（1月-12月）の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
-    pub(crate) latest_two_transfers: Vec<Transfer>,
+    bank_account: Option<BankAccount>,
+    rewards_of_the_month: Option<i32>, // 一ヶ月の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
+    rewards_of_the_year: Option<i32>, // 1年間（1月-12月）の報酬の合計。報酬 = 相談料 - プラットフォーム利用料。振込手数料は引かない。
+    latest_two_transfers: Vec<Transfer>,
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -409,8 +419,9 @@ mod tests {
     };
 
     use crate::err::Code;
-    use crate::personal_info::rewards::{handle_reward_req, Transfer};
-    use crate::util::bank_account::BankAccount;
+    use crate::handlers::authenticated_handlers::personal_info::rewards::{
+        handle_reward_req, BankAccount, Transfer,
+    };
     use crate::util::rewards::{
         create_start_and_end_date_time_of_current_month,
         create_start_and_end_date_time_of_current_year, PaymentInfo,

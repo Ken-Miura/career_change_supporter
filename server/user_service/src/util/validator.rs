@@ -7,13 +7,11 @@ use common::util::validator::{
 };
 use once_cell::sync::Lazy;
 
-pub(crate) mod bank_account_validator;
 pub(crate) mod career_validator;
 pub(crate) mod consultant_search_param;
 pub(crate) mod consultation_date_time_validator;
 pub(crate) mod consultation_req_id_validator;
 pub(crate) mod file_name_validator;
-pub(crate) mod identity_validator;
 
 pub(crate) const COMPANY_NAME_MIN_LENGTH: usize = 1;
 pub(crate) const COMPANY_NAME_MAX_LENGTH: usize = 256;
@@ -302,6 +300,8 @@ mod tests {
         validate_profession, CONTRACT_TYPE_SET, MAX_ANNUAL_INCOME_IN_MAN_YEN,
     };
 
+    // TODO 再整理が終わったらendまで削除
+
     pub(in crate::util::validator) static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(32);
         set.insert("!".to_string());
@@ -518,6 +518,8 @@ mod tests {
         set.insert("9".to_string());
         set
     });
+
+    // end
 
     #[test]
     fn validate_company_name_returns_ok_if_1_char_company_name_is_passed() {
