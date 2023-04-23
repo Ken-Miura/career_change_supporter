@@ -50,7 +50,14 @@ pub(crate) async fn post_finish_request_consultation(
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_finish_request_consultation(user_info.account_id, charge_id, op, smtp_client).await
+    handle_finish_request_consultation(
+        user_info.account_id,
+        user_info.email_address,
+        charge_id,
+        op,
+        smtp_client,
+    )
+    .await
 }
 
 #[derive(Deserialize)]
@@ -69,7 +76,8 @@ struct Candidates {
 }
 
 async fn handle_finish_request_consultation(
-    account_id: i64,
+    user_account_id: i64,
+    user_email_address: String,
     charge_id: String,
     op: impl FinishRequestConsultationOperation,
     send_mail: impl SendMail,
@@ -86,7 +94,7 @@ async fn handle_finish_request_consultation(
         extract_latest_candidate_date_time_in_jst(&candidates_date_time_in_jst)?;
     let id_and_charge = op
         .create_request_consultation(
-            account_id,
+            user_account_id,
             consultant_id,
             candidates_date_time_in_jst,
             latest_candidate_date_time_in_jst,
@@ -105,16 +113,13 @@ async fn handle_finish_request_consultation(
         .await?;
     send_mail_to_consultant(
         consultant_email_address.as_str(),
-        account_id,
+        user_account_id,
         consultation_req_id,
         &charge,
         &send_mail,
     )
     .await?;
 
-    let user_email_address = op
-        .get_user_account_email_address_by_user_account_id(account_id)
-        .await?;
     send_mail_to_user(
         user_email_address.as_str(),
         consultant_id,
@@ -458,7 +463,9 @@ fn extract_candidate_expression_in_japanese(
 #[async_trait]
 trait FinishRequestConsultationOperation {
     async fn get_charge_by_charge_id(&self, charge_id: String) -> Result<Charge, ErrResp>;
+
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp>;
+
     async fn create_request_consultation(
         &self,
         account_id: i64,
@@ -467,10 +474,7 @@ trait FinishRequestConsultationOperation {
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
         charge_id: String,
     ) -> Result<(i64, Charge), ErrResp>;
-    async fn get_user_account_email_address_by_user_account_id(
-        &self,
-        user_account_id: i64,
-    ) -> Result<String, ErrResp>;
+
     async fn get_consultant_email_address_by_consultant_id(
         &self,
         consultant_id: i64,
@@ -585,30 +589,6 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
         Ok((id_and_charge.0, id_and_charge.1))
     }
 
-    async fn get_user_account_email_address_by_user_account_id(
-        &self,
-        user_account_id: i64,
-    ) -> Result<String, ErrResp> {
-        let model_option = user_account::Entity::find_by_id(user_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_account (user_account_id: {}): {}",
-                    user_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        let model = match model_option {
-            Some(m) => m,
-            None => {
-                error!("No user found");
-                return Err(unexpected_err_resp());
-            }
-        };
-        Ok(model.email_address)
-    }
-
     async fn get_consultant_email_address_by_consultant_id(
         &self,
         consultant_id: i64,
@@ -671,7 +651,8 @@ mod tests {
 
     #[derive(Debug)]
     struct Input {
-        account_id: i64,
+        user_account_id: i64,
+        user_email_address: String,
         charge_id: String,
         op: FinishRequestConsultationOperationMock,
         smtp_client: SendMailMock,
@@ -684,7 +665,6 @@ mod tests {
         charge: Charge,
         consultant_id: i64,
         latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
-        user_account_email_address: String,
         consultant_email_address: String,
     }
 
@@ -732,14 +712,6 @@ mod tests {
             Ok((1, charge))
         }
 
-        async fn get_user_account_email_address_by_user_account_id(
-            &self,
-            user_account_id: i64,
-        ) -> Result<String, ErrResp> {
-            assert_eq!(self.account_id, user_account_id);
-            Ok(self.user_account_email_address.clone())
-        }
-
         async fn get_consultant_email_address_by_consultant_id(
             &self,
             consultant_id: i64,
@@ -766,11 +738,13 @@ mod tests {
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let user_email_address = "test0@test.com";
         vec![
             TestCase {
                 name: "success case 1 (3D secure status verified)".to_string(),
                 input: Input {
-                    account_id: 1,
+                    user_account_id: 1,
+                    user_email_address: user_email_address.to_string(),
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                     op: FinishRequestConsultationOperationMock {
                         account_id: 1,
@@ -796,7 +770,6 @@ mod tests {
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                     },
                     smtp_client: SendMailMock {},
@@ -806,7 +779,8 @@ mod tests {
             TestCase {
                 name: "success case 2 (3D secure status attempted)".to_string(),
                 input: Input {
-                    account_id: 1,
+                    user_account_id: 1,
+                    user_email_address: user_email_address.to_string(),
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                     op: FinishRequestConsultationOperationMock {
                         account_id: 1,
@@ -832,7 +806,6 @@ mod tests {
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                     },
                     smtp_client: SendMailMock {},
@@ -842,7 +815,8 @@ mod tests {
             TestCase {
                 name: "fail ConsultantIsNotAvailable".to_string(),
                 input: Input {
-                    account_id: 1,
+                    user_account_id: 1,
+                    user_email_address: user_email_address.to_string(),
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                     op: FinishRequestConsultationOperationMock {
                         account_id: 1,
@@ -868,7 +842,6 @@ mod tests {
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                     },
                     smtp_client: SendMailMock {},
@@ -883,7 +856,8 @@ mod tests {
             TestCase {
                 name: "fail ThreeDSecureError unverified".to_string(),
                 input: Input {
-                    account_id: 1,
+                    user_account_id: 1,
+                    user_email_address: user_email_address.to_string(),
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                     op: FinishRequestConsultationOperationMock {
                         account_id: 1,
@@ -909,7 +883,6 @@ mod tests {
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                     },
                     smtp_client: SendMailMock {},
@@ -924,7 +897,8 @@ mod tests {
             TestCase {
                 name: "fail ThreeDSecureError failed".to_string(),
                 input: Input {
-                    account_id: 1,
+                    user_account_id: 1,
+                    user_email_address: user_email_address.to_string(),
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                     op: FinishRequestConsultationOperationMock {
                         account_id: 1,
@@ -950,7 +924,6 @@ mod tests {
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                     },
                     smtp_client: SendMailMock {},
@@ -965,7 +938,8 @@ mod tests {
             TestCase {
                 name: "fail ThreeDSecureError error".to_string(),
                 input: Input {
-                    account_id: 1,
+                    user_account_id: 1,
+                    user_email_address: user_email_address.to_string(),
                     charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                     op: FinishRequestConsultationOperationMock {
                         account_id: 1,
@@ -991,7 +965,6 @@ mod tests {
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                             .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
                             .unwrap(),
-                        user_account_email_address: "test0@test.com".to_string(),
                         consultant_email_address: "test1@test.com".to_string(),
                     },
                     smtp_client: SendMailMock {},
@@ -1097,13 +1070,20 @@ mod tests {
     #[tokio::test]
     async fn handle_finish_request_consultation_tests() {
         for test_case in TEST_CASE_SET.iter() {
-            let account_id = test_case.input.account_id;
+            let user_account_id = test_case.input.user_account_id;
+            let user_email_address = test_case.input.user_email_address.clone();
             let charge_id = test_case.input.charge_id.clone();
             let op = test_case.input.op.clone();
             let smtp_client = test_case.input.smtp_client.clone();
 
-            let result =
-                handle_finish_request_consultation(account_id, charge_id, op, smtp_client).await;
+            let result = handle_finish_request_consultation(
+                user_account_id,
+                user_email_address,
+                charge_id,
+                op,
+                smtp_client,
+            )
+            .await;
 
             let message = format!("test case \"{}\" failed", test_case.name.clone());
             if test_case.expected.is_ok() {
