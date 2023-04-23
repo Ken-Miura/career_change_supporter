@@ -120,7 +120,6 @@ export default defineComponent({
         await router.push('/delete-account-success')
       } catch (e) {
         deleteAccountErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
-        console.log(deleteAccountErrorMessage.value)
       }
     }
 
