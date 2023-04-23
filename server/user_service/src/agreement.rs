@@ -9,7 +9,6 @@ use common::ApiError;
 use common::ErrResp;
 use common::JAPANESE_TIME_ZONE;
 use entity::prelude::TermsOfUse;
-use entity::prelude::UserAccount;
 use entity::sea_orm::ActiveModelTrait;
 use entity::sea_orm::DatabaseConnection;
 use entity::sea_orm::EntityTrait;
@@ -32,6 +31,7 @@ pub(crate) async fn post_agreement(
     let agreed_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let result = handle_agreement_req(
         user_info.account_id,
+        user_info.email_address,
         *TERMS_OF_USE_VERSION,
         &agreed_time,
         op,
@@ -42,23 +42,16 @@ pub(crate) async fn post_agreement(
 
 async fn handle_agreement_req(
     account_id: i64,
+    email_address: String,
     version: i32,
     agreed_at: &DateTime<FixedOffset>,
     op: impl AgreementOperation,
 ) -> Result<StatusCode, ErrResp> {
-    // 利用規約同意のデータに連絡先としてメールアドレスを保管しておきたいため
-    // ユーザー情報を取得する
-    let account_option = op.find_account_by_id(account_id).await?;
-    let account = account_option.ok_or_else(|| {
-        // 利用規約に同意するリクエストを送った後、アカウント情報が取得される前にアカウントが削除されるような事態は
-        // 通常の操作では発生し得ない。そのため、unexpected_err_respとして処理する。
-        unexpected_err_resp()
-    })?;
     let agreement_date_option = op.check_if_already_agreed(account_id, version).await?;
     if let Some(agreement_date) = agreement_date_option {
         error!(
             "{} (account id: {}) has already agreed terms of use (version {}) at {}",
-            &account.email_address,
+            &email_address,
             account_id,
             version,
             agreement_date.with_timezone(&(*JAPANESE_TIME_ZONE))
@@ -71,18 +64,17 @@ async fn handle_agreement_req(
         ));
     }
     // ACID特性が重要な箇所ではないので、op.check_if_already_agreedとまとめてトランザクションにしていない
-    op.agree_terms_of_use(account_id, version, &account.email_address, agreed_at)
+    op.agree_terms_of_use(account_id, version, &email_address, agreed_at)
         .await?;
     info!(
         "{} (account id: {}) agreed terms of use (version {}) at {}",
-        &account.email_address, account_id, version, agreed_at
+        &email_address, account_id, version, agreed_at
     );
     Ok(StatusCode::OK)
 }
 
 #[async_trait]
 trait AgreementOperation {
-    async fn find_account_by_id(&self, account_id: i64) -> Result<Option<Account>, ErrResp>;
     async fn check_if_already_agreed(
         &self,
         account_id: i64,
@@ -111,22 +103,6 @@ impl AgreementOperationImpl {
 
 #[async_trait]
 impl AgreementOperation for AgreementOperationImpl {
-    async fn find_account_by_id(&self, account_id: i64) -> Result<Option<Account>, ErrResp> {
-        let model = UserAccount::find_by_id(account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_account (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| Account {
-            email_address: m.email_address,
-        }))
-    }
-
     async fn check_if_already_agreed(
         &self,
         account_id: i64,
@@ -167,22 +143,16 @@ impl AgreementOperation for AgreementOperationImpl {
     }
 }
 
-#[derive(Clone, Debug)]
-struct Account {
-    email_address: String,
-}
-
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
+    use axum::http::StatusCode;
     use chrono::TimeZone;
     use common::ErrResp;
     use common::JAPANESE_TIME_ZONE;
-    use hyper::StatusCode;
 
     use crate::err::Code::AlreadyAgreedTermsOfUse;
 
-    use super::Account;
     use super::AgreedDateTime;
     use super::{handle_agreement_req, AgreementOperation};
 
@@ -217,14 +187,6 @@ mod tests {
 
     #[async_trait]
     impl AgreementOperation for AgreementOperationMock<'_> {
-        async fn find_account_by_id(&self, account_id: i64) -> Result<Option<Account>, ErrResp> {
-            assert_eq!(self.account_id, account_id);
-            let account = Account {
-                email_address: self.email_address.to_string(),
-            };
-            Ok(Some(account))
-        }
-
         async fn check_if_already_agreed(
             &self,
             account_id: i64,
@@ -271,7 +233,7 @@ mod tests {
             &agreed_at,
         );
 
-        let result = handle_agreement_req(id, version, &agreed_at, op)
+        let result = handle_agreement_req(id, email_address.to_string(), version, &agreed_at, op)
             .await
             .expect("failed to get Ok");
 
@@ -296,7 +258,7 @@ mod tests {
             &agreed_at,
         );
 
-        let result = handle_agreement_req(id, version, &agreed_at, op)
+        let result = handle_agreement_req(id, email_address.to_string(), version, &agreed_at, op)
             .await
             .expect_err("failed to get Err");
 
