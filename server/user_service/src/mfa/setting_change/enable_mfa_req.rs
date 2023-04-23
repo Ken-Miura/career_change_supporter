@@ -182,10 +182,10 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let user_model =
+                    let user_model_option =
                         find_user_account_by_user_account_id_with_exclusive_lock(txn, account_id)
                             .await?;
-                    let user_model = user_model.ok_or_else(|| {
+                    let user_model = user_model_option.ok_or_else(|| {
                         error!(
                             "failed to find user_account (user_account_id: {})",
                             account_id
