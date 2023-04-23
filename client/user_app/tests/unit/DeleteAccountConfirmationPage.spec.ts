@@ -159,7 +159,7 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     expect(resultMessage).toContain(Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE)
   })
 
-  it(`displays ${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE} if connection fails when refresh`, async () => {
+  it('displays alert message if connection fails when refresh', async () => {
     const errDetail = 'connection error'
     refreshFuncMock.mockRejectedValue(new Error(errDetail))
     const wrapper = mount(DeleteAccountConfirmationPage, {
@@ -298,5 +298,37 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.ACCOUNT_DELETE_IS_NOT_CONFIRMED_MESSAGE)
     expect(resultMessage).toContain(Code.ACCOUNT_DELETE_IS_NOT_CONFIRMED.toString())
+  })
+
+  it('displays alert message if connection fails when account delete', async () => {
+    refreshFuncMock.mockResolvedValue(RefreshResp.create())
+    const errDetail = 'connection error'
+    deleteAccountFuncMock.mockRejectedValue(new Error(errDetail))
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const accountDeleteConfirmed = wrapper.find('[data-test="account-delete-confirmed"]')
+    await accountDeleteConfirmed.setValue(true)
+    await flushPromises()
+
+    const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
+    await deleteAccountButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.UNEXPECTED_ERR)
+    expect(resultMessage).toContain(errDetail)
   })
 })
