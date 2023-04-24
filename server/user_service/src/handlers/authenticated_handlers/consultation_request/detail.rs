@@ -18,8 +18,9 @@ use crate::util::{
     consultation_request::round_to_one_decimal_places, consultation_request::ConsultationRequest,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     request_consultation::ConsultationDateTime,
-    validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
 };
+
+use super::validate_consultation_req_id_is_positive;
 
 pub(crate) async fn get_consultation_request_detail(
     VerifiedUser { user_info }: VerifiedUser,
@@ -40,19 +41,19 @@ pub(crate) async fn get_consultation_request_detail(
 
 #[derive(Deserialize)]
 pub(crate) struct ConsultationRequestDetailQuery {
-    pub(crate) consultation_req_id: i64,
+    consultation_req_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultationRequestDetail {
-    pub(crate) consultation_req_id: i64,
-    pub(crate) user_account_id: i64,
-    pub(crate) user_rating: Option<String>, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
-    pub(crate) num_of_rated_of_user: i32,
-    pub(crate) fee_per_hour_in_yen: i32,
-    pub(crate) first_candidate_in_jst: ConsultationDateTime,
-    pub(crate) second_candidate_in_jst: ConsultationDateTime,
-    pub(crate) third_candidate_in_jst: ConsultationDateTime,
+    consultation_req_id: i64,
+    user_account_id: i64,
+    user_rating: Option<String>, // 適切な型は浮動少数だが、PartialEqの==を正しく動作させるために文字列として処理する
+    num_of_rated_of_user: i32,
+    fee_per_hour_in_yen: i32,
+    first_candidate_in_jst: ConsultationDateTime,
+    second_candidate_in_jst: ConsultationDateTime,
+    third_candidate_in_jst: ConsultationDateTime,
 }
 
 async fn handle_consultation_request_detail(

@@ -39,13 +39,13 @@ pub(crate) async fn get_consultation_requests(
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultationRequestsResult {
-    pub(crate) consultation_requests: Vec<ConsultationRequestDescription>,
+    consultation_requests: Vec<ConsultationRequestDescription>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub(crate) struct ConsultationRequestDescription {
-    pub(crate) consultation_req_id: i64,
-    pub(crate) user_account_id: i64,
+    consultation_req_id: i64,
+    user_account_id: i64,
 }
 
 async fn handle_consultation_requests(
@@ -122,10 +122,8 @@ mod tests {
     use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::{
-        consultation_request::list::NUM_OF_CONSULTATION_REQUESTS,
-        util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-    };
+    use super::NUM_OF_CONSULTATION_REQUESTS;
+    use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 
     use super::{
         handle_consultation_requests, ConsultationRequestDescription,

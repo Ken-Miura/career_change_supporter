@@ -17,7 +17,6 @@ pub(crate) mod session;
 pub(crate) mod terms_of_use;
 pub(crate) mod the_other_person_account;
 pub(crate) mod user_info;
-pub(crate) mod validator;
 pub(crate) mod years_of_service_period;
 
 use std::env::var;

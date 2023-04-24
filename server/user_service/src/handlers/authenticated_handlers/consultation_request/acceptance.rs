@@ -26,13 +26,13 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
+use super::validate_consultation_req_id_is_positive;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 use crate::util::{
     self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-    validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
 };
 
 static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
@@ -66,9 +66,9 @@ pub(crate) async fn post_consultation_request_acceptance(
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct ConsultationRequestAcceptanceParam {
-    pub(crate) consultation_req_id: i64,
-    pub(crate) picked_candidate: u8,
-    pub(crate) user_checked: bool,
+    consultation_req_id: i64,
+    picked_candidate: u8,
+    user_checked: bool,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -905,7 +905,7 @@ mod tests {
     use common::{ApiError, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::consultation_request::acceptance::{
+    use super::{
         create_text_for_consultant, create_text_for_user, CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT,
     };
     use crate::err::{unexpected_err_resp, Code};

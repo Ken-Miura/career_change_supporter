@@ -2,7 +2,6 @@
 
 mod account;
 mod agreement;
-mod consultation_request;
 mod consultation_room;
 mod consultations;
 mod err;
@@ -20,10 +19,10 @@ use crate::account::accounts::post_accounts;
 use crate::account::delete_accounts::delete_accounts;
 use crate::account::temp_accounts::post_temp_accounts;
 use crate::agreement::post_agreement;
-use crate::consultation_request::acceptance::post_consultation_request_acceptance;
-use crate::consultation_request::detail::get_consultation_request_detail;
-use crate::consultation_request::list::get_consultation_requests;
-use crate::consultation_request::rejection::post_consultation_request_rejection;
+use crate::handlers::authenticated_handlers::consultation_request::acceptance::post_consultation_request_acceptance;
+use crate::handlers::authenticated_handlers::consultation_request::detail::get_consultation_request_detail;
+use crate::handlers::authenticated_handlers::consultation_request::list::get_consultation_requests;
+use crate::handlers::authenticated_handlers::consultation_request::rejection::post_consultation_request_rejection;
 use crate::consultation_room::consultant_side_info::get_consultant_side_info;
 use crate::consultation_room::user_side_info::get_user_side_info;
 use crate::consultations::get_consultations;

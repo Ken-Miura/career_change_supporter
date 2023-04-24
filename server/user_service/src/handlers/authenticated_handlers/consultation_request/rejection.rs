@@ -16,11 +16,11 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
+use super::validate_consultation_req_id_is_positive;
 use crate::err::{unexpected_err_resp, Code};
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::{
     self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
-    validator::consultation_req_id_validator::validate_consultation_req_id_is_positive,
     ACCESS_INFO,
 };
 
@@ -51,7 +51,7 @@ pub(crate) async fn post_consultation_request_rejection(
 
 #[derive(Deserialize)]
 pub(crate) struct ConsultationRequestRejectionParam {
-    pub(crate) consultation_req_id: i64,
+    consultation_req_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
