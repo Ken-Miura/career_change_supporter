@@ -273,10 +273,8 @@ mod tests {
     use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::consultation_room::tests::{
-        DUMMY_APPLICATION_ID, DUMMY_SECRET, ROOM_NAME, TOKEN, TOKEN_ID,
-    };
-    use crate::consultation_room::{
+    use super::super::tests::{DUMMY_APPLICATION_ID, DUMMY_SECRET, ROOM_NAME, TOKEN, TOKEN_ID};
+    use super::super::{
         tests::{CURRENT_DATE_TIME, MEMBER_NAME},
         Consultation, SkyWayIdentification, LEEWAY_IN_MINUTES,
     };

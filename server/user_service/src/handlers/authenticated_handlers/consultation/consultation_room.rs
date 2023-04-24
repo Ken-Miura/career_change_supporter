@@ -327,9 +327,9 @@ mod tests {
     use common::JAPANESE_TIME_ZONE;
     use once_cell::sync::Lazy;
 
-    use crate::{
-        consultation_room::MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS, err::unexpected_err_resp,
-    };
+    use crate::err::unexpected_err_resp;
+
+    use super::MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS;
 
     use super::{
         create_sky_way_auth_token, create_sky_way_auth_token_payload, SkyWayAppScope,
@@ -337,20 +337,17 @@ mod tests {
         SkyWayScope, SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
     };
 
-    pub(in crate::consultation_room) const TOKEN_ID: &str = "6668affc-5afa-4996-b65a-6afe2f72756b";
-    pub(in crate::consultation_room) const DUMMY_APPLICATION_ID: &str =
-        "fb374e11-742b-454e-a313-17d3207d41f6";
-    pub(in crate::consultation_room) const DUMMY_SECRET: &str =
-        "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=";
-    pub(in crate::consultation_room) const ROOM_NAME: &str = "187313a8d6cf41bc963d71d4bfd5f363";
-    pub(in crate::consultation_room) const MEMBER_NAME: &str = "234";
-    pub(in crate::consultation_room) const TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI2NjY4YWZmYy01YWZhLTQ5OTYtYjY1YS02YWZlMmY3Mjc1NmIiLCJpYXQiOjE2NzY4MDk5NDEsImV4cCI6MTY3NjgxNDE0MSwic2NvcGUiOnsiYXBwIjp7ImlkIjoiZmIzNzRlMTEtNzQyYi00NTRlLWEzMTMtMTdkMzIwN2Q0MWY2IiwiYWN0aW9ucyI6WyJyZWFkIl0sImNoYW5uZWxzIjpbeyJuYW1lIjoiMTg3MzEzYThkNmNmNDFiYzk2M2Q3MWQ0YmZkNWYzNjMiLCJhY3Rpb25zIjpbInJlYWQiLCJjcmVhdGUiLCJkZWxldGUiXSwibWVtYmVycyI6W3sibmFtZSI6IjIzNCIsImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIiwic2lnbmFsIl0sInB1YmxpY2F0aW9uIjp7ImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIl19LCJzdWJzY3JpcHRpb24iOnsiYWN0aW9ucyI6WyJjcmVhdGUiLCJkZWxldGUiXX19XX1dfX19.qb1VLQwK2WMzmjilEG0eBO0_cqF9Xq1saxbaP0toqDg";
-    pub(in crate::consultation_room) static CURRENT_DATE_TIME: Lazy<DateTime<FixedOffset>> =
-        Lazy::new(|| {
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
-                .unwrap()
-        });
+    pub(super) const TOKEN_ID: &str = "6668affc-5afa-4996-b65a-6afe2f72756b";
+    pub(super) const DUMMY_APPLICATION_ID: &str = "fb374e11-742b-454e-a313-17d3207d41f6";
+    pub(super) const DUMMY_SECRET: &str = "C7AV42GBs7jCJ4pmk5Jt9iyXNxN/h99um=";
+    pub(super) const ROOM_NAME: &str = "187313a8d6cf41bc963d71d4bfd5f363";
+    pub(super) const MEMBER_NAME: &str = "234";
+    pub(super) const TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI2NjY4YWZmYy01YWZhLTQ5OTYtYjY1YS02YWZlMmY3Mjc1NmIiLCJpYXQiOjE2NzY4MDk5NDEsImV4cCI6MTY3NjgxNDE0MSwic2NvcGUiOnsiYXBwIjp7ImlkIjoiZmIzNzRlMTEtNzQyYi00NTRlLWEzMTMtMTdkMzIwN2Q0MWY2IiwiYWN0aW9ucyI6WyJyZWFkIl0sImNoYW5uZWxzIjpbeyJuYW1lIjoiMTg3MzEzYThkNmNmNDFiYzk2M2Q3MWQ0YmZkNWYzNjMiLCJhY3Rpb25zIjpbInJlYWQiLCJjcmVhdGUiLCJkZWxldGUiXSwibWVtYmVycyI6W3sibmFtZSI6IjIzNCIsImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIiwic2lnbmFsIl0sInB1YmxpY2F0aW9uIjp7ImFjdGlvbnMiOlsiY3JlYXRlIiwiZGVsZXRlIl19LCJzdWJzY3JpcHRpb24iOnsiYWN0aW9ucyI6WyJjcmVhdGUiLCJkZWxldGUiXX19XX1dfX19.qb1VLQwK2WMzmjilEG0eBO0_cqF9Xq1saxbaP0toqDg";
+    pub(super) static CURRENT_DATE_TIME: Lazy<DateTime<FixedOffset>> = Lazy::new(|| {
+        JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 2, 19, 21, 32, 21)
+            .unwrap()
+    });
 
     #[test]
     fn test_create_sky_way_auth_token_payload_success1() {

@@ -273,12 +273,12 @@ mod tests {
     use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::consultation_room::tests::{
+    use super::super::tests::{
         CURRENT_DATE_TIME, DUMMY_APPLICATION_ID, DUMMY_SECRET, MEMBER_NAME, ROOM_NAME, TOKEN,
         TOKEN_ID,
     };
-    use crate::consultation_room::LEEWAY_IN_MINUTES;
-    use crate::consultation_room::{Consultation, SkyWayIdentification};
+    use super::super::LEEWAY_IN_MINUTES;
+    use super::super::{Consultation, SkyWayIdentification};
     use crate::err::Code;
     use crate::util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
     use crate::util::user_info::UserInfo;

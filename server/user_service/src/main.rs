@@ -2,8 +2,6 @@
 
 mod account;
 mod agreement;
-mod consultation_room;
-mod consultations;
 mod err;
 mod handlers;
 mod login;
@@ -23,9 +21,9 @@ use crate::handlers::authenticated_handlers::consultation::consultation_request:
 use crate::handlers::authenticated_handlers::consultation::consultation_request::detail::get_consultation_request_detail;
 use crate::handlers::authenticated_handlers::consultation::consultation_request::list::get_consultation_requests;
 use crate::handlers::authenticated_handlers::consultation::consultation_request::rejection::post_consultation_request_rejection;
-use crate::consultation_room::consultant_side_info::get_consultant_side_info;
-use crate::consultation_room::user_side_info::get_user_side_info;
-use crate::consultations::get_consultations;
+use crate::handlers::authenticated_handlers::consultation::consultation_room::consultant_side_info::get_consultant_side_info;
+use crate::handlers::authenticated_handlers::consultation::consultation_room::user_side_info::get_user_side_info;
+use crate::handlers::authenticated_handlers::consultation::consultations::get_consultations;
 use crate::handlers::authenticated_handlers::consultation::consultant::detail::get_consultant_detail;
 use crate::handlers::authenticated_handlers::consultation::consultant::search::post_consultants_search;
 use crate::handlers::authenticated_handlers::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
@@ -83,7 +81,7 @@ use common::storage::{
 };
 use common::util::check_env_vars;
 use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
-use consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
+use handlers::authenticated_handlers::consultation::consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
