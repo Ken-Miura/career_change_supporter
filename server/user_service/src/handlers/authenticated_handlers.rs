@@ -2,7 +2,6 @@
 
 pub(crate) mod consultation;
 pub(crate) mod personal_info;
-pub(crate) mod request_consultation;
 
 #[cfg(test)]
 mod tests {

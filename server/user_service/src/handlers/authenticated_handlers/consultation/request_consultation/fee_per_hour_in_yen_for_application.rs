@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util;
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
 
@@ -51,7 +50,7 @@ struct FeePerHourInYenForApplicationOperationImpl {
 impl FeePerHourInYenForApplicationOperation for FeePerHourInYenForApplicationOperationImpl {
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
-        util::consultant_disabled_check::check_if_consultant_is_available(consultant_id, &op).await
+        super::super::check_if_consultant_is_available(consultant_id, &op).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(

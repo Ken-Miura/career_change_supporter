@@ -114,7 +114,7 @@ struct RequestConsultationOperationImpl {
 impl RequestConsultationOperation for RequestConsultationOperationImpl {
     async fn check_if_consultant_is_available(&self, consultant_id: i64) -> Result<bool, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
-        util::consultant_disabled_check::check_if_consultant_is_available(consultant_id, &op).await
+        super::super::check_if_consultant_is_available(consultant_id, &op).await
     }
 
     async fn find_fee_per_hour_in_yen_by_consultant_id(

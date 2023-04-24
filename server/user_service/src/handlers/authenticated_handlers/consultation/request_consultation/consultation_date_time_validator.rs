@@ -121,7 +121,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        handlers::authenticated_handlers::request_consultation::consultation_date_time_validator::validate_consultation_date_time,
+        handlers::authenticated_handlers::consultation::request_consultation::consultation_date_time_validator::validate_consultation_date_time,
         util::request_consultation::ConsultationDateTime,
     };
 
