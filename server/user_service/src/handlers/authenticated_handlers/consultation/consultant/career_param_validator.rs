@@ -478,7 +478,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::handlers::authenticated_handlers::{
-        consultant::{
+        consultation::consultant::{
             career_param_validator::{validate_career_param, validate_years_of_service},
             search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
         },

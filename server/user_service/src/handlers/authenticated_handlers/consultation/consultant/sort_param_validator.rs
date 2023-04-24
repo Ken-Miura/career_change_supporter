@@ -53,7 +53,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::handlers::authenticated_handlers::{
-        consultant::search::SortParam,
+        consultation::consultant::search::SortParam,
         tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
     };
 

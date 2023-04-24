@@ -88,7 +88,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        handlers::authenticated_handlers::consultant::search::FeePerHourInYenParam,
+        handlers::authenticated_handlers::consultation::consultant::search::FeePerHourInYenParam,
         util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
     };
 
