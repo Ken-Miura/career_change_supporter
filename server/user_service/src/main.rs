@@ -14,7 +14,6 @@ mod news;
 mod password;
 mod rating;
 mod refresh;
-mod request_consultation;
 mod util;
 
 use crate::account::accounts::post_accounts;
@@ -55,9 +54,9 @@ use crate::rating::{
     user_rating::post_user_rating,
 };
 use crate::refresh::get_refresh;
-use crate::request_consultation::begin::post_begin_request_consultation;
-use crate::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
-use crate::request_consultation::finish::post_finish_request_consultation;
+use crate::handlers::authenticated_handlers::request_consultation::begin::post_begin_request_consultation;
+use crate::handlers::authenticated_handlers::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
+use crate::handlers::authenticated_handlers::request_consultation::finish::post_finish_request_consultation;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
 use async_fred_session::fred::pool::RedisPool;

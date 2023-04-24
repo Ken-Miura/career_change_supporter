@@ -35,12 +35,13 @@ use crate::util::rewards::{
 };
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
-use crate::util::validator::consultation_date_time_validator::{
-    validate_consultation_date_time, ConsultationDateTimeValidationError,
-};
 use crate::{
     err::unexpected_err_resp,
     util::{self, ACCESS_INFO},
+};
+
+use super::consultation_date_time_validator::{
+    validate_consultation_date_time, ConsultationDateTimeValidationError,
 };
 
 pub(crate) async fn post_begin_request_consultation(

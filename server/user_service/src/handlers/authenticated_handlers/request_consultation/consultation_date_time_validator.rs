@@ -12,7 +12,7 @@ use crate::util::{
     request_consultation::ConsultationDateTime,
 };
 
-pub(crate) fn validate_consultation_date_time(
+pub(super) fn validate_consultation_date_time(
     consultation_date_time: &ConsultationDateTime,
     current_date_time: &DateTime<FixedOffset>,
 ) -> Result<(), ConsultationDateTimeValidationError> {
@@ -66,7 +66,7 @@ pub(crate) fn validate_consultation_date_time(
 
 /// Error related to [validate_consultation_date_time()]
 #[derive(Debug, PartialEq)]
-pub(crate) enum ConsultationDateTimeValidationError {
+pub(super) enum ConsultationDateTimeValidationError {
     IllegalDateTime {
         year: i32,
         month: u32,
@@ -120,9 +120,9 @@ mod tests {
     use common::JAPANESE_TIME_ZONE;
     use once_cell::sync::Lazy;
 
-    use crate::util::{
-        request_consultation::ConsultationDateTime,
-        validator::consultation_date_time_validator::validate_consultation_date_time,
+    use crate::{
+        handlers::authenticated_handlers::request_consultation::consultation_date_time_validator::validate_consultation_date_time,
+        util::request_consultation::ConsultationDateTime,
     };
 
     use super::ConsultationDateTimeValidationError;
