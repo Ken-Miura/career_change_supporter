@@ -12,7 +12,7 @@ static JPEG_FILE_NAME_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(JPEG_FILE_NAME_REGEXP).expect("failed to compile jpeg file name regexp")
 });
 
-pub(crate) fn validate_extension_is_jpeg(file_name: &str) -> Result<(), FileNameValidationError> {
+pub(super) fn validate_extension_is_jpeg(file_name: &str) -> Result<(), FileNameValidationError> {
     if !JPEG_FILE_NAME_RE.is_match(file_name) {
         return Err(FileNameValidationError::NotJpegExtension(
             file_name.to_string(),
@@ -23,7 +23,7 @@ pub(crate) fn validate_extension_is_jpeg(file_name: &str) -> Result<(), FileName
 
 /// Error related to file name
 #[derive(Debug, PartialEq)]
-pub(crate) enum FileNameValidationError {
+pub(super) enum FileNameValidationError {
     NotJpegExtension(String),
 }
 
@@ -49,7 +49,7 @@ mod tests {
 
     use once_cell::sync::Lazy;
 
-    use crate::util::validator::file_name_validator::FileNameValidationError;
+    use super::FileNameValidationError;
 
     use super::validate_extension_is_jpeg;
 

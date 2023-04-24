@@ -4,6 +4,7 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::err::Code::IdentityReqAlreadyExists;
+use crate::handlers::authenticated_handlers::personal_info::profile::file_name_validator::validate_extension_is_jpeg;
 use crate::util::{
     image_converter::convert_jpeg_to_png, multipart::clone_file_name_if_exists,
     multipart::FileNameAndBinary,
@@ -35,7 +36,7 @@ use uuid::Uuid;
 
 use crate::{
     err::{self, unexpected_err_resp, Code},
-    util::{session::user::User, validator::file_name_validator::validate_extension_is_jpeg},
+    util::session::user::User,
 };
 
 use super::identity_validator::{validate_identity, IdentityValidationError};

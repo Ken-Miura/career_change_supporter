@@ -2,6 +2,7 @@
 
 pub(crate) mod career;
 pub(crate) mod fee_per_hour_in_yen;
+mod file_name_validator;
 pub(crate) mod identity;
 
 use axum::async_trait;
