@@ -21,11 +21,11 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::err::{unexpected_err_resp, Code};
-use crate::util::charge_metadata_key::{
+use super::{
     KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
+use crate::err::{unexpected_err_resp, Code};
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::util::session::verified_user::VerifiedUser;
@@ -626,12 +626,12 @@ mod tests {
     use common::{ApiError, WEB_SITE_NAME};
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-    use crate::handlers::authenticated_handlers::request_consultation::finish::extract_candidates_date_time_in_jst;
-    use crate::util::charge_metadata_key::{
+    use super::super::{
         KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
         KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
     };
+    use crate::err::Code;
+    use crate::handlers::authenticated_handlers::request_consultation::finish::extract_candidates_date_time_in_jst;
     use crate::util::optional_env_var::{
         EXPIRY_DAYS_OF_CHARGE, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     };
