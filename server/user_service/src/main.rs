@@ -34,7 +34,7 @@ use crate::handlers::authenticated_handlers::personal_info::profile::career::pos
 use crate::handlers::authenticated_handlers::personal_info::profile::career::{delete, get, post};
 use crate::handlers::authenticated_handlers::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
 use crate::handlers::authenticated_handlers::personal_info::profile::get_profile;
-use crate::handlers::authenticated_handlers::personal_info::profile::identity::{
+use crate::handlers::authenticated_handlers::personal_info::profile::identity::post::{
     post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
 };
 use crate::handlers::authenticated_handlers::personal_info::rewards::bank_account::post_bank_account;
