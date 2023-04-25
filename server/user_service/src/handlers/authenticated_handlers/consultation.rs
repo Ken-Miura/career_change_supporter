@@ -13,9 +13,18 @@ use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
 use common::{ApiError, ErrResp, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+struct ConsultationDateTime {
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+}
 
 /// コンサルタントのアカウントが利用可能か確認する。
 /// アカウントが存在し、かつ無効化されていない（=利用可能な）場合、trueを返す。そうでない場合、falseを返す。

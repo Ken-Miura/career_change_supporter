@@ -13,13 +13,10 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::authenticated_handlers::consultation::{
-    consultation_req_exists, round_to_one_decimal_places, ConsultationRequest,
+    consultation_req_exists, round_to_one_decimal_places, ConsultationDateTime, ConsultationRequest,
 };
+use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::verified_user::VerifiedUser;
-use crate::util::{
-    optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-    request_consultation::ConsultationDateTime,
-};
 
 use super::validate_consultation_req_id_is_positive;
 
@@ -229,7 +226,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::util::request_consultation::ConsultationDateTime;
+    use crate::handlers::authenticated_handlers::consultation::ConsultationDateTime;
 
     use super::{
         handle_consultation_request_detail, ConsultationRequest, ConsultationRequestDetail,

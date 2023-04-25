@@ -4,12 +4,12 @@ use std::{error::Error, fmt::Display};
 
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
-use crate::util::{
-    optional_env_var::{
+use crate::{
+    handlers::authenticated_handlers::consultation::ConsultationDateTime,
+    util::optional_env_var::{
         FIRST_START_HOUR_OF_CONSULTATION, LAST_START_HOUR_OF_CONSULTATION,
         MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
     },
-    request_consultation::ConsultationDateTime,
 };
 
 pub(super) fn validate_consultation_date_time(
@@ -120,9 +120,9 @@ mod tests {
     use common::JAPANESE_TIME_ZONE;
     use once_cell::sync::Lazy;
 
-    use crate::{
-        handlers::authenticated_handlers::consultation::request_consultation::consultation_date_time_validator::validate_consultation_date_time,
-        util::request_consultation::ConsultationDateTime,
+    use crate::handlers::authenticated_handlers::consultation::{
+        request_consultation::consultation_date_time_validator::validate_consultation_date_time,
+        ConsultationDateTime,
     };
 
     use super::ConsultationDateTimeValidationError;

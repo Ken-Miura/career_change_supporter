@@ -16,12 +16,10 @@ use entity::{
 use serde::Serialize;
 use tracing::error;
 
+use crate::handlers::authenticated_handlers::consultation::ConsultationDateTime;
 use crate::{
     err::unexpected_err_resp,
-    util::{
-        request_consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE},
-        session::user::User,
-    },
+    util::{request_consultation::LENGTH_OF_MEETING_IN_MINUTE, session::user::User},
 };
 
 const MAX_NUM_OF_UNRATED_CONSULTANTS: u64 = 20;
@@ -216,7 +214,8 @@ mod tests {
     use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::util::request_consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE};
+    use crate::handlers::authenticated_handlers::consultation::ConsultationDateTime;
+    use crate::util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 
     use super::{
         handle_unrated_items, UnratedConsultant, UnratedItemsOperation, UnratedItemsResult,

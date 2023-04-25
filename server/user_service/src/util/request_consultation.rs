@@ -3,20 +3,11 @@
 use axum::http::StatusCode;
 use axum::Json;
 use common::{ApiError, ErrResp};
-use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::err::{unexpected_err_resp, Code};
 
 pub(crate) const LENGTH_OF_MEETING_IN_MINUTE: u64 = 60;
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub(crate) struct ConsultationDateTime {
-    pub(crate) year: i32,
-    pub(crate) month: u32,
-    pub(crate) day: u32,
-    pub(crate) hour: u32,
-}
 
 pub(crate) fn convert_payment_err_to_err_resp(e: &common::payment_platform::Error) -> ErrResp {
     match e {

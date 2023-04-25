@@ -13,11 +13,10 @@ use tracing::error;
 
 use crate::{
     err::unexpected_err_resp,
-    util::{
-        request_consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE},
-        session::user::User,
-    },
+    util::{request_consultation::LENGTH_OF_MEETING_IN_MINUTE, session::user::User},
 };
+
+use super::ConsultationDateTime;
 
 pub(crate) async fn get_consultations(
     User { user_info }: User,
@@ -188,7 +187,10 @@ mod tests {
     use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::util::request_consultation::{ConsultationDateTime, LENGTH_OF_MEETING_IN_MINUTE};
+    use crate::{
+        handlers::authenticated_handlers::consultation::ConsultationDateTime,
+        util::request_consultation::LENGTH_OF_MEETING_IN_MINUTE,
+    };
 
     use super::{
         handle_consultations, ConsultantSideConsultation, ConsultationsOperation,
