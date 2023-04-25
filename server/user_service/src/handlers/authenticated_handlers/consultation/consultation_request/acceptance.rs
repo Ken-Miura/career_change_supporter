@@ -28,12 +28,12 @@ use uuid::Uuid;
 
 use super::validate_consultation_req_id_is_positive;
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::authenticated_handlers::consultation::{
+    consultation_req_exists, ConsultationRequest,
+};
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
-use crate::util::{
-    self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
-    optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-};
+use crate::util::{self, optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE};
 
 static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
@@ -230,11 +230,8 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
-        util::consultation_request::find_consultation_req_by_consultation_req_id(
-            &self.pool,
-            consultation_req_id,
-        )
-        .await
+        super::super::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id)
+            .await
     }
 
     async fn get_user_account_if_available(
@@ -909,7 +906,7 @@ mod tests {
         create_text_for_consultant, create_text_for_user, CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT,
     };
     use crate::err::{unexpected_err_resp, Code};
-    use crate::util::consultation_request::ConsultationRequest;
+    use crate::handlers::authenticated_handlers::consultation::ConsultationRequest;
     use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
     use crate::util::user_info::UserInfo;
 

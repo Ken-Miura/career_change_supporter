@@ -12,10 +12,11 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::authenticated_handlers::consultation::{
+    consultation_req_exists, round_to_one_decimal_places, ConsultationRequest,
+};
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::{
-    self, consultation_request::consultation_req_exists,
-    consultation_request::round_to_one_decimal_places, consultation_request::ConsultationRequest,
     optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     request_consultation::ConsultationDateTime,
 };
@@ -126,11 +127,8 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
-        util::consultation_request::find_consultation_req_by_consultation_req_id(
-            &self.pool,
-            consultation_req_id,
-        )
-        .await
+        super::super::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id)
+            .await
     }
 
     async fn filter_user_rating_by_user_account_id(

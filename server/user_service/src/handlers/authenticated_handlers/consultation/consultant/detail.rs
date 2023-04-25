@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
-use crate::util::consultation_request::round_to_one_decimal_places;
+use crate::handlers::authenticated_handlers::consultation::round_to_one_decimal_places;
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
 use crate::util::years_of_service_period::{

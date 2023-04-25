@@ -18,11 +18,11 @@ use tracing::{error, info};
 
 use super::validate_consultation_req_id_is_positive;
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::verified_user::VerifiedUser;
-use crate::util::{
-    self, consultation_request::consultation_req_exists, consultation_request::ConsultationRequest,
-    ACCESS_INFO,
+use crate::handlers::authenticated_handlers::consultation::{
+    consultation_req_exists, ConsultationRequest,
 };
+use crate::util::session::verified_user::VerifiedUser;
+use crate::util::ACCESS_INFO;
 
 static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み拒否通知", WEB_SITE_NAME));
@@ -124,11 +124,8 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp> {
-        util::consultation_request::find_consultation_req_by_consultation_req_id(
-            &self.pool,
-            consultation_req_id,
-        )
-        .await
+        super::super::find_consultation_req_by_consultation_req_id(&self.pool, consultation_req_id)
+            .await
     }
 
     async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp> {
@@ -247,7 +244,8 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::util::{consultation_request::ConsultationRequest, tests::SendMailMock};
+    use crate::handlers::authenticated_handlers::consultation::ConsultationRequest;
+    use crate::util::tests::SendMailMock;
 
     use super::{
         create_text, handle_consultation_request_rejection, ConsultationRequestRejection,

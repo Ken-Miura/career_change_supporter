@@ -16,7 +16,7 @@ use super::sort_param_validator::SortParamError;
 use crate::err::Code;
 use crate::handlers::authenticated_handlers::consultation::consultant::fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param;
 use crate::handlers::authenticated_handlers::consultation::consultant::sort_param_validator::validate_sort_param;
-use crate::util::consultation_request::round_to_one_decimal_places;
+use crate::handlers::authenticated_handlers::consultation::round_to_one_decimal_places;
 use crate::util::session::verified_user::VerifiedUser;
 
 use super::career_param_validator::CareerParamValidationError;

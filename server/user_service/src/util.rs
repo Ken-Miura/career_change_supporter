@@ -1,6 +1,5 @@
 // Copyright 2021 Ken Miura
 
-pub(crate) mod consultation_request;
 pub(crate) mod document_operation;
 pub(crate) mod fee_per_hour_in_yen_range;
 pub(crate) mod identity_check;
