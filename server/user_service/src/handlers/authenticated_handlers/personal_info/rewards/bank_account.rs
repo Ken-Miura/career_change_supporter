@@ -26,7 +26,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
-use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
+use crate::handlers::authenticated_handlers::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::util::{
     document_operation::{
         find_document_model_by_user_account_id_with_shared_lock, insert_document,

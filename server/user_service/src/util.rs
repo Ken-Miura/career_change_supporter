@@ -3,7 +3,6 @@
 pub(crate) mod document_operation;
 pub(crate) mod login_status;
 pub(crate) mod optional_env_var;
-pub(crate) mod platform_fee_rate;
 pub(crate) mod request_consultation;
 pub(crate) mod rewards;
 pub(crate) mod session;

@@ -26,8 +26,8 @@ use super::{
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::authenticated_handlers::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
-use crate::util::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
 use crate::util::{request_consultation::convert_payment_err_to_err_resp, ACCESS_INFO};
