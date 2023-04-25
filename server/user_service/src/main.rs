@@ -1,6 +1,5 @@
 // Copyright 2021 Ken Miura
 
-mod agreement;
 mod err;
 mod handlers;
 mod login;
@@ -8,13 +7,12 @@ mod logout;
 mod mfa;
 mod news;
 mod password;
-mod refresh;
 mod util;
 
 use crate::handlers::account::accounts::post_accounts;
 use crate::handlers::account::delete_accounts::delete_accounts;
 use crate::handlers::account::temp_accounts::post_temp_accounts;
-use crate::agreement::post_agreement;
+use crate::handlers::authenticated_handlers::agreement::post_agreement;
 use crate::handlers::authenticated_handlers::consultation::consultation_request::acceptance::post_consultation_request_acceptance;
 use crate::handlers::authenticated_handlers::consultation::consultation_request::detail::get_consultation_request_detail;
 use crate::handlers::authenticated_handlers::consultation::consultation_request::list::get_consultation_requests;
@@ -48,7 +46,7 @@ use crate::handlers::authenticated_handlers::consultation::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,
 };
-use crate::refresh::get_refresh;
+use crate::handlers::authenticated_handlers::refresh::get_refresh;
 use crate::handlers::authenticated_handlers::consultation::request_consultation::begin::post_begin_request_consultation;
 use crate::handlers::authenticated_handlers::consultation::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::handlers::authenticated_handlers::consultation::request_consultation::finish::post_finish_request_consultation;
