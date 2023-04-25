@@ -79,8 +79,8 @@ pub(crate) async fn post_password_update(
 #[derive(Deserialize)]
 pub(crate) struct PasswordUpdateReq {
     #[serde(rename = "pwd-change-req-id")]
-    pub(crate) pwd_change_req_id: String,
-    pub(crate) password: String,
+    pwd_change_req_id: String,
+    password: String,
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -309,7 +309,7 @@ mod tests {
 
     use crate::{
         err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired},
-        password::update::{
+        handlers::password::update::{
             create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
             PasswordUpdateResult, SUBJECT,
         },

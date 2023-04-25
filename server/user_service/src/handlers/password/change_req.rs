@@ -71,7 +71,7 @@ pub(crate) async fn post_password_change_req(
 
 #[derive(Deserialize)]
 pub(crate) struct Account {
-    pub(crate) email_address: String,
+    email_address: String,
 }
 
 #[derive(Serialize, Debug)]
@@ -229,7 +229,7 @@ mod tests {
 
     use crate::{
         err::Code::ReachPasswordChangeReqLimit,
-        password::change_req::{
+        handlers::password::change_req::{
             create_text, handle_password_change_req, MAX_NUM_OF_PWD_CHANGE_REQ, SUBJECT,
         },
         util::tests::SendMailMock,
