@@ -28,9 +28,9 @@ use super::{
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
 use crate::err::Code;
+use crate::handlers::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::authenticated_handlers::consultation::ConsultationDateTime;
 use crate::util::optional_env_var::{EXPIRY_DAYS_OF_CHARGE, MAX_ANNUAL_REWARDS_IN_YEN};
-use crate::util::request_consultation::convert_payment_err_to_err_resp;
 use crate::util::rewards::{
     calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
