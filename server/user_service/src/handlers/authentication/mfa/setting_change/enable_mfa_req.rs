@@ -16,11 +16,11 @@ use tracing::error;
 use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::mfa::{
+use crate::handlers::authentication::mfa::{
     ensure_mfa_is_not_enabled, filter_temp_mfa_secret_order_by_dsc, verify_pass_code,
     USER_TOTP_ISSUER,
 };
-use crate::mfa::{extract_first_temp_mfa_secret, TempMfaSecret};
+use crate::handlers::authentication::mfa::{extract_first_temp_mfa_secret, TempMfaSecret};
 use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::session::user::User;
 
@@ -250,7 +250,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::{unexpected_err_resp, Code};
-    use crate::mfa::TempMfaSecret;
+    use crate::handlers::authentication::mfa::TempMfaSecret;
 
     use super::{handle_enable_mfa_req, EnableMfaReqOperation, EnableMfaReqResult};
 

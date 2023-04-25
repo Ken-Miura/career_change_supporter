@@ -2,9 +2,6 @@
 
 mod err;
 mod handlers;
-mod login;
-mod logout;
-mod mfa;
 mod util;
 
 use crate::handlers::account::accounts::post_accounts;
@@ -29,14 +26,14 @@ use crate::handlers::authenticated_handlers::personal_info::profile::identity::p
 };
 use crate::handlers::authenticated_handlers::personal_info::rewards::bank_account::post_bank_account;
 use crate::handlers::authenticated_handlers::personal_info::rewards::get_reward;
-use crate::login::post_login;
-use crate::logout::post_logout;
-use crate::mfa::mfa_request::pass_code::post_pass_code;
-use crate::mfa::mfa_request::recovery_code::post_recovery_code;
-use crate::mfa::setting_change::disable_mfa_req::post_disable_mfa_req;
-use crate::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
-use crate::mfa::temp_secret::get::get_temp_mfa_secret;
-use crate::mfa::temp_secret::post::post_temp_mfa_secret;
+use crate::handlers::authentication::login::post_login;
+use crate::handlers::authentication::logout::post_logout;
+use crate::handlers::authentication::mfa::mfa_request::pass_code::post_pass_code;
+use crate::handlers::authentication::mfa::mfa_request::recovery_code::post_recovery_code;
+use crate::handlers::authentication::mfa::setting_change::disable_mfa_req::post_disable_mfa_req;
+use crate::handlers::authentication::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
+use crate::handlers::authentication::mfa::temp_secret::get::get_temp_mfa_secret;
+use crate::handlers::authentication::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::handlers::news::get_news;
 use crate::handlers::password::change_req::post_password_change_req;
 use crate::handlers::password::update::post_password_update;
@@ -79,7 +76,7 @@ use handlers::authenticated_handlers::consultation::consultation_room::{KEY_TO_S
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
-use mfa::KEY_TO_USER_TOTP_ISSUER;
+use handlers::authentication::mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;

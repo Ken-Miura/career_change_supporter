@@ -15,11 +15,11 @@ use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::mfa::mfa_request::get_session_by_session_id;
-use crate::mfa::USER_TOTP_ISSUER;
+use crate::handlers::authentication::mfa::mfa_request::get_session_by_session_id;
+use crate::handlers::authentication::mfa::USER_TOTP_ISSUER;
 use crate::{
     err::{unexpected_err_resp, Code},
-    mfa::{ensure_mfa_is_enabled, verify_pass_code},
+    handlers::authentication::mfa::{ensure_mfa_is_enabled, verify_pass_code},
     util::{
         login_status::LoginStatus,
         session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME},
@@ -168,7 +168,7 @@ mod tests {
     use crate::util::login_status::LoginStatus;
     use crate::util::session::tests::prepare_session;
     use crate::util::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
-    use crate::{mfa::mfa_request::MfaInfo, util::user_info::UserInfo};
+    use crate::{handlers::authentication::mfa::mfa_request::MfaInfo, util::user_info::UserInfo};
 
     use super::{handle_pass_code_req, PassCodeOperation, PassCodeReqResult};
 

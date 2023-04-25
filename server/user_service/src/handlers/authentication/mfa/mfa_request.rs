@@ -123,7 +123,9 @@ mod tests {
 
     use crate::{
         err::Code,
-        mfa::mfa_request::{get_session_by_session_id, update_login_status},
+        handlers::authentication::mfa::mfa_request::{
+            get_session_by_session_id, update_login_status,
+        },
         util::{
             login_status::LoginStatus,
             session::{

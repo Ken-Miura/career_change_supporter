@@ -346,7 +346,7 @@ mod tests {
     use common::ErrResp;
     use common::JAPANESE_TIME_ZONE;
 
-    use crate::login::handle_login_req;
+    use crate::handlers::authentication::login::handle_login_req;
     use crate::util::login_status::LoginStatus;
     use crate::util::session::KEY_TO_LOGIN_STATUS;
     use crate::util::session::KEY_TO_USER_ACCOUNT_ID;

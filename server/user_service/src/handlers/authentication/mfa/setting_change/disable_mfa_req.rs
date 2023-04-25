@@ -7,7 +7,7 @@ use common::{ErrResp, RespResult};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::mfa::ensure_mfa_is_enabled;
+use crate::handlers::authentication::mfa::ensure_mfa_is_enabled;
 use crate::util::session::user::User;
 
 pub(crate) async fn post_disable_mfa_req(
@@ -47,7 +47,7 @@ struct DisableMfaReqOperationImpl {
 #[async_trait]
 impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
     async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
-        crate::mfa::disable_mfa(account_id, &self.pool).await
+        crate::handlers::authentication::mfa::disable_mfa(account_id, &self.pool).await
     }
 }
 

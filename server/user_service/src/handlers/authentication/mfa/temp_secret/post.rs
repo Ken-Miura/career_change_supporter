@@ -14,7 +14,9 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::err::Code;
-use crate::mfa::{ensure_mfa_is_not_enabled, MAX_NUM_OF_TEMP_MFA_SECRETS};
+use crate::handlers::authentication::mfa::{
+    ensure_mfa_is_not_enabled, MAX_NUM_OF_TEMP_MFA_SECRETS,
+};
 use crate::{err::unexpected_err_resp, util::session::user::User};
 
 const VALID_PERIOD_IN_MINUTE: i64 = 15;
@@ -139,8 +141,8 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::mfa::temp_secret::post::VALID_PERIOD_IN_MINUTE;
-    use crate::mfa::MAX_NUM_OF_TEMP_MFA_SECRETS;
+    use crate::handlers::authentication::mfa::temp_secret::post::VALID_PERIOD_IN_MINUTE;
+    use crate::handlers::authentication::mfa::MAX_NUM_OF_TEMP_MFA_SECRETS;
 
     use super::{handle_temp_mfp_secret, PostTempMfaSecretResult, TempMfaSecretResultOperation};
 

@@ -9,8 +9,10 @@ use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::mfa::{ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret, USER_TOTP_ISSUER};
-use crate::mfa::{filter_temp_mfa_secret_order_by_dsc, TempMfaSecret};
+use crate::handlers::authentication::mfa::{
+    ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret, USER_TOTP_ISSUER,
+};
+use crate::handlers::authentication::mfa::{filter_temp_mfa_secret_order_by_dsc, TempMfaSecret};
 use crate::util::session::user::User;
 
 pub(crate) async fn get_temp_mfa_secret(
@@ -99,7 +101,7 @@ mod tests {
     use hyper::StatusCode;
     use once_cell::sync::Lazy;
 
-    use crate::{err::Code, mfa::TempMfaSecret};
+    use crate::{err::Code, handlers::authentication::mfa::TempMfaSecret};
 
     use super::{handle_temp_mfp_secret, GetTempMfaSecretResult, TempMfaSecretResultOperation};
 

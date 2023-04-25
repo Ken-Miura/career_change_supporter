@@ -82,7 +82,7 @@ mod tests {
     use async_session::MemoryStore;
 
     use crate::{
-        logout::handle_logout_req,
+        handlers::authentication::logout::handle_logout_req,
         util::{
             login_status::LoginStatus,
             session::tests::{prepare_session, remove_session_from_store},

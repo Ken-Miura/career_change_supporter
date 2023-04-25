@@ -17,8 +17,8 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
-use crate::mfa::ensure_mfa_is_enabled;
-use crate::mfa::mfa_request::get_session_by_session_id;
+use crate::handlers::authentication::mfa::ensure_mfa_is_enabled;
+use crate::handlers::authentication::mfa::mfa_request::get_session_by_session_id;
 use crate::util::login_status::LoginStatus;
 use crate::util::session::LOGIN_SESSION_EXPIRY;
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
@@ -96,7 +96,7 @@ impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
     }
 
     async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
-        crate::mfa::disable_mfa(account_id, &self.pool).await
+        crate::handlers::authentication::mfa::disable_mfa(account_id, &self.pool).await
     }
 
     fn set_login_session_expiry(&self, session: &mut Session) {
@@ -178,7 +178,7 @@ mod tests {
 
     use crate::err::Code;
     use crate::{
-        mfa::mfa_request::MfaInfo,
+        handlers::authentication::mfa::mfa_request::MfaInfo,
         util::{
             login_status::LoginStatus,
             session::{tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},

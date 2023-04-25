@@ -113,7 +113,7 @@ fn extract_first_temp_mfa_secret(
     Ok(secret.clone())
 }
 
-pub(crate) fn verify_pass_code(
+fn verify_pass_code(
     account_id: i64,
     base32_encoded_secret: &str,
     issuer: &str,
@@ -205,7 +205,7 @@ mod tests {
     use chrono::TimeZone;
     use common::JAPANESE_TIME_ZONE;
 
-    use crate::{err::Code, mfa::TempMfaSecret};
+    use crate::{err::Code, handlers::authentication::mfa::TempMfaSecret};
 
     use super::{
         ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret,
