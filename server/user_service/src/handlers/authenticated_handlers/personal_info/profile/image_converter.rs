@@ -13,7 +13,7 @@ use crate::err::{unexpected_err_resp, Code};
 /// <br>
 /// 画像ファイルの中のメタデータに悪意ある内容が含まれている場合が考えられるので、画像情報以外のメタデータを取り除く必要がある。
 /// メタデータを取り除くのに画像形式を変換するのが最も容易な実装のため、画像形式の変換を行っている。
-pub(crate) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
+pub(super) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrResp> {
     let img = image::io::Reader::with_format(Cursor::new(data), ImageFormat::Jpeg)
         .decode()
         .map_err(|e| {
@@ -46,7 +46,7 @@ mod tests {
 
     use crate::{
         err::Code,
-        util::{image_converter::convert_jpeg_to_png, tests::create_dummy_jpeg_image},
+        handlers::authenticated_handlers::personal_info::profile::image_converter::convert_jpeg_to_png,
     };
 
     #[test]
@@ -69,6 +69,14 @@ mod tests {
         let result = result.expect_err("failed to get Err");
         assert_eq!(result.0, StatusCode::BAD_REQUEST);
         assert_eq!(result.1.code, Code::InvalidJpegImage as u32);
+    }
+
+    fn create_dummy_jpeg_image() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(128, 128);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+            .expect("failed to get Ok");
+        bytes
     }
 
     fn create_dummy_png_image() -> Cursor<Vec<u8>> {

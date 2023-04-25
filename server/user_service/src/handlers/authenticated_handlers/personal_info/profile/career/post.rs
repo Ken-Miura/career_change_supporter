@@ -7,11 +7,9 @@ use crate::handlers::authenticated_handlers::personal_info::profile::career::car
     validate_career, CareerValidationError,
 };
 use crate::handlers::authenticated_handlers::personal_info::profile::file_name_validator::validate_extension_is_jpeg;
+use crate::handlers::authenticated_handlers::personal_info::profile::image_converter::convert_jpeg_to_png;
 use crate::util::session::verified_user::VerifiedUser;
-use crate::util::{
-    image_converter::convert_jpeg_to_png, multipart::clone_file_name_if_exists,
-    multipart::FileNameAndBinary,
-};
+use crate::util::{multipart::clone_file_name_if_exists, multipart::FileNameAndBinary};
 use async_session::serde_json;
 use axum::async_trait;
 use axum::body::Bytes;
@@ -657,8 +655,9 @@ mod tests {
     use uuid::Uuid;
 
     use super::{handle_multipart, CareerResult, MAX_CAREER_IMAGE_SIZE_IN_BYTES};
+    use crate::err::Code;
+    use crate::handlers::authenticated_handlers::personal_info::profile::image_converter::convert_jpeg_to_png;
     use crate::util::tests::SendMailMock;
-    use crate::{err::Code, util::image_converter::convert_jpeg_to_png};
 
     use super::{
         create_subject, create_text, handle_career_req, CareerField, MultipartWrapper,
