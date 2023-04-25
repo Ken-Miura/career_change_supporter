@@ -580,8 +580,9 @@ mod tests {
     use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::rating::consultant_rating::calculate_average_rating;
-    use crate::{err::Code, rating::ConsultationInfo};
+    use crate::err::Code;
+    use crate::handlers::authenticated_handlers::consultation::rating::consultant_rating::calculate_average_rating;
+    use crate::handlers::authenticated_handlers::consultation::rating::ConsultationInfo;
 
     use super::{handle_consultant_rating, ConsultantRatingOperation, ConsultantRatingResult};
 

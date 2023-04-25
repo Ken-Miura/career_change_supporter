@@ -4,6 +4,7 @@ pub(crate) mod consultant;
 pub(crate) mod consultation_request;
 pub(crate) mod consultation_room;
 pub(crate) mod consultations;
+pub(crate) mod rating;
 pub(crate) mod request_consultation;
 
 use crate::util::user_info::FindUserInfoOperation;

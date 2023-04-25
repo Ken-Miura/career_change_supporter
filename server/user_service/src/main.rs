@@ -9,7 +9,6 @@ mod logout;
 mod mfa;
 mod news;
 mod password;
-mod rating;
 mod refresh;
 mod util;
 
@@ -46,7 +45,7 @@ use crate::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::news::get_news;
 use crate::password::change_req::post_password_change_req;
 use crate::password::update::post_password_update;
-use crate::rating::{
+use crate::handlers::authenticated_handlers::consultation::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,
 };
