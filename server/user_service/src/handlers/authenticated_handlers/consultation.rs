@@ -8,7 +8,7 @@ mod convert_payment_err;
 pub(crate) mod rating;
 pub(crate) mod request_consultation;
 
-use crate::util::user_info::FindUserInfoOperation;
+use crate::util::user_info::{FindUserInfoOperation, UserInfo};
 
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
@@ -33,15 +33,27 @@ async fn check_if_consultant_is_available(
     account_id: i64,
     op: &impl FindUserInfoOperation,
 ) -> Result<bool, ErrResp> {
+    let user_info_opion = find_user_info_if_available(account_id, op).await?;
+    if user_info_opion.is_some() {
+        return Ok(true);
+    }
+    Ok(false)
+}
+
+/// アカウントが存在し、かつ無効化されていない場合、UserInfoを返す
+async fn find_user_info_if_available(
+    account_id: i64,
+    op: &impl FindUserInfoOperation,
+) -> Result<Option<UserInfo>, ErrResp> {
     let user_info = op.find_user_info_by_account_id(account_id).await?;
     if let Some(u) = user_info {
         if u.disabled_at.is_some() {
-            Ok(false)
+            Ok(None)
         } else {
-            Ok(true)
+            Ok(Some(u))
         }
     } else {
-        Ok(false)
+        Ok(None)
     }
 }
 
@@ -136,7 +148,8 @@ mod tests {
 
     use crate::{
         handlers::authenticated_handlers::consultation::{
-            check_if_consultant_is_available, round_to_one_decimal_places,
+            check_if_consultant_is_available, find_user_info_if_available,
+            round_to_one_decimal_places,
         },
         util::user_info::{FindUserInfoOperation, UserInfo},
     };
@@ -218,6 +231,68 @@ mod tests {
             .expect("failed to get Ok");
 
         assert!(ret);
+    }
+
+    #[tokio::test]
+    async fn test_find_user_info_if_available_returns_none_when_no_account_is_found() {
+        let user_info = UserInfo {
+            account_id: 6051,
+            email_address: "test@test.com".to_string(),
+            mfa_enabled_at: None,
+            disabled_at: None,
+        };
+        let op = FindUserInfoOperationMock {
+            user_info: &user_info,
+        };
+        let other_account_id = user_info.account_id + 6501;
+
+        let ret = find_user_info_if_available(other_account_id, &op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(ret, None);
+    }
+
+    #[tokio::test]
+    async fn test_find_user_info_if_available_returns_none_when_user_is_disabled() {
+        let user_info = UserInfo {
+            account_id: 6051,
+            email_address: "test@test.com".to_string(),
+            mfa_enabled_at: None,
+            disabled_at: Some(
+                JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2022, 1, 3, 23, 59, 59)
+                    .unwrap(),
+            ),
+        };
+        let op = FindUserInfoOperationMock {
+            user_info: &user_info,
+        };
+
+        let ret = find_user_info_if_available(user_info.account_id, &op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(ret, None);
+    }
+
+    #[tokio::test]
+    async fn test_find_user_info_if_available_returns_user_info_when_user_is_not_disabled() {
+        let user_info = UserInfo {
+            account_id: 6051,
+            email_address: "test@test.com".to_string(),
+            mfa_enabled_at: None,
+            disabled_at: None,
+        };
+        let op = FindUserInfoOperationMock {
+            user_info: &user_info,
+        };
+
+        let ret = find_user_info_if_available(user_info.account_id, &op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(ret, Some(user_info));
     }
 
     #[derive(Debug)]

@@ -18,7 +18,6 @@ use tracing::error;
 use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util;
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 
@@ -151,8 +150,7 @@ impl ConsultantSideInfoOperation for ConsultantSideInfoOperationImpl {
         user_account_id: i64,
     ) -> Result<Option<UserInfo>, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
-        util::the_other_person_account::get_the_other_person_info_if_available(user_account_id, &op)
-            .await
+        super::super::find_user_info_if_available(user_account_id, &op).await
     }
 
     async fn update_consultant_entered_at_if_needed(

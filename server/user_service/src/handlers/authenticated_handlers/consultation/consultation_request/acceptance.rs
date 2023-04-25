@@ -31,9 +31,9 @@ use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::authenticated_handlers::consultation::{
     consultation_req_exists, ConsultationRequest,
 };
+use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
-use crate::util::{self, optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE};
 
 static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
@@ -239,8 +239,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         user_account_id: i64,
     ) -> Result<Option<UserInfo>, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
-        util::the_other_person_account::get_the_other_person_info_if_available(user_account_id, &op)
-            .await
+        super::super::find_user_info_if_available(user_account_id, &op).await
     }
 
     async fn count_user_side_consultation_by_user_account_id(
