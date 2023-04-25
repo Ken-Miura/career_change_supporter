@@ -5,6 +5,7 @@ pub(crate) mod fee_per_hour_in_yen;
 mod file_name_validator;
 pub(crate) mod identity;
 mod image_converter;
+mod multipart;
 
 use axum::async_trait;
 use axum::{extract::State, http::StatusCode, Json};

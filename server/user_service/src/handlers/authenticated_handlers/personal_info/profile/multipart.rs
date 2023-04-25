@@ -2,10 +2,10 @@
 
 use std::io::Cursor;
 
-pub(crate) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
+pub(super) type FileNameAndBinary = (String, Cursor<Vec<u8>>);
 
 /// 引数が存在する場合、ファイル名のみ複製を行う
-pub(crate) fn clone_file_name_if_exists(
+pub(super) fn clone_file_name_if_exists(
     file_name_and_binary_option: Option<FileNameAndBinary>,
 ) -> (Option<FileNameAndBinary>, Option<String>) {
     if let Some(file_name_and_binary) = file_name_and_binary_option {
@@ -18,7 +18,12 @@ pub(crate) fn clone_file_name_if_exists(
 
 #[cfg(test)]
 mod tests {
-    use crate::util::{multipart::clone_file_name_if_exists, tests::create_dummy_jpeg_image};
+
+    use std::io::Cursor;
+
+    use image::{ImageBuffer, ImageOutputFormat, RgbImage};
+
+    use crate::handlers::authenticated_handlers::personal_info::profile::multipart::clone_file_name_if_exists;
 
     #[test]
     fn clone_file_name_if_exists_returns_none_if_none_is_passed() {
@@ -37,5 +42,13 @@ mod tests {
 
         assert_eq!(Some(file_name_and_binary), ret1);
         assert_eq!(Some(file_name.to_string()), ret2);
+    }
+
+    fn create_dummy_jpeg_image() -> Cursor<Vec<u8>> {
+        let img: RgbImage = ImageBuffer::new(128, 128);
+        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
+        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
+            .expect("failed to get Ok");
+        bytes
     }
 }

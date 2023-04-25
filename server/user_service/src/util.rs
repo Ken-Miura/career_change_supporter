@@ -2,7 +2,6 @@
 
 pub(crate) mod document_operation;
 pub(crate) mod login_status;
-pub(crate) mod multipart;
 pub(crate) mod optional_env_var;
 pub(crate) mod platform_fee_rate;
 pub(crate) mod request_consultation;
@@ -135,13 +134,11 @@ pub(crate) async fn update_last_login(
 /// 通常のテストコードに加え、共通で使うモックをまとめる
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::io::Cursor;
 
     use axum::async_trait;
     use axum::http::StatusCode;
     use chrono::TimeZone;
     use common::{smtp::SendMail, ErrResp, JAPANESE_TIME_ZONE};
-    use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
     use crate::{
         err::Code,
@@ -184,14 +181,6 @@ pub(crate) mod tests {
             assert_eq!(self.text, text);
             Ok(())
         }
-    }
-
-    pub(super) fn create_dummy_jpeg_image() -> Cursor<Vec<u8>> {
-        let img: RgbImage = ImageBuffer::new(128, 128);
-        let mut bytes = Cursor::new(Vec::with_capacity(50 * 1024));
-        img.write_to(&mut bytes, ImageOutputFormat::Jpeg(85))
-            .expect("failed to get Ok");
-        bytes
     }
 
     struct FindUserInfoOperationMock<'a> {
