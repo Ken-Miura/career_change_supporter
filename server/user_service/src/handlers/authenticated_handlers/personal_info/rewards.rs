@@ -22,11 +22,10 @@ use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::util::rewards::{
+use crate::handlers::authenticated_handlers::rewards_info::{
     calculate_rewards, create_start_and_end_date_time_of_current_month,
     create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
-use crate::util::{self};
 use crate::{
     err::{self, unexpected_err_resp},
     util::{session::user::User, ACCESS_INFO},
@@ -369,7 +368,7 @@ impl RewardOperation for RewardOperationImpl {
         start: &DateTime<FixedOffset>,
         end: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        util::rewards::filter_receipts_of_the_duration_by_consultant_id(
+        super::super::rewards_info::filter_receipts_of_the_duration_by_consultant_id(
             &self.pool,
             consultant_id,
             start,
@@ -384,7 +383,7 @@ impl RewardOperation for RewardOperationImpl {
         start: &DateTime<FixedOffset>,
         end: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        util::rewards::filter_receipts_of_the_duration_by_consultant_id(
+        super::super::rewards_info::filter_receipts_of_the_duration_by_consultant_id(
             &self.pool,
             consultant_id,
             start,
@@ -422,7 +421,7 @@ mod tests {
     use crate::handlers::authenticated_handlers::personal_info::rewards::{
         handle_reward_req, BankAccount, Transfer,
     };
-    use crate::util::rewards::{
+    use crate::handlers::authenticated_handlers::rewards_info::{
         create_start_and_end_date_time_of_current_month,
         create_start_and_end_date_time_of_current_year, PaymentInfo,
     };

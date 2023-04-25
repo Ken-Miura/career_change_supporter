@@ -30,16 +30,13 @@ use super::{
 use crate::err::Code;
 use crate::handlers::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::authenticated_handlers::consultation::ConsultationDateTime;
-use crate::util::optional_env_var::{EXPIRY_DAYS_OF_CHARGE, MAX_ANNUAL_REWARDS_IN_YEN};
-use crate::util::rewards::{
+use crate::handlers::authenticated_handlers::rewards_info::{
     calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
+use crate::util::optional_env_var::{EXPIRY_DAYS_OF_CHARGE, MAX_ANNUAL_REWARDS_IN_YEN};
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
-use crate::{
-    err::unexpected_err_resp,
-    util::{self, ACCESS_INFO},
-};
+use crate::{err::unexpected_err_resp, util::ACCESS_INFO};
 
 use super::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
@@ -238,7 +235,7 @@ impl RequestConsultationOperation for RequestConsultationOperationImpl {
         start: &DateTime<FixedOffset>,
         end: &DateTime<FixedOffset>,
     ) -> Result<Vec<PaymentInfo>, ErrResp> {
-        util::rewards::filter_receipts_of_the_duration_by_consultant_id(
+        super::super::super::rewards_info::filter_receipts_of_the_duration_by_consultant_id(
             &self.pool,
             consultant_id,
             start,
@@ -637,7 +634,9 @@ mod tests {
     };
     use crate::err::Code;
     use crate::handlers::authenticated_handlers::consultation::ConsultationDateTime;
-    use crate::util::rewards::{create_start_and_end_date_time_of_current_year, PaymentInfo};
+    use crate::handlers::authenticated_handlers::rewards_info::{
+        create_start_and_end_date_time_of_current_year, PaymentInfo,
+    };
 
     use super::{
         handle_begin_request_consultation, BeginRequestConsultationParam,

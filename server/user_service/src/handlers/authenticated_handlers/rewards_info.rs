@@ -22,12 +22,12 @@ use crate::err::unexpected_err_resp;
 ///
 /// [crate::common::payment_platform::charge::Chage]と同じデータを保持するキャッシュとしての役割を持つ
 #[derive(Clone, Debug)]
-pub(crate) struct PaymentInfo {
-    pub(crate) fee_per_hour_in_yen: i32,
-    pub(crate) platform_fee_rate_in_percentage: String,
+pub(super) struct PaymentInfo {
+    pub(super) fee_per_hour_in_yen: i32,
+    pub(super) platform_fee_rate_in_percentage: String,
 }
 
-pub(crate) async fn filter_receipts_of_the_duration_by_consultant_id(
+pub(super) async fn filter_receipts_of_the_duration_by_consultant_id(
     pool: &DatabaseConnection,
     consultant_id: i64,
     start: &DateTime<FixedOffset>,
@@ -70,7 +70,7 @@ pub(crate) async fn filter_receipts_of_the_duration_by_consultant_id(
 
 // [tenantオブジェクト](https://pay.jp/docs/api/#tenant%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)のpayjp_fee_includedがtrueであるとことを前提として実装
 // payjp_fee_includedの値を設定できるのはテナント作成時のみ。そのためテナント作成時のコードで必ずtrueを設定することで、ここでtrueを前提として処理を行う
-pub(crate) fn calculate_rewards(payment_info: &[PaymentInfo]) -> Result<i32, ErrResp> {
+pub(super) fn calculate_rewards(payment_info: &[PaymentInfo]) -> Result<i32, ErrResp> {
     let rewards = payment_info.iter().try_fold(0, accumulate_rewards)?;
     Ok(rewards)
 }
@@ -109,7 +109,7 @@ fn calculate_fee(sales: i32, percentage: &str) -> Result<i32, ErrResp> {
 }
 
 /// 渡された日時に対して、その年の日本時間における1月1日0時0分0秒と12月31日23時59分59秒を示す日時を返す。
-pub(crate) fn create_start_and_end_date_time_of_current_year(
+pub(super) fn create_start_and_end_date_time_of_current_year(
     current_date_time: &DateTime<FixedOffset>,
 ) -> Result<(DateTime<FixedOffset>, DateTime<FixedOffset>), ErrResp> {
     let current_year = current_date_time.year();
@@ -150,7 +150,7 @@ pub(crate) fn create_start_and_end_date_time_of_current_year(
 }
 
 /// 渡された日時に対して、その月の日本時間における1日0時0分0秒と最終日23時59分59秒を示す日時を返す。
-pub(crate) fn create_start_and_end_date_time_of_current_month(
+pub(super) fn create_start_and_end_date_time_of_current_month(
     current_date_time: &DateTime<FixedOffset>,
 ) -> Result<(DateTime<FixedOffset>, DateTime<FixedOffset>), ErrResp> {
     let current_year = current_date_time.year();
@@ -204,7 +204,7 @@ mod tests {
     use common::JAPANESE_TIME_ZONE;
     use once_cell::sync::Lazy;
 
-    use crate::util::rewards::{
+    use crate::handlers::authenticated_handlers::rewards_info::{
         create_start_and_end_date_time_of_current_month,
         create_start_and_end_date_time_of_current_year,
     };

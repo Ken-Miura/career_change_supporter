@@ -4,7 +4,6 @@ pub(crate) mod document_operation;
 pub(crate) mod login_status;
 pub(crate) mod optional_env_var;
 pub(crate) mod request_consultation;
-pub(crate) mod rewards;
 pub(crate) mod session;
 pub(crate) mod terms_of_use;
 pub(crate) mod the_other_person_account;
