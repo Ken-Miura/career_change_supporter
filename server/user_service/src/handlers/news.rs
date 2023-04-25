@@ -97,7 +97,7 @@ mod tests {
     use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
     use hyper::StatusCode;
 
-    use crate::news::{NewsResult, NEWS_RETRIEVAL_CRITERIA_IN_DAYS};
+    use crate::handlers::news::{NewsResult, NEWS_RETRIEVAL_CRITERIA_IN_DAYS};
 
     use super::{handle_news, News, NewsOperation};
 
