@@ -1,6 +1,5 @@
 // Copyright 2021 Ken Miura
 
-mod account;
 mod agreement;
 mod err;
 mod handlers;
@@ -12,9 +11,9 @@ mod password;
 mod refresh;
 mod util;
 
-use crate::account::accounts::post_accounts;
-use crate::account::delete_accounts::delete_accounts;
-use crate::account::temp_accounts::post_temp_accounts;
+use crate::handlers::account::accounts::post_accounts;
+use crate::handlers::account::delete_accounts::delete_accounts;
+use crate::handlers::account::temp_accounts::post_temp_accounts;
 use crate::agreement::post_agreement;
 use crate::handlers::authenticated_handlers::consultation::consultation_request::acceptance::post_consultation_request_acceptance;
 use crate::handlers::authenticated_handlers::consultation::consultation_request::detail::get_consultation_request_detail;

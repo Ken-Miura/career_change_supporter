@@ -29,6 +29,8 @@ use uuid::Uuid;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachTempAccountsLimit;
 
+use super::TempAccount;
+
 // TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_TEMP_ACCOUNTS: u64 = 5;
 
@@ -188,14 +190,6 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
         })?;
         Ok(())
     }
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct TempAccount {
-    pub(crate) user_temp_account_id: String,
-    pub(crate) email_address: String,
-    pub(crate) hashed_password: Vec<u8>,
-    pub(crate) created_at: DateTime<FixedOffset>,
 }
 
 #[cfg(test)]

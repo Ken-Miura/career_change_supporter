@@ -23,7 +23,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use tracing::{error, info};
 
-use crate::account::temp_accounts::TempAccount;
+use super::TempAccount;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
 
@@ -147,7 +147,7 @@ struct NewAccount {
 #[derive(Deserialize)]
 pub(crate) struct TempAccountId {
     #[serde(rename = "temp-account-id")]
-    pub(crate) temp_account_id: String,
+    temp_account_id: String,
 }
 
 fn create_text() -> String {
@@ -269,10 +269,12 @@ mod tests {
     };
     use uuid::Uuid;
 
-    use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
     use crate::{
-        account::accounts::{create_text, handle_accounts_req, AccountsResult, SUBJECT},
-        account::temp_accounts::TempAccount,
+        err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired},
+        handlers::account::TempAccount,
+    };
+    use crate::{
+        handlers::account::accounts::{create_text, handle_accounts_req, AccountsResult, SUBJECT},
         util::tests::SendMailMock,
     };
 

@@ -73,7 +73,7 @@ pub(crate) async fn delete_accounts(
 
 #[derive(Deserialize)]
 pub(crate) struct DeleteAccountsQuery {
-    pub(crate) account_delete_confirmed: bool,
+    account_delete_confirmed: bool,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -446,10 +446,10 @@ mod tests {
     use common::{opensearch::INDEX_NAME, smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
     use crate::{
-        account::delete_accounts::{
+        err::Code,
+        handlers::account::delete_accounts::{
             create_text, handle_delete_accounts, DeleteAccountsResult, SUBJECT,
         },
-        err::Code,
         util::tests::SendMailMock,
     };
 
