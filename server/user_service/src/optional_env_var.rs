@@ -8,7 +8,7 @@ const KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN: &str = "MAX_ANNUAL_REWARDS_IN_YEN";
 /// 年間で稼ぐことが可能な最大報酬額（単位：円）
 ///
 /// 動作確認時の利便性のために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
+pub(super) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
     let max_annual_rewards =
         env::var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| "470000".to_string());
     let max_annual_rewards = max_annual_rewards
@@ -28,7 +28,7 @@ const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
 /// 相談者が相談依頼を行った日時を起点とし、相談開始日時までの秒単位での最小期間
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
+pub(super) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
     let min_duration_in_seconds = env::var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
         .unwrap_or_else(|_| {
             "259200".to_string() // 3 days
@@ -50,7 +50,7 @@ const KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
 /// 相談者が相談依頼を行った日時を起点とし、相談開始日時までの秒単位での最大期間
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
+pub(super) static MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
     let max_duration_in_seconds = env::var(KEY_TO_MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
         .unwrap_or_else(|_| {
             "1814400".to_string() // 21 days
@@ -69,7 +69,7 @@ const KEY_TO_EXPIRY_DAYS_OF_CHARGE: &str = "EXPIRY_DAYS_OF_CHARGE";
 /// 相談者が相談依頼を行った日時を起点とし、決済の認証が切れるまでの有効期限（単位：日）
 ///
 /// 動作確認時の利便性のために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
+pub(super) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
     let expiry_days_of_charge =
         env::var(KEY_TO_EXPIRY_DAYS_OF_CHARGE).unwrap_or_else(|_| "59".to_string());
     let expiry_days_of_charge = expiry_days_of_charge
@@ -99,7 +99,7 @@ const KEY_TO_MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: &str =
 /// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：時間）
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
+pub(super) static MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
     Lazy::new(|| {
         let min_duration_in_hour =
             env::var(KEY_TO_MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE)
@@ -113,7 +113,7 @@ const KEY_TO_FIRST_START_HOUR_OF_CONSULTATION: &str = "FIRST_START_HOUR_OF_CONSU
 /// 1日の内、最も早い相談開始時刻
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static FIRST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
+pub(super) static FIRST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
     let first_start_hour =
         env::var(KEY_TO_FIRST_START_HOUR_OF_CONSULTATION).unwrap_or_else(|_| "7".to_string());
     let first_start_hour = first_start_hour
@@ -132,7 +132,7 @@ const KEY_TO_LAST_START_HOUR_OF_CONSULTATION: &str = "LAST_START_HOUR_OF_CONSULT
 /// 1日の内、最も遅い相談開始時刻
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(crate) static LAST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
+pub(super) static LAST_START_HOUR_OF_CONSULTATION: Lazy<u32> = Lazy::new(|| {
     let last_start_hour =
         env::var(KEY_TO_LAST_START_HOUR_OF_CONSULTATION).unwrap_or_else(|_| "23".to_string());
     let last_start_hour = last_start_hour

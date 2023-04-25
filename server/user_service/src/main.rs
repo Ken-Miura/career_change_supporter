@@ -2,6 +2,7 @@
 
 mod err;
 mod handlers;
+mod optional_env_var;
 mod util;
 
 use crate::handlers::account::accounts::post_accounts;

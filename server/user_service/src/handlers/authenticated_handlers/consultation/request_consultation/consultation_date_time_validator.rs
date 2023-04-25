@@ -6,7 +6,7 @@ use chrono::{DateTime, FixedOffset, NaiveDate};
 
 use crate::{
     handlers::authenticated_handlers::consultation::ConsultationDateTime,
-    util::optional_env_var::{
+    optional_env_var::{
         FIRST_START_HOUR_OF_CONSULTATION, LAST_START_HOUR_OF_CONSULTATION,
         MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS, MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS,
     },

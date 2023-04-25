@@ -15,7 +15,7 @@ use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::authenticated_handlers::consultation::{
     consultation_req_exists, round_to_one_decimal_places, ConsultationDateTime, ConsultationRequest,
 };
-use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
+use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::verified_user::VerifiedUser;
 
 use super::validate_consultation_req_id_is_positive;

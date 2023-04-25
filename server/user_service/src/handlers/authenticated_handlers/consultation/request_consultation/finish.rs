@@ -28,7 +28,7 @@ use super::{
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::authenticated_handlers::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
-use crate::util::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
+use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
 use crate::util::ACCESS_INFO;
@@ -633,7 +633,7 @@ mod tests {
     };
     use crate::err::Code;
     use crate::handlers::authenticated_handlers::consultation::request_consultation::finish::extract_candidates_date_time_in_jst;
-    use crate::util::optional_env_var::{
+    use crate::optional_env_var::{
         EXPIRY_DAYS_OF_CHARGE, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
     };
 
