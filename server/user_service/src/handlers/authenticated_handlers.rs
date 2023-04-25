@@ -3,6 +3,9 @@
 pub(crate) mod consultation;
 pub(crate) mod personal_info;
 
+const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
+const MAX_FEE_PER_HOUR_IN_YEN: i32 = 10000;
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;

@@ -938,7 +938,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::util::fee_per_hour_in_yen_range::MIN_FEE_PER_HOUR_IN_YEN;
+    use crate::handlers::authenticated_handlers::MIN_FEE_PER_HOUR_IN_YEN;
 
     use super::{
         handle_consultants_search, AnnualInComeInManYenParam, CareerParam,

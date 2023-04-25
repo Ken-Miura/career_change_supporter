@@ -16,10 +16,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::authenticated_handlers::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
 use crate::util::document_operation::{
     find_document_model_by_user_account_id_with_shared_lock, insert_document,
 };
-use crate::util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
 use crate::util::session::verified_user::VerifiedUser;
 
 pub(crate) async fn post_fee_per_hour_in_yen(
@@ -233,8 +233,9 @@ mod tests {
 
     use crate::{
         err::Code,
-        handlers::authenticated_handlers::personal_info::profile::fee_per_hour_in_yen::{
-            FeePerHourInYenResult, MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
+        handlers::authenticated_handlers::{
+            personal_info::profile::fee_per_hour_in_yen::FeePerHourInYenResult,
+            MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
         },
     };
 

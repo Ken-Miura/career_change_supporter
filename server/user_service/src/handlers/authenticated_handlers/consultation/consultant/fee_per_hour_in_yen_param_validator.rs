@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use crate::util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
+use crate::handlers::authenticated_handlers::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN};
 
 use super::search::FeePerHourInYenParam;
 
@@ -87,9 +87,9 @@ impl Display for FeePerHourInYenParamError {
 mod tests {
     use once_cell::sync::Lazy;
 
-    use crate::{
-        handlers::authenticated_handlers::consultation::consultant::search::FeePerHourInYenParam,
-        util::fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
+    use crate::handlers::authenticated_handlers::{
+        consultation::consultant::search::FeePerHourInYenParam, MAX_FEE_PER_HOUR_IN_YEN,
+        MIN_FEE_PER_HOUR_IN_YEN,
     };
 
     use super::{validate_fee_per_hour_in_yen_param, FeePerHourInYenParamError};
