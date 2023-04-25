@@ -1,7 +1,6 @@
 // Copyright 2021 Ken Miura
 
 pub(crate) mod document_operation;
-pub(crate) mod identity_check;
 pub(crate) mod image_converter;
 pub(crate) mod login_status;
 pub(crate) mod multipart;

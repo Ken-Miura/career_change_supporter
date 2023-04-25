@@ -1,13 +1,14 @@
 // Copyright 2021 Ken Miura
 
 use async_session::{Session, SessionStore};
+use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::{http::StatusCode, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
 use common::{ApiError, AppState, ErrResp};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use std::time::Duration;
 use tracing::{error, info};
 
@@ -19,7 +20,6 @@ use crate::err::unexpected_err_resp;
 use crate::err::Code;
 
 use super::get_user_info_if_available;
-use super::identity_check::{IdentityCheckOperation, IdentityCheckOperationImpl};
 use super::login_status::LoginStatus;
 use super::request_consultation::LENGTH_OF_MEETING_IN_MINUTE;
 use super::terms_of_use::{
@@ -169,6 +169,41 @@ pub(crate) async fn get_verified_user_info_from_cookie(
     ensure_identity_exists(user_info.account_id, &op).await?;
 
     Ok(user_info)
+}
+
+#[async_trait]
+trait IdentityCheckOperation {
+    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
+    ///
+    /// 個人情報の登録をしていないと使えないAPIに関して、処理を継続してよいか確認するために利用する。
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+}
+
+struct IdentityCheckOperationImpl<'a> {
+    pool: &'a DatabaseConnection,
+}
+
+impl<'a> IdentityCheckOperationImpl<'a> {
+    fn new(pool: &'a DatabaseConnection) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl<'a> IdentityCheckOperation for IdentityCheckOperationImpl<'a> {
+    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+        let model = entity::identity::Entity::find_by_id(account_id)
+            .one(self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find identity (user_account_id: {}): {}",
+                    account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.is_some())
+    }
 }
 
 /// session_idを使い、storeからユーザーを一意に識別する値を取得する。<br>
@@ -342,7 +377,6 @@ pub(crate) mod tests {
     use crate::{
         err::Code,
         util::{
-            identity_check::IdentityCheckOperation,
             login_status::LoginStatus,
             session::{
                 destroy_session_if_exists, get_user_account_id_by_session_id,
@@ -353,8 +387,8 @@ pub(crate) mod tests {
     };
 
     use super::{
-        check_if_user_has_already_agreed, ensure_identity_exists, RefreshOperation,
-        KEY_TO_LOGIN_STATUS,
+        check_if_user_has_already_agreed, ensure_identity_exists, IdentityCheckOperation,
+        RefreshOperation, KEY_TO_LOGIN_STATUS,
     };
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
