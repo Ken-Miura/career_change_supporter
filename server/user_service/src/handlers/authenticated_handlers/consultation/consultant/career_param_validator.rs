@@ -4,16 +4,14 @@ use std::{collections::HashSet, error::Error, fmt::Display};
 
 use once_cell::sync::Lazy;
 
-use crate::{
-    handlers::authenticated_handlers::personal_info::profile::career::MAX_ANNUAL_INCOME_IN_MAN_YEN,
-    util::years_of_service_period::{
-        VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
-        VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
-        VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
-    },
-};
+use crate::handlers::authenticated_handlers::personal_info::profile::career::MAX_ANNUAL_INCOME_IN_MAN_YEN;
 
-use super::search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam};
+use super::{
+    search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
+    VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
+    VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
+    VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
+};
 
 static VALID_YEARS_OF_SERVICE_SET: Lazy<HashSet<i32>> = Lazy::new(|| {
     let mut set: HashSet<i32> = HashSet::with_capacity(5);

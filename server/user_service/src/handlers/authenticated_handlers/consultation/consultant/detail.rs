@@ -15,7 +15,8 @@ use crate::err::Code;
 use crate::handlers::authenticated_handlers::consultation::round_to_one_decimal_places;
 use crate::util::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
-use crate::util::years_of_service_period::{
+
+use super::{
     VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,
     VALID_YEARS_OF_SERVICE_PERIOD_TEN, VALID_YEARS_OF_SERVICE_PERIOD_THREE,
     VALID_YEARS_OF_SERVICE_PERIOD_TWENTY,
