@@ -30,7 +30,7 @@ use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired};
-use crate::util::session::{destroy_session_if_exists, SESSION_ID_COOKIE_NAME};
+use crate::handlers::session::{destroy_session_if_exists, SESSION_ID_COOKIE_NAME};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更完了通知", WEB_SITE_NAME));
 

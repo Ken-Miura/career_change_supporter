@@ -8,44 +8,44 @@ mod util;
 use crate::handlers::account::accounts::post_accounts;
 use crate::handlers::account::delete_accounts::delete_accounts;
 use crate::handlers::account::temp_accounts::post_temp_accounts;
-use crate::handlers::authenticated_handlers::agreement::post_agreement;
-use crate::handlers::authenticated_handlers::consultation::consultation_request::acceptance::post_consultation_request_acceptance;
-use crate::handlers::authenticated_handlers::consultation::consultation_request::detail::get_consultation_request_detail;
-use crate::handlers::authenticated_handlers::consultation::consultation_request::list::get_consultation_requests;
-use crate::handlers::authenticated_handlers::consultation::consultation_request::rejection::post_consultation_request_rejection;
-use crate::handlers::authenticated_handlers::consultation::consultation_room::consultant_side_info::get_consultant_side_info;
-use crate::handlers::authenticated_handlers::consultation::consultation_room::user_side_info::get_user_side_info;
-use crate::handlers::authenticated_handlers::consultation::consultations::get_consultations;
-use crate::handlers::authenticated_handlers::consultation::consultant::detail::get_consultant_detail;
-use crate::handlers::authenticated_handlers::consultation::consultant::search::post_consultants_search;
-use crate::handlers::authenticated_handlers::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
-use crate::handlers::authenticated_handlers::personal_info::profile::career::{delete, get, post};
-use crate::handlers::authenticated_handlers::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
-use crate::handlers::authenticated_handlers::personal_info::profile::get_profile;
-use crate::handlers::authenticated_handlers::personal_info::profile::identity::post::{
+use crate::handlers::session::authentication::authenticated_handlers::agreement::post_agreement;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::acceptance::post_consultation_request_acceptance;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::detail::get_consultation_request_detail;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::list::get_consultation_requests;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::rejection::post_consultation_request_rejection;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_room::consultant_side_info::get_consultant_side_info;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_room::user_side_info::get_user_side_info;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultations::get_consultations;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant::detail::get_consultant_detail;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant::search::post_consultants_search;
+use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::career::post::MAX_CAREER_IMAGE_SIZE_IN_BYTES;
+use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::career::{delete, get, post};
+use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::fee_per_hour_in_yen::post_fee_per_hour_in_yen;
+use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::get_profile;
+use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::post::{
     post_identity, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
 };
-use crate::handlers::authenticated_handlers::personal_info::rewards::bank_account::post_bank_account;
-use crate::handlers::authenticated_handlers::personal_info::rewards::get_reward;
-use crate::handlers::authentication::login::post_login;
-use crate::handlers::authentication::logout::post_logout;
-use crate::handlers::authentication::mfa::mfa_request::pass_code::post_pass_code;
-use crate::handlers::authentication::mfa::mfa_request::recovery_code::post_recovery_code;
-use crate::handlers::authentication::mfa::setting_change::disable_mfa_req::post_disable_mfa_req;
-use crate::handlers::authentication::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
-use crate::handlers::authentication::mfa::temp_secret::get::get_temp_mfa_secret;
-use crate::handlers::authentication::mfa::temp_secret::post::post_temp_mfa_secret;
+use crate::handlers::session::authentication::authenticated_handlers::personal_info::rewards::bank_account::post_bank_account;
+use crate::handlers::session::authentication::authenticated_handlers::personal_info::rewards::get_reward;
+use crate::handlers::session::authentication::login::post_login;
+use crate::handlers::session::authentication::logout::post_logout;
+use crate::handlers::session::authentication::mfa::mfa_request::pass_code::post_pass_code;
+use crate::handlers::session::authentication::mfa::mfa_request::recovery_code::post_recovery_code;
+use crate::handlers::session::authentication::mfa::setting_change::disable_mfa_req::post_disable_mfa_req;
+use crate::handlers::session::authentication::mfa::setting_change::enable_mfa_req::post_enable_mfa_req;
+use crate::handlers::session::authentication::mfa::temp_secret::get::get_temp_mfa_secret;
+use crate::handlers::session::authentication::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::handlers::news::get_news;
 use crate::handlers::password::change_req::post_password_change_req;
 use crate::handlers::password::update::post_password_update;
-use crate::handlers::authenticated_handlers::consultation::rating::{
+use crate::handlers::session::authentication::authenticated_handlers::consultation::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,
 };
-use crate::handlers::authenticated_handlers::refresh::get_refresh;
-use crate::handlers::authenticated_handlers::consultation::request_consultation::begin::post_begin_request_consultation;
-use crate::handlers::authenticated_handlers::consultation::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
-use crate::handlers::authenticated_handlers::consultation::request_consultation::finish::post_finish_request_consultation;
+use crate::handlers::session::authentication::authenticated_handlers::refresh::get_refresh;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::begin::post_begin_request_consultation;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::finish::post_finish_request_consultation;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use crate::util::ROOT_PATH;
 use async_fred_session::fred::pool::RedisPool;
@@ -73,11 +73,11 @@ use common::storage::{
 };
 use common::util::check_env_vars;
 use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
-use handlers::authenticated_handlers::consultation::consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
+use handlers::session::authentication::authenticated_handlers::consultation::consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
-use handlers::authentication::mfa::KEY_TO_USER_TOTP_ISSUER;
+use handlers::session::authentication::mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
