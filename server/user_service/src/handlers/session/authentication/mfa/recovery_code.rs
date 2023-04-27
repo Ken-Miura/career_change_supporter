@@ -18,7 +18,7 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
-use crate::handlers::session::authentication::ensure_mfa_is_enabled;
+use crate::handlers::session::authentication::mfa::ensure_mfa_is_enabled;
 use crate::handlers::session::authentication::mfa::get_session_by_session_id;
 use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 use crate::util::login_status::LoginStatus;
@@ -96,7 +96,7 @@ impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
     }
 
     async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
-        crate::handlers::session::authentication::disable_mfa(account_id, &self.pool).await
+        crate::handlers::session::authentication::mfa::disable_mfa(account_id, &self.pool).await
     }
 
     fn set_login_session_expiry(&self, session: &mut Session) {

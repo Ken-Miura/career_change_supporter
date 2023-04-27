@@ -77,7 +77,7 @@ use handlers::session::authentication::authenticated_handlers::consultation::con
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use hyper::{Body, Request};
-use handlers::session::authentication::KEY_TO_USER_TOTP_ISSUER;
+use handlers::session::authentication::mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
