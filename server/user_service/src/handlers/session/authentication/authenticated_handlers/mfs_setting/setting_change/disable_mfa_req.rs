@@ -8,7 +8,7 @@ use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
-use crate::handlers::session::authentication::mfa::ensure_mfa_is_enabled;
+use crate::handlers::session::authentication::ensure_mfa_is_enabled;
 
 pub(crate) async fn post_disable_mfa_req(
     User { user_info }: User,
@@ -47,7 +47,7 @@ struct DisableMfaReqOperationImpl {
 #[async_trait]
 impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
     async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
-        crate::handlers::session::authentication::mfa::disable_mfa(account_id, &self.pool).await
+        crate::handlers::session::authentication::disable_mfa(account_id, &self.pool).await
     }
 }
 

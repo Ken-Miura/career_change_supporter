@@ -16,11 +16,11 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::handlers::session::authentication::mfa::get_session_by_session_id;
-use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
+use crate::handlers::session::authentication::USER_TOTP_ISSUER;
 use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 use crate::{
     err::{unexpected_err_resp, Code},
-    handlers::session::authentication::mfa::{ensure_mfa_is_enabled, verify_pass_code},
+    handlers::session::authentication::{ensure_mfa_is_enabled, verify_pass_code},
     util::{
         login_status::LoginStatus,
         user_info::{FindUserInfoOperationImpl, UserInfo},

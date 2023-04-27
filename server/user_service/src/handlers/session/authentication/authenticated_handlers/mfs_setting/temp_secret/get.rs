@@ -14,7 +14,7 @@ use super::super::{
 };
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::ensure_mfa_is_not_enabled;
-use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
+use crate::handlers::session::authentication::USER_TOTP_ISSUER;
 
 pub(crate) async fn get_temp_mfa_secret(
     User { user_info }: User,
