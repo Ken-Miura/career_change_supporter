@@ -4,12 +4,12 @@ use std::error::Error;
 use std::io::Cursor;
 
 use crate::err::Code::IdentityReqAlreadyExists;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::file_name_validator::validate_extension_is_jpeg;
 use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::image_converter::convert_jpeg_to_png;
 use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::multipart::{
     clone_file_name_if_exists, FileNameAndBinary,
 };
-use crate::handlers::session::user::User;
 use async_session::serde_json;
 use axum::async_trait;
 use axum::body::Bytes;

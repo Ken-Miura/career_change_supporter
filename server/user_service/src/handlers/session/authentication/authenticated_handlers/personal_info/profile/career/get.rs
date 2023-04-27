@@ -13,7 +13,7 @@ use serde::Deserialize;
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::handlers::session::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 
 pub(crate) async fn career(
     User { user_info }: User,

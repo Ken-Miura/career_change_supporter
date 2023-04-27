@@ -12,10 +12,10 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::{
     consultation_req_exists, round_to_one_decimal_places, ConsultationDateTime, ConsultationRequest,
 };
-use crate::handlers::session::verified_user::VerifiedUser;
 use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 
 use super::validate_consultation_req_id_is_positive;

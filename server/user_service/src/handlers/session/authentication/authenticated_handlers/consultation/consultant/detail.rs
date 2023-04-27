@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::Code;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::round_to_one_decimal_places;
-use crate::handlers::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
 
 use super::{

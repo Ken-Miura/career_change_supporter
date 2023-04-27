@@ -9,13 +9,12 @@ use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::handlers::session::authentication::mfa::{
-    ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret, USER_TOTP_ISSUER,
+use super::super::{
+    extract_first_temp_mfa_secret, filter_temp_mfa_secret_order_by_dsc, TempMfaSecret,
 };
-use crate::handlers::session::authentication::mfa::{
-    filter_temp_mfa_secret_order_by_dsc, TempMfaSecret,
-};
-use crate::handlers::session::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::ensure_mfa_is_not_enabled;
+use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
 
 pub(crate) async fn get_temp_mfa_secret(
     User { user_info }: User,
@@ -103,7 +102,10 @@ mod tests {
     use hyper::StatusCode;
     use once_cell::sync::Lazy;
 
-    use crate::{err::Code, handlers::session::authentication::mfa::TempMfaSecret};
+    use crate::{
+        err::Code,
+        handlers::session::authentication::authenticated_handlers::mfs_setting::TempMfaSecret,
+    };
 
     use super::{handle_temp_mfp_secret, GetTempMfaSecretResult, TempMfaSecretResultOperation};
 

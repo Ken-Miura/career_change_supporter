@@ -18,7 +18,7 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
-use crate::handlers::session::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 
 pub(crate) async fn get_profile(
     User { user_info }: User,

@@ -12,7 +12,7 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
-use crate::handlers::session::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::LENGTH_OF_MEETING_IN_MINUTE;
 
 use super::ConsultationDateTime;

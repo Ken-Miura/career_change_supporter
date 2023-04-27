@@ -4,53 +4,49 @@ use std::time::Duration;
 
 use async_fred_session::RedisSessionStore;
 use async_session::{Session, SessionStore};
-use axum::{async_trait, extract::State, http::StatusCode, Json};
+use axum::async_trait;
+use axum::http::StatusCode;
+use axum::{extract::State, Json};
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{
-    util::validator::pass_code_validator::validate_pass_code, ApiError, ErrResp, RespResult,
-    JAPANESE_TIME_ZONE,
-};
+use common::mfa::is_recovery_code_match;
+use common::util::validator::uuid_validator::validate_uuid;
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::handlers::session::authentication::mfa::mfa_request::get_session_by_session_id;
-use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
+use crate::err::unexpected_err_resp;
+use crate::err::Code;
+use crate::handlers::session::authentication::mfa::ensure_mfa_is_enabled;
+use crate::handlers::session::authentication::mfa::get_session_by_session_id;
 use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
-use crate::{
-    err::{unexpected_err_resp, Code},
-    handlers::session::authentication::mfa::{ensure_mfa_is_enabled, verify_pass_code},
-    util::{
-        login_status::LoginStatus,
-        user_info::{FindUserInfoOperationImpl, UserInfo},
-    },
-};
+use crate::util::login_status::LoginStatus;
+use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 
 use super::{
     extract_session_id_from_cookie, get_account_id_from_session, get_mfa_info_by_account_id,
     update_login_status, MfaInfo,
 };
 
-pub(crate) async fn post_pass_code(
+pub(crate) async fn post_recovery_code(
     jar: SignedCookieJar,
     State(pool): State<DatabaseConnection>,
     State(store): State<RedisSessionStore>,
-    Json(req): Json<PassCodeReq>,
-) -> RespResult<PassCodeReqResult> {
+    Json(req): Json<RecoveryCodeReq>,
+) -> RespResult<RecoveryCodeReqResult> {
     let option_cookie = jar.get(SESSION_ID_COOKIE_NAME);
     let session_id = extract_session_id_from_cookie(option_cookie)?;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let op = PassCodeOperationImpl {
+    let op = RecoveryCodeOperationImpl {
         pool,
         expiry: LOGIN_SESSION_EXPIRY,
     };
 
-    handle_pass_code_req(
+    handle_recovery_code(
         session_id.as_str(),
         &current_date_time,
-        req.pass_code.as_str(),
-        USER_TOTP_ISSUER.as_str(),
+        req.recovery_code.as_str(),
         &op,
         &store,
     )
@@ -58,18 +54,20 @@ pub(crate) async fn post_pass_code(
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub(crate) struct PassCodeReq {
-    pass_code: String,
+pub(crate) struct RecoveryCodeReq {
+    recovery_code: String,
 }
 
-#[derive(Debug, Serialize, PartialEq)]
-pub(crate) struct PassCodeReqResult {}
+#[derive(Serialize, Debug, PartialEq)]
+pub(crate) struct RecoveryCodeReqResult {}
 
 #[async_trait]
-trait PassCodeOperation {
+trait RecoveryCodeOperation {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp>;
 
     async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp>;
+
+    async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp>;
 
     fn set_login_session_expiry(&self, session: &mut Session);
 
@@ -80,13 +78,13 @@ trait PassCodeOperation {
     ) -> Result<(), ErrResp>;
 }
 
-struct PassCodeOperationImpl {
+struct RecoveryCodeOperationImpl {
     pool: DatabaseConnection,
     expiry: Duration,
 }
 
 #[async_trait]
-impl PassCodeOperation for PassCodeOperationImpl {
+impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
         let user_info = crate::util::get_user_info_if_available(account_id, &op).await?;
@@ -95,6 +93,10 @@ impl PassCodeOperation for PassCodeOperationImpl {
 
     async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
         get_mfa_info_by_account_id(account_id, &self.pool).await
+    }
+
+    async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
+        crate::handlers::session::authentication::mfa::disable_mfa(account_id, &self.pool).await
     }
 
     fn set_login_session_expiry(&self, session: &mut Session) {
@@ -110,20 +112,19 @@ impl PassCodeOperation for PassCodeOperationImpl {
     }
 }
 
-async fn handle_pass_code_req(
+async fn handle_recovery_code(
     session_id: &str,
     current_date_time: &DateTime<FixedOffset>,
-    pass_code: &str,
-    issuer: &str,
-    op: &impl PassCodeOperation,
+    recovery_code: &str,
+    op: &impl RecoveryCodeOperation,
     store: &impl SessionStore,
-) -> RespResult<PassCodeReqResult> {
-    validate_pass_code(pass_code).map_err(|e| {
-        error!("invalid pass code format: {}", e);
+) -> RespResult<RecoveryCodeReqResult> {
+    validate_uuid(recovery_code).map_err(|e| {
+        error!("failed to validate {}: {}", recovery_code, e);
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::InvalidPassCode as u32,
+                code: Code::InvalidRecoveryCode as u32,
             }),
         )
     })?;
@@ -133,13 +134,9 @@ async fn handle_pass_code_req(
     ensure_mfa_is_enabled(user_info.mfa_enabled_at.is_some())?;
 
     let mi = op.get_mfa_info_by_account_id(account_id).await?;
-    verify_pass_code(
-        account_id,
-        &mi.base32_encoded_secret,
-        issuer,
-        current_date_time,
-        pass_code,
-    )?;
+    verify_recovery_code(recovery_code, &mi.hashed_recovery_code)?;
+
+    op.disable_mfa(account_id).await?;
 
     update_login_status(&mut session, LoginStatus::Finish)?;
     op.set_login_session_expiry(&mut session);
@@ -150,7 +147,23 @@ async fn handle_pass_code_req(
 
     op.update_last_login(account_id, current_date_time).await?;
 
-    Ok((StatusCode::OK, Json(PassCodeReqResult {})))
+    Ok((StatusCode::OK, Json(RecoveryCodeReqResult {})))
+}
+
+fn verify_recovery_code(recovery_code: &str, hashed_recovery_code: &[u8]) -> Result<(), ErrResp> {
+    let matched = is_recovery_code_match(recovery_code, hashed_recovery_code).map_err(|e| {
+        error!("failed is_recovery_code_match: {}", e);
+        unexpected_err_resp()
+    })?;
+    if !matched {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::RecoveryCodeDoesNotMatch as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -159,26 +172,24 @@ mod tests {
     use axum::http::StatusCode;
     use axum::{async_trait, Json};
     use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::mfa::hash_recovery_code;
     use common::ApiError;
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+    use common::{mfa::hash_recovery_code, ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::handlers::session::tests::prepare_session;
-    use crate::handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
-    use crate::util::login_status::LoginStatus;
     use crate::{
-        handlers::session::authentication::mfa::mfa_request::MfaInfo, util::user_info::UserInfo,
+        handlers::session::authentication::mfa::MfaInfo,
+        handlers::session::{tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
+        util::{login_status::LoginStatus, user_info::UserInfo},
     };
 
-    use super::{handle_pass_code_req, PassCodeOperation, PassCodeReqResult};
+    use super::{handle_recovery_code, RecoveryCodeOperation, RecoveryCodeReqResult};
 
     #[derive(Debug)]
     struct TestCase {
         name: String,
         input: Input,
-        expected: RespResult<PassCodeReqResult>,
+        expected: RespResult<RecoveryCodeReqResult>,
     }
 
     #[derive(Debug)]
@@ -186,9 +197,8 @@ mod tests {
         session_exists: bool,
         ls: LoginStatus,
         current_date_time: DateTime<FixedOffset>,
-        pass_code: String,
-        issuer: String,
-        op: PassCodeOperationMock,
+        recovery_code: String,
+        op: RecoveryCodeOperationMock,
     }
 
     impl Input {
@@ -196,8 +206,7 @@ mod tests {
             session_exists: bool,
             ls: LoginStatus,
             current_date_time: DateTime<FixedOffset>,
-            pass_code: String,
-            issuer: String,
+            recovery_code: String,
             user_info: UserInfo,
             mfa_info: MfaInfo,
         ) -> Self {
@@ -205,9 +214,8 @@ mod tests {
                 session_exists,
                 ls,
                 current_date_time,
-                pass_code,
-                issuer,
-                op: PassCodeOperationMock {
+                recovery_code,
+                op: RecoveryCodeOperationMock {
                     user_info,
                     mfa_info,
                     login_time: current_date_time,
@@ -216,15 +224,15 @@ mod tests {
         }
     }
 
-    #[derive(Clone, Debug)]
-    struct PassCodeOperationMock {
+    #[derive(Debug, Clone)]
+    struct RecoveryCodeOperationMock {
         user_info: UserInfo,
         mfa_info: MfaInfo,
         login_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
-    impl PassCodeOperation for PassCodeOperationMock {
+    impl RecoveryCodeOperation for RecoveryCodeOperationMock {
         async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
             // セッションがない場合や無効化されている場合はエラーとなる。
             // その動作はこの実装で実際に呼び出している関数のテストでされているのでここでは実施しない。
@@ -235,6 +243,11 @@ mod tests {
         async fn get_mfa_info_by_account_id(&self, account_id: i64) -> Result<MfaInfo, ErrResp> {
             assert_eq!(self.user_info.account_id, account_id);
             Ok(self.mfa_info.clone())
+        }
+
+        async fn disable_mfa(&self, account_id: i64) -> Result<(), ErrResp> {
+            assert_eq!(self.user_info.account_id, account_id);
+            Ok(())
         }
 
         fn set_login_session_expiry(&self, _session: &mut Session) {
@@ -264,14 +277,11 @@ mod tests {
             mfa_enabled_at: Some(current_date_time - chrono::Duration::days(3)),
             disabled_at: None,
         };
+        let recovery_code = "41ae5398f71c424e910d85734c204f1e";
         let mfa_info = MfaInfo {
             base32_encoded_secret: "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD".to_string(),
-            hashed_recovery_code: hash_recovery_code("41ae5398f71c424e910d85734c204f1e")
-                .expect("failed to get Ok"),
+            hashed_recovery_code: hash_recovery_code(recovery_code).expect("failed to get Ok"),
         };
-        // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
-        let pass_code = "540940";
-        let issuer = "Issuer";
 
         vec![
             TestCase {
@@ -280,39 +290,36 @@ mod tests {
                     session_exists,
                     ls.clone(),
                     current_date_time,
-                    pass_code.to_string(),
-                    issuer.to_string(),
+                    recovery_code.to_string(),
                     user_info.clone(),
                     mfa_info.clone(),
                 ),
-                expected: Ok((StatusCode::OK, Json(PassCodeReqResult {}))),
+                expected: Ok((StatusCode::OK, Json(RecoveryCodeReqResult {}))),
             },
             TestCase {
-                name: "fail InvalidPassCode".to_string(),
+                name: "fail InvalidRecoveryCode".to_string(),
                 input: Input::new(
                     session_exists,
                     ls.clone(),
                     current_date_time,
-                    "Acd#%&".to_string(),
-                    issuer.to_string(),
+                    "abcdEFGH1234!\"#$".to_string(),
                     user_info.clone(),
                     mfa_info.clone(),
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::InvalidPassCode as u32,
+                        code: Code::InvalidRecoveryCode as u32,
                     }),
                 )),
             },
             TestCase {
-                name: "fail Unauthorized (no session found)".to_string(),
+                name: "fail Unauthorized".to_string(),
                 input: Input::new(
                     false,
                     ls.clone(),
                     current_date_time,
-                    pass_code.to_string(),
-                    issuer.to_string(),
+                    recovery_code.to_string(),
                     user_info.clone(),
                     mfa_info.clone(),
                 ),
@@ -329,8 +336,7 @@ mod tests {
                     session_exists,
                     ls.clone(),
                     current_date_time,
-                    pass_code.to_string(),
-                    issuer.to_string(),
+                    recovery_code.to_string(),
                     UserInfo {
                         account_id: 413,
                         email_address: "test@test.com".to_string(),
@@ -347,20 +353,19 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "fail PassCodeDoesNotMatch".to_string(),
+                name: "fail RecoveryCodeDoesNotMatch".to_string(),
                 input: Input::new(
                     session_exists,
                     ls,
                     current_date_time,
-                    "123456".to_string(),
-                    issuer.to_string(),
+                    "51ae5398f71c424e910d85734c204f1f".to_string(),
                     user_info,
                     mfa_info,
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::PassCodeDoesNotMatch as u32,
+                        code: Code::RecoveryCodeDoesNotMatch as u32,
                     }),
                 )),
             },
@@ -368,11 +373,10 @@ mod tests {
     });
 
     #[tokio::test]
-    async fn handle_pass_code_req_tests() {
+    async fn handle_recovery_code_tests() {
         for test_case in TEST_CASE_SET.iter() {
             let current_date_time = test_case.input.current_date_time;
-            let pass_code = test_case.input.pass_code.clone();
-            let issuer = test_case.input.issuer.clone();
+            let recovery_code = test_case.input.recovery_code.clone();
             let op = test_case.input.op.clone();
             let store = MemoryStore::new();
             let session_id = if test_case.input.session_exists {
@@ -387,11 +391,10 @@ mod tests {
                 "4d/UQZs+7mY0kF16rdf8qb07y2TzyHM2LCooSqBJB4GuF5LHw8h5jFLoJmbR3wYbwpy9bGQB2DExLM4lxvD62A==".to_string()
             };
 
-            let result = handle_pass_code_req(
+            let result = handle_recovery_code(
                 session_id.as_str(),
                 &current_date_time,
-                pass_code.as_str(),
-                issuer.as_str(),
+                recovery_code.as_str(),
                 &op,
                 &store,
             )

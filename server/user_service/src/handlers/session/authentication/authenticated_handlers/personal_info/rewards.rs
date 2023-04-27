@@ -22,11 +22,11 @@ use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::authentication::authenticated_handlers::rewards_info::{
     calculate_rewards, create_start_and_end_date_time_of_current_month,
     create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
-use crate::handlers::session::user::User;
 use crate::{
     err::{self, unexpected_err_resp},
     util::ACCESS_INFO,

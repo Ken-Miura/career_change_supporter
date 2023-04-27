@@ -17,8 +17,9 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime;
-use crate::handlers::session::{user::User, LENGTH_OF_MEETING_IN_MINUTE};
+use crate::handlers::session::LENGTH_OF_MEETING_IN_MINUTE;
 
 const MAX_NUM_OF_UNRATED_CONSULTANTS: u64 = 20;
 const MAX_NUM_OF_UNRATED_USERS: u64 = 20;

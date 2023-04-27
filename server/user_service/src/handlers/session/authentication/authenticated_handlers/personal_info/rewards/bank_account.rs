@@ -27,8 +27,8 @@ use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::authentication::authenticated_handlers::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
-use crate::handlers::session::user::User;
 use crate::util::{
     document_operation::{
         find_document_model_by_user_account_id_with_shared_lock, insert_document,

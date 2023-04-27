@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::handlers::session::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
 
 pub(crate) async fn career(

@@ -7,8 +7,8 @@ use common::{ErrResp, RespResult};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::authentication::mfa::ensure_mfa_is_enabled;
-use crate::handlers::session::user::User;
 
 pub(crate) async fn post_disable_mfa_req(
     User { user_info }: User,

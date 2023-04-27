@@ -15,13 +15,13 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 use uuid::Uuid;
 
-use crate::err::{unexpected_err_resp, Code};
-use crate::handlers::session::authentication::mfa::{
-    ensure_mfa_is_not_enabled, filter_temp_mfa_secret_order_by_dsc, verify_pass_code,
-    USER_TOTP_ISSUER,
+use super::super::{
+    extract_first_temp_mfa_secret, filter_temp_mfa_secret_order_by_dsc, TempMfaSecret,
 };
-use crate::handlers::session::authentication::mfa::{extract_first_temp_mfa_secret, TempMfaSecret};
-use crate::handlers::session::user::User;
+use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::ensure_mfa_is_not_enabled;
+use crate::handlers::session::authentication::mfa::{verify_pass_code, USER_TOTP_ISSUER};
 use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 
 pub(crate) async fn post_enable_mfa_req(
@@ -250,7 +250,7 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::{unexpected_err_resp, Code};
-    use crate::handlers::session::authentication::mfa::TempMfaSecret;
+    use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::TempMfaSecret;
 
     use super::{handle_enable_mfa_req, EnableMfaReqOperation, EnableMfaReqResult};
 

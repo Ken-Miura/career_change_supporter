@@ -26,10 +26,10 @@ use super::{
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::platform_fee_rate::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
-use crate::handlers::session::verified_user::VerifiedUser;
 use crate::util::user_info::FindUserInfoOperationImpl;
 use crate::util::ACCESS_INFO;
 

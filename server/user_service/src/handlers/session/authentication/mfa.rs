@@ -1,55 +1,45 @@
 // Copyright 2023 Ken Miura
 
+pub(crate) mod pass_code;
+pub(crate) mod recovery_code;
+
 use std::env;
 
+use async_session::{Session, SessionStore};
 use axum::{http::StatusCode, Json};
+use axum_extra::extract::cookie::Cookie;
 use chrono::{DateTime, FixedOffset};
 use common::{mfa::check_if_pass_code_matches, ApiError, ErrResp, ErrRespStruct};
 use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder,
-    QuerySelect, Set, TransactionError, TransactionTrait,
+    ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
 use once_cell::sync::Lazy;
 use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::find_user_account_by_user_account_id_with_exclusive_lock,
+    handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
+    util::{find_user_account_by_user_account_id_with_exclusive_lock, login_status::LoginStatus},
 };
 
-pub(crate) mod mfa_request;
-pub(crate) mod setting_change;
-pub(crate) mod temp_secret;
-
-const MAX_NUM_OF_TEMP_MFA_SECRETS: u64 = 8;
-
 pub(crate) const KEY_TO_USER_TOTP_ISSUER: &str = "USER_TOTP_ISSUER";
-static USER_TOTP_ISSUER: Lazy<String> = Lazy::new(|| {
-    let issuer = env::var(KEY_TO_USER_TOTP_ISSUER).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_USER_TOTP_ISSUER
-        )
+pub(in crate::handlers::session::authentication) static USER_TOTP_ISSUER: Lazy<String> =
+    Lazy::new(|| {
+        let issuer = env::var(KEY_TO_USER_TOTP_ISSUER).unwrap_or_else(|_| {
+            panic!(
+                "Not environment variable found: environment variable \"{}\" must be set",
+                KEY_TO_USER_TOTP_ISSUER
+            )
+        });
+        if issuer.contains(':') {
+            panic!("USER_TOTP_ISSUER must not contain \":\": {}", issuer);
+        }
+        issuer
     });
-    if issuer.contains(':') {
-        panic!("USER_TOTP_ISSUER must not contain \":\": {}", issuer);
-    }
-    issuer
-});
 
-fn ensure_mfa_is_not_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
-    if mfa_enabled {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::MfaHasAlreadyBeenEnabled as u32,
-            }),
-        ));
-    }
-    Ok(())
-}
-
-fn ensure_mfa_is_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
+pub(in crate::handlers::session::authentication) fn ensure_mfa_is_enabled(
+    mfa_enabled: bool,
+) -> Result<(), ErrResp> {
     if !mfa_enabled {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -61,59 +51,7 @@ fn ensure_mfa_is_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
     Ok(())
 }
 
-#[derive(Clone, Debug, PartialEq)]
-struct TempMfaSecret {
-    temp_mfa_secret_id: i64,
-    base32_encoded_secret: String,
-}
-
-async fn filter_temp_mfa_secret_order_by_dsc(
-    account_id: i64,
-    current_date_time: DateTime<FixedOffset>,
-    pool: &DatabaseConnection,
-) -> Result<Vec<TempMfaSecret>, ErrResp> {
-    let models = entity::temp_mfa_secret::Entity::find()
-        .filter(entity::temp_mfa_secret::Column::UserAccountId.eq(account_id))
-        .filter(entity::temp_mfa_secret::Column::ExpiredAt.gt(current_date_time))
-        .limit(MAX_NUM_OF_TEMP_MFA_SECRETS)
-        .order_by_desc(entity::temp_mfa_secret::Column::ExpiredAt)
-        .all(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to filter temp_mfa_secret (account_id: {}, current_date_time: {}): {}",
-                account_id, current_date_time, e
-            );
-            unexpected_err_resp()
-        })?;
-    Ok(models
-        .into_iter()
-        .map(|m| TempMfaSecret {
-            temp_mfa_secret_id: m.temp_mfa_secret_id,
-            base32_encoded_secret: m.base32_encoded_secret,
-        })
-        .collect::<Vec<TempMfaSecret>>())
-}
-
-fn extract_first_temp_mfa_secret(
-    temp_mfa_secrets: Vec<TempMfaSecret>,
-) -> Result<TempMfaSecret, ErrResp> {
-    if temp_mfa_secrets.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoTempMfaSecretFound as u32,
-            }),
-        ));
-    }
-    let secret = temp_mfa_secrets.get(0).ok_or_else(|| {
-        error!("there are no temp_mfa_secrets");
-        unexpected_err_resp()
-    })?;
-    Ok(secret.clone())
-}
-
-fn verify_pass_code(
+pub(in crate::handlers::session::authentication) fn verify_pass_code(
     account_id: i64,
     base32_encoded_secret: &str,
     issuer: &str,
@@ -142,7 +80,10 @@ fn verify_pass_code(
     Ok(())
 }
 
-async fn disable_mfa(account_id: i64, pool: &DatabaseConnection) -> Result<(), ErrResp> {
+pub(in crate::handlers::session::authentication) async fn disable_mfa(
+    account_id: i64,
+    pool: &DatabaseConnection,
+) -> Result<(), ErrResp> {
     pool.transaction::<_, (), ErrRespStruct>(|txn| {
         Box::pin(async move {
             let user_model =
@@ -199,33 +140,125 @@ async fn disable_mfa(account_id: i64, pool: &DatabaseConnection) -> Result<(), E
     Ok(())
 }
 
+fn extract_session_id_from_cookie(cookie: Option<Cookie>) -> Result<String, ErrResp> {
+    let session_id = match cookie {
+        Some(s) => s.value().to_string(),
+        None => {
+            error!("no sessoin cookie found");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ));
+        }
+    };
+    Ok(session_id)
+}
+
+#[derive(Clone, Debug)]
+struct MfaInfo {
+    base32_encoded_secret: String,
+    hashed_recovery_code: Vec<u8>,
+}
+
+async fn get_mfa_info_by_account_id(
+    account_id: i64,
+    pool: &DatabaseConnection,
+) -> Result<MfaInfo, ErrResp> {
+    let result = entity::mfa_info::Entity::find_by_id(account_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find mfa_info (user_account_id: {}): {}",
+                account_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    let mi = result.ok_or_else(|| {
+        error!("no mfa_info (user_account_id: {}) found", account_id);
+        unexpected_err_resp()
+    })?;
+    Ok(MfaInfo {
+        base32_encoded_secret: mi.base32_encoded_secret,
+        hashed_recovery_code: mi.hashed_recovery_code,
+    })
+}
+
+async fn get_session_by_session_id(
+    session_id: &str,
+    store: &impl SessionStore,
+) -> Result<Session, ErrResp> {
+    let option_session = store
+        .load_session(session_id.to_string())
+        .await
+        .map_err(|e| {
+            error!("failed to load session: {}", e);
+            unexpected_err_resp()
+        })?;
+    let session = match option_session {
+        Some(s) => s,
+        None => {
+            error!("no session found");
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ));
+        }
+    };
+    Ok(session)
+}
+
+fn get_account_id_from_session(session: &Session) -> Result<i64, ErrResp> {
+    let account_id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
+        Some(id) => id,
+        None => {
+            error!("failed to get account id from session");
+            return Err(unexpected_err_resp());
+        }
+    };
+    Ok(account_id)
+}
+
+fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), ErrResp> {
+    session
+        .insert(KEY_TO_LOGIN_STATUS, ls.clone())
+        .map_err(|e| {
+            error!(
+                "failed to insert login_status ({}) into session: {}",
+                String::from(ls),
+                e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
+    use async_session::{MemoryStore, Session};
     use axum::http::StatusCode;
+    use axum_extra::extract::cookie::Cookie;
     use chrono::TimeZone;
     use common::JAPANESE_TIME_ZONE;
 
-    use crate::{err::Code, handlers::session::authentication::mfa::TempMfaSecret};
-
-    use super::{
-        ensure_mfa_is_enabled, ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret,
-        verify_pass_code,
+    use crate::{
+        err::Code,
+        handlers::session::{
+            authentication::mfa::{
+                extract_session_id_from_cookie, get_account_id_from_session,
+                get_session_by_session_id, update_login_status,
+            },
+            tests::{prepare_session, remove_session_from_store},
+            KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME,
+        },
+        util::login_status::LoginStatus,
     };
 
-    #[test]
-    fn ensure_mfa_is_not_enabled_success() {
-        let mfa_enabled = false;
-        ensure_mfa_is_not_enabled(mfa_enabled).expect("failed to get Ok");
-    }
-
-    #[test]
-    fn ensure_mfa_is_not_enabled_error() {
-        let mfa_enabled = true;
-        let result = ensure_mfa_is_not_enabled(mfa_enabled).expect_err("failed to get Err");
-
-        assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(Code::MfaHasAlreadyBeenEnabled as u32, result.1.code);
-    }
+    use super::{ensure_mfa_is_enabled, verify_pass_code};
 
     #[test]
     fn ensure_mfa_is_enabled_success() {
@@ -240,47 +273,6 @@ mod tests {
 
         assert_eq!(StatusCode::BAD_REQUEST, result.0);
         assert_eq!(Code::MfaIsNotEnabled as u32, result.1.code);
-    }
-
-    #[test]
-    fn extract_first_temp_mfa_secret_empty_case() {
-        let temp_secrets = vec![];
-
-        let result = extract_first_temp_mfa_secret(temp_secrets);
-
-        let err_resp = result.expect_err("failed to get Err");
-        assert_eq!(err_resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(err_resp.1.code, Code::NoTempMfaSecretFound as u32);
-    }
-
-    #[test]
-    fn extract_first_temp_mfa_secret_1_temp_mfa_secret() {
-        let temp_mfa_secret = TempMfaSecret {
-            temp_mfa_secret_id: 1,
-            base32_encoded_secret: "7GRCVBFZ73L6NM5VTBKN7SBS4652NTIK".to_string(),
-        };
-        let temp_secrets = vec![temp_mfa_secret.clone()];
-
-        let result = extract_first_temp_mfa_secret(temp_secrets).expect("failed to get Ok");
-
-        assert_eq!(result, temp_mfa_secret);
-    }
-
-    #[test]
-    fn extract_first_temp_mfa_secret_2_temp_mfa_secrets() {
-        let temp_mfa_secret1 = TempMfaSecret {
-            temp_mfa_secret_id: 1,
-            base32_encoded_secret: "7GRCVBFZ73L6NM5VTBKN7SBS4652NTIK".to_string(),
-        };
-        let temp_mfa_secret2 = TempMfaSecret {
-            temp_mfa_secret_id: 2,
-            base32_encoded_secret: "HU7YU2643SZJMWFW5MUOMWNMHSGLA3S6".to_string(),
-        };
-        let temp_secrets = vec![temp_mfa_secret2.clone(), temp_mfa_secret1];
-
-        let result = extract_first_temp_mfa_secret(temp_secrets).expect("failed to get Ok");
-
-        assert_eq!(result, temp_mfa_secret2);
     }
 
     #[test]
@@ -381,5 +373,139 @@ mod tests {
 
         assert_eq!(result.0, StatusCode::BAD_REQUEST);
         assert_eq!(result.1.code, Code::PassCodeDoesNotMatch as u32);
+    }
+
+    #[test]
+    fn extract_session_id_from_cookie_success() {
+        let value = "4d/UQZs+7mY0kF16rdf8qb07y2TzyHM2LCooSqBJB4GuF5LHw8h5jFLoJmbR3wYbwpy9bGQB2DExLM4lxvD62A==";
+        let cookie = Cookie::build(SESSION_ID_COOKIE_NAME, value).finish();
+
+        let result = extract_session_id_from_cookie(Some(cookie)).expect("failed to get Ok");
+
+        assert_eq!(result, value);
+    }
+
+    #[test]
+    fn extract_session_id_from_cookie_fail() {
+        let result = extract_session_id_from_cookie(None).expect_err("failed to get Err");
+        assert_eq!(result.0, StatusCode::UNAUTHORIZED);
+        assert_eq!(result.1.code, Code::Unauthorized as u32);
+    }
+
+    #[tokio::test]
+    async fn get_session_by_session_id_success1() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(1, store.count().await);
+        assert_eq!(
+            user_account_id,
+            result
+                .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                .expect("failed to get Ok")
+        );
+        assert_eq!(
+            String::from(LoginStatus::NeedMoreVerification),
+            result
+                .get::<String>(KEY_TO_LOGIN_STATUS)
+                .expect("failed to get Ok")
+        );
+    }
+
+    #[tokio::test]
+    async fn get_session_by_session_id_success2() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(1, store.count().await);
+        assert_eq!(
+            user_account_id,
+            result
+                .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                .expect("failed to get Ok")
+        );
+        assert_eq!(
+            String::from(LoginStatus::Finish),
+            result
+                .get::<String>(KEY_TO_LOGIN_STATUS)
+                .expect("failed to get Ok")
+        );
+    }
+
+    #[tokio::test]
+    async fn get_session_by_session_id_fail() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        // リクエストのプリプロセス前ににセッションを削除
+        remove_session_from_store(&session_id, &store).await;
+        assert_eq!(0, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(0, store.count().await);
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
+    }
+
+    #[test]
+    fn get_account_id_from_session_success() {
+        let user_account_id = 5115;
+        let login_status = LoginStatus::NeedMoreVerification;
+        let mut session = Session::new();
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        session
+            .insert(KEY_TO_LOGIN_STATUS, String::from(login_status))
+            .expect("failed to get Ok");
+
+        let result = get_account_id_from_session(&session).expect("failed to get Ok");
+
+        assert_eq!(result, user_account_id);
+    }
+
+    #[test]
+    fn update_login_status_success() {
+        let user_account_id = 5115;
+        let mut session = Session::new();
+        // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
+        session
+            .insert(KEY_TO_USER_ACCOUNT_ID, user_account_id)
+            .expect("failed to get Ok");
+        session
+            .insert(
+                KEY_TO_LOGIN_STATUS,
+                String::from(LoginStatus::NeedMoreVerification),
+            )
+            .expect("failed to get Ok");
+
+        update_login_status(&mut session, LoginStatus::Finish).expect("failed to get Ok");
+
+        let result1 = session
+            .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+            .expect("failed to get Ok");
+        let result2 = session
+            .get::<String>(KEY_TO_LOGIN_STATUS)
+            .expect("failed to get Ok");
+        assert_eq!(result1, user_account_id);
+        assert_eq!(result2, String::from(LoginStatus::Finish));
     }
 }

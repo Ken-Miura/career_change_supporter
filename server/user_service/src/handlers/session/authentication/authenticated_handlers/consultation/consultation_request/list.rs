@@ -23,7 +23,7 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
-use crate::handlers::session::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 
 const NUM_OF_CONSULTATION_REQUESTS: u64 = 20;

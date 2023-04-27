@@ -13,11 +13,12 @@ use entity::sea_orm::{
 use serde::Serialize;
 use tracing::error;
 
+use crate::err::unexpected_err_resp;
 use crate::err::Code;
-use crate::handlers::session::authentication::mfa::{
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::{
     ensure_mfa_is_not_enabled, MAX_NUM_OF_TEMP_MFA_SECRETS,
 };
-use crate::{err::unexpected_err_resp, handlers::session::user::User};
 
 const VALID_PERIOD_IN_MINUTE: i64 = 15;
 
@@ -141,8 +142,8 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
-    use crate::handlers::session::authentication::mfa::temp_secret::post::VALID_PERIOD_IN_MINUTE;
-    use crate::handlers::session::authentication::mfa::MAX_NUM_OF_TEMP_MFA_SECRETS;
+    use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::MAX_NUM_OF_TEMP_MFA_SECRETS;
+    use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::temp_secret::post::VALID_PERIOD_IN_MINUTE;
 
     use super::{handle_temp_mfp_secret, PostTempMfaSecretResult, TempMfaSecretResultOperation};
 

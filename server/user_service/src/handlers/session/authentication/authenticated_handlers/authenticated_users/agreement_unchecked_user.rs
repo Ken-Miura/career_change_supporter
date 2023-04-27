@@ -10,10 +10,9 @@ use serde::Deserialize;
 
 use crate::util::user_info::UserInfo;
 
-use super::{
-    extract_singed_jar_from_request_parts, get_agreement_unchecked_user_info_from_cookie,
-    SESSION_ID_COOKIE_NAME,
-};
+use super::{extract_singed_jar_from_request_parts, get_agreement_unchecked_user_info_from_cookie};
+
+use super::super::super::super::SESSION_ID_COOKIE_NAME;
 
 /// 利用規約に同意したかどうか確認していないユーザーの情報を保持する構造体
 ///
@@ -26,7 +25,7 @@ use super::{
 /// </ul>
 #[derive(Deserialize, Clone, Debug)]
 pub(crate) struct AgreementUncheckedUser {
-    pub(crate) user_info: UserInfo,
+    pub(in crate::handlers::session::authentication::authenticated_handlers) user_info: UserInfo,
 }
 
 #[async_trait]

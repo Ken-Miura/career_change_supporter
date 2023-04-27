@@ -16,10 +16,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::{
     MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
 };
-use crate::handlers::session::verified_user::VerifiedUser;
 use crate::util::document_operation::{
     find_document_model_by_user_account_id_with_shared_lock, insert_document,
 };

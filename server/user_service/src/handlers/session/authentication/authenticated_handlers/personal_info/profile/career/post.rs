@@ -3,6 +3,7 @@
 use std::error::Error;
 use std::io::Cursor;
 
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::career::career_validator::{
     validate_career, CareerValidationError,
 };
@@ -11,7 +12,6 @@ use crate::handlers::session::authentication::authenticated_handlers::personal_i
 use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::multipart::{
     clone_file_name_if_exists, FileNameAndBinary,
 };
-use crate::handlers::session::verified_user::VerifiedUser;
 use async_session::serde_json;
 use axum::async_trait;
 use axum::body::Bytes;

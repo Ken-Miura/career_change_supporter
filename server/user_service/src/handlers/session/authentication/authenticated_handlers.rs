@@ -1,8 +1,10 @@
 // Copyright 2023 Ken Miura
 
 pub(crate) mod agreement;
+pub(crate) mod authenticated_users;
 pub(crate) mod consultation;
 pub(crate) mod delete_accounts;
+pub(crate) mod mfs_setting;
 pub(crate) mod personal_info;
 mod platform_fee_rate;
 pub(crate) mod refresh;

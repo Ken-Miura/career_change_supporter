@@ -5,7 +5,7 @@ use common::ErrResp;
 use axum::http::StatusCode;
 use tracing::info;
 
-use crate::handlers::session::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 
 /// 下記の処理を順に行う<br>
 ///   - ログインセッションが存在しているか確認する

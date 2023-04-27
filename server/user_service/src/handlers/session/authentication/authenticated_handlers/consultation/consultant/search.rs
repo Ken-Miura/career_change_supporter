@@ -14,10 +14,10 @@ use super::career_param_validator::validate_career_param;
 use super::fee_per_hour_in_yen_param_validator::FeePerHourInYenParamError;
 use super::sort_param_validator::SortParamError;
 use crate::err::Code;
+use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant::fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant::sort_param_validator::validate_sort_param;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::round_to_one_decimal_places;
-use crate::handlers::session::verified_user::VerifiedUser;
 
 use super::career_param_validator::CareerParamValidationError;
 

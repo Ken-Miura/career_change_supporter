@@ -1,151 +1,28 @@
 // Copyright 2021 Ken Miura
 
-pub(crate) mod agreement_unchecked_user;
 pub(crate) mod authentication;
 pub(crate) mod password_change;
-pub(crate) mod user;
-pub(crate) mod verified_user;
 
 use async_session::{Session, SessionStore};
-use axum::async_trait;
-use axum::extract::{FromRef, FromRequestParts};
-use axum::http::request::Parts;
 use axum::{http::StatusCode, Json};
-use axum_extra::extract::cookie::Cookie;
-use axum_extra::extract::SignedCookieJar;
-use common::{ApiError, AppState, ErrResp};
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use common::{ApiError, ErrResp};
 use std::time::Duration;
 use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
-use crate::util::get_user_info_if_available;
 use crate::util::login_status::LoginStatus;
-use crate::util::terms_of_use::{
-    TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
-};
-use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 
 const SESSION_ID_COOKIE_NAME: &str = "session_id";
 const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 const KEY_TO_LOGIN_STATUS: &str = "login_status";
-const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 
 const LENGTH_OF_MEETING_IN_MINUTE: u64 = 60;
+const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 
 /// セッションの有効期限
 const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
-
-async fn extract_singed_jar_from_request_parts<S>(
-    parts: &mut Parts,
-    state: &S,
-) -> Result<SignedCookieJar<AppState>, ErrResp>
-where
-    AppState: FromRef<S>,
-    S: Send + Sync,
-{
-    let signed_cookies = SignedCookieJar::<AppState>::from_request_parts(parts, state)
-        .await
-        .map_err(|e| {
-            error!("failed to get cookies: {:?}", e);
-            unexpected_err_resp()
-        })?;
-    Ok(signed_cookies)
-}
-
-async fn get_agreement_unchecked_user_info_from_cookie(
-    option_cookie: Option<Cookie<'_>>,
-    store: &impl SessionStore,
-    pool: &DatabaseConnection,
-) -> Result<UserInfo, ErrResp> {
-    let session_id = match option_cookie {
-        Some(s) => s.value().to_string(),
-        None => {
-            info!("no sessoin cookie found");
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(ApiError {
-                    code: Code::Unauthorized as u32,
-                }),
-            ));
-        }
-    };
-
-    let refresh_op = RefreshOperationImpl {};
-    let user_account_id =
-        get_user_account_id_by_session_id(session_id, store, refresh_op, LOGIN_SESSION_EXPIRY)
-            .await?;
-
-    let find_user_op = FindUserInfoOperationImpl::new(pool);
-    let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;
-
-    Ok(user_info)
-}
-
-async fn get_user_info_from_cookie(
-    option_cookie: Option<Cookie<'_>>,
-    store: &impl SessionStore,
-    pool: &DatabaseConnection,
-) -> Result<UserInfo, ErrResp> {
-    let user_info =
-        get_agreement_unchecked_user_info_from_cookie(option_cookie, store, pool).await?;
-
-    let terms_of_use_op = TermsOfUseLoadOperationImpl::new(pool);
-    check_if_user_has_already_agreed(user_info.account_id, *TERMS_OF_USE_VERSION, terms_of_use_op)
-        .await?;
-
-    Ok(user_info)
-}
-
-async fn get_verified_user_info_from_cookie(
-    option_cookie: Option<Cookie<'_>>,
-    store: &impl SessionStore,
-    pool: &DatabaseConnection,
-) -> Result<UserInfo, ErrResp> {
-    let user_info = get_user_info_from_cookie(option_cookie, store, pool).await?;
-
-    let op = IdentityCheckOperationImpl::new(pool);
-    ensure_identity_exists(user_info.account_id, &op).await?;
-
-    Ok(user_info)
-}
-
-#[async_trait]
-trait IdentityCheckOperation {
-    /// Identityが存在するか確認する。存在する場合、trueを返す。そうでない場合、falseを返す。
-    ///
-    /// 個人情報の登録をしていないと使えないAPIに関して、処理を継続してよいか確認するために利用する。
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
-}
-
-struct IdentityCheckOperationImpl<'a> {
-    pool: &'a DatabaseConnection,
-}
-
-impl<'a> IdentityCheckOperationImpl<'a> {
-    fn new(pool: &'a DatabaseConnection) -> Self {
-        Self { pool }
-    }
-}
-
-#[async_trait]
-impl<'a> IdentityCheckOperation for IdentityCheckOperationImpl<'a> {
-    async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let model = entity::identity::Entity::find_by_id(account_id)
-            .one(self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.is_some())
-    }
-}
 
 /// session_idを使い、storeからユーザーを一意に識別する値を取得する。<br>
 /// この値を取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
@@ -244,44 +121,6 @@ impl RefreshOperation for RefreshOperationImpl {
     }
 }
 
-async fn check_if_user_has_already_agreed(
-    account_id: i64,
-    terms_of_use_version: i32,
-    op: impl TermsOfUseLoadOperation,
-) -> Result<(), ErrResp> {
-    let option = op.find(account_id, terms_of_use_version).await?;
-    let _ = option.ok_or_else(|| {
-        error!(
-            "account id ({}) has not agreed terms of use (version {}) yet",
-            account_id, terms_of_use_version
-        );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NotTermsOfUseAgreedYet as u32,
-            }),
-        )
-    })?;
-    Ok(())
-}
-
-async fn ensure_identity_exists(
-    account_id: i64,
-    op: &impl IdentityCheckOperation,
-) -> Result<(), ErrResp> {
-    let identity_exists = op.check_if_identity_exists(account_id).await?;
-    if !identity_exists {
-        error!("identity is not registered (account_id: {})", account_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityRegistered as u32,
-            }),
-        ));
-    }
-    Ok(())
-}
-
 async fn destroy_session_if_exists(
     session_id: &str,
     store: &impl SessionStore,
@@ -307,29 +146,20 @@ async fn destroy_session_if_exists(
     Ok(())
 }
 
-/// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
 mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
-    use axum::async_trait;
     use axum::http::StatusCode;
-    use common::ErrResp;
 
     use crate::{
         err::Code,
         handlers::session::{
             destroy_session_if_exists, get_user_account_id_by_session_id, LOGIN_SESSION_EXPIRY,
         },
-        util::{
-            login_status::LoginStatus,
-            terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
-        },
+        util::login_status::LoginStatus,
     };
 
-    use super::{
-        check_if_user_has_already_agreed, ensure_identity_exists, IdentityCheckOperation,
-        RefreshOperation, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID,
-    };
+    use super::{RefreshOperation, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
     pub(super) async fn prepare_session(
@@ -445,95 +275,6 @@ mod tests {
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
         assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
-    }
-
-    struct TermsOfUseLoadOperationMock {
-        has_already_agreed: bool,
-    }
-
-    impl TermsOfUseLoadOperationMock {
-        fn new(has_already_agreed: bool) -> Self {
-            Self { has_already_agreed }
-        }
-    }
-
-    #[async_trait]
-    impl TermsOfUseLoadOperation for TermsOfUseLoadOperationMock {
-        async fn find(
-            &self,
-            _account_id: i64,
-            _terms_of_use_version: i32,
-        ) -> Result<Option<TermsOfUseData>, ErrResp> {
-            if !self.has_already_agreed {
-                return Ok(None);
-            }
-            let terms_of_use_data = TermsOfUseData {};
-            Ok(Some(terms_of_use_data))
-        }
-    }
-
-    #[tokio::test]
-    async fn check_if_user_has_already_agreed_success_user_has_already_agreed() {
-        let user_account_id = 10002;
-        let terms_of_use_version = 1;
-        let op = TermsOfUseLoadOperationMock::new(true);
-
-        let result =
-            check_if_user_has_already_agreed(user_account_id, terms_of_use_version, op).await;
-
-        result.expect("failed to get Ok");
-    }
-
-    #[tokio::test]
-    async fn check_if_user_has_already_agreed_fail_user_has_not_agreed_yet() {
-        let user_account_id = 10002;
-        let terms_of_use_version = 1;
-        let op = TermsOfUseLoadOperationMock::new(false);
-
-        let result = check_if_user_has_already_agreed(user_account_id, terms_of_use_version, op)
-            .await
-            .expect_err("failed to get Err");
-
-        assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(Code::NotTermsOfUseAgreedYet as u32, result.1 .0.code);
-    }
-
-    struct IdentityCheckOperationMock {
-        account_id: i64,
-    }
-
-    #[async_trait]
-    impl IdentityCheckOperation for IdentityCheckOperationMock {
-        async fn check_if_identity_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-            if self.account_id != account_id {
-                return Ok(false);
-            }
-            Ok(true)
-        }
-    }
-
-    #[tokio::test]
-    async fn ensure_identity_exists_success() {
-        let account_id = 670;
-        let op = IdentityCheckOperationMock { account_id };
-
-        let result = ensure_identity_exists(account_id, &op).await;
-
-        result.expect("failed to get Ok")
-    }
-
-    #[tokio::test]
-    async fn ensure_identity_exists_fail_identity_is_not_registered() {
-        let account_id = 670;
-        let op = IdentityCheckOperationMock { account_id };
-        let other_account_id = account_id + 51;
-
-        let result = ensure_identity_exists(other_account_id, &op)
-            .await
-            .expect_err("failed to get Err");
-
-        assert_eq!(StatusCode::BAD_REQUEST, result.0);
-        assert_eq!(Code::NoIdentityRegistered as u32, result.1 .0.code);
     }
 
     #[tokio::test]
