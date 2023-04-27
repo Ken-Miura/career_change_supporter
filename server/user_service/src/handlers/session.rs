@@ -2,6 +2,7 @@
 
 pub(crate) mod agreement_unchecked_user;
 pub(crate) mod authentication;
+pub(crate) mod password_change;
 pub(crate) mod user;
 pub(crate) mod verified_user;
 
@@ -342,7 +343,7 @@ async fn ensure_identity_exists(
     Ok(())
 }
 
-pub(super) async fn destroy_session_if_exists(
+async fn destroy_session_if_exists(
     session_id: &str,
     store: &impl SessionStore,
 ) -> Result<(), ErrResp> {

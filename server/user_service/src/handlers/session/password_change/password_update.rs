@@ -307,12 +307,12 @@ mod tests {
     };
     use uuid::Uuid;
 
+    use super::{
+        create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
+        PasswordUpdateResult, SUBJECT,
+    };
     use crate::{
         err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired},
-        handlers::password::update::{
-            create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
-            PasswordUpdateResult, SUBJECT,
-        },
         util::tests::SendMailMock,
     };
 

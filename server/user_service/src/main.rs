@@ -36,8 +36,8 @@ use crate::handlers::session::authentication::mfa::setting_change::enable_mfa_re
 use crate::handlers::session::authentication::mfa::temp_secret::get::get_temp_mfa_secret;
 use crate::handlers::session::authentication::mfa::temp_secret::post::post_temp_mfa_secret;
 use crate::handlers::news::get_news;
-use crate::handlers::password::change_req::post_password_change_req;
-use crate::handlers::password::update::post_password_update;
+use crate::handlers::session::password_change::change_req::post_password_change_req;
+use crate::handlers::session::password_change::password_update::post_password_update;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::rating::{
     consultant_rating::post_consultant_rating, unrated_items::get_unrated_items,
     user_rating::post_user_rating,
