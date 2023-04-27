@@ -20,10 +20,11 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::authenticated_handlers::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
-use crate::util::{find_user_account_by_user_account_id_with_exclusive_lock, ACCESS_INFO};
+use crate::util::{find_user_account_by_user_account_id_with_exclusive_lock};
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,

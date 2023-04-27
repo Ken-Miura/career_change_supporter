@@ -5,25 +5,16 @@ pub(crate) mod login_status;
 pub(crate) mod terms_of_use;
 pub(crate) mod user_info;
 
-use std::env::var;
-
 use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, FixedOffset};
-use common::{
-    payment_platform::{
-        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
-    },
-    ApiError, ErrResp, ErrRespStruct,
-};
+use common::{ApiError, ErrResp, ErrRespStruct};
 use entity::{
     sea_orm::{
         ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
     },
     user_account,
 };
-use once_cell::sync::Lazy;
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
@@ -31,30 +22,6 @@ use crate::err::{unexpected_err_resp, Code};
 use self::user_info::{FindUserInfoOperation, UserInfo};
 
 pub(crate) const ROOT_PATH: &str = "/api";
-
-/// PAY.JPにアクセスするための情報を保持する変数
-pub(crate) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
-    let url_without_path = var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_URL
-        )
-    });
-    let username = var(KEY_TO_PAYMENT_PLATFORM_API_USERNAME).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_USERNAME
-        )
-    });
-    let password = var(KEY_TO_PAYMENT_PLATFORM_API_PASSWORD).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_PASSWORD
-        )
-    });
-    let access_info = AccessInfo::new(url_without_path, username, password);
-    access_info.expect("failed to get Ok")
-});
 
 pub(crate) async fn find_user_account_by_user_account_id_with_exclusive_lock(
     txn: &DatabaseTransaction,

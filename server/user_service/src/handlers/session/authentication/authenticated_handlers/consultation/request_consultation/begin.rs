@@ -28,6 +28,7 @@ use super::{
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
 use crate::err::Code;
+use crate::handlers::session::authentication::authenticated_handlers::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime;
@@ -36,7 +37,7 @@ use crate::handlers::session::authentication::authenticated_handlers::rewards_in
 };
 use crate::optional_env_var::{EXPIRY_DAYS_OF_CHARGE, MAX_ANNUAL_REWARDS_IN_YEN};
 use crate::util::user_info::FindUserInfoOperationImpl;
-use crate::{err::unexpected_err_resp, util::ACCESS_INFO};
+use crate::{err::unexpected_err_resp};
 
 use super::consultation_date_time_validator::{
     validate_consultation_date_time, ConsultationDateTimeValidationError,
