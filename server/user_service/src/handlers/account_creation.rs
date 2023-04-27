@@ -3,7 +3,6 @@
 use chrono::{DateTime, FixedOffset};
 
 pub(crate) mod accounts;
-pub(crate) mod delete_accounts;
 pub(crate) mod temp_accounts;
 
 #[derive(Clone, Debug)]

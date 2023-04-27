@@ -5,9 +5,9 @@ mod handlers;
 mod optional_env_var;
 mod util;
 
-use crate::handlers::account::accounts::post_accounts;
-use crate::handlers::account::delete_accounts::delete_accounts;
-use crate::handlers::account::temp_accounts::post_temp_accounts;
+use crate::handlers::account_creation::accounts::post_accounts;
+use crate::handlers::session::authentication::authenticated_handlers::delete_accounts::delete_accounts;
+use crate::handlers::account_creation::temp_accounts::post_temp_accounts;
 use crate::handlers::session::authentication::authenticated_handlers::agreement::post_agreement;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::acceptance::post_consultation_request_acceptance;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::detail::get_consultation_request_detail;

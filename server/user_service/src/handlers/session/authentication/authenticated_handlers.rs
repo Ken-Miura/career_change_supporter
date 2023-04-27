@@ -2,6 +2,7 @@
 
 pub(crate) mod agreement;
 pub(crate) mod consultation;
+pub(crate) mod delete_accounts;
 pub(crate) mod personal_info;
 mod platform_fee_rate;
 pub(crate) mod refresh;

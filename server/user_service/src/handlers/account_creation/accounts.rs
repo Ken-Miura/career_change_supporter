@@ -269,14 +269,10 @@ mod tests {
     };
     use uuid::Uuid;
 
-    use crate::{
-        err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired},
-        handlers::account::TempAccount,
-    };
-    use crate::{
-        handlers::account::accounts::{create_text, handle_accounts_req, AccountsResult, SUBJECT},
-        util::tests::SendMailMock,
-    };
+    use super::super::TempAccount;
+    use super::{create_text, handle_accounts_req, AccountsResult, SUBJECT};
+    use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
+    use crate::util::tests::SendMailMock;
 
     use super::{AccountsOperation, NewAccount};
 

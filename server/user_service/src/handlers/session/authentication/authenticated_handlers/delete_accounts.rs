@@ -32,6 +32,9 @@ use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] アカウント削除完了通知", WEB_SITE_NAME));
 
+// 認証が必要なハンドラは、UserInfoを持つ構造体を利用し、この関数に届く前に認証処理が完了していることを保証するように書く
+// しかし、delete_accountsは通常の認証処理とは異なる処理（セッションIDを取得しておき、そのセッションを破棄する処理）が必要なのでCookieを直接受け取り、
+// このハンドラ内で認証処理が完了しているか確認する
 pub(crate) async fn delete_accounts(
     jar: SignedCookieJar,
     query: Query<DeleteAccountsQuery>,
@@ -447,7 +450,7 @@ mod tests {
 
     use crate::{
         err::Code,
-        handlers::account::delete_accounts::{
+        handlers::session::authentication::authenticated_handlers::delete_accounts::{
             create_text, handle_delete_accounts, DeleteAccountsResult, SUBJECT,
         },
         util::tests::SendMailMock,
