@@ -27,7 +27,7 @@ use crate::util::terms_of_use::{
 };
 use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 
-pub(super) const SESSION_ID_COOKIE_NAME: &str = "session_id";
+const SESSION_ID_COOKIE_NAME: &str = "session_id";
 const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 const KEY_TO_LOGIN_STATUS: &str = "login_status";
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
@@ -145,7 +145,7 @@ async fn get_agreement_unchecked_user_info_from_cookie(
     Ok(user_info)
 }
 
-pub(super) async fn get_user_info_from_cookie(
+async fn get_user_info_from_cookie(
     option_cookie: Option<Cookie<'_>>,
     store: &impl SessionStore,
     pool: &DatabaseConnection,
