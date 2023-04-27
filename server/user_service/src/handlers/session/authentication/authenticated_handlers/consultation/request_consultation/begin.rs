@@ -28,7 +28,7 @@ use super::{
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
 use crate::err::Code;
-use crate::handlers::session::authentication::authenticated_handlers::ACCESS_INFO;
+use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime;

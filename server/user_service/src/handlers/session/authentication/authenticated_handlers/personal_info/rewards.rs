@@ -24,11 +24,11 @@ use tracing::{error, info};
 
 use crate::err::{self, unexpected_err_resp};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
+use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::rewards_info::{
     calculate_rewards, create_start_and_end_date_time_of_current_month,
     create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
-use crate::handlers::session::authentication::authenticated_handlers::ACCESS_INFO;
 
 const MAX_NUM_OF_TENANT_TRANSFERS_PER_REQUEST: u32 = 2;
 

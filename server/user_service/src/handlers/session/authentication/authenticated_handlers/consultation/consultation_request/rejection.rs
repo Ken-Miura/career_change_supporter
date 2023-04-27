@@ -18,7 +18,7 @@ use tracing::{error, info};
 
 use super::validate_consultation_req_id_is_positive;
 use crate::err::{unexpected_err_resp, Code};
-use crate::handlers::session::authentication::authenticated_handlers::ACCESS_INFO;
+use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::{
     consultation_req_exists, ConsultationRequest,
