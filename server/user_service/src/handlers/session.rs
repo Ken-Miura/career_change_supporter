@@ -38,67 +38,6 @@ const LENGTH_OF_MEETING_IN_MINUTE: u64 = 60;
 const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
-async fn get_agreement_unchecked_user_info_from_request_parts<S>(
-    parts: &mut Parts,
-    state: &S,
-) -> Result<UserInfo, ErrResp>
-where
-    AppState: FromRef<S>,
-    S: Send + Sync,
-{
-    let signed_cookies = extract_singed_jar_from_request_parts(parts, state).await?;
-    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
-
-    let app_state = AppState::from_ref(state);
-    let store = app_state.store;
-    let pool = app_state.pool;
-
-    let user_info =
-        get_agreement_unchecked_user_info_from_cookie(option_cookie, &store, &pool).await?;
-
-    Ok(user_info)
-}
-
-async fn get_user_info_from_request_parts<S>(
-    parts: &mut Parts,
-    state: &S,
-) -> Result<UserInfo, ErrResp>
-where
-    AppState: FromRef<S>,
-    S: Send + Sync,
-{
-    let signed_cookies = extract_singed_jar_from_request_parts(parts, state).await?;
-    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
-
-    let app_state = AppState::from_ref(state);
-    let store = app_state.store;
-    let pool = app_state.pool;
-
-    let user_info = get_user_info_from_cookie(option_cookie, &store, &pool).await?;
-
-    Ok(user_info)
-}
-
-async fn get_verified_user_info_from_request_parts<S>(
-    parts: &mut Parts,
-    state: &S,
-) -> Result<UserInfo, ErrResp>
-where
-    AppState: FromRef<S>,
-    S: Send + Sync,
-{
-    let signed_cookies = extract_singed_jar_from_request_parts(parts, state).await?;
-    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
-
-    let app_state = AppState::from_ref(state);
-    let store = app_state.store;
-    let pool = app_state.pool;
-
-    let user_info = get_verified_user_info_from_cookie(option_cookie, &store, &pool).await?;
-
-    Ok(user_info)
-}
-
 async fn extract_singed_jar_from_request_parts<S>(
     parts: &mut Parts,
     state: &S,

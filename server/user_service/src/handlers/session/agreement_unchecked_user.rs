@@ -10,7 +10,10 @@ use serde::Deserialize;
 
 use crate::util::user_info::UserInfo;
 
-use super::get_agreement_unchecked_user_info_from_request_parts;
+use super::{
+    extract_singed_jar_from_request_parts, get_agreement_unchecked_user_info_from_cookie,
+    SESSION_ID_COOKIE_NAME,
+};
 
 /// 利用規約に同意したかどうか確認していないユーザーの情報を保持する構造体
 ///
@@ -38,4 +41,25 @@ where
         let user_info = get_agreement_unchecked_user_info_from_request_parts(parts, state).await?;
         Ok(AgreementUncheckedUser { user_info })
     }
+}
+
+async fn get_agreement_unchecked_user_info_from_request_parts<S>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<UserInfo, ErrResp>
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
+    let signed_cookies = extract_singed_jar_from_request_parts(parts, state).await?;
+    let option_cookie = signed_cookies.get(SESSION_ID_COOKIE_NAME);
+
+    let app_state = AppState::from_ref(state);
+    let store = app_state.store;
+    let pool = app_state.pool;
+
+    let user_info =
+        get_agreement_unchecked_user_info_from_cookie(option_cookie, &store, &pool).await?;
+
+    Ok(user_info)
 }
