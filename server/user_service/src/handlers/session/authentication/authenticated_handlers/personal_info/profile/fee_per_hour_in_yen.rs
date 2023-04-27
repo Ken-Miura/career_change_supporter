@@ -17,7 +17,7 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
-use crate::handlers::session::authentication::authenticated_handlers::{
+use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::{
     MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
 };
 use crate::util::document_operation::{
@@ -236,8 +236,8 @@ mod tests {
     use crate::{
         err::Code,
         handlers::session::authentication::authenticated_handlers::{
+            fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
             personal_info::profile::fee_per_hour_in_yen::FeePerHourInYenResult,
-            MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
         },
     };
 

@@ -281,8 +281,8 @@ mod tests {
     use common::ErrResp;
     use common::MAX_NUM_OF_CAREER_PER_USER_ACCOUNT;
 
-    use crate::handlers::session::authentication::authenticated_handlers::MAX_FEE_PER_HOUR_IN_YEN;
-    use crate::handlers::session::authentication::authenticated_handlers::MIN_FEE_PER_HOUR_IN_YEN;
+    use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::MAX_FEE_PER_HOUR_IN_YEN;
+    use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::MIN_FEE_PER_HOUR_IN_YEN;
     use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::identity_validator::validate_identity;
     use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::identity_validator::MIN_AGE_REQUIREMENT;
 

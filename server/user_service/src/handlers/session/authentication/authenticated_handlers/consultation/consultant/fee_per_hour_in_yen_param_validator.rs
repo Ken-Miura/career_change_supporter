@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use crate::handlers::session::authentication::authenticated_handlers::{
+use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::{
     MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
 };
 
@@ -90,8 +90,8 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::handlers::session::authentication::authenticated_handlers::{
-        consultation::consultant::search::FeePerHourInYenParam, MAX_FEE_PER_HOUR_IN_YEN,
-        MIN_FEE_PER_HOUR_IN_YEN,
+        consultation::consultant::search::FeePerHourInYenParam,
+        fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
     };
 
     use super::{validate_fee_per_hour_in_yen_param, FeePerHourInYenParamError};

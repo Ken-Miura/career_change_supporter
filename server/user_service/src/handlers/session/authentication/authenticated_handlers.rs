@@ -4,14 +4,12 @@ pub(crate) mod agreement;
 pub(crate) mod authenticated_users;
 pub(crate) mod consultation;
 pub(crate) mod delete_accounts;
+mod fee_per_hour_in_yen_range;
 pub(crate) mod mfs_setting;
 mod payment_platform;
 pub(crate) mod personal_info;
 pub(crate) mod refresh;
 mod rewards_info;
-
-const MIN_FEE_PER_HOUR_IN_YEN: i32 = 3000;
-const MAX_FEE_PER_HOUR_IN_YEN: i32 = 10000;
 
 #[cfg(test)]
 mod tests {
