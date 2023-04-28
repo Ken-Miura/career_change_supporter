@@ -116,20 +116,11 @@ impl ConsultationRequestsOperation for ConsultationRequestsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
-
-    use super::NUM_OF_CONSULTATION_REQUESTS;
-
-    use super::{
-        handle_consultation_requests, ConsultationRequestDescription,
-        ConsultationRequestsOperation, ConsultationRequestsResult,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

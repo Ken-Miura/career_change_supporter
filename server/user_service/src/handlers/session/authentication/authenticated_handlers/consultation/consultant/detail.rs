@@ -401,23 +401,10 @@ fn convert_years_of_service(years_of_service: i64) -> Result<String, ErrResp> {
 
 #[cfg(test)]
 mod tests {
-    use async_session::serde_json::{json, Value};
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use common::{ApiError, ErrResp, RespResult};
+
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-
-    use super::{
-        handle_consultant_detail, ConsultantCareerDetail, ConsultantDetail,
-        ConsultantDetailOperation, YEARS_OF_SERVICE_FIFTEEN_YEARS_OR_MORE_LESS_THAN_TWENTY_YEARS,
-        YEARS_OF_SERVICE_FIVE_YEARS_OR_MORE_LESS_THAN_TEN_YEARS,
-        YEARS_OF_SERVICE_LESS_THAN_THREE_YEARS,
-        YEARS_OF_SERVICE_TEN_YEARS_OR_MORE_LESS_THAN_FIFTEEN_YEARS,
-        YEARS_OF_SERVICE_THREE_YEARS_OR_MORE_LESS_THAN_FIVE_YEARS,
-        YEARS_OF_SERVICE_TWENTY_YEARS_OR_MORE,
-    };
+    use super::*;
 
     #[derive(Clone, Debug)]
     struct ConsultantDetailOperationMock {

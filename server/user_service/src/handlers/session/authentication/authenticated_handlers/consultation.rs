@@ -144,16 +144,9 @@ mod tests {
 
     use axum::async_trait;
     use chrono::TimeZone;
-    use common::{ErrResp, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::handlers::session::authentication::{
-        authenticated_handlers::consultation::{
-            check_if_consultant_is_available, find_user_info_if_available,
-            round_to_one_decimal_places,
-        },
-        user_operation::{FindUserInfoOperation, UserInfo},
-    };
+    use super::*;
 
     struct FindUserInfoOperationMock<'a> {
         user_info: &'a UserInfo,

@@ -892,28 +892,10 @@ Email: {}",
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-    use common::util::Maintenance;
-    use common::{smtp::SendMail, ErrResp, RespResult};
-    use common::{ApiError, JAPANESE_TIME_ZONE};
-    use once_cell::sync::Lazy;
 
-    use super::{
-        create_text_for_consultant, create_text_for_user, CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT,
-    };
-    use crate::err::{unexpected_err_resp, Code};
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationRequest;
-    use crate::handlers::session::authentication::user_operation::UserInfo;
-    use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
+    use chrono::TimeZone;
 
-    use super::{
-        handle_consultation_request_acceptance, AcceptedConsultation,
-        ConsultationRequestAcceptanceOperation, ConsultationRequestAcceptanceParam,
-        ConsultationRequestAcceptanceResult,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

@@ -146,16 +146,10 @@ impl AgreementOperation for AgreementOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
+
     use chrono::TimeZone;
-    use common::ErrResp;
-    use common::JAPANESE_TIME_ZONE;
 
-    use crate::err::Code::AlreadyAgreedTermsOfUse;
-
-    use super::AgreedDateTime;
-    use super::{handle_agreement_req, AgreementOperation};
+    use super::*;
 
     struct AgreementOperationMock<'a> {
         already_agreed_terms_of_use: bool,

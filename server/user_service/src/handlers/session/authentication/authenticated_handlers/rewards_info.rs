@@ -200,16 +200,9 @@ pub(super) fn create_start_and_end_date_time_of_current_month(
 #[cfg(test)]
 mod tests {
 
-    use chrono::TimeZone;
-    use common::JAPANESE_TIME_ZONE;
     use once_cell::sync::Lazy;
 
-    use crate::handlers::session::authentication::authenticated_handlers::rewards_info::{
-        create_start_and_end_date_time_of_current_month,
-        create_start_and_end_date_time_of_current_year,
-    };
-
-    use super::{calculate_rewards, PaymentInfo};
+    use super::*;
 
     #[derive(Debug)]
     struct CalculateRewardsTestCase {

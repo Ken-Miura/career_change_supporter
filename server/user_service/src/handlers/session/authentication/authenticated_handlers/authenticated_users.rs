@@ -177,19 +177,10 @@ async fn ensure_identity_exists(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use common::ErrResp;
 
-    use crate::{
-        err::Code,
-        handlers::session::authentication::authenticated_handlers::{
-            authenticated_users::{check_if_user_has_already_agreed, ensure_identity_exists},
-            terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
-        },
-    };
+    use crate::handlers::session::authentication::authenticated_handlers::terms_of_use::TermsOfUseData;
 
-    use super::IdentityCheckOperation;
+    use super::*;
 
     struct TermsOfUseLoadOperationMock {
         has_already_agreed: bool,

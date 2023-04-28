@@ -219,19 +219,11 @@ fn calculate_rating_and_count(user_ratings: Vec<i16>) -> Result<(Option<String>,
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime;
-
-    use super::{
-        handle_consultation_request_detail, ConsultationRequest, ConsultationRequestDetail,
-        ConsultationRequestDetailOperation,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

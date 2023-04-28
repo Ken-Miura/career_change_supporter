@@ -931,21 +931,12 @@ fn create_consultant_career_description(
 
 #[cfg(test)]
 mod tests {
-    use async_session::serde_json::{json, Value};
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use common::{opensearch::Sort, ApiError, ErrResp, RespResult};
+
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
     use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::MIN_FEE_PER_HOUR_IN_YEN;
 
-    use super::{
-        handle_consultants_search, AnnualInComeInManYenParam, CareerParam,
-        ConsultantCareerDescription, ConsultantDescription, ConsultantSearchParam,
-        ConsultantsSearchOperation, ConsultantsSearchResult, FeePerHourInYenParam, SortParam,
-        YearsOfServiceParam,
-    };
+    use super::*;
 
     #[derive(Clone, Debug)]
     struct ConsultantsSearchOperationMock {

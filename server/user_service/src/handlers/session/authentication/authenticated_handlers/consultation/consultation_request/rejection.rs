@@ -232,25 +232,16 @@ Email: {}",
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
+
     use chrono::TimeZone;
-    use common::smtp::SYSTEM_EMAIL_ADDRESS;
     use common::{
         payment_platform::{ErrorDetail, ErrorInfo},
-        ErrResp, RespResult,
+        JAPANESE_TIME_ZONE,
     };
-    use common::{ApiError, JAPANESE_TIME_ZONE};
-    use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationRequest;
     use crate::handlers::tests::SendMailMock;
 
-    use super::{
-        create_text, handle_consultation_request_rejection, ConsultationRequestRejection,
-        ConsultationRequestRejectionResult, CONSULTATION_REQ_REJECTION_MAIL_SUBJECT,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

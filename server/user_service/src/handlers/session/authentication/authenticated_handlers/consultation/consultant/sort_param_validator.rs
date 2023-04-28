@@ -50,14 +50,12 @@ impl Display for SortParamError {
 
 #[cfg(test)]
 mod tests {
-    use once_cell::sync::Lazy;
 
-    use crate::handlers::session::authentication::authenticated_handlers::{
-        consultation::consultant::search::SortParam,
-        tests::{CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET},
+    use crate::handlers::session::authentication::authenticated_handlers::tests::{
+        CONTROL_CHAR_SET, SPACE_SET, SYMBOL_SET,
     };
 
-    use super::{validate_sort_param, SortParamError};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

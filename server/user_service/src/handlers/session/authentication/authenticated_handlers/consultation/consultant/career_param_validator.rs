@@ -471,24 +471,10 @@ impl Error for CareerParamValidationError {}
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
-    use once_cell::sync::Lazy;
+    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::career::{COMPANY_NAME_MIN_LENGTH, COMPANY_NAME_MAX_LENGTH, DEPARTMENT_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH, OFFICE_MIN_LENGTH, OFFICE_MAX_LENGTH, PROFESSION_MIN_LENGTH, PROFESSION_MAX_LENGTH, POSITION_NAME_MIN_LENGTH, POSITION_NAME_MAX_LENGTH, NOTE_MIN_LENGTH, NOTE_MAX_LENGTH};
 
-    use crate::handlers::session::authentication::authenticated_handlers::{
-        consultation::consultant::{
-            career_param_validator::{validate_career_param, validate_years_of_service},
-            search::{AnnualInComeInManYenParam, CareerParam, YearsOfServiceParam},
-        },
-        personal_info::profile::career::{
-            COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH,
-            DEPARTMENT_NAME_MIN_LENGTH, MAX_ANNUAL_INCOME_IN_MAN_YEN, NOTE_MAX_LENGTH,
-            NOTE_MIN_LENGTH, OFFICE_MAX_LENGTH, OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH,
-            POSITION_NAME_MIN_LENGTH, PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
-        },
-    };
-
-    use super::CareerParamValidationError;
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

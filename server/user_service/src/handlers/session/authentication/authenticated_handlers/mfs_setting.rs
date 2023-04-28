@@ -82,11 +82,8 @@ fn ensure_mfa_is_not_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
 
-    use crate::err::Code;
-
-    use super::{ensure_mfa_is_not_enabled, extract_first_temp_mfa_secret, TempMfaSecret};
+    use super::*;
 
     #[test]
     fn extract_first_temp_mfa_secret_empty_case() {
