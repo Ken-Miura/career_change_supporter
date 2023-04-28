@@ -43,7 +43,7 @@ where
     Ok(signed_cookies)
 }
 
-pub(in crate::handlers::session::authentication) async fn get_agreement_unchecked_user_info_from_cookie(
+async fn get_agreement_unchecked_user_info_from_cookie(
     option_cookie: Option<Cookie<'_>>,
     store: &impl SessionStore,
     pool: &DatabaseConnection,
@@ -87,7 +87,7 @@ pub(in crate::handlers::session::authentication) async fn get_user_info_from_coo
     Ok(user_info)
 }
 
-pub(in crate::handlers::session::authentication) async fn get_verified_user_info_from_cookie(
+async fn get_verified_user_info_from_cookie(
     option_cookie: Option<Cookie<'_>>,
     store: &impl SessionStore,
     pool: &DatabaseConnection,
