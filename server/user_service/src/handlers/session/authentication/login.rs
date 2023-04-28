@@ -20,6 +20,7 @@ use entity::user_account;
 use serde::Serialize;
 use tracing::{error, info};
 
+use super::update_last_login;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
 use crate::handlers::session::{
@@ -27,7 +28,6 @@ use crate::handlers::session::{
 };
 use crate::handlers::ROOT_PATH;
 use crate::util::login_status::LoginStatus;
-use crate::util::update_last_login;
 
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookie、ログイン処理の状態（完了、または二段階目の認証が必要）をセットして応答する<br>

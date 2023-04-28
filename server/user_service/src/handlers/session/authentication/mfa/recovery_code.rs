@@ -114,7 +114,10 @@ impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
         account_id: i64,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        crate::util::update_last_login(account_id, login_time, &self.pool).await
+        crate::handlers::session::authentication::update_last_login(
+            account_id, login_time, &self.pool,
+        )
+        .await
     }
 }
 
