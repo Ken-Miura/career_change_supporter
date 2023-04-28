@@ -636,35 +636,16 @@ impl SubmitCareerOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use std::cmp::max;
-    use std::error::Error;
-    use std::fmt::Display;
-    use std::io::Cursor;
 
-    use async_session::serde_json;
-    use axum::body::Bytes;
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, Utc};
-    use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-    use common::{
-        util::{Career, Ymd},
-        ApiError, ErrResp,
-    };
-    use common::{JAPANESE_TIME_ZONE, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
+    use std::{cmp::max, fmt::Display};
+
+    use common::util::Ymd;
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
-    use serde::{Deserialize, Serialize};
-    use uuid::Uuid;
+    use serde::Deserialize;
 
-    use super::{handle_multipart, CareerResult, MAX_CAREER_IMAGE_SIZE_IN_BYTES};
-    use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::image_converter::convert_jpeg_to_png;
     use crate::handlers::tests::SendMailMock;
 
-    use super::{
-        create_subject, create_text, handle_career_req, CareerField, MultipartWrapper,
-        SubmitCareerOperation, SubmittedCareer,
-    };
+    use super::*;
 
     // CareerFieldのdataのResult<Bytes, Box<dyn Error>>がSendを実装しておらず、asyncメソッド内のselfに含められない
     // そのため、テスト用にdataの型を一部修正したダミークラスを用意

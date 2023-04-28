@@ -873,66 +873,15 @@ impl SubmitIdentityOperationImpl {
 #[cfg(test)]
 mod tests {
 
-    use std::cmp::max;
-    use std::{error::Error, fmt::Display, io::Cursor};
+    use std::{cmp::max, error::Error, fmt::Display, io::Cursor};
 
-    use crate::err::Code::DateOfBirthIsNotMatch;
-    use crate::err::Code::ExceedMaxIdentityImageSizeLimit;
-    use crate::err::Code::FirstNameIsNotMatch;
-    use crate::err::Code::IdentityReqAlreadyExists;
-    use crate::err::Code::IllegalAge;
-    use crate::err::Code::IllegalCharInAddressLine1;
-    use crate::err::Code::IllegalCharInAddressLine2;
-    use crate::err::Code::IllegalCharInCity;
-    use crate::err::Code::IllegalCharInFirstName;
-    use crate::err::Code::IllegalCharInFirstNameFurigana;
-    use crate::err::Code::IllegalCharInLastName;
-    use crate::err::Code::IllegalCharInLastNameFurigana;
-    use crate::err::Code::IllegalDate;
-    use crate::err::Code::InvalidAddressLine1Length;
-    use crate::err::Code::InvalidAddressLine2Length;
-    use crate::err::Code::InvalidCityLength;
-    use crate::err::Code::InvalidFirstNameFuriganaLength;
-    use crate::err::Code::InvalidFirstNameLength;
-    use crate::err::Code::InvalidIdentityJson;
-    use crate::err::Code::InvalidJpegImage;
-    use crate::err::Code::InvalidLastNameFuriganaLength;
-    use crate::err::Code::InvalidLastNameLength;
-    use crate::err::Code::InvalidNameInField;
-    use crate::err::Code::InvalidPrefecture;
-    use crate::err::Code::InvalidTelNumFormat;
-    use crate::err::Code::InvalidUtf8Sequence;
-    use crate::err::Code::NoFileNameFound;
-    use crate::err::Code::NoIdentityFound;
-    use crate::err::Code::NoIdentityImage1Found;
-    use crate::err::Code::NoIdentityUpdated;
-    use crate::err::Code::NoNameFound;
-    use crate::err::Code::NotJpegExtension;
-    use crate::err::Code::{self, DataParseFailure};
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::post::{
-        IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
-    };
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::identity_validator::MIN_AGE_REQUIREMENT;
-    use crate::handlers::tests::SendMailMock;
-    use async_session::serde_json;
-    use axum::body::Bytes;
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone};
-    use common::smtp::{ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-    use common::util::{Identity, Ymd};
-    use common::{ApiError, ErrResp, JAPANESE_TIME_ZONE};
+    use chrono::TimeZone;
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
     use serde::Deserialize;
-    use serde::Serialize;
-    use uuid::Uuid;
 
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::post::convert_jpeg_to_png;
+    use crate::handlers::{session::authentication::authenticated_handlers::personal_info::profile::identity::identity_validator::MIN_AGE_REQUIREMENT, tests::SendMailMock};
 
-    use super::{
-        create_subject, create_text, handle_identity_req, handle_multipart, IdentityField,
-        MultipartWrapper, SubmitIdentityOperation, SubmittedIdentity,
-    };
+    use super::*;
 
     // IdentityFieldのdataのResult<Bytes, Box<dyn Error>>がSendを実装しておらず、asyncメソッド内のselfに含められない
     // そのため、テスト用にdataの型を一部修正したダミークラスを用意
@@ -1248,7 +1197,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(NoNameFound as u32, err_resp.1.code);
+        assert_eq!(Code::NoNameFound as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1264,7 +1213,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(DataParseFailure as u32, err_resp.1.code);
+        assert_eq!(Code::DataParseFailure as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1299,7 +1248,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidNameInField as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidNameInField as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1332,7 +1281,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(NoIdentityFound as u32, err_resp.1.code);
+        assert_eq!(Code::NoIdentityFound as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1361,7 +1310,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(NoIdentityImage1Found as u32, err_resp.1.code);
+        assert_eq!(Code::NoIdentityImage1Found as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1396,7 +1345,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(NoFileNameFound as u32, err_resp.1.code);
+        assert_eq!(Code::NoFileNameFound as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1431,7 +1380,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(NotJpegExtension as u32, err_resp.1.code);
+        assert_eq!(Code::NotJpegExtension as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1467,7 +1416,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidIdentityJson as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidIdentityJson as u32, err_resp.1.code);
     }
 
     fn create_dummy_err_identity() -> ErrIdentity {
@@ -1527,7 +1476,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidUtf8Sequence as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidUtf8Sequence as u32, err_resp.1.code);
     }
 
     fn create_invalid_utf8_identity_field(name: Option<String>) -> DummyIdentityField {
@@ -1575,7 +1524,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidJpegImage as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidJpegImage as u32, err_resp.1.code);
     }
 
     fn create_dummy_identity_image1_png() -> Cursor<Vec<u8>> {
@@ -1630,7 +1579,10 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(ExceedMaxIdentityImageSizeLimit as u32, err_resp.1.code);
+        assert_eq!(
+            Code::ExceedMaxIdentityImageSizeLimit as u32,
+            err_resp.1.code
+        );
     }
 
     #[tokio::test]
@@ -1674,7 +1626,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidLastNameLength as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidLastNameLength as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1718,7 +1670,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalCharInLastName as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalCharInLastName as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1762,7 +1714,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidFirstNameLength as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidFirstNameLength as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1806,7 +1758,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalCharInFirstName as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalCharInFirstName as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1850,7 +1802,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidLastNameFuriganaLength as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidLastNameFuriganaLength as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1894,7 +1846,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalCharInLastNameFurigana as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalCharInLastNameFurigana as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1938,7 +1890,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidFirstNameFuriganaLength as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidFirstNameFuriganaLength as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -1982,7 +1934,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalCharInFirstNameFurigana as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalCharInFirstNameFurigana as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2026,7 +1978,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalDate as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalDate as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2070,7 +2022,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalAge as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalAge as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2114,7 +2066,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidPrefecture as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidPrefecture as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2158,7 +2110,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidCityLength as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidCityLength as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2202,7 +2154,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalCharInCity as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalCharInCity as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2246,7 +2198,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidAddressLine1Length as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidAddressLine1Length as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2290,7 +2242,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalCharInAddressLine1 as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalCharInAddressLine1 as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2334,7 +2286,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidAddressLine2Length as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidAddressLine2Length as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2378,7 +2330,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(IllegalCharInAddressLine2 as u32, err_resp.1.code);
+        assert_eq!(Code::IllegalCharInAddressLine2 as u32, err_resp.1.code);
     }
 
     #[tokio::test]
@@ -2423,7 +2375,7 @@ mod tests {
 
         let err_resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, err_resp.0);
-        assert_eq!(InvalidTelNumFormat as u32, err_resp.1.code);
+        assert_eq!(Code::InvalidTelNumFormat as u32, err_resp.1.code);
     }
 
     struct SubmitIdentityOperationMock {
@@ -2691,7 +2643,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(DateOfBirthIsNotMatch as u32, resp.1 .0.code);
+        assert_eq!(Code::DateOfBirthIsNotMatch as u32, resp.1 .0.code);
     }
 
     #[tokio::test]
@@ -2736,7 +2688,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(FirstNameIsNotMatch as u32, resp.1 .0.code);
+        assert_eq!(Code::FirstNameIsNotMatch as u32, resp.1 .0.code);
     }
 
     #[tokio::test]
@@ -2774,6 +2726,6 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(NoIdentityUpdated as u32, resp.1 .0.code);
+        assert_eq!(Code::NoIdentityUpdated as u32, resp.1 .0.code);
     }
 }

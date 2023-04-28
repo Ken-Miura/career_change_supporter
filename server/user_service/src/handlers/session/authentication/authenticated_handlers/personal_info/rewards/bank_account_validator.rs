@@ -199,15 +199,12 @@ impl Error for BankAccountValidationError {}
 
 #[cfg(test)]
 mod tests {
-    use crate::handlers::session::authentication::authenticated_handlers::{
-        personal_info::rewards::BankAccount,
-        tests::{CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET},
+
+    use crate::handlers::session::authentication::authenticated_handlers::tests::{
+        CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET,
     };
 
-    use super::{
-        validate_bank_account, BankAccountValidationError, ACCOUNT_HOLDER_NAME_MAX_LENGTH,
-        ACCOUNT_HOLDER_NAME_MIN_LENGTH,
-    };
+    use super::*;
 
     #[test]
     fn validate_bank_account_success1() {

@@ -586,29 +586,12 @@ impl Error for IdentityValidationError {}
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
-    use chrono::{Datelike, NaiveDate};
-    use common::util::Identity;
-    use once_cell::sync::Lazy;
-
-    use common::util::Ymd;
-
-    use crate::handlers::session::authentication::authenticated_handlers::{
-        personal_info::{
-            profile::identity::identity_validator::{
-                IdentityValidationError, ADDRESS_LINE1_MAX_LENGTH, ADDRESS_LINE1_MIN_LENGTH,
-                ADDRESS_LINE2_MAX_LENGTH, ADDRESS_LINE2_MIN_LENGTH, CITY_MAX_LENGTH,
-                CITY_MIN_LENGTH, FIRST_NAME_FURIGANA_MAX_LENGTH, FIRST_NAME_FURIGANA_MIN_LENGTH,
-                LAST_NAME_FURIGANA_MAX_LENGTH, LAST_NAME_FURIGANA_MIN_LENGTH,
-            },
-            FIRST_NAME_MAX_LENGTH, FIRST_NAME_MIN_LENGTH, LAST_NAME_MAX_LENGTH,
-            LAST_NAME_MIN_LENGTH,
-        },
-        tests::{CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET},
+    use crate::handlers::session::authentication::authenticated_handlers::tests::{
+        CONTROL_CHAR_SET, NUMBER_SET, SPACE_SET, SYMBOL_SET,
     };
 
-    use super::{validate_identity, PREFECTURE_SET};
+    use super::*;
 
     static SYMBOL_WITH_OUT_HYPHEN_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(31);

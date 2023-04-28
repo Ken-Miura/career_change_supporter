@@ -124,16 +124,8 @@ impl GetCareerOperation for GetCareerOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use common::{
-        util::{Career, Ymd},
-        ErrResp,
-    };
 
-    use crate::err::Code;
-
-    use super::{handle_career_req, GetCareerOperation};
+    use super::*;
 
     struct GetCareerOperationMock {
         account_id: i64,
