@@ -4,9 +4,9 @@ pub(crate) mod agreement_unchecked_user;
 pub(crate) mod user;
 pub(crate) mod verified_user;
 
+use crate::handlers::session::authentication::get_user_info_if_available;
 use crate::handlers::session::get_user_account_id_by_session_id;
 use crate::handlers::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
-use crate::util::get_user_info_if_available;
 use crate::util::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };

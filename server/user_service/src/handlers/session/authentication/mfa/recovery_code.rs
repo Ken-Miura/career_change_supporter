@@ -87,7 +87,9 @@ struct RecoveryCodeOperationImpl {
 impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
-        let user_info = crate::util::get_user_info_if_available(account_id, &op).await?;
+        let user_info =
+            crate::handlers::session::authentication::get_user_info_if_available(account_id, &op)
+                .await?;
         Ok(user_info)
     }
 
