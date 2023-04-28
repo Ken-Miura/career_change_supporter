@@ -11,8 +11,6 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
-pub(crate) const ROOT_PATH: &str = "/api";
-
 pub(crate) async fn update_last_login(
     account_id: i64,
     login_time: &DateTime<FixedOffset>,

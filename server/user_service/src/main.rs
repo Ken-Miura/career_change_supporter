@@ -5,6 +5,7 @@ mod handlers;
 mod optional_env_var;
 mod util;
 
+use crate::handlers::ROOT_PATH;
 use crate::handlers::account_creation::accounts::post_accounts;
 use crate::handlers::session::authentication::authenticated_handlers::delete_accounts::delete_accounts;
 use crate::handlers::account_creation::temp_accounts::post_temp_accounts;
@@ -47,7 +48,6 @@ use crate::handlers::session::authentication::authenticated_handlers::consultati
 use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::finish::post_finish_request_consultation;
 use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
-use crate::util::ROOT_PATH;
 use async_fred_session::fred::pool::RedisPool;
 use async_fred_session::fred::types::RedisConfig;
 use async_fred_session::RedisSessionStore;
