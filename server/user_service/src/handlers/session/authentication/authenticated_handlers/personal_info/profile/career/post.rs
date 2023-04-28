@@ -659,7 +659,7 @@ mod tests {
     use super::{handle_multipart, CareerResult, MAX_CAREER_IMAGE_SIZE_IN_BYTES};
     use crate::err::Code;
     use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::image_converter::convert_jpeg_to_png;
-    use crate::util::tests::SendMailMock;
+    use crate::handlers::tests::SendMailMock;
 
     use super::{
         create_subject, create_text, handle_career_req, CareerField, MultipartWrapper,

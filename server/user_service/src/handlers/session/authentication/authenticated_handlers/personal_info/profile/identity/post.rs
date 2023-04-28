@@ -913,7 +913,7 @@ mod tests {
         IdentityResult, MAX_IDENTITY_IMAGE_SIZE_IN_BYTES,
     };
     use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::identity_validator::MIN_AGE_REQUIREMENT;
-    use crate::util::tests::SendMailMock;
+    use crate::handlers::tests::SendMailMock;
     use async_session::serde_json;
     use axum::body::Bytes;
     use axum::http::StatusCode;

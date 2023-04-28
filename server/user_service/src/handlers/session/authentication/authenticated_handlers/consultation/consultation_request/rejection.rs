@@ -245,7 +245,7 @@ mod tests {
 
     use crate::err::Code;
     use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationRequest;
-    use crate::util::tests::SendMailMock;
+    use crate::handlers::tests::SendMailMock;
 
     use super::{
         create_text, handle_consultation_request_rejection, ConsultationRequestRejection,

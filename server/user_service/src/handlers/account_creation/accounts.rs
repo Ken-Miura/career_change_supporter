@@ -255,26 +255,18 @@ impl AccountsOperation for AccountsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
+    use chrono::TimeZone;
     use common::{
         password::hash_password,
-        smtp::SYSTEM_EMAIL_ADDRESS,
         util::validator::{
             email_address_validator::validate_email_address, password_validator::validate_password,
-            uuid_validator::validate_uuid,
         },
-        ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR,
     };
     use uuid::Uuid;
 
-    use super::super::TempAccount;
-    use super::{create_text, handle_accounts_req, AccountsResult, SUBJECT};
-    use crate::err::Code::{AccountAlreadyExists, NoTempAccountFound, TempAccountExpired};
-    use crate::util::tests::SendMailMock;
+    use crate::handlers::tests::SendMailMock;
 
-    use super::{AccountsOperation, NewAccount};
+    use super::*;
 
     struct AccountsOperationMock<'a> {
         temp_account: &'a TempAccount,

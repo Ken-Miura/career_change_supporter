@@ -228,7 +228,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::{create_text, handle_password_change_req, MAX_NUM_OF_PWD_CHANGE_REQ, SUBJECT};
-    use crate::{err::Code::ReachPasswordChangeReqLimit, util::tests::SendMailMock};
+    use crate::{err::Code::ReachPasswordChangeReqLimit, handlers::tests::SendMailMock};
 
     use axum::http::StatusCode;
 

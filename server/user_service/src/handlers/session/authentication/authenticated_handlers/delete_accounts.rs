@@ -450,10 +450,12 @@ mod tests {
 
     use crate::{
         err::Code,
-        handlers::session::authentication::authenticated_handlers::delete_accounts::{
-            create_text, handle_delete_accounts, DeleteAccountsResult, SUBJECT,
+        handlers::{
+            session::authentication::authenticated_handlers::delete_accounts::{
+                create_text, handle_delete_accounts, DeleteAccountsResult, SUBJECT,
+            },
+            tests::SendMailMock,
         },
-        util::tests::SendMailMock,
     };
 
     use super::DeleteAccountsOperation;

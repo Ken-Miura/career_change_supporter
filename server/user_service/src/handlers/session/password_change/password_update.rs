@@ -313,7 +313,7 @@ mod tests {
     };
     use crate::{
         err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired},
-        util::tests::SendMailMock,
+        handlers::tests::SendMailMock,
     };
 
     use super::PasswordUpdateOperation;

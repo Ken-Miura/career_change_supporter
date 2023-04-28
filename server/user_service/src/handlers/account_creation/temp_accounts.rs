@@ -194,7 +194,6 @@ impl TempAccountsOperation for TempAccountsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-
     use common::{
         password::is_password_match,
         util::validator::{
@@ -202,7 +201,7 @@ mod tests {
         },
     };
 
-    use crate::util::tests::SendMailMock;
+    use crate::handlers::tests::SendMailMock;
 
     use super::*;
 
