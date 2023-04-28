@@ -23,7 +23,7 @@ use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
-use crate::handlers::session::authentication::find_user_account_by_user_account_id_with_exclusive_lock;
+use crate::handlers::session::authentication::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
 
 use super::{

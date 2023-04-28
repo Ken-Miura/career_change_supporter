@@ -24,7 +24,7 @@ use crate::{
     util::login_status::LoginStatus,
 };
 
-use super::find_user_account_by_user_account_id_with_exclusive_lock;
+use super::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 
 pub(crate) const KEY_TO_USER_TOTP_ISSUER: &str = "USER_TOTP_ISSUER";
 pub(super) static USER_TOTP_ISSUER: Lazy<String> = Lazy::new(|| {

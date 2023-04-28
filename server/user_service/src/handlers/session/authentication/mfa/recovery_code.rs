@@ -20,9 +20,11 @@ use crate::err::unexpected_err_resp;
 use crate::err::Code;
 use crate::handlers::session::authentication::mfa::ensure_mfa_is_enabled;
 use crate::handlers::session::authentication::mfa::get_session_by_session_id;
+use crate::handlers::session::authentication::user_operation::{
+    FindUserInfoOperationImpl, UserInfo,
+};
 use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 use crate::util::login_status::LoginStatus;
-use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 
 use super::{
     extract_session_id_from_cookie, get_account_id_from_session, get_mfa_info_by_account_id,
@@ -88,8 +90,10 @@ impl RecoveryCodeOperation for RecoveryCodeOperationImpl {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
         let user_info =
-            crate::handlers::session::authentication::get_user_info_if_available(account_id, &op)
-                .await?;
+            crate::handlers::session::authentication::user_operation::get_user_info_if_available(
+                account_id, &op,
+            )
+            .await?;
         Ok(user_info)
     }
 
@@ -179,10 +183,11 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
+    use crate::handlers::session::authentication::user_operation::UserInfo;
     use crate::{
         handlers::session::authentication::mfa::MfaInfo,
         handlers::session::{tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
-        util::{login_status::LoginStatus, user_info::UserInfo},
+        util::login_status::LoginStatus,
     };
 
     use super::{handle_recovery_code, RecoveryCodeOperation, RecoveryCodeReqResult};

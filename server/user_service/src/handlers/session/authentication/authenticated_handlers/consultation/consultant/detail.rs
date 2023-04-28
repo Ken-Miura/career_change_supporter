@@ -14,7 +14,7 @@ use tracing::{error, info};
 use crate::err::Code;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::round_to_one_decimal_places;
-use crate::util::user_info::FindUserInfoOperationImpl;
+use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl};
 
 use super::{
     VALID_YEARS_OF_SERVICE_PERIOD_FIFTEEN, VALID_YEARS_OF_SERVICE_PERIOD_FIVE,

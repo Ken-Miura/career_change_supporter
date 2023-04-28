@@ -8,8 +8,6 @@ mod convert_payment_err;
 pub(crate) mod rating;
 pub(crate) mod request_consultation;
 
-use crate::util::user_info::{FindUserInfoOperation, UserInfo};
-
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
 use common::{ApiError, ErrResp, JAPANESE_TIME_ZONE};
@@ -17,7 +15,10 @@ use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::{
+    err::{unexpected_err_resp, Code},
+    handlers::session::authentication::user_operation::{FindUserInfoOperation, UserInfo},
+};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 struct ConsultationDateTime {
@@ -146,12 +147,12 @@ mod tests {
     use common::{ErrResp, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::{
-        handlers::session::authentication::authenticated_handlers::consultation::{
+    use crate::handlers::session::authentication::{
+        authenticated_handlers::consultation::{
             check_if_consultant_is_available, find_user_info_if_available,
             round_to_one_decimal_places,
         },
-        util::user_info::{FindUserInfoOperation, UserInfo},
+        user_operation::{FindUserInfoOperation, UserInfo},
     };
 
     struct FindUserInfoOperationMock<'a> {

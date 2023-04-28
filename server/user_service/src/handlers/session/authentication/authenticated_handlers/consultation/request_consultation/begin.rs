@@ -36,7 +36,7 @@ use crate::handlers::session::authentication::authenticated_handlers::rewards_in
     calculate_rewards, create_start_and_end_date_time_of_current_year, PaymentInfo,
 };
 use crate::optional_env_var::{EXPIRY_DAYS_OF_CHARGE, MAX_ANNUAL_REWARDS_IN_YEN};
-use crate::util::user_info::FindUserInfoOperationImpl;
+use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl};
 use crate::{err::unexpected_err_resp};
 
 use super::consultation_date_time_validator::{

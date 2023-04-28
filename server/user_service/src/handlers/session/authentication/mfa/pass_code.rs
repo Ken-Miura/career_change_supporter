@@ -17,14 +17,13 @@ use tracing::error;
 
 use crate::handlers::session::authentication::mfa::get_session_by_session_id;
 use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
+use crate::handlers::session::authentication::user_operation::FindUserInfoOperationImpl;
+use crate::handlers::session::authentication::user_operation::UserInfo;
 use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::mfa::{ensure_mfa_is_enabled, verify_pass_code},
-    util::{
-        login_status::LoginStatus,
-        user_info::{FindUserInfoOperationImpl, UserInfo},
-    },
+    util::login_status::LoginStatus,
 };
 
 use super::{
@@ -90,8 +89,10 @@ impl PassCodeOperation for PassCodeOperationImpl {
     async fn get_user_info_if_available(&self, account_id: i64) -> Result<UserInfo, ErrResp> {
         let op = FindUserInfoOperationImpl::new(&self.pool);
         let user_info =
-            crate::handlers::session::authentication::get_user_info_if_available(account_id, &op)
-                .await?;
+            crate::handlers::session::authentication::user_operation::get_user_info_if_available(
+                account_id, &op,
+            )
+            .await?;
         Ok(user_info)
     }
 
@@ -167,10 +168,11 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
+    use crate::handlers::session::authentication::mfa::MfaInfo;
+    use crate::handlers::session::authentication::user_operation::UserInfo;
     use crate::handlers::session::tests::prepare_session;
     use crate::handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
     use crate::util::login_status::LoginStatus;
-    use crate::{handlers::session::authentication::mfa::MfaInfo, util::user_info::UserInfo};
 
     use super::{handle_pass_code_req, PassCodeOperation, PassCodeReqResult};
 

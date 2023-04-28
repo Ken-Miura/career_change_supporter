@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
-use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
+use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl, UserInfo};
 
 use super::{
     create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,
@@ -277,8 +277,8 @@ mod tests {
         Consultation, SkyWayIdentification, LEEWAY_IN_MINUTES,
     };
     use crate::err::Code;
+    use crate::handlers::session::authentication::user_operation::UserInfo;
     use crate::handlers::session::LENGTH_OF_MEETING_IN_MINUTE;
-    use crate::util::user_info::UserInfo;
 
     use super::{handle_user_side_info, UserSideInfoOperation, UserSideInfoResult};
 

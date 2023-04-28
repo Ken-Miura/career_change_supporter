@@ -4,13 +4,14 @@ pub(crate) mod agreement_unchecked_user;
 pub(crate) mod user;
 pub(crate) mod verified_user;
 
-use crate::handlers::session::authentication::get_user_info_if_available;
+use crate::handlers::session::authentication::user_operation::{
+    get_user_info_if_available, FindUserInfoOperationImpl, UserInfo,
+};
 use crate::handlers::session::get_user_account_id_by_session_id;
 use crate::handlers::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use crate::util::terms_of_use::{
     TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
 };
-use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
 use async_session::SessionStore;
 use axum::{async_trait, Json};
 use axum::{

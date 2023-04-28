@@ -11,7 +11,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
-use crate::util::user_info::FindUserInfoOperationImpl;
+use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl};
 
 pub(crate) async fn get_fee_per_hour_in_yen_for_application(
     VerifiedUser { user_info: _ }: VerifiedUser,

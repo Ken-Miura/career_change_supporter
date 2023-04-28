@@ -8,7 +8,7 @@ use axum::{
 use common::{AppState, ErrResp};
 use serde::Deserialize;
 
-use crate::util::user_info::UserInfo;
+use crate::handlers::session::authentication::user_operation::UserInfo;
 
 use super::extract_singed_jar_from_request_parts;
 use super::{super::super::super::SESSION_ID_COOKIE_NAME, get_verified_user_info_from_cookie};

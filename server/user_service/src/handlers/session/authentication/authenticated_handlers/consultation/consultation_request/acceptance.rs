@@ -33,7 +33,7 @@ use crate::handlers::session::authentication::authenticated_handlers::consultati
     consultation_req_exists, ConsultationRequest,
 };
 use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
-use crate::util::user_info::{FindUserInfoOperationImpl, UserInfo};
+use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl, UserInfo};
 
 static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
@@ -906,8 +906,8 @@ mod tests {
     };
     use crate::err::{unexpected_err_resp, Code};
     use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationRequest;
+    use crate::handlers::session::authentication::user_operation::UserInfo;
     use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
-    use crate::util::user_info::UserInfo;
 
     use super::{
         handle_consultation_request_acceptance, AcceptedConsultation,
