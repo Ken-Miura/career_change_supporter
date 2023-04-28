@@ -23,8 +23,7 @@ use crate::handlers::session::authentication::mfa::get_session_by_session_id;
 use crate::handlers::session::authentication::user_operation::{
     FindUserInfoOperationImpl, UserInfo,
 };
-use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
-use crate::util::login_status::LoginStatus;
+use crate::handlers::session::{LoginStatus, LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 
 use super::{
     extract_session_id_from_cookie, get_account_id_from_session, get_mfa_info_by_account_id,
@@ -177,23 +176,17 @@ fn verify_recovery_code(recovery_code: &str, hashed_recovery_code: &[u8]) -> Res
 
 #[cfg(test)]
 mod tests {
-    use async_session::{MemoryStore, Session, SessionStore};
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::ApiError;
-    use common::{mfa::hash_recovery_code, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use async_session::MemoryStore;
+    use chrono::TimeZone;
+    use common::mfa::hash_recovery_code;
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-    use crate::handlers::session::authentication::user_operation::UserInfo;
-    use crate::{
-        handlers::session::authentication::mfa::MfaInfo,
-        handlers::session::{tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
-        util::login_status::LoginStatus,
+    use crate::handlers::session::{
+        tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID,
     };
 
-    use super::{handle_recovery_code, RecoveryCodeOperation, RecoveryCodeReqResult};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

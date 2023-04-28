@@ -14,15 +14,15 @@ use entity::sea_orm::{
 use once_cell::sync::Lazy;
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::{
+    err::{unexpected_err_resp, Code},
+    handlers::session::LoginStatus,
+};
 
 use async_session::{Session, SessionStore};
 use axum_extra::extract::cookie::Cookie;
 
-use crate::{
-    handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
-    util::login_status::LoginStatus,
-};
+use crate::handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
 
 use super::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 
@@ -238,26 +238,16 @@ fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), Err
 #[cfg(test)]
 mod tests {
 
-    use async_session::{MemoryStore, Session};
-    use axum::http::StatusCode;
-    use axum_extra::extract::cookie::Cookie;
+    use async_session::MemoryStore;
     use chrono::TimeZone;
     use common::JAPANESE_TIME_ZONE;
 
-    use crate::{
-        err::Code,
-        handlers::session::{
-            authentication::mfa::{
-                ensure_mfa_is_enabled, extract_session_id_from_cookie, get_account_id_from_session,
-                get_session_by_session_id, update_login_status,
-            },
-            tests::{prepare_session, remove_session_from_store},
-            KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME,
-        },
-        util::login_status::LoginStatus,
+    use crate::handlers::session::{
+        tests::{prepare_session, remove_session_from_store},
+        SESSION_ID_COOKIE_NAME,
     };
 
-    use super::verify_pass_code;
+    use super::*;
 
     #[test]
     fn ensure_mfa_is_enabled_success() {

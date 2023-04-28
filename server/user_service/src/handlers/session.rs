@@ -6,16 +6,46 @@ pub(crate) mod password_change;
 use async_session::{Session, SessionStore};
 use axum::{http::StatusCode, Json};
 use common::{ApiError, ErrResp};
+use serde::Serialize;
 use std::time::Duration;
 use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
-use crate::util::login_status::LoginStatus;
 
 const SESSION_ID_COOKIE_NAME: &str = "session_id";
 const KEY_TO_USER_ACCOUNT_ID: &str = "user_account_id";
 const KEY_TO_LOGIN_STATUS: &str = "login_status";
+
+const LOGIN_STATUS_FINISH: &str = "Finish";
+const LOGIN_STATUS_NEED_MORE_VERIFICATION: &str = "NeedMoreVerification";
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+enum LoginStatus {
+    Finish,
+    NeedMoreVerification,
+}
+
+impl From<String> for LoginStatus {
+    fn from(ls: String) -> Self {
+        if ls == LOGIN_STATUS_FINISH {
+            LoginStatus::Finish
+        } else if ls == LOGIN_STATUS_NEED_MORE_VERIFICATION {
+            LoginStatus::NeedMoreVerification
+        } else {
+            panic!("never reach here!")
+        }
+    }
+}
+
+impl From<LoginStatus> for String {
+    fn from(ls: LoginStatus) -> Self {
+        match ls {
+            LoginStatus::Finish => LOGIN_STATUS_FINISH.to_string(),
+            LoginStatus::NeedMoreVerification => LOGIN_STATUS_NEED_MORE_VERIFICATION.to_string(),
+        }
+    }
+}
 
 const LENGTH_OF_MEETING_IN_MINUTE: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
@@ -148,18 +178,10 @@ async fn destroy_session_if_exists(
 
 #[cfg(test)]
 mod tests {
-    use async_session::{MemoryStore, Session, SessionStore};
-    use axum::http::StatusCode;
 
-    use crate::{
-        err::Code,
-        handlers::session::{
-            destroy_session_if_exists, get_user_account_id_by_session_id, LOGIN_SESSION_EXPIRY,
-        },
-        util::login_status::LoginStatus,
-    };
+    use async_session::MemoryStore;
 
-    use super::{RefreshOperation, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
+    use super::*;
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
     pub(super) async fn prepare_session(

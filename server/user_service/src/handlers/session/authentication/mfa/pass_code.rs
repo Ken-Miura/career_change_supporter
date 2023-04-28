@@ -19,11 +19,11 @@ use crate::handlers::session::authentication::mfa::get_session_by_session_id;
 use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
 use crate::handlers::session::authentication::user_operation::FindUserInfoOperationImpl;
 use crate::handlers::session::authentication::user_operation::UserInfo;
+use crate::handlers::session::LoginStatus;
 use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
 use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::mfa::{ensure_mfa_is_enabled, verify_pass_code},
-    util::login_status::LoginStatus,
 };
 
 use super::{
@@ -161,23 +161,17 @@ async fn handle_pass_code_req(
 
 #[cfg(test)]
 mod tests {
-    use async_session::{MemoryStore, Session, SessionStore};
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
+
+    use async_session::MemoryStore;
+    use chrono::TimeZone;
     use common::mfa::hash_recovery_code;
-    use common::ApiError;
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-    use crate::handlers::session::authentication::mfa::MfaInfo;
-    use crate::handlers::session::authentication::user_operation::UserInfo;
-    use crate::handlers::session::tests::prepare_session;
-    use crate::handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
-    use crate::util::login_status::LoginStatus;
+    use crate::handlers::session::{
+        tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID,
+    };
 
-    use super::{handle_pass_code_req, PassCodeOperation, PassCodeReqResult};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

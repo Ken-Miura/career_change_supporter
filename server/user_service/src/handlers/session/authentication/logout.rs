@@ -79,15 +79,15 @@ fn record_logout_info(session: &Session) {
 
 #[cfg(test)]
 mod tests {
+
     use async_session::MemoryStore;
 
-    use crate::{
-        handlers::session::{
-            authentication::logout::handle_logout_req,
-            tests::{prepare_session, remove_session_from_store},
-        },
-        util::login_status::LoginStatus,
+    use crate::handlers::session::{
+        tests::{prepare_session, remove_session_from_store},
+        LoginStatus,
     };
+
+    use super::*;
 
     #[tokio::test]
     async fn handle_logout_req_success_session_alive() {
