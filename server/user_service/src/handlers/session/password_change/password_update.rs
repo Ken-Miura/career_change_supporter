@@ -293,30 +293,17 @@ impl PasswordUpdateOperation for PasswordUpdateOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use chrono::{Duration, TimeZone};
+
+    use chrono::TimeZone;
     use common::{
         password::is_password_match,
-        smtp::SYSTEM_EMAIL_ADDRESS,
-        util::validator::{
-            email_address_validator::validate_email_address, password_validator::validate_password,
-            uuid_validator::validate_uuid,
-        },
-        ErrResp, JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
+        util::validator::email_address_validator::validate_email_address,
     };
     use uuid::Uuid;
 
-    use super::{
-        create_text, handle_password_update_req, PasswordChangeReq, PasswordUpdateReq,
-        PasswordUpdateResult, SUBJECT,
-    };
-    use crate::{
-        err::Code::{NoAccountFound, NoPwdChnageReqFound, PwdChnageReqExpired},
-        handlers::tests::SendMailMock,
-    };
+    use crate::handlers::tests::SendMailMock;
 
-    use super::PasswordUpdateOperation;
+    use super::*;
 
     struct PasswordUpdateOperationMock {
         account_id: i64,

@@ -92,14 +92,9 @@ async fn handle_news(
 #[cfg(test)]
 mod tests {
 
-    use axum::async_trait;
-    use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
-    use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
-    use hyper::StatusCode;
+    use chrono::TimeZone;
 
-    use crate::handlers::news::{NewsResult, NEWS_RETRIEVAL_CRITERIA_IN_DAYS};
-
-    use super::{handle_news, News, NewsOperation};
+    use super::*;
 
     struct NewsOperationMock {
         news_array: Vec<(i64, String, String, DateTime<FixedOffset>)>,

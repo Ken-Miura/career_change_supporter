@@ -115,14 +115,11 @@ pub(super) async fn find_user_account_by_user_account_id_with_exclusive_lock(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
+
     use chrono::TimeZone;
-    use common::{ErrResp, JAPANESE_TIME_ZONE};
+    use common::JAPANESE_TIME_ZONE;
 
-    use crate::err::Code;
-
-    use super::{get_user_info_if_available, FindUserInfoOperation, UserInfo};
+    use super::*;
 
     struct FindUserInfoOperationMock<'a> {
         user_info: &'a UserInfo,

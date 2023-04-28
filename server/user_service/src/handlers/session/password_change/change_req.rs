@@ -218,21 +218,10 @@ impl PasswordChangeReqOperation for PasswordChangeReqOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use chrono::{DateTime, FixedOffset};
-    use common::{
-        smtp::SYSTEM_EMAIL_ADDRESS,
-        util::validator::email_address_validator::validate_email_address, ErrResp,
-        JAPANESE_TIME_ZONE,
-    };
-    use uuid::Uuid;
 
-    use super::{create_text, handle_password_change_req, MAX_NUM_OF_PWD_CHANGE_REQ, SUBJECT};
-    use crate::{err::Code::ReachPasswordChangeReqLimit, handlers::tests::SendMailMock};
+    use crate::handlers::tests::SendMailMock;
 
-    use axum::http::StatusCode;
-
-    use super::{PasswordChangeReq, PasswordChangeReqOperation};
+    use super::*;
 
     struct PasswordChangeReqOperationMock<'a> {
         cnt: u64,
