@@ -28,11 +28,11 @@ use uuid::Uuid;
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
-use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
-use crate::handlers::session::authentication::authenticated_handlers::payment_platform::PLATFORM_FEE_RATE_IN_PERCENTAGE;
-use crate::util::document_operation::{
+use crate::handlers::session::authentication::authenticated_handlers::document_operation::{
     find_document_model_by_user_account_id_with_shared_lock, insert_document,
 };
+use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
+use crate::handlers::session::authentication::authenticated_handlers::payment_platform::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 
 use super::bank_account_validator::{validate_bank_account, BankAccountValidationError};
 use super::BankAccount;
@@ -604,20 +604,8 @@ fn create_err_resp_from_code(code: &str) -> ErrResp {
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use common::RespResult;
-    use common::{
-        util::{Identity, Ymd},
-        ApiError, ErrResp,
-    };
-    use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::rewards::bank_account::BankAccountResult;
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::rewards::BankAccount;
-
-    use super::{handle_bank_account_req, BankAccountRegisterReq, SubmitBankAccountOperation};
+    use super::*;
 
     #[derive(Debug, Clone)]
     struct SubmitBankAccountOperationMock {

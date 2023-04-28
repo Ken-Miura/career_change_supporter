@@ -26,9 +26,9 @@ use tracing::{error, info, warn};
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::handlers::session::{destroy_session_if_exists, SESSION_ID_COOKIE_NAME};
-use crate::util::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 
 use super::authenticated_users::get_user_info_from_cookie;
+use super::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] アカウント削除完了通知", WEB_SITE_NAME));
 
@@ -443,22 +443,12 @@ fn ensure_account_delete_confirmed(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::{opensearch::INDEX_NAME, smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
-    use crate::{
-        err::Code,
-        handlers::{
-            session::authentication::authenticated_handlers::delete_accounts::{
-                create_text, handle_delete_accounts, DeleteAccountsResult, SUBJECT,
-            },
-            tests::SendMailMock,
-        },
-    };
+    use chrono::TimeZone;
 
-    use super::DeleteAccountsOperation;
+    use crate::handlers::tests::SendMailMock;
+
+    use super::*;
 
     struct DeleteAccountsOperationMock {
         account_id: i64,

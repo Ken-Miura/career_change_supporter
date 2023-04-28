@@ -12,7 +12,7 @@ use crate::err::unexpected_err_resp;
 /// 共有ロックを行い、documentテーブルからドキュメントIDを取得する
 ///
 /// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
-pub(crate) async fn find_document_model_by_user_account_id_with_shared_lock(
+pub(super) async fn find_document_model_by_user_account_id_with_shared_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<document::Model>, ErrRespStruct> {
@@ -35,7 +35,7 @@ pub(crate) async fn find_document_model_by_user_account_id_with_shared_lock(
 /// 排他ロックを行い、documentテーブルからドキュメントIDを取得する
 ///
 /// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
-pub(crate) async fn find_document_model_by_user_account_id_with_exclusive_lock(
+pub(super) async fn find_document_model_by_user_account_id_with_exclusive_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<document::Model>, ErrRespStruct> {
@@ -59,7 +59,7 @@ pub(crate) async fn find_document_model_by_user_account_id_with_exclusive_lock(
 ///
 /// opensearchにドキュメントを登録する際、そのドキュメントIDをDBに保管しておくために利用する<br>
 /// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
-pub(crate) async fn insert_document(
+pub(super) async fn insert_document(
     txn: &DatabaseTransaction,
     user_account_id: i64,
     document_id: i64,

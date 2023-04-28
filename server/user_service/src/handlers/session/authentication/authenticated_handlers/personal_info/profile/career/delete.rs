@@ -18,7 +18,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
-use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
+use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_shared_lock;
 
 pub(crate) async fn career(
     User { user_info }: User,
@@ -197,13 +197,8 @@ async fn remove_career_from_document(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use common::ErrResp;
 
-    use crate::err::Code;
-
-    use super::{handle_career_req, DeleteCareerOperation, DeleteCareerResult};
+    use super::*;
 
     struct DeleteCareerOperationMock {
         account_id: i64,

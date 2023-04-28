@@ -4,6 +4,7 @@ pub(crate) mod agreement;
 pub(crate) mod authenticated_users;
 pub(crate) mod consultation;
 pub(crate) mod delete_accounts;
+mod document_operation;
 mod fee_per_hour_in_yen_range;
 pub(crate) mod mfs_setting;
 mod payment_platform;

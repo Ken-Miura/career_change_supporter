@@ -20,11 +20,11 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_shared_lock;
 use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
-use crate::util::document_operation::find_document_model_by_user_account_id_with_shared_lock;
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
@@ -573,19 +573,11 @@ fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use std::vec;
 
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::rating::consultant_rating::calculate_average_rating;
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::rating::ConsultationInfo;
-
-    use super::{handle_consultant_rating, ConsultantRatingOperation, ConsultantRatingResult};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

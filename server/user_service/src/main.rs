@@ -3,7 +3,6 @@
 mod err;
 mod handlers;
 mod optional_env_var;
-mod util;
 
 use crate::handlers::ROOT_PATH;
 use crate::handlers::account_creation::accounts::post_accounts;
