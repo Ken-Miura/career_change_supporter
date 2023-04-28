@@ -117,17 +117,10 @@ async fn handle_fee_per_hour_in_yen_for_application(
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use common::{ApiError, ErrResp, RespResult};
+
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-
-    use super::{
-        handle_fee_per_hour_in_yen_for_application, FeePerHourInYenForApplication,
-        FeePerHourInYenForApplicationOperation,
-    };
+    use super::*;
 
     #[derive(Clone, Debug)]
     struct FeePerHourInYenForApplicationOperationMock {

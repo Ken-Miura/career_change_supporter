@@ -396,36 +396,18 @@ impl RewardOperation for RewardOperationImpl {
 #[cfg(test)]
 mod tests {
 
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::payment_platform::charge::Charge;
-    use common::payment_platform::customer::Card;
-    use common::payment_platform::tenant::ReviewedBrands;
-    use common::payment_platform::tenant_transfer::Summary;
-    use common::util::Ymd;
-    use common::JAPANESE_TIME_ZONE;
-    use common::{
-        payment_platform::{
-            tenant::{CreateTenant, TenantOperation, UpdateTenant},
-            tenant_transfer::{
-                Query as SearchTenantTransfersQuery, TenantTransfer, TenantTransferOperation,
-            },
-            ErrorDetail, ErrorInfo, List,
-        },
-        ErrResp,
+    use chrono::TimeZone;
+    use common::payment_platform::{
+        charge::Charge,
+        customer::Card,
+        tenant::{CreateTenant, ReviewedBrands, UpdateTenant},
+        tenant_transfer::Summary,
+        ErrorDetail, ErrorInfo, List,
     };
 
     use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::rewards::{
-        handle_reward_req, BankAccount, Transfer,
-    };
-    use crate::handlers::session::authentication::authenticated_handlers::rewards_info::{
-        create_start_and_end_date_time_of_current_month,
-        create_start_and_end_date_time_of_current_year, PaymentInfo,
-    };
 
-    use super::RewardOperation;
+    use super::*;
 
     struct RewardOperationMock {
         account_id: i64,

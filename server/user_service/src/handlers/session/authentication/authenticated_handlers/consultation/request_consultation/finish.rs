@@ -617,31 +617,13 @@ impl FinishRequestConsultationOperation for FinishRequestConsultationOperationIm
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
+
+    use chrono::{Duration, Utc};
     use common::payment_platform::customer::Card;
-    use common::payment_platform::Metadata;
-    use common::smtp::{SendMail, INQUIRY_EMAIL_ADDRESS};
-    use common::{payment_platform::charge::Charge, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-    use common::{ApiError, WEB_SITE_NAME};
-    use once_cell::sync::Lazy;
 
-    use super::super::{
-        KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-        KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    };
-    use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::finish::extract_candidates_date_time_in_jst;
-    use crate::optional_env_var::{
-        EXPIRY_DAYS_OF_CHARGE, MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-    };
+    use crate::optional_env_var::EXPIRY_DAYS_OF_CHARGE;
 
-    use super::{
-        create_text_for_consultant_mail, create_text_for_user_mail,
-        handle_finish_request_consultation, Candidates, FinishRequestConsultationOperation,
-        FinishRequestConsultationResult,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

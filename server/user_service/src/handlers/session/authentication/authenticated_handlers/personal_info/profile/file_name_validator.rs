@@ -45,13 +45,10 @@ impl Error for FileNameValidationError {}
 
 #[cfg(test)]
 mod tests {
+
     use std::collections::HashSet;
 
-    use once_cell::sync::Lazy;
-
-    use super::FileNameValidationError;
-
-    use super::validate_extension_is_jpeg;
+    use super::*;
 
     static JPEG_EXTENTSION_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(5);

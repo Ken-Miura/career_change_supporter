@@ -265,22 +265,22 @@ async fn update_user_account_entered_at(
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use super::super::tests::{DUMMY_APPLICATION_ID, DUMMY_SECRET, ROOM_NAME, TOKEN, TOKEN_ID};
-    use super::super::{
-        tests::{CURRENT_DATE_TIME, MEMBER_NAME},
-        Consultation, SkyWayIdentification, LEEWAY_IN_MINUTES,
+    use crate::handlers::session::{
+        authentication::authenticated_handlers::consultation::consultation_room::{
+            tests::{
+                CURRENT_DATE_TIME, DUMMY_APPLICATION_ID, DUMMY_SECRET, MEMBER_NAME, ROOM_NAME,
+                TOKEN, TOKEN_ID,
+            },
+            LEEWAY_IN_MINUTES,
+        },
+        LENGTH_OF_MEETING_IN_MINUTE,
     };
-    use crate::err::Code;
-    use crate::handlers::session::authentication::user_operation::UserInfo;
-    use crate::handlers::session::LENGTH_OF_MEETING_IN_MINUTE;
 
-    use super::{handle_user_side_info, UserSideInfoOperation, UserSideInfoResult};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

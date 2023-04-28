@@ -53,14 +53,13 @@ impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use common::{ApiError, ErrResp, RespResult};
+
+    use common::ApiError;
     use once_cell::sync::Lazy;
 
     use crate::err::Code;
 
-    use super::{handle_disable_mfa_req, DisableMfaReqOperation, DisableMfaReqResult};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

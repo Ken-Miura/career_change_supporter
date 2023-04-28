@@ -265,25 +265,22 @@ async fn update_consultant_entered_at(
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use super::super::tests::{
-        CURRENT_DATE_TIME, DUMMY_APPLICATION_ID, DUMMY_SECRET, MEMBER_NAME, ROOM_NAME, TOKEN,
-        TOKEN_ID,
+    use crate::handlers::session::{
+        authentication::authenticated_handlers::consultation::consultation_room::{
+            tests::{
+                CURRENT_DATE_TIME, DUMMY_APPLICATION_ID, DUMMY_SECRET, MEMBER_NAME, ROOM_NAME,
+                TOKEN, TOKEN_ID,
+            },
+            LEEWAY_IN_MINUTES,
+        },
+        LENGTH_OF_MEETING_IN_MINUTE,
     };
-    use super::super::LEEWAY_IN_MINUTES;
-    use super::super::{Consultation, SkyWayIdentification};
-    use crate::err::Code;
-    use crate::handlers::session::authentication::user_operation::UserInfo;
-    use crate::handlers::session::LENGTH_OF_MEETING_IN_MINUTE;
 
-    use super::{
-        handle_consultant_side_info, ConsultantSideInfoOperation, ConsultantSideInfoResult,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

@@ -181,20 +181,11 @@ impl ConsultationsOperation for ConsultationsOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::{async_trait, http::StatusCode, Json};
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use crate::handlers::session::{
-        authentication::authenticated_handlers::consultation::ConsultationDateTime,
-        LENGTH_OF_MEETING_IN_MINUTE,
-    };
-
-    use super::{
-        handle_consultations, ConsultantSideConsultation, ConsultationsOperation,
-        ConsultationsResult, UserSideConsultation,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

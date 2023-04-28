@@ -113,18 +113,10 @@ fn create_err_resp_from_status(status: u32) -> ErrResp {
 #[cfg(test)]
 mod tests {
 
-    use axum::http::StatusCode;
-    use axum::Json;
-    use common::{
-        payment_platform::{ErrorDetail, ErrorInfo},
-        ApiError, ErrResp,
-    };
+    use common::payment_platform::{ErrorDetail, ErrorInfo};
     use once_cell::sync::Lazy;
 
-    use crate::{
-        err::Code,
-        handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct ConvertPaymentErrToErrRespTestCase {

@@ -273,15 +273,11 @@ fn ensure_consultant_ids_are_same(
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use crate::err::Code;
-
-    use super::{handle_user_rating, ConsultationInfo, UserRatingOperation, UserRatingResult};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

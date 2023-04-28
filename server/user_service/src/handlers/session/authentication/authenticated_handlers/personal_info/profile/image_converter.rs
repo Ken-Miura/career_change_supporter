@@ -39,15 +39,10 @@ pub(super) fn convert_jpeg_to_png(data: Bytes) -> Result<Cursor<Vec<u8>>, ErrRes
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
 
-    use axum::{body::Bytes, http::StatusCode};
-    use image::{ImageBuffer, ImageFormat, ImageOutputFormat, RgbImage};
+    use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
-    use crate::{
-        err::Code,
-        handlers::session::authentication::authenticated_handlers::personal_info::profile::image_converter::convert_jpeg_to_png,
-    };
+    use super::*;
 
     #[test]
     fn convert_jpeg_to_png_returns_ok_if_convert_is_success() {

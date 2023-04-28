@@ -618,31 +618,10 @@ fn generate_metadata(
 #[cfg(test)]
 mod tests {
 
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
     use common::payment_platform::customer::Card;
-    use common::ApiError;
-    use common::{
-        payment_platform::charge::{Charge, CreateCharge},
-        ErrResp, RespResult, JAPANESE_TIME_ZONE,
-    };
     use once_cell::sync::Lazy;
 
-    use super::super::{
-        KEY_TO_CONSULTAND_ID_ON_CHARGE_OBJ, KEY_TO_FIRST_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-        KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
-    };
-    use crate::err::Code;
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime;
-    use crate::handlers::session::authentication::authenticated_handlers::rewards_info::{
-        create_start_and_end_date_time_of_current_year, PaymentInfo,
-    };
-
-    use super::{
-        handle_begin_request_consultation, BeginRequestConsultationParam,
-        RequestConsultationOperation, RequestConsultationResult,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

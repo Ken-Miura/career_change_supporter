@@ -63,16 +63,11 @@ fn ensure_end_of_consultation_date_time_has_passed(
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
+
     use chrono::TimeZone;
-    use common::{ApiError, JAPANESE_TIME_ZONE};
+    use common::JAPANESE_TIME_ZONE;
 
-    use crate::err::Code;
-
-    use super::{
-        ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
-        ensure_rating_is_in_valid_range, MAX_RATING, MIN_RATING,
-    };
+    use super::*;
 
     #[test]
     fn test_succsess_ensure_rating_id_is_positive() {

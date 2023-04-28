@@ -116,16 +116,10 @@ impl Error for ConsultationDateTimeValidationError {}
 #[cfg(test)]
 mod tests {
 
-    use chrono::{DateTime, FixedOffset, NaiveDate};
     use common::JAPANESE_TIME_ZONE;
     use once_cell::sync::Lazy;
 
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::{
-        request_consultation::consultation_date_time_validator::validate_consultation_date_time,
-        ConsultationDateTime,
-    };
-
-    use super::ConsultationDateTimeValidationError;
+    use super::*;
 
     struct TestCase {
         name: String,

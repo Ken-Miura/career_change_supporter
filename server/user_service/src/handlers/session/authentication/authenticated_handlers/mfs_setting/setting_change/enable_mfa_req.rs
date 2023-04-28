@@ -242,17 +242,12 @@ impl EnableMfaReqOperation for EnableMfaReqOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, FixedOffset, TimeZone};
-    use common::ApiError;
-    use common::{mfa::is_recovery_code_match, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
+    use common::mfa::is_recovery_code_match;
     use once_cell::sync::Lazy;
 
-    use crate::err::{unexpected_err_resp, Code};
-    use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::TempMfaSecret;
-
-    use super::{handle_enable_mfa_req, EnableMfaReqOperation, EnableMfaReqResult};
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

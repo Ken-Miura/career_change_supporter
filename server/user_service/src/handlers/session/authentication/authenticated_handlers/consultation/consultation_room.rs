@@ -323,19 +323,10 @@ async fn get_consultation_with_exclusive_lock(
 
 #[cfg(test)]
 mod tests {
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::JAPANESE_TIME_ZONE;
-    use once_cell::sync::Lazy;
 
-    use crate::err::unexpected_err_resp;
+    use chrono::TimeZone;
 
-    use super::MAX_DURATION_ON_SKY_WAY_API_IN_SECONDS;
-
-    use super::{
-        create_sky_way_auth_token, create_sky_way_auth_token_payload, SkyWayAppScope,
-        SkyWayAuthTokenPayload, SkyWayChannelScope, SkyWayMemberScope, SkyWayPublicationScope,
-        SkyWayScope, SkyWaySubscriptionScope, VALID_TOKEN_DURATION_IN_SECONDS,
-    };
+    use super::*;
 
     pub(super) const TOKEN_ID: &str = "6668affc-5afa-4996-b65a-6afe2f72756b";
     pub(super) const DUMMY_APPLICATION_ID: &str = "fb374e11-742b-454e-a313-17d3207d41f6";

@@ -304,27 +304,13 @@ pub(in crate::handlers::session::authentication::authenticated_handlers) enum No
 
 #[cfg(test)]
 mod tests {
-    use crate::handlers::session::authentication::authenticated_handlers::{
-        personal_info::profile::career::{
-            AnnualIncomInManYenValidationError, CompanyNameValidationError,
-            ContractTypeValidationError, DepartmentNameValidationError, NoteValidationError,
-            OfficeValidationError, PositionNameValidationError, ProfessionValidationError,
-            COMPANY_NAME_MAX_LENGTH, COMPANY_NAME_MIN_LENGTH, DEPARTMENT_NAME_MAX_LENGTH,
-            DEPARTMENT_NAME_MIN_LENGTH, NOTE_MAX_LENGTH, NOTE_MIN_LENGTH, OFFICE_MAX_LENGTH,
-            OFFICE_MIN_LENGTH, POSITION_NAME_MAX_LENGTH, POSITION_NAME_MIN_LENGTH,
-            PROFESSION_MAX_LENGTH, PROFESSION_MIN_LENGTH,
-        },
-        tests::{
-            CONTROL_CHAR_SET, NEW_LINE_CONTROL_CHAR_SET, NON_NEW_LINE_CONTROL_CHAR_SET, SPACE_SET,
-            SYMBOL_SET,
-        },
+
+    use crate::handlers::session::authentication::authenticated_handlers::tests::{
+        CONTROL_CHAR_SET, NEW_LINE_CONTROL_CHAR_SET, NON_NEW_LINE_CONTROL_CHAR_SET, SPACE_SET,
+        SYMBOL_SET,
     };
 
-    use super::{
-        validate_annual_income_in_man_yen, validate_company_name, validate_contract_type,
-        validate_department_name, validate_note, validate_office, validate_position_name,
-        validate_profession, CONTRACT_TYPE_SET, MAX_ANNUAL_INCOME_IN_MAN_YEN,
-    };
+    use super::*;
 
     #[test]
     fn validate_company_name_returns_ok_if_1_char_company_name_is_passed() {

@@ -273,21 +273,17 @@ impl ProfileOperationImpl {
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
-    use axum::http::StatusCode;
-    use chrono::{Datelike, NaiveDate};
-    use common::util::Identity;
-    use common::util::Ymd;
-    use common::ErrResp;
-    use common::MAX_NUM_OF_CAREER_PER_USER_ACCOUNT;
 
-    use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::MAX_FEE_PER_HOUR_IN_YEN;
-    use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::MIN_FEE_PER_HOUR_IN_YEN;
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::identity_validator::validate_identity;
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::identity::identity_validator::MIN_AGE_REQUIREMENT;
+    use chrono::NaiveDate;
 
-    use super::CareerDescription;
-    use super::{handle_profile_req, ProfileOperation};
+    use crate::handlers::session::authentication::authenticated_handlers::{
+        fee_per_hour_in_yen_range::{MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN},
+        personal_info::profile::identity::identity_validator::{
+            validate_identity, MIN_AGE_REQUIREMENT,
+        },
+    };
+
+    use super::*;
 
     struct ProfileOperationMock {
         identity_option: Option<Identity>,

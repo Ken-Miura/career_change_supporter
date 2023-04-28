@@ -207,19 +207,11 @@ async fn handle_unrated_items(
 
 #[cfg(test)]
 mod tests {
-    use axum::http::StatusCode;
-    use axum::{async_trait, Json};
-    use chrono::{DateTime, Duration, FixedOffset, TimeZone};
-    use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+
+    use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime;
-    use crate::handlers::session::LENGTH_OF_MEETING_IN_MINUTE;
-
-    use super::{
-        handle_unrated_items, UnratedConsultant, UnratedItemsOperation, UnratedItemsResult,
-        UnratedUser,
-    };
+    use super::*;
 
     #[derive(Debug)]
     struct TestCase {

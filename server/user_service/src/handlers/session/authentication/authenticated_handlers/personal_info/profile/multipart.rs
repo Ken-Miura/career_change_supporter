@@ -19,11 +19,9 @@ pub(super) fn clone_file_name_if_exists(
 #[cfg(test)]
 mod tests {
 
-    use std::io::Cursor;
-
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
-    use crate::handlers::session::authentication::authenticated_handlers::personal_info::profile::multipart::clone_file_name_if_exists;
+    use super::*;
 
     #[test]
     fn clone_file_name_if_exists_returns_none_if_none_is_passed() {
