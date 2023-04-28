@@ -47,7 +47,6 @@ use crate::handlers::session::authentication::authenticated_handlers::refresh::g
 use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::begin::post_begin_request_consultation;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::fee_per_hour_in_yen_for_application::get_fee_per_hour_in_yen_for_application;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::request_consultation::finish::post_finish_request_consultation;
-use crate::util::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use async_fred_session::fred::pool::RedisPool;
 use async_fred_session::fred::types::RedisConfig;
 use async_fred_session::RedisSessionStore;
@@ -76,6 +75,7 @@ use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
 use handlers::session::authentication::authenticated_handlers::consultation::consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
+use handlers::session::authentication::authenticated_handlers::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
 use hyper::{Body, Request};
 use handlers::session::authentication::mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;

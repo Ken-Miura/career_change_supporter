@@ -20,9 +20,8 @@ use tracing::info;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::AlreadyAgreedTermsOfUse;
 
-use crate::util::terms_of_use::TERMS_OF_USE_VERSION;
-
 use super::authenticated_users::agreement_unchecked_user::AgreementUncheckedUser;
+use super::terms_of_use::TERMS_OF_USE_VERSION;
 
 /// ユーザーが利用規約に同意したことを記録する
 pub(crate) async fn post_agreement(

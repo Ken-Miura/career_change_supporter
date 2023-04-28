@@ -9,9 +9,6 @@ use crate::handlers::session::authentication::user_operation::{
 };
 use crate::handlers::session::get_user_account_id_by_session_id;
 use crate::handlers::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
-use crate::util::terms_of_use::{
-    TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
-};
 use async_session::SessionStore;
 use axum::{async_trait, Json};
 use axum::{
@@ -26,6 +23,10 @@ use hyper::StatusCode;
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
+
+use super::terms_of_use::{
+    TermsOfUseLoadOperation, TermsOfUseLoadOperationImpl, TERMS_OF_USE_VERSION,
+};
 
 async fn extract_singed_jar_from_request_parts<S>(
     parts: &mut Parts,
@@ -182,10 +183,10 @@ mod tests {
 
     use crate::{
         err::Code,
-        handlers::session::authentication::authenticated_handlers::authenticated_users::{
-            check_if_user_has_already_agreed, ensure_identity_exists,
+        handlers::session::authentication::authenticated_handlers::{
+            authenticated_users::{check_if_user_has_already_agreed, ensure_identity_exists},
+            terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
         },
-        util::terms_of_use::{TermsOfUseData, TermsOfUseLoadOperation},
     };
 
     use super::IdentityCheckOperation;
