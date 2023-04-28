@@ -6,11 +6,12 @@ pub(crate) mod logout;
 pub(crate) mod mfa;
 
 use axum::{http::StatusCode, Json};
-use common::{ApiError, ErrResp};
+use common::{ApiError, ErrResp, ErrRespStruct};
+use entity::sea_orm::{DatabaseTransaction, EntityTrait, QuerySelect};
 use tracing::error;
 
 use crate::{
-    err::Code,
+    err::{unexpected_err_resp, Code},
     util::user_info::{FindUserInfoOperation, UserInfo},
 };
 
@@ -44,6 +45,26 @@ async fn get_user_info_if_available(
         ));
     }
     Ok(user)
+}
+
+async fn find_user_account_by_user_account_id_with_exclusive_lock(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<entity::user_account::Model>, ErrRespStruct> {
+    let model = entity::user_account::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id): {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model)
 }
 
 #[cfg(test)]

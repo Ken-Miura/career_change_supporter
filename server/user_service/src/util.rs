@@ -6,38 +6,13 @@ pub(crate) mod terms_of_use;
 pub(crate) mod user_info;
 
 use chrono::{DateTime, FixedOffset};
-use common::{ErrResp, ErrRespStruct};
-use entity::{
-    sea_orm::{
-        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
-    },
-    user_account,
-};
+use common::ErrResp;
+use entity::sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
 pub(crate) const ROOT_PATH: &str = "/api";
-
-pub(crate) async fn find_user_account_by_user_account_id_with_exclusive_lock(
-    txn: &DatabaseTransaction,
-    user_account_id: i64,
-) -> Result<Option<user_account::Model>, ErrRespStruct> {
-    let model = entity::prelude::UserAccount::find_by_id(user_account_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find user_account (user_account_id): {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(model)
-}
 
 pub(crate) async fn update_last_login(
     account_id: i64,

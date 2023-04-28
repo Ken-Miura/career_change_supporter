@@ -14,10 +14,7 @@ use entity::sea_orm::{
 use once_cell::sync::Lazy;
 use tracing::error;
 
-use crate::{
-    err::{unexpected_err_resp, Code},
-    util::find_user_account_by_user_account_id_with_exclusive_lock,
-};
+use crate::err::{unexpected_err_resp, Code};
 
 use async_session::{Session, SessionStore};
 use axum_extra::extract::cookie::Cookie;
@@ -26,6 +23,8 @@ use crate::{
     handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID},
     util::login_status::LoginStatus,
 };
+
+use super::find_user_account_by_user_account_id_with_exclusive_lock;
 
 pub(crate) const KEY_TO_USER_TOTP_ISSUER: &str = "USER_TOTP_ISSUER";
 pub(super) static USER_TOTP_ISSUER: Lazy<String> = Lazy::new(|| {

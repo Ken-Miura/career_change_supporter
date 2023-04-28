@@ -15,7 +15,7 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
-use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
+use crate::handlers::session::authentication::find_user_account_by_user_account_id_with_exclusive_lock;
 
 use super::{
     ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,

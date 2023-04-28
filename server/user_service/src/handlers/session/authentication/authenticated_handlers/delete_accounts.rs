@@ -24,9 +24,9 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::handlers::session::{destroy_session_if_exists, SESSION_ID_COOKIE_NAME};
 use crate::util::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
-use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 
 use super::authenticated_users::get_user_info_from_cookie;
 

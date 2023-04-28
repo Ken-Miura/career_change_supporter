@@ -21,8 +21,8 @@ use super::super::{
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
 use crate::handlers::session::authentication::authenticated_handlers::mfs_setting::ensure_mfa_is_not_enabled;
+use crate::handlers::session::authentication::find_user_account_by_user_account_id_with_exclusive_lock;
 use crate::handlers::session::authentication::mfa::{verify_pass_code, USER_TOTP_ISSUER};
-use crate::util::find_user_account_by_user_account_id_with_exclusive_lock;
 
 pub(crate) async fn post_enable_mfa_req(
     User { user_info }: User,
