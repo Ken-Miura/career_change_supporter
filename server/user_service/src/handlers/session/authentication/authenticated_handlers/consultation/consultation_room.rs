@@ -21,6 +21,7 @@ use serde::Serialize;
 use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::LENGTH_OF_MEETING_IN_MINUTE,
+    optional_env_var::CHECK_IF_CONSULTATION_ROOM_IS_OPENED,
 };
 
 pub(crate) mod consultant_side_info;
@@ -266,6 +267,9 @@ fn ensure_consultation_room_can_be_opened(
     current_date_time: &DateTime<FixedOffset>,
     consultation_date_time_in_jst: &DateTime<FixedOffset>,
 ) -> Result<(), ErrResp> {
+    if !(*CHECK_IF_CONSULTATION_ROOM_IS_OPENED) {
+        return Ok(());
+    }
     let leeway = Duration::minutes(LEEWAY_IN_MINUTES);
     let start_criteria = *consultation_date_time_in_jst - leeway;
     if *current_date_time < start_criteria {
