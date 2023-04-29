@@ -136,7 +136,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* ユーザーがアカウントの作成を試みたときに生成される。一定期間後、定期実行ツールにより削除される */
+            /* ユーザーがアカウントの作成を試みたときに生成される。有効期限が切れた後、定期実行ツールにより削除される */
             /* 一度仮登録した後、それを忘れてしまいもう一度仮登録したいケースを考え、email_addressをUNIQUEにしない。user_temp_account_idがPRIMARY KEYなので一意に検索は可能 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.user_temp_account (
@@ -191,7 +191,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* ユーザーがパスワードの変更を試みたときに生成される。一定期間後、定期実行ツールにより削除される */
+            /* ユーザーがパスワードの変更を試みたときに生成される。有効期限が切れた後、定期実行ツールにより削除される */
             /* 一度パスワード変更依頼を出した後、もう一度パスワード変更依頼を出したいケースを考慮し、email_addressをUNIQUEにしない。pwd_change_req_idがPRIMARY KEYなので一意に検索は可能 */
             .execute(sql.stmt(r"CREATE TABLE ccs_schema.pwd_change_req (
                 pwd_change_req_id ccs_schema.uuid_simple_form PRIMARY KEY,
@@ -212,7 +212,7 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             /* ユーザーが二段階認証を有効にしようとしたときに生成される。ユーザーが二段階認証を有効にしたときに削除される。
-             * 有効にしようと試みた後、実際に有効にせずに残っていたものは、一定期間後、定期実行ツールにより削除される
+             * 有効にしようと試みた後、実際に有効にせずに残っていたものは、有効期限が切れた後、定期実行ツールにより削除される
              */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.temp_mfa_secret (
@@ -279,7 +279,7 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             /* 管理者がユーザーの身分確認依頼を承認したときに生成される。
-             * ユーザーがアカウントを削除した後、(削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される 
+             * ユーザーがアカウントを削除した後（削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される
              */
             /* user_account一つに対して、identityは0もしくは1の関係とする。 */
             /* prefecture => 都道府県の最大文字数は4文字（神奈川県、鹿児島県、和歌山県） */
@@ -333,8 +333,8 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(
                 /* 管理者がユーザーの職歴確認依頼を承認したときに生成される。また、ユーザーが職歴を削除した際に削除される。
-             　　* ユーザーがアカウントを削除した後、(削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される 
-             　　*/
+                 * ユーザーがアカウントを削除した後（削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される
+                 */
                 /* annual_income_in_man_yen => 万円単位での年収 */
                 sql.stmt(
                     r"CREATE TABLE ccs_schema.career (
@@ -382,6 +382,9 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが相談料を（初めて）設定したときに生成される。
+             * ユーザーがアカウントを削除した後（削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される
+             */
             /* user_account一つに対して、consulting_feeは0もしくは1の関係とする。 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consulting_fee (
@@ -408,6 +411,9 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが（初めて）入金口座の登録をしたときに生成される。
+             * ユーザーがアカウントを削除した後（削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される
+             */
             /* user_account一つに対して、tenantは0もしくは1の関係とする。 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.tenant (
@@ -428,6 +434,9 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが相談申し込みをしたときに生成される。コンサルタントが相談申し込みを承認、または拒否したときに削除される。
+             * 相談開始日時の候補すべてが現在時刻を超えている場合、定期実行ツールにより削除される
+             */
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける。
             // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
