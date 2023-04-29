@@ -30,13 +30,16 @@ use crate::handlers::session::authentication::authenticated_handlers::payment_pl
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::payment_platform::PLATFORM_FEE_RATE_IN_PERCENTAGE;
-use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
 use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl};
+use crate::optional_env_var::MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE;
 
 static CONSULTANT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み通知", WEB_SITE_NAME));
 static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み完了通知", WEB_SITE_NAME));
+
+static MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
+    Lazy::new(|| *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE / 3600);
 
 pub(crate) async fn post_finish_request_consultation(
     VerifiedUser { user_info }: VerifiedUser,
@@ -333,7 +336,7 @@ Email: {}",
         candidates.0,
         candidates.1,
         candidates.2,
-        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+        *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
         INQUIRY_EMAIL_ADDRESS
     )
 }
@@ -398,8 +401,8 @@ Email: {}",
         candidates.0,
         candidates.1,
         candidates.2,
-        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-        *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+        *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
+        *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
         WEB_SITE_NAME,
         INQUIRY_EMAIL_ADDRESS
     )
@@ -1123,7 +1126,7 @@ Email: {}",
             first_candidate,
             second_candidate,
             third_candidate,
-            *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+            *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
             INQUIRY_EMAIL_ADDRESS
         );
 
@@ -1178,8 +1181,8 @@ Email: {}",
             first_candidate,
             second_candidate,
             third_candidate,
-            *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
-            *MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE,
+            *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
+            *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
             WEB_SITE_NAME,
             INQUIRY_EMAIL_ADDRESS
         );

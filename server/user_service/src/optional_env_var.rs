@@ -94,19 +94,19 @@ pub(super) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
     expiry_days_of_charge
 });
 
-const KEY_TO_MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: &str =
-    "MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE";
-/// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：時間）
+const KEY_TO_MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE: &str =
+    "MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE";
+/// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：秒）
 ///
 /// 動作確認時に待機時間を減らすために環境変数をセットする選択肢を用意しているただけで、原則、環境変数をセットせず、デフォルト値を用いる。
-pub(super) static MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
+pub(super) static MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
     Lazy::new(|| {
         let min_duration_in_hour =
-            env::var(KEY_TO_MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE)
-                .unwrap_or_else(|_| "6".to_string());
+            env::var(KEY_TO_MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE)
+                .unwrap_or_else(|_| "21600".to_string()); // 6時間
         min_duration_in_hour
             .parse()
-            .expect("failed to parse MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE")
+            .expect("failed to parse MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE")
     });
 
 const KEY_TO_FIRST_START_HOUR_OF_CONSULTATION: &str = "FIRST_START_HOUR_OF_CONSULTATION";

@@ -16,7 +16,7 @@ use crate::handlers::session::authentication::authenticated_handlers::authentica
 use crate::handlers::session::authentication::authenticated_handlers::consultation::{
     consultation_req_exists, round_to_one_decimal_places, ConsultationDateTime, ConsultationRequest,
 };
-use crate::optional_env_var::MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE;
+use crate::optional_env_var::MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE;
 
 use super::validate_consultation_req_id_is_positive;
 
@@ -187,7 +187,7 @@ fn validate_consultation_req_for_reference(
         ));
     }
     let criteria = *current_date_time
-        + Duration::hours(*MIN_DURATION_IN_HOUR_BEFORE_CONSULTATION_ACCEPTANCE as i64);
+        + Duration::seconds(*MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64);
     if consultation_req.latest_candidate_date_time_in_jst <= criteria {
         error!(
             "latest candidate ({}) is not over criteria ({})",
