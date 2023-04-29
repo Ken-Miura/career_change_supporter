@@ -815,6 +815,9 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが管理者に新規に身分確認を依頼したときに生成される。
+             * 管理者が身分確認依頼を承認、または拒否したときに削除される。
+             */
             /*
              * user_account一つに対して、create_identity_req (本人確認依頼 (新規)) は0もしくは1の関係とする。従って、user_account_idをPRIMARY KEYに指定する
              * 画像ファイルの実体は、データベース外に保存している。user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
@@ -866,6 +869,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* 管理者がユーザーの新規身分確認依頼を承認したときに生成される。サービスの運用期間を通じて存在し続ける */
             /*
              * user_accountのuser_account_idはBIGSERIALなので重複する心配はない。そのため、
              * approved_create_identity_req (本人確認依頼 (新規) の承認) のPRIMARY KEYとしてuser_account_idを利用する
@@ -903,6 +907,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* 管理者がユーザーの新規身分確認依頼を拒否したときに生成される。サービスの運用期間を通じて存在し続ける */
             /*
              * 複数回拒否の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
              */
@@ -951,6 +956,9 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが管理者に身分情報の更新を依頼したときに生成される。
+             * 管理者が身分情報の更新依頼を承認、または拒否したときに削除される。
+             */
             /*
              * user_account一つに対して、update_identity_req (本人確認依頼 (更新)) は0もしくは1の関係とする。従って、user_account_idをPRIMARY KEYに指定する
              * 画像ファイルの実体は、データベース外に保存している。user_account_idを外部キーにすると、user_accountの操作時に同時にこちらのテーブルのレコードも操作されて、
@@ -1002,6 +1010,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* 管理者がユーザーの身分情報の更新依頼を承認したときに生成される。サービスの運用期間を通じて存在し続ける */
             /*
              * 複数回更新の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
              */
@@ -1045,6 +1054,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* 管理者がユーザーの身分情報の更新依頼を拒否したときに生成される。サービスの運用期間を通じて存在し続ける */
             /*
              * 複数回拒否の記録が残る可能性があるため、user_accountのuser_account_idをPRIMARY KEYとしては扱わない。
              */
