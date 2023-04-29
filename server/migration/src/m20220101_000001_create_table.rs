@@ -56,6 +56,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         // その他（TABLE、INDEX等）の定義
         let _ = conn
+        /* ユーザーがアカウントを作成した際に生成される。ユーザーがアカウントを削除した際に削除される（情報は削除されたユーザーテーブルに移される） */
         /* NOTE: email_addressがUNIQUEであることに依存するコードとなっているため、UNIQUEを外さない */
         .execute(sql.stmt(r"CREATE TABLE ccs_schema.user_account (
             user_account_id BIGSERIAL PRIMARY KEY,
@@ -102,6 +103,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーがアカウントを削除した際に生成される。一定期間後、定期実行ツールにより削除される */
             /* NOTE: アカウント作成 -> 削除 -> バッチ処理によりdeleted_user_accountが削除される前に同じメールアドレスでアカウント作成 -> 削除
              * といったケースに対応するためにemail_addressにはUNIQUEをつけない
              */
@@ -134,6 +136,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーがアカウントの作成を試みたときに生成される。一定期間後、定期実行ツールにより削除される */
             /* 一度仮登録した後、それを忘れてしまいもう一度仮登録したいケースを考え、email_addressをUNIQUEにしない。user_temp_account_idがPRIMARY KEYなので一意に検索は可能 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.user_temp_account (
@@ -158,6 +161,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが利用規約に同意したときに生成される。サービスの運用期間を通じて存在し続ける */
             /*
              * ユーザーが利用規約に同意した証拠となる。
              * そのため、後から同意したことを追跡できるように、アカウントが削除されても利用規約の合意は削除されないようにする
@@ -187,6 +191,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーがパスワードの変更を試みたときに生成される。一定期間後、定期実行ツールにより削除される */
             /* 一度パスワード変更依頼を出した後、もう一度パスワード変更依頼を出したいケースを考慮し、email_addressをUNIQUEにしない。pwd_change_req_idがPRIMARY KEYなので一意に検索は可能 */
             .execute(sql.stmt(r"CREATE TABLE ccs_schema.pwd_change_req (
                 pwd_change_req_id ccs_schema.uuid_simple_form PRIMARY KEY,
@@ -206,6 +211,9 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが二段階認証を有効にしようとしたときに生成される。ユーザーが二段階認証を有効にしたときに削除される。
+             * 有効にしようと試みた後、実際に有効にせずに残っていたものは、一定期間後、定期実行ツールにより削除される
+             */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.temp_mfa_secret (
                 temp_mfa_secret_id BIGSERIAL PRIMARY KEY,
@@ -249,6 +257,7 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* ユーザーが二段階認証を有効にしたときに生成される。ユーザーが二段階認証を無効にしたとき、リカバリーコードでログインしたときに削除される */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.mfa_info (
                 user_account_id BIGINT PRIMARY KEY,
@@ -269,6 +278,9 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* 管理者がユーザーの身分確認依頼を承認したときに生成される。
+             * ユーザーがアカウントを削除した後、(削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される 
+             */
             /* user_account一つに対して、identityは0もしくは1の関係とする。 */
             /* prefecture => 都道府県の最大文字数は4文字（神奈川県、鹿児島県、和歌山県） */
             /* city => 市区町村の最大文字数は6文字。しかし、市区町村は頻繁に名前が変更される可能性があるので長さに余裕をもたせる */
@@ -320,6 +332,9 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             .execute(
+                /* 管理者がユーザーの職歴確認依頼を承認したときに生成される。また、ユーザーが職歴を削除した際に削除される。
+             　　* ユーザーがアカウントを削除した後、(削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される 
+             　　*/
                 /* annual_income_in_man_yen => 万円単位での年収 */
                 sql.stmt(
                     r"CREATE TABLE ccs_schema.career (
