@@ -611,6 +611,7 @@ impl MigrationTrait for Migration {
              *   - ユーザーがアカウントを削除したとき（削除されたユーザーテーブルに移されたとき）（決済中止テーブルへ情報を移動する）
              *   - 管理者がユーザーを無効化したとき（決済中止テーブルへ情報を移動する）
              *   - 管理者が決済中止操作を行ったとき（決済中止テーブルへ情報を移動する）（ユーザーからの問い合わせで、悪意のあるコンサルタントであると判断した場合、決済中止を行う）
+             *   - 管理者がメンテナンス期間を設定し、かつ相談日時がそのメンテナンス期間に重なっているとき（決済中止テーブルへ情報を移動する）
              */
             // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
             // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
@@ -657,6 +658,7 @@ impl MigrationTrait for Migration {
              *   - 管理者がユーザーを無効化したとき
              *   - ユーザーがアカウントを削除したとき（削除されたユーザーテーブルに移されたとき）
              *   - 管理者が決済中止操作を行ったとき
+             *   - 管理者がメンテナンス期間を設定し、かつ相談日時がそのメンテナンス期間に重なっているとき
              *
              * 下記のタイミングで削除される
              *   - 有効期限（credit_facilities_expired_at）が過ぎている場合（定期実行ツールにより削除される）
@@ -1293,6 +1295,8 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* 管理者がメンテナンス期間を設定したときに生成される。
+             * サービスの運用期間を通じて存在し続ける。不要なデータはメンテナンス日時でフィルタリングする */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.maintenance (
                   maintenance_id BIGSERIAL PRIMARY KEY,
@@ -1328,6 +1332,8 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* 管理者がお知らせを作成したときに生成される。
+             * サービスの運用期間を通じて存在し続ける。不要なデータは掲載日時でフィルタリングする */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.news (
                   news_id BIGSERIAL PRIMARY KEY,
@@ -1360,6 +1366,8 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
+            /* サービスのオーナーが管理者を作成したときに生成される。
+             * サービスのオーナーが管理者を削除したときに生成される。 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.admin_account (
                     admin_account_id BIGSERIAL PRIMARY KEY,
