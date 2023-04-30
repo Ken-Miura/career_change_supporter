@@ -141,7 +141,6 @@ impl AccountOperationClient {
         let account = admin_account::ActiveModel {
             email_address: Set(email_addr.to_string()),
             hashed_password: Set(hashed_pwd),
-            last_login_time: Set(None),
             ..Default::default()
         };
         let _ = self
