@@ -7,6 +7,7 @@ mod identity_by_user_account_id;
 mod identity_request;
 mod login;
 mod logout;
+mod reason_validator;
 mod refresh;
 mod util;
 

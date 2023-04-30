@@ -4,10 +4,10 @@ use std::{error::Error, fmt::Display};
 
 use common::util::validator::{has_control_char, SPACE_RE, SYMBOL_CHAR_RE};
 
-pub(crate) const REASON_MIN_LENGTH: usize = 1;
-pub(crate) const REASON_MAX_LENGTH: usize = 256;
+pub(super) const REASON_MIN_LENGTH: usize = 1;
+pub(super) const REASON_MAX_LENGTH: usize = 256;
 
-pub(crate) fn validate_reason(reason: &str) -> Result<(), ReasonValidationError> {
+pub(super) fn validate_reason(reason: &str) -> Result<(), ReasonValidationError> {
     let reason_length = reason.chars().count();
     if !(REASON_MIN_LENGTH..=REASON_MAX_LENGTH).contains(&reason_length) {
         return Err(ReasonValidationError::InvalidReasonLength {
@@ -31,7 +31,7 @@ pub(crate) fn validate_reason(reason: &str) -> Result<(), ReasonValidationError>
 
 /// Error related to [validate_reason()]
 #[derive(Debug, PartialEq)]
-pub(crate) enum ReasonValidationError {
+pub(super) enum ReasonValidationError {
     InvalidReasonLength {
         length: usize,
         min_length: usize,
@@ -72,11 +72,7 @@ mod tests {
 
     use once_cell::sync::Lazy;
 
-    use crate::util::validator::reason_validator::{
-        ReasonValidationError, REASON_MAX_LENGTH, REASON_MIN_LENGTH,
-    };
-
-    use super::validate_reason;
+    use super::*;
 
     static SYMBOL_SET: Lazy<HashSet<String>> = Lazy::new(|| {
         let mut set: HashSet<String> = HashSet::with_capacity(32);

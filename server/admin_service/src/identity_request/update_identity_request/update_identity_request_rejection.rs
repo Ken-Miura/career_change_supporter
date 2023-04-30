@@ -27,10 +27,8 @@ use tracing::error;
 use crate::{
     err::{unexpected_err_resp, Code},
     identity_request::delete_identity_images,
-    util::{
-        find_user_model_by_user_account_id_with_shared_lock, session::Admin,
-        validator::reason_validator::validate_reason,
-    },
+    reason_validator::validate_reason,
+    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
 };
 
 use super::find_update_identity_req_model_by_user_account_id_with_exclusive_lock;

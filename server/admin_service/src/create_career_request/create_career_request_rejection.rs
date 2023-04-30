@@ -26,10 +26,8 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{
-        find_user_model_by_user_account_id_with_shared_lock, session::Admin,
-        validator::reason_validator::validate_reason,
-    },
+    reason_validator::validate_reason,
+    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
 };
 
 use super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
