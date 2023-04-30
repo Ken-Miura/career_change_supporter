@@ -6,7 +6,7 @@
 - 期限切れのpwd_change_reqレコードの削除
 - 期限切れのtemp_mfa_secretレコードの削除
 - 相談開始日時の候補すべてが現在時刻を超えてしまっているconsultation_reqの削除
-- deleted_user_accountに紐づくidentity、career、tenant、consulting_fee、create_identity_request、update_identity_request、create_career_requestの削除
+- deleted_user_accountに紐づくidentity、career、tenant、consulting_feeの削除
 
 Vueのデバッグ（ブレークポイントを貼って、そこで止めること）ができなくなった問題の解決
 
@@ -25,6 +25,8 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
   -> 削除する方針で検討。ただ、実装が完了し、確定後にこの項目はTODOから削除する
 
 管理者向けサイトで同じユーザーからの確認依頼かどうかの確認で承認済みユーザーのみしか確認していない箇所に関して、削除済みのユーザーかどうかのエリアを追加する
+
+承認、拒否のタイミングでアカウントが削除されている（または無効化されている場合）場合、create_identity_request、update_identity_request、create_career_requestについて削除する
 
 SkyWayクライアントサイドのエラーハンドリング
 
