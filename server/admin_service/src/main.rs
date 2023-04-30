@@ -2,6 +2,7 @@
 
 mod create_career_request;
 mod err;
+mod handlers;
 mod identity_by_user_account_id;
 mod identity_request;
 mod login;
