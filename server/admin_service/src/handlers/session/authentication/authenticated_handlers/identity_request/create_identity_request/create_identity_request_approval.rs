@@ -58,7 +58,7 @@ pub(crate) async fn post_create_identity_request_approval(
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateIdentityReqApproval {
-    pub(crate) user_account_id: i64,
+    user_account_id: i64,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]

@@ -1,5 +1,9 @@
 // Copyright 2022 Ken Miura
 
+pub(crate) mod create_identity_request;
+pub(crate) mod identity_images;
+pub(crate) mod update_identity_request;
+
 use common::{
     storage::{self, IDENTITY_IMAGES_BUCKET_NAME},
     ErrRespStruct,
@@ -7,10 +11,6 @@ use common::{
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
-
-pub(crate) mod create_identity_request;
-pub(crate) mod identity_images;
-pub(crate) mod update_identity_request;
 
 async fn delete_identity_images(
     user_account_id: i64,

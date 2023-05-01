@@ -27,7 +27,7 @@ pub(crate) async fn get_identity_by_user_account_id(
 
 #[derive(Deserialize)]
 pub(crate) struct GetIdentityQuery {
-    pub(crate) user_account_id: i64,
+    user_account_id: i64,
 }
 
 async fn get_identity_by_user_account_id_internal(
@@ -113,7 +113,7 @@ mod tests {
 
     use crate::err::Code;
 
-    use super::{get_identity_by_user_account_id_internal, IdentityOperation};
+    use super::*;
 
     struct IdentityOperationMock {
         user_account_id: i64,

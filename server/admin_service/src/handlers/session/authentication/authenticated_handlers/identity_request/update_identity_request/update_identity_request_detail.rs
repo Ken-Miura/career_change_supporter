@@ -30,23 +30,23 @@ pub(crate) async fn get_update_identity_request_detail(
 
 #[derive(Deserialize)]
 pub(crate) struct UpdateIdentityReqDetailQuery {
-    pub(crate) user_account_id: i64,
+    user_account_id: i64,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct UpdateIdentityReqDetail {
-    pub(crate) last_name: String,
-    pub(crate) first_name: String,
-    pub(crate) last_name_furigana: String,
-    pub(crate) first_name_furigana: String,
-    pub(crate) date_of_birth: Ymd,
-    pub(crate) prefecture: String,
-    pub(crate) city: String,
-    pub(crate) address_line1: String,
-    pub(crate) address_line2: Option<String>,
-    pub(crate) telephone_number: String,
-    pub(crate) image1_file_name_without_ext: String,
-    pub(crate) image2_file_name_without_ext: Option<String>,
+    last_name: String,
+    first_name: String,
+    last_name_furigana: String,
+    first_name_furigana: String,
+    date_of_birth: Ymd,
+    prefecture: String,
+    city: String,
+    address_line1: String,
+    address_line2: Option<String>,
+    telephone_number: String,
+    image1_file_name_without_ext: String,
+    image2_file_name_without_ext: Option<String>,
 }
 
 async fn get_update_identity_req_detail(
@@ -125,9 +125,7 @@ mod tests {
     use axum::http::StatusCode;
     use common::{util::Ymd, ErrResp};
 
-    use super::{
-        get_update_identity_req_detail, UpdateIdentityReqDetail, UpdateIdentityReqDetailOperation,
-    };
+    use super::*;
 
     struct UpdateIdentityReqDetailOperationMock {
         user_account_id: i64,

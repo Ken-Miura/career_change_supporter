@@ -64,7 +64,7 @@ pub(crate) async fn post_create_career_request_approval(
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateCareerReqApproval {
-    pub(crate) create_career_req_id: i64,
+    create_career_req_id: i64,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]

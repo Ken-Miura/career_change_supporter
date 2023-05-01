@@ -78,7 +78,7 @@ mod tests {
     use common::{err::Code::InvalidUuidFormat, ErrResp};
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
-    use super::{get_career_images_internal, DownloadCareerImageOperation};
+    use super::*;
 
     struct DownloadCareerImageOperationMock {
         key: String,

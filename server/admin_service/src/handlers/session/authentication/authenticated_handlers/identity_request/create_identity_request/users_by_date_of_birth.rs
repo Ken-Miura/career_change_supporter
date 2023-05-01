@@ -31,24 +31,24 @@ pub(crate) async fn get_users_by_date_of_birth(
 
 #[derive(Deserialize)]
 pub(crate) struct DateOfBirth {
-    pub(crate) year: i32,
-    pub(crate) month: u32,
-    pub(crate) day: u32,
+    year: i32,
+    month: u32,
+    day: u32,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct User {
-    pub(crate) user_account_id: i64,
-    pub(crate) last_name: String,
-    pub(crate) first_name: String,
-    pub(crate) last_name_furigana: String,
-    pub(crate) first_name_furigana: String,
-    pub(crate) date_of_birth: Ymd,
-    pub(crate) prefecture: String,
-    pub(crate) city: String,
-    pub(crate) address_line1: String,
-    pub(crate) address_line2: Option<String>,
-    pub(crate) telephone_number: String,
+    user_account_id: i64,
+    last_name: String,
+    first_name: String,
+    last_name_furigana: String,
+    first_name_furigana: String,
+    date_of_birth: Ymd,
+    prefecture: String,
+    city: String,
+    address_line1: String,
+    address_line2: Option<String>,
+    telephone_number: String,
 }
 
 async fn get_users_by_date_of_birth_internal(
@@ -132,7 +132,7 @@ mod tests {
     use chrono::{Datelike, NaiveDate, TimeZone};
     use common::{util::Ymd, ErrResp, JAPANESE_TIME_ZONE};
 
-    use super::{get_users_by_date_of_birth_internal, User, UsersByDateOfBirthOperation};
+    use super::*;
 
     struct UsersByDateOfBirthOperationMock {
         users: Vec<User>,

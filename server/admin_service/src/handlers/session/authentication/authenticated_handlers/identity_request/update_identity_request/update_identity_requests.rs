@@ -30,9 +30,9 @@ pub(crate) async fn get_update_identity_requests(
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct UpdateIdentityReqItem {
-    pub(crate) user_account_id: i64,
-    pub(crate) requested_at: DateTime<FixedOffset>,
-    pub(crate) name: String,
+    user_account_id: i64,
+    requested_at: DateTime<FixedOffset>,
+    name: String,
 }
 
 async fn get_update_identity_request_items(
@@ -97,10 +97,7 @@ mod tests {
 
     use crate::handlers::session::authentication::authenticated_handlers::pagination::Pagination;
 
-    use super::{
-        get_update_identity_request_items, UpdateIdentityReqItem,
-        UpdateIdentityRequestItemsOperation,
-    };
+    use super::*;
 
     struct UpdateIdentityRequestItemsOperationMock {
         items: Vec<UpdateIdentityReqItem>,

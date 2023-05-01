@@ -30,26 +30,26 @@ pub(crate) async fn get_create_career_request_detail(
 
 #[derive(Deserialize)]
 pub(crate) struct CreateCareerReqDetailQuery {
-    pub(crate) create_career_req_id: i64,
+    create_career_req_id: i64,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateCareerReqDetail {
-    pub(crate) user_account_id: i64,
-    pub(crate) company_name: String,
-    pub(crate) department_name: Option<String>,
-    pub(crate) office: Option<String>,
-    pub(crate) career_start_date: Ymd,
-    pub(crate) career_end_date: Option<Ymd>,
-    pub(crate) contract_type: String,
-    pub(crate) profession: Option<String>,
-    pub(crate) annual_income_in_man_yen: Option<i32>,
-    pub(crate) is_manager: bool,
-    pub(crate) position_name: Option<String>,
-    pub(crate) is_new_graduate: bool,
-    pub(crate) note: Option<String>,
-    pub(crate) image1_file_name_without_ext: String,
-    pub(crate) image2_file_name_without_ext: Option<String>,
+    user_account_id: i64,
+    company_name: String,
+    department_name: Option<String>,
+    office: Option<String>,
+    career_start_date: Ymd,
+    career_end_date: Option<Ymd>,
+    contract_type: String,
+    profession: Option<String>,
+    annual_income_in_man_yen: Option<i32>,
+    is_manager: bool,
+    position_name: Option<String>,
+    is_new_graduate: bool,
+    note: Option<String>,
+    image1_file_name_without_ext: String,
+    image2_file_name_without_ext: Option<String>,
 }
 
 async fn get_create_career_req_detail(
@@ -137,9 +137,7 @@ mod tests {
     use axum::http::StatusCode;
     use common::{util::Ymd, ErrResp};
 
-    use super::{
-        get_create_career_req_detail, CreateCareerReqDetail, CreateCareerReqDetailOperation,
-    };
+    use super::*;
 
     struct CreateCareerReqDetailOperationMock {
         create_career_req_id: i64,

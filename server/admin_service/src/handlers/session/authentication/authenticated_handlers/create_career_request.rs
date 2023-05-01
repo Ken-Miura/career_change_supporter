@@ -1,5 +1,11 @@
 // Copyright 2022 Ken Miura
 
+pub(crate) mod career_images;
+pub(crate) mod create_career_request_approval;
+pub(crate) mod create_career_request_detail;
+pub(crate) mod create_career_request_rejection;
+pub(crate) mod create_career_requests;
+
 use common::ErrRespStruct;
 use entity::{
     create_career_req,
@@ -8,12 +14,6 @@ use entity::{
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
-
-pub(crate) mod career_images;
-pub(crate) mod create_career_request_approval;
-pub(crate) mod create_career_request_detail;
-pub(crate) mod create_career_request_rejection;
-pub(crate) mod create_career_requests;
 
 async fn find_create_career_req_model_by_create_career_req_id_with_exclusive_lock(
     txn: &DatabaseTransaction,

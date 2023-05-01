@@ -63,8 +63,8 @@ pub(crate) async fn post_update_identity_request_rejection(
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct UpdateIdentityReqRejection {
-    pub(crate) user_account_id: i64,
-    pub(crate) rejection_reason: String,
+    user_account_id: i64,
+    rejection_reason: String,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]

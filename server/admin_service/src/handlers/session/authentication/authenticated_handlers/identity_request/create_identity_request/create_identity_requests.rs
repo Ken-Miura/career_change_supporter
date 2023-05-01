@@ -32,9 +32,9 @@ pub(crate) async fn get_create_identity_requests(
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateIdentityReqItem {
-    pub(crate) user_account_id: i64,
-    pub(crate) requested_at: DateTime<FixedOffset>,
-    pub(crate) name: String,
+    user_account_id: i64,
+    requested_at: DateTime<FixedOffset>,
+    name: String,
 }
 
 async fn get_create_identity_request_items(
@@ -99,10 +99,7 @@ mod tests {
 
     use crate::handlers::session::authentication::authenticated_handlers::pagination::Pagination;
 
-    use super::{
-        get_create_identity_request_items, CreateIdentityReqItem,
-        CreateIdentityRequestItemsOperation,
-    };
+    use super::*;
 
     struct CreateIdentityRequestItemsOperationMock {
         items: Vec<CreateIdentityReqItem>,

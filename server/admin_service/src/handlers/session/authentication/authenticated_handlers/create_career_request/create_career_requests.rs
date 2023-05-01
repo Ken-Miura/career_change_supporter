@@ -30,9 +30,9 @@ pub(crate) async fn get_create_career_requests(
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct CreateCareerReqItem {
-    pub(crate) create_career_req_id: i64,
-    pub(crate) company_name: String,
-    pub(crate) requested_at: DateTime<FixedOffset>,
+    create_career_req_id: i64,
+    company_name: String,
+    requested_at: DateTime<FixedOffset>,
 }
 
 async fn get_create_career_request_items(
@@ -97,9 +97,7 @@ mod tests {
 
     use crate::handlers::session::authentication::authenticated_handlers::pagination::Pagination;
 
-    use super::{
-        get_create_career_request_items, CreateCareerReqItem, CreateCareerRequestItemsOperation,
-    };
+    use super::*;
 
     struct CreateCareerRequestItemsOperationMock {
         items: Vec<CreateCareerReqItem>,
