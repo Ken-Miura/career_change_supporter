@@ -1,7 +1,7 @@
 // Copyright 2023 Ken Miura
 
 pub(crate) mod admin;
-pub(crate) mod create_career_request;
+pub(crate) mod career_request;
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod identity_request;
 pub(crate) mod pagination;

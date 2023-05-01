@@ -1,8 +1,8 @@
 // Copyright 2022 Ken Miura
 
-pub(crate) mod create_identity_request;
+pub(crate) mod create_request;
 pub(crate) mod identity_images;
-pub(crate) mod update_identity_request;
+pub(crate) mod update_request;
 
 use common::{
     storage::{self, IDENTITY_IMAGES_BUCKET_NAME},

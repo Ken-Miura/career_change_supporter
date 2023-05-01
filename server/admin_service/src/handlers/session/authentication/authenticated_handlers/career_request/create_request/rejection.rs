@@ -32,7 +32,7 @@ use crate::{
     },
 };
 
-use super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
+use super::super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴登録拒否通知", WEB_SITE_NAME));
 
