@@ -4,9 +4,11 @@ pub(crate) mod agreement_unchecked_user;
 pub(crate) mod user;
 pub(crate) mod verified_user;
 
-use crate::handlers::session::authentication::get_and_refresh_authenticated_user_account_id;
 use crate::handlers::session::authentication::user_operation::{
     get_user_info_if_available, FindUserInfoOperationImpl, UserInfo,
+};
+use crate::handlers::session::authentication::{
+    get_authenticated_user_account_id, get_session_by_session_id, refresh_login_session,
 };
 use crate::handlers::session::authentication::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use async_session::SessionStore;
@@ -63,14 +65,10 @@ async fn get_agreement_unchecked_user_info_from_cookie(
         }
     };
 
+    let session = get_session_by_session_id(&session_id, store).await?;
+    let user_account_id = get_authenticated_user_account_id(&session).await?;
     let refresh_op = RefreshOperationImpl {};
-    let user_account_id = get_and_refresh_authenticated_user_account_id(
-        session_id,
-        store,
-        refresh_op,
-        LOGIN_SESSION_EXPIRY,
-    )
-    .await?;
+    refresh_login_session(session, store, &refresh_op, LOGIN_SESSION_EXPIRY).await?;
 
     let find_user_op = FindUserInfoOperationImpl::new(pool);
     let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;
