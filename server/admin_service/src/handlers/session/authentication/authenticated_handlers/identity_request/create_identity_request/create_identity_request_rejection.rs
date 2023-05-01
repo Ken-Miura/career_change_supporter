@@ -25,9 +25,10 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    identity_request::delete_identity_images,
-    reason_validator::validate_reason,
-    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
+    handlers::session::authentication::authenticated_handlers::{
+        admin::Admin, identity_request::delete_identity_images, reason_validator::validate_reason,
+        user_operation::find_user_model_by_user_account_id_with_shared_lock,
+    },
 };
 
 use super::find_create_identity_req_model_by_user_account_id_with_exclusive_lock;
@@ -284,14 +285,10 @@ mod tests {
     use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
     use crate::{
-        err::Code,
-        identity_request::create_identity_request::create_identity_request_rejection::{
-            create_text, CreateIdentityReqRejectionResult, SUBJECT,
-        },
-        util::tests::SendMailMock,
+        err::Code, handlers::session::authentication::authenticated_handlers::tests::SendMailMock,
     };
 
-    use super::{handle_create_identity_request_rejection, CreateIdentityReqRejectionOperation};
+    use super::*;
 
     struct Admin {
         admin_account_id: i64,

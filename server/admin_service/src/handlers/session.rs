@@ -1,13 +1,10 @@
 // Copyright 2021 Ken Miura
 
+pub(crate) mod authentication;
+
 use async_session::{Session, SessionStore};
-use axum::async_trait;
-use axum::extract::{FromRef, FromRequestParts};
-use axum::http::request::Parts;
 use axum::{http::StatusCode, Json};
-use axum_extra::extract::SignedCookieJar;
-use common::{ApiError, AppState, ErrResp};
-use serde::Deserialize;
+use common::{ApiError, ErrResp};
 use std::time::Duration;
 use tracing::{error, info};
 
@@ -20,59 +17,9 @@ const ADMIN_OPERATION_TIME: u64 = 15;
 /// セッションの有効期限
 pub(crate) const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * ADMIN_OPERATION_TIME);
 
-/// 管理者の情報にアクセスするためのID
-///
-/// ハンドラ関数内で管理者の情報にアクセスしたい場合、原則としてこの型をパラメータとして受け付ける。
-/// このパラメータに含むIDを用いて、データベースから管理者情報を取得できる。
-/// この型をパラメータとして受け付けると、ハンドラ関数の処理に入る前に下記の前処理を実施する。
-/// <ul>
-///   <li>ログインセッションが有効であることを確認</li>
-/// </ul>
-#[derive(Deserialize, Clone, Debug)]
-pub(crate) struct Admin {
-    pub(crate) account_id: i64,
-}
-
-#[async_trait]
-impl<S> FromRequestParts<S> for Admin
-where
-    AppState: FromRef<S>,
-    S: Send + Sync,
-{
-    type Rejection = ErrResp;
-
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let signed_cookies = SignedCookieJar::<AppState>::from_request_parts(parts, state)
-            .await
-            .map_err(|e| {
-                error!("failed to get cookies: {:?}", e);
-                unexpected_err_resp()
-            })?;
-        let option_cookie = signed_cookies.get(ADMIN_SESSION_ID_COOKIE_NAME);
-        let session_id = match option_cookie {
-            Some(s) => s.value().to_string(),
-            None => {
-                info!("no sessoin cookie found");
-                return Err((
-                    StatusCode::UNAUTHORIZED,
-                    Json(ApiError {
-                        code: Unauthorized as u32,
-                    }),
-                ));
-            }
-        };
-        let app_state = AppState::from_ref(state);
-        let store = app_state.store;
-        let op = RefreshOperationImpl {};
-        let admin = get_admin_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY).await?;
-
-        Ok(admin)
-    }
-}
-
-/// session_idを使いstoreから、Adminを取得する。<br>
-/// Adminを取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
-/// Adminの取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
+/// session_idを使いstoreから、管理者のアカウントIDを取得する。<br>
+/// 管理者のアカウントIDを取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
+/// 管理者のアカウントIDの取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
 /// <br>
 /// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
 /// # NOTE
@@ -83,12 +30,12 @@ where
 /// <ul>
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
-pub(crate) async fn get_admin_by_session_id(
+pub(crate) async fn get_admin_account_id_by_session_id(
     session_id: String,
     store: &impl SessionStore,
     op: impl RefreshOperation,
     expiry: Duration,
-) -> Result<Admin, ErrResp> {
+) -> Result<i64, ErrResp> {
     let option_session = store.load_session(session_id.clone()).await.map_err(|e| {
         error!("failed to load session: {}", e);
         unexpected_err_resp()
@@ -105,7 +52,7 @@ pub(crate) async fn get_admin_by_session_id(
             ));
         }
     };
-    let id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
+    let admin_account_id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
         Some(id) => id,
         None => {
             error!("failed to get admin account id from session");
@@ -118,7 +65,7 @@ pub(crate) async fn get_admin_by_session_id(
         error!("failed to store session: {}", e);
         unexpected_err_resp()
     })?;
-    Ok(Admin { account_id: id })
+    Ok(admin_account_id)
 }
 
 pub(crate) trait RefreshOperation {
@@ -139,12 +86,9 @@ pub(crate) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
     use axum::http::StatusCode;
 
-    use crate::{
-        err,
-        util::session::{get_admin_by_session_id, KEY_TO_ADMIN_ACCOUNT_ID, LOGIN_SESSION_EXPIRY},
-    };
+    use crate::err;
 
-    use super::RefreshOperation;
+    use super::*;
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
     pub(crate) async fn prepare_session(
@@ -190,7 +134,7 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn get_admin_by_session_id_success() {
+    async fn get_admin_account_id_by_session_id_success() {
         let store = MemoryStore::new();
         let admin_account_id = 15001;
         let session_id = prepare_session(admin_account_id, &store).await;
@@ -199,21 +143,22 @@ pub(crate) mod tests {
         let op = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
-        let admin = get_admin_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
-            .await
-            .expect("failed to get Ok");
+        let result =
+            get_admin_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
+                .await
+                .expect("failed to get Ok");
 
-        // get_admin_by_session_idが何らかの副作用でセッションを破棄していないか確認
+        // get_admin_account_id_by_session_idが何らかの副作用でセッションを破棄していないか確認
         // 補足説明:
         // 実際の運用ではセッションに有効期限をもたせるので、
-        // get_admin_by_session_idの後にセッションの有効期限が切れて0になることもあり得る。
+        // get_admin_account_id_by_session_idの後にセッションの有効期限が切れて0になることもあり得る。
         // しかし、テストケースではセッションに有効期限を持たせていないため、暗黙のうちに0になる心配はない。
         assert_eq!(1, store.count().await);
-        assert_eq!(admin_account_id, admin.account_id);
+        assert_eq!(admin_account_id, result);
     }
 
     #[tokio::test]
-    async fn get_admin_by_session_id_fail_session_already_expired() {
+    async fn get_admin_account_id_by_session_id_fail_session_already_expired() {
         let admin_account_id = 10002;
         let store = MemoryStore::new();
         let session_id = prepare_session(admin_account_id, &store).await;
@@ -224,9 +169,10 @@ pub(crate) mod tests {
         let op = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
-        let result = get_admin_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
-            .await
-            .expect_err("failed to get Err");
+        let result =
+            get_admin_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
+                .await
+                .expect_err("failed to get Err");
 
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);

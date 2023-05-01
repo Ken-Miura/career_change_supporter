@@ -12,7 +12,8 @@ use common::{
 };
 use tracing::error;
 
-use crate::{err::unexpected_err_resp, util::session::Admin};
+use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 pub(crate) async fn get_identity_images(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ

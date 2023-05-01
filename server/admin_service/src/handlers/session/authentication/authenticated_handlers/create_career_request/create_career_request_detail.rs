@@ -16,7 +16,7 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::NoCreateCareerReqDetailFound;
-use crate::util::session::Admin;
+use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 pub(crate) async fn get_create_career_request_detail(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ

@@ -29,7 +29,9 @@ use tracing::{error, info};
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
+    handlers::session::authentication::authenticated_handlers::{
+        admin::Admin, user_operation::find_user_model_by_user_account_id_with_shared_lock,
+    },
 };
 
 use super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
@@ -550,15 +552,10 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::{
-        create_career_request::create_career_request_approval::{
-            create_text, handle_create_career_request_approval, CreateCareerReqApprovalResult,
-            SUBJECT,
-        },
-        err::Code,
-        util::tests::SendMailMock,
+        err::Code, handlers::session::authentication::authenticated_handlers::tests::SendMailMock,
     };
 
-    use super::{calculate_years_of_service, CreateCareerReqApprovalOperation};
+    use super::*;
 
     struct Admin {
         admin_account_id: i64,

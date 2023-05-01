@@ -12,7 +12,8 @@ use serde::Deserialize;
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::util::session::Admin;
+
+use super::admin::Admin;
 
 pub(crate) async fn get_identity_by_user_account_id(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ

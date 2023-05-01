@@ -21,11 +21,9 @@ use entity::sea_orm::{
 };
 use tracing::{error, info};
 
-use crate::err::unexpected_err_resp;
-use crate::err::Code::EmailOrPwdIncorrect;
-use crate::util::session::LOGIN_SESSION_EXPIRY;
-use crate::util::session::{ADMIN_SESSION_ID_COOKIE_NAME, KEY_TO_ADMIN_ACCOUNT_ID};
-use crate::util::ROOT_PATH;
+use super::super::{ADMIN_SESSION_ID_COOKIE_NAME, KEY_TO_ADMIN_ACCOUNT_ID, LOGIN_SESSION_EXPIRY};
+use crate::err::{unexpected_err_resp, Code::EmailOrPwdIncorrect};
+use crate::handlers::ROOT_PATH;
 
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookieをセットして応答する<br>
@@ -229,12 +227,9 @@ mod tests {
     use common::ErrResp;
     use common::JAPANESE_TIME_ZONE;
 
-    use crate::login::handle_login_req;
-    use crate::util::session::KEY_TO_ADMIN_ACCOUNT_ID;
-
-    use super::Account;
-    use super::LoginOperation;
     use crate::err::Code::EmailOrPwdIncorrect;
+
+    use super::*;
 
     struct LoginOperationMock<'a> {
         account: Account,

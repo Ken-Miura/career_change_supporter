@@ -7,10 +7,8 @@ use axum_extra::extract::{cookie::Cookie, SignedCookieJar};
 use common::ErrResp;
 use tracing::{error, info};
 
-use crate::{
-    err::unexpected_err_resp,
-    util::session::{ADMIN_SESSION_ID_COOKIE_NAME, KEY_TO_ADMIN_ACCOUNT_ID},
-};
+use super::super::{ADMIN_SESSION_ID_COOKIE_NAME, KEY_TO_ADMIN_ACCOUNT_ID};
+use crate::err::unexpected_err_resp;
 
 /// ログアウトを行う
 /// <br>
@@ -82,10 +80,9 @@ async fn handle_logout_req<'a>(
 mod tests {
     use async_session::MemoryStore;
 
-    use crate::{
-        logout::handle_logout_req,
-        util::session::tests::{prepare_session, remove_session_from_store},
-    };
+    use crate::handlers::session::tests::{prepare_session, remove_session_from_store};
+
+    use super::*;
 
     #[tokio::test]
     async fn handle_logout_req_success_session_alive() {

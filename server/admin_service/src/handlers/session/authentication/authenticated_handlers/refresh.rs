@@ -5,11 +5,11 @@ use common::ErrResp;
 use axum::http::StatusCode;
 use tracing::info;
 
-use crate::util::session::Admin;
+use super::admin::Admin;
 
 /// 下記の処理を順に行う<br>
 ///   - ログインセッションが存在しているか確認する
-///   - ログインセッションが存在している場合、有効期限を[crate::util::session::LOGIN_SESSION_EXPIRY]だけ延長する
+///   - ログインセッションが存在している場合、有効期限を[LOGIN_SESSION_EXPIRY]だけ延長する
 ///
 /// すべての処理が完了した場合、ステータスコード200を返す<br>
 /// <br>

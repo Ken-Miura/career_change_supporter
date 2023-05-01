@@ -13,12 +13,10 @@ use common::{
 use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_update_identity_req, identity,
+    admin_account, approved_create_identity_req, create_identity_req, identity,
     sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
-        EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
+        ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
     },
-    update_identity_req,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -26,29 +24,31 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
+    handlers::session::authentication::authenticated_handlers::{
+        admin::Admin, user_operation::find_user_model_by_user_account_id_with_shared_lock,
+    },
 };
 
-use super::find_update_identity_req_model_by_user_account_id_with_exclusive_lock;
+use super::find_create_identity_req_model_by_user_account_id_with_exclusive_lock;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
 
-pub(crate) async fn post_update_identity_request_approval(
+pub(crate) async fn post_create_identity_request_approval(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
-    Json(update_identity_req_approval): Json<UpdateIdentityReqApproval>,
-) -> RespResult<UpdateIdentityReqApprovalResult> {
+    Json(create_identity_req_approval): Json<CreateIdentityReqApproval>,
+) -> RespResult<CreateIdentityReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let op = UpdateIdentityReqApprovalOperationImpl { pool };
+    let op = CreateIdentityReqApprovalOperationImpl { pool };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
         *SMTP_PORT,
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_update_identity_request_approval(
+    handle_create_identity_request_approval(
         account_id,
-        update_identity_req_approval.user_account_id,
+        create_identity_req_approval.user_account_id,
         current_date_time,
         op,
         smtp_client,
@@ -57,20 +57,20 @@ pub(crate) async fn post_update_identity_request_approval(
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct UpdateIdentityReqApproval {
+pub(crate) struct CreateIdentityReqApproval {
     pub(crate) user_account_id: i64,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub(crate) struct UpdateIdentityReqApprovalResult {}
+pub(crate) struct CreateIdentityReqApprovalResult {}
 
-async fn handle_update_identity_request_approval(
+async fn handle_create_identity_request_approval(
     admin_account_id: i64,
     user_account_id: i64,
     approved_time: DateTime<FixedOffset>,
-    op: impl UpdateIdentityReqApprovalOperation,
+    op: impl CreateIdentityReqApprovalOperation,
     send_mail: impl SendMail,
-) -> RespResult<UpdateIdentityReqApprovalResult> {
+) -> RespResult<CreateIdentityReqApprovalResult> {
     let admin_email_address_option = op
         .get_admin_email_address_by_admin_account_id(admin_account_id)
         .await?;
@@ -84,11 +84,11 @@ async fn handle_update_identity_request_approval(
     })?;
 
     let approved_user = op
-        .approve_update_identity_req(user_account_id, admin_email_address, approved_time)
+        .approve_create_identity_req(user_account_id, admin_email_address, approved_time)
         .await?;
 
     let user_email_address = approved_user.ok_or_else(|| {
-        // 承認をしようとした際、既にユーザーがアカウントを削除している、またはDisabledになっているケース
+        // 承認をしようとした際、既にユーザーがアカウントを削除しているケース、またはDisabledになっているケース
         error!(
             "no user account (user account id: {}) found or the account is disabled",
             user_account_id
@@ -110,17 +110,17 @@ async fn handle_update_identity_request_approval(
         )
         .await?;
 
-    Ok((StatusCode::OK, Json(UpdateIdentityReqApprovalResult {})))
+    Ok((StatusCode::OK, Json(CreateIdentityReqApprovalResult {})))
 }
 
 #[async_trait]
-trait UpdateIdentityReqApprovalOperation {
+trait CreateIdentityReqApprovalOperation {
     async fn get_admin_email_address_by_admin_account_id(
         &self,
         admin_account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 
-    async fn approve_update_identity_req(
+    async fn approve_create_identity_req(
         &self,
         user_account_id: i64,
         approver_email_address: String,
@@ -128,12 +128,12 @@ trait UpdateIdentityReqApprovalOperation {
     ) -> Result<Option<String>, ErrResp>;
 }
 
-struct UpdateIdentityReqApprovalOperationImpl {
+struct CreateIdentityReqApprovalOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationImpl {
+impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationImpl {
     async fn get_admin_email_address_by_admin_account_id(
         &self,
         admin_account_id: i64,
@@ -143,7 +143,7 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find admin account (admin account id: {}): {}",
+                    "failed to find admin_account (admin_account_id: {}): {}",
                     admin_account_id, e
                 );
                 unexpected_err_resp()
@@ -151,7 +151,7 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
         Ok(model.map(|m| m.email_address))
     }
 
-    async fn approve_update_identity_req(
+    async fn approve_create_identity_req(
         &self,
         user_account_id: i64,
         approver_email_address: String,
@@ -170,23 +170,12 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                         return Ok(None)
                     }
 
-                    let identity_option = find_identity_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
-                    let _ = identity_option.ok_or_else(|| {
-                            error!(
-                                "no identity (user account id: {}) found",
-                                user_account_id
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-
-                    let req = find_update_identity_req_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
+                    let req = find_create_identity_req_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
 
                     let identity_model = generate_identity_active_model(req.clone());
-                    let _  = identity_model.update(txn).await.map_err(|e| {
+                    let _ = identity_model.insert(txn).await.map_err(|e| {
                         error!(
-                            "failed to update identity (user account id: {}): {}",
+                            "failed to insert identity (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -195,10 +184,10 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let approved_req = generate_approved_update_identity_req_active_model(req, approved_time, approver_email_address);
+                    let approved_req = generate_approved_create_identity_req_active_model(req, approved_time, approver_email_address);
                     let _ = approved_req.insert(txn).await.map_err(|e| {
                         error!(
-                            "failed to insert approved update identity req (user account id: {}): {}",
+                            "failed to insert approved_create_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -207,9 +196,9 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let _ = update_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
+                    let _ = create_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
                         error!(
-                            "failed to delete update identity request (user account id: {}): {}",
+                            "failed to delete create_identity_req (user_account_id: {}): {}",
                             user_account_id,
                             e
                         );
@@ -228,7 +217,7 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to approve update identity req: {}", err_resp_struct);
+                    error!("failed to approve create_identity_req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -236,33 +225,12 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
     }
 }
 
-async fn find_identity_model_by_user_account_id_with_exclusive_lock(
-    txn: &DatabaseTransaction,
-    user_account_id: i64,
-) -> Result<Option<identity::Model>, ErrRespStruct> {
-    let identity_option = identity::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find identity (user account id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(identity_option)
-}
-
-fn generate_approved_update_identity_req_active_model(
-    model: update_identity_req::Model,
+fn generate_approved_create_identity_req_active_model(
+    model: create_identity_req::Model,
     approved_time: DateTime<FixedOffset>,
     approver_email_address: String,
-) -> approved_update_identity_req::ActiveModel {
-    approved_update_identity_req::ActiveModel {
-        appr_upd_identity_req_id: NotSet,
+) -> approved_create_identity_req::ActiveModel {
+    approved_create_identity_req::ActiveModel {
         user_account_id: Set(model.user_account_id),
         last_name: Set(model.last_name),
         first_name: Set(model.first_name),
@@ -281,7 +249,7 @@ fn generate_approved_update_identity_req_active_model(
     }
 }
 
-fn generate_identity_active_model(model: update_identity_req::Model) -> identity::ActiveModel {
+fn generate_identity_active_model(model: create_identity_req::Model) -> identity::ActiveModel {
     identity::ActiveModel {
         user_account_id: Set(model.user_account_id),
         last_name: Set(model.last_name),
@@ -300,7 +268,14 @@ fn generate_identity_active_model(model: update_identity_req::Model) -> identity
 fn create_text() -> String {
     // TODO: 文面の調整
     format!(
-        r"本人確認が完了し、ユーザー情報を更新致しました。
+        r"本人確認が完了し、ユーザー情報を登録致しました。
+
+本人確認が完了したため、他のユーザーに相談を申し込むことが可能になりました。相談の申し込みは、ログイン後、画面上部にある相談申し込みの項目から行うことが出来ます。
+
+他のユーザーから相談を受けるには、ご本人確認に加え、下記の三点の登録が必要となります。他のユーザーからの相談を受けたい場合、追加で下記の三点をご登録いただくようお願いします。
+・職務経歴
+・相談料
+・銀行口座
 
 本メールはシステムより自動配信されています。
 本メールに返信されましても、回答いたしかねます。
@@ -320,15 +295,10 @@ mod tests {
     use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
     use crate::{
-        err::Code,
-        identity_request::update_identity_request::update_identity_request_approval::UpdateIdentityReqApprovalResult,
-        util::tests::SendMailMock,
+        err::Code, handlers::session::authentication::authenticated_handlers::tests::SendMailMock,
     };
 
-    use super::{
-        create_text, handle_update_identity_request_approval, UpdateIdentityReqApprovalOperation,
-        SUBJECT,
-    };
+    use super::*;
 
     struct Admin {
         admin_account_id: i64,
@@ -341,14 +311,14 @@ mod tests {
         email_address: String,
     }
 
-    struct UpdateIdentityReqApprovalOperationMock {
+    struct CreateIdentityReqApprovalOperationMock {
         admin: Admin,
         user_option: Option<User>,
         approved_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
-    impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationMock {
+    impl CreateIdentityReqApprovalOperation for CreateIdentityReqApprovalOperationMock {
         async fn get_admin_email_address_by_admin_account_id(
             &self,
             admin_account_id: i64,
@@ -357,7 +327,7 @@ mod tests {
             Ok(Some(self.admin.email_address.clone()))
         }
 
-        async fn approve_update_identity_req(
+        async fn approve_create_identity_req(
             &self,
             user_account_id: i64,
             approver_email_address: String,
@@ -375,7 +345,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_update_identity_request_approval_success() {
+    async fn handle_create_identity_request_approval_success() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
@@ -390,7 +360,7 @@ mod tests {
         let approval_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
             .unwrap();
-        let op_mock = UpdateIdentityReqApprovalOperationMock {
+        let op_mock = CreateIdentityReqApprovalOperationMock {
             admin,
             user_option,
             approved_time: approval_time,
@@ -402,7 +372,7 @@ mod tests {
             create_text(),
         );
 
-        let result = handle_update_identity_request_approval(
+        let result = handle_create_identity_request_approval(
             admin_account_id,
             user_account_id,
             approval_time,
@@ -413,11 +383,11 @@ mod tests {
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(UpdateIdentityReqApprovalResult {}, resp.1 .0);
+        assert_eq!(CreateIdentityReqApprovalResult {}, resp.1 .0);
     }
 
     #[tokio::test]
-    async fn handle_update_identity_request_approval_fail_no_user_account_found() {
+    async fn handle_create_identity_request_approval_fail_no_user_account_found() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
@@ -428,7 +398,7 @@ mod tests {
         let approval_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
             .unwrap();
-        let op_mock = UpdateIdentityReqApprovalOperationMock {
+        let op_mock = CreateIdentityReqApprovalOperationMock {
             admin,
             user_option: None,
             approved_time: approval_time,
@@ -440,7 +410,7 @@ mod tests {
             create_text(),
         );
 
-        let result = handle_update_identity_request_approval(
+        let result = handle_create_identity_request_approval(
             admin_account_id,
             user_account_id,
             approval_time,

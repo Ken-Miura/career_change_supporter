@@ -6,84 +6,83 @@ use common::{ErrResp, RespResult};
 
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
-use entity::{
-    create_identity_req,
-    sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder},
-};
+use entity::sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
+use entity::update_identity_req;
 use serde::Serialize;
 use tracing::error;
 
-use crate::{
-    err::unexpected_err_resp,
-    util::{session::Admin, validate_page_size, Pagination},
+use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
+use crate::handlers::session::authentication::authenticated_handlers::pagination::{
+    validate_page_size, Pagination,
 };
 
-pub(crate) async fn get_create_identity_requests(
+pub(crate) async fn get_update_identity_requests(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     pagination: Query<Pagination>,
     State(pool): State<DatabaseConnection>,
-) -> RespResult<Vec<CreateIdentityReqItem>> {
+) -> RespResult<Vec<UpdateIdentityReqItem>> {
     let pagination = pagination.0;
     validate_page_size(pagination.per_page)?;
-    let op = CreateIdentityRequestItemsOperationImpl { pool };
-    get_create_identity_request_items(pagination, op).await
+    let op = UpdateIdentityRequestItemsOperationImpl { pool };
+    get_update_identity_request_items(pagination, op).await
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub(crate) struct CreateIdentityReqItem {
+pub(crate) struct UpdateIdentityReqItem {
     pub(crate) user_account_id: i64,
     pub(crate) requested_at: DateTime<FixedOffset>,
     pub(crate) name: String,
 }
 
-async fn get_create_identity_request_items(
+async fn get_update_identity_request_items(
     pagination: Pagination,
-    op: impl CreateIdentityRequestItemsOperation,
-) -> RespResult<Vec<CreateIdentityReqItem>> {
+    op: impl UpdateIdentityRequestItemsOperation,
+) -> RespResult<Vec<UpdateIdentityReqItem>> {
     let items = op.get_items(pagination.page, pagination.per_page).await?;
     Ok((StatusCode::OK, Json(items)))
 }
 
 #[async_trait]
-trait CreateIdentityRequestItemsOperation {
+trait UpdateIdentityRequestItemsOperation {
     async fn get_items(
         &self,
         page: u64,
         page_size: u64,
-    ) -> Result<Vec<CreateIdentityReqItem>, ErrResp>;
+    ) -> Result<Vec<UpdateIdentityReqItem>, ErrResp>;
 }
 
-struct CreateIdentityRequestItemsOperationImpl {
+struct UpdateIdentityRequestItemsOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperationImpl {
+impl UpdateIdentityRequestItemsOperation for UpdateIdentityRequestItemsOperationImpl {
     async fn get_items(
         &self,
         page: u64,
         page_size: u64,
-    ) -> Result<Vec<CreateIdentityReqItem>, ErrResp> {
-        let items = create_identity_req::Entity::find()
-            .order_by_asc(create_identity_req::Column::RequestedAt)
+    ) -> Result<Vec<UpdateIdentityReqItem>, ErrResp> {
+        let items = update_identity_req::Entity::find()
+            .order_by_asc(update_identity_req::Column::RequestedAt)
             .paginate(&self.pool, page_size)
             .fetch_page(page)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to fetch page (page: {}, page_size: {}) in create_identity_req: {}",
+                    "failed to fetch page (page: {}, page_size: {}) in update_identity_req: {}",
                     page, page_size, e
                 );
                 unexpected_err_resp()
             })?;
         Ok(items
             .iter()
-            .map(|model| CreateIdentityReqItem {
+            .map(|model| UpdateIdentityReqItem {
                 user_account_id: model.user_account_id,
                 requested_at: model.requested_at,
                 name: model.last_name.clone() + " " + model.first_name.as_str(),
             })
-            .collect::<Vec<CreateIdentityReqItem>>())
+            .collect::<Vec<UpdateIdentityReqItem>>())
     }
 }
 
@@ -96,24 +95,24 @@ mod tests {
     use chrono::{Duration, TimeZone};
     use common::{ErrResp, JAPANESE_TIME_ZONE};
 
-    use crate::util::Pagination;
+    use crate::handlers::session::authentication::authenticated_handlers::pagination::Pagination;
 
     use super::{
-        get_create_identity_request_items, CreateIdentityReqItem,
-        CreateIdentityRequestItemsOperation,
+        get_update_identity_request_items, UpdateIdentityReqItem,
+        UpdateIdentityRequestItemsOperation,
     };
 
-    struct CreateIdentityRequestItemsOperationMock {
-        items: Vec<CreateIdentityReqItem>,
+    struct UpdateIdentityRequestItemsOperationMock {
+        items: Vec<UpdateIdentityReqItem>,
     }
 
     #[async_trait]
-    impl CreateIdentityRequestItemsOperation for CreateIdentityRequestItemsOperationMock {
+    impl UpdateIdentityRequestItemsOperation for UpdateIdentityRequestItemsOperationMock {
         async fn get_items(
             &self,
             page: u64,
             page_size: u64,
-        ) -> Result<Vec<CreateIdentityReqItem>, ErrResp> {
+        ) -> Result<Vec<UpdateIdentityReqItem>, ErrResp> {
             let items = self.items.clone();
             let length = items.len() as u64;
             let start = page * page_size;
@@ -136,9 +135,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success1() {
+    async fn get_update_identity_request_items_success1() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -146,7 +145,7 @@ mod tests {
             per_page: 3,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_update_identity_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -154,9 +153,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success2() {
+    async fn get_update_identity_request_items_success2() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -164,7 +163,7 @@ mod tests {
             per_page: 2,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_update_identity_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -172,9 +171,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success3() {
+    async fn get_update_identity_request_items_success3() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -182,7 +181,7 @@ mod tests {
             per_page: 2,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_update_identity_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -191,9 +190,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_identity_request_items_success4() {
+    async fn get_update_identity_request_items_success4() {
         let items = create_3_dummy_items();
-        let op_mock = CreateIdentityRequestItemsOperationMock {
+        let op_mock = UpdateIdentityRequestItemsOperationMock {
             items: items.clone(),
         };
         let pagination = Pagination {
@@ -201,33 +200,33 @@ mod tests {
             per_page: 2,
         };
 
-        let result = get_create_identity_request_items(pagination, op_mock).await;
+        let result = get_update_identity_request_items(pagination, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(Vec::<CreateIdentityReqItem>::with_capacity(0), resp.1 .0);
+        assert_eq!(Vec::<UpdateIdentityReqItem>::with_capacity(0), resp.1 .0);
     }
 
-    fn create_3_dummy_items() -> Vec<CreateIdentityReqItem> {
+    fn create_3_dummy_items() -> Vec<UpdateIdentityReqItem> {
         let mut items = Vec::with_capacity(3);
         let requested_at_1 = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
             .unwrap();
-        let item1 = CreateIdentityReqItem {
+        let item1 = UpdateIdentityReqItem {
             user_account_id: 1,
             requested_at: requested_at_1,
             name: String::from("山田 太郎"),
         };
         items.push(item1);
         let requested_at_2 = requested_at_1 + Duration::days(1);
-        let item2 = CreateIdentityReqItem {
+        let item2 = UpdateIdentityReqItem {
             user_account_id: 2,
             requested_at: requested_at_2,
             name: String::from("佐藤 次郎"),
         };
         items.push(item2);
         let requested_at_3 = requested_at_2 + Duration::days(1);
-        let item3 = CreateIdentityReqItem {
+        let item3 = UpdateIdentityReqItem {
             user_account_id: 3,
             requested_at: requested_at_3,
             name: String::from("田中 三郎"),

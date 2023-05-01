@@ -17,7 +17,7 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code::IllegalDate;
-use crate::util::session::Admin;
+use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 pub(crate) async fn get_users_by_date_of_birth(
     Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ

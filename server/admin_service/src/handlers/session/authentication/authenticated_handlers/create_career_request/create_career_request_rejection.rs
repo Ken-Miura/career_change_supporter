@@ -1,4 +1,4 @@
-// Copyright 2021 Ken Miura
+// Copyright 2022 Ken Miura
 
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
@@ -7,18 +7,18 @@ use common::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
         SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
     },
+    storage::{self, CAREER_IMAGES_BUCKET_NAME},
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
 use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, rejected_update_identity_req,
+    admin_account, create_career_req, rejected_create_career_req,
     sea_orm::{
         ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set,
         TransactionError, TransactionTrait,
     },
-    update_identity_req,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -26,33 +26,33 @@ use tracing::error;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    identity_request::delete_identity_images,
-    reason_validator::validate_reason,
-    util::{find_user_model_by_user_account_id_with_shared_lock, session::Admin},
+    handlers::session::authentication::authenticated_handlers::{
+        admin::Admin, reason_validator::validate_reason,
+        user_operation::find_user_model_by_user_account_id_with_shared_lock,
+    },
 };
 
-use super::find_update_identity_req_model_by_user_account_id_with_exclusive_lock;
+use super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
 
-static SUBJECT: Lazy<String> =
-    Lazy::new(|| format!("[{}] ユーザー情報更新拒否通知", WEB_SITE_NAME));
+static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴登録拒否通知", WEB_SITE_NAME));
 
-pub(crate) async fn post_update_identity_request_rejection(
+pub(crate) async fn post_create_career_request_rejection(
     Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
-    Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
-) -> RespResult<UpdateIdentityReqRejectionResult> {
+    Json(create_career_req_rejection): Json<CreateCareerReqRejection>,
+) -> RespResult<CreateCareerReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let op = UpdateIdentityReqRejectionOperationImpl { pool };
+    let op = CreateCareerReqRejectionOperationImpl { pool };
     let smtp_client = SmtpClient::new(
         SMTP_HOST.to_string(),
         *SMTP_PORT,
         SMTP_USERNAME.to_string(),
         SMTP_PASSWORD.to_string(),
     );
-    handle_update_identity_request_rejection(
+    handle_create_career_request_rejection(
         account_id,
-        update_identity_req_rejection.user_account_id,
-        update_identity_req_rejection.rejection_reason,
+        create_career_req_rejection.create_career_req_id,
+        create_career_req_rejection.rejection_reason,
         current_date_time,
         op,
         smtp_client,
@@ -61,22 +61,22 @@ pub(crate) async fn post_update_identity_request_rejection(
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct UpdateIdentityReqRejection {
-    pub(crate) user_account_id: i64,
+pub(crate) struct CreateCareerReqRejection {
+    pub(crate) create_career_req_id: i64,
     pub(crate) rejection_reason: String,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub(crate) struct UpdateIdentityReqRejectionResult {}
+pub(crate) struct CreateCareerReqRejectionResult {}
 
-async fn handle_update_identity_request_rejection(
+async fn handle_create_career_request_rejection(
     admin_account_id: i64,
-    user_account_id: i64,
+    create_career_req_id: i64,
     rejection_reason: String,
     rejected_time: DateTime<FixedOffset>,
-    op: impl UpdateIdentityReqRejectionOperation,
+    op: impl CreateCareerReqRejectionOperation,
     send_mail: impl SendMail,
-) -> RespResult<UpdateIdentityReqRejectionResult> {
+) -> RespResult<CreateCareerReqRejectionResult> {
     validate_reason(rejection_reason.as_str()).map_err(|e| {
         error!("invalid format reason ({}): {}", rejection_reason, e);
         (
@@ -97,10 +97,21 @@ async fn handle_update_identity_request_rejection(
         // admin accountでログインしているので、admin accountがないことはunexpected errorとして処理する
         unexpected_err_resp()
     })?;
+    let user_account_id_option = op
+        .get_user_account_id_by_create_career_req_id(create_career_req_id)
+        .await?;
+    let user_account_id = user_account_id_option.ok_or_else(|| {
+        error!(
+            "no create career request (create career request id: {}) found",
+            create_career_req_id
+        );
+        unexpected_err_resp()
+    })?;
 
     let rejected_user = op
-        .reject_update_identity_req(
+        .reject_create_career_req(
             user_account_id,
+            create_career_req_id,
             admin_email_address,
             rejection_reason.clone(),
             rejected_time,
@@ -130,31 +141,37 @@ async fn handle_update_identity_request_rejection(
         )
         .await?;
 
-    Ok((StatusCode::OK, Json(UpdateIdentityReqRejectionResult {})))
+    Ok((StatusCode::OK, Json(CreateCareerReqRejectionResult {})))
 }
 
 #[async_trait]
-trait UpdateIdentityReqRejectionOperation {
+trait CreateCareerReqRejectionOperation {
     async fn get_admin_email_address_by_admin_account_id(
         &self,
         admin_account_id: i64,
     ) -> Result<Option<String>, ErrResp>;
 
-    async fn reject_update_identity_req(
+    async fn get_user_account_id_by_create_career_req_id(
+        &self,
+        create_career_req_id: i64,
+    ) -> Result<Option<i64>, ErrResp>;
+
+    async fn reject_create_career_req(
         &self,
         user_account_id: i64,
+        create_career_req_id: i64,
         refuser_email_address: String,
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
     ) -> Result<Option<String>, ErrResp>;
 }
 
-struct UpdateIdentityReqRejectionOperationImpl {
+struct CreateCareerReqRejectionOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperationImpl {
+impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationImpl {
     async fn get_admin_email_address_by_admin_account_id(
         &self,
         admin_account_id: i64,
@@ -172,9 +189,27 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
         Ok(model.map(|m| m.email_address))
     }
 
-    async fn reject_update_identity_req(
+    async fn get_user_account_id_by_create_career_req_id(
+        &self,
+        create_career_req_id: i64,
+    ) -> Result<Option<i64>, ErrResp> {
+        let model = create_career_req::Entity::find_by_id(create_career_req_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find create_career_req (create_career_req_id: {}): {}",
+                    create_career_req_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| m.user_account_id))
+    }
+
+    async fn reject_create_career_req(
         &self,
         user_account_id: i64,
+        create_career_req_id: i64,
         refuser_email_address: String,
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
@@ -183,38 +218,57 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let user_option = find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
+                    let user_option =
+                        find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id)
+                            .await?;
                     let user = match user_option {
                         Some(m) => m,
-                        None => { return Ok(None) },
+                        None => return Ok(None),
                     };
 
-                    let req = find_update_identity_req_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
+                    let req =
+                        find_create_career_req_model_by_create_career_req_id_with_exclusive_lock(
+                            txn,
+                            create_career_req_id,
+                        )
+                        .await?;
 
-                    let rejected_req_active_model = generate_rejected_update_identity_req_active_model(req.clone(), rejected_time, rejection_reason, refuser_email_address);
+                    let rejected_req_active_model =
+                        generate_rejected_create_career_req_active_model(
+                            req.clone(),
+                            rejected_time,
+                            rejection_reason,
+                            refuser_email_address,
+                        );
                     let _ = rejected_req_active_model.insert(txn).await.map_err(|e| {
                         error!(
-                            "failed to insert rejected_update_identity_req (user_account_id: {}): {}",
-                            user_account_id,
-                            e
-                        );
+                      "failed to insert rejected_create_career_req (create_career_req_id: {}): {}",
+                        create_career_req_id, e
+                      );
                         ErrRespStruct {
                             err_resp: unexpected_err_resp(),
                         }
                     })?;
 
-                    let _ = update_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
-                        error!(
-                            "failed to delete update_identity_req (user_account_id: {}): {}",
-                            user_account_id,
-                            e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    let _ = create_career_req::Entity::delete_by_id(create_career_req_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to delete create_career_req (create_career_req_id: {}): {}",
+                                create_career_req_id, e
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
 
-                    let _ = delete_identity_images(user_account_id, req.image1_file_name_without_ext, req.image2_file_name_without_ext).await?;
+                    let _ = delete_career_images(
+                        user_account_id,
+                        req.image1_file_name_without_ext,
+                        req.image2_file_name_without_ext,
+                    )
+                    .await?;
 
                     Ok(Some(user.email_address))
                 })
@@ -226,7 +280,7 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to reject update_identity_req: {}", err_resp_struct);
+                    error!("failed to reject create_career_req: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -234,35 +288,73 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
     }
 }
 
-fn generate_rejected_update_identity_req_active_model(
-    model: update_identity_req::Model,
+fn generate_rejected_create_career_req_active_model(
+    model: create_career_req::Model,
     rejected_time: DateTime<FixedOffset>,
     rejection_reason: String,
     refuser_email_address: String,
-) -> rejected_update_identity_req::ActiveModel {
-    rejected_update_identity_req::ActiveModel {
-        rjd_upd_identity_id: NotSet,
+) -> rejected_create_career_req::ActiveModel {
+    rejected_create_career_req::ActiveModel {
+        rjd_cre_career_req_id: NotSet,
         user_account_id: Set(model.user_account_id),
-        last_name: Set(model.last_name),
-        first_name: Set(model.first_name),
-        last_name_furigana: Set(model.last_name_furigana),
-        first_name_furigana: Set(model.first_name_furigana),
-        date_of_birth: Set(model.date_of_birth),
-        prefecture: Set(model.prefecture),
-        city: Set(model.city),
-        address_line1: Set(model.address_line1),
-        address_line2: Set(model.address_line2),
-        telephone_number: Set(model.telephone_number),
+        company_name: Set(model.company_name),
+        department_name: Set(model.department_name),
+        office: Set(model.office),
+        career_start_date: Set(model.career_start_date),
+        career_end_date: Set(model.career_end_date),
+        contract_type: Set(model.contract_type),
+        profession: Set(model.profession),
+        annual_income_in_man_yen: Set(model.annual_income_in_man_yen),
+        is_manager: Set(model.is_manager),
+        position_name: Set(model.position_name),
+        is_new_graduate: Set(model.is_new_graduate),
+        note: Set(model.note),
         reason: Set(rejection_reason),
         rejected_at: Set(rejected_time),
         rejected_by: Set(refuser_email_address),
     }
 }
 
+async fn delete_career_images(
+    user_account_id: i64,
+    image1_file_name_without_ext: String,
+    image2_file_name_without_ext: Option<String>,
+) -> Result<(), ErrRespStruct> {
+    let image1_key = format!("{}/{}.png", user_account_id, image1_file_name_without_ext);
+    storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image1_key.as_str())
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete career image1 (key: {}): {}",
+                image1_key, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+
+    if let Some(image2_file_name_without_ext) = image2_file_name_without_ext {
+        let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
+        storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image2_key.as_str())
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to delete career image2 (key: {}): {}",
+                    image2_key, e
+                );
+                ErrRespStruct {
+                    err_resp: unexpected_err_resp(),
+                }
+            })?;
+    }
+
+    Ok(())
+}
+
 fn create_text(rejection_reason: String) -> String {
     // TODO: 文面の調整
     format!(
-        r"下記の【拒否理由】により、ユーザー情報の更新を拒否いたしました。お手数ですが、再度本人確認依頼をお願いいたします。
+        r"下記の【拒否理由】により、職務経歴の登録を拒否いたしました。お手数ですが、再度職務経歴確認依頼をお願いいたします。
 
 【拒否理由】
 {}
@@ -285,14 +377,10 @@ mod tests {
     use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
     use crate::{
-        err::Code,
-        identity_request::update_identity_request::update_identity_request_rejection::{
-            create_text, UpdateIdentityReqRejectionResult, SUBJECT,
-        },
-        util::tests::SendMailMock,
+        err::Code, handlers::session::authentication::authenticated_handlers::tests::SendMailMock,
     };
 
-    use super::{handle_update_identity_request_rejection, UpdateIdentityReqRejectionOperation};
+    use super::*;
 
     struct Admin {
         admin_account_id: i64,
@@ -305,15 +393,22 @@ mod tests {
         email_address: String,
     }
 
-    struct UpdateIdentityReqRejectionOperationMock {
+    #[derive(Clone)]
+    struct CreateCareerReqMock {
+        create_career_req_id: i64,
+        user_account_id: i64,
+    }
+
+    struct CreateCareerReqRejectionOperationMock {
         admin: Admin,
         user_option: Option<User>,
+        create_career_req_mock: CreateCareerReqMock,
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
-    impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperationMock {
+    impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationMock {
         async fn get_admin_email_address_by_admin_account_id(
             &self,
             admin_account_id: i64,
@@ -322,9 +417,21 @@ mod tests {
             Ok(Some(self.admin.email_address.clone()))
         }
 
-        async fn reject_update_identity_req(
+        async fn get_user_account_id_by_create_career_req_id(
+            &self,
+            create_career_req_id: i64,
+        ) -> Result<Option<i64>, ErrResp> {
+            assert_eq!(
+                self.create_career_req_mock.create_career_req_id,
+                create_career_req_id
+            );
+            Ok(Some(self.create_career_req_mock.user_account_id))
+        }
+
+        async fn reject_create_career_req(
             &self,
             user_account_id: i64,
+            create_career_req_id: i64,
             refuser_email_address: String,
             rejection_reason: String,
             rejected_time: DateTime<FixedOffset>,
@@ -332,6 +439,10 @@ mod tests {
             if let Some(user) = self.user_option.clone() {
                 assert_eq!(user.user_account_id, user_account_id);
                 assert_eq!(self.admin.email_address, refuser_email_address);
+                assert_eq!(
+                    self.create_career_req_mock.create_career_req_id,
+                    create_career_req_id
+                );
                 assert_eq!(self.rejection_reason, rejection_reason);
                 assert_eq!(self.rejected_time, rejected_time);
                 Ok(Some(user.email_address))
@@ -342,25 +453,31 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_update_identity_request_rejection_success() {
+    async fn handle_create_career_request_rejection_success() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
             email_address: String::from("admin@test.com"),
         };
-        let user_account_id = 53215;
+        let user_account_id = 53;
         let user_email_address = String::from("test@test.com");
         let user_option = Some(User {
             user_account_id,
             email_address: user_email_address.clone(),
         });
+        let create_career_req_id = 51514;
+        let create_career_req = CreateCareerReqMock {
+            create_career_req_id,
+            user_account_id,
+        };
         let rejection_reason = "画像が不鮮明なため";
         let rejected_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
             .unwrap();
-        let op_mock = UpdateIdentityReqRejectionOperationMock {
+        let op_mock = CreateCareerReqRejectionOperationMock {
             admin,
             user_option,
+            create_career_req_mock: create_career_req,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
         };
@@ -371,9 +488,9 @@ mod tests {
             create_text(rejection_reason.to_string()),
         );
 
-        let result = handle_update_identity_request_rejection(
+        let result = handle_create_career_request_rejection(
             admin_account_id,
-            user_account_id,
+            create_career_req_id,
             rejection_reason.to_string(),
             rejected_time,
             op_mock,
@@ -383,29 +500,35 @@ mod tests {
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(UpdateIdentityReqRejectionResult {}, resp.1 .0);
+        assert_eq!(CreateCareerReqRejectionResult {}, resp.1 .0);
     }
 
     #[tokio::test]
-    async fn handle_update_identity_request_rejection_fail_invalid_format_reason() {
+    async fn handle_create_career_request_rejection_fail_invalid_format_reason() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
             email_address: String::from("admin@test.com"),
         };
-        let user_account_id = 53215;
+        let user_account_id = 53;
         let user_email_address = String::from("test@test.com");
         let user_option = Some(User {
             user_account_id,
             email_address: user_email_address.clone(),
         });
+        let create_career_req_id = 51514;
+        let create_career_req = CreateCareerReqMock {
+            create_career_req_id,
+            user_account_id,
+        };
         let rejection_reason = "<script>alert('test');<script>";
         let rejected_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
             .unwrap();
-        let op_mock = UpdateIdentityReqRejectionOperationMock {
+        let op_mock = CreateCareerReqRejectionOperationMock {
             admin,
             user_option,
+            create_career_req_mock: create_career_req,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
         };
@@ -416,9 +539,9 @@ mod tests {
             create_text(rejection_reason.to_string()),
         );
 
-        let result = handle_update_identity_request_rejection(
+        let result = handle_create_career_request_rejection(
             admin_account_id,
-            user_account_id,
+            create_career_req_id,
             rejection_reason.to_string(),
             rejected_time,
             op_mock,
@@ -432,21 +555,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_update_identity_request_rejection_fail_no_user_account_found() {
+    async fn handle_create_career_request_rejection_fail_no_user_account_found() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
             email_address: String::from("admin@test.com"),
         };
-        let user_account_id = 53215;
+        let user_account_id = 53;
         let user_email_address = String::from("test@test.com");
+        let create_career_req_id = 51514;
+        let create_career_req = CreateCareerReqMock {
+            create_career_req_id,
+            user_account_id,
+        };
         let rejection_reason = "画像が不鮮明なため";
         let rejected_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
             .unwrap();
-        let op_mock = UpdateIdentityReqRejectionOperationMock {
+        let op_mock = CreateCareerReqRejectionOperationMock {
             admin,
             user_option: None,
+            create_career_req_mock: create_career_req,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
         };
@@ -457,9 +586,9 @@ mod tests {
             create_text(rejection_reason.to_string()),
         );
 
-        let result = handle_update_identity_request_rejection(
+        let result = handle_create_career_request_rejection(
             admin_account_id,
-            user_account_id,
+            create_career_req_id,
             rejection_reason.to_string(),
             rejected_time,
             op_mock,

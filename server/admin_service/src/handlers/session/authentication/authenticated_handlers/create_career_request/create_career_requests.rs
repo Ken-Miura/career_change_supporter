@@ -11,9 +11,10 @@ use entity::sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrde
 use serde::Serialize;
 use tracing::error;
 
-use crate::{
-    err::unexpected_err_resp,
-    util::{session::Admin, validate_page_size, Pagination},
+use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
+use crate::handlers::session::authentication::authenticated_handlers::pagination::{
+    validate_page_size, Pagination,
 };
 
 pub(crate) async fn get_create_career_requests(
@@ -94,7 +95,7 @@ mod tests {
     use chrono::{Duration, TimeZone};
     use common::{ErrResp, JAPANESE_TIME_ZONE};
 
-    use crate::util::Pagination;
+    use crate::handlers::session::authentication::authenticated_handlers::pagination::Pagination;
 
     use super::{
         get_create_career_request_items, CreateCareerReqItem, CreateCareerRequestItemsOperation,
