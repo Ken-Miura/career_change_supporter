@@ -20,7 +20,7 @@ use serde::Serialize;
 
 use crate::{
     err::{unexpected_err_resp, Code},
-    handlers::session::LENGTH_OF_MEETING_IN_MINUTE,
+    handlers::session::authentication::LENGTH_OF_MEETING_IN_MINUTE,
     optional_env_var::CHECK_IF_CONSULTATION_ROOM_IS_OPENED,
 };
 

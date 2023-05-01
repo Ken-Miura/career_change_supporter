@@ -4,11 +4,11 @@ pub(crate) mod agreement_unchecked_user;
 pub(crate) mod user;
 pub(crate) mod verified_user;
 
+use crate::handlers::session::authentication::get_and_refresh_authenticated_user_account_id;
 use crate::handlers::session::authentication::user_operation::{
     get_user_info_if_available, FindUserInfoOperationImpl, UserInfo,
 };
-use crate::handlers::session::get_user_account_id_by_session_id;
-use crate::handlers::session::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
+use crate::handlers::session::authentication::{RefreshOperationImpl, LOGIN_SESSION_EXPIRY};
 use async_session::SessionStore;
 use axum::{async_trait, Json};
 use axum::{
@@ -64,9 +64,13 @@ async fn get_agreement_unchecked_user_info_from_cookie(
     };
 
     let refresh_op = RefreshOperationImpl {};
-    let user_account_id =
-        get_user_account_id_by_session_id(session_id, store, refresh_op, LOGIN_SESSION_EXPIRY)
-            .await?;
+    let user_account_id = get_and_refresh_authenticated_user_account_id(
+        session_id,
+        store,
+        refresh_op,
+        LOGIN_SESSION_EXPIRY,
+    )
+    .await?;
 
     let find_user_op = FindUserInfoOperationImpl::new(pool);
     let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;

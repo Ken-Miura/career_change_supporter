@@ -9,7 +9,7 @@ use crate::handlers::session::authentication::authenticated_handlers::authentica
 
 /// 下記の処理を順に行う<br>
 ///   - ログインセッションが存在しているか確認する
-///   - ログインセッションが存在している場合、有効期限を[crate::util::session::LOGIN_SESSION_EXPIRY]だけ延長する
+///   - ログインセッションが存在している場合、有効期限を[LOGIN_SESSION_EXPIRY]だけ延長する
 ///   - 利用規約に同意しているかどうかを確認する
 ///
 /// すべての処理が完了した場合、ステータスコード200を返す<br>

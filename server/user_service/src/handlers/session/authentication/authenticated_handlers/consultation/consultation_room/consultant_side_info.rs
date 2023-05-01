@@ -277,7 +277,7 @@ mod tests {
             },
             LEEWAY_IN_MINUTES,
         },
-        LENGTH_OF_MEETING_IN_MINUTE,
+        authentication::LENGTH_OF_MEETING_IN_MINUTE,
     };
 
     use super::*;

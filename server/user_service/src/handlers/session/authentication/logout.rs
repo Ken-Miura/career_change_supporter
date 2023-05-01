@@ -7,10 +7,8 @@ use axum_extra::extract::{cookie::Cookie, SignedCookieJar};
 use common::ErrResp;
 use tracing::{error, info};
 
-use crate::{
-    err::unexpected_err_resp,
-    handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, SESSION_ID_COOKIE_NAME},
-};
+use crate::handlers::session::authentication::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
+use crate::{err::unexpected_err_resp, handlers::session::SESSION_ID_COOKIE_NAME};
 
 /// ログアウトを行う
 /// <br>
@@ -82,10 +80,9 @@ mod tests {
 
     use async_session::MemoryStore;
 
-    use crate::handlers::session::{
-        tests::{prepare_session, remove_session_from_store},
-        LoginStatus,
-    };
+    use crate::handlers::session::authentication::tests::prepare_login_session;
+    use crate::handlers::session::authentication::LoginStatus;
+    use crate::handlers::session::tests::remove_session_from_store;
 
     use super::*;
 
@@ -93,7 +90,7 @@ mod tests {
     async fn handle_logout_req_success_session_alive() {
         let store = MemoryStore::new();
         let user_account_id = 203;
-        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
+        let session_id = prepare_login_session(user_account_id, LoginStatus::Finish, &store).await;
         assert_eq!(1, store.count().await);
 
         handle_logout_req(session_id, &store)
@@ -109,7 +106,7 @@ mod tests {
         let store = MemoryStore::new();
         let user_account_id = 203;
         let session_id =
-            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
         assert_eq!(1, store.count().await);
 
         handle_logout_req(session_id, &store)
@@ -123,7 +120,7 @@ mod tests {
     async fn handle_logout_req_success_session_already_expired() {
         let store = MemoryStore::new();
         let user_account_id = 203;
-        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
+        let session_id = prepare_login_session(user_account_id, LoginStatus::Finish, &store).await;
         // ログアウト前にセッションを削除
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);

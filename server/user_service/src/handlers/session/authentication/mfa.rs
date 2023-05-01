@@ -14,15 +14,14 @@ use entity::sea_orm::{
 use once_cell::sync::Lazy;
 use tracing::error;
 
-use crate::{
-    err::{unexpected_err_resp, Code},
-    handlers::session::LoginStatus,
-};
+use crate::err::{unexpected_err_resp, Code};
 
 use async_session::{Session, SessionStore};
 use axum_extra::extract::cookie::Cookie;
 
-use crate::handlers::session::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
+use crate::handlers::session::authentication::{
+    LoginStatus, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID,
+};
 
 use super::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 
@@ -242,10 +241,8 @@ mod tests {
     use chrono::TimeZone;
     use common::JAPANESE_TIME_ZONE;
 
-    use crate::handlers::session::{
-        tests::{prepare_session, remove_session_from_store},
-        SESSION_ID_COOKIE_NAME,
-    };
+    use crate::handlers::session::authentication::tests::prepare_login_session;
+    use crate::handlers::session::{tests::remove_session_from_store, SESSION_ID_COOKIE_NAME};
 
     use super::*;
 
@@ -386,7 +383,7 @@ mod tests {
         let store = MemoryStore::new();
         let user_account_id = 15001;
         let session_id =
-            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
         assert_eq!(1, store.count().await);
 
         let result = get_session_by_session_id(&session_id, &store)
@@ -412,7 +409,7 @@ mod tests {
     async fn get_session_by_session_id_success2() {
         let store = MemoryStore::new();
         let user_account_id = 15001;
-        let session_id = prepare_session(user_account_id, LoginStatus::Finish, &store).await;
+        let session_id = prepare_login_session(user_account_id, LoginStatus::Finish, &store).await;
         assert_eq!(1, store.count().await);
 
         let result = get_session_by_session_id(&session_id, &store)
@@ -439,7 +436,7 @@ mod tests {
         let store = MemoryStore::new();
         let user_account_id = 15001;
         let session_id =
-            prepare_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
         // リクエストのプリプロセス前ににセッションを削除
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);

@@ -19,8 +19,8 @@ use crate::handlers::session::authentication::mfa::get_session_by_session_id;
 use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
 use crate::handlers::session::authentication::user_operation::FindUserInfoOperationImpl;
 use crate::handlers::session::authentication::user_operation::UserInfo;
-use crate::handlers::session::LoginStatus;
-use crate::handlers::session::{LOGIN_SESSION_EXPIRY, SESSION_ID_COOKIE_NAME};
+use crate::handlers::session::authentication::{LoginStatus, LOGIN_SESSION_EXPIRY};
+use crate::handlers::session::SESSION_ID_COOKIE_NAME;
 use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::mfa::{ensure_mfa_is_enabled, verify_pass_code},
@@ -167,9 +167,8 @@ mod tests {
     use common::mfa::hash_recovery_code;
     use once_cell::sync::Lazy;
 
-    use crate::handlers::session::{
-        tests::prepare_session, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID,
-    };
+    use crate::handlers::session::authentication::tests::prepare_login_session;
+    use crate::handlers::session::authentication::{KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID};
 
     use super::*;
 
@@ -375,7 +374,7 @@ mod tests {
             let op = test_case.input.op.clone();
             let store = MemoryStore::new();
             let session_id = if test_case.input.session_exists {
-                prepare_session(
+                prepare_login_session(
                     test_case.input.op.user_info.account_id,
                     test_case.input.ls.clone(),
                     &store,

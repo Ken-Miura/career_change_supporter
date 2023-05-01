@@ -4,7 +4,7 @@ use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Duration, FixedOffset};
 use common::{ApiError, ErrResp};
 
-use crate::{err::Code, handlers::session::LENGTH_OF_MEETING_IN_MINUTE};
+use crate::{err::Code, handlers::session::authentication::LENGTH_OF_MEETING_IN_MINUTE};
 
 pub(crate) mod consultant_rating;
 pub(crate) mod unrated_items;

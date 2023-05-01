@@ -23,10 +23,10 @@ use tracing::{error, info};
 use super::update_last_login;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::{AccountDisabled, EmailOrPwdIncorrect};
-use crate::handlers::session::{
+use crate::handlers::session::authentication::{
     LoginStatus, KEY_TO_LOGIN_STATUS, KEY_TO_USER_ACCOUNT_ID, LOGIN_SESSION_EXPIRY,
-    SESSION_ID_COOKIE_NAME,
 };
+use crate::handlers::session::SESSION_ID_COOKIE_NAME;
 use crate::handlers::ROOT_PATH;
 
 /// ログインを行う<br>
