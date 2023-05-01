@@ -68,7 +68,7 @@ async fn handle_logout_req<'a>(
     };
     store.destroy_session(session).await.map_err(|e| {
         error!(
-            "failed to destroy session (admin accountid: {:?}): {}",
+            "failed to destroy session (admin account id: {:?}): {}",
             account_id, e
         );
         unexpected_err_resp()

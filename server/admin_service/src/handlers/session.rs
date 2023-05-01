@@ -10,12 +10,12 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code::Unauthorized};
 
-pub(crate) const ADMIN_SESSION_ID_COOKIE_NAME: &str = "admin_session_id";
-pub(crate) const KEY_TO_ADMIN_ACCOUNT_ID: &str = "admin_account_id";
+const ADMIN_SESSION_ID_COOKIE_NAME: &str = "admin_session_id";
+const KEY_TO_ADMIN_ACCOUNT_ID: &str = "admin_account_id";
 const ADMIN_OPERATION_TIME: u64 = 15;
 
 /// セッションの有効期限
-pub(crate) const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * ADMIN_OPERATION_TIME);
+const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * ADMIN_OPERATION_TIME);
 
 /// session_idを使いstoreから、管理者のアカウントIDを取得する。<br>
 /// 管理者のアカウントIDを取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
@@ -30,7 +30,7 @@ pub(crate) const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * ADMIN
 /// <ul>
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
-pub(crate) async fn get_admin_account_id_by_session_id(
+async fn get_admin_account_id_by_session_id(
     session_id: String,
     store: &impl SessionStore,
     op: impl RefreshOperation,
@@ -68,11 +68,11 @@ pub(crate) async fn get_admin_account_id_by_session_id(
     Ok(admin_account_id)
 }
 
-pub(crate) trait RefreshOperation {
+trait RefreshOperation {
     fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration);
 }
 
-pub(crate) struct RefreshOperationImpl {}
+struct RefreshOperationImpl {}
 
 impl RefreshOperation for RefreshOperationImpl {
     fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration) {
@@ -82,7 +82,7 @@ impl RefreshOperation for RefreshOperationImpl {
 
 /// テストコードで共通で使うコードをまとめるモジュール
 #[cfg(test)]
-pub(crate) mod tests {
+pub(super) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
     use axum::http::StatusCode;
 
@@ -91,7 +91,7 @@ pub(crate) mod tests {
     use super::*;
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
-    pub(crate) async fn prepare_session(
+    pub(super) async fn prepare_session(
         admin_account_id: i64,
         store: &impl SessionStore,
     ) -> String {
@@ -107,7 +107,7 @@ pub(crate) mod tests {
             .expect("failed to get value")
     }
 
-    pub(crate) async fn remove_session_from_store(session_id: &str, store: &impl SessionStore) {
+    pub(super) async fn remove_session_from_store(session_id: &str, store: &impl SessionStore) {
         let loaded_session = store
             .load_session(session_id.to_string())
             .await
