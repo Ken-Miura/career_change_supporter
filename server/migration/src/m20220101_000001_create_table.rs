@@ -1367,7 +1367,7 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             /* サービスのオーナーが管理者を作成したときに生成される。
-             * サービスのオーナーが管理者を削除したときに生成される。 */
+             * サービスのオーナーが管理者を削除したときに削除される。 */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.admin_account (
                     admin_account_id BIGSERIAL PRIMARY KEY,
@@ -1433,12 +1433,15 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* 管理者が二段階認証を有効にしたときに生成される。管理者が二段階認証を無効にしたとき、リカバリーコードでログインしたときに削除される */
+            /* 管理者が二段階認証を有効にしたときに生成される。
+             * 管理者が二段階認証を無効にしたきに削除される。
+             * サービスのオーナーが管理者を削除したときに削除される。
+             */
+            /* 管理者向けにはリカバリーコードでのログインは提供しない */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.admin_mfa_info (
                 admin_account_id BIGINT PRIMARY KEY,
-                base32_encoded_secret TEXT NOT NULL,
-                hashed_recovery_code BYTEA NOT NULL
+                base32_encoded_secret TEXT NOT NULL
               );",
             ))
             .await

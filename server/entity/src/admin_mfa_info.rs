@@ -9,8 +9,6 @@ pub struct Model {
     pub admin_account_id: i64,
     #[sea_orm(column_type = "Text")]
     pub base32_encoded_secret: String,
-    #[sea_orm(column_type = "Binary(BlobSize::Blob(None))")]
-    pub hashed_recovery_code: Vec<u8>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
