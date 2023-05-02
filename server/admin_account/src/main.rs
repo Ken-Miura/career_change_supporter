@@ -5,8 +5,6 @@ use common::util::validator::{
     email_address_validator::validate_email_address, password_validator::validate_password,
 };
 use dotenv::dotenv;
-use entity::admin_account;
-use entity::prelude::AdminAccount;
 use entity::sea_orm::sea_query::Expr;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
@@ -138,7 +136,7 @@ impl AccountOperationClient {
         validate_email_address(email_addr)?;
         validate_password(password)?;
         let hashed_pwd = hash_password(password)?;
-        let account = admin_account::ActiveModel {
+        let account = entity::admin_account::ActiveModel {
             email_address: Set(email_addr.to_string()),
             hashed_password: Set(hashed_pwd),
             ..Default::default()
@@ -152,7 +150,7 @@ impl AccountOperationClient {
     fn list_accounts(&self) -> Result<Vec<String>, Box<dyn Error>> {
         let results = self
             .rt
-            .block_on(async { AdminAccount::find().all(&self.conn).await })?;
+            .block_on(async { entity::admin_account::Entity::find().all(&self.conn).await })?;
         Ok(results
             .iter()
             .map(|model| model.email_address.to_string())
@@ -164,12 +162,12 @@ impl AccountOperationClient {
         validate_password(password)?;
         let hashed_pwd = hash_password(password)?;
         let result = self.rt.block_on(async {
-            admin_account::Entity::update_many()
+            entity::admin_account::Entity::update_many()
                 .col_expr(
-                    admin_account::Column::HashedPassword,
+                    entity::admin_account::Column::HashedPassword,
                     Expr::value(Value::Bytes(Some(Box::new(hashed_pwd)))),
                 )
-                .filter(admin_account::Column::EmailAddress.eq(email_addr))
+                .filter(entity::admin_account::Column::EmailAddress.eq(email_addr))
                 .exec(&self.conn)
                 .await
         })?;
@@ -189,8 +187,8 @@ impl AccountOperationClient {
     fn delete_account(&self, email_addr: &str) -> Result<(), Box<dyn Error>> {
         validate_email_address(email_addr)?;
         let result = self.rt.block_on(async {
-            admin_account::Entity::delete_many()
-                .filter(admin_account::Column::EmailAddress.eq(email_addr))
+            entity::admin_account::Entity::delete_many()
+                .filter(entity::admin_account::Column::EmailAddress.eq(email_addr))
                 .exec(&self.conn)
                 .await
         })?;
