@@ -1,7 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use async_fred_session::RedisSessionStore;
-use async_session::SessionStore;
+use async_session::{Session, SessionStore};
 use axum::{extract::State, http::StatusCode};
 use axum_extra::extract::{cookie::Cookie, SignedCookieJar};
 use common::ErrResp;
@@ -10,6 +10,7 @@ use tracing::{error, info};
 use super::super::ADMIN_SESSION_ID_COOKIE_NAME;
 use super::KEY_TO_ADMIN_ACCOUNT_ID;
 use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::KEY_TO_LOGIN_STATUS;
 
 /// ログアウトを行う
 /// <br>
@@ -57,24 +58,23 @@ async fn handle_logout_req<'a>(
             return Ok(());
         }
     };
-    let account_id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
-        Some(id) => {
-            info!("admin (admin account id: {}) logged out", id);
-            Some(id)
-        }
-        None => {
-            info!("someone logged out");
-            None
-        }
-    };
+
+    record_logout_info(&session);
+
     store.destroy_session(session).await.map_err(|e| {
-        error!(
-            "failed to destroy session (admin account id: {:?}): {}",
-            account_id, e
-        );
+        error!("failed to destroy session: {}", e);
         unexpected_err_resp()
     })?;
     Ok(())
+}
+
+fn record_logout_info(session: &Session) {
+    let account_id = session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID);
+    let login_status = session.get::<String>(KEY_TO_LOGIN_STATUS);
+    info!(
+        "admin logged out: session info (account_id: {:?}, login_status: {:?})",
+        account_id, login_status
+    );
 }
 
 #[cfg(test)]
@@ -82,7 +82,8 @@ mod tests {
     use async_session::MemoryStore;
 
     use crate::handlers::session::{
-        authentication::tests::prepare_login_session, tests::remove_session_from_store,
+        authentication::{tests::prepare_login_session, LoginStatus},
+        tests::remove_session_from_store,
     };
 
     use super::*;
@@ -91,7 +92,23 @@ mod tests {
     async fn handle_logout_req_success_session_alive() {
         let store = MemoryStore::new();
         let admin_account_id = 203;
-        let session_id = prepare_login_session(admin_account_id, &store).await;
+        let session_id = prepare_login_session(admin_account_id, LoginStatus::Finish, &store).await;
+        assert_eq!(1, store.count().await);
+
+        handle_logout_req(session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(0, store.count().await);
+    }
+
+    // 通常のUI操作でこのパターンが発生することはないが、テストして問題ないことは確認しておく
+    #[tokio::test]
+    async fn handle_logout_req_success_session_alive_during_mfa_login_sequence() {
+        let store = MemoryStore::new();
+        let user_account_id = 203;
+        let session_id =
+            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
         assert_eq!(1, store.count().await);
 
         handle_logout_req(session_id, &store)
@@ -105,7 +122,7 @@ mod tests {
     async fn handle_logout_req_success_session_already_expired() {
         let store = MemoryStore::new();
         let admin_account_id = 203;
-        let session_id = prepare_login_session(admin_account_id, &store).await;
+        let session_id = prepare_login_session(admin_account_id, LoginStatus::Finish, &store).await;
         // ログアウト前にセッションを削除
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);

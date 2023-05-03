@@ -29,7 +29,6 @@ const LOGIN_STATUS_NEED_MORE_VERIFICATION: &str = "NeedMoreVerification";
 
 const LENGTH_OF_MEETING_IN_MINUTE: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
-
 /// セッションの有効期限
 const LOGIN_SESSION_EXPIRY: Duration =
     Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
@@ -93,7 +92,7 @@ async fn get_session_by_session_id(
 /// <br>
 /// # Errors
 /// セッション内に存在するログイン処理の状態が完了（認証済み）以外を示す場合、ステータスコード401、エラーコード[Unauthorized]を返す。
-async fn get_authenticated_user_account_id(session: &Session) -> Result<i64, ErrResp> {
+fn get_authenticated_user_account_id(session: &Session) -> Result<i64, ErrResp> {
     let account_id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
         Some(id) => id,
         None => {
@@ -241,9 +240,7 @@ mod tests {
         let session = get_session_by_session_id(&session_id, &store)
             .await
             .expect("failed to get Ok");
-        let result = get_authenticated_user_account_id(&session)
-            .await
-            .expect("failed to get Ok");
+        let result = get_authenticated_user_account_id(&session).expect("failed to get Ok");
         let op = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
@@ -272,9 +269,7 @@ mod tests {
         let session = get_session_by_session_id(&session_id, &store)
             .await
             .expect("failed to get Ok");
-        let result = get_authenticated_user_account_id(&session)
-            .await
-            .expect_err("failed to get Err");
+        let result = get_authenticated_user_account_id(&session).expect_err("failed to get Err");
 
         // 各関数が何らかの副作用でセッションを破棄していないか確認
         // + ログイン処理がまだ途中である値を示している場合、エラーは返すがそのエラーに遭遇したことによりセッションを破棄するような処理はしない

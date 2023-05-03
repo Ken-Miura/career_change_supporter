@@ -66,7 +66,7 @@ async fn get_agreement_unchecked_user_info_from_cookie(
     };
 
     let session = get_session_by_session_id(&session_id, store).await?;
-    let user_account_id = get_authenticated_user_account_id(&session).await?;
+    let user_account_id = get_authenticated_user_account_id(&session)?;
 
     let find_user_op = FindUserInfoOperationImpl::new(pool);
     let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;

@@ -26,6 +26,8 @@ use super::{KEY_TO_ADMIN_ACCOUNT_ID, LOGIN_SESSION_EXPIRY};
 use crate::err::{unexpected_err_resp, Code::EmailOrPwdIncorrect};
 use crate::handlers::ROOT_PATH;
 
+// TODO: MFA
+
 /// ログインを行う<br>
 /// ログインに成功した場合、ステータスコードに200、ヘッダにセッションにアクセスするためのcookieをセットして応答する<br>
 /// <br>

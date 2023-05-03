@@ -9,16 +9,48 @@ use std::time::Duration;
 use async_session::{Session, SessionStore};
 use axum::{http::StatusCode, Json};
 use common::{ApiError, ErrResp};
+use serde::Serialize;
 use tracing::{error, info};
 
 use super::find_session_by_session_id;
 use crate::err::{unexpected_err_resp, Code};
 
 const KEY_TO_ADMIN_ACCOUNT_ID: &str = "admin_account_id";
-const ADMIN_OPERATION_TIME: u64 = 15;
+const KEY_TO_LOGIN_STATUS: &str = "login_status";
 
+const LOGIN_STATUS_FINISH: &str = "Finish";
+const LOGIN_STATUS_NEED_MORE_VERIFICATION: &str = "NeedMoreVerification";
+
+const ADMIN_OPERATION_TIME: u64 = 15;
 /// セッションの有効期限
 const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * ADMIN_OPERATION_TIME);
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+enum LoginStatus {
+    Finish,
+    NeedMoreVerification,
+}
+
+impl From<String> for LoginStatus {
+    fn from(ls: String) -> Self {
+        if ls == LOGIN_STATUS_FINISH {
+            LoginStatus::Finish
+        } else if ls == LOGIN_STATUS_NEED_MORE_VERIFICATION {
+            LoginStatus::NeedMoreVerification
+        } else {
+            panic!("never reach here!")
+        }
+    }
+}
+
+impl From<LoginStatus> for String {
+    fn from(ls: LoginStatus) -> Self {
+        match ls {
+            LoginStatus::Finish => LOGIN_STATUS_FINISH.to_string(),
+            LoginStatus::NeedMoreVerification => LOGIN_STATUS_NEED_MORE_VERIFICATION.to_string(),
+        }
+    }
+}
 
 /// session_idを使い、storeからセッションを取得する。<br>
 ///
@@ -51,7 +83,7 @@ async fn get_session_by_session_id(
 /// セッションから管理者を一意に識別する値を取得する。<br>
 /// <br>
 /// # Errors
-/// セッション内にアカウントIDがない場合、ステータスコード401、エラーコード[Unauthorized]を返す。
+/// セッション内に存在するログイン処理の状態が完了（認証済み）以外を示す場合、ステータスコード401、エラーコード[Unauthorized]を返す。
 fn get_authenticated_admin_account_id(session: &Session) -> Result<i64, ErrResp> {
     let account_id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
         Some(id) => id,
@@ -60,7 +92,36 @@ fn get_authenticated_admin_account_id(session: &Session) -> Result<i64, ErrResp>
             return Err(unexpected_err_resp());
         }
     };
+    let login_status = match session.get::<String>(KEY_TO_LOGIN_STATUS) {
+        Some(ls) => ls,
+        None => {
+            error!("failed to get login status from session");
+            return Err(unexpected_err_resp());
+        }
+    };
+    ensure_login_seq_has_already_finished(account_id, login_status)?;
     Ok(account_id)
+}
+
+fn ensure_login_seq_has_already_finished(
+    account_id: i64,
+    login_status: String,
+) -> Result<(), ErrResp> {
+    match LoginStatus::from(login_status) {
+        LoginStatus::Finish => Ok(()),
+        LoginStatus::NeedMoreVerification => {
+            error!(
+                "account_id ({}) has not finished login sequence yet",
+                account_id
+            );
+            Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    code: Code::Unauthorized as u32,
+                }),
+            ))
+        }
+    }
 }
 
 /// セッションの有効期間をexpiryだけ延長する（※）<br>
@@ -104,22 +165,23 @@ pub(super) mod tests {
     use async_session::{MemoryStore, Session, SessionStore};
     use axum::http::StatusCode;
 
-    use crate::{
-        err,
-        handlers::session::tests::{prepare_session, remove_session_from_store},
-    };
+    use crate::handlers::session::tests::{prepare_session, remove_session_from_store};
 
     use super::*;
 
     /// 有効期限がないセッションを作成し、そのセッションにアクセスするためのセッションIDを返す
     pub(super) async fn prepare_login_session(
         admin_account_id: i64,
+        login_status: LoginStatus,
         store: &impl SessionStore,
     ) -> String {
         let mut session = Session::new();
         // 実行環境（PCの性能）に依存させないように、テストコード内ではexpiryは設定しない
         session
             .insert(KEY_TO_ADMIN_ACCOUNT_ID, admin_account_id)
+            .expect("failed to get Ok");
+        session
+            .insert(KEY_TO_LOGIN_STATUS, String::from(login_status))
             .expect("failed to get Ok");
         prepare_session(session, store).await
     }
@@ -142,7 +204,7 @@ pub(super) mod tests {
     async fn get_session_by_session_id_and_get_authenticated_admin_account_id_success() {
         let store = MemoryStore::new();
         let admin_account_id = 15001;
-        let session_id = prepare_login_session(admin_account_id, &store).await;
+        let session_id = prepare_login_session(admin_account_id, LoginStatus::Finish, &store).await;
         assert_eq!(1, store.count().await);
 
         let session = get_session_by_session_id(&session_id, &store)
@@ -156,19 +218,40 @@ pub(super) mod tests {
             .await
             .expect("failed to get Ok");
 
-        // 何らかの副作用でセッションを破棄していないか確認
+        // 各関数で何らかの副作用でセッションを破棄していないか確認
         // 補足説明:
-        // 実際の運用ではセッションに有効期限をもたせるので、後にセッションの有効期限が切れて0になることもあり得る。
+        // 実際の運用ではセッションに有効期限をもたせるので、各関数の後にセッションの有効期限が切れて0になることもあり得る。
         // しかし、テストケースではセッションに有効期限を持たせていないため、暗黙のうちに0になる心配はない。
         assert_eq!(1, store.count().await);
         assert_eq!(admin_account_id, result);
     }
 
     #[tokio::test]
+    async fn get_session_by_session_id_and_get_authenticated_admin_account_id_fail_login_seq_han_not_finished_yet(
+    ) {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let session = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+        let result = get_authenticated_admin_account_id(&session).expect_err("failed to get Err");
+
+        // 各関数が何らかの副作用でセッションを破棄していないか確認
+        // + ログイン処理がまだ途中である値を示している場合、エラーは返すがそのエラーに遭遇したことによりセッションを破棄するような処理はしない
+        assert_eq!(1, store.count().await);
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
+    }
+
+    #[tokio::test]
     async fn get_session_by_session_id_fail_session_already_expired() {
         let admin_account_id = 10002;
         let store = MemoryStore::new();
-        let session_id = prepare_login_session(admin_account_id, &store).await;
+        let session_id = prepare_login_session(admin_account_id, LoginStatus::Finish, &store).await;
         // リクエストのプリプロセス前ににセッションを削除
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);
@@ -179,6 +262,6 @@ pub(super) mod tests {
 
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(err::Code::Unauthorized as u32, result.1 .0.code);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
     }
 }
