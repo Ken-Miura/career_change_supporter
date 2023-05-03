@@ -378,7 +378,7 @@ fn print_base_64_encoded_qr_code_by_html(base_64_encoded_qr_code: String) {
     <title>base_64_encoded_qr_code</title>
   </head>
   <body>
-    <img src="{}" />
+    <img src="data:image/png;base64,{}" />
   </body>
 </html>"#,
         base_64_encoded_qr_code
