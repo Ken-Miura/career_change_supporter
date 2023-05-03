@@ -13,7 +13,8 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::{
-    get_admin_account_id_by_session_id, RefreshOperationImpl, LOGIN_SESSION_EXPIRY,
+    get_authenticated_admin_account_id, get_session_by_session_id, refresh_login_session,
+    RefreshOperationImpl, LOGIN_SESSION_EXPIRY,
 };
 use crate::handlers::session::ADMIN_SESSION_ID_COOKIE_NAME;
 
@@ -66,15 +67,16 @@ where
         };
         let app_state = AppState::from_ref(state);
         let store = app_state.store;
-        let reresh_op = RefreshOperationImpl {};
-        let admin_account_id =
-            get_admin_account_id_by_session_id(session_id, &store, reresh_op, LOGIN_SESSION_EXPIRY)
-                .await?;
+        let session = get_session_by_session_id(&session_id, &store).await?;
+        let admin_account_id = get_authenticated_admin_account_id(&session)?;
 
         let pool = app_state.pool;
         let find_admin_info_op = FindAdminInfoOperationImpl::new(&pool);
         let admin_info =
             get_admin_info_by_account_id(admin_account_id, &find_admin_info_op).await?;
+
+        let reresh_op = RefreshOperationImpl {};
+        refresh_login_session(session, &store, &reresh_op, LOGIN_SESSION_EXPIRY).await?;
 
         Ok(Admin { admin_info })
     }

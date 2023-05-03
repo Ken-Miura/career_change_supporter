@@ -67,11 +67,12 @@ async fn get_agreement_unchecked_user_info_from_cookie(
 
     let session = get_session_by_session_id(&session_id, store).await?;
     let user_account_id = get_authenticated_user_account_id(&session).await?;
-    let refresh_op = RefreshOperationImpl {};
-    refresh_login_session(session, store, &refresh_op, LOGIN_SESSION_EXPIRY).await?;
 
     let find_user_op = FindUserInfoOperationImpl::new(pool);
     let user_info = get_user_info_if_available(user_account_id, &find_user_op).await?;
+
+    let refresh_op = RefreshOperationImpl {};
+    refresh_login_session(session, store, &refresh_op, LOGIN_SESSION_EXPIRY).await?;
 
     Ok(user_info)
 }

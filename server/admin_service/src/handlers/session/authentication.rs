@@ -20,27 +20,20 @@ const ADMIN_OPERATION_TIME: u64 = 15;
 /// セッションの有効期限
 const LOGIN_SESSION_EXPIRY: Duration = Duration::from_secs(60 * ADMIN_OPERATION_TIME);
 
-/// session_idを使いstoreから、管理者のアカウントIDを取得する。<br>
-/// 管理者のアカウントIDを取得するには、セッションが有効な期間中に呼び出す必要がある。<br>
-/// 管理者のアカウントIDの取得に成功した場合、セッションの有効期間がexpiryだけ延長される（※）<br>
-/// <br>
-/// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
-/// # NOTE
-/// Adminを利用するときは、原則としてハンドラのパラメータにAdminを指定する方法を選択する<br>
-/// <br>
+/// session_idを使い、storeからセッションを取得する。<br>
+///
 /// # Errors
 /// 下記の場合、ステータスコード401、エラーコード[Unauthorized]を返す<br>
 /// <ul>
+///   <li>session_idに対応するセッションがstoreに存在しない場合</li>
 ///   <li>既にセッションの有効期限が切れている場合</li>
 /// </ul>
-async fn get_admin_account_id_by_session_id(
-    session_id: String,
+async fn get_session_by_session_id(
+    session_id: &str,
     store: &impl SessionStore,
-    op: impl RefreshOperation,
-    expiry: Duration,
-) -> Result<i64, ErrResp> {
-    let option_session = find_session_by_session_id(&session_id, store).await?;
-    let mut session = match option_session {
+) -> Result<Session, ErrResp> {
+    let option_session = find_session_by_session_id(session_id, store).await?;
+    let session = match option_session {
         Some(s) => s,
         None => {
             info!("no session found");
@@ -52,20 +45,46 @@ async fn get_admin_account_id_by_session_id(
             ));
         }
     };
-    let admin_account_id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
+    Ok(session)
+}
+
+/// セッションから管理者を一意に識別する値を取得する。<br>
+/// <br>
+/// # Errors
+/// セッション内にアカウントIDがない場合、ステータスコード401、エラーコード[Unauthorized]を返す。
+fn get_authenticated_admin_account_id(session: &Session) -> Result<i64, ErrResp> {
+    let account_id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
         Some(id) => id,
         None => {
-            error!("failed to get admin account id from session");
+            error!("failed to get account id from session");
             return Err(unexpected_err_resp());
         }
     };
+    Ok(account_id)
+}
+
+/// セッションの有効期間をexpiryだけ延長する（※）<br>
+/// <br>
+/// （※）いわゆるアイドルタイムアウト。アブソリュートタイムアウトとリニューアルタイムアウトは実装しない。<br>
+/// リニューアルタイムアウトが必要になった場合は、セッションを保存しているキャッシュシステムの定期再起動により実装する。<br>
+/// 参考:<br>
+///   セッションタイムアウトの種類: <https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#automatic-session-expiration><br>
+///   著名なフレームワークにおいてもアイドルタイムアウトが一般的で、アブソリュートタイムアウトは実装されていない<br>
+///     1. <https://stackoverflow.com/questions/62964012/how-to-set-absolute-session-timeout-for-a-spring-session><br>
+///     2. <https://www.webdevqa.jp.net/ja/authentication/%E3%82%BB%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E7%B5%B6%E5%AF%BE%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E3%81%AF%E3%81%A9%E3%82%8C%E3%81%8F%E3%82%89%E3%81%84%E3%81%AE%E9%95%B7%E3%81%95%E3%81%A7%E3%81%99%E3%81%8B%EF%BC%9F/l968265546/><br>
+async fn refresh_login_session(
+    mut session: Session,
+    store: &impl SessionStore,
+    op: &impl RefreshOperation,
+    expiry: Duration,
+) -> Result<(), ErrResp> {
     op.set_login_session_expiry(&mut session, expiry);
     // 新たなexpiryを設定したsessionをstoreに保存することでセッション期限を延長する
     let _ = store.store_session(session).await.map_err(|e| {
         error!("failed to store session: {}", e);
         unexpected_err_resp()
     })?;
-    Ok(admin_account_id)
+    Ok(())
 }
 
 trait RefreshOperation {
@@ -120,31 +139,33 @@ pub(super) mod tests {
     }
 
     #[tokio::test]
-    async fn get_admin_account_id_by_session_id_success() {
+    async fn get_session_by_session_id_and_get_authenticated_admin_account_id_success() {
         let store = MemoryStore::new();
         let admin_account_id = 15001;
         let session_id = prepare_login_session(admin_account_id, &store).await;
         assert_eq!(1, store.count().await);
 
+        let session = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+        let result = get_authenticated_admin_account_id(&session).expect("failed to get Ok");
         let op = RefreshOperationMock {
             expiry: LOGIN_SESSION_EXPIRY,
         };
-        let result =
-            get_admin_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
-                .await
-                .expect("failed to get Ok");
+        refresh_login_session(session, &store, &op, LOGIN_SESSION_EXPIRY)
+            .await
+            .expect("failed to get Ok");
 
-        // get_admin_account_id_by_session_idが何らかの副作用でセッションを破棄していないか確認
+        // 何らかの副作用でセッションを破棄していないか確認
         // 補足説明:
-        // 実際の運用ではセッションに有効期限をもたせるので、
-        // get_admin_account_id_by_session_idの後にセッションの有効期限が切れて0になることもあり得る。
+        // 実際の運用ではセッションに有効期限をもたせるので、後にセッションの有効期限が切れて0になることもあり得る。
         // しかし、テストケースではセッションに有効期限を持たせていないため、暗黙のうちに0になる心配はない。
         assert_eq!(1, store.count().await);
         assert_eq!(admin_account_id, result);
     }
 
     #[tokio::test]
-    async fn get_admin_account_id_by_session_id_fail_session_already_expired() {
+    async fn get_session_by_session_id_fail_session_already_expired() {
         let admin_account_id = 10002;
         let store = MemoryStore::new();
         let session_id = prepare_login_session(admin_account_id, &store).await;
@@ -152,13 +173,9 @@ pub(super) mod tests {
         remove_session_from_store(&session_id, &store).await;
         assert_eq!(0, store.count().await);
 
-        let op = RefreshOperationMock {
-            expiry: LOGIN_SESSION_EXPIRY,
-        };
-        let result =
-            get_admin_account_id_by_session_id(session_id, &store, op, LOGIN_SESSION_EXPIRY)
-                .await
-                .expect_err("failed to get Err");
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect_err("failed to get Err");
 
         assert_eq!(0, store.count().await);
         assert_eq!(StatusCode::UNAUTHORIZED, result.0);
