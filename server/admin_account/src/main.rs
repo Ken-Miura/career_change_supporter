@@ -1,7 +1,9 @@
 // Copyright 2021 Ken Miura
 
 use chrono::{DateTime, FixedOffset};
+use common::mfa::{generate_base32_encoded_secret, generate_base64_encoded_qr_code};
 use common::password::hash_password;
+use common::util::check_env_vars;
 use common::util::validator::{
     email_address_validator::validate_email_address, password_validator::validate_password,
 };
@@ -15,6 +17,7 @@ use entity::sea_orm::{
 use std::{env::args, env::var, error::Error, fmt, process::exit};
 
 const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_APP";
+const KEY_ADMIN_TOTP_ISSUER: &str = "ADMIN_TOTP_ISSUER";
 
 const SUCCESS: i32 = 0;
 const ENV_VAR_CAPTURE_FAILURE: i32 = 1;
@@ -25,6 +28,16 @@ const APPLICATION_ERR: i32 = 5;
 
 fn main() {
     let _ = dotenv().ok();
+    let result = check_env_vars(vec![
+        KEY_TO_DATABASE_URL.to_string(),
+        KEY_ADMIN_TOTP_ISSUER.to_string(),
+    ]);
+    if result.is_err() {
+        println!("failed to resolve mandatory env vars (following env vars are needed)");
+        println!("{:?}", result.unwrap_err());
+        exit(ENV_VAR_CAPTURE_FAILURE);
+    }
+
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
@@ -49,17 +62,6 @@ async fn main_internal() {
         exit(CONNECTION_ERROR);
     });
 
-    run_command(&conn).await;
-}
-
-async fn connect(database_url: &str) -> Result<DatabaseConnection, Box<dyn Error + Send + Sync>> {
-    let mut opt = ConnectOptions::new(database_url.to_string());
-    opt.max_connections(1).min_connections(1).sqlx_logging(true);
-    let conn = Database::connect(opt).await.map_err(Box::new)?;
-    Ok(conn)
-}
-
-async fn run_command(conn: &DatabaseConnection) {
     let args: Vec<String> = args().collect();
     if args.len() < 2 {
         println!(
@@ -78,7 +80,7 @@ async fn run_command(conn: &DatabaseConnection) {
             println!("ex: {} create admin@test.com 1234abcdABCD", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
-        match create_account(conn, &args[2], &args[3]).await {
+        match create_account(&conn, &args[2], &args[3]).await {
             Ok(_) => exit(SUCCESS),
             Err(e) => {
                 println!("application error: {}", e);
@@ -91,7 +93,7 @@ async fn run_command(conn: &DatabaseConnection) {
             println!("ex: {} list", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
-        match list_accounts(conn).await {
+        match list_accounts(&conn).await {
             Ok(admin_accounts) => {
                 println!("email_address, mfa_enabled, last_login");
                 admin_accounts.iter().for_each(|admin_account| {
@@ -120,7 +122,7 @@ async fn run_command(conn: &DatabaseConnection) {
             println!("ex: {} update admin@test.com 1234abcdABCD", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
-        match update_account(conn, &args[2], &args[3]).await {
+        match update_account(&conn, &args[2], &args[3]).await {
             Ok(_) => exit(SUCCESS),
             Err(e) => {
                 println!("application error: {}", e);
@@ -133,7 +135,7 @@ async fn run_command(conn: &DatabaseConnection) {
             println!("ex: {} delete admin@test.com", args[0]);
             exit(INVALID_ARG_LENGTH);
         }
-        match delete_account(conn, &args[2]).await {
+        match delete_account(&conn, &args[2]).await {
             Ok(_) => exit(SUCCESS),
             Err(e) => {
                 println!("application error: {}", e);
@@ -150,7 +152,40 @@ async fn run_command(conn: &DatabaseConnection) {
             exit(INVALID_ARG_LENGTH);
         }
         if args[2] == "enable" {
-            todo!("enable mfa account");
+            let base32_encoded_secret = generate_base32_encoded_secret().unwrap_or_else(|e| {
+                let err = UnexpectedError(format!("{:?}", e));
+                println!(
+                    "application error: failed to generate base 32 encoded secret: {}",
+                    err
+                );
+                exit(APPLICATION_ERR);
+            });
+            let issuer = var(KEY_ADMIN_TOTP_ISSUER).unwrap_or_else(|e| {
+                println!(
+                    "failed to ge environment variable ({}): {}",
+                    KEY_ADMIN_TOTP_ISSUER, e
+                );
+                exit(ENV_VAR_CAPTURE_FAILURE);
+            });
+            let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+            let result = enable_mfa(
+                &conn,
+                &args[3],
+                &base32_encoded_secret,
+                &issuer,
+                &current_date_time,
+            )
+            .await;
+            match result {
+                Ok(base_64_encoded_qr_code) => {
+                    print_base_64_encoded_qr_code_by_html(base_64_encoded_qr_code);
+                    exit(SUCCESS)
+                }
+                Err(e) => {
+                    println!("application error: {}", e);
+                    exit(APPLICATION_ERR);
+                }
+            };
         } else if args[2] == "disable" {
             todo!("disable mfa account");
         } else {
@@ -166,6 +201,13 @@ async fn run_command(conn: &DatabaseConnection) {
         println!("valid subcommand [ create | list | update | delete | mfa ]");
         exit(INVALID_SUB_COMMAND);
     }
+}
+
+async fn connect(database_url: &str) -> Result<DatabaseConnection, Box<dyn Error + Send + Sync>> {
+    let mut opt = ConnectOptions::new(database_url.to_string());
+    opt.max_connections(1).min_connections(1).sqlx_logging(true);
+    let conn = Database::connect(opt).await.map_err(Box::new)?;
+    Ok(conn)
 }
 
 async fn create_account(
@@ -254,47 +296,94 @@ async fn delete_account(
     Ok(())
 }
 
-// async fn enable_mfa(
-//     conn: &DatabaseConnection,
-//     email_addr: &str,
-//     current_date_time: &DateTime<FixedOffset>,
-// ) -> Result<(), Box<dyn Error + Send + Sync>> {
-//     validate_email_address(email_addr)?;
-//     let model = get_admin_account_by_email_address(conn, email_addr).await?;
-//     let admin_account_id = model.admin_account_id;
-//     conn.transaction::<_, (), TxErr>(|txn| {
-//         Box::pin(async move {
-//             let admin_account_model = select_admin_account_for_update(txn, admin_account_id)
-//                 .await
-//                 .map_err(|e| TxErr(e))?;
+async fn enable_mfa(
+    conn: &DatabaseConnection,
+    email_addr: &str,
+    base32_encoded_secret: &str,
+    issuer: &str,
+    current_date_time: &DateTime<FixedOffset>,
+) -> Result<String, Box<dyn Error + Send + Sync>> {
+    validate_email_address(email_addr)?;
+    let model = get_admin_account_by_email_address(conn, email_addr).await?;
+    let admin_account_id = model.admin_account_id;
+    let email_addr = email_addr.to_string();
+    let base32_encoded_secret = base32_encoded_secret.to_string();
+    let issuer = issuer.to_string();
+    let current_date_time = *current_date_time;
+    let base_64_encoded_qr_code = conn
+        .transaction::<_, String, TxErr>(|txn| {
+            Box::pin(async move {
+                let admin_account_model = select_admin_account_for_update(txn, admin_account_id)
+                    .await
+                    .map_err(|e| TxErr(e))?;
+                let admin_account_model = admin_account_model
+                    .ok_or_else(|| TxErr(Box::new(NoAccountFoundError(email_addr))))?;
 
-//             let admin_mfa_info_active_model = entity::admin_mfa_info::ActiveModel {
-//                 admin_account_id: Set(admin_account_id),
-//                 base32_encoded_secret: todo!(),
-//             };
+                let admin_mfa_info_active_model = entity::admin_mfa_info::ActiveModel {
+                    admin_account_id: Set(admin_account_id),
+                    base32_encoded_secret: Set(base32_encoded_secret.to_string()),
+                };
+                let _ = admin_mfa_info_active_model
+                    .insert(txn)
+                    .await
+                    .map_err(|e| TxErr(Box::new(e)))?;
 
-//             Ok(())
-//         })
-//     })
-//     .await
-//     .map_err(|e| match e {
-//         TransactionError::Connection(db_err) => Box::new(db_err),
-//         TransactionError::Transaction(tx_err) => tx_err.0,
-//     })?;
-//     Ok(())
-// }
+                let mut admin_account_active_model: entity::admin_account::ActiveModel =
+                    admin_account_model.into();
+                admin_account_active_model.mfa_enabled_at = Set(Some(current_date_time));
+                let _ = admin_account_active_model
+                    .update(txn)
+                    .await
+                    .map_err(|e| TxErr(Box::new(e)))?;
 
-// async fn select_admin_account_for_update(
-//     conn: &DatabaseTransaction,
-//     admin_account_id: i64,
-// ) -> Result<Option<entity::admin_account::Model>, Box<dyn Error + Send + Sync>> {
-//     let model = entity::admin_account::Entity::find_by_id(admin_account_id)
-//         .lock_exclusive()
-//         .one(conn)
-//         .await
-//         .map_err(Box::new)?;
-//     Ok(model)
-// }
+                let base_64_encoded_qr_code = generate_base64_encoded_qr_code(
+                    model.admin_account_id,
+                    &base32_encoded_secret,
+                    &issuer,
+                )
+                .map_err(|e| {
+                    let err = UnexpectedError(format!("{:?}", e));
+                    TxErr(Box::new(err))
+                })?;
+
+                Ok(base_64_encoded_qr_code)
+            })
+        })
+        .await
+        .map_err(|e| match e {
+            TransactionError::Connection(db_err) => Box::new(db_err),
+            TransactionError::Transaction(tx_err) => tx_err.0,
+        })?;
+    Ok(base_64_encoded_qr_code)
+}
+
+async fn select_admin_account_for_update(
+    conn: &DatabaseTransaction,
+    admin_account_id: i64,
+) -> Result<Option<entity::admin_account::Model>, Box<dyn Error + Send + Sync>> {
+    let model = entity::admin_account::Entity::find_by_id(admin_account_id)
+        .lock_exclusive()
+        .one(conn)
+        .await
+        .map_err(Box::new)?;
+    Ok(model)
+}
+
+fn print_base_64_encoded_qr_code_by_html(base_64_encoded_qr_code: String) {
+    println!(
+        r#"<!-- Create file, then copy and paste following code on it to capture secret by auth app -->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>base_64_encoded_qr_code</title>
+  </head>
+  <body>
+    <img src="{}" />
+  </body>
+</html>"#,
+        base_64_encoded_qr_code
+    );
+}
 
 #[derive(Debug, Clone)]
 struct NoAccountFoundError(String);
@@ -317,3 +406,14 @@ impl fmt::Display for TxErr {
 }
 
 impl Error for TxErr {}
+
+#[derive(Debug, Clone)]
+struct UnexpectedError(String);
+
+impl fmt::Display for UnexpectedError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "unxepected error: {}", self.0)
+    }
+}
+
+impl Error for UnexpectedError {}
