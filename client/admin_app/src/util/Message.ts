@@ -12,6 +12,7 @@ export namespace Message {
     export const EMAIL_OR_PWD_INCORRECT_MESSAGE = 'メールアドレス、もしくはパスワードが間違っています'
     export const LOGIN_FAILED = `ログインに失敗しました。${RETRY_REQUEST}`
     export const UNAUTHORIZED_MESSAGE = '認証が必要です'
+    export const NO_ACCOUNT_FOUND_MESSAGE = 'アカウントが存在しません'
     export const ILLEGAL_PAGE_SIZE_MESSAGE = `${ASK_ADMIN}`
     export const NO_CREATE_IDENTITY_REQ_DETAIL_FOUND_MESSAGE = `${ASK_ADMIN}`
     export const ILLEGAL_DATE_MESSAGE = `${ASK_ADMIN}`
