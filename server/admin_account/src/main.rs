@@ -187,7 +187,13 @@ async fn main_internal() {
                 }
             };
         } else if args[2] == "disable" {
-            todo!("disable mfa account");
+            match disable_mfa(&conn, &args[3]).await {
+                Ok(_) => exit(SUCCESS),
+                Err(e) => {
+                    println!("application error: {}", e);
+                    exit(APPLICATION_ERR);
+                }
+            };
         } else {
             println!(
                 "usage: {} mfa [ enable | disable ] \"admin_email_address\"",
@@ -371,7 +377,7 @@ async fn select_admin_account_for_update(
 
 fn print_base_64_encoded_qr_code_by_html(base_64_encoded_qr_code: String) {
     println!(
-        r#"<!-- Create file, then copy and paste following code on it to capture secret by auth app -->
+        r#"<!-- Create file, then copy and paste following code on it to capture secret by auth app like Google Authenticator -->
 <html>
   <head>
     <meta charset="utf-8">
@@ -383,6 +389,46 @@ fn print_base_64_encoded_qr_code_by_html(base_64_encoded_qr_code: String) {
 </html>"#,
         base_64_encoded_qr_code
     );
+}
+
+async fn disable_mfa(
+    conn: &DatabaseConnection,
+    email_addr: &str,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    validate_email_address(email_addr)?;
+    let model = get_admin_account_by_email_address(conn, email_addr).await?;
+    let admin_account_id = model.admin_account_id;
+    let email_addr = email_addr.to_string();
+    conn.transaction::<_, (), TxErr>(|txn| {
+        Box::pin(async move {
+            let admin_account_model = select_admin_account_for_update(txn, admin_account_id)
+                .await
+                .map_err(|e| TxErr(e))?;
+            let admin_account_model = admin_account_model
+                .ok_or_else(|| TxErr(Box::new(NoAccountFoundError(email_addr))))?;
+
+            let _ = entity::admin_mfa_info::Entity::delete_by_id(admin_account_id)
+                .exec(txn)
+                .await
+                .map_err(|e| TxErr(Box::new(e)));
+
+            let mut admin_account_active_model: entity::admin_account::ActiveModel =
+                admin_account_model.into();
+            admin_account_active_model.mfa_enabled_at = Set(None);
+            let _ = admin_account_active_model
+                .update(txn)
+                .await
+                .map_err(|e| TxErr(Box::new(e)))?;
+
+            Ok(())
+        })
+    })
+    .await
+    .map_err(|e| match e {
+        TransactionError::Connection(db_err) => Box::new(db_err),
+        TransactionError::Transaction(tx_err) => tx_err.0,
+    })?;
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
