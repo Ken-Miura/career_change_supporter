@@ -104,7 +104,8 @@ async fn create(conn: &DatabaseConnection, args: Vec<String>) {
         println!("ex: {} create admin@test.com 1234abcdABCD", args[0]);
         exit(INVALID_ARG_LENGTH);
     }
-    match create_account(conn, &args[2], &args[3]).await {
+    let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    match create_account(conn, &args[2], &args[3], &current_date_time).await {
         Ok(_) => exit(SUCCESS),
         Err(e) => {
             println!("application error: {}", e);
@@ -117,6 +118,7 @@ async fn create_account(
     conn: &DatabaseConnection,
     email_addr: &str,
     password: &str,
+    current_date_time: &DateTime<FixedOffset>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     validate_email_address(email_addr)?;
     validate_password(password)?;
@@ -124,6 +126,7 @@ async fn create_account(
     let admin_account = entity::admin_account::ActiveModel {
         email_address: Set(email_addr.to_string()),
         hashed_password: Set(hashed_pwd),
+        created_at: Set(*current_date_time),
         ..Default::default()
     };
     admin_account.insert(conn).await.map_err(Box::new)?;
@@ -138,15 +141,21 @@ async fn list(conn: &DatabaseConnection, args: Vec<String>) {
     }
     match list_accounts(conn).await {
         Ok(admin_accounts) => {
-            println!("email_address, mfa_enabled, last_login");
+            println!("email_address, mfa_enabled, last_login, created_at");
             admin_accounts.iter().for_each(|admin_account| {
+                let last_login_time = match admin_account.last_login_time {
+                    Some(t) => t.with_timezone(&*JAPANESE_TIME_ZONE).to_rfc3339(),
+                    None => "None".to_string(),
+                };
                 println!(
-                    "{}, {}, {:?}",
+                    "{}, {}, \"{}\", \"{}\"",
                     admin_account.email_address,
                     admin_account.mfa_enabled_at.is_some(),
+                    last_login_time,
                     admin_account
-                        .last_login_time
-                        .map(|m| { m.with_timezone(&*JAPANESE_TIME_ZONE) })
+                        .created_at
+                        .with_timezone(&*JAPANESE_TIME_ZONE)
+                        .to_rfc3339()
                 );
             });
             exit(SUCCESS)

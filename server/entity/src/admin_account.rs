@@ -12,6 +12,7 @@ pub struct Model {
     #[sea_orm(column_type = "Binary(BlobSize::Blob(None))")]
     pub hashed_password: Vec<u8>,
     pub last_login_time: Option<DateTimeWithTimeZone>,
+    pub created_at: DateTimeWithTimeZone,
     pub mfa_enabled_at: Option<DateTimeWithTimeZone>,
 }
 

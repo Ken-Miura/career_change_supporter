@@ -2,7 +2,6 @@
 
 pub use super::admin_account::Entity as AdminAccount;
 pub use super::admin_mfa_info::Entity as AdminMfaInfo;
-pub use super::admin_temp_mfa_secret::Entity as AdminTempMfaSecret;
 pub use super::approved_create_career_req::Entity as ApprovedCreateCareerReq;
 pub use super::approved_create_identity_req::Entity as ApprovedCreateIdentityReq;
 pub use super::approved_update_identity_req::Entity as ApprovedUpdateIdentityReq;

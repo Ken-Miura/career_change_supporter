@@ -1374,6 +1374,7 @@ impl MigrationTrait for Migration {
                     email_address ccs_schema.email_address NOT NULL UNIQUE,
                     hashed_password BYTEA NOT NULL,
                     last_login_time TIMESTAMP WITH TIME ZONE,
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
                     mfa_enabled_at TIMESTAMP WITH TIME ZONE
                   );",
             ))
@@ -1393,48 +1394,8 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
 
         let _ = conn
-            /* 管理者が二段階認証を有効にしようとしたときに生成される。管理者が二段階認証を有効にしたときに削除される。
-             * 有効にしようと試みた後、実際に有効にせずに残っていたものは、有効期限が切れた後、定期実行ツールにより削除される
-             */
-            .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.admin_temp_mfa_secret (
-                admin_temp_mfa_secret_id BIGSERIAL PRIMARY KEY,
-                admin_account_id BIGINT NOT NULL,
-                base32_encoded_secret TEXT NOT NULL,
-                expired_at TIMESTAMP WITH TIME ZONE NOT NULL
-              );",
-            ))
-            .await
-            .map(|_| ())?;
-        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
-        let _ = conn
-            .execute(sql.stmt(
-                r"GRANT SELECT, INSERT, DELETE ON ccs_schema.admin_temp_mfa_secret To admin_app;",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"GRANT USAGE ON SEQUENCE ccs_schema.admin_temp_mfa_secret_admin_temp_mfa_secret_id_seq TO admin_app;",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX admin_temp_mfa_secret_admin_account_id_idx ON ccs_schema.admin_temp_mfa_secret (admin_account_id);",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX admin_temp_mfa_secret_expired_at_idx ON ccs_schema.admin_temp_mfa_secret (expired_at);",
-            ))
-            .await
-            .map(|_| ())?;
-
-        let _ = conn
-            /* 管理者が二段階認証を有効にしたときに生成される。
-             * 管理者が二段階認証を無効にしたきに削除される。
+            /* サービスのオーナーが二段階認証を有効にしたときに生成される。
+             * サービスのオーナーが二段階認証を無効にしたときに削除される。
              * サービスのオーナーが管理者を削除したときに削除される。
              */
             /* 管理者向けにはリカバリーコードでのログインは提供しない */
