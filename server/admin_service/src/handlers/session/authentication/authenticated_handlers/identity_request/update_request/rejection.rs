@@ -38,7 +38,7 @@ static SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] ユーザー情報更新拒否通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_update_identity_request_rejection(
-    Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
     Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
 ) -> RespResult<UpdateIdentityReqRejectionResult> {
@@ -51,7 +51,7 @@ pub(crate) async fn post_update_identity_request_rejection(
         SMTP_PASSWORD.to_string(),
     );
     handle_update_identity_request_rejection(
-        account_id,
+        admin_info.account_id,
         update_identity_req_rejection.user_account_id,
         update_identity_req_rejection.rejection_reason,
         current_date_time,

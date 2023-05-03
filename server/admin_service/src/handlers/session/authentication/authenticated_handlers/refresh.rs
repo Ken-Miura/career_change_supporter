@@ -15,10 +15,10 @@ use super::admin::Admin;
 /// <br>
 /// # Errors
 /// - ログインセッションが存在しない場合、ステータスコード401、エラーコード[crate::err::Code::Unauthorized]を返す
-pub(crate) async fn get_refresh(Admin { account_id }: Admin) -> Result<StatusCode, ErrResp> {
+pub(crate) async fn get_refresh(Admin { admin_info }: Admin) -> Result<StatusCode, ErrResp> {
     // NOTE:
     // Admin構造体を受け取る際のリクエストのプリプロセスで認証 (ログインセッションの延長) を実施済
     // そのため、ここまで到達した場合、OKを返すのみで良い
-    info!("refresh (admin account id: {})", account_id);
+    info!("refresh (admin account id: {})", admin_info.account_id);
     Ok(StatusCode::OK)
 }

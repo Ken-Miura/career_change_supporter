@@ -16,7 +16,7 @@ use crate::err::unexpected_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 pub(crate) async fn get_identity_images(
-    Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     Path((user_account_id, image_name)): Path<(String, String)>,
 ) -> Result<(HeaderMap, Vec<u8>), ErrResp> {
     let op = DownloadIdentityImageOperationImpl {};

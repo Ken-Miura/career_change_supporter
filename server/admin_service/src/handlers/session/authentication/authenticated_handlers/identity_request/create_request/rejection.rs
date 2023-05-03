@@ -37,7 +37,7 @@ static SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] ユーザー情報登録拒否通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_create_identity_request_rejection(
-    Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
     Json(create_identity_req_rejection): Json<CreateIdentityReqRejection>,
 ) -> RespResult<CreateIdentityReqRejectionResult> {
@@ -50,7 +50,7 @@ pub(crate) async fn post_create_identity_request_rejection(
         SMTP_PASSWORD.to_string(),
     );
     handle_create_identity_request_rejection(
-        account_id,
+        admin_info.account_id,
         create_identity_req_rejection.user_account_id,
         create_identity_req_rejection.rejection_reason,
         current_date_time,

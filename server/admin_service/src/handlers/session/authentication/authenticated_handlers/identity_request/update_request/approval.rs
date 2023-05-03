@@ -36,7 +36,7 @@ use super::find_update_identity_req_model_by_user_account_id_with_exclusive_lock
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_update_identity_request_approval(
-    Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
     Json(update_identity_req_approval): Json<UpdateIdentityReqApproval>,
 ) -> RespResult<UpdateIdentityReqApprovalResult> {
@@ -49,7 +49,7 @@ pub(crate) async fn post_update_identity_request_approval(
         SMTP_PASSWORD.to_string(),
     );
     handle_update_identity_request_approval(
-        account_id,
+        admin_info.account_id,
         update_identity_req_approval.user_account_id,
         current_date_time,
         op,

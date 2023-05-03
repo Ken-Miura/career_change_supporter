@@ -37,7 +37,7 @@ use super::super::find_create_career_req_model_by_create_career_req_id_with_excl
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴登録拒否通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_create_career_request_rejection(
-    Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
     Json(create_career_req_rejection): Json<CreateCareerReqRejection>,
 ) -> RespResult<CreateCareerReqRejectionResult> {
@@ -50,7 +50,7 @@ pub(crate) async fn post_create_career_request_rejection(
         SMTP_PASSWORD.to_string(),
     );
     handle_create_career_request_rejection(
-        account_id,
+        admin_info.account_id,
         create_career_req_rejection.create_career_req_id,
         create_career_req_rejection.rejection_reason,
         current_date_time,

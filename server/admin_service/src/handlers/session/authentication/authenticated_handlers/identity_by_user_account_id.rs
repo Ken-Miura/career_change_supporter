@@ -16,7 +16,7 @@ use crate::err::{unexpected_err_resp, Code};
 use super::admin::Admin;
 
 pub(crate) async fn get_identity_by_user_account_id(
-    Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<GetIdentityQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<Identity> {

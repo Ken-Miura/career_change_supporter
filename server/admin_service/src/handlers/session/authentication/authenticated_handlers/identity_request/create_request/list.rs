@@ -20,7 +20,7 @@ use crate::handlers::session::authentication::authenticated_handlers::pagination
 };
 
 pub(crate) async fn get_create_identity_requests(
-    Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     pagination: Query<Pagination>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<Vec<CreateIdentityReqItem>> {

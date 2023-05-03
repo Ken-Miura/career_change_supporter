@@ -19,7 +19,7 @@ use crate::err::Code::NoCreateIdentityReqDetailFound;
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 pub(crate) async fn get_create_identity_request_detail(
-    Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<CreateIdentityReqDetailQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<CreateIdentityReqDetail> {

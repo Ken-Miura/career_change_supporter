@@ -20,7 +20,7 @@ use crate::err::Code::IllegalDate;
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 pub(crate) async fn get_users_by_date_of_birth(
-    Admin { account_id: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<DateOfBirth>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<Vec<User>> {

@@ -39,7 +39,7 @@ use super::super::find_create_career_req_model_by_create_career_req_id_with_excl
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴確認完了通知", WEB_SITE_NAME));
 
 pub(crate) async fn post_create_career_request_approval(
-    Admin { account_id }: Admin, // 認証されていることを保証するために必須のパラメータ
+    Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
     Json(create_career_req_approval): Json<CreateCareerReqApproval>,
@@ -53,7 +53,7 @@ pub(crate) async fn post_create_career_request_approval(
         SMTP_PASSWORD.to_string(),
     );
     handle_create_career_request_approval(
-        account_id,
+        admin_info.account_id,
         create_career_req_approval.create_career_req_id,
         current_date_time,
         op,
