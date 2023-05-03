@@ -72,136 +72,15 @@ async fn main_internal() {
     }
     let cmd = &args[1];
     if cmd == "create" {
-        if args.len() != 4 {
-            println!(
-                "usage: {} create \"admin_email_address\" \"password\"",
-                args[0]
-            );
-            println!("ex: {} create admin@test.com 1234abcdABCD", args[0]);
-            exit(INVALID_ARG_LENGTH);
-        }
-        match create_account(&conn, &args[2], &args[3]).await {
-            Ok(_) => exit(SUCCESS),
-            Err(e) => {
-                println!("application error: {}", e);
-                exit(APPLICATION_ERR);
-            }
-        };
+        create(&conn, args).await;
     } else if cmd == "list" {
-        if args.len() != 2 {
-            println!("usage: {} list", args[0]);
-            println!("ex: {} list", args[0]);
-            exit(INVALID_ARG_LENGTH);
-        }
-        match list_accounts(&conn).await {
-            Ok(admin_accounts) => {
-                println!("email_address, mfa_enabled, last_login");
-                admin_accounts.iter().for_each(|admin_account| {
-                    println!(
-                        "{}, {}, {:?}",
-                        admin_account.email_address,
-                        admin_account.mfa_enabled_at.is_some(),
-                        admin_account
-                            .last_login_time
-                            .map(|m| { m.with_timezone(&*JAPANESE_TIME_ZONE) })
-                    );
-                });
-                exit(SUCCESS)
-            }
-            Err(e) => {
-                println!("application error: {}", e);
-                exit(APPLICATION_ERR);
-            }
-        };
+        list(&conn, args).await;
     } else if cmd == "update" {
-        if args.len() != 4 {
-            println!(
-                "usage: {} update \"admin_email_address\" \"password\"",
-                args[0]
-            );
-            println!("ex: {} update admin@test.com 1234abcdABCD", args[0]);
-            exit(INVALID_ARG_LENGTH);
-        }
-        match update_account(&conn, &args[2], &args[3]).await {
-            Ok(_) => exit(SUCCESS),
-            Err(e) => {
-                println!("application error: {}", e);
-                exit(APPLICATION_ERR);
-            }
-        };
+        update(&conn, args).await;
     } else if cmd == "delete" {
-        if args.len() != 3 {
-            println!("usage: {} delete \"admin_email_address\"", args[0]);
-            println!("ex: {} delete admin@test.com", args[0]);
-            exit(INVALID_ARG_LENGTH);
-        }
-        match delete_account(&conn, &args[2]).await {
-            Ok(_) => exit(SUCCESS),
-            Err(e) => {
-                println!("application error: {}", e);
-                exit(APPLICATION_ERR);
-            }
-        };
+        delete(&conn, args).await;
     } else if cmd == "mfa" {
-        if args.len() != 4 {
-            println!(
-                "usage: {} mfa [ enable | disable ] \"admin_email_address\"",
-                args[0]
-            );
-            println!("ex: {} mfa enable admin@test.com", args[0]);
-            exit(INVALID_ARG_LENGTH);
-        }
-        if args[2] == "enable" {
-            let base32_encoded_secret = generate_base32_encoded_secret().unwrap_or_else(|e| {
-                let err = UnexpectedError(format!("{:?}", e));
-                println!(
-                    "application error: failed to generate base 32 encoded secret: {}",
-                    err
-                );
-                exit(APPLICATION_ERR);
-            });
-            let issuer = var(KEY_ADMIN_TOTP_ISSUER).unwrap_or_else(|e| {
-                println!(
-                    "failed to ge environment variable ({}): {}",
-                    KEY_ADMIN_TOTP_ISSUER, e
-                );
-                exit(ENV_VAR_CAPTURE_FAILURE);
-            });
-            let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-            let result = enable_mfa(
-                &conn,
-                &args[3],
-                &base32_encoded_secret,
-                &issuer,
-                &current_date_time,
-            )
-            .await;
-            match result {
-                Ok(base_64_encoded_qr_code) => {
-                    print_base_64_encoded_qr_code_by_html(base_64_encoded_qr_code);
-                    exit(SUCCESS)
-                }
-                Err(e) => {
-                    println!("application error: {}", e);
-                    exit(APPLICATION_ERR);
-                }
-            };
-        } else if args[2] == "disable" {
-            match disable_mfa(&conn, &args[3]).await {
-                Ok(_) => exit(SUCCESS),
-                Err(e) => {
-                    println!("application error: {}", e);
-                    exit(APPLICATION_ERR);
-                }
-            };
-        } else {
-            println!(
-                "usage: {} mfa [ enable | disable ] \"admin_email_address\"",
-                args[0]
-            );
-            println!("ex: {} mfa enable admin@test.com", args[0]);
-            exit(INVALID_ARG_LENGTH);
-        }
+        mfa(&conn, args).await;
     } else {
         println!("invalid subcommand: {}", cmd);
         println!("valid subcommand [ create | list | update | delete | mfa ]");
@@ -214,6 +93,24 @@ async fn connect(database_url: &str) -> Result<DatabaseConnection, Box<dyn Error
     opt.max_connections(1).min_connections(1).sqlx_logging(true);
     let conn = Database::connect(opt).await.map_err(Box::new)?;
     Ok(conn)
+}
+
+async fn create(conn: &DatabaseConnection, args: Vec<String>) {
+    if args.len() != 4 {
+        println!(
+            "usage: {} create \"admin_email_address\" \"password\"",
+            args[0]
+        );
+        println!("ex: {} create admin@test.com 1234abcdABCD", args[0]);
+        exit(INVALID_ARG_LENGTH);
+    }
+    match create_account(conn, &args[2], &args[3]).await {
+        Ok(_) => exit(SUCCESS),
+        Err(e) => {
+            println!("application error: {}", e);
+            exit(APPLICATION_ERR);
+        }
+    };
 }
 
 async fn create_account(
@@ -233,6 +130,34 @@ async fn create_account(
     Ok(())
 }
 
+async fn list(conn: &DatabaseConnection, args: Vec<String>) {
+    if args.len() != 2 {
+        println!("usage: {} list", args[0]);
+        println!("ex: {} list", args[0]);
+        exit(INVALID_ARG_LENGTH);
+    }
+    match list_accounts(conn).await {
+        Ok(admin_accounts) => {
+            println!("email_address, mfa_enabled, last_login");
+            admin_accounts.iter().for_each(|admin_account| {
+                println!(
+                    "{}, {}, {:?}",
+                    admin_account.email_address,
+                    admin_account.mfa_enabled_at.is_some(),
+                    admin_account
+                        .last_login_time
+                        .map(|m| { m.with_timezone(&*JAPANESE_TIME_ZONE) })
+                );
+            });
+            exit(SUCCESS)
+        }
+        Err(e) => {
+            println!("application error: {}", e);
+            exit(APPLICATION_ERR);
+        }
+    };
+}
+
 async fn list_accounts(
     conn: &DatabaseConnection,
 ) -> Result<Vec<entity::admin_account::Model>, Box<dyn Error + Send + Sync>> {
@@ -241,6 +166,24 @@ async fn list_accounts(
         .await
         .map_err(Box::new)?;
     Ok(admin_accounts)
+}
+
+async fn update(conn: &DatabaseConnection, args: Vec<String>) {
+    if args.len() != 4 {
+        println!(
+            "usage: {} update \"admin_email_address\" \"password\"",
+            args[0]
+        );
+        println!("ex: {} update admin@test.com 1234abcdABCD", args[0]);
+        exit(INVALID_ARG_LENGTH);
+    }
+    match update_account(conn, &args[2], &args[3]).await {
+        Ok(_) => exit(SUCCESS),
+        Err(e) => {
+            println!("application error: {}", e);
+            exit(APPLICATION_ERR);
+        }
+    };
 }
 
 async fn update_account(
@@ -273,6 +216,21 @@ async fn get_admin_account_by_email_address(
     Ok(results[0].clone())
 }
 
+async fn delete(conn: &DatabaseConnection, args: Vec<String>) {
+    if args.len() != 3 {
+        println!("usage: {} delete \"admin_email_address\"", args[0]);
+        println!("ex: {} delete admin@test.com", args[0]);
+        exit(INVALID_ARG_LENGTH);
+    }
+    match delete_account(conn, &args[2]).await {
+        Ok(_) => exit(SUCCESS),
+        Err(e) => {
+            println!("application error: {}", e);
+            exit(APPLICATION_ERR);
+        }
+    };
+}
+
 async fn delete_account(
     conn: &DatabaseConnection,
     email_addr: &str,
@@ -302,6 +260,68 @@ async fn delete_account(
     Ok(())
 }
 
+async fn mfa(conn: &DatabaseConnection, args: Vec<String>) {
+    if args.len() != 4 {
+        println!(
+            "usage: {} mfa [ enable | disable ] \"admin_email_address\"",
+            args[0]
+        );
+        println!("ex: {} mfa enable admin@test.com", args[0]);
+        exit(INVALID_ARG_LENGTH);
+    }
+    if args[2] == "enable" {
+        let base32_encoded_secret = generate_base32_encoded_secret().unwrap_or_else(|e| {
+            let err = UnexpectedError(format!("{:?}", e));
+            println!(
+                "application error: failed to generate base 32 encoded secret: {}",
+                err
+            );
+            exit(APPLICATION_ERR);
+        });
+        let issuer = var(KEY_ADMIN_TOTP_ISSUER).unwrap_or_else(|e| {
+            println!(
+                "failed to ge environment variable ({}): {}",
+                KEY_ADMIN_TOTP_ISSUER, e
+            );
+            exit(ENV_VAR_CAPTURE_FAILURE);
+        });
+        let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+        let result = enable_mfa(
+            conn,
+            &args[3],
+            &base32_encoded_secret,
+            &issuer,
+            &current_date_time,
+        )
+        .await;
+        match result {
+            Ok(base_64_encoded_qr_code) => {
+                print_base_64_encoded_qr_code_by_html(base_64_encoded_qr_code);
+                exit(SUCCESS)
+            }
+            Err(e) => {
+                println!("application error: {}", e);
+                exit(APPLICATION_ERR);
+            }
+        };
+    } else if args[2] == "disable" {
+        match disable_mfa(conn, &args[3]).await {
+            Ok(_) => exit(SUCCESS),
+            Err(e) => {
+                println!("application error: {}", e);
+                exit(APPLICATION_ERR);
+            }
+        };
+    } else {
+        println!(
+            "usage: {} mfa [ enable | disable ] \"admin_email_address\"",
+            args[0]
+        );
+        println!("ex: {} mfa enable admin@test.com", args[0]);
+        exit(INVALID_ARG_LENGTH);
+    }
+}
+
 async fn enable_mfa(
     conn: &DatabaseConnection,
     email_addr: &str,
@@ -312,6 +332,13 @@ async fn enable_mfa(
     validate_email_address(email_addr)?;
     let model = get_admin_account_by_email_address(conn, email_addr).await?;
     let admin_account_id = model.admin_account_id;
+    let admin_mfa_info = entity::admin_mfa_info::Entity::find_by_id(admin_account_id)
+        .one(conn)
+        .await
+        .map_err(Box::new)?;
+    if admin_mfa_info.is_some() {
+        return Err(Box::new(MfaAlreadyEnabled));
+    }
     let email_addr = email_addr.to_string();
     let base32_encoded_secret = base32_encoded_secret.to_string();
     let issuer = issuer.to_string();
@@ -452,6 +479,17 @@ impl fmt::Display for TxErr {
 }
 
 impl Error for TxErr {}
+
+#[derive(Debug, Clone)]
+struct MfaAlreadyEnabled;
+
+impl fmt::Display for MfaAlreadyEnabled {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "mfa already enabled")
+    }
+}
+
+impl Error for MfaAlreadyEnabled {}
 
 #[derive(Debug, Clone)]
 struct UnexpectedError(String);
