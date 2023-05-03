@@ -327,7 +327,7 @@ async fn mfa(conn: &DatabaseConnection, args: Vec<String>) {
             args[0]
         );
         println!("ex: {} mfa enable admin@test.com", args[0]);
-        exit(INVALID_ARG_LENGTH);
+        exit(INVALID_SUB_COMMAND);
     }
 }
 
