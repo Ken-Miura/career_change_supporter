@@ -21,7 +21,8 @@ use entity::sea_orm::{
 };
 use tracing::{error, info};
 
-use super::super::{ADMIN_SESSION_ID_COOKIE_NAME, KEY_TO_ADMIN_ACCOUNT_ID, LOGIN_SESSION_EXPIRY};
+use super::super::ADMIN_SESSION_ID_COOKIE_NAME;
+use super::{KEY_TO_ADMIN_ACCOUNT_ID, LOGIN_SESSION_EXPIRY};
 use crate::err::{unexpected_err_resp, Code::EmailOrPwdIncorrect};
 use crate::handlers::ROOT_PATH;
 
