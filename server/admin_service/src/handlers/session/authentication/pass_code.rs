@@ -271,5 +271,279 @@ impl PassCodeOperation for PassCodeOperationImpl {
 #[cfg(test)]
 mod tests {
 
-    // use super::*;
+    use async_session::MemoryStore;
+    use chrono::TimeZone;
+
+    use crate::handlers::session::authentication::tests::prepare_login_session;
+
+    use super::*;
+
+    #[derive(Debug)]
+    struct TestCase {
+        name: String,
+        input: Input,
+        expected: RespResult<PassCodeReqResult>,
+    }
+
+    #[derive(Debug)]
+    struct Input {
+        session_exists: bool,
+        ls: LoginStatus,
+        current_date_time: DateTime<FixedOffset>,
+        pass_code: String,
+        issuer: String,
+        op: PassCodeOperationMock,
+    }
+
+    impl Input {
+        fn new(
+            session_exists: bool,
+            ls: LoginStatus,
+            current_date_time: DateTime<FixedOffset>,
+            pass_code: String,
+            issuer: String,
+            admin_info: AdminInfo,
+            mfa_info: MfaInfo,
+        ) -> Self {
+            Input {
+                session_exists,
+                ls,
+                current_date_time,
+                pass_code,
+                issuer,
+                op: PassCodeOperationMock {
+                    admin_info,
+                    mfa_info,
+                    login_time: current_date_time,
+                },
+            }
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct PassCodeOperationMock {
+        admin_info: AdminInfo,
+        mfa_info: MfaInfo,
+        login_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl PassCodeOperation for PassCodeOperationMock {
+        async fn get_admin_info_by_account_id(
+            &self,
+            account_id: i64,
+        ) -> Result<AdminInfo, ErrResp> {
+            // セッションがない場合はエラーとなる。
+            // その動作はこの実装で実際に呼び出している関数のテストでされているのでここでは実施しない。
+            assert_eq!(self.admin_info.account_id, account_id);
+            Ok(self.admin_info.clone())
+        }
+
+        async fn get_admin_mfa_info_by_account_id(
+            &self,
+            account_id: i64,
+        ) -> Result<MfaInfo, ErrResp> {
+            assert_eq!(self.admin_info.account_id, account_id);
+            Ok(self.mfa_info.clone())
+        }
+
+        fn set_login_session_expiry(&self, _session: &mut Session) {
+            // テスト実行中に有効期限が過ぎるケースを考慮し、有効期限は設定しない
+        }
+
+        async fn update_last_login(
+            &self,
+            account_id: i64,
+            login_time: &DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.admin_info.account_id, account_id);
+            assert_eq!(self.login_time, *login_time);
+            Ok(())
+        }
+    }
+
+    static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
+        let session_exists = true;
+        let ls = LoginStatus::NeedMoreVerification;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+            .unwrap();
+        let admin_info = AdminInfo {
+            account_id: 413,
+            email_address: "test@test.com".to_string(),
+            mfa_enabled_at: Some(current_date_time - chrono::Duration::days(3)),
+        };
+        let mfa_info = MfaInfo {
+            base32_encoded_secret: "NKQHIV55R4LJV3MD6YSC4Z4UCMT3NDYD".to_string(),
+        };
+        // 上記のbase32_encoded_secretとcurrent_date_timeでGoogle Authenticatorが実際に算出した値
+        let pass_code = "540940";
+        let issuer = "Issuer";
+
+        vec![
+            TestCase {
+                name: "success".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls.clone(),
+                    current_date_time,
+                    pass_code.to_string(),
+                    issuer.to_string(),
+                    admin_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Ok((StatusCode::OK, Json(PassCodeReqResult {}))),
+            },
+            TestCase {
+                name: "fail InvalidPassCodeFormat".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls.clone(),
+                    current_date_time,
+                    "Acd#%&".to_string(),
+                    issuer.to_string(),
+                    admin_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::InvalidPassCodeFormat as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail Unauthorized (no session found)".to_string(),
+                input: Input::new(
+                    false,
+                    ls.clone(),
+                    current_date_time,
+                    pass_code.to_string(),
+                    issuer.to_string(),
+                    admin_info.clone(),
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ApiError {
+                        code: Code::Unauthorized as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail MfaIsNotEnabled".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls.clone(),
+                    current_date_time,
+                    pass_code.to_string(),
+                    issuer.to_string(),
+                    AdminInfo {
+                        account_id: 413,
+                        email_address: "test@test.com".to_string(),
+                        mfa_enabled_at: None,
+                    },
+                    mfa_info.clone(),
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::MfaIsNotEnabled as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail PassCodeDoesNotMatch".to_string(),
+                input: Input::new(
+                    session_exists,
+                    ls,
+                    current_date_time,
+                    "123456".to_string(),
+                    issuer.to_string(),
+                    admin_info,
+                    mfa_info,
+                ),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PassCodeDoesNotMatch as u32,
+                    }),
+                )),
+            },
+        ]
+    });
+
+    #[tokio::test]
+    async fn handle_pass_code_req_tests() {
+        for test_case in TEST_CASE_SET.iter() {
+            let current_date_time = test_case.input.current_date_time;
+            let pass_code = test_case.input.pass_code.clone();
+            let issuer = test_case.input.issuer.clone();
+            let op = test_case.input.op.clone();
+            let store = MemoryStore::new();
+            let session_id = if test_case.input.session_exists {
+                prepare_login_session(
+                    test_case.input.op.admin_info.account_id,
+                    test_case.input.ls.clone(),
+                    &store,
+                )
+                .await
+            } else {
+                // 適当なセッションIDをSessionStoreに入れずに用意する
+                "zRzdhSMOThIkeF6F8WjOXhIMIXhdSW/bFSAzZq8a40cg7cn9JssNRIR6+9xKdPn6S4h0jkTgYdgEhD/aTYG0wg==".to_string()
+            };
+
+            let result = handle_pass_code_req(
+                session_id.as_str(),
+                &current_date_time,
+                pass_code.as_str(),
+                issuer.as_str(),
+                &op,
+                &store,
+            )
+            .await;
+
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            if test_case.expected.is_ok() {
+                let resp = result.expect("failed to get Ok");
+                let expected = test_case.expected.as_ref().expect("failed to get Ok");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+
+                let session = store
+                    .load_session(session_id.to_string())
+                    .await
+                    .expect("failed to get Ok")
+                    .expect("failed to get value");
+                let result1 = session
+                    .get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID)
+                    .expect("failed to get Ok");
+                assert_eq!(result1, test_case.input.op.admin_info.account_id);
+                let result2 = session
+                    .get::<String>(KEY_TO_LOGIN_STATUS)
+                    .expect("failed to get Ok");
+                assert_eq!(result2, String::from(LoginStatus::Finish));
+            } else {
+                let resp = result.expect_err("failed to get Err");
+                let expected = test_case.expected.as_ref().expect_err("failed to get Err");
+                assert_eq!(expected.0, resp.0, "{}", message);
+                assert_eq!(expected.1 .0, resp.1 .0, "{}", message);
+
+                let option_session = store
+                    .load_session(session_id.to_string())
+                    .await
+                    .expect("failed to get Ok");
+                if let Some(session) = option_session {
+                    let result1 = session
+                        .get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID)
+                        .expect("failed to get Ok");
+                    assert_eq!(result1, test_case.input.op.admin_info.account_id);
+                    let result2 = session
+                        .get::<String>(KEY_TO_LOGIN_STATUS)
+                        .expect("failed to get Ok");
+                    assert_ne!(result2, String::from(LoginStatus::Finish));
+                }
+            }
+        }
+    }
 }
