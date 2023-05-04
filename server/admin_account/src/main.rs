@@ -11,8 +11,8 @@ use common::JAPANESE_TIME_ZONE;
 use dotenv::dotenv;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
-    DatabaseTransaction, EntityTrait, QueryFilter, QuerySelect, Set, TransactionError,
-    TransactionTrait,
+    DatabaseTransaction, EntityTrait, PaginatorTrait, QueryFilter, QuerySelect, Set,
+    TransactionError, TransactionTrait,
 };
 use std::{env::args, env::var, error::Error, fmt, process::exit};
 
@@ -104,6 +104,16 @@ async fn create(conn: &DatabaseConnection, args: Vec<String>) {
         println!("ex: {} create admin@test.com 1234abcdABCD", args[0]);
         exit(INVALID_ARG_LENGTH);
     }
+    let exists = check_if_admin_account_already_exists(conn, &args[2])
+        .await
+        .unwrap_or_else(|e| {
+            println!("application error: {}", e);
+            exit(APPLICATION_ERR);
+        });
+    if exists {
+        println!("application error: \"{}\" already exists", &args[2]);
+        exit(APPLICATION_ERR);
+    }
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     match create_account(conn, &args[2], &args[3], &current_date_time).await {
         Ok(_) => exit(SUCCESS),
@@ -112,6 +122,18 @@ async fn create(conn: &DatabaseConnection, args: Vec<String>) {
             exit(APPLICATION_ERR);
         }
     };
+}
+
+async fn check_if_admin_account_already_exists(
+    conn: &DatabaseConnection,
+    email_addr: &str,
+) -> Result<bool, Box<dyn Error + Send + Sync>> {
+    let count = entity::admin_account::Entity::find()
+        .filter(entity::admin_account::Column::EmailAddress.eq(email_addr))
+        .count(conn)
+        .await
+        .map_err(Box::new)?;
+    Ok(count != 0)
 }
 
 async fn create_account(
