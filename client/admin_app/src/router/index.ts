@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
+import MfaPage from '../views/MfaPage.vue'
 import AdminMenuPage from '../views/personalized/AdminMenuPage.vue'
 import CreateIdentityRequestListPage from '../views/personalized/CreateIdentityRequestListPage.vue'
 import CreateIdentityRequestDetailPage from '../views/personalized/CreateIdentityRequestDetailPage.vue'
@@ -33,6 +34,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/login',
     name: 'LoginPage',
     component: LoginPage
+  },
+  {
+    path: '/mfa',
+    name: 'MfaPage',
+    component: MfaPage
   },
   {
     path: '/admin-menu',
