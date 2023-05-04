@@ -5,7 +5,10 @@
         <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <div v-if="!loginDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <section>
         <h3 class="font-bold text-2xl">ログイン</h3>
       </section>
@@ -35,21 +38,24 @@ import { Message } from '@/util/Message'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { LoginResp } from '@/util/login/LoginResp'
-import { login } from '@/util/login/Login'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { useLogin } from '@/util/login/useLogin'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
 export default defineComponent({
   name: 'LoginPage',
   components: {
     EmailAddressInput,
     PasswordInput,
-    AlertMessage
+    AlertMessage,
+    WaitingCircle
   },
   setup () {
     const router = useRouter()
     const isHidden = ref(true)
     const errorMessage = ref('')
+
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -63,35 +69,52 @@ export default defineComponent({
           } else {
             throw new Error(`unexpected result: ${resp}`)
           }
+        } else {
+          throw new Error(`unexpected result: ${resp}`)
         }
       } catch (e) {
         isHidden.value = false
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
     const {
       form,
       setEmailAddress,
       setPassword
-    } =
-    useCredentil()
+    } = useCredentil()
+    const {
+      loginDone,
+      loginFunc
+    } = useLogin()
+
     const loginHandler = async () => {
       try {
-        const result = await login(form.emailAddress, form.password)
-        if (result instanceof LoginResp) {
-          await router.push('/admin-menu')
-        } else if (result instanceof ApiErrorResp) {
+        const result = await loginFunc(form.emailAddress, form.password)
+        if (!(result instanceof LoginResp)) {
+          if (!(result instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result: ${result}`)
+          }
           isHidden.value = false
           errorMessage.value = createErrorMessage(result.getApiError().getCode())
+          return
+        }
+        const ls = result.getLoginResult()
+        if (ls.login_status === 'Finish') {
+          await router.push('/admin-menu')
+        } else if (ls.login_status === 'NeedMoreVerification') {
+          await router.push('/mfa')
         } else {
-          throw new Error(`unexpected result: ${result}`)
+          throw new Error(`unexpected login_status: ${ls}`)
         }
       } catch (e) {
         isHidden.value = false
         errorMessage.value = `${Message.LOGIN_FAILED}: ${e}`
       }
     }
+
     return {
+      loginDone,
       form,
       setEmailAddress,
       setPassword,

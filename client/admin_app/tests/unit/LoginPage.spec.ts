@@ -4,16 +4,23 @@ import EmailAddressInput from '@/components/EmailAddressInput.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PasswordInput from '@/components/PasswordInput.vue'
 import { Message } from '@/util/Message'
-import { login } from '@/util/login/Login'
 import { LoginResp } from '@/util/login/LoginResp'
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Code } from '@/util/Error'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { refresh } from '@/util/personalized/refresh/Refresh'
 import { RefreshResp } from '@/util/personalized/refresh/RefreshResp'
+import { LoginResult } from '@/util/login/LoginResult'
+import WaitingCircle from '@/components/WaitingCircle.vue'
 
-jest.mock('@/util/login/Login')
-const loginMock = login as jest.MockedFunction<typeof login>
+const loginDoneMock = ref(true)
+const loginFuncMock = jest.fn()
+jest.mock('@/util/login/useLogin', () => ({
+  useLogin: () => ({
+    loginDone: loginDoneMock,
+    loginFunc: loginFuncMock
+  })
+}))
 
 jest.mock('@/util/personalized/refresh/Refresh')
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>
@@ -31,7 +38,8 @@ const PWD = 'abcdABCD1234'
 describe('LoginPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
-    loginMock.mockReset()
+    loginDoneMock.value = true
+    loginFuncMock.mockReset()
     refreshMock.mockReset()
   })
 
@@ -64,7 +72,7 @@ describe('LoginPage.vue', () => {
     expect(classes).toContain('hidden')
   })
 
-  it('moves to admin-menu when session has already existed and user has already agreed terms of use', async () => {
+  it('moves to admin-menu when session has already existed and login sequence is successful', async () => {
     refreshMock.mockResolvedValue(RefreshResp.create())
 
     mount(LoginPage, {
@@ -118,10 +126,34 @@ describe('LoginPage.vue', () => {
     expect(resultMessage).toContain(errDetail)
   })
 
+  it('displays header and WaitingCircle, no AlertMessage while requesting', async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshMock.mockResolvedValue(apiErrResp)
+    loginDoneMock.value = false
+    const ls = { login_status: 'Finish' } as LoginResult
+    loginFuncMock.mockResolvedValue(LoginResp.create(ls))
+
+    const wrapper = mount(LoginPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const headers = wrapper.findAll('header')
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
+  })
+
   it('moves to admin-menu when login is successful', async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
-    loginMock.mockResolvedValue(LoginResp.create())
+    const loginStatus = { login_status: 'Finish' } as LoginResult
+    loginFuncMock.mockResolvedValue(LoginResp.create(loginStatus))
 
     const wrapper = mount(LoginPage, {
       global: {
@@ -146,10 +178,39 @@ describe('LoginPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/admin-menu')
   })
 
+  it('moves to mfa when login is successful and mfa is enabled', async () => {
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
+    refreshMock.mockResolvedValue(apiErrResp)
+    const ls = { login_status: 'NeedMoreVerification' } as LoginResult
+    loginFuncMock.mockResolvedValue(LoginResp.create(ls))
+
+    const wrapper = mount(LoginPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const emailAddr = wrapper.findComponent(EmailAddressInput)
+    const emailAddrInput = emailAddr.find('input')
+    await emailAddrInput.setValue(EMAIL_ADDRESS)
+
+    const pwd = wrapper.findComponent(PasswordInput)
+    const pwdInput = pwd.find('input')
+    await pwdInput.setValue(PWD)
+
+    const button = wrapper.find('button')
+    await button.trigger('submit')
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/mfa')
+  })
+
   it(`displays alert message ${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} when login fails`, async () => {
     const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.UNAUTHORIZED))
     refreshMock.mockResolvedValue(apiErrResp)
-    loginMock.mockResolvedValue(ApiErrorResp.create(401, ApiError.create(Code.EMAIL_OR_PWD_INCORRECT)))
+    loginFuncMock.mockResolvedValue(ApiErrorResp.create(401, ApiError.create(Code.EMAIL_OR_PWD_INCORRECT)))
 
     const wrapper = mount(LoginPage, {
       global: {
