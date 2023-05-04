@@ -75,6 +75,8 @@ export default defineComponent({
           } else {
             throw new Error(`unexpected result: ${resp}`)
           }
+        } else {
+          throw new Error(`unexpected result: ${resp}`)
         }
       } catch (e) {
         isHidden.value = false
