@@ -16,7 +16,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 
-use async_session::{Session, SessionStore};
+use async_session::Session;
 use axum_extra::extract::cookie::Cookie;
 
 use crate::handlers::session::authentication::{
@@ -183,32 +183,6 @@ async fn get_mfa_info_by_account_id(
     })
 }
 
-async fn get_session_by_session_id(
-    session_id: &str,
-    store: &impl SessionStore,
-) -> Result<Session, ErrResp> {
-    let option_session = store
-        .load_session(session_id.to_string())
-        .await
-        .map_err(|e| {
-            error!("failed to load session: {}", e);
-            unexpected_err_resp()
-        })?;
-    let session = match option_session {
-        Some(s) => s,
-        None => {
-            error!("no session found");
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(ApiError {
-                    code: Code::Unauthorized as u32,
-                }),
-            ));
-        }
-    };
-    Ok(session)
-}
-
 fn get_account_id_from_session(session: &Session) -> Result<i64, ErrResp> {
     let account_id = match session.get::<i64>(KEY_TO_USER_ACCOUNT_ID) {
         Some(id) => id,
@@ -237,12 +211,10 @@ fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), Err
 #[cfg(test)]
 mod tests {
 
-    use async_session::MemoryStore;
     use chrono::TimeZone;
     use common::JAPANESE_TIME_ZONE;
 
-    use crate::handlers::session::authentication::tests::prepare_login_session;
-    use crate::handlers::session::{tests::remove_session_from_store, SESSION_ID_COOKIE_NAME};
+    use crate::handlers::session::SESSION_ID_COOKIE_NAME;
 
     use super::*;
 
@@ -376,78 +348,6 @@ mod tests {
         let result = extract_session_id_from_cookie(None).expect_err("failed to get Err");
         assert_eq!(result.0, StatusCode::UNAUTHORIZED);
         assert_eq!(result.1.code, Code::Unauthorized as u32);
-    }
-
-    #[tokio::test]
-    async fn get_session_by_session_id_success1() {
-        let store = MemoryStore::new();
-        let user_account_id = 15001;
-        let session_id =
-            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
-        assert_eq!(1, store.count().await);
-
-        let result = get_session_by_session_id(&session_id, &store)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(1, store.count().await);
-        assert_eq!(
-            user_account_id,
-            result
-                .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
-                .expect("failed to get Ok")
-        );
-        assert_eq!(
-            String::from(LoginStatus::NeedMoreVerification),
-            result
-                .get::<String>(KEY_TO_LOGIN_STATUS)
-                .expect("failed to get Ok")
-        );
-    }
-
-    #[tokio::test]
-    async fn get_session_by_session_id_success2() {
-        let store = MemoryStore::new();
-        let user_account_id = 15001;
-        let session_id = prepare_login_session(user_account_id, LoginStatus::Finish, &store).await;
-        assert_eq!(1, store.count().await);
-
-        let result = get_session_by_session_id(&session_id, &store)
-            .await
-            .expect("failed to get Ok");
-
-        assert_eq!(1, store.count().await);
-        assert_eq!(
-            user_account_id,
-            result
-                .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
-                .expect("failed to get Ok")
-        );
-        assert_eq!(
-            String::from(LoginStatus::Finish),
-            result
-                .get::<String>(KEY_TO_LOGIN_STATUS)
-                .expect("failed to get Ok")
-        );
-    }
-
-    #[tokio::test]
-    async fn get_session_by_session_id_fail() {
-        let store = MemoryStore::new();
-        let user_account_id = 15001;
-        let session_id =
-            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
-        // リクエストのプリプロセス前ににセッションを削除
-        remove_session_from_store(&session_id, &store).await;
-        assert_eq!(0, store.count().await);
-
-        let result = get_session_by_session_id(&session_id, &store)
-            .await
-            .expect_err("failed to get Err");
-
-        assert_eq!(0, store.count().await);
-        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
-        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
     }
 
     #[test]

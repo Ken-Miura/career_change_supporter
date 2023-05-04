@@ -15,7 +15,7 @@ use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::handlers::session::authentication::mfa::get_session_by_session_id;
+use crate::handlers::session::authentication::get_session_by_session_id;
 use crate::handlers::session::authentication::mfa::USER_TOTP_ISSUER;
 use crate::handlers::session::authentication::user_operation::FindUserInfoOperationImpl;
 use crate::handlers::session::authentication::user_operation::UserInfo;

@@ -231,6 +231,78 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_session_by_session_id_success1() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(1, store.count().await);
+        assert_eq!(
+            user_account_id,
+            result
+                .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                .expect("failed to get Ok")
+        );
+        assert_eq!(
+            String::from(LoginStatus::NeedMoreVerification),
+            result
+                .get::<String>(KEY_TO_LOGIN_STATUS)
+                .expect("failed to get Ok")
+        );
+    }
+
+    #[tokio::test]
+    async fn get_session_by_session_id_success2() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id = prepare_login_session(user_account_id, LoginStatus::Finish, &store).await;
+        assert_eq!(1, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(1, store.count().await);
+        assert_eq!(
+            user_account_id,
+            result
+                .get::<i64>(KEY_TO_USER_ACCOUNT_ID)
+                .expect("failed to get Ok")
+        );
+        assert_eq!(
+            String::from(LoginStatus::Finish),
+            result
+                .get::<String>(KEY_TO_LOGIN_STATUS)
+                .expect("failed to get Ok")
+        );
+    }
+
+    #[tokio::test]
+    async fn get_session_by_session_id_fail() {
+        let store = MemoryStore::new();
+        let user_account_id = 15001;
+        let session_id =
+            prepare_login_session(user_account_id, LoginStatus::NeedMoreVerification, &store).await;
+        // リクエストのプリプロセス前ににセッションを削除
+        remove_session_from_store(&session_id, &store).await;
+        assert_eq!(0, store.count().await);
+
+        let result = get_session_by_session_id(&session_id, &store)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(0, store.count().await);
+        assert_eq!(StatusCode::UNAUTHORIZED, result.0);
+        assert_eq!(Code::Unauthorized as u32, result.1 .0.code);
+    }
+
+    #[tokio::test]
     async fn get_session_by_session_id_and_get_authenticated_user_account_id_success() {
         let store = MemoryStore::new();
         let user_account_id = 15001;

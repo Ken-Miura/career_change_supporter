@@ -18,8 +18,8 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
+use crate::handlers::session::authentication::get_session_by_session_id;
 use crate::handlers::session::authentication::mfa::ensure_mfa_is_enabled;
-use crate::handlers::session::authentication::mfa::get_session_by_session_id;
 use crate::handlers::session::authentication::user_operation::{
     FindUserInfoOperationImpl, UserInfo,
 };
