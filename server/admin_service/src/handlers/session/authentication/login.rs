@@ -16,9 +16,7 @@ use common::{ApiError, ErrResp};
 use common::{ValidCred, JAPANESE_TIME_ZONE};
 use entity::admin_account;
 use entity::prelude::AdminAccount;
-use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
-};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::Serialize;
 use tracing::{error, info};
 
@@ -301,19 +299,7 @@ impl LoginOperation for LoginOperationImpl {
         account_id: i64,
         login_time: &DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        let account_model = admin_account::ActiveModel {
-            admin_account_id: Set(account_id),
-            last_login_time: Set(Some(*login_time)),
-            ..Default::default()
-        };
-        let _ = account_model.update(&self.pool).await.map_err(|e| {
-            error!(
-                "failed to update admin_account (admin_account_id: {}): {}",
-                account_id, e
-            );
-            unexpected_err_resp()
-        })?;
-        Ok(())
+        super::update_last_login(account_id, login_time, &self.pool).await
     }
 }
 

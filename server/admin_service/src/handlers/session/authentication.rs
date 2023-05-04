@@ -1,5 +1,6 @@
 // Copyright 2023 Ken Miura
 
+pub(crate) mod admin_operation;
 pub(crate) mod authenticated_handlers;
 pub(crate) mod login;
 pub(crate) mod logout;
@@ -9,7 +10,9 @@ use std::time::Duration;
 
 use async_session::{Session, SessionStore};
 use axum::{http::StatusCode, Json};
+use chrono::{DateTime, FixedOffset};
 use common::{ApiError, ErrResp};
+use entity::sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 use serde::Serialize;
 use tracing::{error, info};
 
@@ -159,6 +162,26 @@ impl RefreshOperation for RefreshOperationImpl {
     fn set_login_session_expiry(&self, session: &mut Session, expiry: Duration) {
         session.expire_in(expiry);
     }
+}
+
+async fn update_last_login(
+    account_id: i64,
+    login_time: &DateTime<FixedOffset>,
+    pool: &DatabaseConnection,
+) -> Result<(), ErrResp> {
+    let admin_account_model = entity::admin_account::ActiveModel {
+        admin_account_id: Set(account_id),
+        last_login_time: Set(Some(*login_time)),
+        ..Default::default()
+    };
+    let _ = admin_account_model.update(pool).await.map_err(|e| {
+        error!(
+            "failed to update admin_account (admin_account_id: {}): {}",
+            account_id, e
+        );
+        unexpected_err_resp()
+    })?;
+    Ok(())
 }
 
 #[cfg(test)]
