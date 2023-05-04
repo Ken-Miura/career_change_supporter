@@ -431,6 +431,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn handle_login_req_success_mfa_enabled() {
+        let id = 1102;
+        let email_addr = "test@example.com";
+        let pwd = "1234567890abcdABCD";
+        validate_email_address(email_addr).expect("failed to get Ok");
+        validate_password(pwd).expect("failed to get Ok");
+        let hashed_pwd = hash_password(pwd).expect("failed to hash pwd");
+        let creation_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2021, 9, 11, 15, 30, 45)
+            .unwrap();
+        let last_login = creation_time + chrono::Duration::days(1);
+        let account = Account {
+            admin_account_id: id,
+            hashed_password: hashed_pwd,
+            mfa_enabled: true,
+        };
+        let store = MemoryStore::new();
+        let current_date_time = last_login + chrono::Duration::days(1);
+        let op = LoginOperationMock::new(account, email_addr, &current_date_time);
+
+        let result = handle_login_req(email_addr, pwd, &current_date_time, op, store.clone()).await;
+
+        let session_id_and_login_status = result.expect("failed to get Ok");
+        let session_id = session_id_and_login_status.0;
+        let login_status = session_id_and_login_status.1;
+
+        let session = store
+            .load_session(session_id)
+            .await
+            .expect("failed to get Ok")
+            .expect("failed to get value");
+
+        let actual_id = session
+            .get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID)
+            .expect("failed to get value");
+        assert_eq!(id, actual_id);
+
+        assert_eq!(login_status.clone(), LoginStatus::NeedMoreVerification);
+        let actual_login_status = session
+            .get::<String>(KEY_TO_LOGIN_STATUS)
+            .expect("failed to get value");
+        assert_eq!(String::from(login_status), actual_login_status);
+    }
+
+    #[tokio::test]
     async fn handle_login_req_fail_no_email_addr_found() {
         let id = 1102;
         let email_addr1 = "test1@example.com";
