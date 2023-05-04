@@ -23,6 +23,7 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::login::post_login;
 use crate::handlers::session::authentication::logout::post_logout;
 use crate::handlers::session::authentication::authenticated_handlers::refresh::get_refresh;
+use crate::handlers::session::authentication::pass_code::post_pass_code;
 use async_fred_session::fred::pool::RedisPool;
 use async_fred_session::fred::types::RedisConfig;
 use async_fred_session::RedisSessionStore;
@@ -183,6 +184,7 @@ async fn main_internal(num_of_cpus: u32) {
             ROOT_PATH,
             Router::new()
                 .route("/login", post(post_login))
+                .route("/pass-code", post(post_pass_code))
                 .route("/logout", post(post_logout))
                 .route("/refresh", get(get_refresh))
                 .route(

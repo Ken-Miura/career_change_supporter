@@ -3,6 +3,7 @@
 pub(crate) mod authenticated_handlers;
 pub(crate) mod login;
 pub(crate) mod logout;
+pub(crate) mod pass_code;
 
 use std::time::Duration;
 
