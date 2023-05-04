@@ -11,6 +11,8 @@ export namespace Message {
     export const INVALID_UUID_FORMAT_MESSAGE = 'UUIDの形式が不正です。URLが提供されたものと一致するかご確認下さい'
     export const EMAIL_OR_PWD_INCORRECT_MESSAGE = 'メールアドレス、もしくはパスワードが間違っています'
     export const INVALID_PASS_CODE_MESSAGE = 'パスコードが間違っています'
+    export const MFA_IS_NOT_ENABLED_MESSAGE = '二段階認証が有効になっていません'
+    export const PASS_CODE_DOES_NOT_MATCH_MESSAGE = 'パスコードが間違っています'
     export const LOGIN_FAILED = `ログインに失敗しました。${RETRY_REQUEST}`
     export const UNAUTHORIZED_MESSAGE = '認証が必要です'
     export const NO_ACCOUNT_FOUND_MESSAGE = 'アカウントが存在しません'

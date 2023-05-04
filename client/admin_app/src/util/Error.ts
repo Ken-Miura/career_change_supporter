@@ -12,17 +12,19 @@ export namespace Code {
   export const UNEXPECTED_ERR_ADMIN = 30000
   export const EMAIL_OR_PWD_INCORRECT = 30001
   export const INVALID_PASS_CODE = 30002
-  export const UNAUTHORIZED = 30003
-  export const NO_ACCOUNT_FOUND = 30004
-  export const ILLEGAL_PAGE_SIZE = 30005
-  export const NO_CREATE_IDENTITY_REQ_DETAIL_FOUND = 30006
-  export const ILLEGAL_DATE = 30007
-  export const INVALID_FORMAT_REASON = 30008
-  export const NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND = 30009
-  export const NO_USER_ACCOUNT_FOUND = 30010
-  export const NO_IDENTITY_FOUND = 30011
-  export const NO_CREATE_CAREER_REQ_DETAIL_FOUND = 30012
-  export const NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED = 30013
+  export const MFA_IS_NOT_ENABLED = 30003
+  export const PASS_CODE_DOES_NOT_MATCH = 30004
+  export const UNAUTHORIZED = 30005
+  export const NO_ACCOUNT_FOUND = 30006
+  export const ILLEGAL_PAGE_SIZE = 30007
+  export const NO_CREATE_IDENTITY_REQ_DETAIL_FOUND = 30008
+  export const ILLEGAL_DATE = 30009
+  export const INVALID_FORMAT_REASON = 30010
+  export const NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND = 30011
+  export const NO_USER_ACCOUNT_FOUND = 30012
+  export const NO_IDENTITY_FOUND = 30013
+  export const NO_CREATE_CAREER_REQ_DETAIL_FOUND = 30014
+  export const NO_USER_ACCOUNT_FOUND_OR_THE_ACCOUNT_IS_DISABLED = 30015
 }
 
 export function createErrorMessage (code: number): string {
@@ -50,6 +52,8 @@ codeToMessage.set(Code.INVALID_PASSWORD_FORMAT.toString(), `${Message.INVALID_PA
 codeToMessage.set(Code.INVALID_UUID_FORMAT.toString(), `${Message.INVALID_UUID_FORMAT_MESSAGE} (${Code.INVALID_UUID_FORMAT})`)
 codeToMessage.set(Code.EMAIL_OR_PWD_INCORRECT.toString(), `${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} (${Code.EMAIL_OR_PWD_INCORRECT})`)
 codeToMessage.set(Code.INVALID_PASS_CODE.toString(), `${Message.INVALID_PASS_CODE_MESSAGE} (${Code.INVALID_PASS_CODE})`)
+codeToMessage.set(Code.MFA_IS_NOT_ENABLED.toString(), `${Message.MFA_IS_NOT_ENABLED_MESSAGE} (${Code.MFA_IS_NOT_ENABLED})`)
+codeToMessage.set(Code.PASS_CODE_DOES_NOT_MATCH.toString(), `${Message.PASS_CODE_DOES_NOT_MATCH_MESSAGE} (${Code.PASS_CODE_DOES_NOT_MATCH})`)
 codeToMessage.set(Code.UNAUTHORIZED.toString(), `${Message.UNAUTHORIZED_MESSAGE} (${Code.UNAUTHORIZED})`)
 codeToMessage.set(Code.NO_ACCOUNT_FOUND.toString(), `${Message.NO_ACCOUNT_FOUND_MESSAGE} (${Code.NO_ACCOUNT_FOUND})`)
 codeToMessage.set(Code.ILLEGAL_PAGE_SIZE.toString(), `${Message.ILLEGAL_PAGE_SIZE_MESSAGE} (${Code.ILLEGAL_PAGE_SIZE})`)
