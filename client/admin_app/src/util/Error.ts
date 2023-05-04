@@ -11,7 +11,7 @@ export namespace Code {
 
   export const UNEXPECTED_ERR_ADMIN = 30000
   export const EMAIL_OR_PWD_INCORRECT = 30001
-  export const INVALID_PASS_CODE = 30002
+  export const INVALID_PASS_CODE_FORMAT = 30002
   export const MFA_IS_NOT_ENABLED = 30003
   export const PASS_CODE_DOES_NOT_MATCH = 30004
   export const UNAUTHORIZED = 30005
@@ -51,7 +51,7 @@ codeToMessage.set(Code.INVALID_EMAIL_ADDRESS_FORMAT.toString(), `${Message.INVAL
 codeToMessage.set(Code.INVALID_PASSWORD_FORMAT.toString(), `${Message.INVALID_PASSWORD_FORMAT_MESSAGE} (${Code.INVALID_PASSWORD_FORMAT})`)
 codeToMessage.set(Code.INVALID_UUID_FORMAT.toString(), `${Message.INVALID_UUID_FORMAT_MESSAGE} (${Code.INVALID_UUID_FORMAT})`)
 codeToMessage.set(Code.EMAIL_OR_PWD_INCORRECT.toString(), `${Message.EMAIL_OR_PWD_INCORRECT_MESSAGE} (${Code.EMAIL_OR_PWD_INCORRECT})`)
-codeToMessage.set(Code.INVALID_PASS_CODE.toString(), `${Message.INVALID_PASS_CODE_MESSAGE} (${Code.INVALID_PASS_CODE})`)
+codeToMessage.set(Code.INVALID_PASS_CODE_FORMAT.toString(), `${Message.INVALID_PASS_CODE_FORMAT_MESSAGE} (${Code.INVALID_PASS_CODE_FORMAT})`)
 codeToMessage.set(Code.MFA_IS_NOT_ENABLED.toString(), `${Message.MFA_IS_NOT_ENABLED_MESSAGE} (${Code.MFA_IS_NOT_ENABLED})`)
 codeToMessage.set(Code.PASS_CODE_DOES_NOT_MATCH.toString(), `${Message.PASS_CODE_DOES_NOT_MATCH_MESSAGE} (${Code.PASS_CODE_DOES_NOT_MATCH})`)
 codeToMessage.set(Code.UNAUTHORIZED.toString(), `${Message.UNAUTHORIZED_MESSAGE} (${Code.UNAUTHORIZED})`)

@@ -11,7 +11,7 @@ use tracing::error;
 pub(crate) enum Code {
     UnexpectedErr = 30000,
     EmailOrPwdIncorrect = 30001,
-    InvalidPassCode = 30002,
+    InvalidPassCodeFormat = 30002,
     MfaIsNotEnabled = 30003,
     PassCodeDoesNotMatch = 30004,
     Unauthorized = 30005,

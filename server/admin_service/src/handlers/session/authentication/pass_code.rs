@@ -10,6 +10,7 @@ use axum::{extract::State, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
+use common::mfa::check_if_pass_code_matches;
 use common::util::validator::pass_code_validator::validate_pass_code;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
@@ -17,10 +18,11 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::get_session_by_session_id;
 use crate::handlers::session::ADMIN_SESSION_ID_COOKIE_NAME;
 
 use super::admin_operation::{AdminInfo, FindAdminInfoOperationImpl};
-use super::LOGIN_SESSION_EXPIRY;
+use super::{LoginStatus, KEY_TO_ADMIN_ACCOUNT_ID, KEY_TO_LOGIN_STATUS, LOGIN_SESSION_EXPIRY};
 
 pub(crate) async fn post_pass_code(
     jar: SignedCookieJar,
@@ -36,7 +38,15 @@ pub(crate) async fn post_pass_code(
         expiry: LOGIN_SESSION_EXPIRY,
     };
 
-    todo!()
+    handle_pass_code_req(
+        session_id.as_str(),
+        &current_date_time,
+        req.pass_code.as_str(),
+        "", // USER_TOTP_ISSUER.as_str(), TODO
+        &op,
+        &store,
+    )
+    .await
 }
 
 fn extract_session_id_from_cookie(cookie: Option<Cookie>) -> Result<String, ErrResp> {
@@ -76,11 +86,100 @@ async fn handle_pass_code_req(
         (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::InvalidPassCode as u32,
+                code: Code::InvalidPassCodeFormat as u32,
             }),
         )
     })?;
-    todo!()
+    let mut session = get_session_by_session_id(session_id, store).await?;
+    let account_id = get_admin_account_id_from_session(&session)?;
+    let admin_info = op.get_admin_info_by_account_id(account_id).await?;
+    ensure_mfa_is_enabled(admin_info.mfa_enabled_at.is_some())?;
+
+    let mi = op.get_admin_mfa_info_by_account_id(account_id).await?;
+    verify_pass_code(
+        account_id,
+        &mi.base32_encoded_secret,
+        issuer,
+        current_date_time,
+        pass_code,
+    )?;
+
+    update_login_status(&mut session, LoginStatus::Finish)?;
+    op.set_login_session_expiry(&mut session);
+    let _ = store.store_session(session).await.map_err(|e| {
+        error!("failed to store session: {}", e);
+        unexpected_err_resp()
+    })?;
+
+    op.update_last_login(account_id, current_date_time).await?;
+
+    Ok((StatusCode::OK, Json(PassCodeReqResult {})))
+}
+
+fn get_admin_account_id_from_session(session: &Session) -> Result<i64, ErrResp> {
+    let account_id = match session.get::<i64>(KEY_TO_ADMIN_ACCOUNT_ID) {
+        Some(id) => id,
+        None => {
+            error!("failed to get admin account id from session");
+            return Err(unexpected_err_resp());
+        }
+    };
+    Ok(account_id)
+}
+
+fn ensure_mfa_is_enabled(mfa_enabled: bool) -> Result<(), ErrResp> {
+    if !mfa_enabled {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::MfaIsNotEnabled as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+fn verify_pass_code(
+    account_id: i64,
+    base32_encoded_secret: &str,
+    issuer: &str,
+    current_date_time: &DateTime<FixedOffset>,
+    pass_code: &str,
+) -> Result<(), ErrResp> {
+    let matched = check_if_pass_code_matches(
+        account_id,
+        base32_encoded_secret,
+        issuer,
+        current_date_time,
+        pass_code,
+    )?;
+    if !matched {
+        error!(
+            "failed to check pass code (account_id: {}, current_date_time: {})",
+            account_id, current_date_time
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PassCodeDoesNotMatch as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
+fn update_login_status(session: &mut Session, ls: LoginStatus) -> Result<(), ErrResp> {
+    session
+        .insert(KEY_TO_LOGIN_STATUS, ls.clone())
+        .map_err(|e| {
+            error!(
+                "failed to insert login_status ({}) into session: {}",
+                String::from(ls),
+                e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(())
 }
 
 #[async_trait]

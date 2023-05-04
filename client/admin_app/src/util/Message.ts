@@ -10,7 +10,7 @@ export namespace Message {
     export const INVALID_PASSWORD_FORMAT_MESSAGE = 'パスワードの形式が不正です。英大文字、英小文字、数字、記号の内、2種類以上を組み合わせた10文字以上32文字以下の文字列を指定して下さい'
     export const INVALID_UUID_FORMAT_MESSAGE = 'UUIDの形式が不正です。URLが提供されたものと一致するかご確認下さい'
     export const EMAIL_OR_PWD_INCORRECT_MESSAGE = 'メールアドレス、もしくはパスワードが間違っています'
-    export const INVALID_PASS_CODE_MESSAGE = 'パスコードが間違っています'
+    export const INVALID_PASS_CODE_FORMAT_MESSAGE = '不正な形式のパスコードです'
     export const MFA_IS_NOT_ENABLED_MESSAGE = '二段階認証が有効になっていません'
     export const PASS_CODE_DOES_NOT_MATCH_MESSAGE = 'パスコードが間違っています'
     export const LOGIN_FAILED = `ログインに失敗しました。${RETRY_REQUEST}`
