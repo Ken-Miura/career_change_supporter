@@ -52,6 +52,7 @@ use common::util::check_env_vars;
 use common::{AppState, RequestLogElements};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
+use handlers::session::authentication::pass_code::KEY_TO_ADMIN_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
@@ -87,6 +88,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_OPENSEARCH_ENDPOINT_URI.to_string(),
         KEY_TO_OPENSEARCH_USERNAME.to_string(),
         KEY_TO_OPENSEARCH_PASSWORD.to_string(),
+        KEY_TO_ADMIN_TOTP_ISSUER.to_string(),
     ]
 });
 

@@ -1,5 +1,6 @@
 // Copyright 2023 Ken Miura
 
+use std::env;
 use std::time::Duration;
 
 use async_fred_session::RedisSessionStore;
@@ -14,6 +15,7 @@ use common::mfa::check_if_pass_code_matches;
 use common::util::validator::pass_code_validator::validate_pass_code;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -23,6 +25,20 @@ use crate::handlers::session::ADMIN_SESSION_ID_COOKIE_NAME;
 
 use super::admin_operation::{AdminInfo, FindAdminInfoOperationImpl};
 use super::{LoginStatus, KEY_TO_ADMIN_ACCOUNT_ID, KEY_TO_LOGIN_STATUS, LOGIN_SESSION_EXPIRY};
+
+pub(crate) const KEY_TO_ADMIN_TOTP_ISSUER: &str = "ADMIN_TOTP_ISSUER";
+static ADMIN_TOTP_ISSUER: Lazy<String> = Lazy::new(|| {
+    let issuer = env::var(KEY_TO_ADMIN_TOTP_ISSUER).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_ADMIN_TOTP_ISSUER
+        )
+    });
+    if issuer.contains(':') {
+        panic!("ADMIN_TOTP_ISSUER must not contain \":\": {}", issuer);
+    }
+    issuer
+});
 
 pub(crate) async fn post_pass_code(
     jar: SignedCookieJar,
@@ -42,7 +58,7 @@ pub(crate) async fn post_pass_code(
         session_id.as_str(),
         &current_date_time,
         req.pass_code.as_str(),
-        "", // USER_TOTP_ISSUER.as_str(), TODO
+        ADMIN_TOTP_ISSUER.as_str(),
         &op,
         &store,
     )
@@ -250,4 +266,10 @@ impl PassCodeOperation for PassCodeOperationImpl {
     ) -> Result<(), ErrResp> {
         super::update_last_login(account_id, login_time, &self.pool).await
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
 }
