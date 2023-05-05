@@ -21,10 +21,8 @@ pub(crate) enum Code {
     IllegalDate = 30009,
     InvalidFormatReason = 30010,
     NoUpdateIdentityReqDetailFound = 30011,
-    NoUserAccountFound = 30012,
-    NoIdentityFound = 30013,
-    NoCreateCareerReqDetailFound = 30014,
-    NoUserAccountFoundOrTheAccountIsDisabled = 30015,
+    NoIdentityFound = 30012,
+    NoCreateCareerReqDetailFound = 30013,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

@@ -1,5 +1,10 @@
 // Copyright 2021 Ken Miura
 
+pub(crate) mod approval;
+pub(crate) mod detail;
+pub(crate) mod list;
+pub(crate) mod rejection;
+
 use common::ErrRespStruct;
 use entity::{
     sea_orm::{DatabaseTransaction, EntityTrait, QuerySelect},
@@ -9,10 +14,24 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
-pub(crate) mod approval;
-pub(crate) mod detail;
-pub(crate) mod list;
-pub(crate) mod rejection;
+async fn delete_update_identity_req(
+    user_account_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<(), ErrRespStruct> {
+    let _ = entity::update_identity_req::Entity::delete_by_id(user_account_id)
+        .exec(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete update identity request (user account id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(())
+}
 
 async fn find_update_identity_req_model_by_user_account_id_with_exclusive_lock(
     txn: &DatabaseTransaction,

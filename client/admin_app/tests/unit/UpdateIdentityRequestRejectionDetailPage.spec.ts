@@ -194,33 +194,4 @@ describe('UpdateIdentityRequestRejectionDetailPage.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(`${Message.INVALID_FORMAT_REASON_MESSAGE} (${Code.INVALID_FORMAT_REASON})`)
   })
-
-  it(`displays ${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} if ${Code.NO_USER_ACCOUNT_FOUND} is returned`, async () => {
-    routeParam = '1'
-    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_USER_ACCOUNT_FOUND))
-    postUpdateIdentityRequestRejectionFuncMock.mockResolvedValue(apiErrResp)
-    const wrapper = mount(UpdateIdentityRequestRejectionDetailPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-
-    const button = wrapper.find('[data-test="submit-button"]')
-    await button.trigger('submit')
-    await nextTick()
-
-    expect(postUpdateIdentityRequestRejectionFuncMock).toHaveBeenCalledTimes(1)
-    const list = createReasonList()
-    expect(postUpdateIdentityRequestRejectionFuncMock).toHaveBeenCalledWith(parseInt(routeParam), list[0])
-    expect(routerPushMock).toHaveBeenCalledTimes(0)
-    const alertMessages = wrapper.findAllComponents(AlertMessage)
-    expect(alertMessages.length).toBe(1)
-    const alertMessage = alertMessages[0]
-    const classes = alertMessage.classes()
-    expect(classes).not.toContain('hidden')
-    const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(`${Message.NO_USER_ACCOUNT_FOUND_MESSAGE} (${Code.NO_USER_ACCOUNT_FOUND})`)
-  })
 })

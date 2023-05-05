@@ -7,7 +7,7 @@ use common::{
         SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
         SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
     },
-    ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
+    ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
 use axum::extract::State;
@@ -22,16 +22,19 @@ use entity::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::{
-    err::{unexpected_err_resp, Code},
+    err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, user_operation::find_user_model_by_user_account_id_with_shared_lock,
     },
 };
 
-use super::find_update_identity_req_model_by_user_account_id_with_exclusive_lock;
+use super::{
+    delete_update_identity_req,
+    find_update_identity_req_model_by_user_account_id_with_exclusive_lock,
+};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 本人確認完了通知", WEB_SITE_NAME));
 
@@ -89,19 +92,17 @@ async fn handle_update_identity_request_approval(
         .approve_update_identity_req(user_account_id, admin_email_address, approved_time)
         .await?;
 
-    let user_email_address = approved_user.ok_or_else(|| {
-        // 承認をしようとした際、既にユーザーがアカウントを削除している、またはDisabledになっているケース
-        error!(
-            "no user account (user account id: {}) found or the account is disabled",
-            user_account_id
-        );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoUserAccountFoundOrTheAccountIsDisabled as u32,
-            }),
-        )
-    })?;
+    let user_email_address = match approved_user {
+        Some(u) => u,
+        None => {
+            // 承認をしようとした際、既にユーザーがアカウントを削除している、またはDisabledになっているケース
+            info!(
+                "no user account (user account id: {}) found or the account is disabled",
+                user_account_id
+            );
+            return Ok((StatusCode::OK, Json(UpdateIdentityReqApprovalResult {})));
+        }
+    };
 
     send_mail
         .send_mail(
@@ -164,15 +165,21 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let user_option = find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
+
+                    let identity_option = find_identity_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
+
                     let user = match user_option {
                         Some(m) => m,
-                        None => { return Ok(None) },
+                        None => {
+                            delete_update_identity_req(user_account_id, txn).await?;
+                            return Ok(None)
+                        },
                     };
                     if user.disabled_at.is_some() {
+                        delete_update_identity_req(user_account_id, txn).await?;
                         return Ok(None)
                     }
 
-                    let identity_option = find_identity_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
                     let _ = identity_option.ok_or_else(|| {
                             error!(
                                 "no identity (user account id: {}) found",
@@ -209,16 +216,7 @@ impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationIm
                         }
                     })?;
 
-                    let _ = update_identity_req::Entity::delete_by_id(user_account_id).exec(txn).await.map_err(|e| {
-                        error!(
-                            "failed to delete update identity request (user account id: {}): {}",
-                            user_account_id,
-                            e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
+                    delete_update_identity_req(user_account_id, txn).await?;
 
                     Ok(Some(user.email_address))
                 })
@@ -321,9 +319,7 @@ mod tests {
     use chrono::{DateTime, FixedOffset, TimeZone};
     use common::{smtp::SYSTEM_EMAIL_ADDRESS, ErrResp, JAPANESE_TIME_ZONE};
 
-    use crate::{
-        err::Code, handlers::session::authentication::authenticated_handlers::tests::SendMailMock,
-    };
+    use crate::handlers::session::authentication::authenticated_handlers::tests::SendMailMock;
 
     use super::*;
 
@@ -414,7 +410,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_update_identity_request_approval_fail_no_user_account_found() {
+    async fn handle_update_identity_request_approval_success_no_user_account_found() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
@@ -446,11 +442,8 @@ mod tests {
         )
         .await;
 
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(
-            Code::NoUserAccountFoundOrTheAccountIsDisabled as u32,
-            resp.1 .0.code
-        );
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(UpdateIdentityReqApprovalResult {}, resp.1 .0);
     }
 }

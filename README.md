@@ -26,8 +26,6 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 
 管理者向けサイトで同じユーザーからの確認依頼かどうかの確認で承認済みユーザーのみしか確認していない箇所に関して、削除済みのユーザーかどうかのエリアを追加する
 
-承認、拒否のタイミングでアカウントが削除されている（または無効化されている場合）場合、create_identity_request、update_identity_request、create_career_requestについて削除する
-
 SkyWayクライアントサイドのエラーハンドリング
 
 # NOTE
