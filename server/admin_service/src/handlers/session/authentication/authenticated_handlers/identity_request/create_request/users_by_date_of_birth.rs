@@ -308,6 +308,54 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_users_by_date_of_birth_internal_success_one_disabled_user_found() {
+        let date_of_birth = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(1991, 4, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
+        let user = create_dummy_user4(date_of_birth);
+        let op_mock = UsersByDateOfBirthOperationMock {
+            users: vec![user.clone()],
+        };
+
+        let result = get_users_by_date_of_birth_internal(
+            date_of_birth.year(),
+            date_of_birth.month(),
+            date_of_birth.day(),
+            op_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(vec![user], resp.1 .0);
+    }
+
+    #[tokio::test]
+    async fn get_users_by_date_of_birth_internal_success_one_deleted_user_found() {
+        let date_of_birth = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(1991, 4, 1, 0, 0, 0)
+            .unwrap()
+            .date_naive();
+        let user = create_dummy_user5(date_of_birth);
+        let op_mock = UsersByDateOfBirthOperationMock {
+            users: vec![user.clone()],
+        };
+
+        let result = get_users_by_date_of_birth_internal(
+            date_of_birth.year(),
+            date_of_birth.month(),
+            date_of_birth.day(),
+            op_mock,
+        )
+        .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(vec![user], resp.1 .0);
+    }
+
+    #[tokio::test]
     async fn get_users_by_date_of_birth_internal_success_no_user_found() {
         let date_of_birth = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(1991, 4, 1, 0, 0, 0)
@@ -475,6 +523,50 @@ mod tests {
             address_line2: None,
             telephone_number: String::from("08087654321"),
             account_status: AccountStatus::Enabled,
+        }
+    }
+
+    fn create_dummy_user4(date_of_birth: NaiveDate) -> User {
+        let ymd = Ymd {
+            year: date_of_birth.year(),
+            month: date_of_birth.month(),
+            day: date_of_birth.day(),
+        };
+        User {
+            user_account_id: 341,
+            last_name: String::from("田中"),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("タナカ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: ymd,
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("09012345678"),
+            account_status: AccountStatus::Disabled,
+        }
+    }
+
+    fn create_dummy_user5(date_of_birth: NaiveDate) -> User {
+        let ymd = Ymd {
+            year: date_of_birth.year(),
+            month: date_of_birth.month(),
+            day: date_of_birth.day(),
+        };
+        User {
+            user_account_id: 341,
+            last_name: String::from("田中"),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("タナカ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: ymd,
+            prefecture: String::from("東京都"),
+            city: String::from("町田市"),
+            address_line1: String::from("森の里２−２２−２"),
+            address_line2: None,
+            telephone_number: String::from("09012345678"),
+            account_status: AccountStatus::Deleted,
         }
     }
 }
