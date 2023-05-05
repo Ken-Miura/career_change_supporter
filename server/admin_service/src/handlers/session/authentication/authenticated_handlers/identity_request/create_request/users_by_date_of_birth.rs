@@ -18,6 +18,9 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::IllegalDate;
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
+use crate::handlers::session::authentication::authenticated_handlers::user_operation::{
+    FindUserInfoOperation, FindUserInfoOperationImpl, UserInfo,
+};
 
 pub(crate) async fn get_users_by_date_of_birth(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -37,6 +40,21 @@ pub(crate) struct DateOfBirth {
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
+struct UserWithoutAccountStatus {
+    user_account_id: i64,
+    last_name: String,
+    first_name: String,
+    last_name_furigana: String,
+    first_name_furigana: String,
+    date_of_birth: Ymd,
+    prefecture: String,
+    city: String,
+    address_line1: String,
+    address_line2: Option<String>,
+    telephone_number: String,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct User {
     user_account_id: i64,
     last_name: String,
@@ -49,6 +67,14 @@ pub(crate) struct User {
     address_line1: String,
     address_line2: Option<String>,
     telephone_number: String,
+    account_status: AccountStatus,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+enum AccountStatus {
+    Enabled,
+    Disabled,
+    Deleted,
 }
 
 async fn get_users_by_date_of_birth_internal(
@@ -66,8 +92,52 @@ async fn get_users_by_date_of_birth_internal(
             }),
         )
     })?;
-    let users = op.get_users_by_date_of_birth(date_of_birth).await?;
+
+    let users_without_account_status = op.get_users_by_date_of_birth(date_of_birth).await?;
+
+    let mut users = Vec::with_capacity(users_without_account_status.capacity());
+    // NOTE:
+    //   同じ生年月日のユーザーは少ないと考え、forでSQLクエリを繰り返す。
+    //   運用中、性能問題が発生した場合（同じ生年月日のユーザーが多数いるケースが珍しくないと判明した場合）、JOINを使い一度のクエリで取得できるように書き直す。
+    for user_without_account_status in users_without_account_status {
+        let user_info = op
+            .find_user_info_by_user_account_id(user_without_account_status.user_account_id)
+            .await?;
+        let user = create_user(user_info, user_without_account_status);
+        users.push(user);
+    }
+
     Ok((StatusCode::OK, Json(users)))
+}
+
+fn create_user(
+    user_info: Option<UserInfo>,
+    user_without_account_status: UserWithoutAccountStatus,
+) -> User {
+    let account_status = match user_info {
+        Some(ui) => {
+            if ui.disabled_at.is_some() {
+                AccountStatus::Disabled
+            } else {
+                AccountStatus::Enabled
+            }
+        }
+        None => AccountStatus::Deleted,
+    };
+    User {
+        user_account_id: user_without_account_status.user_account_id,
+        last_name: user_without_account_status.last_name,
+        first_name: user_without_account_status.first_name,
+        last_name_furigana: user_without_account_status.last_name_furigana,
+        first_name_furigana: user_without_account_status.first_name_furigana,
+        date_of_birth: user_without_account_status.date_of_birth,
+        prefecture: user_without_account_status.prefecture,
+        city: user_without_account_status.city,
+        address_line1: user_without_account_status.address_line1,
+        address_line2: user_without_account_status.address_line2,
+        telephone_number: user_without_account_status.telephone_number,
+        account_status,
+    }
 }
 
 #[async_trait]
@@ -75,7 +145,12 @@ trait UsersByDateOfBirthOperation {
     async fn get_users_by_date_of_birth(
         &self,
         date_of_birth: NaiveDate,
-    ) -> Result<Vec<User>, ErrResp>;
+    ) -> Result<Vec<UserWithoutAccountStatus>, ErrResp>;
+
+    async fn find_user_info_by_user_account_id(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<UserInfo>, ErrResp>;
 }
 
 struct UsersByDateOfBirthOperationImpl {
@@ -87,7 +162,7 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
     async fn get_users_by_date_of_birth(
         &self,
         date_of_birth: NaiveDate,
-    ) -> Result<Vec<User>, ErrResp> {
+    ) -> Result<Vec<UserWithoutAccountStatus>, ErrResp> {
         let models = Identity::find()
             .filter(identity::Column::DateOfBirth.eq(date_of_birth))
             .all(&self.pool)
@@ -101,7 +176,7 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
             })?;
         Ok(models
             .into_iter()
-            .map(|m| User {
+            .map(|m| UserWithoutAccountStatus {
                 user_account_id: m.user_account_id,
                 last_name: m.last_name,
                 first_name: m.first_name,
@@ -118,7 +193,15 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
                 address_line2: m.address_line2,
                 telephone_number: m.telephone_number,
             })
-            .collect::<Vec<User>>())
+            .collect::<Vec<UserWithoutAccountStatus>>())
+    }
+
+    async fn find_user_info_by_user_account_id(
+        &self,
+        user_account_id: i64,
+    ) -> Result<Option<UserInfo>, ErrResp> {
+        let op = FindUserInfoOperationImpl::new(&self.pool);
+        op.find_user_info_by_account_id(user_account_id).await
     }
 }
 
@@ -143,19 +226,60 @@ mod tests {
         async fn get_users_by_date_of_birth(
             &self,
             date_of_birth: NaiveDate,
-        ) -> Result<Vec<User>, ErrResp> {
-            let mut users = Vec::with_capacity(self.users.len());
+        ) -> Result<Vec<UserWithoutAccountStatus>, ErrResp> {
+            let ymd = Ymd {
+                year: date_of_birth.year(),
+                month: date_of_birth.month(),
+                day: date_of_birth.day(),
+            };
+            let mut users_without_account_status = Vec::with_capacity(self.users.capacity());
             for user in &self.users {
-                let ymd = Ymd {
-                    year: date_of_birth.year(),
-                    month: date_of_birth.month(),
-                    day: date_of_birth.day(),
+                if user.date_of_birth != ymd {
+                    continue;
+                }
+                let user_without_account_status = UserWithoutAccountStatus {
+                    user_account_id: user.user_account_id,
+                    last_name: user.last_name.clone(),
+                    first_name: user.first_name.clone(),
+                    last_name_furigana: user.last_name_furigana.clone(),
+                    first_name_furigana: user.first_name_furigana.clone(),
+                    date_of_birth: user.date_of_birth.clone(),
+                    prefecture: user.prefecture.clone(),
+                    city: user.city.clone(),
+                    address_line1: user.address_line1.clone(),
+                    address_line2: user.address_line2.clone(),
+                    telephone_number: user.telephone_number.clone(),
                 };
-                if user.date_of_birth == ymd {
-                    users.push(user.clone());
+                users_without_account_status.push(user_without_account_status);
+            }
+            Ok(users_without_account_status)
+        }
+
+        async fn find_user_info_by_user_account_id(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Option<UserInfo>, ErrResp> {
+            for user in &self.users {
+                if user.user_account_id == user_account_id {
+                    let account_status = user.account_status.clone();
+                    let disabled_at = match account_status {
+                        AccountStatus::Enabled => None,
+                        AccountStatus::Disabled => Some(
+                            JAPANESE_TIME_ZONE
+                                .with_ymd_and_hms(2023, 4, 5, 0, 1, 7) // Someで返せばよいので日時はダミー値
+                                .unwrap(),
+                        ),
+                        AccountStatus::Deleted => return Ok(None),
+                    };
+                    return Ok(Some(UserInfo {
+                        account_id: user.user_account_id,
+                        email_address: "test@test.com".to_string(), // 利用しないのでリテラルでダミー値をセット
+                        mfa_enabled_at: None, // 利用しないのでリテラルでダミー値をセット
+                        disabled_at,
+                    }));
                 }
             }
-            Ok(users)
+            panic!("never reach here!")
         }
     }
 
@@ -306,6 +430,7 @@ mod tests {
             address_line1: String::from("森の里２−２２−２"),
             address_line2: None,
             telephone_number: String::from("09012345678"),
+            account_status: AccountStatus::Enabled,
         }
     }
 
@@ -327,6 +452,7 @@ mod tests {
             address_line1: String::from("泉崎１ー１ー１"),
             address_line2: None,
             telephone_number: String::from("08012345678"),
+            account_status: AccountStatus::Enabled,
         }
     }
 
@@ -348,6 +474,7 @@ mod tests {
             address_line1: String::from("中央区北1条西2丁目"),
             address_line2: None,
             telephone_number: String::from("08087654321"),
+            account_status: AccountStatus::Enabled,
         }
     }
 }
