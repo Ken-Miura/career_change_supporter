@@ -22,7 +22,7 @@ use entity::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::{
     err::{unexpected_err_resp, Code},
@@ -32,7 +32,10 @@ use crate::{
     },
 };
 
-use super::super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock;
+use super::{
+    super::find_create_career_req_model_by_create_career_req_id_with_exclusive_lock,
+    delete_create_career_req,
+};
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴登録拒否通知", WEB_SITE_NAME));
 
@@ -118,19 +121,17 @@ async fn handle_create_career_request_rejection(
         )
         .await?;
 
-    let user_email_address = rejected_user.ok_or_else(|| {
-        // 拒否をしようとした際、既にユーザーがアカウントを削除しているケース
-        error!(
-            "no user account (user account id: {}) found",
-            user_account_id
-        );
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoUserAccountFound as u32,
-            }),
-        )
-    })?;
+    let user_email_address = match rejected_user {
+        Some(u) => u,
+        None => {
+            // 拒否をしようとした際、既にユーザーがアカウントを削除しているケース、またはDisabledになっているケース
+            info!(
+                "no user account (user account id: {}) found or the account is disabled",
+                user_account_id
+            );
+            return Ok((StatusCode::OK, Json(CreateCareerReqRejectionResult {})));
+        }
+    };
 
     send_mail
         .send_mail(
@@ -221,10 +222,6 @@ impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationImpl
                     let user_option =
                         find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id)
                             .await?;
-                    let user = match user_option {
-                        Some(m) => m,
-                        None => return Ok(None),
-                    };
 
                     let req =
                         find_create_career_req_model_by_create_career_req_id_with_exclusive_lock(
@@ -232,6 +229,20 @@ impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationImpl
                             create_career_req_id,
                         )
                         .await?;
+
+                    let user = match user_option {
+                        Some(m) => m,
+                        None => {
+                            return {
+                                delete_create_career_req(req.create_career_req_id, txn).await?;
+                                Ok(None)
+                            }
+                        }
+                    };
+                    if user.disabled_at.is_some() {
+                        delete_create_career_req(req.create_career_req_id, txn).await?;
+                        return Ok(None);
+                    }
 
                     let rejected_req_active_model =
                         generate_rejected_create_career_req_active_model(
@@ -250,18 +261,7 @@ impl CreateCareerReqRejectionOperation for CreateCareerReqRejectionOperationImpl
                         }
                     })?;
 
-                    let _ = create_career_req::Entity::delete_by_id(create_career_req_id)
-                        .exec(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to delete create_career_req (create_career_req_id: {}): {}",
-                                create_career_req_id, e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
+                    delete_create_career_req(create_career_req_id, txn).await?;
 
                     let _ = delete_career_images(
                         user_account_id,
@@ -555,7 +555,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_create_career_request_rejection_fail_no_user_account_found() {
+    async fn handle_create_career_request_rejection_success_no_user_account_found() {
         let admin_account_id = 23;
         let admin = Admin {
             admin_account_id,
@@ -596,8 +596,8 @@ mod tests {
         )
         .await;
 
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(Code::NoUserAccountFound as u32, resp.1 .0.code);
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(CreateCareerReqRejectionResult {}, resp.1 .0);
     }
 }
