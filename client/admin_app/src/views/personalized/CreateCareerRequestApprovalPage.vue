@@ -9,8 +9,9 @@
       <h3 class="font-bold text-lg">職務経歴確認依頼を承認しました。</h3>
       <router-link to="/create-career-request-list" class="m-4 hover:underline">職務経歴確認依頼一覧へ</router-link>
     </main>
-    <footer class="max-w-lg mx-auto flex justify-center text-white">
-      <router-link to="/" class="hover:underline">トップページへ</router-link>
+    <footer class="max-w-lg mx-auto flex flex-col text-white">
+      <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
+      <router-link to="/" class="mt-6 hover:underline text-center">トップページへ</router-link>
     </footer>
   </div>
 </template>

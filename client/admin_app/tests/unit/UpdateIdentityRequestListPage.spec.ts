@@ -236,7 +236,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      user_account_id: 1,
+      user_account_id: 2,
       name: '田中 太郎',
       requested_at: date2
     } as UpdateIdentityRequestItem
@@ -272,7 +272,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      user_account_id: 1,
+      user_account_id: 2,
       name: '田中 太郎',
       requested_at: date2
     } as UpdateIdentityRequestItem
@@ -315,7 +315,7 @@ describe('UpdateIdentityRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      user_account_id: 1,
+      user_account_id: 2,
       name: '田中 太郎',
       requested_at: date2
     } as UpdateIdentityRequestItem

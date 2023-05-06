@@ -45,7 +45,7 @@
           </div>
           <div v-else>
             <ul data-test="same-date-of-birth-users">
-              <li v-for="user in users" v-bind:key="user">
+              <li v-for="user in users" v-bind:key="user.user_account_id">
                 <div class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーアカウントID: {{ user.user_account_id }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
@@ -142,6 +142,7 @@ export default defineComponent({
     const waitingRequestDone = computed(() => {
       return waitingGetCreateIdentityRequestDetailDone.value || waitingGetUsersByDateOfBirthDone.value || waitingPostCreateIdentityRequestApprovalDone.value
     })
+
     const getUsers = async (year: number, month: number, day: number) => {
       const response = await getUsersByDateOfBirthFunc(year, month, day)
       if (!(response instanceof GetUsersByDateOfBirthResp)) {
@@ -159,6 +160,7 @@ export default defineComponent({
       }
       users.value = response.getUsers()
     }
+
     onMounted(async () => {
       try {
         const response = await getCreateIdentityRequestDetailFunc(userAccountId)

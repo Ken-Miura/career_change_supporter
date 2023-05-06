@@ -24,8 +24,9 @@
         </form>
       </div>
     </main>
-    <footer class="max-w-lg mx-auto flex justify-center text-white">
-      <router-link to="/" class="hover:underline">トップページへ</router-link>
+    <footer class="max-w-lg mx-auto flex flex-col text-white">
+      <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
+      <router-link to="/" class="mt-6 hover:underline text-center">トップページへ</router-link>
     </footer>
   </div>
 </template>

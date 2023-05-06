@@ -18,7 +18,7 @@
             <div class="mt-2 justify-self-start col-span-1"></div>
           </div>
           <ul data-test="items">
-            <li v-for="item in items" v-bind:key="item">
+            <li v-for="item in items" v-bind:key="item.create_career_req_id">
               <div class="mt-4">
                 <div class="border border-gray-600 rounded bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
                   <div class="mt-3 justify-self-start col-span-2">{{ item.requested_at.getFullYear() }}年{{ (item.requested_at.getMonth() + 1).toString().padStart(2, '0') }}月{{ item.requested_at.getDate().toString().padStart(2, '0') }}日{{ item.requested_at.getHours().toString().padStart(2, '0') }}時{{ item.requested_at.getMinutes().toString().padStart(2, '0') }}分{{ item.requested_at.getSeconds().toString().padStart(2, '0') }}秒</div>

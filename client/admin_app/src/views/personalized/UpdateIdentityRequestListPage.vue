@@ -18,7 +18,7 @@
             <div class="mt-2 justify-self-start col-span-1"></div>
           </div>
           <ul data-test="items">
-            <li v-for="item in items" v-bind:key="item">
+            <li v-for="item in items" v-bind:key="item.user_account_id">
               <div class="mt-4">
                 <div class="border border-gray-600 rounded bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
                   <div class="mt-3 justify-self-start col-span-2">{{ item.requested_at.getFullYear() }}年{{ (item.requested_at.getMonth() + 1).toString().padStart(2, '0') }}月{{ item.requested_at.getDate().toString().padStart(2, '0') }}日{{ item.requested_at.getHours().toString().padStart(2, '0') }}時{{ item.requested_at.getMinutes().toString().padStart(2, '0') }}分{{ item.requested_at.getSeconds().toString().padStart(2, '0') }}秒</div>
@@ -35,8 +35,9 @@
         </div>
       </div>
     </main>
-    <footer class="max-w-lg mx-auto flex justify-center text-white">
-      <router-link to="/" class="hover:underline">トップページへ</router-link>
+    <footer class="max-w-lg mx-auto flex flex-col text-white">
+      <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
+      <router-link to="/" class="mt-6 hover:underline text-center">トップページへ</router-link>
     </footer>
   </div>
 </template>

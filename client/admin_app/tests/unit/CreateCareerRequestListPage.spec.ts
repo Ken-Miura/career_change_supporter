@@ -236,7 +236,7 @@ describe('CreateCareerRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      create_career_req_id: 1,
+      create_career_req_id: 2,
       company_name: 'テスト２株式会社',
       requested_at: date2
     } as CreateCareerRequestItem
@@ -272,7 +272,7 @@ describe('CreateCareerRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      create_career_req_id: 1,
+      create_career_req_id: 2,
       company_name: 'テスト２株式会社',
       requested_at: date2
     } as CreateCareerRequestItem
@@ -315,7 +315,7 @@ describe('CreateCareerRequestListPage.vue', () => {
     const date2Utc = date1Utc + 60
     const date2 = new Date(date2Utc)
     const item2 = {
-      create_career_req_id: 1,
+      create_career_req_id: 2,
       company_name: 'テスト２株式会社',
       requested_at: date2
     } as CreateCareerRequestItem
