@@ -10,6 +10,7 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { Message } from '@/util/Message'
 import AlertMessage from '@/components/AlertMessage.vue'
 import { PostCreateIdentityRequestApprovalResp } from '@/util/personalized/create-identity-request-detail/PostCreateIdentityRequestApprovalResp'
+import { AccountStatus } from '@/util/personalized/create-identity-request-detail/AccountStatus'
 
 const routerPushMock = jest.fn()
 let routeParam = ''
@@ -709,7 +710,8 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
       city: '町田市',
       address_line1: '森の里２−２２−２',
       address_line2: 'アーバンライフ２０２号',
-      telephone_number: '07087654321'
+      telephone_number: '07087654321',
+      account_status: 'Enabled' as AccountStatus
     }
     const resp2 = GetUsersByDateOfBirthResp.create([user])
     getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
@@ -778,7 +780,8 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
       city: '町田市',
       address_line1: '森の里２−２２−２',
       address_line2: 'アーバンライフ２０２号',
-      telephone_number: '07087654321'
+      telephone_number: '07087654321',
+      account_status: 'Enabled' as AccountStatus
     }
     const user2 = {
       user_account_id: 8785,
@@ -791,7 +794,8 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
       city: '札幌市',
       address_line1: '北区２−１',
       address_line2: 'アーバンライフ２０２号',
-      telephone_number: '09087654321'
+      telephone_number: '09087654321',
+      account_status: 'Enabled' as AccountStatus
     }
     const resp2 = GetUsersByDateOfBirthResp.create([user1, user2])
     getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)

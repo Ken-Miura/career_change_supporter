@@ -1,4 +1,5 @@
 import { Ymd } from '@/util/Ymd'
+import { AccountStatus } from './AccountStatus'
 
 export type User = {
     /* eslint-disable camelcase */
@@ -13,5 +14,6 @@ export type User = {
     address_line1: string,
     address_line2: string | null,
     telephone_number: string,
+    account_status: AccountStatus
     /* eslint-enable camelcase */
 }
