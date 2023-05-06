@@ -676,7 +676,7 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
     expect(noUsersFound).toContain('生年月日が同じユーザーはいません。')
   })
 
-  it('displays user who has same date of birth', async () => {
+  it('displays user who has same date of birth (account status is enabled)', async () => {
     routeParam = '1626'
     const detail = {
       last_name: '田中',
@@ -727,6 +727,152 @@ describe('CreateIdentityRequestDetailPage.vue', () => {
     const usersDiv = wrapper.find('[data-test="same-date-of-birth-users"]')
     const users = usersDiv.text()
     expect(users).toContain(`ユーザーアカウントID: ${user.user_account_id}`)
+    expect(users).toContain('アカウントステータス')
+    expect(users).toContain('有効')
+    expect(users).toContain('氏名')
+    expect(users).toContain(`${user.last_name} ${user.first_name}`)
+    expect(users).toContain('フリガナ')
+    expect(users).toContain(`${user.last_name_furigana} ${user.first_name_furigana}`)
+    expect(users).toContain('生年月日')
+    expect(users).toContain(`${user.date_of_birth.year}年${user.date_of_birth.month}月${user.date_of_birth.day}日`)
+    expect(users).toContain('住所')
+    expect(users).toContain('都道府県')
+    expect(users).toContain(`${user.prefecture}`)
+    expect(users).toContain('市区町村')
+    expect(users).toContain(`${user.city}`)
+    expect(users).toContain('番地')
+    expect(users).toContain(`${user.address_line1}`)
+    expect(users).toContain('建物名・部屋番号')
+    expect(users).toContain(`${user.address_line2}`)
+    expect(users).toContain('電話番号')
+    expect(users).toContain(`${user.telephone_number}`)
+  })
+
+  it('displays user who has same date of birth (account status is disabled)', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: 'サーパスマンション１０１号',
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetCreateIdentityRequestDetailResp.create(detail)
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const user = {
+      user_account_id: 5341,
+      last_name: '佐藤',
+      first_name: '次郎',
+      last_name_furigana: 'サトウ',
+      first_name_furigana: 'ジロウ',
+      date_of_birth: detail.date_of_birth,
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '森の里２−２２−２',
+      address_line2: 'アーバンライフ２０２号',
+      telephone_number: '07087654321',
+      account_status: 'Disabled' as AccountStatus
+    }
+    const resp2 = GetUsersByDateOfBirthResp.create([user])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const usersDiv = wrapper.find('[data-test="same-date-of-birth-users"]')
+    const users = usersDiv.text()
+    expect(users).toContain(`ユーザーアカウントID: ${user.user_account_id}`)
+    expect(users).toContain('アカウントステータス')
+    expect(users).toContain('無効')
+    expect(users).toContain('氏名')
+    expect(users).toContain(`${user.last_name} ${user.first_name}`)
+    expect(users).toContain('フリガナ')
+    expect(users).toContain(`${user.last_name_furigana} ${user.first_name_furigana}`)
+    expect(users).toContain('生年月日')
+    expect(users).toContain(`${user.date_of_birth.year}年${user.date_of_birth.month}月${user.date_of_birth.day}日`)
+    expect(users).toContain('住所')
+    expect(users).toContain('都道府県')
+    expect(users).toContain(`${user.prefecture}`)
+    expect(users).toContain('市区町村')
+    expect(users).toContain(`${user.city}`)
+    expect(users).toContain('番地')
+    expect(users).toContain(`${user.address_line1}`)
+    expect(users).toContain('建物名・部屋番号')
+    expect(users).toContain(`${user.address_line2}`)
+    expect(users).toContain('電話番号')
+    expect(users).toContain(`${user.telephone_number}`)
+  })
+
+  it('displays user who has same date of birth (account status is deleted)', async () => {
+    routeParam = '1626'
+    const detail = {
+      last_name: '田中',
+      first_name: '太郎',
+      last_name_furigana: 'タナカ',
+      first_name_furigana: 'タロウ',
+      date_of_birth: {
+        year: 1994,
+        month: 5,
+        day: 21
+      },
+      prefecture: '北海道',
+      city: '札幌市',
+      address_line1: '北区２−１',
+      address_line2: 'サーパスマンション１０１号',
+      telephone_number: '09012345678',
+      image1_file_name_without_ext: 'c9df65633f6fa4ff2960000535156eda',
+      image2_file_name_without_ext: 'cc22730f1780f733ca92e052260a9b15',
+      requested_at: new Date(Date.UTC(2022, 4, 10, 16, 38, 43))
+    }
+    const resp1 = GetCreateIdentityRequestDetailResp.create(detail)
+    getCreateIdentityRequestDetailFuncMock.mockResolvedValue(resp1)
+    const user = {
+      user_account_id: 5341,
+      last_name: '佐藤',
+      first_name: '次郎',
+      last_name_furigana: 'サトウ',
+      first_name_furigana: 'ジロウ',
+      date_of_birth: detail.date_of_birth,
+      prefecture: '東京都',
+      city: '町田市',
+      address_line1: '森の里２−２２−２',
+      address_line2: 'アーバンライフ２０２号',
+      telephone_number: '07087654321',
+      account_status: 'Deleted' as AccountStatus
+    }
+    const resp2 = GetUsersByDateOfBirthResp.create([user])
+    getUsersByDateOfBirthFuncMock.mockResolvedValue(resp2)
+    const wrapper = mount(CreateIdentityRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const usersDiv = wrapper.find('[data-test="same-date-of-birth-users"]')
+    const users = usersDiv.text()
+    expect(users).toContain(`ユーザーアカウントID: ${user.user_account_id}`)
+    expect(users).toContain('アカウントステータス')
+    expect(users).toContain('削除済み')
     expect(users).toContain('氏名')
     expect(users).toContain(`${user.last_name} ${user.first_name}`)
     expect(users).toContain('フリガナ')
