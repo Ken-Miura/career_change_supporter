@@ -13,7 +13,7 @@ use common::{
 use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_update_identity_req, identity,
+    approved_update_identity_req, identity,
     sea_orm::{
         ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction,
         EntityTrait, QuerySelect, Set, TransactionError, TransactionTrait,
@@ -52,7 +52,7 @@ pub(crate) async fn post_update_identity_request_approval(
         SMTP_PASSWORD.to_string(),
     );
     handle_update_identity_request_approval(
-        admin_info.account_id,
+        admin_info.email_address,
         update_identity_req_approval.user_account_id,
         current_date_time,
         op,
@@ -70,24 +70,12 @@ pub(crate) struct UpdateIdentityReqApproval {
 pub(crate) struct UpdateIdentityReqApprovalResult {}
 
 async fn handle_update_identity_request_approval(
-    admin_account_id: i64,
+    admin_email_address: String,
     user_account_id: i64,
     approved_time: DateTime<FixedOffset>,
     op: impl UpdateIdentityReqApprovalOperation,
     send_mail: impl SendMail,
 ) -> RespResult<UpdateIdentityReqApprovalResult> {
-    let admin_email_address_option = op
-        .get_admin_email_address_by_admin_account_id(admin_account_id)
-        .await?;
-    let admin_email_address = admin_email_address_option.ok_or_else(|| {
-        error!(
-            "no admin account (admin account id: {}) found",
-            admin_account_id
-        );
-        // admin accountでログインしているので、admin accountがないことはunexpected errorとして処理する
-        unexpected_err_resp()
-    })?;
-
     let approved_user = op
         .approve_update_identity_req(user_account_id, admin_email_address, approved_time)
         .await?;
@@ -118,11 +106,6 @@ async fn handle_update_identity_request_approval(
 
 #[async_trait]
 trait UpdateIdentityReqApprovalOperation {
-    async fn get_admin_email_address_by_admin_account_id(
-        &self,
-        admin_account_id: i64,
-    ) -> Result<Option<String>, ErrResp>;
-
     async fn approve_update_identity_req(
         &self,
         user_account_id: i64,
@@ -137,23 +120,6 @@ struct UpdateIdentityReqApprovalOperationImpl {
 
 #[async_trait]
 impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationImpl {
-    async fn get_admin_email_address_by_admin_account_id(
-        &self,
-        admin_account_id: i64,
-    ) -> Result<Option<String>, ErrResp> {
-        let model = admin_account::Entity::find_by_id(admin_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find admin account (admin account id: {}): {}",
-                    admin_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| m.email_address))
-    }
-
     async fn approve_update_identity_req(
         &self,
         user_account_id: i64,
@@ -323,11 +289,6 @@ mod tests {
 
     use super::*;
 
-    struct Admin {
-        admin_account_id: i64,
-        email_address: String,
-    }
-
     #[derive(Clone)]
     struct User {
         user_account_id: i64,
@@ -335,21 +296,13 @@ mod tests {
     }
 
     struct UpdateIdentityReqApprovalOperationMock {
-        admin: Admin,
+        admin_email_address: String,
         user_option: Option<User>,
         approved_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
     impl UpdateIdentityReqApprovalOperation for UpdateIdentityReqApprovalOperationMock {
-        async fn get_admin_email_address_by_admin_account_id(
-            &self,
-            admin_account_id: i64,
-        ) -> Result<Option<String>, ErrResp> {
-            assert_eq!(self.admin.admin_account_id, admin_account_id);
-            Ok(Some(self.admin.email_address.clone()))
-        }
-
         async fn approve_update_identity_req(
             &self,
             user_account_id: i64,
@@ -358,7 +311,7 @@ mod tests {
         ) -> Result<Option<String>, ErrResp> {
             if let Some(user) = self.user_option.clone() {
                 assert_eq!(user.user_account_id, user_account_id);
-                assert_eq!(self.admin.email_address, approver_email_address);
+                assert_eq!(self.admin_email_address, approver_email_address);
                 assert_eq!(self.approved_time, approved_time);
                 Ok(Some(user.email_address))
             } else {
@@ -369,11 +322,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_update_identity_request_approval_success() {
-        let admin_account_id = 23;
-        let admin = Admin {
-            admin_account_id,
-            email_address: String::from("admin@test.com"),
-        };
+        let admin_email_address = String::from("admin@test.com");
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
         let user_option = Some(User {
@@ -384,7 +333,7 @@ mod tests {
             .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
             .unwrap();
         let op_mock = UpdateIdentityReqApprovalOperationMock {
-            admin,
+            admin_email_address: admin_email_address.clone(),
             user_option,
             approved_time: approval_time,
         };
@@ -396,7 +345,7 @@ mod tests {
         );
 
         let result = handle_update_identity_request_approval(
-            admin_account_id,
+            admin_email_address,
             user_account_id,
             approval_time,
             op_mock,
@@ -411,18 +360,14 @@ mod tests {
 
     #[tokio::test]
     async fn handle_update_identity_request_approval_success_no_user_account_found() {
-        let admin_account_id = 23;
-        let admin = Admin {
-            admin_account_id,
-            email_address: String::from("admin@test.com"),
-        };
+        let admin_email_address = String::from("admin@test.com");
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
         let approval_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
             .unwrap();
         let op_mock = UpdateIdentityReqApprovalOperationMock {
-            admin,
+            admin_email_address: admin_email_address.clone(),
             user_option: None,
             approved_time: approval_time,
         };
@@ -434,7 +379,7 @@ mod tests {
         );
 
         let result = handle_update_identity_request_approval(
-            admin_account_id,
+            admin_email_address,
             user_account_id,
             approval_time,
             op_mock,

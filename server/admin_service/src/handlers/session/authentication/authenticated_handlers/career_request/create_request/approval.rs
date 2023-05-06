@@ -15,7 +15,7 @@ use common::{
 use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, approved_create_career_req, career, create_career_req, document,
+    approved_create_career_req, career, create_career_req, document,
     sea_orm::{
         ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection,
         DatabaseTransaction, EntityTrait, PaginatorTrait, QueryFilter, QuerySelect, Set,
@@ -56,7 +56,7 @@ pub(crate) async fn post_create_career_request_approval(
         SMTP_PASSWORD.to_string(),
     );
     handle_create_career_request_approval(
-        admin_info.account_id,
+        admin_info.email_address,
         create_career_req_approval.create_career_req_id,
         current_date_time,
         op,
@@ -74,24 +74,12 @@ pub(crate) struct CreateCareerReqApproval {
 pub(crate) struct CreateCareerReqApprovalResult {}
 
 async fn handle_create_career_request_approval(
-    admin_account_id: i64,
+    admin_email_address: String,
     create_career_req_id: i64,
     approved_time: DateTime<FixedOffset>,
     op: impl CreateCareerReqApprovalOperation,
     send_mail: impl SendMail,
 ) -> RespResult<CreateCareerReqApprovalResult> {
-    let admin_email_address_option = op
-        .get_admin_email_address_by_admin_account_id(admin_account_id)
-        .await?;
-    let admin_email_address = admin_email_address_option.ok_or_else(|| {
-        error!(
-            "no admin account (admin account id: {}) found",
-            admin_account_id
-        );
-        // admin accountでログインしているので、admin accountがないことはunexpected errorとして処理する
-        unexpected_err_resp()
-    })?;
-
     let user_account_id_option = op
         .get_user_account_id_by_create_career_req_id(create_career_req_id)
         .await?;
@@ -138,11 +126,6 @@ async fn handle_create_career_request_approval(
 
 #[async_trait]
 trait CreateCareerReqApprovalOperation {
-    async fn get_admin_email_address_by_admin_account_id(
-        &self,
-        admin_account_id: i64,
-    ) -> Result<Option<String>, ErrResp>;
-
     async fn get_user_account_id_by_create_career_req_id(
         &self,
         create_career_req_id: i64,
@@ -164,23 +147,6 @@ struct CreateCareerReqApprovalOperationImpl {
 
 #[async_trait]
 impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
-    async fn get_admin_email_address_by_admin_account_id(
-        &self,
-        admin_account_id: i64,
-    ) -> Result<Option<String>, ErrResp> {
-        let model = admin_account::Entity::find_by_id(admin_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find admin_account (admin_account_id: {}): {}",
-                    admin_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| m.email_address))
-    }
-
     async fn get_user_account_id_by_create_career_req_id(
         &self,
         create_career_req_id: i64,
@@ -550,11 +516,6 @@ mod tests {
 
     use super::*;
 
-    struct Admin {
-        admin_account_id: i64,
-        email_address: String,
-    }
-
     #[derive(Clone)]
     struct User {
         user_account_id: i64,
@@ -568,7 +529,7 @@ mod tests {
     }
 
     struct CreateCareerReqApprovalOperationMock {
-        admin: Admin,
+        admin_email_address: String,
         user_option: Option<User>,
         create_career_req_mock: CreateCareerReqMock,
         approved_time: DateTime<FixedOffset>,
@@ -576,14 +537,6 @@ mod tests {
 
     #[async_trait]
     impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationMock {
-        async fn get_admin_email_address_by_admin_account_id(
-            &self,
-            admin_account_id: i64,
-        ) -> Result<Option<String>, ErrResp> {
-            assert_eq!(self.admin.admin_account_id, admin_account_id);
-            Ok(Some(self.admin.email_address.clone()))
-        }
-
         async fn get_user_account_id_by_create_career_req_id(
             &self,
             create_career_req_id: i64,
@@ -604,7 +557,7 @@ mod tests {
         ) -> Result<Option<String>, ErrResp> {
             if let Some(user) = self.user_option.clone() {
                 assert_eq!(user.user_account_id, user_account_id);
-                assert_eq!(self.admin.email_address, approver_email_address);
+                assert_eq!(self.admin_email_address, approver_email_address);
                 assert_eq!(
                     self.create_career_req_mock.create_career_req_id,
                     create_career_req_id
@@ -619,11 +572,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_create_career_request_approval_success() {
-        let admin_account_id = 23;
-        let admin = Admin {
-            admin_account_id,
-            email_address: String::from("admin@test.com"),
-        };
+        let admin_email_address = String::from("admin@test.com");
         let user_account_id = 432;
         let user_email_address = String::from("test@test.com");
         let user_option = Some(User {
@@ -639,7 +588,7 @@ mod tests {
             .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
             .unwrap();
         let op_mock = CreateCareerReqApprovalOperationMock {
-            admin,
+            admin_email_address: admin_email_address.clone(),
             user_option,
             create_career_req_mock: create_career_req,
             approved_time: approval_time,
@@ -652,7 +601,7 @@ mod tests {
         );
 
         let result = handle_create_career_request_approval(
-            admin_account_id,
+            admin_email_address,
             create_career_req_id,
             approval_time,
             op_mock,
@@ -667,11 +616,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_create_career_request_approval_success_no_user_account_found() {
-        let admin_account_id = 23;
-        let admin = Admin {
-            admin_account_id,
-            email_address: String::from("admin@test.com"),
-        };
+        let admin_email_address = String::from("admin@test.com");
         let user_account_id = 432;
         let user_email_address = String::from("test@test.com");
         let create_career_req_id = 53215;
@@ -683,7 +628,7 @@ mod tests {
             .with_ymd_and_hms(2022, 4, 1, 21, 0, 40)
             .unwrap();
         let op_mock = CreateCareerReqApprovalOperationMock {
-            admin,
+            admin_email_address: admin_email_address.clone(),
             user_option: None,
             create_career_req_mock: create_career_req,
             approved_time: approval_time,
@@ -696,7 +641,7 @@ mod tests {
         );
 
         let result = handle_create_career_request_approval(
-            admin_account_id,
+            admin_email_address,
             create_career_req_id,
             approval_time,
             op_mock,

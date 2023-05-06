@@ -13,10 +13,10 @@ use common::{
 use axum::extract::State;
 use axum::http::StatusCode;
 use entity::{
-    admin_account, create_identity_req, rejected_create_identity_req,
+    create_identity_req, rejected_create_identity_req,
     sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set,
-        TransactionError, TransactionTrait,
+        ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, Set, TransactionError,
+        TransactionTrait,
     },
 };
 use once_cell::sync::Lazy;
@@ -53,7 +53,7 @@ pub(crate) async fn post_create_identity_request_rejection(
         SMTP_PASSWORD.to_string(),
     );
     handle_create_identity_request_rejection(
-        admin_info.account_id,
+        admin_info.email_address,
         create_identity_req_rejection.user_account_id,
         create_identity_req_rejection.rejection_reason,
         current_date_time,
@@ -73,7 +73,7 @@ pub(crate) struct CreateIdentityReqRejection {
 pub(crate) struct CreateIdentityReqRejectionResult {}
 
 async fn handle_create_identity_request_rejection(
-    admin_account_id: i64,
+    admin_email_address: String,
     user_account_id: i64,
     rejection_reason: String,
     rejected_time: DateTime<FixedOffset>,
@@ -88,17 +88,6 @@ async fn handle_create_identity_request_rejection(
                 code: Code::InvalidFormatReason as u32,
             }),
         )
-    })?;
-    let admin_email_address_option = op
-        .get_admin_email_address_by_admin_account_id(admin_account_id)
-        .await?;
-    let admin_email_address = admin_email_address_option.ok_or_else(|| {
-        error!(
-            "no admin account (admin account id: {}) found",
-            admin_account_id
-        );
-        // admin accountでログインしているので、admin accountがないことはunexpected errorとして処理する
-        unexpected_err_resp()
     })?;
 
     let rejected_user = op
@@ -136,11 +125,6 @@ async fn handle_create_identity_request_rejection(
 
 #[async_trait]
 trait CreateIdentityReqRejectionOperation {
-    async fn get_admin_email_address_by_admin_account_id(
-        &self,
-        admin_account_id: i64,
-    ) -> Result<Option<String>, ErrResp>;
-
     async fn reject_create_identity_req(
         &self,
         user_account_id: i64,
@@ -156,23 +140,6 @@ struct CreateIdentityReqRejectionOperationImpl {
 
 #[async_trait]
 impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperationImpl {
-    async fn get_admin_email_address_by_admin_account_id(
-        &self,
-        admin_account_id: i64,
-    ) -> Result<Option<String>, ErrResp> {
-        let model = admin_account::Entity::find_by_id(admin_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find admin_account (admin_account_id: {}): {}",
-                    admin_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(model.map(|m| m.email_address))
-    }
-
     async fn reject_create_identity_req(
         &self,
         user_account_id: i64,
@@ -290,11 +257,6 @@ mod tests {
 
     use super::*;
 
-    struct Admin {
-        admin_account_id: i64,
-        email_address: String,
-    }
-
     #[derive(Clone)]
     struct User {
         user_account_id: i64,
@@ -302,7 +264,7 @@ mod tests {
     }
 
     struct CreateIdentityReqRejectionOperationMock {
-        admin: Admin,
+        admin_email_address: String,
         user_option: Option<User>,
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
@@ -310,14 +272,6 @@ mod tests {
 
     #[async_trait]
     impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperationMock {
-        async fn get_admin_email_address_by_admin_account_id(
-            &self,
-            admin_account_id: i64,
-        ) -> Result<Option<String>, ErrResp> {
-            assert_eq!(self.admin.admin_account_id, admin_account_id);
-            Ok(Some(self.admin.email_address.clone()))
-        }
-
         async fn reject_create_identity_req(
             &self,
             user_account_id: i64,
@@ -327,7 +281,7 @@ mod tests {
         ) -> Result<Option<String>, ErrResp> {
             if let Some(user) = self.user_option.clone() {
                 assert_eq!(user.user_account_id, user_account_id);
-                assert_eq!(self.admin.email_address, refuser_email_address);
+                assert_eq!(self.admin_email_address, refuser_email_address);
                 assert_eq!(self.rejection_reason, rejection_reason);
                 assert_eq!(self.rejected_time, rejected_time);
                 Ok(Some(user.email_address))
@@ -339,11 +293,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_create_identity_request_rejection_success() {
-        let admin_account_id = 23;
-        let admin = Admin {
-            admin_account_id,
-            email_address: String::from("admin@test.com"),
-        };
+        let admin_email_address = String::from("admin@test.com");
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
         let user_option = Some(User {
@@ -355,7 +305,7 @@ mod tests {
             .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
             .unwrap();
         let op_mock = CreateIdentityReqRejectionOperationMock {
-            admin,
+            admin_email_address: admin_email_address.clone(),
             user_option,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
@@ -368,7 +318,7 @@ mod tests {
         );
 
         let result = handle_create_identity_request_rejection(
-            admin_account_id,
+            admin_email_address,
             user_account_id,
             rejection_reason.to_string(),
             rejected_time,
@@ -384,11 +334,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_create_identity_request_rejection_fail_invalid_format_reason() {
-        let admin_account_id = 23;
-        let admin = Admin {
-            admin_account_id,
-            email_address: String::from("admin@test.com"),
-        };
+        let admin_email_address = String::from("admin@test.com");
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
         let user_option = Some(User {
@@ -400,7 +346,7 @@ mod tests {
             .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
             .unwrap();
         let op_mock = CreateIdentityReqRejectionOperationMock {
-            admin,
+            admin_email_address: admin_email_address.clone(),
             user_option,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
@@ -413,7 +359,7 @@ mod tests {
         );
 
         let result = handle_create_identity_request_rejection(
-            admin_account_id,
+            admin_email_address,
             user_account_id,
             rejection_reason.to_string(),
             rejected_time,
@@ -429,11 +375,7 @@ mod tests {
 
     #[tokio::test]
     async fn handle_create_identity_request_rejection_success_no_user_account_found() {
-        let admin_account_id = 23;
-        let admin = Admin {
-            admin_account_id,
-            email_address: String::from("admin@test.com"),
-        };
+        let admin_email_address = String::from("admin@test.com");
         let user_account_id = 53215;
         let user_email_address = String::from("test@test.com");
         let rejection_reason = "画像が不鮮明なため";
@@ -441,7 +383,7 @@ mod tests {
             .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
             .unwrap();
         let op_mock = CreateIdentityReqRejectionOperationMock {
-            admin,
+            admin_email_address: admin_email_address.clone(),
             user_option: None,
             rejection_reason: rejection_reason.to_string(),
             rejected_time,
@@ -454,7 +396,7 @@ mod tests {
         );
 
         let result = handle_create_identity_request_rejection(
-            admin_account_id,
+            admin_email_address,
             user_account_id,
             rejection_reason.to_string(),
             rejected_time,
