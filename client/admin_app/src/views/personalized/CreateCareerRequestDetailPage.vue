@@ -16,15 +16,15 @@
           <p class="mt-2 text-lg">氏名が証明書画像の内容と一致しているか確認してください。</p>
           <div v-if="identity !== null">
             <div class="m-4 text-2xl grid grid-cols-3">
-              <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="justify-self-start col-span-2">{{ identity.last_name }} {{ identity.first_name }}</div>
-              <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="justify-self-start col-span-2">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div>
-              <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="justify-self-start col-span-2">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
+              <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name }} {{ identity.first_name }}</div>
+              <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div>
+              <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
               <div class="mt-2 justify-self-start col-span-3">住所</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="justify-self-start col-span-2">{{ identity.prefecture }}</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="justify-self-start col-span-2">{{ identity.city }}</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="justify-self-start col-span-2">{{ identity.address_line1 }}</div>
-              <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="justify-self-start col-span-2">{{ identity.address_line2 }}</div>
-              <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="justify-self-start col-span-2">{{ identity.telephone_number }}</div>
+              <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-2">{{ identity.prefecture }}</div>
+              <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-2">{{ identity.city }}</div>
+              <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-2">{{ identity.address_line1 }}</div>
+              <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ identity.address_line2 }}</div>
+              <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ identity.telephone_number }}</div>
             </div>
           </div>
         </div>
