@@ -2,7 +2,7 @@
 
 use axum::async_trait;
 use chrono::{DateTime, FixedOffset};
-use common::{ErrResp, ErrRespStruct};
+use common::{ErrResp, ErrRespStruct, JAPANESE_TIME_ZONE};
 use entity::{
     sea_orm::{DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect},
     user_account,
@@ -16,6 +16,8 @@ use crate::err::unexpected_err_resp;
 pub(super) struct UserAccountInfo {
     pub(super) account_id: i64,
     pub(super) email_address: String,
+    pub(super) last_login_time: Option<DateTime<FixedOffset>>,
+    pub(super) created_at: DateTime<FixedOffset>,
     pub(super) mfa_enabled_at: Option<DateTime<FixedOffset>>,
     pub(super) disabled_at: Option<DateTime<FixedOffset>>,
 }
@@ -57,8 +59,16 @@ impl<'a> FindUserAccountInfoOperation for FindUserAccountInfoOperationImpl<'a> {
         Ok(model.map(|m| UserAccountInfo {
             account_id: m.user_account_id,
             email_address: m.email_address,
-            mfa_enabled_at: m.mfa_enabled_at,
-            disabled_at: m.disabled_at,
+            last_login_time: m
+                .last_login_time
+                .map(|t| t.with_timezone(&(*JAPANESE_TIME_ZONE))),
+            created_at: m.created_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+            mfa_enabled_at: m
+                .mfa_enabled_at
+                .map(|t| t.with_timezone(&(*JAPANESE_TIME_ZONE))),
+            disabled_at: m
+                .disabled_at
+                .map(|t| t.with_timezone(&(*JAPANESE_TIME_ZONE))),
         }))
     }
 }

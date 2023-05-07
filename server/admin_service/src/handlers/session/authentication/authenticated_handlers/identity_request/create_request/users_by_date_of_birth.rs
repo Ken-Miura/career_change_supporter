@@ -274,6 +274,10 @@ mod tests {
                     return Ok(Some(UserAccountInfo {
                         account_id: user.user_account_id,
                         email_address: "test@test.com".to_string(), // 利用しないのでリテラルでダミー値をセット
+                        last_login_time: None, // 利用しないのでリテラルでダミー値をセット
+                        created_at: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2023, 4, 1, 0, 1, 7) // 利用しないのでダミー値をセット
+                            .unwrap(),
                         mfa_enabled_at: None, // 利用しないのでリテラルでダミー値をセット
                         disabled_at,
                     }));
