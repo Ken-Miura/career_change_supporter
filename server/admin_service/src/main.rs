@@ -20,6 +20,8 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::detail::get_update_identity_request_detail;
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::rejection::post_update_identity_request_rejection;
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_email_address::post_user_account_retrieval_by_email_address;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_user_account_id::post_user_account_retrieval_by_user_account_id;
 use crate::handlers::session::authentication::login::post_login;
 use crate::handlers::session::authentication::logout::post_logout;
 use crate::handlers::session::authentication::authenticated_handlers::refresh::get_refresh;
@@ -248,6 +250,14 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/create-career-request-rejection",
                     post(post_create_career_request_rejection),
+                )
+                .route(
+                    "/user-account-retrieval-by-user-account-id",
+                    post(post_user_account_retrieval_by_user_account_id),
+                )
+                .route(
+                    "/user-account-retrieval-by-email-address",
+                    post(post_user_account_retrieval_by_email_address),
                 )
                 .with_state(state),
         )
