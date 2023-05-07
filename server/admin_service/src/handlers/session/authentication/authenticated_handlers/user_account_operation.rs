@@ -4,7 +4,9 @@ use axum::async_trait;
 use chrono::{DateTime, FixedOffset};
 use common::{ErrResp, ErrRespStruct, JAPANESE_TIME_ZONE};
 use entity::{
-    sea_orm::{DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect},
+    sea_orm::{
+        ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QueryFilter, QuerySelect,
+    },
     user_account,
 };
 use serde::Deserialize;
@@ -27,6 +29,11 @@ pub(super) trait FindUserAccountInfoOperation {
     async fn find_user_account_info_by_account_id(
         &self,
         account_id: i64,
+    ) -> Result<Option<UserAccountInfo>, ErrResp>;
+
+    async fn find_user_account_info_by_email_address(
+        &self,
+        email_address: &str,
     ) -> Result<Option<UserAccountInfo>, ErrResp>;
 }
 
@@ -59,6 +66,46 @@ impl<'a> FindUserAccountInfoOperation for FindUserAccountInfoOperationImpl<'a> {
         Ok(model.map(|m| UserAccountInfo {
             account_id: m.user_account_id,
             email_address: m.email_address,
+            last_login_time: m
+                .last_login_time
+                .map(|t| t.with_timezone(&(*JAPANESE_TIME_ZONE))),
+            created_at: m.created_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+            mfa_enabled_at: m
+                .mfa_enabled_at
+                .map(|t| t.with_timezone(&(*JAPANESE_TIME_ZONE))),
+            disabled_at: m
+                .disabled_at
+                .map(|t| t.with_timezone(&(*JAPANESE_TIME_ZONE))),
+        }))
+    }
+
+    async fn find_user_account_info_by_email_address(
+        &self,
+        email_address: &str,
+    ) -> Result<Option<UserAccountInfo>, ErrResp> {
+        let user_accounts = entity::user_account::Entity::find()
+            .filter(entity::user_account::Column::EmailAddress.eq(email_address))
+            .all(self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter user_account (email_address: {}): {}",
+                    email_address, e
+                );
+                unexpected_err_resp()
+            })?;
+        if user_accounts.len() > 1 {
+            error!(
+                "multiple user_account found (email_address: {}, len: {})",
+                email_address,
+                user_accounts.len()
+            );
+            return Err(unexpected_err_resp());
+        };
+        let user_account = user_accounts.get(0);
+        Ok(user_account.map(|m| UserAccountInfo {
+            account_id: m.user_account_id,
+            email_address: m.email_address.clone(),
             last_login_time: m
                 .last_login_time
                 .map(|t| t.with_timezone(&(*JAPANESE_TIME_ZONE))),

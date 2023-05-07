@@ -9,7 +9,10 @@ use crate::handlers::session::authentication::authenticated_handlers::user_accou
     FindUserAccountInfoOperation, FindUserAccountInfoOperationImpl,
 };
 
-use super::{super::admin::Admin, UserAccount, UserAccountRetrievalResult};
+use super::{
+    super::admin::Admin, validate_user_account_id_is_positive, UserAccount,
+    UserAccountRetrievalResult,
+};
 
 pub(crate) async fn post_user_account_retrieval_by_user_account_id(
     Admin { admin_info: _ }: Admin,
@@ -29,6 +32,8 @@ async fn handle_user_account_retrieval_by_user_account_id(
     user_account_id: i64,
     op: &impl FindUserAccountInfoOperation,
 ) -> RespResult<UserAccountRetrievalResult> {
+    validate_user_account_id_is_positive(user_account_id)?;
+
     let result = op
         .find_user_account_info_by_account_id(user_account_id)
         .await?;
@@ -47,4 +52,9 @@ async fn handle_user_account_retrieval_by_user_account_id(
         UserAccountRetrievalResult { user_account: None }
     };
     Ok((StatusCode::OK, Json(uarr)))
+}
+
+#[cfg(test)]
+mod tests {
+    // TODO
 }
