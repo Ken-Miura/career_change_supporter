@@ -57,9 +57,11 @@ async fn handle_user_account_retrieval_by_user_account_id(
 #[cfg(test)]
 mod tests {
     use axum::async_trait;
-    use common::ErrResp;
+    use chrono::TimeZone;
+    use common::{ErrResp, JAPANESE_TIME_ZONE};
 
     use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::{FindUserAccountInfoOperation, UserAccountInfo};
+    use crate::err::Code;
 
     use super::*;
 
@@ -88,7 +90,48 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_user_account_retrieval_by_user_account_id_success_none() {
+    async fn handle_user_account_retrieval_by_user_account_id_success() {
+        let user_account_id = 5151;
+        let user_account = UserAccountInfo {
+            account_id: user_account_id,
+            email_address: "test@test.com".to_string(),
+            last_login_time: Some(
+                JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2023, 4, 7, 0, 1, 7)
+                    .unwrap(),
+            ),
+            created_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 4, 5, 0, 1, 7)
+                .unwrap(),
+            mfa_enabled_at: None,
+            disabled_at: None,
+        };
+        let op = FindUserAccountInfoOperationMock {
+            user_account_info: Some(user_account.clone()),
+        };
+
+        let result = handle_user_account_retrieval_by_user_account_id(user_account_id, &op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(
+            resp.1 .0,
+            UserAccountRetrievalResult {
+                user_account: Some(UserAccount {
+                    user_account_id: user_account.account_id,
+                    email_address: user_account.email_address,
+                    last_login_time: user_account.last_login_time.map(|m| m.to_rfc3339()),
+                    created_at: user_account.created_at.to_rfc3339(),
+                    mfa_enabled_at: user_account.mfa_enabled_at.map(|m| m.to_rfc3339()),
+                    disabled_at: user_account.disabled_at.map(|m| m.to_rfc3339())
+                })
+            }
+        )
+    }
+
+    #[tokio::test]
+    async fn handle_user_account_retrieval_by_user_account_id_success_user_account_already_deleted()
+    {
         let user_account_id = 5151;
         let op = FindUserAccountInfoOperationMock {
             user_account_info: None,
@@ -99,5 +142,33 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(resp.0, StatusCode::OK);
         assert_eq!(resp.1 .0, UserAccountRetrievalResult { user_account: None })
+    }
+
+    #[tokio::test]
+    async fn handle_user_account_retrieval_by_user_account_id_fail_user_account_id_is_zero() {
+        let user_account_id = 0;
+        let op = FindUserAccountInfoOperationMock {
+            user_account_info: None,
+        };
+
+        let result = handle_user_account_retrieval_by_user_account_id(user_account_id, &op).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::UserAccountIdIsNotPositive as u32)
+    }
+
+    #[tokio::test]
+    async fn handle_user_account_retrieval_by_user_account_id_fail_user_account_id_is_negative() {
+        let user_account_id = -1;
+        let op = FindUserAccountInfoOperationMock {
+            user_account_info: None,
+        };
+
+        let result = handle_user_account_retrieval_by_user_account_id(user_account_id, &op).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::UserAccountIdIsNotPositive as u32)
     }
 }
