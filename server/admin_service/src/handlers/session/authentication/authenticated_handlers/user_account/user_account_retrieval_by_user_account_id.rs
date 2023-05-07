@@ -56,5 +56,48 @@ async fn handle_user_account_retrieval_by_user_account_id(
 
 #[cfg(test)]
 mod tests {
-    // TODO
+    use axum::async_trait;
+    use common::ErrResp;
+
+    use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::{FindUserAccountInfoOperation, UserAccountInfo};
+
+    use super::*;
+
+    struct FindUserAccountInfoOperationMock {
+        user_account_info: Option<UserAccountInfo>,
+    }
+
+    #[async_trait]
+    impl FindUserAccountInfoOperation for FindUserAccountInfoOperationMock {
+        async fn find_user_account_info_by_account_id(
+            &self,
+            account_id: i64,
+        ) -> Result<Option<UserAccountInfo>, ErrResp> {
+            if let Some(uai) = self.user_account_info.clone() {
+                assert_eq!(uai.account_id, account_id)
+            }
+            Ok(self.user_account_info.clone())
+        }
+
+        async fn find_user_account_info_by_email_address(
+            &self,
+            _email_address: &str,
+        ) -> Result<Option<UserAccountInfo>, ErrResp> {
+            panic!("never called in this test cases");
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_user_account_retrieval_by_user_account_id_success_none() {
+        let user_account_id = 5151;
+        let op = FindUserAccountInfoOperationMock {
+            user_account_info: None,
+        };
+
+        let result = handle_user_account_retrieval_by_user_account_id(user_account_id, &op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(resp.1 .0, UserAccountRetrievalResult { user_account: None })
+    }
 }
