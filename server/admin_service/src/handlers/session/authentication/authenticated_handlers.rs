@@ -7,7 +7,8 @@ pub(crate) mod identity_request;
 pub(crate) mod pagination;
 mod reason_validator;
 pub(crate) mod refresh;
-mod user_operation;
+pub(crate) mod user_account_info;
+mod user_account_operation;
 
 #[cfg(test)]
 pub(super) mod tests {

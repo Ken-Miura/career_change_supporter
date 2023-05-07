@@ -18,8 +18,8 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::IllegalDate;
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
-use crate::handlers::session::authentication::authenticated_handlers::user_operation::{
-    FindUserInfoOperation, FindUserInfoOperationImpl, UserInfo,
+use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::{
+    FindUserAccountInfoOperation, FindUserAccountInfoOperationImpl, UserAccountInfo,
 };
 
 pub(crate) async fn get_users_by_date_of_birth(
@@ -111,7 +111,7 @@ async fn get_users_by_date_of_birth_internal(
 }
 
 fn create_user(
-    user_info: Option<UserInfo>,
+    user_info: Option<UserAccountInfo>,
     user_without_account_status: UserWithoutAccountStatus,
 ) -> User {
     let account_status = match user_info {
@@ -150,7 +150,7 @@ trait UsersByDateOfBirthOperation {
     async fn find_user_info_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Option<UserInfo>, ErrResp>;
+    ) -> Result<Option<UserAccountInfo>, ErrResp>;
 }
 
 struct UsersByDateOfBirthOperationImpl {
@@ -199,8 +199,8 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
     async fn find_user_info_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Option<UserInfo>, ErrResp> {
-        let op = FindUserInfoOperationImpl::new(&self.pool);
+    ) -> Result<Option<UserAccountInfo>, ErrResp> {
+        let op = FindUserAccountInfoOperationImpl::new(&self.pool);
         op.find_user_info_by_account_id(user_account_id).await
     }
 }
@@ -258,7 +258,7 @@ mod tests {
         async fn find_user_info_by_user_account_id(
             &self,
             user_account_id: i64,
-        ) -> Result<Option<UserInfo>, ErrResp> {
+        ) -> Result<Option<UserAccountInfo>, ErrResp> {
             for user in &self.users {
                 if user.user_account_id == user_account_id {
                     let account_status = user.account_status.clone();
@@ -271,7 +271,7 @@ mod tests {
                         ),
                         AccountStatus::Deleted => return Ok(None),
                     };
-                    return Ok(Some(UserInfo {
+                    return Ok(Some(UserAccountInfo {
                         account_id: user.user_account_id,
                         email_address: "test@test.com".to_string(), // 利用しないのでリテラルでダミー値をセット
                         mfa_enabled_at: None, // 利用しないのでリテラルでダミー値をセット

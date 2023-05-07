@@ -27,7 +27,7 @@ use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, identity_request::delete_identity_images, reason_validator::validate_reason,
-        user_operation::find_user_model_by_user_account_id_with_shared_lock,
+        user_account_operation::find_user_account_model_by_user_account_id_with_shared_lock,
     },
 };
 
@@ -151,7 +151,7 @@ impl CreateIdentityReqRejectionOperation for CreateIdentityReqRejectionOperation
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let user_option = find_user_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
+                    let user_option = find_user_account_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
 
                     let req = find_create_identity_req_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
 

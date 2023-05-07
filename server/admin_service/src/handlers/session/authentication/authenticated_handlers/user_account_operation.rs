@@ -13,7 +13,7 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
-pub(super) struct UserInfo {
+pub(super) struct UserAccountInfo {
     pub(super) account_id: i64,
     pub(super) email_address: String,
     pub(super) mfa_enabled_at: Option<DateTime<FixedOffset>>,
@@ -21,29 +21,29 @@ pub(super) struct UserInfo {
 }
 
 #[async_trait]
-pub(super) trait FindUserInfoOperation {
+pub(super) trait FindUserAccountInfoOperation {
     async fn find_user_info_by_account_id(
         &self,
         account_id: i64,
-    ) -> Result<Option<UserInfo>, ErrResp>;
+    ) -> Result<Option<UserAccountInfo>, ErrResp>;
 }
 
-pub(super) struct FindUserInfoOperationImpl<'a> {
+pub(super) struct FindUserAccountInfoOperationImpl<'a> {
     pool: &'a DatabaseConnection,
 }
 
-impl<'a> FindUserInfoOperationImpl<'a> {
+impl<'a> FindUserAccountInfoOperationImpl<'a> {
     pub(super) fn new(pool: &'a DatabaseConnection) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl<'a> FindUserInfoOperation for FindUserInfoOperationImpl<'a> {
+impl<'a> FindUserAccountInfoOperation for FindUserAccountInfoOperationImpl<'a> {
     async fn find_user_info_by_account_id(
         &self,
         account_id: i64,
-    ) -> Result<Option<UserInfo>, ErrResp> {
+    ) -> Result<Option<UserAccountInfo>, ErrResp> {
         let model = entity::user_account::Entity::find_by_id(account_id)
             .one(self.pool)
             .await
@@ -54,7 +54,7 @@ impl<'a> FindUserInfoOperation for FindUserInfoOperationImpl<'a> {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(model.map(|m| UserInfo {
+        Ok(model.map(|m| UserAccountInfo {
             account_id: m.user_account_id,
             email_address: m.email_address,
             mfa_enabled_at: m.mfa_enabled_at,
@@ -64,7 +64,7 @@ impl<'a> FindUserInfoOperation for FindUserInfoOperationImpl<'a> {
 }
 
 /// 承認、拒否を行う際にユーザーがアカウントを削除しないことを保証するために明示的に共有ロックを取得し、user_accountを取得する
-pub(super) async fn find_user_model_by_user_account_id_with_shared_lock(
+pub(super) async fn find_user_account_model_by_user_account_id_with_shared_lock(
     txn: &DatabaseTransaction,
     user_account_id: i64,
 ) -> Result<Option<user_account::Model>, ErrRespStruct> {
