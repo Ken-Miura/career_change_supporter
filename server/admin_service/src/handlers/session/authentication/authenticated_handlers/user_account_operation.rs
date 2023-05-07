@@ -24,7 +24,7 @@ pub(super) struct UserAccountInfo {
 
 #[async_trait]
 pub(super) trait FindUserAccountInfoOperation {
-    async fn find_user_info_by_account_id(
+    async fn find_user_account_info_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Option<UserAccountInfo>, ErrResp>;
@@ -42,7 +42,7 @@ impl<'a> FindUserAccountInfoOperationImpl<'a> {
 
 #[async_trait]
 impl<'a> FindUserAccountInfoOperation for FindUserAccountInfoOperationImpl<'a> {
-    async fn find_user_info_by_account_id(
+    async fn find_user_account_info_by_account_id(
         &self,
         account_id: i64,
     ) -> Result<Option<UserAccountInfo>, ErrResp> {

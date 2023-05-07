@@ -201,7 +201,8 @@ impl UsersByDateOfBirthOperation for UsersByDateOfBirthOperationImpl {
         user_account_id: i64,
     ) -> Result<Option<UserAccountInfo>, ErrResp> {
         let op = FindUserAccountInfoOperationImpl::new(&self.pool);
-        op.find_user_info_by_account_id(user_account_id).await
+        op.find_user_account_info_by_account_id(user_account_id)
+            .await
     }
 }
 
