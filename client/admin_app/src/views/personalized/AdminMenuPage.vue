@@ -7,11 +7,8 @@
           <button data-test="move-to-create-identity-request-list-page-button" v-on:click="moveToCreateIdentityRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（新規）</button>
           <button data-test="move-to-update-identity-request-list-page-button" v-on:click="moveToUpdateIdentityRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（更新）</button>
           <button data-test="move-to-create-career-request-list-page-button" v-on:click="moveToCreateCareerRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼</button>
-          <button data-test="move-to-disable-account-page-button" v-on:click="moveToDisableAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント無効化</button>
-          <button data-test="move-to-enable-account-page-button" v-on:click="moveToEnableAccountPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント有効化</button>
-          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談情報確認</button>
-          <button data-test="move-to-refund-page-button" v-on:click="moveToRefundPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金処理</button>
-          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス設定</button>
+          <button data-test="move-to-user-account-search-page-button" v-on:click="moveToUserAccountSearchPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント情報確認</button>
+          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス期間設定</button>
           <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">お知らせ作成</button>
         </div>
       </div>
@@ -34,33 +31,28 @@ export default defineComponent({
   },
   setup () {
     const router = useRouter()
+
     const moveToCreateIdentityRequestListPage = async () => {
       await router.push('/create-identity-request-list')
     }
+
     const moveToUpdateIdentityRequestListPage = async () => {
       await router.push('/update-identity-request-list')
     }
+
     const moveToCreateCareerRequestListPage = async () => {
       await router.push('/create-career-request-list')
     }
-    const moveToDisableAccountPage = async () => {
-      // 相談料の支払いが発生しないように調整（settlement -> stopped_settlement）
-      // opensearch上のデータの削除は、実装上必要はない
-      await router.push('/disable-account')
+
+    const moveToUserAccountSearchPage = async () => {
+      await router.push('/user-account-search')
     }
-    const moveToEnableAccountPage = async () => {
-      await router.push('/enable-account')
-    }
-    const moveToRefundPage = async () => {
-      await router.push('/refund')
-    }
+
     return {
       moveToCreateIdentityRequestListPage,
       moveToUpdateIdentityRequestListPage,
       moveToCreateCareerRequestListPage,
-      moveToDisableAccountPage,
-      moveToEnableAccountPage,
-      moveToRefundPage
+      moveToUserAccountSearchPage
     }
   }
 })

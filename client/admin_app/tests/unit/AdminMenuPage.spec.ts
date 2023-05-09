@@ -58,7 +58,7 @@ describe('AdminMenuPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/create-career-request-list')
   })
 
-  it('moves to move-to-disable-account when the button is pushed', async () => {
+  it('moves to user-account-search when the button is pushed', async () => {
     const wrapper = mount(AdminMenuPage, {
       global: {
         stubs: {
@@ -66,40 +66,10 @@ describe('AdminMenuPage.vue', () => {
         }
       }
     })
-    const button = wrapper.find('[data-test="move-to-disable-account-page-button"]')
+    const button = wrapper.find('[data-test="move-to-user-account-search-page-button"]')
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/disable-account')
-  })
-
-  it('moves to move-to-enable-account when the button is pushed', async () => {
-    const wrapper = mount(AdminMenuPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    const button = wrapper.find('[data-test="move-to-enable-account-page-button"]')
-    await button.trigger('click')
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/enable-account')
-  })
-
-  it('moves to move-to-enable-account when the button is pushed', async () => {
-    const wrapper = mount(AdminMenuPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    const button = wrapper.find('[data-test="move-to-refund-page-button"]')
-    await button.trigger('click')
-
-    expect(routerPushMock).toHaveBeenCalledTimes(1)
-    expect(routerPushMock).toHaveBeenCalledWith('/refund')
+    expect(routerPushMock).toHaveBeenCalledWith('/user-account-search')
   })
 })
