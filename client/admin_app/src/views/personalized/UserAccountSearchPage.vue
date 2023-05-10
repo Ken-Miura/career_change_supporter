@@ -66,11 +66,11 @@ export default defineComponent({
 
     const createUserAccountSearchParam = (accountId: string, emailAddress: string) => {
       let acccountIdNumber = null
-      if (accountId) {
+      if (accountId !== '') {
         acccountIdNumber = parseInt(accountId)
       }
       let emailAddr = null
-      if (emailAddress) {
+      if (emailAddress !== '') {
         emailAddr = emailAddress
       }
       return {
