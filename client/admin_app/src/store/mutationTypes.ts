@@ -1,1 +1,1 @@
-export const DUMMY_RESULT_MESSAGE = 'dummyResultMessage'
+export const SET_USER_ACCOUNT_SEARCH_PARAM = 'setUserAccountSearchParam'

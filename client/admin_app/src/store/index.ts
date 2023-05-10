@@ -1,8 +1,9 @@
+import { UserAccountSearchParam } from '@/util/personalized/user-account-search/UserAccountSearchParam'
 import { createStore } from 'vuex'
-import { DUMMY_RESULT_MESSAGE } from './mutationTypes'
+import { SET_USER_ACCOUNT_SEARCH_PARAM } from './mutationTypes'
 
 export type State = {
-  dummyResultMessage: string | null
+  userAccountSearchParam: UserAccountSearchParam | null
 };
 
 // 下記URLにVuexにてTypescriptの型推論を有効にするためにkeyが必要と記載されているが
@@ -12,11 +13,11 @@ export type State = {
 
 export default createStore<State>({
   state: {
-    dummyResultMessage: null
+    userAccountSearchParam: null
   },
   mutations: {
-    [DUMMY_RESULT_MESSAGE] (state: State, message: string) {
-      state.dummyResultMessage = message
+    [SET_USER_ACCOUNT_SEARCH_PARAM] (state: State, userAccountSearchParam: UserAccountSearchParam) {
+      state.userAccountSearchParam = userAccountSearchParam
     }
   },
   actions: {

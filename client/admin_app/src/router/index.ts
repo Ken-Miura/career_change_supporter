@@ -19,6 +19,7 @@ import CreateCareerRequestApprovalPage from '../views/personalized/CreateCareerR
 import CreateCareerRequestRejectionDetailPage from '../views/personalized/CreateCareerRequestRejectionDetailPage.vue'
 import CreateCareerRequestRejectionPage from '../views/personalized/CreateCareerRequestRejectionPage.vue'
 import UserAccountSearchPage from '../views/personalized/UserAccountSearchPage.vue'
+import UserAccountInfoPage from '../views/personalized/UserAccountInfoPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -125,6 +126,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/user-account-search',
     name: 'UserAccountSearchPage',
     component: UserAccountSearchPage
+  },
+  {
+    path: '/user-account-info',
+    name: 'UserAccountInfoPage',
+    component: UserAccountInfoPage
   }
 ]
 

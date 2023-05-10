@@ -1,10 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="false" class="m-6">
-      <WaitingCircle />
-    </div>
-    <main v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <main class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
       <h3 class="font-bold text-2xl">アカウント検索</h3>
       <p class="ml-2 mt-4 mb-6 text-lg">アカウントID、またはメールアドレスを入力して検索を押して下さい。既に削除されたアカウントは、メールアドレスではなくアカウントIDで検索して下さい。削除されたアカウントは、そうでないアカウントと比較し、確認できる情報が限定されています。</p>
       <form class="flex flex-col" @submit.prevent="searchUserAccountHandler">
@@ -36,25 +33,65 @@
 import { defineComponent, ref, computed } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
-import WaitingCircle from '@/components/WaitingCircle.vue'
+import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
+import { UserAccountSearchParam } from '@/util/personalized/user-account-search/UserAccountSearchParam'
+import { SET_USER_ACCOUNT_SEARCH_PARAM } from '@/store/mutationTypes'
 
 export default defineComponent({
   name: 'UserAccountSearchPage',
   components: {
     TheHeader,
-    AlertMessage,
-    WaitingCircle
+    AlertMessage
   },
   setup () {
+    const store = useStore()
+    const router = useRouter()
+
+    const errorMessage = ref(null as string | null)
     const accountId = ref('')
     const emailAddress = ref('')
-    const disabled = computed(() => {
+
+    const bothEmpty = () => {
       return accountId.value === '' && emailAddress.value === ''
+    }
+
+    const bothFilled = () => {
+      return accountId.value !== '' && emailAddress.value !== ''
+    }
+
+    const disabled = computed(() => {
+      return bothEmpty() || bothFilled()
     })
-    const errorMessage = ref(null as string | null)
+
+    const createUserAccountSearchParam = (accountId: string, emailAddress: string) => {
+      let acccountIdNumber = null
+      if (accountId) {
+        acccountIdNumber = parseInt(accountId)
+      }
+      let emailAddr = null
+      if (emailAddress) {
+        emailAddr = emailAddress
+      }
+      return {
+        accountId: acccountIdNumber,
+        emailAddress: emailAddr
+      } as UserAccountSearchParam
+    }
 
     const searchUserAccountHandler = async () => {
-      console.log(`${accountId.value}, ${emailAddress.value}`)
+      if (bothEmpty()) {
+        errorMessage.value = 'bothEmpty' // TODO
+        return
+      }
+      if (bothFilled()) {
+        errorMessage.value = 'bothFilled' // TODO
+        return
+      }
+
+      const param = createUserAccountSearchParam(accountId.value, emailAddress.value)
+      store.commit(SET_USER_ACCOUNT_SEARCH_PARAM, param)
+      await router.push('/user-account-info')
     }
 
     return {
