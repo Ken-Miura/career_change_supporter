@@ -1,5 +1,5 @@
 import { UserAccountSearchParam } from '@/util/personalized/user-account-search/UserAccountSearchParam'
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import TheHeader from '@/components/TheHeader.vue'
 import UserAccountSearchPage from '@/views/personalized/UserAccountSearchPage.vue'
 
@@ -28,7 +28,20 @@ describe('UserAccountSearchPage.vue', () => {
     routerPushMock.mockClear()
   })
 
-  it('diaplays header and contents for UserAccountSearchPage', async () => {
+  it('has header', async () => {
+    const wrapper = mount(UserAccountSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+  })
+
+  it('diaplays contents for UserAccountSearchPage', async () => {
     const wrapper = mount(UserAccountSearchPage, {
       global: {
         stubs: {
@@ -48,6 +61,48 @@ describe('UserAccountSearchPage.vue', () => {
     expect(accountIdLabel.text()).toContain('アカウントID')
     const emailAddressLabel = wrapper.find('[data-test="email-address-label"]')
     expect(emailAddressLabel.text()).toContain('メールアドレス')
+
+    const button = wrapper.find('[data-test="button"]')
+    expect(button.text()).toContain('検索')
+    const buttonDisabledAttr = button.attributes('disabled')
+    expect(buttonDisabledAttr).toBeDefined()
+  })
+
+  it('diaplays disabled button if both input is filled', async () => {
+    const wrapper = mount(UserAccountSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const accountIdValue = wrapper.find('[data-test="account-id-value"]')
+    await accountIdValue.setValue('1')
+    const emailAddressValue = wrapper.find('[data-test="email-address-value"]')
+    await emailAddressValue.setValue('test@test.com')
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="button"]')
+    expect(button.text()).toContain('検索')
+    const buttonDisabledAttr = button.attributes('disabled')
+    expect(buttonDisabledAttr).toBeDefined()
+  })
+
+  it('diaplays disabled button if both input is empty', async () => {
+    const wrapper = mount(UserAccountSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const accountIdValue = wrapper.find('[data-test="account-id-value"]')
+    await accountIdValue.setValue('')
+    const emailAddressValue = wrapper.find('[data-test="email-address-value"]')
+    await emailAddressValue.setValue('')
+    await flushPromises()
 
     const button = wrapper.find('[data-test="button"]')
     expect(button.text()).toContain('検索')

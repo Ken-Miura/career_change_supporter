@@ -7,14 +7,14 @@
       <form class="flex flex-col" @submit.prevent="searchUserAccountHandler">
         <div class="pt-3 rounded bg-gray-200">
           <label data-test="account-id-label" class="block text-gray-700 text-sm font-bold mb-2 ml-3">アカウントID</label>
-          <input v-model="accountId" minlength="1" pattern="\d+" title="数値" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+          <input data-test="account-id-value" v-model="accountId" minlength="1" pattern="\d+" title="数値" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
         </div>
         <div class="ml-2 p-2 text-xl">
           or
         </div>
         <div class="mb-6 pt-3 rounded bg-gray-200">
           <label data-test="email-address-label" class="block text-gray-700 text-sm font-bold mb-2 ml-3">メールアドレス</label>
-          <input v-model="emailAddress" type="email" minlength="1" maxlength="254" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
+          <input data-test="email-address-value" v-model="emailAddress" type="email" minlength="1" maxlength="254" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
         </div>
         <button data-test="button" v-bind:disabled="disabled" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">検索</button>
         <div v-if="errorMessage">
