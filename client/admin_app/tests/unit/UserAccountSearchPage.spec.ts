@@ -2,6 +2,7 @@ import { UserAccountSearchParam } from '@/util/personalized/user-account-search/
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import TheHeader from '@/components/TheHeader.vue'
 import UserAccountSearchPage from '@/views/personalized/UserAccountSearchPage.vue'
+import { SET_USER_ACCOUNT_SEARCH_PARAM } from '@/store/mutationTypes'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -108,5 +109,65 @@ describe('UserAccountSearchPage.vue', () => {
     expect(button.text()).toContain('検索')
     const buttonDisabledAttr = button.attributes('disabled')
     expect(buttonDisabledAttr).toBeDefined()
+  })
+
+  it('moves user-account-info if button is clicked with account id', async () => {
+    const wrapper = mount(UserAccountSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const accountIdValue = wrapper.find('[data-test="account-id-value"]')
+    await accountIdValue.setValue('1')
+    const emailAddressValue = wrapper.find('[data-test="email-address-value"]')
+    await emailAddressValue.setValue('')
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="button"]')
+    await button.trigger('submit')
+    await flushPromises()
+
+    const param = {
+      accountId: 1,
+      emailAddress: null
+    } as UserAccountSearchParam
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_USER_ACCOUNT_SEARCH_PARAM, param)
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/user-account-info')
+  })
+
+  it('moves user-account-info if button is clicked with email address', async () => {
+    const wrapper = mount(UserAccountSearchPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+
+    const accountIdValue = wrapper.find('[data-test="account-id-value"]')
+    await accountIdValue.setValue('')
+    const emailAddressValue = wrapper.find('[data-test="email-address-value"]')
+    await emailAddressValue.setValue('test@test.com')
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="button"]')
+    await button.trigger('submit')
+    await flushPromises()
+
+    const param = {
+      accountId: null,
+      emailAddress: 'test@test.com'
+    } as UserAccountSearchParam
+    expect(storeCommitMock).toHaveBeenCalledTimes(1)
+    expect(storeCommitMock).toHaveBeenNthCalledWith(1, SET_USER_ACCOUNT_SEARCH_PARAM, param)
+
+    expect(routerPushMock).toHaveBeenCalledTimes(1)
+    expect(routerPushMock).toHaveBeenCalledWith('/user-account-info')
   })
 })
