@@ -23,4 +23,6 @@ export namespace Message {
     export const NO_UPDATE_IDENTITY_REQ_DETAIL_FOUND_MESSAGE = `${ASK_ADMIN}`
     export const NO_IDENTITY_FOUND_MESSAGE = `${ASK_ADMIN}`
     export const NO_CREATE_CAREER_REQ_DETAIL_FOUND_MESSAGE = `${ASK_ADMIN}`
+    export const BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_EMPTY_MESSAGE = 'アカウントIDとメールアドレスの両方が空です'
+    export const BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_FILLED_MESSAGE = 'アカウントIDとメールアドレスの両方が入力されています'
 }

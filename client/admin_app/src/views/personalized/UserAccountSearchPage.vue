@@ -37,6 +37,7 @@ import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { UserAccountSearchParam } from '@/util/personalized/user-account-search/UserAccountSearchParam'
 import { SET_USER_ACCOUNT_SEARCH_PARAM } from '@/store/mutationTypes'
+import { Message } from '@/util/Message'
 
 export default defineComponent({
   name: 'UserAccountSearchPage',
@@ -81,11 +82,11 @@ export default defineComponent({
 
     const searchUserAccountHandler = async () => {
       if (bothEmpty()) {
-        errorMessage.value = 'bothEmpty' // TODO
+        errorMessage.value = Message.BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_EMPTY_MESSAGE
         return
       }
       if (bothFilled()) {
-        errorMessage.value = 'bothFilled' // TODO
+        errorMessage.value = Message.BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_FILLED_MESSAGE
         return
       }
 
