@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="false" class="m-6">
+    <div v-if="!requestsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -16,7 +16,7 @@
           <p v-else class="mt-4 ml-4 text-xl">意図しない動作です。管理者に連絡して下さい</p>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          {{ accountId }}, {{ emailAddress }}
+          {{ userAccount }}
         </div>
       </div>
     </main>
@@ -28,13 +28,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue'
+import { defineComponent, ref, onMounted, computed } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useStore } from 'vuex'
 import { UserAccountSearchParam } from '@/util/personalized/user-account-search/UserAccountSearchParam'
 import { Message } from '@/util/Message'
+import { usePostUserAccountRetrieval } from '@/util/personalized/user-account-info/usePostUserAccountRetrieval'
+import { ApiErrorResp } from '@/util/ApiError'
+import { UserAccountRetrievalResp } from '@/util/personalized/user-account-info/UserAccountRetrievalResp'
+import { Code, createErrorMessage } from '@/util/Error'
+import { useRouter } from 'vue-router'
+import { UserAccount } from '@/util/personalized/user-account-info/UserAccount'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -44,12 +50,35 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
+    const router = useRouter()
     const store = useStore()
 
     const accountId = ref(null as number | null)
     const emailAddress = ref(null as string | null)
 
+    const userAccount = ref(null as UserAccount | null)
+
     const outerErrorMessage = ref(null as string | null)
+
+    const {
+      postUserAccountRetrievalDone,
+      postUserAccountRetrievalByUserAccountIdFunc,
+      postUserAccountRetrievalByEmailAddressFunc
+    } = usePostUserAccountRetrieval()
+
+    const requestsDone = computed(() => {
+      return postUserAccountRetrievalDone.value
+    })
+
+    const getUserAccountByEitherAccountIdOrEmailAddress = async (accountId: number | null, emailAddress: string | null): Promise<UserAccountRetrievalResp | ApiErrorResp> => {
+      if (accountId) {
+        return postUserAccountRetrievalByUserAccountIdFunc(accountId)
+      } else if (emailAddress) {
+        return postUserAccountRetrievalByEmailAddressFunc(emailAddress)
+      } else {
+        throw new Error('Both accountId and emailAddress are null')
+      }
+    }
 
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
@@ -67,11 +96,29 @@ export default defineComponent({
       }
       accountId.value = param.accountId
       emailAddress.value = param.emailAddress
+
+      const postUserAccountRetrievalResponse = await getUserAccountByEitherAccountIdOrEmailAddress(param.accountId, param.emailAddress)
+      if (!(postUserAccountRetrievalResponse instanceof UserAccountRetrievalResp)) {
+        if (!(postUserAccountRetrievalResponse instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${postUserAccountRetrievalResponse}`)
+        }
+        const code = postUserAccountRetrievalResponse.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        outerErrorMessage.value = createErrorMessage(postUserAccountRetrievalResponse.getApiError().getCode())
+        return
+      }
+      const result = postUserAccountRetrievalResponse.getResult()
+      userAccount.value = result.user_account
     })
 
     return {
+      requestsDone,
       accountId,
       emailAddress,
+      userAccount,
       outerErrorMessage
     }
   }
