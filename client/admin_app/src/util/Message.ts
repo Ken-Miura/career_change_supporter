@@ -25,4 +25,5 @@ export namespace Message {
     export const NO_CREATE_CAREER_REQ_DETAIL_FOUND_MESSAGE = `${ASK_ADMIN}`
     export const BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_EMPTY_MESSAGE = 'アカウントIDとメールアドレスの両方が空です'
     export const BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_FILLED_MESSAGE = 'アカウントIDとメールアドレスの両方が入力されています'
+    export const USER_ACCOUNT_SEARCH_PARAM_IS_NULL = '検索に必要なパラメータが設定されていません'
 }
