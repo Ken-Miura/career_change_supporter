@@ -1,54 +1,45 @@
-// Copyright 2022 Ken Miura
+// Copyright 2023 Ken Miura
 
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::util::Identity;
-use common::{ApiError, ErrResp, RespResult};
+use common::{ErrResp, RespResult};
 use entity::sea_orm::DatabaseConnection;
-use serde::Deserialize;
-use tracing::error;
+use serde::Serialize;
 
-use crate::err::Code;
+use super::super::admin::Admin;
+use super::super::find_identity_by_user_account_id;
+use super::UserAccountIdQuery;
 
-use super::admin::Admin;
-use super::find_identity_by_user_account_id;
-
-pub(crate) async fn get_identity_by_user_account_id(
+pub(crate) async fn get_identity_option_by_user_account_id(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
-    query: Query<GetIdentityQuery>,
+    query: Query<UserAccountIdQuery>,
     State(pool): State<DatabaseConnection>,
-) -> RespResult<Identity> {
+) -> RespResult<IdentityResult> {
     let query = query.0;
     let op = IdentityOperationImpl { pool };
-    get_identity_by_user_account_id_internal(query.user_account_id, op).await
+    get_identity_option_by_user_account_id_internal(query.user_account_id, op).await
 }
 
-#[derive(Deserialize)]
-pub(crate) struct GetIdentityQuery {
-    user_account_id: i64,
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+pub(crate) struct IdentityResult {
+    identity_option: Option<Identity>,
 }
 
-async fn get_identity_by_user_account_id_internal(
+async fn get_identity_option_by_user_account_id_internal(
     user_account_id: i64,
     op: impl IdentityOperation,
-) -> RespResult<Identity> {
-    let identity_option = op.get_identity_by_user_account_id(user_account_id).await?;
-    let identity = identity_option.ok_or_else(|| {
-        error!("no identity (user account id: {}) found", user_account_id);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NoIdentityFound as u32,
-            }),
-        )
-    })?;
-    Ok((StatusCode::OK, Json(identity)))
+) -> RespResult<IdentityResult> {
+    let identity_option = op
+        .get_identity_option_by_user_account_id(user_account_id)
+        .await?;
+    Ok((StatusCode::OK, Json(IdentityResult { identity_option })))
 }
 
 #[async_trait]
 trait IdentityOperation {
-    async fn get_identity_by_user_account_id(
+    async fn get_identity_option_by_user_account_id(
         &self,
         user_account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
@@ -60,7 +51,7 @@ struct IdentityOperationImpl {
 
 #[async_trait]
 impl IdentityOperation for IdentityOperationImpl {
-    async fn get_identity_by_user_account_id(
+    async fn get_identity_option_by_user_account_id(
         &self,
         user_account_id: i64,
     ) -> Result<Option<Identity>, ErrResp> {
@@ -77,8 +68,6 @@ mod tests {
         ErrResp,
     };
 
-    use crate::err::Code;
-
     use super::*;
 
     struct IdentityOperationMock {
@@ -88,7 +77,7 @@ mod tests {
 
     #[async_trait]
     impl IdentityOperation for IdentityOperationMock {
-        async fn get_identity_by_user_account_id(
+        async fn get_identity_option_by_user_account_id(
             &self,
             user_account_id: i64,
         ) -> Result<Option<Identity>, ErrResp> {
@@ -101,7 +90,7 @@ mod tests {
 
     #[tokio::test]
 
-    async fn get_identity_by_user_account_id_internal_success() {
+    async fn get_identity_option_by_user_account_id_internal_success() {
         let user_account_id = 64431;
         let identity = Identity {
             last_name: String::from("田中"),
@@ -124,16 +113,20 @@ mod tests {
             identity: identity.clone(),
         };
 
-        let result = get_identity_by_user_account_id_internal(user_account_id, op_mock).await;
+        let result =
+            get_identity_option_by_user_account_id_internal(user_account_id, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(identity, resp.1 .0);
+        assert_eq!(
+            identity,
+            resp.1 .0.identity_option.expect("failed to get identity")
+        );
     }
 
     #[tokio::test]
 
-    async fn get_identity_by_user_account_id_internal_fail_no_identity_found() {
+    async fn get_identity_option_by_user_account_id_internal_success_no_identity_found() {
         let user_account_id = 64431;
         let identity = Identity {
             last_name: String::from("田中"),
@@ -157,10 +150,10 @@ mod tests {
         };
         let dummy_id = user_account_id + 451;
 
-        let result = get_identity_by_user_account_id_internal(dummy_id, op_mock).await;
+        let result = get_identity_option_by_user_account_id_internal(dummy_id, op_mock).await;
 
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
-        assert_eq!(Code::NoIdentityFound as u32, resp.1 .0.code);
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(None, resp.1 .0.identity_option);
     }
 }

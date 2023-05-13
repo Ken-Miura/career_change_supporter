@@ -1,14 +1,20 @@
 // Copyright 2023 Ken Miura
 
+pub(crate) mod identity_option_by_user_account_id;
 pub(crate) mod user_account_retrieval_by_email_address;
 pub(crate) mod user_account_retrieval_by_user_account_id;
 
 use axum::{http::StatusCode, Json};
 use common::{ApiError, ErrResp};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::err::Code;
+
+#[derive(Deserialize)]
+pub(crate) struct UserAccountIdQuery {
+    pub(super) user_account_id: i64,
+}
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct UserAccountRetrievalResult {

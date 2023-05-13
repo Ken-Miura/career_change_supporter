@@ -1,5 +1,15 @@
 // Copyright 2023 Ken Miura
 
+use chrono::Datelike;
+use common::{
+    util::{Identity, Ymd},
+    ErrResp,
+};
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use tracing::error;
+
+use crate::err::unexpected_err_resp;
+
 pub(crate) mod admin;
 pub(crate) mod career_request;
 pub(crate) mod identity_by_user_account_id;
@@ -9,6 +19,44 @@ mod reason_validator;
 pub(crate) mod refresh;
 pub(crate) mod user_account;
 mod user_account_operation;
+
+async fn find_identity_by_user_account_id(
+    pool: &DatabaseConnection,
+    user_account_id: i64,
+) -> Result<Option<Identity>, ErrResp> {
+    let model = entity::identity::Entity::find_by_id(user_account_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find identity (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model.map(convert_identity))
+}
+
+fn convert_identity(identity_model: entity::identity::Model) -> Identity {
+    let date = identity_model.date_of_birth;
+    let ymd = Ymd {
+        year: date.year(),
+        month: date.month(),
+        day: date.day(),
+    };
+    Identity {
+        last_name: identity_model.last_name,
+        first_name: identity_model.first_name,
+        last_name_furigana: identity_model.last_name_furigana,
+        first_name_furigana: identity_model.first_name_furigana,
+        date_of_birth: ymd,
+        prefecture: identity_model.prefecture,
+        city: identity_model.city,
+        address_line1: identity_model.address_line1,
+        address_line2: identity_model.address_line2,
+        telephone_number: identity_model.telephone_number,
+    }
+}
 
 #[cfg(test)]
 pub(super) mod tests {
