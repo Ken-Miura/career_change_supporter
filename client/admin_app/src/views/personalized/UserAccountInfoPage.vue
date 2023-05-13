@@ -68,6 +68,10 @@
             </div>
           </div>
         </div>
+        <div v-if="identity" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">身分情報</h3>
+          <p class="text-xl">{{ identity }}</p>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -91,6 +95,9 @@ import { UserAccountRetrievalResp } from '@/util/personalized/user-account-info/
 import { Code, createErrorMessage } from '@/util/Error'
 import { useRouter } from 'vue-router'
 import { UserAccount } from '@/util/personalized/user-account-info/UserAccount'
+import { Identity } from '@/util/personalized/Identity'
+import { useGetIdentityOptionByUserAccountId } from '@/util/personalized/user-account-info/useGetIdentityOptionByUserAccountId'
+import { GetIdentityOptionByUserAccountIdResp } from '@/util/personalized/user-account-info/GetIdentityOptionByUserAccountIdResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -105,20 +112,14 @@ export default defineComponent({
 
     const accountId = ref(null as number | null)
     const emailAddress = ref(null as string | null)
-
-    const userAccount = ref(null as UserAccount | null)
-
     const outerErrorMessage = ref(null as string | null)
 
+    const userAccount = ref(null as UserAccount | null)
     const {
       postUserAccountRetrievalDone,
       postUserAccountRetrievalByUserAccountIdFunc,
       postUserAccountRetrievalByEmailAddressFunc
     } = usePostUserAccountRetrieval()
-
-    const requestsDone = computed(() => {
-      return postUserAccountRetrievalDone.value
-    })
 
     const getUserAccountByEitherAccountIdOrEmailAddress = async (accountId: number | null, emailAddress: string | null): Promise<UserAccountRetrievalResp | ApiErrorResp> => {
       if (accountId) {
@@ -131,20 +132,20 @@ export default defineComponent({
     }
 
     const getUserAccount = async (accountId: number | null, emailAddress: string | null) => {
-      const postUserAccountRetrievalResponse = await getUserAccountByEitherAccountIdOrEmailAddress(accountId, emailAddress)
-      if (!(postUserAccountRetrievalResponse instanceof UserAccountRetrievalResp)) {
-        if (!(postUserAccountRetrievalResponse instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${postUserAccountRetrievalResponse}`)
+      const response = await getUserAccountByEitherAccountIdOrEmailAddress(accountId, emailAddress)
+      if (!(response instanceof UserAccountRetrievalResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
         }
-        const code = postUserAccountRetrievalResponse.getApiError().getCode()
+        const code = response.getApiError().getCode()
         if (code === Code.UNAUTHORIZED) {
           await router.push('/login')
           return
         }
-        outerErrorMessage.value = createErrorMessage(postUserAccountRetrievalResponse.getApiError().getCode())
+        outerErrorMessage.value = createErrorMessage(response.getApiError().getCode())
         return
       }
-      const result = postUserAccountRetrievalResponse.getResult()
+      const result = response.getResult()
       userAccount.value = result.user_account
     }
 
@@ -161,6 +162,41 @@ export default defineComponent({
     const disableMfaErrorMessage = ref(null as string | null)
     const disableMfa = async () => {
       console.log('disableMfa') // 更新後のUserAccountを返してもらうようにする
+    }
+
+    const selectUserAccountId = (userAccount: UserAccount | null, userAccountId: number | null) => {
+      if (userAccount) {
+        return userAccount.user_account_id
+      }
+      if (userAccountId) {
+        return userAccountId
+      }
+      return null
+    }
+
+    const identity = ref(null as Identity | null)
+    const {
+      getIdentityOptionByUserAccountIdDone,
+      getIdentityOptionByUserAccountIdFunc
+    } = useGetIdentityOptionByUserAccountId()
+    const identityMessage = ref(null as string | null)
+
+    const findIdentity = async (accountId: number) => {
+      const response = await getIdentityOptionByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetIdentityOptionByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        identityMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getIdentityResult()
+      identity.value = result.identity_option
     }
 
     onMounted(async () => {
@@ -180,11 +216,18 @@ export default defineComponent({
       accountId.value = param.accountId
       emailAddress.value = param.emailAddress
 
-      getUserAccount(param.accountId, param.emailAddress)
-      if (userAccount.value === null && param.accountId === null) {
+      await getUserAccount(param.accountId, param.emailAddress)
+
+      const accId = selectUserAccountId(userAccount.value, param.accountId)
+      if (!accId) {
         return
       }
-      console.log('do')
+
+      await findIdentity(accId)
+    })
+
+    const requestsDone = computed(() => {
+      return (postUserAccountRetrievalDone.value && getIdentityOptionByUserAccountIdDone)
     })
 
     return {
@@ -199,6 +242,8 @@ export default defineComponent({
       disableMfaConfirmation,
       disableMfaErrorMessage,
       disableMfa,
+      identity,
+      identityMessage,
       outerErrorMessage
     }
   }
