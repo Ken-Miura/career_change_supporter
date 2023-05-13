@@ -16,7 +16,57 @@
           <p v-else class="mt-4 ml-4 text-xl">意図しない動作です。管理者に連絡して下さい</p>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          {{ userAccount }}
+          <h3 class="font-bold text-2xl">アカウント情報</h3>
+          <div class="mt-4 ml-2">
+            <div v-if="userAccount">
+              <div class="m-4 text-2xl grid grid-cols-3">
+                <div class="mt-2 justify-self-start col-span-1">アカウントID</div><div class="mt-2 justify-self-start col-span-2">{{ userAccount.user_account_id }}</div>
+                <div class="mt-2 justify-self-start col-span-1">メールアドレス</div><div class="mt-2 justify-self-start col-span-2">{{ userAccount.email_address }}</div>
+                <div class="mt-2 justify-self-start col-span-1">アカウント作成日</div><div class="mt-2 justify-self-start col-span-2">{{ userAccount.created_at }}</div>
+                <div class="mt-2 justify-self-start col-span-1">最終ログイン日</div><div v-if="userAccount.last_login_time" class="mt-2 justify-self-start col-span-2">{{ userAccount.last_login_time }}</div><div v-else class="mt-2 justify-self-start col-span-2">未ログイン</div>
+                <div class="mt-2 justify-self-start col-span-1">無効化日時</div><div v-if="userAccount.disabled_at" class="mt-2 justify-self-start col-span-2">{{ userAccount.disabled_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">無効化されていません</div>
+                <div class="mt-2 justify-self-start col-span-1">二段階認証設定日</div><div v-if="userAccount.mfa_enabled_at" class="mt-2 justify-self-start col-span-2">{{ userAccount.mfa_enabled_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">二段階認証は設定されていません</div>
+              </div>
+              <div class="mt-4 ml-2">
+                <div class="text-2xl justify-self-start col-span-6 pt-3">
+                  <p>アカウント無効化・有効化</p>
+                </div>
+                <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+                  <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+                    <div class="col-span-5">アカウントに対する操作が適正であることを確認しました</div>
+                    <input v-model="accountEnableDisableConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                  </div>
+                </div>
+                <div v-if="userAccount.disabled_at">
+                  <button v-on:click="enableAccount" v-bind:disabled="!accountEnableDisableConfirmation" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">有効化する</button>
+                </div>
+                <div v-else>
+                  <button v-on:click="disableAccount" v-bind:disabled="!accountEnableDisableConfirmation" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">無効化する</button>
+                </div>
+                <div v-if="accountEnableDisableErrorMessage" class="mt-4">
+                  <AlertMessage v-bind:message="accountEnableDisableErrorMessage"/>
+                </div>
+              </div>
+              <div v-if="userAccount.mfa_enabled_at" class="mt-4 ml-2">
+                <div class="text-2xl justify-self-start col-span-6 pt-3">
+                  <p>二段階認証設定解除</p>
+                </div>
+                <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+                  <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+                    <div class="col-span-5">アカウントに対する操作が適正であることを確認しました</div>
+                    <input v-model="disableMfaConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                  </div>
+                </div>
+                <button v-on:click="disableMfa" v-bind:disabled="!disableMfaConfirmation" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">二段階認証設定を解除する</button>
+                <div v-if="disableMfaErrorMessage" class="mt-4">
+                  <AlertMessage v-bind:message="disableMfaErrorMessage"/>
+                </div>
+              </div>
+            </div>
+            <div v-else>
+              <p class="text-xl">アカウントが既に削除されている、または初めから存在しません。</p>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -80,6 +130,39 @@ export default defineComponent({
       }
     }
 
+    const getUserAccount = async (accountId: number | null, emailAddress: string | null) => {
+      const postUserAccountRetrievalResponse = await getUserAccountByEitherAccountIdOrEmailAddress(accountId, emailAddress)
+      if (!(postUserAccountRetrievalResponse instanceof UserAccountRetrievalResp)) {
+        if (!(postUserAccountRetrievalResponse instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${postUserAccountRetrievalResponse}`)
+        }
+        const code = postUserAccountRetrievalResponse.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        outerErrorMessage.value = createErrorMessage(postUserAccountRetrievalResponse.getApiError().getCode())
+        return
+      }
+      const result = postUserAccountRetrievalResponse.getResult()
+      userAccount.value = result.user_account
+    }
+
+    const accountEnableDisableConfirmation = ref(false)
+    const accountEnableDisableErrorMessage = ref(null as string | null)
+    const disableAccount = async () => {
+      console.log('disableAccount') // 更新後のUserAccountを返してもらうようにする
+    }
+    const enableAccount = async () => {
+      console.log('enableAccount') // 更新後のUserAccountを返してもらうようにする
+    }
+
+    const disableMfaConfirmation = ref(false)
+    const disableMfaErrorMessage = ref(null as string | null)
+    const disableMfa = async () => {
+      console.log('disableMfa') // 更新後のUserAccountを返してもらうようにする
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -97,21 +180,11 @@ export default defineComponent({
       accountId.value = param.accountId
       emailAddress.value = param.emailAddress
 
-      const postUserAccountRetrievalResponse = await getUserAccountByEitherAccountIdOrEmailAddress(param.accountId, param.emailAddress)
-      if (!(postUserAccountRetrievalResponse instanceof UserAccountRetrievalResp)) {
-        if (!(postUserAccountRetrievalResponse instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${postUserAccountRetrievalResponse}`)
-        }
-        const code = postUserAccountRetrievalResponse.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
-          return
-        }
-        outerErrorMessage.value = createErrorMessage(postUserAccountRetrievalResponse.getApiError().getCode())
+      getUserAccount(param.accountId, param.emailAddress)
+      if (userAccount.value === null && param.accountId === null) {
         return
       }
-      const result = postUserAccountRetrievalResponse.getResult()
-      userAccount.value = result.user_account
+      console.log('do')
     })
 
     return {
@@ -119,6 +192,13 @@ export default defineComponent({
       accountId,
       emailAddress,
       userAccount,
+      accountEnableDisableConfirmation,
+      accountEnableDisableErrorMessage,
+      disableAccount,
+      enableAccount,
+      disableMfaConfirmation,
+      disableMfaErrorMessage,
+      disableMfa,
       outerErrorMessage
     }
   }
