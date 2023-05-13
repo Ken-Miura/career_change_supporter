@@ -245,7 +245,7 @@ export default defineComponent({
     })
 
     const requestsDone = computed(() => {
-      return (postUserAccountRetrievalDone.value && getIdentityOptionByUserAccountIdDone)
+      return (postUserAccountRetrievalDone.value && getIdentityOptionByUserAccountIdDone.value)
     })
 
     return {
