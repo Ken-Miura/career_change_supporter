@@ -70,7 +70,7 @@
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">身分情報</h3>
-          <div v-if="!identityMessage">
+          <div v-if="!identityErrMessage">
             <div v-if="identity" class="m-4 text-2xl grid grid-cols-3">
               <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name }} {{ identity.first_name }}</div>
               <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div>
@@ -87,7 +87,21 @@
             </div>
           </div>
           <div v-else>
-            <AlertMessage class="mt-4" v-bind:message="identityMessage"/>
+            <AlertMessage class="mt-4" v-bind:message="identityErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">職務経歴</h3>
+          <div v-if="!careersErrMessage">
+            <div v-if="careers.length !== 0" class="m-4 text-2xl grid grid-cols-3">
+              {{ careers }}
+            </div>
+            <div v-else class="m-4 text-2xl">
+              職務経歴は見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="careersErrMessage"/>
           </div>
         </div>
       </div>
@@ -116,6 +130,9 @@ import { UserAccount } from '@/util/personalized/user-account-info/UserAccount'
 import { Identity } from '@/util/personalized/Identity'
 import { useGetIdentityOptionByUserAccountId } from '@/util/personalized/user-account-info/useGetIdentityOptionByUserAccountId'
 import { GetIdentityOptionByUserAccountIdResp } from '@/util/personalized/user-account-info/GetIdentityOptionByUserAccountIdResp'
+import { useGetCareersByUserAccountId } from '@/util/personalized/user-account-info/useGetCareersByUserAccountId'
+import { CareersWithId } from '@/util/personalized/user-account-info/CareersWithId'
+import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-info/GetCareersByUserAccountIdResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -197,7 +214,7 @@ export default defineComponent({
       getIdentityOptionByUserAccountIdDone,
       getIdentityOptionByUserAccountIdFunc
     } = useGetIdentityOptionByUserAccountId()
-    const identityMessage = ref(null as string | null)
+    const identityErrMessage = ref(null as string | null)
 
     const findIdentity = async (accountId: number) => {
       const response = await getIdentityOptionByUserAccountIdFunc(accountId.toString())
@@ -210,11 +227,36 @@ export default defineComponent({
           await router.push('/login')
           return
         }
-        identityMessage.value = createErrorMessage(response.getApiError().getCode())
+        identityErrMessage.value = createErrorMessage(response.getApiError().getCode())
         return
       }
       const result = response.getIdentityResult()
       identity.value = result.identity_option
+    }
+
+    const careers = ref([] as CareersWithId[])
+    const {
+      getCareersByUserAccountIdDone,
+      getCareersByUserAccountIdFunc
+    } = useGetCareersByUserAccountId()
+    const careersErrMessage = ref(null as string | null)
+
+    const findCareers = async (accountId: number) => {
+      const response = await getCareersByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetCareersByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        careersErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getCareersResult()
+      careers.value = result.careers
     }
 
     onMounted(async () => {
@@ -242,10 +284,13 @@ export default defineComponent({
       }
 
       await findIdentity(accId)
+      await findCareers(accId)
     })
 
     const requestsDone = computed(() => {
-      return (postUserAccountRetrievalDone.value && getIdentityOptionByUserAccountIdDone.value)
+      return (postUserAccountRetrievalDone.value &&
+        getIdentityOptionByUserAccountIdDone.value &&
+        getCareersByUserAccountIdDone.value)
     })
 
     return {
@@ -261,7 +306,9 @@ export default defineComponent({
       disableMfaErrorMessage,
       disableMfa,
       identity,
-      identityMessage,
+      identityErrMessage,
+      careers,
+      careersErrMessage,
       outerErrorMessage
     }
   }
