@@ -93,8 +93,34 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">職務経歴</h3>
           <div v-if="!careersErrMessage">
-            <div v-if="careers.length !== 0" class="m-4 text-2xl grid grid-cols-3">
-              {{ careers }}
+            <div v-if="careers.length !== 0">
+              <ul>
+                <li v-for="c in careers" v-bind:key="c.career_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴番号{{ c.career_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ c.career.company_name }}</div>
+                    <div v-if="c.career.department_name !== null" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="c.career.department_name !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.department_name }}</div>
+                    <div v-if="c.career.office !== null" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="c.career.office !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.office }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="mt-2 justify-self-start col-span-2">{{ c.career.career_start_date.year }}年{{ c.career.career_start_date.month }}月{{ c.career.career_start_date.day }}日</div>
+                    <div v-if="c.career.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="c.career.career_end_date !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.career_end_date.year }}年{{ c.career.career_end_date.month }}月{{ c.career.career_end_date.day }}日</div>
+                    <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
+                    <div v-if="c.career.contract_type === 'regular'" class="mt-2 justify-self-start col-span-2">正社員</div>
+                    <div v-else-if="c.career.contract_type === 'contract'" class="mt-2 justify-self-start col-span-2">契約社員</div>
+                    <div v-else-if="c.career.contract_type === 'other'" class="mt-2 justify-self-start col-span-2">その他</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">想定外の値です。管理者にご連絡下さい</div>
+                    <div v-if="c.career.profession !== null" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="c.career.profession !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.profession }}</div>
+                    <div v-if="c.career.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-1">年収（単位：万円）</div><div v-if="c.career.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.annual_income_in_man_yen }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">管理職区分</div>
+                    <div v-if="c.career.is_manager" class="mt-2 justify-self-start col-span-2">管理職</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">非管理職</div>
+                    <div v-if="c.career.position_name !== null" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="c.career.position_name !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.position_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">入社区分</div>
+                    <div v-if="c.career.is_new_graduate" class="mt-2 justify-self-start col-span-2">新卒入社</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">中途入社</div>
+                    <div v-if="c.career.note !== null" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="c.career.note !== null" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ c.career.note }}</div>
+                  </div>
+                </li>
+              </ul>
             </div>
             <div v-else class="m-4 text-2xl">
               職務経歴は見つかりませんでした
