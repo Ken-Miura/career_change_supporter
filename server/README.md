@@ -3,7 +3,7 @@
 ## 連携するサーバ群を立ち上げる
 VS Code remote developmentで開発している場合、自動的に連携するサーバ群が立ち上がるため、特に対応は必要ない（連携するサーバ群の情報を含んだcompose.ymlが、プロジェクトルートの.devcontainer/devcontainer.jsonに記載されているため、VS Code remote development利用時に自動的に立ち上がる）<br>
 <br>
-VS Code remote developmentを使っていない場合、下記のコマンドで連携するサーバ群を立ち上げる。
+VS Code remote developmentを使っていない場合、下記のコマンドで連携するサーバ群を立ち上げる。その後、.devcontainer/postCreateCommand.shに記載されているバックエンドの環境の準備処理を参考に各サーバの初期化を実施しておく。
 ```
 docker compose up -d
 ```
@@ -12,32 +12,12 @@ docker compose up -d
 docker compose down
 ```
 
-## 環境変数の用意
-sample.envファイルを.envへリネームし、環境にあった変数を設定する
-
-## DBのセットアップ
-### DBにスキーマとテーブルを作成（空のDBを初期化する処理）
-```
-export DATABASE_URL=postgres://postgres:example@db/ccs_db
-sea-orm-cli migrate up
-```
-
-## OpenSearchのセットアップ
-### OSの設定値の変更
-OpenSearchを安定して動作させるため、下記のリンクの設定に従い、vm.max_map_countを262144以上に設定する。<br>
+## OSの設定値の変更
+OpenSearchを安定して動作させるため、下記のリンクの設定に従い、（コンテナではなく）ホストマシン上のvm.max_map_countを262144以上に設定する。<br>
 https://opensearch.org/docs/latest/opensearch/install/important-settings/
 
-### インデックスの生成
-docker composeを立ち上げた後、OpenSearchに対して下記のコマンドを打ってインデックスを生成する
-```
-curl -XPUT -H "Content-Type: application/json" --data "@files_for_compose/opensearch/index_definition/index.json" "http://opensearch:9200/users"
-```
-
-### replicaシャードの数を0に設定（開発環境の設定であり、本番環境では実施しない設定）
-開発環境では、OpenSearchは単一ノードで構成する。単一ノードの場合、replicaシャードを配置するための別ノードが存在しない。そのため、それに起因してインデックスのステータスがyellowとなる。開発環境においては、replicaシャードが存在しないことは問題とならない。そのため、このステータスをgreenにしておくため、[インデックスの生成](#インデックスの生成)で作成したインデックスに対して、下記のコマンドを打ってレプリカの数を0に設定しておく。
-```
-curl -XPUT -H "Content-Type: application/json" -d '{ "index": { "number_of_replicas": 0 } }' "http://opensearch:9200/users/_settings"
-```
+## 環境変数の用意
+sample.envファイルを.envへリネームし、環境にあった変数を設定する
 
 ## 管理者アカウントのセットアップ
 下記のコマンドを打ち、管理者向けサービスのアカウントを作成する
