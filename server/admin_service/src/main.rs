@@ -21,6 +21,7 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::rejection::post_update_identity_request_rejection;
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::careers_by_user_account_id::get_careers_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::fee_per_hour_in_yen_by_user_account_id::get_fee_per_hour_in_yen_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_option_by_user_account_id::get_identity_option_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_email_address::post_user_account_retrieval_by_email_address;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_user_account_id::post_user_account_retrieval_by_user_account_id;
@@ -268,6 +269,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/careers-by-user-account-id",
                     get(get_careers_by_user_account_id),
+                )
+                .route(
+                    "/fee-per-hour-in-yen-by-user-account-id",
+                    get(get_fee_per_hour_in_yen_by_user_account_id),
                 )
                 .with_state(state),
         )
