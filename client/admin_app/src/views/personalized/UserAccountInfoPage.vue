@@ -144,6 +144,20 @@
             <AlertMessage class="mt-4" v-bind:message="feePerHourInYenErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">テナント情報（報酬の入金口座、売上関連情報が紐づく識別子の情報）</h3>
+          <div v-if="!tenantIdErrMessage">
+            <div v-if="tenantId" class="mt-6 ml-8 text-2xl">
+              <p>テナントID: {{ tenantId }}</p>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              テナント情報は見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="tenantIdErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -175,6 +189,8 @@ import { CareersWithId } from '@/util/personalized/user-account-info/career/Care
 import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-info/career/GetCareersByUserAccountIdResp'
 import { useGetFeePerHourInYenByUserAccountId } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/useGetFeePerHourInYenByUserAccountId'
 import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
+import { useGetTenantIdByUserAccountId } from '@/util/personalized/user-account-info/tenant/useGetTenantIdByUserAccountId'
+import { GetTenantIdByUserAccountIdResp } from '@/util/personalized/user-account-info/tenant/GetTenantIdByUserAccountIdResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -326,6 +342,31 @@ export default defineComponent({
       feePerHourInYen.value = result.fee_per_hour_in_yen
     }
 
+    const tenantId = ref(null as string | null)
+    const {
+      getTenantIdByUserAccountIdDone,
+      getTenantIdByUserAccountIdFunc
+    } = useGetTenantIdByUserAccountId()
+    const tenantIdErrMessage = ref(null as string | null)
+
+    const findTenantId = async (accountId: number) => {
+      const response = await getTenantIdByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetTenantIdByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        tenantIdErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getTenantIdResult()
+      tenantId.value = result.tenant_id
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -353,13 +394,15 @@ export default defineComponent({
       await findIdentity(accId)
       await findCareers(accId)
       await findFeePerHourInYen(accId)
+      await findTenantId(accId)
     })
 
     const requestsDone = computed(() => {
       return (postUserAccountRetrievalDone.value &&
         getIdentityOptionByUserAccountIdDone.value &&
         getCareersByUserAccountIdDone.value &&
-        getFeePerHourInYenByUserAccountIdDone.value)
+        getFeePerHourInYenByUserAccountIdDone.value &&
+        getTenantIdByUserAccountIdDone.value)
     })
 
     return {
@@ -380,6 +423,8 @@ export default defineComponent({
       careersErrMessage,
       feePerHourInYen,
       feePerHourInYenErrMessage,
+      tenantId,
+      tenantIdErrMessage,
       outerErrorMessage
     }
   }
