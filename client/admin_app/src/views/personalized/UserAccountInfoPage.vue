@@ -130,6 +130,20 @@
             <AlertMessage class="mt-4" v-bind:message="careersErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
+          <div v-if="!feePerHourInYenErrMessage">
+            <div v-if="feePerHourInYen" class="mt-6 ml-8 text-2xl">
+              <p>{{ feePerHourInYen }}円</p>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              相談一回（１時間）の相談料は見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="feePerHourInYenErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -159,6 +173,8 @@ import { GetIdentityOptionByUserAccountIdResp } from '@/util/personalized/user-a
 import { useGetCareersByUserAccountId } from '@/util/personalized/user-account-info/useGetCareersByUserAccountId'
 import { CareersWithId } from '@/util/personalized/user-account-info/CareersWithId'
 import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-info/GetCareersByUserAccountIdResp'
+import { useGetFeePerHourInYenByUserAccountId } from '@/util/personalized/user-account-info/useGetFeePerHourInYenByUserAccountId'
+import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/GetFeePerHourInYenByUserAccountIdResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -285,6 +301,31 @@ export default defineComponent({
       careers.value = result.careers
     }
 
+    const feePerHourInYen = ref(null as number | null)
+    const {
+      getFeePerHourInYenByUserAccountIdDone,
+      getFeePerHourInYenByUserAccountIdFunc
+    } = useGetFeePerHourInYenByUserAccountId()
+    const feePerHourInYenErrMessage = ref(null as string | null)
+
+    const findFeePerHourInYen = async (accountId: number) => {
+      const response = await getFeePerHourInYenByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetFeePerHourInYenByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        feePerHourInYenErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getFeePerHourInYenResult()
+      feePerHourInYen.value = result.fee_per_hour_in_yen
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -311,12 +352,14 @@ export default defineComponent({
 
       await findIdentity(accId)
       await findCareers(accId)
+      await findFeePerHourInYen(accId)
     })
 
     const requestsDone = computed(() => {
       return (postUserAccountRetrievalDone.value &&
         getIdentityOptionByUserAccountIdDone.value &&
-        getCareersByUserAccountIdDone.value)
+        getCareersByUserAccountIdDone.value &&
+        getFeePerHourInYenByUserAccountIdDone.value)
     })
 
     return {
@@ -335,6 +378,8 @@ export default defineComponent({
       identityErrMessage,
       careers,
       careersErrMessage,
+      feePerHourInYen,
+      feePerHourInYenErrMessage,
       outerErrorMessage
     }
   }
