@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { getFeePerHourInYenByUserAccountId } from './GetFeePerHourInYenByUserAccountId'
+import { getFeePerHourInYenByUserAccountId } from '../fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountId'
 
 export function useGetFeePerHourInYenByUserAccountId () {
   const getFeePerHourInYenByUserAccountIdDone = ref(true)

@@ -1,4 +1,4 @@
-import { Identity } from '../Identity'
+import { Identity } from '../../Identity'
 
 export type IdentityResult = {
     /* eslint-disable camelcase */
