@@ -276,7 +276,7 @@ async fn main_internal(num_of_cpus: u32) {
                     get(get_fee_per_hour_in_yen_by_user_account_id),
                 )
                 .route(
-                    "/tenant-by-user-account-id",
+                    "/tenant-id-by-user-account-id",
                     get(get_tenant_id_by_user_account_id),
                 )
                 .with_state(state),
