@@ -69,6 +69,28 @@
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">利用規約同意履歴</h3>
+          <div v-if="!agreementsErrMessage">
+            <div v-if="agreements.length !== 0">
+              <ul>
+                <li v-for="a in agreements" v-bind:key="a.version" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">利用規約バージョン {{ a.version }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">主体（メールアドレス）</div><div class="mt-2 justify-self-start col-span-2">{{ a.email_address }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">同意日時</div><div class="mt-2 justify-self-start col-span-2">{{ a.agreed_at }}</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              利用規約同意履歴は見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="agreementsErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">身分情報</h3>
           <div v-if="!identityErrMessage">
             <div v-if="identity" class="m-4 text-2xl grid grid-cols-3">
@@ -191,6 +213,9 @@ import { useGetFeePerHourInYenByUserAccountId } from '@/util/personalized/user-a
 import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
 import { useGetTenantIdByUserAccountId } from '@/util/personalized/user-account-info/tenant/useGetTenantIdByUserAccountId'
 import { GetTenantIdByUserAccountIdResp } from '@/util/personalized/user-account-info/tenant/GetTenantIdByUserAccountIdResp'
+import { useGetAgreementsByUserAccountId } from '@/util/personalized/user-account-info/terms-of-use/useGetCareersByUserAccountId'
+import { Agreement } from '@/util/personalized/user-account-info/terms-of-use/Agreement'
+import { GetAgreementsByUserAccountIdResp } from '@/util/personalized/user-account-info/terms-of-use/GetAgreementsByUserAccountIdResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -265,6 +290,31 @@ export default defineComponent({
         return userAccountId
       }
       return null
+    }
+
+    const agreements = ref([] as Agreement[])
+    const {
+      getAgreementsByUserAccountIdDone,
+      getAgreementsByUserAccountIdFunc
+    } = useGetAgreementsByUserAccountId()
+    const agreementsErrMessage = ref(null as string | null)
+
+    const findAgreements = async (accountId: number) => {
+      const response = await getAgreementsByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetAgreementsByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        agreementsErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getAgreementsResult()
+      agreements.value = result.agreements
     }
 
     const identity = ref(null as Identity | null)
@@ -391,6 +441,7 @@ export default defineComponent({
         return
       }
 
+      await findAgreements(accId)
       await findIdentity(accId)
       await findCareers(accId)
       await findFeePerHourInYen(accId)
@@ -399,6 +450,7 @@ export default defineComponent({
 
     const requestsDone = computed(() => {
       return (postUserAccountRetrievalDone.value &&
+        getAgreementsByUserAccountIdDone.value &&
         getIdentityOptionByUserAccountIdDone.value &&
         getCareersByUserAccountIdDone.value &&
         getFeePerHourInYenByUserAccountIdDone.value &&
@@ -417,6 +469,8 @@ export default defineComponent({
       disableMfaConfirmation,
       disableMfaErrorMessage,
       disableMfa,
+      agreements,
+      agreementsErrMessage,
       identity,
       identityErrMessage,
       careers,

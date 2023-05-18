@@ -4,7 +4,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 use serde::Serialize;
 use tracing::error;
 
@@ -65,6 +65,7 @@ impl AgreementsOperation for AgreementsOperationImpl {
     ) -> Result<Vec<Agreement>, ErrResp> {
         let models = entity::terms_of_use::Entity::find()
             .filter(entity::terms_of_use::Column::UserAccountId.eq(user_account_id))
+            .order_by_desc(entity::terms_of_use::Column::Ver)
             .all(&self.pool)
             .await
             .map_err(|e| {
