@@ -1,5 +1,6 @@
 // Copyright 2023 Ken Miura
 
+pub(crate) mod agreement_by_user_account_id;
 pub(crate) mod careers_by_user_account_id;
 pub(crate) mod fee_per_hour_in_yen_by_user_account_id;
 pub(crate) mod identity_option_by_user_account_id;
