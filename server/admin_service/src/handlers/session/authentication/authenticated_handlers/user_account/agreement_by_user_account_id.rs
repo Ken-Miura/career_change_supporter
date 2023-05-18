@@ -3,7 +3,7 @@
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use common::{ErrResp, RespResult};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::Serialize;
 use tracing::error;
@@ -79,7 +79,10 @@ impl AgreementsOperation for AgreementsOperationImpl {
             .map(|m| Agreement {
                 email_address: m.email_address,
                 version: m.ver,
-                agreed_at: m.agreed_at.to_rfc3339(),
+                agreed_at: m
+                    .agreed_at
+                    .with_timezone(&(*JAPANESE_TIME_ZONE))
+                    .to_rfc3339(),
             })
             .collect::<Vec<Agreement>>())
     }
