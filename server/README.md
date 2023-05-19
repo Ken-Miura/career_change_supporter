@@ -104,7 +104,7 @@ user_accountで共有ロックを取得 -> create_career_reqで排他ロック�
 #### user_service
 ##### handlers/session/authentication/authenticated_handlers/personal_info/profile/fee_per_hour_in_yen.rs
 consulting_feeで排他ロックを取得 -> documentで共有ロックを取得
-##### handlers/session/authentication/authenticated_handlers/consultation/rating/consultant_rating.rs TODO: ドキュメント通りでないため要確認
+##### handlers/session/authentication/authenticated_handlers/consultation/rating/consultant_rating.rs
 user_accountで排他ロックを取得 -> documentで共有ロックを取得
 ##### handlers/session/authentication/authenticated_handlers/delete_accounts.rs
 user_accountで排他ロックを取得 -> documentで排他ロックを取得
