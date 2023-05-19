@@ -6,7 +6,7 @@ cargo install --locked ripgrep && \
   cargo install --locked cargo-sort
 
 # 以下バックエンドの環境の準備
-pushd server
+pushd server > /dev/null
 
 while ! echo exit | curl -s telnet://db:5432;
 do
@@ -38,4 +38,4 @@ curl -s -XPUT -H "Content-Type: application/json" --data "@files_for_compose/ope
 curl -s -XPUT -H "Content-Type: application/json" -d '{ "index": { "number_of_replicas": 0 } }' "http://opensearch:9200/users/_settings" > /dev/null
 echo "opensearch initialization end"
 
-popd
+popd > /dev/null
