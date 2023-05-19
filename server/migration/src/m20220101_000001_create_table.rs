@@ -918,7 +918,9 @@ impl MigrationTrait for Migration {
              * 管理者の把握しないうちに拒否した記録が消去される可能性がある。そのため、user_account_idは外部キーとしない
              */
             /*
-             * 拒否した場合、アップロードされた画像は削除するため、image1_file_name_without_ext, image2_file_name_without_extは保持しない。
+             * アップロードされた画像は任意のタイミングで定期実行ツールを用いて削除する。
+             * そのため、画像のアップロード先のパスを示すimage1_file_name_without_ext, image2_file_name_without_extを保持させる。
+             * 画像が削除される際、image1_file_name_without_ext, image2_file_name_without_extはNULLに更新される。
              */
             /*
              * PRIMARY KEYはSEQUENCE名にしたときに識別子の63文字制限に引っかからないように命名する（rjd_cre_identity_id）
@@ -938,6 +940,8 @@ impl MigrationTrait for Migration {
                   address_line2 VARCHAR (128),
                   telephone_number VARCHAR (13) NOT NULL,
                   reason VARCHAR (256) NOT NULL,
+                  image1_file_name_without_ext ccs_schema.uuid_simple_form,
+                  image2_file_name_without_ext ccs_schema.uuid_simple_form,
                   rejected_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   rejected_by ccs_schema.email_address NOT NULL
                 );",
@@ -948,6 +952,12 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"GRANT SELECT, INSERT ON ccs_schema.rejected_create_identity_req To admin_app;",
             ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT UPDATE (image1_file_name_without_ext, image2_file_name_without_ext) ON ccs_schema.rejected_create_identity_req To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
@@ -1065,7 +1075,9 @@ impl MigrationTrait for Migration {
              * 管理者の把握しないうちに拒否した記録が消去される可能性がある。そのため、user_account_idは外部キーとしない
              */
             /*
-             * 拒否した場合、アップロードされた画像は削除するため、image1_file_name_without_ext, image2_file_name_without_extは保持しない。
+             * アップロードされた画像は任意のタイミングで定期実行ツールを用いて削除する。
+             * そのため、画像のアップロード先のパスを示すimage1_file_name_without_ext, image2_file_name_without_extを保持させる。
+             * 画像が削除される際、image1_file_name_without_ext, image2_file_name_without_extはNULLに更新される。
              */
             /*
              * PRIMARY KEYはSEQUENCE名にしたときに識別子の63文字制限に引っかからないように命名する（rjd_upd_identity_id）
@@ -1085,6 +1097,8 @@ impl MigrationTrait for Migration {
                   address_line2 VARCHAR (128),
                   telephone_number VARCHAR (13) NOT NULL,
                   reason VARCHAR (256) NOT NULL,
+                  image1_file_name_without_ext ccs_schema.uuid_simple_form,
+                  image2_file_name_without_ext ccs_schema.uuid_simple_form,
                   rejected_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   rejected_by ccs_schema.email_address NOT NULL
                 );",
@@ -1095,6 +1109,12 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"GRANT SELECT, INSERT ON ccs_schema.rejected_update_identity_req To admin_app;",
             ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT UPDATE (image1_file_name_without_ext, image2_file_name_without_ext) ON ccs_schema.rejected_update_identity_req To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
@@ -1255,7 +1275,9 @@ impl MigrationTrait for Migration {
                  * 管理者の把握しないうちにレコードが消去される可能性がある。そのため、user_account_idは外部キーとしない
                  */
                 /*
-                 * 拒否した場合、アップロードされた画像は削除するため、image1_file_name_without_ext, image2_file_name_without_extは保持しない。
+                 * アップロードされた画像は任意のタイミングで定期実行ツールを用いて削除する。
+                 * そのため、画像のアップロード先のパスを示すimage1_file_name_without_ext, image2_file_name_without_extを保持させる。
+                 * 画像が削除される際、image1_file_name_without_ext, image2_file_name_without_extはNULLに更新される。
                  */
                 sql.stmt(
                     r"CREATE TABLE ccs_schema.rejected_create_career_req (
@@ -1274,6 +1296,8 @@ impl MigrationTrait for Migration {
                     is_new_graduate BOOLEAN NOT NULL,
                     note VARCHAR (2048),
                     reason VARCHAR (256) NOT NULL,
+                    image1_file_name_without_ext ccs_schema.uuid_simple_form,
+                    image2_file_name_without_ext ccs_schema.uuid_simple_form,
                     rejected_at TIMESTAMP WITH TIME ZONE NOT NULL,
                     rejected_by ccs_schema.email_address NOT NULL
                   );",
@@ -1285,6 +1309,12 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"GRANT SELECT, INSERT ON ccs_schema.rejected_create_career_req To admin_app;",
             ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT UPDATE (image1_file_name_without_ext, image2_file_name_without_ext) ON ccs_schema.rejected_create_career_req To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn

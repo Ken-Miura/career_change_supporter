@@ -222,6 +222,8 @@ fn generate_rejected_update_identity_req_active_model(
         address_line2: Set(model.address_line2),
         telephone_number: Set(model.telephone_number),
         reason: Set(rejection_reason),
+        image1_file_name_without_ext: Set(Some(model.image1_file_name_without_ext)),
+        image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
         rejected_at: Set(rejected_time),
         rejected_by: Set(refuser_email_address),
     }

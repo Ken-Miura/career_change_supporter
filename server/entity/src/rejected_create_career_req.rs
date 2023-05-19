@@ -21,6 +21,8 @@ pub struct Model {
     pub is_new_graduate: bool,
     pub note: Option<String>,
     pub reason: String,
+    pub image1_file_name_without_ext: Option<String>,
+    pub image2_file_name_without_ext: Option<String>,
     pub rejected_at: DateTimeWithTimeZone,
     pub rejected_by: String,
 }
