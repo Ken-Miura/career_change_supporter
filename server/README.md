@@ -88,27 +88,27 @@ ON DELETE CASCADE、ON DELETE SET NULL、ON UPDATE CASCADE、ON UPDATE SET NULL�
 <p>（※2）外部キーを使う場合、子のレコードをINSERT、UPDATEするときに親レコードに暗黙的に共有ロックがかかる。このケースは見落としやすいので要注意する</p>
 
 #### admin_service
-##### create_identity_request_approval.rs
+##### handlers/session/authentication/authenticated_handlers/identity_request/create_request/approval.rs
 user_accountで共有ロックを取得 -> create_identity_reqで排他ロックを取得
-##### create_identity_request_rejection.rs
+##### handlers/session/authentication/authenticated_handlers/identity_request/create_request/rejection.rs
 user_accountで共有ロックを取得 -> create_identity_reqで排他ロックを取得
-##### update_identity_request_approval.rs
+##### handlers/session/authentication/authenticated_handlers/identity_request/update_request/approval.rs
 user_accountで共有ロックを取得 -> identityで排他ロックを取得 -> update_identity_reqで排他ロックを取得
-##### update_identity_request_rejection.rs
+##### handlers/session/authentication/authenticated_handlers/identity_request/update_request/rejection.rs
 user_accountで共有ロックを取得 -> update_identity_reqで排他ロックを取得
-##### create_career_request_approval.rs
+##### handlers/session/authentication/authenticated_handlers/career_request/create_request/approval.rs
 user_accountで共有ロックを取得 -> create_career_reqで排他ロックを取得 -> documentで共有ロックを取得
-##### create_career_request_rejection.rs
+##### handlers/session/authentication/authenticated_handlers/career_request/create_request/rejection.rs
 user_accountで共有ロックを取得 -> create_career_reqで排他ロックを取得
 
 #### user_service
-##### personal_info/profile/fee_per_hour_in_yen.rs
+##### handlers/session/authentication/authenticated_handlers/personal_info/profile/fee_per_hour_in_yen.rs
 consulting_feeで排他ロックを取得 -> documentで共有ロックを取得
-##### personal_info/profile/career/delete.rs
+##### handlers/session/authentication/authenticated_handlers/personal_info/profile/career/delete.rs TODO: ドキュメント通りでないため要確認
 careerで排他ロックを取得 -> documentで共有ロックを取得
-##### rating/consultant_rating.rs
+##### handlers/session/authentication/authenticated_handlers/consultation/rating/consultant_rating.rs TODO: ドキュメント通りでないため要確認
 user_accountで排他ロックを取得 -> documentで共有ロックを取得
-##### account/delete_accounts.rs
+##### handlers/session/authentication/authenticated_handlers/delete_accounts.rs
 user_accountで排他ロックを取得 -> documentで排他ロックを取得
 
 ## 検索用インデックスの設計について
