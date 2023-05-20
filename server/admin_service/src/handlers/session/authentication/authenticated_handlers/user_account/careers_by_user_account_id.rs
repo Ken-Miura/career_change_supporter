@@ -13,7 +13,7 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
-use super::UserAccountIdQuery;
+use super::{validate_account_id_is_positive, UserAccountIdQuery};
 
 pub(crate) async fn get_careers_by_user_account_id(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -40,6 +40,7 @@ async fn get_careers_by_user_account_id_internal(
     user_account_id: i64,
     op: impl CareersOperation,
 ) -> RespResult<CareersResult> {
+    validate_account_id_is_positive(user_account_id)?;
     let careers = op.get_careers_by_user_account_id(user_account_id).await?;
     Ok((StatusCode::OK, Json(CareersResult { careers })))
 }
@@ -109,6 +110,8 @@ mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use common::{util::Ymd, ErrResp};
+
+    use crate::err::Code;
 
     use super::*;
 
@@ -231,5 +234,35 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(Vec::<CareerWithId>::with_capacity(0), resp.1 .0.careers);
+    }
+
+    #[tokio::test]
+    async fn get_careers_by_user_account_id_internal_fail_user_account_id_is_zero() {
+        let user_account_id = 0;
+        let op_mock = CareersOperationMock {
+            user_account_id,
+            careers: vec![],
+        };
+
+        let result = get_careers_by_user_account_id_internal(user_account_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    }
+
+    #[tokio::test]
+    async fn get_careers_by_user_account_id_internal_fail_user_account_id_is_negative() {
+        let user_account_id = -1;
+        let op_mock = CareersOperationMock {
+            user_account_id,
+            careers: vec![],
+        };
+
+        let result = get_careers_by_user_account_id_internal(user_account_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
     }
 }
