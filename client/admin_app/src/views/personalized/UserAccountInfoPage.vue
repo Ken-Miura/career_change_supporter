@@ -216,6 +216,11 @@ import { GetTenantIdByUserAccountIdResp } from '@/util/personalized/user-account
 import { useGetAgreementsByUserAccountId } from '@/util/personalized/user-account-info/terms-of-use/useGetCareersByUserAccountId'
 import { Agreement } from '@/util/personalized/user-account-info/terms-of-use/Agreement'
 import { GetAgreementsByUserAccountIdResp } from '@/util/personalized/user-account-info/terms-of-use/GetAgreementsByUserAccountIdResp'
+import { GetConsultationReqsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByUserAccountIdResp'
+import { useGetConsultationReqsByUserAccountId } from '@/util/personalized/user-account-info/consultation-req/useGetConsultationReqsByUserAccountId'
+import { ConsultationReq } from '@/util/personalized/user-account-info/consultation-req/ConsultationReq'
+import { GetConsultationReqsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByConsultantIdResp'
+import { useGetConsultationReqsByConsultantId } from '@/util/personalized/user-account-info/consultation-req/useGetConsultationReqsByConsultantId'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -417,6 +422,56 @@ export default defineComponent({
       tenantId.value = result.tenant_id
     }
 
+    const consultationReqs = ref([] as ConsultationReq[])
+    const {
+      getConsultationReqsByUserAccountIdDone,
+      getConsultationReqsByUserAccountIdFunc
+    } = useGetConsultationReqsByUserAccountId()
+    const consultationReqsErrMessage = ref(null as string | null)
+
+    const findConsultationReqs = async (accountId: number) => {
+      const response = await getConsultationReqsByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetConsultationReqsByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        consultationReqsErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getConsultationReqsResult()
+      consultationReqs.value = result.consultation_reqs
+    }
+
+    const consultationOffers = ref([] as ConsultationReq[])
+    const {
+      getConsultationReqsByConsultantIdDone,
+      getConsultationReqsByConsultantIdFunc
+    } = useGetConsultationReqsByConsultantId()
+    const consultationOffersErrMessage = ref(null as string | null)
+
+    const findConsultationOffers = async (accountId: number) => {
+      const response = await getConsultationReqsByConsultantIdFunc(accountId.toString())
+      if (!(response instanceof GetConsultationReqsByConsultantIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        consultationOffersErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getConsultationReqsResult()
+      consultationOffers.value = result.consultation_reqs
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -446,6 +501,8 @@ export default defineComponent({
       await findCareers(accId)
       await findFeePerHourInYen(accId)
       await findTenantId(accId)
+      await findConsultationReqs(accId)
+      await findConsultationOffers(accId)
     })
 
     const requestsDone = computed(() => {
@@ -454,7 +511,9 @@ export default defineComponent({
         getIdentityOptionByUserAccountIdDone.value &&
         getCareersByUserAccountIdDone.value &&
         getFeePerHourInYenByUserAccountIdDone.value &&
-        getTenantIdByUserAccountIdDone.value)
+        getTenantIdByUserAccountIdDone.value &&
+        getConsultationReqsByUserAccountIdDone.value &&
+        getConsultationReqsByConsultantIdDone.value)
     })
 
     return {
@@ -479,6 +538,10 @@ export default defineComponent({
       feePerHourInYenErrMessage,
       tenantId,
       tenantIdErrMessage,
+      consultationReqs,
+      consultationReqsErrMessage,
+      consultationOffers,
+      consultationOffersErrMessage,
       outerErrorMessage
     }
   }
