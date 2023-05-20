@@ -10,7 +10,9 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
-use super::{ConsultantIdQuery, ConsultationReq, ConsultationReqsResult};
+use super::{
+    validate_account_id_is_positive, ConsultantIdQuery, ConsultationReq, ConsultationReqsResult,
+};
 
 pub(crate) async fn get_consultation_reqs_by_consultant_id(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -26,6 +28,7 @@ async fn get_consultation_reqs_by_consultant_id_internal(
     consultant_id: i64,
     op: impl ConsultationReqsOperation,
 ) -> RespResult<ConsultationReqsResult> {
+    validate_account_id_is_positive(consultant_id)?;
     let consultation_reqs = op
         .get_consultation_reqs_by_consultant_id(consultant_id)
         .await?;
@@ -103,6 +106,8 @@ mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
     use common::ErrResp;
+
+    use crate::err::Code;
 
     use super::*;
 
@@ -211,5 +216,35 @@ mod tests {
             Vec::<ConsultationReq>::with_capacity(0),
             resp.1 .0.consultation_reqs
         );
+    }
+
+    #[tokio::test]
+    async fn get_consultation_reqs_by_consultant_id_internal_fail_consultant_id_is_zero() {
+        let consultant_id = 0;
+        let op_mock = ConsultationReqsOperationMock {
+            consultant_id,
+            consultation_reqs: vec![],
+        };
+
+        let result = get_consultation_reqs_by_consultant_id_internal(consultant_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    }
+
+    #[tokio::test]
+    async fn get_consultation_reqs_by_consultant_id_internal_fail_consultant_id_is_negative() {
+        let consultant_id = -1;
+        let op_mock = ConsultationReqsOperationMock {
+            consultant_id,
+            consultation_reqs: vec![],
+        };
+
+        let result = get_consultation_reqs_by_consultant_id_internal(consultant_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
     }
 }
