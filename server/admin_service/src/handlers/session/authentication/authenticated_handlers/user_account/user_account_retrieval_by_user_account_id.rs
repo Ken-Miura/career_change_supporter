@@ -10,8 +10,7 @@ use crate::handlers::session::authentication::authenticated_handlers::user_accou
 };
 
 use super::{
-    super::admin::Admin, validate_user_account_id_is_positive, UserAccount,
-    UserAccountRetrievalResult,
+    super::admin::Admin, validate_account_id_is_positive, UserAccount, UserAccountRetrievalResult,
 };
 
 pub(crate) async fn post_user_account_retrieval_by_user_account_id(
@@ -32,7 +31,7 @@ async fn handle_user_account_retrieval_by_user_account_id(
     user_account_id: i64,
     op: &impl FindUserAccountInfoOperation,
 ) -> RespResult<UserAccountRetrievalResult> {
-    validate_user_account_id_is_positive(user_account_id)?;
+    validate_account_id_is_positive(user_account_id)?;
 
     let result = op
         .find_user_account_info_by_account_id(user_account_id)
@@ -155,7 +154,7 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1 .0.code, Code::UserAccountIdIsNotPositive as u32)
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
     }
 
     #[tokio::test]
@@ -169,6 +168,6 @@ mod tests {
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1 .0.code, Code::UserAccountIdIsNotPositive as u32)
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
     }
 }

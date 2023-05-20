@@ -22,6 +22,11 @@ pub(crate) struct UserAccountIdQuery {
     user_account_id: i64,
 }
 
+#[derive(Deserialize)]
+pub(crate) struct ConsultantIdQuery {
+    consultant_id: i64,
+}
+
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct UserAccountRetrievalResult {
     user_account: Option<UserAccount>,
@@ -37,22 +42,17 @@ struct UserAccount {
     disabled_at: Option<String>,     // RFC 3339形式の文字列
 }
 
-fn validate_user_account_id_is_positive(user_account_id: i64) -> Result<(), ErrResp> {
-    if !user_account_id.is_positive() {
-        error!("user_account_id is not positive: {}", user_account_id);
+fn validate_account_id_is_positive(account_id: i64) -> Result<(), ErrResp> {
+    if !account_id.is_positive() {
+        error!("account_id is not positive: {}", account_id);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                code: Code::UserAccountIdIsNotPositive as u32,
+                code: Code::AccountIdIsNotPositive as u32,
             }),
         ));
     }
     Ok(())
-}
-
-#[derive(Deserialize)]
-pub(crate) struct ConsultantIdQuery {
-    consultant_id: i64,
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
