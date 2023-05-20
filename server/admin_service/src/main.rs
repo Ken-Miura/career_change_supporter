@@ -20,11 +20,11 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::detail::get_update_identity_request_detail;
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::rejection::post_update_identity_request_rejection;
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
-use crate::handlers::session::authentication::authenticated_handlers::user_account::agreement_by_user_account_id::get_agreements_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::agreements_by_user_account_id::get_agreements_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::careers_by_user_account_id::get_careers_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::fee_per_hour_in_yen_by_user_account_id::get_fee_per_hour_in_yen_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_option_by_user_account_id::get_identity_option_by_user_account_id;
-use crate::handlers::session::authentication::authenticated_handlers::user_account::tenant_by_user_account_id::get_tenant_id_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::tenant_id_by_user_account_id::get_tenant_id_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_email_address::post_user_account_retrieval_by_email_address;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_user_account_id::post_user_account_retrieval_by_user_account_id;
 use crate::handlers::session::authentication::login::post_login;
