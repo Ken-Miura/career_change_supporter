@@ -22,6 +22,7 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::agreements_by_user_account_id::get_agreements_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::careers_by_user_account_id::get_careers_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::consultation_reqs_by_user_account_id::get_consultation_reqs_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::fee_per_hour_in_yen_by_user_account_id::get_fee_per_hour_in_yen_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_option_by_user_account_id::get_identity_option_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::tenant_id_by_user_account_id::get_tenant_id_by_user_account_id;
@@ -265,6 +266,10 @@ async fn main_internal(num_of_cpus: u32) {
                     post(post_user_account_retrieval_by_email_address),
                 )
                 .route(
+                    "/agreements-by-user-account-id",
+                    get(get_agreements_by_user_account_id),
+                )
+                .route(
                     "/identity-option-by-user-account-id",
                     get(get_identity_option_by_user_account_id),
                 )
@@ -281,8 +286,8 @@ async fn main_internal(num_of_cpus: u32) {
                     get(get_tenant_id_by_user_account_id),
                 )
                 .route(
-                    "/agreements-by-user-account-id",
-                    get(get_agreements_by_user_account_id),
+                    "/get-consultation-reqs-by-user-account-id",
+                    get(get_consultation_reqs_by_user_account_id),
                 )
                 .with_state(state),
         )

@@ -48,3 +48,18 @@ fn validate_user_account_id_is_positive(user_account_id: i64) -> Result<(), ErrR
     }
     Ok(())
 }
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+struct ConsultationReq {
+    consultation_req_id: i64,
+    user_account_id: i64,
+    consultant_id: i64,
+    first_candidate_date_time: String,  // RFC 3339形式の文字列
+    second_candidate_date_time: String, // RFC 3339形式の文字列
+    third_candidate_date_time: String,  // RFC 3339形式の文字列
+    latest_candidate_date_time: String, // RFC 3339形式の文字列
+    charge_id: String,
+    fee_per_hour_in_yen: i32,
+    platform_fee_rate_in_percentage: String,
+    credit_facilities_expired_at: String, // RFC 3339形式の文字列
+}
