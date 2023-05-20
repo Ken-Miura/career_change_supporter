@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use super::super::admin::Admin;
 use super::super::find_identity_by_user_account_id;
-use super::UserAccountIdQuery;
+use super::{validate_account_id_is_positive, UserAccountIdQuery};
 
 pub(crate) async fn get_identity_option_by_user_account_id(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -31,6 +31,7 @@ async fn get_identity_option_by_user_account_id_internal(
     user_account_id: i64,
     op: impl IdentityOperation,
 ) -> RespResult<IdentityResult> {
+    validate_account_id_is_positive(user_account_id)?;
     let identity_option = op
         .get_identity_option_by_user_account_id(user_account_id)
         .await?;
@@ -67,6 +68,8 @@ mod tests {
         util::{Identity, Ymd},
         ErrResp,
     };
+
+    use crate::err::Code;
 
     use super::*;
 
@@ -155,5 +158,69 @@ mod tests {
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(None, resp.1 .0.identity_option);
+    }
+
+    #[tokio::test]
+    async fn get_identity_option_by_user_account_id_internal_fail_user_account_id_is_zero() {
+        let user_account_id = 0;
+        let identity = Identity {
+            last_name: String::from("田中"),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("タナカ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: Ymd {
+                year: 1978,
+                month: 11,
+                day: 23,
+            },
+            prefecture: String::from("和歌山県"),
+            city: String::from("和歌山市"),
+            address_line1: String::from("小松原通１−１"),
+            address_line2: None,
+            telephone_number: String::from("08043218765"),
+        };
+        let op_mock = IdentityOperationMock {
+            user_account_id,
+            identity: identity.clone(),
+        };
+
+        let result =
+            get_identity_option_by_user_account_id_internal(user_account_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    }
+
+    #[tokio::test]
+    async fn get_identity_option_by_user_account_id_internal_fail_user_account_id_is_negative() {
+        let user_account_id = -1;
+        let identity = Identity {
+            last_name: String::from("田中"),
+            first_name: String::from("太郎"),
+            last_name_furigana: String::from("タナカ"),
+            first_name_furigana: String::from("タロウ"),
+            date_of_birth: Ymd {
+                year: 1978,
+                month: 11,
+                day: 23,
+            },
+            prefecture: String::from("和歌山県"),
+            city: String::from("和歌山市"),
+            address_line1: String::from("小松原通１−１"),
+            address_line2: None,
+            telephone_number: String::from("08043218765"),
+        };
+        let op_mock = IdentityOperationMock {
+            user_account_id,
+            identity: identity.clone(),
+        };
+
+        let result =
+            get_identity_option_by_user_account_id_internal(user_account_id, op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
     }
 }
