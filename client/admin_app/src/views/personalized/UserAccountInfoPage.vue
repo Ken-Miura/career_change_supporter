@@ -180,6 +180,64 @@
             <AlertMessage class="mt-4" v-bind:message="tenantIdErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">相談申し込み</h3>
+          <div v-if="!consultationReqsErrMessage">
+            <div v-if="consultationReqs.length !== 0">
+              <ul>
+                <li v-for="consultationReq in consultationReqs" v-bind:key="consultationReq.consultation_req_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談依頼番号{{ consultationReq.consultation_req_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-7">
+                    <div class="mt-2 justify-self-start col-span-3">相談申し込み先のアカウントID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.consultant_id }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（第一候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.first_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（第二候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.second_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（第三候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.third_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（最遅の候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.latest_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.charge_id }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.fee_per_hour_in_yen }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.platform_fee_rate_in_percentage }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.credit_facilities_expired_at }}</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              相談申し込みは見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="consultationReqsErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">相談受け付け</h3>
+          <div v-if="!consultationOffersErrMessage">
+            <div v-if="consultationOffers.length !== 0">
+              <ul>
+                <li v-for="consultationOffer in consultationOffers" v-bind:key="consultationOffer.consultation_req_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談依頼番号{{ consultationOffer.consultation_req_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-7">
+                    <div class="mt-2 justify-self-start col-span-3">相談申し込み元のアカウントID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.user_account_id }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（第一候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.first_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（第二候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.second_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（第三候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.third_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時（最遅の候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.latest_candidate_date_time }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.charge_id }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.fee_per_hour_in_yen }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.platform_fee_rate_in_percentage }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.credit_facilities_expired_at }}</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              相談受け付けは見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="consultationOffersErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
