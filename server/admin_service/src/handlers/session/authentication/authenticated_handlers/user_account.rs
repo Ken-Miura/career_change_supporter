@@ -4,6 +4,8 @@ pub(crate) mod agreements_by_user_account_id;
 pub(crate) mod careers_by_user_account_id;
 pub(crate) mod consultation_reqs_by_consultant_id;
 pub(crate) mod consultation_reqs_by_user_account_id;
+pub(crate) mod consultations_by_consultant_id;
+pub(crate) mod consultations_by_user_account_id;
 pub(crate) mod fee_per_hour_in_yen_by_user_account_id;
 pub(crate) mod identity_option_by_user_account_id;
 pub(crate) mod tenant_id_by_user_account_id;
@@ -73,4 +75,20 @@ struct ConsultationReq {
     fee_per_hour_in_yen: i32,
     platform_fee_rate_in_percentage: String,
     credit_facilities_expired_at: String, // RFC 3339形式の文字列
+}
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ConsultationsResult {
+    consultations: Vec<Consultation>,
+}
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+struct Consultation {
+    consultation_id: i64,
+    user_account_id: i64,
+    consultant_id: i64,
+    meeting_at: String, // RFC 3339形式の文字列
+    room_name: String,
+    user_account_entered_at: Option<String>, // RFC 3339形式の文字列
+    consultant_entered_at: Option<String>,   // RFC 3339形式の文字列
 }

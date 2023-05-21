@@ -24,6 +24,7 @@ use crate::handlers::session::authentication::authenticated_handlers::user_accou
 use crate::handlers::session::authentication::authenticated_handlers::user_account::careers_by_user_account_id::get_careers_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultation_reqs_by_consultant_id::get_consultation_reqs_by_consultant_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultation_reqs_by_user_account_id::get_consultation_reqs_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::consultations_by_user_account_id::get_consultations_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::fee_per_hour_in_yen_by_user_account_id::get_fee_per_hour_in_yen_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_option_by_user_account_id::get_identity_option_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::tenant_id_by_user_account_id::get_tenant_id_by_user_account_id;
@@ -293,6 +294,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/get-consultation-reqs-by-consultant-id",
                     get(get_consultation_reqs_by_consultant_id),
+                )
+                .route(
+                    "/get-consultations-by-consultant-id",
+                    get(get_consultations_by_user_account_id),
                 )
                 .with_state(state),
         )
