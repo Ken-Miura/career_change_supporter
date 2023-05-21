@@ -238,6 +238,56 @@
             <AlertMessage class="mt-4" v-bind:message="consultationOffersErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">ユーザーとしての相談一覧</h3>
+          <div v-if="!consultationsAsUserErrMessage">
+            <div v-if="consultationsAsUser.length !== 0">
+              <ul>
+                <li v-for="consultationAsUser in consultationsAsUser" v-bind:key="consultationAsUser.consultation_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談番号{{ consultationAsUser.consultation_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-7">
+                    <div class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.consultant_id }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.meeting_at }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">部屋名</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.room_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">ユーザー入室日時</div><div v-if="consultationAsUser.user_account_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
+                    <div class="mt-2 justify-self-start col-span-3">コンサルタント入室日時</div><div v-if="consultationAsUser.consultant_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              相談は見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="consultationsAsUserErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">コンサルタントとしての相談一覧</h3>
+          <div v-if="!consultationsAsConsultantErrMessage">
+            <div v-if="consultationsAsConsultant.length !== 0">
+              <ul>
+                <li v-for="consultationAsConsultant in consultationsAsConsultant" v-bind:key="consultationAsConsultant.consultation_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談番号{{ consultationAsConsultant.consultation_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-7">
+                    <div class="mt-2 justify-self-start col-span-3">ユーザーID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsConsultant.user_account_id }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsConsultant.meeting_at }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">部屋名</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsConsultant.room_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">ユーザー入室日時</div><div v-if="consultationAsConsultant.user_account_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsConsultant.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
+                    <div class="mt-2 justify-self-start col-span-3">コンサルタント入室日時</div><div v-if="consultationAsConsultant.consultant_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsConsultant.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              相談は見つかりませんでした
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="consultationsAsConsultantErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -279,6 +329,11 @@ import { useGetConsultationReqsByUserAccountId } from '@/util/personalized/user-
 import { ConsultationReq } from '@/util/personalized/user-account-info/consultation-req/ConsultationReq'
 import { GetConsultationReqsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByConsultantIdResp'
 import { useGetConsultationReqsByConsultantId } from '@/util/personalized/user-account-info/consultation-req/useGetConsultationReqsByConsultantId'
+import { Consultation } from '@/util/personalized/user-account-info/consultation/Consultation'
+import { GetConsultationsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByUserAccountIdResp'
+import { useGetConsultationsByUserAccountId } from '@/util/personalized/user-account-info/consultation/useGetConsultationsByUserAccountId'
+import { useGetConsultationsByConsultantId } from '@/util/personalized/user-account-info/consultation/useGetConsultationsByConsultantId'
+import { GetConsultationsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByConsultantIdResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -530,6 +585,56 @@ export default defineComponent({
       consultationOffers.value = result.consultation_reqs
     }
 
+    const consultationsAsUser = ref([] as Consultation[])
+    const {
+      getConsultationsByUserAccountIdDone,
+      getConsultationsByUserAccountIdFunc
+    } = useGetConsultationsByUserAccountId()
+    const consultationsAsUserErrMessage = ref(null as string | null)
+
+    const findConsultationsAsUser = async (accountId: number) => {
+      const response = await getConsultationsByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetConsultationsByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        consultationsAsUserErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getConsultationsResult()
+      consultationsAsUser.value = result.consultations
+    }
+
+    const consultationsAsConsultant = ref([] as Consultation[])
+    const {
+      getConsultationsByConsultantIdDone,
+      getConsultationsByConsultantIdFunc
+    } = useGetConsultationsByConsultantId()
+    const consultationsAsConsultantErrMessage = ref(null as string | null)
+
+    const findConsultationsAsConsultant = async (accountId: number) => {
+      const response = await getConsultationsByConsultantIdFunc(accountId.toString())
+      if (!(response instanceof GetConsultationsByConsultantIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        consultationsAsConsultantErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getConsultationsResult()
+      consultationsAsConsultant.value = result.consultations
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -561,6 +666,8 @@ export default defineComponent({
       await findTenantId(accId)
       await findConsultationReqs(accId)
       await findConsultationOffers(accId)
+      await findConsultationsAsUser(accId)
+      await findConsultationsAsConsultant(accId)
     })
 
     const requestsDone = computed(() => {
@@ -571,7 +678,9 @@ export default defineComponent({
         getFeePerHourInYenByUserAccountIdDone.value &&
         getTenantIdByUserAccountIdDone.value &&
         getConsultationReqsByUserAccountIdDone.value &&
-        getConsultationReqsByConsultantIdDone.value)
+        getConsultationReqsByConsultantIdDone.value &&
+        getConsultationsByUserAccountIdDone.value &&
+        getConsultationsByConsultantIdDone.value)
     })
 
     return {
@@ -600,6 +709,10 @@ export default defineComponent({
       consultationReqsErrMessage,
       consultationOffers,
       consultationOffersErrMessage,
+      consultationsAsUser,
+      consultationsAsUserErrMessage,
+      consultationsAsConsultant,
+      consultationsAsConsultantErrMessage,
       outerErrorMessage
     }
   }
