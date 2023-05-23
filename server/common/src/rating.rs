@@ -3,6 +3,9 @@
 // 評価の平均値を返す。
 pub fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
     let size = ratings.len();
+    if size == 0 {
+        return 0.0;
+    }
     let mut sum = 0;
     for rating in ratings {
         sum += rating as usize
@@ -28,7 +31,68 @@ mod tests {
 
     use super::*;
 
-    // TODO: Add calculate_average_rating tests
+    #[derive(Debug)]
+    struct CalculateAverageRatingTestCase {
+        name: String,
+        input: Vec<i16>,
+        expected: f64,
+    }
+
+    static CALCULATE_AVERAGE_RATING_TEST_CASE_SET: Lazy<Vec<CalculateAverageRatingTestCase>> =
+        Lazy::new(|| {
+            vec![
+                CalculateAverageRatingTestCase {
+                    name: "no ratings".to_string(),
+                    input: vec![],
+                    expected: 0.0,
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 1".to_string(), // 0という評価はないが計算が正しいかテストはしておく
+                    input: vec![0],
+                    expected: 0.0,
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 2".to_string(),
+                    input: vec![1],
+                    expected: 1.0,
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 3".to_string(),
+                    input: vec![1, 2],
+                    expected: 1.5,
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 4".to_string(),
+                    input: vec![1, 2, 3],
+                    expected: 2.0,
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 5".to_string(),
+                    input: vec![1, 2, 3, 4],
+                    expected: 2.5,
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 6".to_string(),
+                    input: vec![0, 1, 2, 3, 4], // 0という評価はないが計算が正しいかテストはしておく
+                    expected: 2.0,
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 7".to_string(),
+                    input: vec![0, 1, 1, 1, 2, 2, 6], // 0、6という評価はないが計算が正しいかテストはしておく
+                    expected: 13.0 / 7.0,
+                },
+            ]
+        });
+
+    #[test]
+    fn test_calculate_average_rating() {
+        for test_case in CALCULATE_AVERAGE_RATING_TEST_CASE_SET.iter() {
+            let actual = calculate_average_rating(test_case.input.clone());
+            let message = format!("test case \"{}\" failed", test_case.name.clone());
+            let diff = (test_case.expected - actual).abs();
+            assert!(diff < f64::EPSILON, "{}", message);
+        }
+    }
 
     #[derive(Debug)]
     struct RoundRatingToOneDecimalPlacesTestCase {
