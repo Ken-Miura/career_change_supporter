@@ -4,6 +4,7 @@
 pub fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
     let size = ratings.len();
     if size == 0 {
+        // TODO: Noneを返し、Optionを返すように返り値型を修正
         return 0.0;
     }
     let mut sum = 0;
