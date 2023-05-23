@@ -5,6 +5,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::opensearch::{search_documents, INDEX_NAME};
+use common::rating::round_rating_to_one_decimal_places;
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use entity::sea_orm::DatabaseConnection;
 use opensearch::OpenSearch;
@@ -13,7 +14,6 @@ use tracing::{error, info};
 
 use crate::err::Code;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::round_to_one_decimal_places;
 use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl};
 
 use super::{
@@ -280,7 +280,7 @@ fn create_consultant_detail(hit: &Value) -> Result<ConsultantDetail, ErrResp> {
     Ok(ConsultantDetail {
         consultant_id: account_id,
         fee_per_hour_in_yen: fee_per_hour_in_yen as i32,
-        rating: rating.map(round_to_one_decimal_places),
+        rating: rating.map(round_rating_to_one_decimal_places),
         num_of_rated: num_of_rated as i32,
         careers: consultant_career_details,
     })

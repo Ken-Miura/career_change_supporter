@@ -5,6 +5,7 @@ use async_session::serde_json::{json, Value};
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use common::opensearch::{search_documents, Sort, INDEX_NAME};
+use common::rating::round_rating_to_one_decimal_places;
 use common::{ApiError, ErrResp, RespResult, MAX_NUM_OF_CAREER_PER_USER_ACCOUNT};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
@@ -17,7 +18,6 @@ use crate::err::Code;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant::fee_per_hour_in_yen_param_validator::validate_fee_per_hour_in_yen_param;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant::sort_param_validator::validate_sort_param;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::round_to_one_decimal_places;
 
 use super::career_param_validator::CareerParamValidationError;
 
@@ -902,7 +902,7 @@ fn create_consultant_description(hit: &Value) -> Result<ConsultantDescription, E
     Ok(ConsultantDescription {
         consultant_id: account_id,
         fee_per_hour_in_yen: fee_per_hour_in_yen as i32,
-        rating: rating.map(round_to_one_decimal_places),
+        rating: rating.map(round_rating_to_one_decimal_places),
         num_of_rated: num_of_rated as i32,
         careers: consultant_career_descriptions,
     })

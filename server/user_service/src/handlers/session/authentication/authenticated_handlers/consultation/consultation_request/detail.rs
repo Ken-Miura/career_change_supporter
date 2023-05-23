@@ -4,6 +4,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
+use common::rating::{calculate_average_rating, round_rating_to_one_decimal_places};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::UserRating;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
@@ -14,7 +15,7 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::{
-    consultation_req_exists, round_to_one_decimal_places, ConsultationDateTime, ConsultationRequest,
+    consultation_req_exists, ConsultationDateTime, ConsultationRequest,
 };
 use crate::optional_env_var::MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE;
 
@@ -208,12 +209,8 @@ fn calculate_rating_and_count(user_ratings: Vec<i16>) -> Result<(Option<String>,
     if count == 0 {
         return Ok((None, 0));
     }
-    let mut sum = 0_i32;
-    for u in user_ratings {
-        sum += u as i32
-    }
-    let rating = sum as f64 / count as f64;
-    let rating_str = round_to_one_decimal_places(rating);
+    let rating = calculate_average_rating(user_ratings);
+    let rating_str = round_rating_to_one_decimal_places(rating);
     Ok((Some(rating_str), count as i32))
 }
 

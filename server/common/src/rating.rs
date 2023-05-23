@@ -28,6 +28,8 @@ mod tests {
 
     use super::*;
 
+    // TODO: Add calculate_average_rating tests
+
     #[derive(Debug)]
     struct RoundRatingToOneDecimalPlacesTestCase {
         name: String,

@@ -7,6 +7,7 @@ use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::opensearch::{update_document, INDEX_NAME};
 use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl};
+use common::rating::calculate_average_rating;
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::prelude::{ConsultantRating, Consultation};
 use entity::sea_orm::ActiveValue::NotSet;
@@ -560,15 +561,6 @@ fn ensure_user_account_ids_are_same(
         ));
     }
     Ok(())
-}
-
-fn calculate_average_rating(ratings: Vec<i16>) -> f64 {
-    let size = ratings.len();
-    let mut sum = 0;
-    for rating in ratings {
-        sum += rating as usize
-    }
-    (sum / size) as f64
 }
 
 #[cfg(test)]
