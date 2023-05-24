@@ -206,12 +206,13 @@ fn validate_consultation_req_for_reference(
 
 fn calculate_rating_and_count(user_ratings: Vec<i16>) -> Result<(Option<String>, i32), ErrResp> {
     let count = user_ratings.len();
-    if count == 0 {
-        return Ok((None, 0));
+    let rating_option = calculate_average_rating(user_ratings);
+    if let Some(rating) = rating_option {
+        let rating_str = round_rating_to_one_decimal_places(rating);
+        Ok((Some(rating_str), count as i32))
+    } else {
+        Ok((None, 0))
     }
-    let rating = calculate_average_rating(user_ratings);
-    let rating_str = round_rating_to_one_decimal_places(rating);
-    Ok((Some(rating_str), count as i32))
 }
 
 #[cfg(test)]

@@ -516,7 +516,9 @@ async fn handle_consultant_rating(
         .filter_consultant_rating_by_consultant_id(cl.consultant_id)
         .await?;
     let num_of_rated = ratings.len() as i32;
-    let average_rating = calculate_average_rating(ratings);
+    // Noneの場合は評価数0を意味するので、現在の評価は0として扱う
+    let average_rating = calculate_average_rating(ratings).unwrap_or(0.0);
+    // ユーザーに見せる評価は小数点一桁まで。ただ、表示するときに小数点一桁に丸めるだけで、データとしては計算結果をそのまま保管しておく
     op.update_rating_on_document_if_not_disabled(cl.consultant_id, average_rating, num_of_rated)
         .await?;
 
@@ -649,7 +651,7 @@ mod tests {
             assert_eq!(self.consultation_info.consultant_id, consultant_id);
             let ratings = self.ratings.clone();
             assert_eq!(ratings.len() as i32, num_of_rated);
-            let average = calculate_average_rating(ratings);
+            let average = calculate_average_rating(ratings).unwrap_or(0.0);
             let diff = (averate_rating - average).abs();
             assert!(diff < f64::EPSILON);
             Ok(())
