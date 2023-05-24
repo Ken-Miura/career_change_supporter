@@ -76,11 +76,16 @@ mod tests {
                 },
                 CalculateAverageRatingTestCase {
                     name: "case 6".to_string(),
+                    input: vec![1, 2, 3, 4, 5],
+                    expected: Some(3.0),
+                },
+                CalculateAverageRatingTestCase {
+                    name: "case 7".to_string(),
                     input: vec![0, 1, 2, 3, 4], // 0という評価はないが計算が正しいかテストはしておく
                     expected: Some(2.0),
                 },
                 CalculateAverageRatingTestCase {
-                    name: "case 7".to_string(),
+                    name: "case 8".to_string(),
                     input: vec![0, 1, 1, 1, 2, 2, 6], // 0、6という評価はないが計算が正しいかテストはしておく
                     expected: Some(13.0 / 7.0),
                 },
