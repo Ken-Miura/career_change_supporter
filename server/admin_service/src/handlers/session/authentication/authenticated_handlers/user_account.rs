@@ -8,12 +8,16 @@ pub(crate) mod consultations_by_consultant_id;
 pub(crate) mod consultations_by_user_account_id;
 pub(crate) mod fee_per_hour_in_yen_by_user_account_id;
 pub(crate) mod identity_option_by_user_account_id;
+pub(crate) mod rating_info_by_user_account_id;
 pub(crate) mod tenant_id_by_user_account_id;
 pub(crate) mod user_account_retrieval_by_email_address;
 pub(crate) mod user_account_retrieval_by_user_account_id;
 
 use axum::{http::StatusCode, Json};
-use common::{ApiError, ErrResp};
+use common::{
+    rating::{calculate_average_rating, round_rating_to_one_decimal_places},
+    ApiError, ErrResp,
+};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -91,4 +95,21 @@ struct Consultation {
     room_name: String,
     user_account_entered_at: Option<String>, // RFC 3339形式の文字列
     consultant_entered_at: Option<String>,   // RFC 3339形式の文字列
+}
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+pub(crate) struct RatingInfoResult {
+    average_rating: Option<String>,
+    count: i32,
+}
+
+fn calculate_rating_and_count(ratings: Vec<i16>) -> (Option<String>, i32) {
+    let count = ratings.len();
+    let rating_option = calculate_average_rating(ratings);
+    if let Some(rating) = rating_option {
+        let rating_str = round_rating_to_one_decimal_places(rating);
+        (Some(rating_str), count as i32)
+    } else {
+        (None, 0)
+    }
 }
