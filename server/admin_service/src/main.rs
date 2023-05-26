@@ -28,6 +28,7 @@ use crate::handlers::session::authentication::authenticated_handlers::user_accou
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultations_by_user_account_id::get_consultations_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::fee_per_hour_in_yen_by_user_account_id::get_fee_per_hour_in_yen_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_option_by_user_account_id::get_identity_option_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::rating_info_by_consultant_id::get_rating_info_by_consultant_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::rating_info_by_user_account_id::get_rating_info_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::tenant_id_by_user_account_id::get_tenant_id_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_email_address::post_user_account_retrieval_by_email_address;
@@ -308,6 +309,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/get-rating-info-by-user-account-id",
                     get(get_rating_info_by_user_account_id),
+                )
+                .route(
+                    "/get-rating-info-by-consultant-id",
+                    get(get_rating_info_by_consultant_id),
                 )
                 .with_state(state),
         )
