@@ -5,7 +5,7 @@ import { ConsultationReqsResult } from './ConsultationReqsResult'
 export async function getConsultationReqsByUserAccountId (userAccountId: string): Promise<GetConsultationReqsByUserAccountIdResp | ApiErrorResp> {
   const params = { user_account_id: userAccountId }
   const query = new URLSearchParams(params)
-  const response = await fetch(`/admin/api/get-consultation-reqs-by-user-account-id?${query}`, {
+  const response = await fetch(`/admin/api/consultation-reqs-by-user-account-id?${query}`, {
     method: 'GET'
   })
   if (!response.ok) {

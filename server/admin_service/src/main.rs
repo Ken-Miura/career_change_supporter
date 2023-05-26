@@ -291,27 +291,27 @@ async fn main_internal(num_of_cpus: u32) {
                     get(get_tenant_id_by_user_account_id),
                 )
                 .route(
-                    "/get-consultation-reqs-by-user-account-id",
+                    "/consultation-reqs-by-user-account-id",
                     get(get_consultation_reqs_by_user_account_id),
                 )
                 .route(
-                    "/get-consultation-reqs-by-consultant-id",
+                    "/consultation-reqs-by-consultant-id",
                     get(get_consultation_reqs_by_consultant_id),
                 )
                 .route(
-                    "/get-consultations-by-user-account-id",
+                    "/consultations-by-user-account-id",
                     get(get_consultations_by_user_account_id),
                 )
                 .route(
-                    "/get-consultations-by-consultant-id",
+                    "/consultations-by-consultant-id",
                     get(get_consultations_by_consultant_id),
                 )
                 .route(
-                    "/get-rating-info-by-user-account-id",
+                    "/rating-info-by-user-account-id",
                     get(get_rating_info_by_user_account_id),
                 )
                 .route(
-                    "/get-rating-info-by-consultant-id",
+                    "/rating-info-by-consultant-id",
                     get(get_rating_info_by_consultant_id),
                 )
                 .with_state(state),
