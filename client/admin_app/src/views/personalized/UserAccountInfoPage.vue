@@ -294,6 +294,34 @@
             <AlertMessage class="mt-4" v-bind:message="consultationsAsConsultantErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">ユーザーとしての評価</h3>
+          <div v-if="!ratingInfoAsUserErrMessage">
+            <div v-if="ratingInfoAsUser.average_rating" class="mt-6 ml-8 text-2xl">
+              {{ ratingInfoAsUser.average_rating }}/5（評価件数：{{ ratingInfoAsUser.count }} 件）
+            </div>
+            <div v-else class="m-4 text-2xl">
+              0/5（評価件数：{{ ratingInfoAsUser.count }} 件）
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="ratingInfoAsUserErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">コンサルタントとしての評価</h3>
+          <div v-if="!ratingInfoAsConsultantErrMessage">
+            <div v-if="ratingInfoAsConsultant.average_rating" class="mt-6 ml-8 text-2xl">
+              {{ ratingInfoAsConsultant.average_rating }}/5（評価件数：{{ ratingInfoAsConsultant.count }} 件）
+            </div>
+            <div v-else class="m-4 text-2xl">
+              0/5（評価件数：{{ ratingInfoAsConsultant.count }} 件）
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="ratingInfoAsConsultantErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -340,6 +368,11 @@ import { GetConsultationsByUserAccountIdResp } from '@/util/personalized/user-ac
 import { useGetConsultationsByUserAccountId } from '@/util/personalized/user-account-info/consultation/useGetConsultationsByUserAccountId'
 import { useGetConsultationsByConsultantId } from '@/util/personalized/user-account-info/consultation/useGetConsultationsByConsultantId'
 import { GetConsultationsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByConsultantIdResp'
+import { RatingInfoResult } from '@/util/personalized/user-account-info/rating-info/RatingInfoResult'
+import { GetRatingInfoByUserAccountIdResp } from '@/util/personalized/user-account-info/rating-info/GetRatingInfoByUserAccountIdResp'
+import { useGetRatingInfoByUserAccountId } from '@/util/personalized/user-account-info/rating-info/useGetRatingInfoByUserAccountId'
+import { useGetRatingInfoByConsultantId } from '@/util/personalized/user-account-info/rating-info/useGetRatingInfoByConsultantId'
+import { GetRatingInfoByConsultantIdResp } from '@/util/personalized/user-account-info/rating-info/GetRatingInfoByConsultantIdResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -645,6 +678,54 @@ export default defineComponent({
       console.log(consultationId) // 決済、返金、評価状況を表示するページへ遷移する
     }
 
+    const ratingInfoAsUser = ref({ average_rating: null, count: 0 } as RatingInfoResult)
+    const {
+      getRatingInfoByUserAccountIdDone,
+      getRatingInfoByUserAccountIdFunc
+    } = useGetRatingInfoByUserAccountId()
+    const ratingInfoAsUserErrMessage = ref(null as string | null)
+
+    const findInfoRatingAsUser = async (accountId: number) => {
+      const response = await getRatingInfoByUserAccountIdFunc(accountId.toString())
+      if (!(response instanceof GetRatingInfoByUserAccountIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        ratingInfoAsUserErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      ratingInfoAsUser.value = response.getRatingInfoResult()
+    }
+
+    const ratingInfoAsConsultant = ref({ average_rating: null, count: 0 } as RatingInfoResult)
+    const {
+      getRatingInfoByConsultantIdDone,
+      getRatingInfoByConsultantIdFunc
+    } = useGetRatingInfoByConsultantId()
+    const ratingInfoAsConsultantErrMessage = ref(null as string | null)
+
+    const findInfoRatingAsConsultant = async (accountId: number) => {
+      const response = await getRatingInfoByConsultantIdFunc(accountId.toString())
+      if (!(response instanceof GetRatingInfoByConsultantIdResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        ratingInfoAsConsultantErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      ratingInfoAsConsultant.value = response.getRatingInfoResult()
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -678,6 +759,8 @@ export default defineComponent({
       await findConsultationOffers(accId)
       await findConsultationsAsUser(accId)
       await findConsultationsAsConsultant(accId)
+      await findInfoRatingAsUser(accId)
+      await findInfoRatingAsConsultant(accId)
     })
 
     const requestsDone = computed(() => {
@@ -690,7 +773,9 @@ export default defineComponent({
         getConsultationReqsByUserAccountIdDone.value &&
         getConsultationReqsByConsultantIdDone.value &&
         getConsultationsByUserAccountIdDone.value &&
-        getConsultationsByConsultantIdDone.value)
+        getConsultationsByConsultantIdDone.value &&
+        getRatingInfoByUserAccountIdDone.value &&
+        getRatingInfoByConsultantIdDone.value)
     })
 
     return {
@@ -724,6 +809,10 @@ export default defineComponent({
       consultationsAsConsultant,
       consultationsAsConsultantErrMessage,
       moveToConsultationRelatedInfoPage,
+      ratingInfoAsUser,
+      ratingInfoAsUserErrMessage,
+      ratingInfoAsConsultant,
+      ratingInfoAsConsultantErrMessage,
       outerErrorMessage
     }
   }
