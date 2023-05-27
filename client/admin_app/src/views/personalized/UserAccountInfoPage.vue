@@ -322,6 +322,20 @@
             <AlertMessage class="mt-4" v-bind:message="ratingInfoAsConsultantErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">本人確認承認履歴（初回）</h3>
+          <div v-if="!identityCreationApprovalRecordErrMessage">
+            <div v-if="identityCreationApprovalRecord" class="mt-6 ml-8 text-2xl">
+              <img class="mt-2" v-bind:src="identityCreationApprovalRecord.image1_file_name_without_ext" />
+            </div>
+            <div v-else class="m-4 text-2xl">
+              本人確認承認履歴（初回）はありません。
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="identityCreationApprovalRecordErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -736,25 +750,6 @@ export default defineComponent({
     } = useGetIdentityCreationApprovalRecord()
     const identityCreationApprovalRecordErrMessage = ref(null as string | null)
 
-    const identityCreationApprovalImage1Url = computed(() => {
-      if (identityCreationApprovalRecord.value === null) {
-        return ''
-      }
-      const record = identityCreationApprovalRecord.value
-      return `/admin/api/identity-images/${record.user_account_id}/${record.image1_file_name_without_ext}`
-    })
-
-    const identityCreationApprovalImage2Url = computed(() => {
-      if (identityCreationApprovalRecord.value === null) {
-        return null
-      }
-      const record = identityCreationApprovalRecord.value
-      if (record.image2_file_name_without_ext === null) {
-        return null
-      }
-      return `/admin/api/identity-images/${record.user_account_id}/${record.image2_file_name_without_ext}`
-    })
-
     const findIdentityCreationApprovalRecord = async (accountId: number) => {
       const response = await getIdentityCreationApprovalRecordFunc(accountId.toString())
       if (!(response instanceof GetIdentityCreationApprovalRecordResp)) {
@@ -770,7 +765,14 @@ export default defineComponent({
         return
       }
       const result = response.getIdentityCreationApprovalRecordResult()
-      identityCreationApprovalRecord.value = result.approval_record
+      const approvalRecord = result.approval_record
+      if (approvalRecord) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
+        approvalRecord.image1_file_name_without_ext = `/admin/api/identity-images/${approvalRecord.user_account_id}/${approvalRecord.image1_file_name_without_ext}`
+        if (approvalRecord.image2_file_name_without_ext) {
+          approvalRecord.image2_file_name_without_ext = `/admin/api/identity-images/${approvalRecord.user_account_id}/${approvalRecord.image2_file_name_without_ext}`
+        }
+      }
+      identityCreationApprovalRecord.value = approvalRecord
     }
 
     onMounted(async () => {
@@ -864,8 +866,6 @@ export default defineComponent({
       ratingInfoAsConsultantErrMessage,
       identityCreationApprovalRecord,
       identityCreationApprovalRecordErrMessage,
-      identityCreationApprovalImage1Url,
-      identityCreationApprovalImage2Url,
       outerErrorMessage
     }
   }
