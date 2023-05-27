@@ -373,6 +373,9 @@ import { GetRatingInfoByUserAccountIdResp } from '@/util/personalized/user-accou
 import { useGetRatingInfoByUserAccountId } from '@/util/personalized/user-account-info/rating-info/useGetRatingInfoByUserAccountId'
 import { useGetRatingInfoByConsultantId } from '@/util/personalized/user-account-info/rating-info/useGetRatingInfoByConsultantId'
 import { GetRatingInfoByConsultantIdResp } from '@/util/personalized/user-account-info/rating-info/GetRatingInfoByConsultantIdResp'
+import { IdentityCreationApprovalRecord } from '@/util/personalized/user-account-info/identity-creation/IdentityCreationApprovalRecord'
+import { useGetIdentityCreationApprovalRecord } from '@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationApprovalRecord'
+import { GetIdentityCreationApprovalRecordResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationApprovalRecordResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -685,7 +688,7 @@ export default defineComponent({
     } = useGetRatingInfoByUserAccountId()
     const ratingInfoAsUserErrMessage = ref(null as string | null)
 
-    const findInfoRatingAsUser = async (accountId: number) => {
+    const findRatingInfoAsUser = async (accountId: number) => {
       const response = await getRatingInfoByUserAccountIdFunc(accountId.toString())
       if (!(response instanceof GetRatingInfoByUserAccountIdResp)) {
         if (!(response instanceof ApiErrorResp)) {
@@ -709,7 +712,7 @@ export default defineComponent({
     } = useGetRatingInfoByConsultantId()
     const ratingInfoAsConsultantErrMessage = ref(null as string | null)
 
-    const findInfoRatingAsConsultant = async (accountId: number) => {
+    const findRatingInfoAsConsultant = async (accountId: number) => {
       const response = await getRatingInfoByConsultantIdFunc(accountId.toString())
       if (!(response instanceof GetRatingInfoByConsultantIdResp)) {
         if (!(response instanceof ApiErrorResp)) {
@@ -724,6 +727,50 @@ export default defineComponent({
         return
       }
       ratingInfoAsConsultant.value = response.getRatingInfoResult()
+    }
+
+    const identityCreationApprovalRecord = ref(null as IdentityCreationApprovalRecord | null)
+    const {
+      getIdentityCreationApprovalRecordDone,
+      getIdentityCreationApprovalRecordFunc
+    } = useGetIdentityCreationApprovalRecord()
+    const identityCreationApprovalRecordErrMessage = ref(null as string | null)
+
+    const identityCreationApprovalImage1Url = computed(() => {
+      if (identityCreationApprovalRecord.value === null) {
+        return ''
+      }
+      const record = identityCreationApprovalRecord.value
+      return `/admin/api/identity-images/${record.user_account_id}/${record.image1_file_name_without_ext}`
+    })
+
+    const identityCreationApprovalImage2Url = computed(() => {
+      if (identityCreationApprovalRecord.value === null) {
+        return null
+      }
+      const record = identityCreationApprovalRecord.value
+      if (record.image2_file_name_without_ext === null) {
+        return null
+      }
+      return `/admin/api/identity-images/${record.user_account_id}/${record.image2_file_name_without_ext}`
+    })
+
+    const findIdentityCreationApprovalRecord = async (accountId: number) => {
+      const response = await getIdentityCreationApprovalRecordFunc(accountId.toString())
+      if (!(response instanceof GetIdentityCreationApprovalRecordResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        identityCreationApprovalRecordErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getIdentityCreationApprovalRecordResult()
+      identityCreationApprovalRecord.value = result.approval_record
     }
 
     onMounted(async () => {
@@ -759,8 +806,9 @@ export default defineComponent({
       await findConsultationOffers(accId)
       await findConsultationsAsUser(accId)
       await findConsultationsAsConsultant(accId)
-      await findInfoRatingAsUser(accId)
-      await findInfoRatingAsConsultant(accId)
+      await findRatingInfoAsUser(accId)
+      await findRatingInfoAsConsultant(accId)
+      await findIdentityCreationApprovalRecord(accId)
     })
 
     const requestsDone = computed(() => {
@@ -775,7 +823,8 @@ export default defineComponent({
         getConsultationsByUserAccountIdDone.value &&
         getConsultationsByConsultantIdDone.value &&
         getRatingInfoByUserAccountIdDone.value &&
-        getRatingInfoByConsultantIdDone.value)
+        getRatingInfoByConsultantIdDone.value &&
+        getIdentityCreationApprovalRecordDone.value)
     })
 
     return {
@@ -813,6 +862,10 @@ export default defineComponent({
       ratingInfoAsUserErrMessage,
       ratingInfoAsConsultant,
       ratingInfoAsConsultantErrMessage,
+      identityCreationApprovalRecord,
+      identityCreationApprovalRecordErrMessage,
+      identityCreationApprovalImage1Url,
+      identityCreationApprovalImage2Url,
       outerErrorMessage
     }
   }
