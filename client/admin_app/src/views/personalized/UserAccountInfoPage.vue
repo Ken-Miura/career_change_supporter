@@ -323,13 +323,33 @@
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">本人確認承認履歴（初回）</h3>
+          <h3 class="font-bold text-2xl">本人確認申請承認履歴（初回）</h3>
           <div v-if="!identityCreationApprovalRecordErrMessage">
             <div v-if="identityCreationApprovalRecord" class="mt-6 ml-8 text-2xl">
-              <img class="mt-2" v-bind:src="identityCreationApprovalRecord.image1_file_name_without_ext" />
+              <div class="m-4 text-2xl grid grid-cols-3">
+                <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.last_name }} {{ identityCreationApprovalRecord.first_name }}</div>
+                <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.last_name_furigana }} {{ identityCreationApprovalRecord.first_name_furigana }}</div>
+                <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.date_of_birth }}</div>
+                <div class="mt-2 justify-self-start col-span-3">住所</div>
+                <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.prefecture }}</div>
+                <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.city }}</div>
+                <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.address_line1 }}</div>
+                <div v-if="identityCreationApprovalRecord.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identityCreationApprovalRecord.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.address_line2 }}</div>
+                <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.telephone_number }}</div>
+                <div class="mt-2 justify-self-start col-span-1">承認者</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.approved_by }}</div>
+                <div class="mt-2 justify-self-start col-span-1">承認日時</div><div class="mt-2 justify-self-start col-span-2">{{ identityCreationApprovalRecord.approved_at }}</div>
+              </div>
+              <div class="m-2 text-2xl">
+                <div class="mt-2">身分証明書画像（表面）</div>
+                <img data-test="req-detail-image1" class="mt-2" v-bind:src="identityCreationApprovalRecord.image1_file_name_without_ext" />
+              </div>
+              <div v-if="identityCreationApprovalRecord.image2_file_name_without_ext" class="m-2 text-2xl">
+                <div class="mt-2">身分証明書画像（裏面）</div>
+                <img data-test="req-detail-image2" class="mt-2" v-bind:src="identityCreationApprovalRecord.image2_file_name_without_ext" />
+              </div>
             </div>
             <div v-else class="m-4 text-2xl">
-              本人確認承認履歴（初回）はありません。
+              本人確認申請承認履歴（初回）はありません。
             </div>
           </div>
           <div v-else>
