@@ -185,7 +185,7 @@ mod tests {
 
     #[tokio::test]
 
-    async fn get_identity_creation_approval_record_internal_success_no_fee_per_hour_in_yen_found() {
+    async fn get_identity_creation_approval_record_internal_success_no_approval_record_found() {
         let user_account_id = 64431;
         let approval_record = create_dummy_approval_record(user_account_id);
         let op_mock = ApprovalRecordOperationMock {
