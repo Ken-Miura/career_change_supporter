@@ -280,8 +280,6 @@ fn generate_rejected_create_career_req_active_model(
         is_new_graduate: Set(model.is_new_graduate),
         note: Set(model.note),
         reason: Set(rejection_reason),
-        image1_file_name_without_ext: Set(Some(model.image1_file_name_without_ext)),
-        image2_file_name_without_ext: Set(model.image2_file_name_without_ext),
         rejected_at: Set(rejected_time),
         rejected_by: Set(refuser_email_address),
     }

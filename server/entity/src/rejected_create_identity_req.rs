@@ -22,8 +22,6 @@ pub struct Model {
     pub address_line2: Option<String>,
     pub telephone_number: String,
     pub reason: String,
-    pub image1_file_name_without_ext: Option<String>,
-    pub image2_file_name_without_ext: Option<String>,
     pub rejected_at: DateTimeWithTimeZone,
     pub rejected_by: String,
 }

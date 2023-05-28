@@ -43,8 +43,6 @@ struct RejectionRecord {
     address_line2: Option<String>,
     telephone_number: String,
     reason: String,
-    image1_file_name_without_ext: Option<String>,
-    image2_file_name_without_ext: Option<String>,
     rejected_at: String, // RFC 3339形式の文字列
     rejected_by: String,
 }
@@ -109,8 +107,6 @@ impl RejectionRecordsOperation for RejectionRecordsOperationImpl {
                 address_line2: m.address_line2,
                 telephone_number: m.telephone_number,
                 reason: m.reason,
-                image1_file_name_without_ext: m.image1_file_name_without_ext,
-                image2_file_name_without_ext: m.image2_file_name_without_ext,
                 rejected_at: m
                     .rejected_at
                     .with_timezone(&(*JAPANESE_TIME_ZONE))
@@ -164,8 +160,6 @@ mod tests {
             address_line2: Some("マンション１０１".to_string()),
             telephone_number: "09012345678".to_string(),
             reason: "理由１".to_string(),
-            image1_file_name_without_ext: Some("6faa6b9468cc4e8fadde117b0fa4d690".to_string()),
-            image2_file_name_without_ext: Some("5ef5bc0add3545898c51f3b9b8554b43".to_string()),
             rejected_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
             rejected_by: "admin@test.com".to_string(),
         }
@@ -186,8 +180,6 @@ mod tests {
             address_line2: Some("マンション１０１".to_string()),
             telephone_number: "09012345678".to_string(),
             reason: "理由２".to_string(),
-            image1_file_name_without_ext: Some("7faa6b9468cc4e8fadde117b0fa4d690".to_string()),
-            image2_file_name_without_ext: Some("3ef5bc0add3545898c51f3b9b8554b43".to_string()),
             rejected_at: "2023-04-23T14:12:53.4242+09:00 ".to_string(),
             rejected_by: "admin@test.com".to_string(),
         }
