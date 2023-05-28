@@ -4,7 +4,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 use serde::Serialize;
 use tracing::error;
 
@@ -83,6 +83,7 @@ impl RejectionRecordsOperation for RejectionRecordsOperationImpl {
     ) -> Result<Vec<RejectionRecord>, ErrResp> {
         let models = entity::rejected_create_identity_req::Entity::find()
             .filter(entity::rejected_create_identity_req::Column::UserAccountId.eq(user_account_id))
+            .order_by_desc(entity::rejected_create_identity_req::Column::RejectedAt)
             .all(&self.pool)
             .await
             .map_err(|e| {
