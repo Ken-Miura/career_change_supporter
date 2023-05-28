@@ -363,7 +363,7 @@
               <ul>
                 <li v-for="rejectionRecord in identityCreationRejectionRecords" v-bind:key="rejectionRecord.rjd_cre_identity_id" class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">本人確認申請拒否番号{{ rejectionRecord.rjd_cre_identity_id }}</div>
-                  <div class="m-4 text-2xl grid grid-cols-3">
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name }} {{ rejectionRecord.first_name }}</div>
                     <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name_furigana }} {{ rejectionRecord.first_name_furigana }}</div>
                     <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.date_of_birth }}</div>
