@@ -13,8 +13,6 @@ export type IdentityCreationRejectionRecord = {
   address_line2: string | null,
   telephone_number: string,
   reason: string,
-  image1_file_name_without_ext: string | null,
-  image2_file_name_without_ext: string | null,
   rejected_at: string, // RFC 3339形式の文字列
   rejected_by: string,
   /* eslint-enable camelcase */

@@ -377,24 +377,6 @@
                     <div class="mt-2 justify-self-start col-span-1">拒否者</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_by }}</div>
                     <div class="mt-2 justify-self-start col-span-1">拒否日時</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_at }}</div>
                   </div>
-                  <div class="m-2 text-2xl">
-                    <div class="mt-2">身分証明書画像（表面）</div>
-                    <div v-if="rejectionRecord.image1_file_name_without_ext">
-                      <img class="mt-2" v-bind:src="rejectionRecord.image1_file_name_without_ext" />
-                    </div>
-                    <div v-else class="ml-2 mt-2">
-                      身分証明書画像（表面）は既に削除されています。
-                    </div>
-                  </div>
-                  <div class="m-2 text-2xl">
-                    <div class="mt-2">身分証明書画像（裏面）</div>
-                    <div v-if="rejectionRecord.image2_file_name_without_ext">
-                      <img class="mt-2" v-bind:src="rejectionRecord.image2_file_name_without_ext" />
-                    </div>
-                    <div v-else class="ml-2 mt-2">
-                      身分証明書画像（裏面）は既に削除されている、または提出されていません。
-                    </div>
-                  </div>
                 </li>
               </ul>
             </div>
@@ -870,17 +852,7 @@ export default defineComponent({
         return
       }
       const result = response.getIdentityCreationRejectionRecordResult()
-      const rejectionRecords = result.rejection_records
-      for (let i = 1; i < rejectionRecords.length; i++) {
-        // imgタグのv-bind:src内でそのまま指定して使えるように調整する
-        if (rejectionRecords[i].image1_file_name_without_ext) {
-          rejectionRecords[i].image1_file_name_without_ext = `/admin/api/identity-images/${rejectionRecords[i].user_account_id}/${rejectionRecords[i].image1_file_name_without_ext}`
-        }
-        if (rejectionRecords[i].image2_file_name_without_ext) {
-          rejectionRecords[i].image2_file_name_without_ext = `/admin/api/identity-images/${rejectionRecords[i].user_account_id}/${rejectionRecords[i].image2_file_name_without_ext}`
-        }
-      }
-      identityCreationRejectionRecords.value = rejectionRecords
+      identityCreationRejectionRecords.value = result.rejection_records
     }
 
     onMounted(async () => {
