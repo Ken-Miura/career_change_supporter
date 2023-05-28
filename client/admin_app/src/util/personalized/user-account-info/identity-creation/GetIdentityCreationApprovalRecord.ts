@@ -12,6 +12,6 @@ export async function getIdentityCreationApprovalRecord (userAccountId: string):
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  const tenantIdResult = await response.json() as IdentityCreationApprovalRecordResult
-  return GetIdentityCreationApprovalRecordResp.create(tenantIdResult)
+  const result = await response.json() as IdentityCreationApprovalRecordResult
+  return GetIdentityCreationApprovalRecordResp.create(result)
 }

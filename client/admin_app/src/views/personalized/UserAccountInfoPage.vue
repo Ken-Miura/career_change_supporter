@@ -356,6 +356,56 @@
             <AlertMessage class="mt-4" v-bind:message="identityCreationApprovalRecordErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">本人確認申請拒否履歴（初回）</h3>
+          <div v-if="!identityCreationRejectionRecordsErrMessage">
+            <div v-if="identityCreationRejectionRecords.length !== 0" class="mt-6 ml-8 text-2xl">
+              <ul>
+                <li v-for="rejectionRecord in identityCreationRejectionRecords" v-bind:key="rejectionRecord.rjd_cre_identity_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">本人確認申請拒否番号{{ rejectionRecord.rjd_cre_identity_id }}</div>
+                  <div class="m-4 text-2xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name }} {{ rejectionRecord.first_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name_furigana }} {{ rejectionRecord.first_name_furigana }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.date_of_birth }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">住所</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.prefecture }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.city }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.address_line1 }}</div>
+                    <div v-if="rejectionRecord.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="rejectionRecord.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.address_line2 }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.telephone_number }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否理由</div><div class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ rejectionRecord.reason }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否者</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_by }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否日時</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_at }}</div>
+                  </div>
+                  <div class="m-2 text-2xl">
+                    <div class="mt-2">身分証明書画像（表面）</div>
+                    <div v-if="rejectionRecord.image1_file_name_without_ext">
+                      <img class="mt-2" v-bind:src="rejectionRecord.image1_file_name_without_ext" />
+                    </div>
+                    <div v-else class="ml-2 mt-2">
+                      身分証明書画像（表面）は既に削除されています。
+                    </div>
+                  </div>
+                  <div class="m-2 text-2xl">
+                    <div class="mt-2">身分証明書画像（裏面）</div>
+                    <div v-if="rejectionRecord.image2_file_name_without_ext">
+                      <img class="mt-2" v-bind:src="rejectionRecord.image2_file_name_without_ext" />
+                    </div>
+                    <div v-else class="ml-2 mt-2">
+                      身分証明書画像（裏面）は既に削除されている、または提出されていません。
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              本人確認申請拒否履歴（初回）はありません。
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="identityCreationRejectionRecordsErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -410,6 +460,9 @@ import { GetRatingInfoByConsultantIdResp } from '@/util/personalized/user-accoun
 import { IdentityCreationApprovalRecord } from '@/util/personalized/user-account-info/identity-creation/IdentityCreationApprovalRecord'
 import { useGetIdentityCreationApprovalRecord } from '@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationApprovalRecord'
 import { GetIdentityCreationApprovalRecordResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationApprovalRecordResp'
+import { IdentityCreationRejectionRecord } from '@/util/personalized/user-account-info/identity-creation/IdentityCreationRejectionRecord'
+import { useGetIdentityCreationRejectionRecord } from '@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationRejectionRecord'
+import { GetIdentityCreationRejectionRecordResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationRejectionRecordResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -795,6 +848,41 @@ export default defineComponent({
       identityCreationApprovalRecord.value = approvalRecord
     }
 
+    const identityCreationRejectionRecords = ref([] as IdentityCreationRejectionRecord[])
+    const {
+      getIdentityCreationRejectionRecordDone,
+      getIdentityCreationRejectionRecordFunc
+    } = useGetIdentityCreationRejectionRecord()
+    const identityCreationRejectionRecordsErrMessage = ref(null as string | null)
+
+    const findIdentityCreationRejectionRecords = async (accountId: number) => {
+      const response = await getIdentityCreationRejectionRecordFunc(accountId.toString())
+      if (!(response instanceof GetIdentityCreationRejectionRecordResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        identityCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getIdentityCreationRejectionRecordResult()
+      const rejectionRecords = result.rejection_records
+      for (let i = 1; i < rejectionRecords.length; i++) {
+        // imgタグのv-bind:src内でそのまま指定して使えるように調整する
+        if (rejectionRecords[i].image1_file_name_without_ext) {
+          rejectionRecords[i].image1_file_name_without_ext = `/admin/api/identity-images/${rejectionRecords[i].user_account_id}/${rejectionRecords[i].image1_file_name_without_ext}`
+        }
+        if (rejectionRecords[i].image2_file_name_without_ext) {
+          rejectionRecords[i].image2_file_name_without_ext = `/admin/api/identity-images/${rejectionRecords[i].user_account_id}/${rejectionRecords[i].image2_file_name_without_ext}`
+        }
+      }
+      identityCreationRejectionRecords.value = rejectionRecords
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -831,6 +919,7 @@ export default defineComponent({
       await findRatingInfoAsUser(accId)
       await findRatingInfoAsConsultant(accId)
       await findIdentityCreationApprovalRecord(accId)
+      await findIdentityCreationRejectionRecords(accId)
     })
 
     const requestsDone = computed(() => {
@@ -846,7 +935,8 @@ export default defineComponent({
         getConsultationsByConsultantIdDone.value &&
         getRatingInfoByUserAccountIdDone.value &&
         getRatingInfoByConsultantIdDone.value &&
-        getIdentityCreationApprovalRecordDone.value)
+        getIdentityCreationApprovalRecordDone.value &&
+        getIdentityCreationRejectionRecordDone.value)
     })
 
     return {
@@ -886,6 +976,8 @@ export default defineComponent({
       ratingInfoAsConsultantErrMessage,
       identityCreationApprovalRecord,
       identityCreationApprovalRecordErrMessage,
+      identityCreationRejectionRecords,
+      identityCreationRejectionRecordsErrMessage,
       outerErrorMessage
     }
   }
