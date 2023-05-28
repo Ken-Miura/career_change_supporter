@@ -9,6 +9,7 @@ pub(crate) mod consultations_by_user_account_id;
 pub(crate) mod fee_per_hour_in_yen_by_user_account_id;
 pub(crate) mod identity_creation;
 pub(crate) mod identity_option_by_user_account_id;
+pub(crate) mod identity_update;
 pub(crate) mod rating_info_by_consultant_id;
 pub(crate) mod rating_info_by_user_account_id;
 pub(crate) mod tenant_id_by_user_account_id;
