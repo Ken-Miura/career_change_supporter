@@ -952,12 +952,6 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(
-                sql.stmt(r"GRANT UPDATE (image1_file_name_without_ext, image2_file_name_without_ext) ON ccs_schema.rejected_create_identity_req To admin_app;"),
-            )
-            .await
-            .map(|_| ())?;
-        let _ = conn
             .execute(sql.stmt(
                 r"GRANT USAGE ON SEQUENCE ccs_schema.rejected_create_identity_req_rjd_cre_identity_id_seq TO admin_app;",
             ))
@@ -1103,12 +1097,6 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"GRANT SELECT, INSERT ON ccs_schema.rejected_update_identity_req To admin_app;",
             ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(
-                sql.stmt(r"GRANT UPDATE (image1_file_name_without_ext, image2_file_name_without_ext) ON ccs_schema.rejected_update_identity_req To admin_app;"),
-            )
             .await
             .map(|_| ())?;
         let _ = conn
@@ -1300,12 +1288,6 @@ impl MigrationTrait for Migration {
             .execute(sql.stmt(
                 r"GRANT SELECT, INSERT ON ccs_schema.rejected_create_career_req To admin_app;",
             ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(
-                sql.stmt(r"GRANT UPDATE (image1_file_name_without_ext, image2_file_name_without_ext) ON ccs_schema.rejected_create_career_req To admin_app;"),
-            )
             .await
             .map(|_| ())?;
         let _ = conn
