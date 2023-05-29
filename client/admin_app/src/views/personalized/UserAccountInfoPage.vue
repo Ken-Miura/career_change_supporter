@@ -407,14 +407,14 @@
                     <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.telephone_number }}</div>
                     <div class="mt-2 justify-self-start col-span-1">承認者</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.approved_by }}</div>
                     <div class="mt-2 justify-self-start col-span-1">承認日時</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.approved_at }}</div>
-                  </div>
-                  <div class="m-2 text-2xl">
-                    <div class="mt-2">身分証明書画像（表面）</div>
-                    <img class="mt-2" v-bind:src="approvalRecord.image1_file_name_without_ext" />
-                  </div>
-                  <div v-if="approvalRecord.image2_file_name_without_ext" class="m-2 text-2xl">
-                    <div class="mt-2">身分証明書画像（裏面）</div>
-                    <img class="mt-2" v-bind:src="approvalRecord.image2_file_name_without_ext" />
+                    <div class="m-2 col-span-3">
+                      <div class="mt-2">身分証明書画像（表面）</div>
+                      <img class="mt-2" v-bind:src="approvalRecord.image1_file_name_without_ext" />
+                    </div>
+                    <div v-if="approvalRecord.image2_file_name_without_ext" class="m-2 col-span-3">
+                      <div class="mt-2">身分証明書画像（裏面）</div>
+                      <img class="mt-2" v-bind:src="approvalRecord.image2_file_name_without_ext" />
+                    </div>
                   </div>
                 </li>
               </ul>
