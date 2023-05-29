@@ -362,7 +362,7 @@
             <div v-if="identityCreationRejectionRecords.length !== 0" class="mt-6 ml-8 text-2xl">
               <ul>
                 <li v-for="rejectionRecord in identityCreationRejectionRecords" v-bind:key="rejectionRecord.rjd_cre_identity_id" class="mt-4">
-                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">本人確認申請拒否番号{{ rejectionRecord.rjd_cre_identity_id }}</div>
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">本人確認申請拒否（初回）番号{{ rejectionRecord.rjd_cre_identity_id }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name }} {{ rejectionRecord.first_name }}</div>
                     <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name_furigana }} {{ rejectionRecord.first_name_furigana }}</div>
@@ -386,6 +386,77 @@
           </div>
           <div v-else>
             <AlertMessage class="mt-4" v-bind:message="identityCreationRejectionRecordsErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">本人確認申請承認履歴（更新）</h3>
+          <div v-if="!identityUpdateApprovalRecordsErrMessage">
+            <div v-if="identityUpdateApprovalRecords.length !== 0" class="mt-6 ml-8 text-2xl">
+              <ul>
+                <li v-for="approvalRecord in identityUpdateApprovalRecords" v-bind:key="approvalRecord.appr_upd_identity_req_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">本人確認申請承認（更新）番号{{ approvalRecord.appr_upd_identity_req_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.last_name }} {{ approvalRecord.first_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.last_name_furigana }} {{ approvalRecord.first_name_furigana }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.date_of_birth }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">住所</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.prefecture }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.city }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.address_line1 }}</div>
+                    <div v-if="approvalRecord.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="approvalRecord.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ approvalRecord.address_line2 }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.telephone_number }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">承認者</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.approved_by }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">承認日時</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.approved_at }}</div>
+                  </div>
+                  <div class="m-2 text-2xl">
+                    <div class="mt-2">身分証明書画像（表面）</div>
+                    <img class="mt-2" v-bind:src="approvalRecord.image1_file_name_without_ext" />
+                  </div>
+                  <div v-if="approvalRecord.image2_file_name_without_ext" class="m-2 text-2xl">
+                    <div class="mt-2">身分証明書画像（裏面）</div>
+                    <img class="mt-2" v-bind:src="approvalRecord.image2_file_name_without_ext" />
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              本人確認申請承認履歴（更新）はありません。
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="identityUpdateApprovalRecordsErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">本人確認申請拒否履歴（更新）</h3>
+          <div v-if="!identityUpdateRejectionRecordsErrMessage">
+            <div v-if="identityUpdateRejectionRecords.length !== 0" class="mt-6 ml-8 text-2xl">
+              <ul>
+                <li v-for="rejectionRecord in identityUpdateRejectionRecords" v-bind:key="rejectionRecord.rjd_upd_identity_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">本人確認申請拒否（更新）番号{{ rejectionRecord.rjd_upd_identity_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name }} {{ rejectionRecord.first_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.last_name_furigana }} {{ rejectionRecord.first_name_furigana }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.date_of_birth }}</div>
+                    <div class="mt-2 justify-self-start col-span-3">住所</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.prefecture }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.city }}</div>
+                    <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.address_line1 }}</div>
+                    <div v-if="rejectionRecord.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="rejectionRecord.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.address_line2 }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.telephone_number }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否理由</div><div class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ rejectionRecord.reason }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否者</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_by }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否日時</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_at }}</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              本人確認申請拒否履歴（更新）はありません。
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="identityUpdateRejectionRecordsErrMessage"/>
           </div>
         </div>
       </div>
@@ -883,7 +954,14 @@ export default defineComponent({
         return
       }
       const result = response.getIdentityUpdateApprovalRecordResult()
-      identityUpdateApprovalRecords.value = result.approval_records
+      const approvalRecords = result.approval_records
+      for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
+        approvalRecords[i].image1_file_name_without_ext = `/admin/api/identity-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
+        if (approvalRecords[i].image2_file_name_without_ext) {
+          approvalRecords[i].image2_file_name_without_ext = `/admin/api/identity-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image2_file_name_without_ext}`
+        }
+      }
+      identityUpdateApprovalRecords.value = approvalRecords
     }
 
     const identityUpdateRejectionRecords = ref([] as IdentityUpdateRejectionRecord[])
