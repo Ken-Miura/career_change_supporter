@@ -22,6 +22,7 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::agreements_by_user_account_id::get_agreements_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::career_creation::approval_records::get_career_creation_approval_records;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::career_creation::rejection_records::get_career_creation_rejection_records;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::careers_by_user_account_id::get_careers_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultation_reqs_by_consultant_id::get_consultation_reqs_by_consultant_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultation_reqs_by_user_account_id::get_consultation_reqs_by_user_account_id;
@@ -338,6 +339,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/career-creation-approval-records",
                     get(get_career_creation_approval_records),
+                )
+                .route(
+                    "/career-creation-rejection-records",
+                    get(get_career_creation_rejection_records),
                 )
                 .with_state(state),
         )

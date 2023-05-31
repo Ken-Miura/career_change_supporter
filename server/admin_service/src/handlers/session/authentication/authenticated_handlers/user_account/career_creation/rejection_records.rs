@@ -13,14 +13,14 @@ use crate::err::unexpected_err_resp;
 use super::super::super::admin::Admin;
 use super::super::{validate_account_id_is_positive, UserAccountIdQuery};
 
-pub(crate) async fn get_identity_update_rejection_records(
+pub(crate) async fn get_career_creation_rejection_records(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<UserAccountIdQuery>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<RejectionRecordResult> {
     let query = query.0;
     let op = RejectionRecordsOperationImpl { pool };
-    get_identity_update_rejection_records_internal(query.user_account_id, op).await
+    get_career_creation_rejection_records_internal(query.user_account_id, op).await
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
@@ -30,30 +30,32 @@ pub(crate) struct RejectionRecordResult {
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 struct RejectionRecord {
-    rjd_upd_identity_id: i64,
+    rjd_cre_career_req_id: i64,
     user_account_id: i64,
-    last_name: String,
-    first_name: String,
-    last_name_furigana: String,
-    first_name_furigana: String,
-    date_of_birth: String, // 2023-05-27 のような形式の文字列
-    prefecture: String,
-    city: String,
-    address_line1: String,
-    address_line2: Option<String>,
-    telephone_number: String,
+    company_name: String,
+    department_name: Option<String>,
+    office: Option<String>,
+    career_start_date: String,       // 2023-05-27 のような形式の文字列
+    career_end_date: Option<String>, // 2023-05-27 のような形式の文字列
+    contract_type: String,           // 'regular' or 'contract' or 'other'
+    profession: Option<String>,
+    annual_income_in_man_yen: Option<i32>,
+    is_manager: bool,
+    position_name: Option<String>,
+    is_new_graduate: bool,
+    note: Option<String>,
     reason: String,
     rejected_at: String, // RFC 3339形式の文字列
     rejected_by: String,
 }
 
-async fn get_identity_update_rejection_records_internal(
+async fn get_career_creation_rejection_records_internal(
     user_account_id: i64,
     op: impl RejectionRecordsOperation,
 ) -> RespResult<RejectionRecordResult> {
     validate_account_id_is_positive(user_account_id)?;
     let rejection_records = op
-        .get_identity_update_rejection_records(user_account_id)
+        .get_career_creation_rejection_records(user_account_id)
         .await?;
     Ok((
         StatusCode::OK,
@@ -63,7 +65,7 @@ async fn get_identity_update_rejection_records_internal(
 
 #[async_trait]
 trait RejectionRecordsOperation {
-    async fn get_identity_update_rejection_records(
+    async fn get_career_creation_rejection_records(
         &self,
         user_account_id: i64,
     ) -> Result<Vec<RejectionRecord>, ErrResp>;
@@ -75,18 +77,18 @@ struct RejectionRecordsOperationImpl {
 
 #[async_trait]
 impl RejectionRecordsOperation for RejectionRecordsOperationImpl {
-    async fn get_identity_update_rejection_records(
+    async fn get_career_creation_rejection_records(
         &self,
         user_account_id: i64,
     ) -> Result<Vec<RejectionRecord>, ErrResp> {
-        let models = entity::rejected_update_identity_req::Entity::find()
-            .filter(entity::rejected_update_identity_req::Column::UserAccountId.eq(user_account_id))
-            .order_by_desc(entity::rejected_update_identity_req::Column::RejectedAt)
+        let models = entity::rejected_create_career_req::Entity::find()
+            .filter(entity::rejected_create_career_req::Column::UserAccountId.eq(user_account_id))
+            .order_by_desc(entity::rejected_create_career_req::Column::RejectedAt)
             .all(&self.pool)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter rejected_update_identity_req (user_account_id: {}): {}",
+                    "failed to filter rejected_create_career_req (user_account_id: {}): {}",
                     user_account_id, e
                 );
                 unexpected_err_resp()
@@ -94,18 +96,22 @@ impl RejectionRecordsOperation for RejectionRecordsOperationImpl {
         Ok(models
             .into_iter()
             .map(|m| RejectionRecord {
-                rjd_upd_identity_id: m.rjd_upd_identity_id,
+                rjd_cre_career_req_id: m.rjd_cre_career_req_id,
                 user_account_id: m.user_account_id,
-                last_name: m.last_name,
-                first_name: m.first_name,
-                last_name_furigana: m.last_name_furigana,
-                first_name_furigana: m.first_name_furigana,
-                date_of_birth: m.date_of_birth.format("%Y-%m-%d").to_string(),
-                prefecture: m.prefecture,
-                city: m.city,
-                address_line1: m.address_line1,
-                address_line2: m.address_line2,
-                telephone_number: m.telephone_number,
+                company_name: m.company_name,
+                department_name: m.department_name,
+                office: m.office,
+                career_start_date: m.career_start_date.format("%Y-%m-%d").to_string(),
+                career_end_date: m
+                    .career_end_date
+                    .map(|dt| dt.format("%Y-%m-%d").to_string()),
+                contract_type: m.contract_type,
+                profession: m.profession,
+                annual_income_in_man_yen: m.annual_income_in_man_yen,
+                is_manager: m.is_manager,
+                position_name: m.position_name,
+                is_new_graduate: m.is_new_graduate,
+                note: m.note,
                 reason: m.reason,
                 rejected_at: m
                     .rejected_at
@@ -134,7 +140,7 @@ mod tests {
 
     #[async_trait]
     impl RejectionRecordsOperation for RejectionRecordsOperationMock {
-        async fn get_identity_update_rejection_records(
+        async fn get_career_creation_rejection_records(
             &self,
             user_account_id: i64,
         ) -> Result<Vec<RejectionRecord>, ErrResp> {
@@ -147,18 +153,20 @@ mod tests {
 
     fn create_dummy_rejection_record1(user_account_id: i64) -> RejectionRecord {
         RejectionRecord {
-            rjd_upd_identity_id: 1,
+            rjd_cre_career_req_id: 1,
             user_account_id,
-            last_name: "田中".to_string(),
-            first_name: "太郎".to_string(),
-            last_name_furigana: "タナカ".to_string(),
-            first_name_furigana: "タロウ".to_string(),
-            date_of_birth: "2000-04-01".to_string(),
-            prefecture: "東京都".to_string(),
-            city: "八王子市".to_string(),
-            address_line1: "元本郷町三丁目24番1号".to_string(),
-            address_line2: Some("マンション１０１".to_string()),
-            telephone_number: "09012345678".to_string(),
+            company_name: "テスト１株式会社".to_string(),
+            department_name: None,
+            office: None,
+            career_start_date: "2016-04-01".to_string(),
+            career_end_date: Some("2017-12-01".to_string()),
+            contract_type: "regular".to_string(),
+            profession: None,
+            annual_income_in_man_yen: None,
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: true,
+            note: None,
             reason: "理由１".to_string(),
             rejected_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
             rejected_by: "admin@test.com".to_string(),
@@ -167,18 +175,25 @@ mod tests {
 
     fn create_dummy_rejection_record2(user_account_id: i64) -> RejectionRecord {
         RejectionRecord {
-            rjd_upd_identity_id: 2,
+            rjd_cre_career_req_id: 2,
             user_account_id,
-            last_name: "田中".to_string(),
-            first_name: "太郎".to_string(),
-            last_name_furigana: "タナカ".to_string(),
-            first_name_furigana: "タロウ".to_string(),
-            date_of_birth: "2000-04-01".to_string(),
-            prefecture: "東京都".to_string(),
-            city: "八王子市".to_string(),
-            address_line1: "元本郷町三丁目24番1号".to_string(),
-            address_line2: Some("マンション１０１".to_string()),
-            telephone_number: "09012345678".to_string(),
+            company_name: "テスト２株式会社".to_string(),
+            department_name: Some("開発部署".to_string()),
+            office: Some("和歌山事業所".to_string()),
+            career_start_date: "2018-01-01".to_string(),
+            career_end_date: None,
+            contract_type: "other".to_string(),
+            profession: Some("SE".to_string()),
+            annual_income_in_man_yen: Some(600),
+            is_manager: true,
+            position_name: Some("係長".to_string()),
+            is_new_graduate: false,
+            note: Some(
+                r"理由１
+            理由２
+            理由３"
+                    .to_string(),
+            ),
             reason: "理由２".to_string(),
             rejected_at: "2023-04-23T14:12:53.4242+09:00 ".to_string(),
             rejected_by: "admin@test.com".to_string(),
@@ -187,7 +202,7 @@ mod tests {
 
     #[tokio::test]
 
-    async fn get_identity_update_rejection_records_internal_success_1_result() {
+    async fn get_career_creation_rejection_records_internal_success_1_result() {
         let user_account_id = 64431;
         let rejection_records = vec![create_dummy_rejection_record1(user_account_id)];
         let op_mock = RejectionRecordsOperationMock {
@@ -195,7 +210,7 @@ mod tests {
             rejection_records: rejection_records.clone(),
         };
 
-        let result = get_identity_update_rejection_records_internal(user_account_id, op_mock).await;
+        let result = get_career_creation_rejection_records_internal(user_account_id, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -204,7 +219,7 @@ mod tests {
 
     #[tokio::test]
 
-    async fn get_identity_update_rejection_records_internal_success_2_results() {
+    async fn get_career_creation_rejection_records_internal_success_2_results() {
         let user_account_id = 64431;
         let rejection_records = vec![
             create_dummy_rejection_record1(user_account_id),
@@ -215,7 +230,7 @@ mod tests {
             rejection_records: rejection_records.clone(),
         };
 
-        let result = get_identity_update_rejection_records_internal(user_account_id, op_mock).await;
+        let result = get_career_creation_rejection_records_internal(user_account_id, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -224,7 +239,7 @@ mod tests {
 
     #[tokio::test]
 
-    async fn get_identity_update_rejection_records_internal_success_no_result() {
+    async fn get_career_creation_rejection_records_internal_success_no_result() {
         let user_account_id = 64431;
         let rejection_records = vec![
             create_dummy_rejection_record1(user_account_id),
@@ -236,7 +251,7 @@ mod tests {
         };
         let dummy_id = user_account_id + 451;
 
-        let result = get_identity_update_rejection_records_internal(dummy_id, op_mock).await;
+        let result = get_career_creation_rejection_records_internal(dummy_id, op_mock).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
@@ -247,7 +262,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_identity_update_rejection_records_internal_fail_user_account_id_is_zero() {
+    async fn get_career_creation_rejection_records_internal_fail_user_account_id_is_zero() {
         let user_account_id = 0;
         let rejection_records = vec![create_dummy_rejection_record1(user_account_id)];
         let op_mock = RejectionRecordsOperationMock {
@@ -255,7 +270,7 @@ mod tests {
             rejection_records,
         };
 
-        let result = get_identity_update_rejection_records_internal(user_account_id, op_mock).await;
+        let result = get_career_creation_rejection_records_internal(user_account_id, op_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
@@ -263,7 +278,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_identity_update_rejection_records_internal_fail_user_account_id_is_negative() {
+    async fn get_career_creation_rejection_records_internal_fail_user_account_id_is_negative() {
         let user_account_id = -1;
         let rejection_records = vec![create_dummy_rejection_record1(user_account_id)];
         let op_mock = RejectionRecordsOperationMock {
@@ -271,7 +286,7 @@ mod tests {
             rejection_records,
         };
 
-        let result = get_identity_update_rejection_records_internal(user_account_id, op_mock).await;
+        let result = get_career_creation_rejection_records_internal(user_account_id, op_mock).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
