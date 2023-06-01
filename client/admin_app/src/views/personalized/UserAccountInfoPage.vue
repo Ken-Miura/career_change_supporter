@@ -522,6 +522,12 @@ import { GetIdentityUpdateRejectionRecordResp } from '@/util/personalized/user-a
 import { IdentityUpdateApprovalRecord } from '@/util/personalized/user-account-info/identity-update/IdentityUpdateApprovalRecord'
 import { useGetIdentityUpdateApprovalRecord } from '@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateApprovalRecord'
 import { GetIdentityUpdateApprovalRecordResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateApprovalRecordResp'
+import { CareerCreationApprovalRecord } from '@/util/personalized/user-account-info/career-creation/CareerCreationApprovalRecord'
+import { useGetCareerCreationApprovalRecord } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationApprovalRecord'
+import { GetCareerCreationApprovalRecordResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationApprovalRecordResp'
+import { CareerCreationRejectionRecord } from '@/util/personalized/user-account-info/career-creation/CareerCreationRejectionRecord'
+import { useGetCareerCreationRejectionRecord } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationRejectionRecord'
+import { GetCareerCreationRejectionRecordResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationRejectionRecordResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -989,6 +995,63 @@ export default defineComponent({
       identityUpdateRejectionRecords.value = result.rejection_records
     }
 
+    const careerCreationApprovalRecords = ref([] as CareerCreationApprovalRecord[])
+    const {
+      getCareerCreationApprovalRecordDone,
+      getCareerCreationApprovalRecordFunc
+    } = useGetCareerCreationApprovalRecord()
+    const careerCreationApprovalRecordsErrMessage = ref(null as string | null)
+
+    const findCareerCreationApprovalRecords = async (accountId: number) => {
+      const response = await getCareerCreationApprovalRecordFunc(accountId.toString())
+      if (!(response instanceof GetCareerCreationApprovalRecordResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        careerCreationApprovalRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getCareerCreationApprovalRecordResult()
+      const approvalRecords = result.approval_records
+      for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
+        approvalRecords[i].image1_file_name_without_ext = `/admin/api/career-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
+        if (approvalRecords[i].image2_file_name_without_ext) {
+          approvalRecords[i].image2_file_name_without_ext = `/admin/api/career-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image2_file_name_without_ext}`
+        }
+      }
+      careerCreationApprovalRecords.value = approvalRecords
+    }
+
+    const careerCreationRejectionRecords = ref([] as CareerCreationRejectionRecord[])
+    const {
+      getCareerCreationRejectionRecordDone,
+      getCareerCreationRejectionRecordFunc
+    } = useGetCareerCreationRejectionRecord()
+    const careerCreationRejectionRecordsErrMessage = ref(null as string | null)
+
+    const findCareerCreationRejectionRecords = async (accountId: number) => {
+      const response = await getCareerCreationRejectionRecordFunc(accountId.toString())
+      if (!(response instanceof GetCareerCreationRejectionRecordResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        careerCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getCareerCreationRejectionRecordResult()
+      careerCreationRejectionRecords.value = result.rejection_records
+    }
+
     onMounted(async () => {
       const param = store.state.userAccountSearchParam as UserAccountSearchParam
       if (!param) {
@@ -1028,6 +1091,8 @@ export default defineComponent({
       await findIdentityCreationRejectionRecords(accId)
       await findIdentityUpdateApprovalRecords(accId)
       await findIdentityUpdateRejectionRecords(accId)
+      await findCareerCreationApprovalRecords(accId)
+      await findCareerCreationRejectionRecords(accId)
     })
 
     const requestsDone = computed(() => {
@@ -1046,7 +1111,9 @@ export default defineComponent({
         getIdentityCreationApprovalRecordDone.value &&
         getIdentityCreationRejectionRecordDone.value &&
         getIdentityUpdateApprovalRecordDone.value &&
-        getIdentityUpdateRejectionRecordDone.value)
+        getIdentityUpdateRejectionRecordDone.value &&
+        getCareerCreationApprovalRecordDone.value &&
+        getCareerCreationRejectionRecordDone.value)
     })
 
     return {
@@ -1092,6 +1159,10 @@ export default defineComponent({
       identityUpdateRejectionRecordsErrMessage,
       identityUpdateApprovalRecords,
       identityUpdateApprovalRecordsErrMessage,
+      careerCreationApprovalRecords,
+      careerCreationApprovalRecordsErrMessage,
+      careerCreationRejectionRecords,
+      careerCreationRejectionRecordsErrMessage,
       outerErrorMessage
     }
   }
