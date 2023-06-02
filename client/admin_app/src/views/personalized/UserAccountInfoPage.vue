@@ -459,6 +459,99 @@
             <AlertMessage class="mt-4" v-bind:message="identityUpdateRejectionRecordsErrMessage"/>
           </div>
         </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">職務経歴確認申請承認履歴</h3>
+          <div v-if="!careerCreationApprovalRecordsErrMessage">
+            <div v-if="careerCreationApprovalRecords.length !== 0" class="mt-6 ml-8 text-2xl">
+              <ul>
+                <li v-for="approvalRecord in careerCreationApprovalRecords" v-bind:key="approvalRecord.appr_cre_career_req_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴確認申請承認番号{{ approvalRecord.appr_cre_career_req_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.company_name }}</div>
+                    <div v-if="approvalRecord.department_name !== null" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="approvalRecord.department_name !== null" class="mt-2 justify-self-start col-span-2">{{ approvalRecord.department_name }}</div>
+                    <div v-if="approvalRecord.office !== null" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="approvalRecord.office !== null" class="mt-2 justify-self-start col-span-2">{{ approvalRecord.office }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.career_start_date }}</div>
+                    <div v-if="approvalRecord.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="approvalRecord.career_end_date !== null" class="mt-2 justify-self-start col-span-2">{{ approvalRecord.career_end_date }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
+                    <div v-if="approvalRecord.contract_type === 'regular'" class="mt-2 justify-self-start col-span-2">正社員</div>
+                    <div v-else-if="approvalRecord.contract_type === 'contract'" class="mt-2 justify-self-start col-span-2">契約社員</div>
+                    <div v-else-if="approvalRecord.contract_type === 'other'" class="mt-2 justify-self-start col-span-2">その他</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">想定外の値です。管理者にご連絡下さい</div>
+                    <div v-if="approvalRecord.profession !== null" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="approvalRecord.profession !== null" class="mt-2 justify-self-start col-span-2">{{ approvalRecord.profession }}</div>
+                    <div v-if="approvalRecord.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-1">年収（単位：万円）</div><div v-if="approvalRecord.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-2">{{ approvalRecord.annual_income_in_man_yen }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">管理職区分</div>
+                    <div v-if="approvalRecord.is_manager" class="mt-2 justify-self-start col-span-2">管理職</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">非管理職</div>
+                    <div v-if="approvalRecord.position_name !== null" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="approvalRecord.position_name !== null" class="mt-2 justify-self-start col-span-2">{{ approvalRecord.position_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">入社区分</div>
+                    <div v-if="approvalRecord.is_new_graduate" class="mt-2 justify-self-start col-span-2">新卒入社</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">中途入社</div>
+                    <div v-if="approvalRecord.note !== null" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="approvalRecord.note !== null" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ approvalRecord.note }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">承認者</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.approved_by }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">承認日時</div><div class="mt-2 justify-self-start col-span-2">{{ approvalRecord.approved_at }}</div>
+                    <div class="m-2 col-span-3">
+                      <div class="mt-2">証明書類画像（表面）</div>
+                      <img class="mt-2" v-bind:src="approvalRecord.image1_file_name_without_ext" />
+                    </div>
+                    <div v-if="approvalRecord.image2_file_name_without_ext" class="m-2 col-span-3">
+                      <div class="mt-2">証明書類画像（裏面）</div>
+                      <img class="mt-2" v-bind:src="approvalRecord.image2_file_name_without_ext" />
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              職務経歴確認申請承認履歴はありません。
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="careerCreationApprovalRecordsErrMessage"/>
+          </div>
+        </div>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-2xl">職務経歴確認申請拒否履歴</h3>
+          <div v-if="!careerCreationRejectionRecordsErrMessage">
+            <div v-if="careerCreationRejectionRecords.length !== 0" class="mt-6 ml-8 text-2xl">
+              <ul>
+                <li v-for="rejectionRecord in careerCreationRejectionRecords" v-bind:key="rejectionRecord.rjd_cre_career_req_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴確認申請拒否番号{{ rejectionRecord.rjd_cre_career_req_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.company_name }}</div>
+                    <div v-if="rejectionRecord.department_name !== null" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="rejectionRecord.department_name !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.department_name }}</div>
+                    <div v-if="rejectionRecord.office !== null" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="rejectionRecord.office !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.office }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.career_start_date }}</div>
+                    <div v-if="rejectionRecord.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="rejectionRecord.career_end_date !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.career_end_date }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
+                    <div v-if="rejectionRecord.contract_type === 'regular'" class="mt-2 justify-self-start col-span-2">正社員</div>
+                    <div v-else-if="rejectionRecord.contract_type === 'contract'" class="mt-2 justify-self-start col-span-2">契約社員</div>
+                    <div v-else-if="rejectionRecord.contract_type === 'other'" class="mt-2 justify-self-start col-span-2">その他</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">想定外の値です。管理者にご連絡下さい</div>
+                    <div v-if="rejectionRecord.profession !== null" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="rejectionRecord.profession !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.profession }}</div>
+                    <div v-if="rejectionRecord.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-1">年収（単位：万円）</div><div v-if="rejectionRecord.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.annual_income_in_man_yen }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">管理職区分</div>
+                    <div v-if="rejectionRecord.is_manager" class="mt-2 justify-self-start col-span-2">管理職</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">非管理職</div>
+                    <div v-if="rejectionRecord.position_name !== null" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="rejectionRecord.position_name !== null" class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.position_name }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">入社区分</div>
+                    <div v-if="rejectionRecord.is_new_graduate" class="mt-2 justify-self-start col-span-2">新卒入社</div>
+                    <div v-else class="mt-2 justify-self-start col-span-2">中途入社</div>
+                    <div v-if="rejectionRecord.note !== null" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="rejectionRecord.note !== null" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ rejectionRecord.note }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否理由</div><div class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ rejectionRecord.reason }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否者</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_by }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">拒否日時</div><div class="mt-2 justify-self-start col-span-2">{{ rejectionRecord.rejected_at }}</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else class="m-4 text-2xl">
+              職務経歴確認申請拒否履歴はありません。
+            </div>
+          </div>
+          <div v-else>
+            <AlertMessage class="mt-4" v-bind:message="careerCreationRejectionRecordsErrMessage"/>
+          </div>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
