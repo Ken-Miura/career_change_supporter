@@ -15,7 +15,7 @@ bcrypt = "0.14.0"
 chrono = "0.4.24"
 entity = { path = "../entity" }
 lettre = { version = "0.10.4", default-features = false, features = ["smtp-transport", "pool", "rustls-tls", "hostname", "builder", "tokio1", "tokio1-rustls-tls"] }
-once_cell = "1.17.1"
+once_cell = "1.17.2"
 opensearch = "2.0.0"
 regex = "1.7.3"
 reqwest = { version = "0.11.16", features = ["json"] }
