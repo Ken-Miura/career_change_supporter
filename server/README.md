@@ -100,6 +100,8 @@ user_accountで共有ロックを取得 -> update_identity_reqで排他ロック
 user_accountで共有ロックを取得 -> create_career_reqで排他ロックを取得 -> documentで共有ロックを取得
 ##### handlers/session/authentication/authenticated_handlers/career_request/create_request/rejection.rs
 user_accountで共有ロックを取得 -> create_career_reqで排他ロックを取得
+##### handlers/session/authentication/authenticated_handlers/user_account/disable_user_account_req.rs
+user_accountで排他ロックを取得 -> documentで排他ロックを取得
 
 #### user_service
 ##### handlers/session/authentication/authenticated_handlers/personal_info/profile/fee_per_hour_in_yen.rs

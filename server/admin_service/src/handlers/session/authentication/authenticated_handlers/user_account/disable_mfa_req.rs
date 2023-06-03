@@ -46,7 +46,7 @@ async fn handle_disable_mfa_req(
 
 #[async_trait]
 trait DisableMfaReqOperation {
-    async fn disable_mfa(&self, account_id: i64) -> Result<UserAccount, ErrResp>;
+    async fn disable_mfa(&self, user_account_id: i64) -> Result<UserAccount, ErrResp>;
 }
 
 struct DisableMfaReqOperationImpl {
