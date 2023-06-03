@@ -621,6 +621,8 @@ import { GetCareerCreationApprovalRecordResp } from '@/util/personalized/user-ac
 import { CareerCreationRejectionRecord } from '@/util/personalized/user-account-info/career-creation/CareerCreationRejectionRecord'
 import { useGetCareerCreationRejectionRecord } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationRejectionRecord'
 import { GetCareerCreationRejectionRecordResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationRejectionRecordResp'
+import { usePostDisableMfaReq } from '@/util/personalized/user-account-info/disable-mfa-req/usePostDisableMfaReq'
+import { PostDisableMfaReqResp } from '@/util/personalized/user-account-info/disable-mfa-req/PostDisableMfaReqResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -683,8 +685,33 @@ export default defineComponent({
 
     const disableMfaConfirmation = ref(false)
     const disableMfaErrorMessage = ref(null as string | null)
+
+    const {
+      postDisableMfaReqDone,
+      postDisableMfaReqFunc
+    } = usePostDisableMfaReq()
+
     const disableMfa = async () => {
-      console.log('disableMfa') // 更新後のUserAccountを返してもらうようにする
+      const ua = userAccount.value
+      if (!ua) {
+        disableMfaErrorMessage.value = `${Message.UNEXPECTED_ERR}: userAccount.value is null`
+        return
+      }
+      const response = await postDisableMfaReqFunc(ua.user_account_id.toString())
+      if (!(response instanceof PostDisableMfaReqResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        disableMfaErrorMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getUserAccountRetrievalResult()
+      userAccount.value = result.user_account
     }
 
     const selectUserAccountId = (userAccount: UserAccount | null, userAccountId: number | null) => {
@@ -1206,7 +1233,8 @@ export default defineComponent({
         getIdentityUpdateApprovalRecordDone.value &&
         getIdentityUpdateRejectionRecordDone.value &&
         getCareerCreationApprovalRecordDone.value &&
-        getCareerCreationRejectionRecordDone.value)
+        getCareerCreationRejectionRecordDone.value &&
+        postDisableMfaReqDone.value)
     })
 
     return {
