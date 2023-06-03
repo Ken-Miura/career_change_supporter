@@ -3,7 +3,7 @@ import { postDisableMfaReq } from './PostDisableMfaReq'
 
 export function usePostDisableMfaReq () {
   const postDisableMfaReqDone = ref(true)
-  const postDisableMfaReqFunc = async (userAccountId: string) => {
+  const postDisableMfaReqFunc = async (userAccountId: number) => {
     try {
       postDisableMfaReqDone.value = false
       const response = await postDisableMfaReq(userAccountId)

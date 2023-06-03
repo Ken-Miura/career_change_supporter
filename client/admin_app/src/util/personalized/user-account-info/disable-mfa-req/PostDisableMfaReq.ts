@@ -2,7 +2,7 @@ import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { PostDisableMfaReqResp } from './PostDisableMfaReqResp'
 import { UserAccountRetrievalResult } from '../UserAccountRetrievalResult'
 
-export async function postDisableMfaReq (userAccountId: string): Promise<PostDisableMfaReqResp | ApiErrorResp> {
+export async function postDisableMfaReq (userAccountId: number): Promise<PostDisableMfaReqResp | ApiErrorResp> {
   // eslint-disable-next-line
   const data = { user_account_id: userAccountId }
   const response = await fetch('/admin/api/disable-mfa-req', {

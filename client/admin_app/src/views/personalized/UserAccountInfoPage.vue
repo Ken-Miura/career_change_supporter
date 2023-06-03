@@ -697,7 +697,7 @@ export default defineComponent({
         disableMfaErrorMessage.value = `${Message.UNEXPECTED_ERR}: userAccount.value is null`
         return
       }
-      const response = await postDisableMfaReqFunc(ua.user_account_id.toString())
+      const response = await postDisableMfaReqFunc(ua.user_account_id)
       if (!(response instanceof PostDisableMfaReqResp)) {
         if (!(response instanceof ApiErrorResp)) {
           throw new Error(`unexpected result on getting request detail: ${response}`)
