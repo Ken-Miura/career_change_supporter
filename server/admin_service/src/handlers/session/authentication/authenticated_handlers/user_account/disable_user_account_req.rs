@@ -4,11 +4,13 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
+use common::opensearch::{delete_document, INDEX_NAME};
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, ModelTrait,
     QuerySelect, Set, TransactionError, TransactionTrait,
 };
+use opensearch::OpenSearch;
 use serde::Deserialize;
 use tracing::error;
 
@@ -21,9 +23,10 @@ use super::{validate_account_id_is_positive, UserAccount, UserAccountRetrievalRe
 pub(crate) async fn post_disable_user_account_req(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
+    State(index_client): State<OpenSearch>,
     Json(req): Json<DisableUserAccountReq>,
 ) -> RespResult<UserAccountRetrievalResult> {
-    let op = DisableUserAccountReqOperationImpl { pool };
+    let op = DisableUserAccountReqOperationImpl { pool, index_client };
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     handle_disable_user_account_req(req.user_account_id, current_date_time, &op).await
 }
@@ -40,7 +43,7 @@ async fn handle_disable_user_account_req(
 ) -> RespResult<UserAccountRetrievalResult> {
     validate_account_id_is_positive(user_account_id)?;
     let ua = op
-        .disable_user_account_req(user_account_id, current_date_time)
+        .disable_user_account_req(user_account_id, INDEX_NAME.to_string(), current_date_time)
         .await?;
     Ok((
         StatusCode::OK,
@@ -55,12 +58,14 @@ trait DisableUserAccountReqOperation {
     async fn disable_user_account_req(
         &self,
         user_account_id: i64,
+        index_name: String,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<UserAccount, ErrResp>;
 }
 
 struct DisableUserAccountReqOperationImpl {
     pool: DatabaseConnection,
+    index_client: OpenSearch,
 }
 
 #[async_trait]
@@ -68,15 +73,17 @@ impl DisableUserAccountReqOperation for DisableUserAccountReqOperationImpl {
     async fn disable_user_account_req(
         &self,
         user_account_id: i64,
+        index_name: String,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<UserAccount, ErrResp> {
+        let index_client = self.index_client.clone();
         let result = self.pool
             .transaction::<_, entity::user_account::Model, ErrRespStruct>(|txn| {
                 Box::pin(async move {
                     let user_model = find_user_model_with_exclusive_lock(user_account_id, txn).await?;
 
                     let doc = find_user_account_model_with_exclusive_lock(user_account_id, txn).await?;
-                    let document_id = doc.document_id;
+                    let document_id = doc.document_id.to_string();
                     let _ = doc.delete(txn).await.map_err(|e| {
                         error!("failed to delete document (user_account_id: {}): {}", user_account_id, e);
                         ErrRespStruct {
@@ -93,7 +100,15 @@ impl DisableUserAccountReqOperation for DisableUserAccountReqOperationImpl {
                         }
                     })?;
 
-                    // document_idを用いてopensearchから削除
+                    delete_document(index_name.as_str(), document_id.as_str(), &index_client).await.map_err(|e|{
+                        error!(
+                          "failed to delete document (user_account_id: {}, index_name: {}, document_id: {}) from Opensearch",
+                          user_account_id, index_name, document_id
+                        );
+                        ErrRespStruct {
+                          err_resp: e,
+                        }
+                      })?;
 
                     Ok(result)
                 })
