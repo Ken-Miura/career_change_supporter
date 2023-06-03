@@ -82,15 +82,6 @@ impl DisableUserAccountReqOperation for DisableUserAccountReqOperationImpl {
                 Box::pin(async move {
                     let user_model = find_user_model_with_exclusive_lock(user_account_id, txn).await?;
 
-                    let doc = find_user_account_model_with_exclusive_lock(user_account_id, txn).await?;
-                    let document_id = doc.document_id.to_string();
-                    let _ = doc.delete(txn).await.map_err(|e| {
-                        error!("failed to delete document (user_account_id: {}): {}", user_account_id, e);
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
                     let mut user_active_model: entity::user_account::ActiveModel = user_model.into();
                     user_active_model.disabled_at = Set(Some(current_date_time));
                     let result = user_active_model.update(txn).await.map_err(|e| {
@@ -100,15 +91,25 @@ impl DisableUserAccountReqOperation for DisableUserAccountReqOperationImpl {
                         }
                     })?;
 
-                    delete_document(index_name.as_str(), document_id.as_str(), &index_client).await.map_err(|e|{
-                        error!(
-                          "failed to delete document (user_account_id: {}, index_name: {}, document_id: {}) from Opensearch",
-                          user_account_id, index_name, document_id
-                        );
-                        ErrRespStruct {
-                          err_resp: e,
-                        }
-                      })?;
+                    let doc_option = find_user_account_model_with_exclusive_lock(user_account_id, txn).await?;
+                    if let Some(doc) = doc_option {
+                        let document_id = doc.document_id.to_string();
+                        let _ = doc.delete(txn).await.map_err(|e| {
+                            error!("failed to delete document (user_account_id: {}): {}", user_account_id, e);
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+                        delete_document(index_name.as_str(), document_id.as_str(), &index_client).await.map_err(|e|{
+                            error!(
+                              "failed to delete document (user_account_id: {}, index_name: {}, document_id: {}) from Opensearch",
+                              user_account_id, index_name, document_id
+                            );
+                            ErrRespStruct {
+                              err_resp: e,
+                            }
+                          })?;
+                    }
 
                     Ok(result)
                 })
@@ -167,8 +168,8 @@ async fn find_user_model_with_exclusive_lock(
 async fn find_user_account_model_with_exclusive_lock(
     user_account_id: i64,
     txn: &DatabaseTransaction,
-) -> Result<entity::document::Model, ErrRespStruct> {
-    let doc = entity::document::Entity::find_by_id(user_account_id)
+) -> Result<Option<entity::document::Model>, ErrRespStruct> {
+    let doc_option = entity::document::Entity::find_by_id(user_account_id)
         .lock_exclusive()
         .one(txn)
         .await
@@ -181,16 +182,7 @@ async fn find_user_account_model_with_exclusive_lock(
                 err_resp: unexpected_err_resp(),
             }
         })?;
-    let doc = doc.ok_or_else(|| {
-        error!(
-            "failed to find document (user_account_id: {})",
-            user_account_id
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(doc)
+    Ok(doc_option)
 }
 
 #[cfg(test)]
