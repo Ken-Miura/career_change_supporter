@@ -7,6 +7,7 @@ pub(crate) mod consultation_reqs_by_consultant_id;
 pub(crate) mod consultation_reqs_by_user_account_id;
 pub(crate) mod consultations_by_consultant_id;
 pub(crate) mod consultations_by_user_account_id;
+pub(crate) mod disable_mfa_req;
 pub(crate) mod fee_per_hour_in_yen_by_user_account_id;
 pub(crate) mod identity_creation;
 pub(crate) mod identity_option_by_user_account_id;

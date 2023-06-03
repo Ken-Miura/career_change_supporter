@@ -28,6 +28,7 @@ use crate::handlers::session::authentication::authenticated_handlers::user_accou
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultation_reqs_by_user_account_id::get_consultation_reqs_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultations_by_consultant_id::get_consultations_by_consultant_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::consultations_by_user_account_id::get_consultations_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::disable_mfa_req::post_disable_mfa_req;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::fee_per_hour_in_yen_by_user_account_id::get_fee_per_hour_in_yen_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_creation::approval_record::get_identity_creation_approval_record;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_creation::rejection_records::get_identity_creation_rejection_records;
@@ -343,6 +344,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/career-creation-rejection-records",
                     get(get_career_creation_rejection_records),
+                )
+                .route(
+                    "/disable-mfa-req",
+                    post(post_disable_mfa_req),
                 )
                 .with_state(state),
         )

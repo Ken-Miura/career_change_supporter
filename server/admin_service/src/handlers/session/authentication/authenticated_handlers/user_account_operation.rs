@@ -140,3 +140,24 @@ pub(super) async fn find_user_account_model_by_user_account_id_with_shared_lock(
         })?;
     Ok(user_model_option)
 }
+
+/// ユーザーアカウントに関連する設定を変更する際、その間にユーザーが自身のアカウントを操作できないように明示的に排他ロックを取得し、user_accountを取得する
+pub(super) async fn find_user_account_model_by_user_account_id_with_exclusive_lock(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<user_account::Model>, ErrRespStruct> {
+    let user_model_option = user_account::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find user_account (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(user_model_option)
+}
