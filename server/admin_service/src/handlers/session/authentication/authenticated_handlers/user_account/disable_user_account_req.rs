@@ -222,7 +222,7 @@ mod tests {
             last_login_time: Some("2023-04-15T14:12:53.4242+09:00 ".to_string()),
             created_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
             mfa_enabled_at: None,
-            disabled_at: None,
+            disabled_at: Some("2023-05-15T14:12:53.4242+09:00 ".to_string()),
         }
     }
 
