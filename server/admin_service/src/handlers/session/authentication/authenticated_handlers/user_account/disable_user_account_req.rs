@@ -12,7 +12,7 @@ use entity::sea_orm::{
 };
 use opensearch::OpenSearch;
 use serde::Deserialize;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::find_user_account_model_by_user_account_id_with_exclusive_lock;
@@ -93,6 +93,7 @@ impl DisableUserAccountReqOperation for DisableUserAccountReqOperationImpl {
 
                     let doc_option = find_user_account_model_with_exclusive_lock(user_account_id, txn).await?;
                     if let Some(doc) = doc_option {
+                        info!("document (user_account_id: {}, document_id: {}) exists and will be deleted", user_account_id, doc.document_id);
                         let document_id = doc.document_id.to_string();
                         let _ = doc.delete(txn).await.map_err(|e| {
                             error!("failed to delete document (user_account_id: {}): {}", user_account_id, e);
