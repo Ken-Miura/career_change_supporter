@@ -135,5 +135,77 @@ impl DisableMfaReqOperation for DisableMfaReqOperationImpl {
 #[cfg(test)]
 mod tests {
 
+    use crate::err::Code;
+
     use super::*;
+
+    struct DisableMfaReqOperationMock {
+        user_account_id: i64,
+        user_account: UserAccount,
+    }
+
+    #[async_trait]
+    impl DisableMfaReqOperation for DisableMfaReqOperationMock {
+        async fn disable_mfa(&self, user_account_id: i64) -> Result<UserAccount, ErrResp> {
+            assert!(self.user_account_id == user_account_id);
+            Ok(self.user_account.clone())
+        }
+    }
+
+    fn create_dummy_user_account(user_account_id: i64) -> UserAccount {
+        UserAccount {
+            user_account_id,
+            email_address: "test0@test.com".to_string(),
+            last_login_time: Some("2023-04-15T14:12:53.4242+09:00 ".to_string()),
+            created_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
+            mfa_enabled_at: None,
+            disabled_at: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_disable_mfa_req_success() {
+        let user_account_id = 57301;
+        let user_account = create_dummy_user_account(user_account_id);
+        let op_mock = DisableMfaReqOperationMock {
+            user_account_id,
+            user_account: user_account.clone(),
+        };
+
+        let result = handle_disable_mfa_req(user_account_id, &op_mock).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(resp.1 .0.user_account, Some(user_account))
+    }
+
+    #[tokio::test]
+    async fn handle_disable_mfa_req_fail_user_account_id_is_zero() {
+        let user_account_id = 0;
+        let op_mock = DisableMfaReqOperationMock {
+            user_account_id,
+            user_account: create_dummy_user_account(user_account_id),
+        };
+
+        let result = handle_disable_mfa_req(user_account_id, &op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    }
+
+    #[tokio::test]
+    async fn handle_disable_mfa_req_fail_user_account_id_is_negative() {
+        let user_account_id = -1;
+        let op_mock = DisableMfaReqOperationMock {
+            user_account_id,
+            user_account: create_dummy_user_account(user_account_id),
+        };
+
+        let result = handle_disable_mfa_req(user_account_id, &op_mock).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    }
 }
