@@ -623,6 +623,8 @@ import { useGetCareerCreationRejectionRecord } from '@/util/personalized/user-ac
 import { GetCareerCreationRejectionRecordResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationRejectionRecordResp'
 import { usePostDisableMfaReq } from '@/util/personalized/user-account-info/disable-mfa-req/usePostDisableMfaReq'
 import { PostDisableMfaReqResp } from '@/util/personalized/user-account-info/disable-mfa-req/PostDisableMfaReqResp'
+import { usePostDisableUserAccountReq } from '@/util/personalized/user-account-info/disable-user-account-req/usePostDisableUserAccountReq'
+import { PostDisableUserAccountReqResp } from '@/util/personalized/user-account-info/disable-user-account-req/PostDisableUserAccountReqResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -676,9 +678,35 @@ export default defineComponent({
 
     const accountEnableDisableConfirmation = ref(false)
     const accountEnableDisableErrorMessage = ref(null as string | null)
+
+    const {
+      postDisableUserAccountReqDone,
+      postDisableUserAccountReqFunc
+    } = usePostDisableUserAccountReq()
+
     const disableAccount = async () => {
-      console.log('disableAccount') // 更新後のUserAccountを返してもらうようにする
+      const ua = userAccount.value
+      if (!ua) {
+        accountEnableDisableErrorMessage.value = `${Message.UNEXPECTED_ERR}: userAccount.value is null`
+        return
+      }
+      const response = await postDisableUserAccountReqFunc(ua.user_account_id)
+      if (!(response instanceof PostDisableUserAccountReqResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getUserAccountRetrievalResult()
+      userAccount.value = result.user_account
     }
+
     const enableAccount = async () => {
       console.log('enableAccount') // 更新後のUserAccountを返してもらうようにする
     }
@@ -1234,6 +1262,7 @@ export default defineComponent({
         getIdentityUpdateRejectionRecordDone.value &&
         getCareerCreationApprovalRecordDone.value &&
         getCareerCreationRejectionRecordDone.value &&
+        postDisableUserAccountReqDone.value &&
         postDisableMfaReqDone.value)
     })
 
