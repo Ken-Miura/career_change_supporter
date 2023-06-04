@@ -4,10 +4,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::{ErrResp, RespResult};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
-use tracing::error;
-
-use crate::err::unexpected_err_resp;
+use entity::sea_orm::DatabaseConnection;
 
 use super::super::admin::Admin;
 use super::{
@@ -59,40 +56,7 @@ impl RatingInfoOperation for RatingInfoOperationImpl {
         &self,
         consultant_id: i64,
     ) -> Result<Vec<i16>, ErrResp> {
-        let models = entity::consultation::Entity::find()
-            .filter(entity::consultation::Column::ConsultantId.eq(consultant_id))
-            .find_with_related(entity::consultant_rating::Entity)
-            .filter(entity::consultant_rating::Column::Rating.is_not_null())
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter consultant_rating (consultant_id: {}): {}",
-                    consultant_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        models
-            .into_iter()
-            .map(|m| {
-                // consultationとconsultant_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
-                let ur = m.1.get(0).ok_or_else(|| {
-                    error!(
-                        "failed to find consultant_rating (consultation_id: {})",
-                        m.0.consultation_id
-                    );
-                    unexpected_err_resp()
-                })?;
-                let r = ur.rating.ok_or_else(|| {
-                    error!(
-                        "rating is null (consultant_rating_id: {}, consultant_id: {})",
-                        ur.consultant_rating_id, m.0.consultant_id
-                    );
-                    unexpected_err_resp()
-                })?;
-                Ok(r)
-            })
-            .collect::<Result<Vec<i16>, ErrResp>>()
+        super::get_consultant_rating_info(consultant_id, &self.pool).await
     }
 }
 

@@ -3,11 +3,12 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use common::opensearch::{delete_document, INDEX_NAME};
+use chrono::NaiveDate;
+use common::opensearch::INDEX_NAME;
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, ModelTrait,
-    QuerySelect, Set, TransactionError, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
+    ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use opensearch::OpenSearch;
 use serde::Deserialize;
@@ -39,6 +40,7 @@ async fn handle_enable_user_account_req(
     op: &impl EnableUserAccountReqOperation,
 ) -> RespResult<UserAccountRetrievalResult> {
     validate_account_id_is_positive(user_account_id)?;
+    // 職務経歴、料金、評価、銀行登録（テナント）を取得する
     let ua = op
         .enable_user_account_req(user_account_id, INDEX_NAME.to_string())
         .await?;
@@ -52,6 +54,14 @@ async fn handle_enable_user_account_req(
 
 #[async_trait]
 trait EnableUserAccountReqOperation {
+    async fn get_careers(&self, user_account_id: i64) -> Result<Vec<Career>, ErrResp>;
+
+    async fn get_fee_per_hour_in_yen(&self, user_account_id: i64) -> Result<Option<i32>, ErrResp>;
+
+    async fn get_tenant_id(&self, user_account_id: i64) -> Result<Option<String>, ErrResp>;
+
+    async fn get_consultant_rating_info(&self, consultant_id: i64) -> Result<Vec<i16>, ErrResp>;
+
     async fn enable_user_account_req(
         &self,
         user_account_id: i64,
@@ -66,6 +76,51 @@ struct EnableUserAccountReqOperationImpl {
 
 #[async_trait]
 impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
+    async fn get_careers(&self, user_account_id: i64) -> Result<Vec<Career>, ErrResp> {
+        let careers = entity::career::Entity::find()
+            .filter(entity::career::Column::UserAccountId.eq(user_account_id))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter career (user_account_id: {}): {}",
+                    user_account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(careers
+            .into_iter()
+            .map(|m| Career {
+                career_id: m.career_id,
+                user_account_id: m.user_account_id,
+                company_name: m.company_name,
+                department_name: m.department_name,
+                office: m.office,
+                career_start_date: m.career_start_date,
+                career_end_date: m.career_end_date,
+                contract_type: m.contract_type,
+                profession: m.profession,
+                annual_income_in_man_yen: m.annual_income_in_man_yen,
+                is_manager: m.is_manager,
+                position_name: m.position_name,
+                is_new_graduate: m.is_new_graduate,
+                note: m.note,
+            })
+            .collect::<Vec<Career>>())
+    }
+
+    async fn get_fee_per_hour_in_yen(&self, user_account_id: i64) -> Result<Option<i32>, ErrResp> {
+        super::get_fee_per_hour_in_yen(user_account_id, &self.pool).await
+    }
+
+    async fn get_tenant_id(&self, user_account_id: i64) -> Result<Option<String>, ErrResp> {
+        super::get_tenant_id(user_account_id, &self.pool).await
+    }
+
+    async fn get_consultant_rating_info(&self, consultant_id: i64) -> Result<Vec<i16>, ErrResp> {
+        super::get_consultant_rating_info(consultant_id, &self.pool).await
+    }
+
     async fn enable_user_account_req(
         &self,
         user_account_id: i64,
@@ -86,26 +141,8 @@ impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
                         }
                     })?;
 
-                    let doc_option = find_user_account_model_with_exclusive_lock(user_account_id, txn).await?;
-                    if let Some(doc) = doc_option {
-                        info!("document (user_account_id: {}, document_id: {}) exists and will be deleted", user_account_id, doc.document_id);
-                        let document_id = doc.document_id.to_string();
-                        let _ = doc.delete(txn).await.map_err(|e| {
-                            error!("failed to delete document (user_account_id: {}): {}", user_account_id, e);
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                        delete_document(index_name.as_str(), document_id.as_str(), &index_client).await.map_err(|e|{
-                            error!(
-                              "failed to delete document (user_account_id: {}, index_name: {}, document_id: {}) from Opensearch",
-                              user_account_id, index_name, document_id
-                            );
-                            ErrRespStruct {
-                              err_resp: e,
-                            }
-                          })?;
-                    }
+                    // 必要に応じてdocument作成
+                    //   documentを作成したらopensearchに入れる
 
                     Ok(result)
                 })
@@ -161,24 +198,22 @@ async fn find_user_model_with_exclusive_lock(
     Ok(user_model)
 }
 
-async fn find_user_account_model_with_exclusive_lock(
+// career_idが必要になるため、共通モジュールのCareerは使わない
+struct Career {
+    career_id: i64,
     user_account_id: i64,
-    txn: &DatabaseTransaction,
-) -> Result<Option<entity::document::Model>, ErrRespStruct> {
-    let doc_option = entity::document::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find document (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(doc_option)
+    company_name: String,
+    department_name: Option<String>,
+    office: Option<String>,
+    career_start_date: NaiveDate,
+    career_end_date: Option<NaiveDate>,
+    contract_type: String,
+    profession: Option<String>,
+    annual_income_in_man_yen: Option<i32>,
+    is_manager: bool,
+    position_name: Option<String>,
+    is_new_graduate: bool,
+    note: Option<String>,
 }
 
 #[cfg(test)]

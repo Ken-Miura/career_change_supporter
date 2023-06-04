@@ -4,11 +4,8 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::{ErrResp, RespResult};
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
-use tracing::error;
-
-use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
 use super::{validate_account_id_is_positive, UserAccountIdQuery};
@@ -55,17 +52,7 @@ impl TenantIdOperation for TenantIdOperationImpl {
         &self,
         user_account_id: i64,
     ) -> Result<Option<String>, ErrResp> {
-        let result = entity::tenant::Entity::find_by_id(user_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find tenant (user_account_id: {}): {}",
-                    user_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(result.map(|m| m.tenant_id))
+        super::get_tenant_id(user_account_id, &self.pool).await
     }
 }
 
