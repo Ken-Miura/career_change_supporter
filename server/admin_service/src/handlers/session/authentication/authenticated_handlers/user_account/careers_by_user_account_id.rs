@@ -25,7 +25,8 @@ pub(crate) struct CareersResult {
     careers: Vec<CareerInfo>,
 }
 
-// NaiveDateを使わずに自身でシリアライズを制御するために下記を使う
+// NaiveDateを使わずに自身でシリアライズを制御するため
+// career_start_dateとcareer_end_dateにStringを指定した下記の型を使う
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 struct CareerInfo {
     career_id: i64,
