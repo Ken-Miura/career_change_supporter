@@ -3,22 +3,21 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use chrono::NaiveDate;
 use common::opensearch::INDEX_NAME;
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
-    ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionError,
+    TransactionTrait,
 };
 use opensearch::OpenSearch;
 use serde::Deserialize;
-use tracing::{error, info};
+use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::find_user_account_model_by_user_account_id_with_exclusive_lock;
 
 use super::super::admin::Admin;
-use super::{validate_account_id_is_positive, UserAccount, UserAccountRetrievalResult};
+use super::{validate_account_id_is_positive, Career, UserAccount, UserAccountRetrievalResult};
 
 pub(crate) async fn post_enable_user_account_req(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -40,7 +39,6 @@ async fn handle_enable_user_account_req(
     op: &impl EnableUserAccountReqOperation,
 ) -> RespResult<UserAccountRetrievalResult> {
     validate_account_id_is_positive(user_account_id)?;
-    // 職務経歴、料金、評価、銀行登録（テナント）を取得する
     let careers = op.get_careers(user_account_id).await?;
     let fee_per_hour_in_yen = op.get_fee_per_hour_in_yen(user_account_id).await?;
     let tenant_id = op.get_tenant_id(user_account_id).await?;
@@ -82,36 +80,7 @@ struct EnableUserAccountReqOperationImpl {
 #[async_trait]
 impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
     async fn get_careers(&self, user_account_id: i64) -> Result<Vec<Career>, ErrResp> {
-        let careers = entity::career::Entity::find()
-            .filter(entity::career::Column::UserAccountId.eq(user_account_id))
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter career (user_account_id: {}): {}",
-                    user_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(careers
-            .into_iter()
-            .map(|m| Career {
-                career_id: m.career_id,
-                user_account_id: m.user_account_id,
-                company_name: m.company_name,
-                department_name: m.department_name,
-                office: m.office,
-                career_start_date: m.career_start_date,
-                career_end_date: m.career_end_date,
-                contract_type: m.contract_type,
-                profession: m.profession,
-                annual_income_in_man_yen: m.annual_income_in_man_yen,
-                is_manager: m.is_manager,
-                position_name: m.position_name,
-                is_new_graduate: m.is_new_graduate,
-                note: m.note,
-            })
-            .collect::<Vec<Career>>())
+        super::get_careers(user_account_id, &self.pool).await
     }
 
     async fn get_fee_per_hour_in_yen(&self, user_account_id: i64) -> Result<Option<i32>, ErrResp> {
@@ -201,24 +170,6 @@ async fn find_user_model_with_exclusive_lock(
         }
     })?;
     Ok(user_model)
-}
-
-// career_idが必要になるため、共通モジュールのCareerは使わない
-struct Career {
-    career_id: i64,
-    user_account_id: i64,
-    company_name: String,
-    department_name: Option<String>,
-    office: Option<String>,
-    career_start_date: NaiveDate,
-    career_end_date: Option<NaiveDate>,
-    contract_type: String,
-    profession: Option<String>,
-    annual_income_in_man_yen: Option<i32>,
-    is_manager: bool,
-    position_name: Option<String>,
-    is_new_graduate: bool,
-    note: Option<String>,
 }
 
 #[cfg(test)]

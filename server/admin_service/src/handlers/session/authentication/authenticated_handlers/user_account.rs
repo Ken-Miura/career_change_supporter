@@ -21,6 +21,7 @@ pub(crate) mod user_account_retrieval_by_email_address;
 pub(crate) mod user_account_retrieval_by_user_account_id;
 
 use axum::{http::StatusCode, Json};
+use chrono::NaiveDate;
 use common::{
     rating::{calculate_average_rating, round_rating_to_one_decimal_places},
     ApiError, ErrResp,
@@ -120,6 +121,60 @@ fn calculate_rating_and_count(ratings: Vec<i16>) -> (Option<String>, i32) {
     } else {
         (None, 0)
     }
+}
+
+// career_idが必要になるため、共通モジュールのCareerは使わない
+struct Career {
+    career_id: i64,
+    user_account_id: i64,
+    company_name: String,
+    department_name: Option<String>,
+    office: Option<String>,
+    career_start_date: NaiveDate,
+    career_end_date: Option<NaiveDate>,
+    contract_type: String,
+    profession: Option<String>,
+    annual_income_in_man_yen: Option<i32>,
+    is_manager: bool,
+    position_name: Option<String>,
+    is_new_graduate: bool,
+    note: Option<String>,
+}
+
+async fn get_careers(
+    user_account_id: i64,
+    pool: &DatabaseConnection,
+) -> Result<Vec<Career>, ErrResp> {
+    let careers = entity::career::Entity::find()
+        .filter(entity::career::Column::UserAccountId.eq(user_account_id))
+        .all(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to filter career (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(careers
+        .into_iter()
+        .map(|m| Career {
+            career_id: m.career_id,
+            user_account_id: m.user_account_id,
+            company_name: m.company_name,
+            department_name: m.department_name,
+            office: m.office,
+            career_start_date: m.career_start_date,
+            career_end_date: m.career_end_date,
+            contract_type: m.contract_type,
+            profession: m.profession,
+            annual_income_in_man_yen: m.annual_income_in_man_yen,
+            is_manager: m.is_manager,
+            position_name: m.position_name,
+            is_new_graduate: m.is_new_graduate,
+            note: m.note,
+        })
+        .collect::<Vec<Career>>())
 }
 
 async fn get_fee_per_hour_in_yen(

@@ -3,14 +3,9 @@
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use chrono::Datelike;
-use common::util::{Career, Ymd};
 use common::{ErrResp, RespResult};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
-use tracing::error;
-
-use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
 use super::{validate_account_id_is_positive, UserAccountIdQuery};
@@ -27,13 +22,26 @@ pub(crate) async fn get_careers_by_user_account_id(
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CareersResult {
-    careers: Vec<CareerWithId>,
+    careers: Vec<CareerInfo>,
 }
 
+// NaiveDateを使わずに自身でシリアライズを制御するために下記を使う
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
-struct CareerWithId {
+struct CareerInfo {
     career_id: i64,
-    career: Career,
+    user_account_id: i64,
+    company_name: String,
+    department_name: Option<String>,
+    office: Option<String>,
+    career_start_date: String,       // 2023-05-27 のような形式の文字列
+    career_end_date: Option<String>, // 2023-05-27 のような形式の文字列
+    contract_type: String,
+    profession: Option<String>,
+    annual_income_in_man_yen: Option<i32>,
+    is_manager: bool,
+    position_name: Option<String>,
+    is_new_graduate: bool,
+    note: Option<String>,
 }
 
 async fn get_careers_by_user_account_id_internal(
@@ -50,7 +58,7 @@ trait CareersOperation {
     async fn get_careers_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<CareerWithId>, ErrResp>;
+    ) -> Result<Vec<CareerInfo>, ErrResp>;
 }
 
 struct CareersOperationImpl {
@@ -62,46 +70,29 @@ impl CareersOperation for CareersOperationImpl {
     async fn get_careers_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<CareerWithId>, ErrResp> {
-        let models = entity::career::Entity::find()
-            .filter(entity::career::Column::UserAccountId.eq(user_account_id))
-            .all(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to filter careers (user_account_id: {}): {}",
-                    user_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        Ok(models
+    ) -> Result<Vec<CareerInfo>, ErrResp> {
+        let careers = super::get_careers(user_account_id, &self.pool).await?;
+        Ok(careers
             .into_iter()
-            .map(|m| CareerWithId {
+            .map(|m| CareerInfo {
                 career_id: m.career_id,
-                career: Career {
-                    company_name: m.company_name,
-                    department_name: m.department_name,
-                    office: m.office,
-                    career_start_date: Ymd {
-                        year: m.career_start_date.year(),
-                        month: m.career_start_date.month(),
-                        day: m.career_start_date.day(),
-                    },
-                    career_end_date: m.career_end_date.map(|date| Ymd {
-                        year: date.year(),
-                        month: date.month(),
-                        day: date.day(),
-                    }),
-                    contract_type: m.contract_type,
-                    profession: m.profession,
-                    annual_income_in_man_yen: m.annual_income_in_man_yen,
-                    is_manager: m.is_manager,
-                    position_name: m.position_name,
-                    is_new_graduate: m.is_new_graduate,
-                    note: m.note,
-                },
+                user_account_id: m.user_account_id,
+                company_name: m.company_name,
+                department_name: m.department_name,
+                office: m.office,
+                career_start_date: m.career_start_date.format("%Y-%m-%d").to_string(),
+                career_end_date: m
+                    .career_end_date
+                    .map(|dt| dt.format("%Y-%m-%d").to_string()),
+                contract_type: m.contract_type,
+                profession: m.profession,
+                annual_income_in_man_yen: m.annual_income_in_man_yen,
+                is_manager: m.is_manager,
+                position_name: m.position_name,
+                is_new_graduate: m.is_new_graduate,
+                note: m.note,
             })
-            .collect::<Vec<CareerWithId>>())
+            .collect::<Vec<CareerInfo>>())
     }
 }
 
@@ -109,7 +100,7 @@ impl CareersOperation for CareersOperationImpl {
 mod tests {
     use axum::async_trait;
     use axum::http::StatusCode;
-    use common::{util::Ymd, ErrResp};
+    use common::ErrResp;
 
     use crate::err::Code;
 
@@ -117,7 +108,7 @@ mod tests {
 
     struct CareersOperationMock {
         user_account_id: i64,
-        careers: Vec<CareerWithId>,
+        careers: Vec<CareerInfo>,
     }
 
     #[async_trait]
@@ -125,7 +116,7 @@ mod tests {
         async fn get_careers_by_user_account_id(
             &self,
             user_account_id: i64,
-        ) -> Result<Vec<CareerWithId>, ErrResp> {
+        ) -> Result<Vec<CareerInfo>, ErrResp> {
             if self.user_account_id != user_account_id {
                 return Ok(vec![]);
             }
@@ -133,55 +124,41 @@ mod tests {
         }
     }
 
-    fn create_dummy_career_with_id1() -> CareerWithId {
-        CareerWithId {
+    fn create_dummy_career_info1(user_account_id: i64) -> CareerInfo {
+        CareerInfo {
             career_id: 1,
-            career: Career {
-                company_name: "テスト１株式会社".to_string(),
-                department_name: Some("営業二課".to_string()),
-                office: Some("新宿事業所".to_string()),
-                career_start_date: Ymd {
-                    year: 2008,
-                    month: 4,
-                    day: 1,
-                },
-                career_end_date: Some(Ymd {
-                    year: 2016,
-                    month: 7,
-                    day: 31,
-                }),
-                contract_type: "regular".to_string(),
-                profession: Some("営業".to_string()),
-                annual_income_in_man_yen: Some(500),
-                is_manager: true,
-                position_name: Some("部長".to_string()),
-                is_new_graduate: true,
-                note: Some("備考１".to_string()),
-            },
+            user_account_id,
+            company_name: "テスト１株式会社".to_string(),
+            department_name: Some("営業二課".to_string()),
+            office: Some("新宿事業所".to_string()),
+            career_start_date: "2008-04-01".to_string(),
+            career_end_date: Some("2016-07-31".to_string()),
+            contract_type: "regular".to_string(),
+            profession: Some("営業".to_string()),
+            annual_income_in_man_yen: Some(500),
+            is_manager: true,
+            position_name: Some("部長".to_string()),
+            is_new_graduate: true,
+            note: Some("備考１".to_string()),
         }
     }
 
-    fn create_dummy_career_with_id2() -> CareerWithId {
-        CareerWithId {
+    fn create_dummy_career_info2(user_account_id: i64) -> CareerInfo {
+        CareerInfo {
             career_id: 2,
-            career: Career {
-                company_name: "テスト２株式会社".to_string(),
-                department_name: Some("開発".to_string()),
-                office: Some("札幌事業所".to_string()),
-                career_start_date: Ymd {
-                    year: 2008,
-                    month: 4,
-                    day: 1,
-                },
-                career_end_date: None,
-                contract_type: "contract".to_string(),
-                profession: Some("エンジニア".to_string()),
-                annual_income_in_man_yen: Some(500),
-                is_manager: false,
-                position_name: None,
-                is_new_graduate: false,
-                note: Some("備考２".to_string()),
-            },
+            user_account_id,
+            company_name: "テスト２株式会社".to_string(),
+            department_name: Some("開発".to_string()),
+            office: Some("札幌事業所".to_string()),
+            career_start_date: "2008-04-01".to_string(),
+            career_end_date: None,
+            contract_type: "contract".to_string(),
+            profession: Some("エンジニア".to_string()),
+            annual_income_in_man_yen: Some(500),
+            is_manager: false,
+            position_name: None,
+            is_new_graduate: false,
+            note: Some("備考２".to_string()),
         }
     }
 
@@ -189,7 +166,7 @@ mod tests {
 
     async fn get_careers_by_user_account_id_internal_success_1_result() {
         let user_account_id = 64431;
-        let career1 = create_dummy_career_with_id1();
+        let career1 = create_dummy_career_info1(user_account_id);
         let op_mock = CareersOperationMock {
             user_account_id,
             careers: vec![career1.clone()],
@@ -206,8 +183,8 @@ mod tests {
 
     async fn get_careers_by_user_account_id_internal_success_2_results() {
         let user_account_id = 64431;
-        let career1 = create_dummy_career_with_id1();
-        let career2 = create_dummy_career_with_id2();
+        let career1 = create_dummy_career_info1(user_account_id);
+        let career2 = create_dummy_career_info2(user_account_id);
         let op_mock = CareersOperationMock {
             user_account_id,
             careers: vec![career1.clone(), career2.clone()],
@@ -233,7 +210,7 @@ mod tests {
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(Vec::<CareerWithId>::with_capacity(0), resp.1 .0.careers);
+        assert_eq!(Vec::<CareerInfo>::with_capacity(0), resp.1 .0.careers);
     }
 
     #[tokio::test]
