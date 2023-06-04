@@ -221,6 +221,8 @@ fn generate_document_value(
     let is_bank_account_registered = tenant_id.is_some();
     let num_of_rated = ratings.len();
     let average_rating = calculate_average_rating(ratings);
+    // 他の操作で最初にdocumentをOpenSearch内に作るとき、評価は一つもないはずなのでnum_of_ratedは作っていない。
+    // 有効化するときはnum_of_ratedがあるかどうか不明、かつ動作に違いがないためnum_of_ratedは最初から作っておく。
     Some(json!({
         "user_account_id": user_account_id,
         "careers": career_values,
