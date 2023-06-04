@@ -625,6 +625,8 @@ import { usePostDisableMfaReq } from '@/util/personalized/user-account-info/disa
 import { PostDisableMfaReqResp } from '@/util/personalized/user-account-info/disable-mfa-req/PostDisableMfaReqResp'
 import { usePostDisableUserAccountReq } from '@/util/personalized/user-account-info/disable-user-account-req/usePostDisableUserAccountReq'
 import { PostDisableUserAccountReqResp } from '@/util/personalized/user-account-info/disable-user-account-req/PostDisableUserAccountReqResp'
+import { usePostEnableUserAccountReq } from '@/util/personalized/user-account-info/enable-user-account-req/usePostDisableUserAccountReq'
+import { PostEnableUserAccountReqResp } from '@/util/personalized/user-account-info/enable-user-account-req/PostEnableUserAccountReqResp'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -707,8 +709,32 @@ export default defineComponent({
       userAccount.value = result.user_account
     }
 
+    const {
+      postEnableUserAccountReqDone,
+      postEnableUserAccountReqFunc
+    } = usePostEnableUserAccountReq()
+
     const enableAccount = async () => {
-      console.log('enableAccount') // 更新後のUserAccountを返してもらうようにする
+      const ua = userAccount.value
+      if (!ua) {
+        accountEnableDisableErrorMessage.value = `${Message.UNEXPECTED_ERR}: userAccount.value is null`
+        return
+      }
+      const response = await postEnableUserAccountReqFunc(ua.user_account_id)
+      if (!(response instanceof PostEnableUserAccountReqResp)) {
+        if (!(response instanceof ApiErrorResp)) {
+          throw new Error(`unexpected result on getting request detail: ${response}`)
+        }
+        const code = response.getApiError().getCode()
+        if (code === Code.UNAUTHORIZED) {
+          await router.push('/login')
+          return
+        }
+        accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
+        return
+      }
+      const result = response.getUserAccountRetrievalResult()
+      userAccount.value = result.user_account
     }
 
     const disableMfaConfirmation = ref(false)
@@ -1263,6 +1289,7 @@ export default defineComponent({
         getCareerCreationApprovalRecordDone.value &&
         getCareerCreationRejectionRecordDone.value &&
         postDisableUserAccountReqDone.value &&
+        postEnableUserAccountReqDone.value &&
         postDisableMfaReqDone.value)
     })
 
