@@ -210,8 +210,9 @@ async fn add_new_fee_per_hour_in_yen_into_document(
         "user_account_id": account_id,
         "careers": [],
         "fee_per_hour_in_yen": fee_per_hour_in_yen,
+        "is_bank_account_registered": false,
         "rating": null,
-        "is_bank_account_registered": null
+        "num_of_rated": 0
     });
     index_document(index_name, document_id, &new_document, &index_client)
         .await

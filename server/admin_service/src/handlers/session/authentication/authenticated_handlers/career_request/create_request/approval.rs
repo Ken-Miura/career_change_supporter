@@ -410,8 +410,9 @@ async fn add_new_document_with_career(
         }],
         "num_of_careers": num_of_careers,
         "fee_per_hour_in_yen": null,
-        "is_bank_account_registered": null,
-        "rating": null
+        "is_bank_account_registered": false,
+        "rating": null,
+        "num_of_rated": 0
     });
     index_document(index_name, document_id, &new_document, &client)
         .await
