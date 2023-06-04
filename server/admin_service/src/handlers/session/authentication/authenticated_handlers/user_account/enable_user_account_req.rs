@@ -1,9 +1,11 @@
 // Copyright 2023 Ken Miura
 
+use async_session::serde_json::{json, Value};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::opensearch::INDEX_NAME;
+use common::rating::calculate_average_rating;
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionError,
@@ -44,8 +46,16 @@ async fn handle_enable_user_account_req(
     let tenant_id = op.get_tenant_id(user_account_id).await?;
     let ratings = op.get_consultant_rating_info(user_account_id).await?; // user_account_id == consultant_id
 
+    let doc_value = generate_document_value(
+        user_account_id,
+        careers,
+        fee_per_hour_in_yen,
+        tenant_id,
+        ratings,
+    );
+
     let ua = op
-        .enable_user_account_req(user_account_id, INDEX_NAME.to_string())
+        .enable_user_account_req(user_account_id, INDEX_NAME.to_string(), doc_value)
         .await?;
     Ok((
         StatusCode::OK,
@@ -69,6 +79,7 @@ trait EnableUserAccountReqOperation {
         &self,
         user_account_id: i64,
         index_name: String,
+        doc_value: Option<Value>,
     ) -> Result<UserAccount, ErrResp>;
 }
 
@@ -99,6 +110,7 @@ impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
         &self,
         user_account_id: i64,
         index_name: String,
+        doc_value: Option<Value>,
     ) -> Result<UserAccount, ErrResp> {
         let index_client = self.index_client.clone();
         let result = self.pool
@@ -115,8 +127,9 @@ impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
                         }
                     })?;
 
-                    // 必要に応じてdocument作成
-                    //   documentを作成したらopensearchに入れる
+                    if let Some(dv) = doc_value {
+                      //   documentを作成したらopensearchに入れる
+                    }
 
                     Ok(result)
                 })
@@ -170,6 +183,50 @@ async fn find_user_model_with_exclusive_lock(
         }
     })?;
     Ok(user_model)
+}
+
+fn generate_document_value(
+    user_account_id: i64,
+    careers: Vec<Career>,
+    fee_per_hour_in_yen: Option<i32>,
+    tenant_id: Option<String>,
+    ratings: Vec<i16>,
+) -> Option<Value> {
+    if careers.is_empty()
+        && fee_per_hour_in_yen.is_none()
+        && tenant_id.is_none()
+        && ratings.is_empty()
+    {
+        return None;
+    }
+    let num_of_careers = careers.len();
+    let is_bank_account_registered = tenant_id.is_some();
+    let num_of_rated = ratings.len();
+    let average_rating = calculate_average_rating(ratings);
+    Some(json!({
+        "user_account_id": user_account_id,
+        "careers": [{
+            // "career_id": career_model.career_id,
+            // "company_name": career_model.company_name,
+            // "department_name": career_model.department_name,
+            // "office": career_model.office,
+            // "years_of_service": years_of_service,
+            // "employed": employed,
+            // "contract_type": career_model.contract_type,
+            // "profession": career_model.profession,
+            // "annual_income_in_man_yen": career_model.annual_income_in_man_yen,
+            // "is_manager": career_model.is_manager,
+            // "position_name": career_model.position_name,
+            // "is_new_graduate": career_model.is_new_graduate,
+            // "note": career_model.note,
+        }],
+        "num_of_careers": num_of_careers,
+        "fee_per_hour_in_yen": fee_per_hour_in_yen,
+        "is_bank_account_registered": is_bank_account_registered,
+        "rating": average_rating,
+        "num_of_rated": num_of_rated
+    }));
+    todo!()
 }
 
 #[cfg(test)]
