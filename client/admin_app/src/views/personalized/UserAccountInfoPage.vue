@@ -120,26 +120,26 @@
                 <li v-for="c in careers" v-bind:key="c.career_id" class="mt-4">
                   <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴番号{{ c.career_id }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ c.career.company_name }}</div>
-                    <div v-if="c.career.department_name !== null" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="c.career.department_name !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.department_name }}</div>
-                    <div v-if="c.career.office !== null" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="c.career.office !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.office }}</div>
-                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="mt-2 justify-self-start col-span-2">{{ c.career.career_start_date.year }}年{{ c.career.career_start_date.month }}月{{ c.career.career_start_date.day }}日</div>
-                    <div v-if="c.career.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="c.career.career_end_date !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.career_end_date.year }}年{{ c.career.career_end_date.month }}月{{ c.career.career_end_date.day }}日</div>
+                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="mt-2 justify-self-start col-span-2">{{ c.company_name }}</div>
+                    <div v-if="c.department_name !== null" class="mt-2 justify-self-start col-span-1">部署名</div><div v-if="c.department_name !== null" class="mt-2 justify-self-start col-span-2">{{ c.department_name }}</div>
+                    <div v-if="c.office !== null" class="mt-2 justify-self-start col-span-1">勤務地</div><div v-if="c.office !== null" class="mt-2 justify-self-start col-span-2">{{ c.office }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="mt-2 justify-self-start col-span-2">{{ c.career_start_date }}</div>
+                    <div v-if="c.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="c.career_end_date !== null" class="mt-2 justify-self-start col-span-2">{{ c.career_end_date }}</div>
                     <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
-                    <div v-if="c.career.contract_type === 'regular'" class="mt-2 justify-self-start col-span-2">正社員</div>
-                    <div v-else-if="c.career.contract_type === 'contract'" class="mt-2 justify-self-start col-span-2">契約社員</div>
-                    <div v-else-if="c.career.contract_type === 'other'" class="mt-2 justify-self-start col-span-2">その他</div>
+                    <div v-if="c.contract_type === 'regular'" class="mt-2 justify-self-start col-span-2">正社員</div>
+                    <div v-else-if="c.contract_type === 'contract'" class="mt-2 justify-self-start col-span-2">契約社員</div>
+                    <div v-else-if="c.contract_type === 'other'" class="mt-2 justify-self-start col-span-2">その他</div>
                     <div v-else class="mt-2 justify-self-start col-span-2">想定外の値です。管理者にご連絡下さい</div>
-                    <div v-if="c.career.profession !== null" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="c.career.profession !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.profession }}</div>
-                    <div v-if="c.career.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-1">年収（単位：万円）</div><div v-if="c.career.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.annual_income_in_man_yen }}</div>
+                    <div v-if="c.profession !== null" class="mt-2 justify-self-start col-span-1">職種</div><div v-if="c.profession !== null" class="mt-2 justify-self-start col-span-2">{{ c.profession }}</div>
+                    <div v-if="c.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-1">年収（単位：万円）</div><div v-if="c.annual_income_in_man_yen !== null" class="mt-2 justify-self-start col-span-2">{{ c.annual_income_in_man_yen }}</div>
                     <div class="mt-2 justify-self-start col-span-1">管理職区分</div>
-                    <div v-if="c.career.is_manager" class="mt-2 justify-self-start col-span-2">管理職</div>
+                    <div v-if="c.is_manager" class="mt-2 justify-self-start col-span-2">管理職</div>
                     <div v-else class="mt-2 justify-self-start col-span-2">非管理職</div>
-                    <div v-if="c.career.position_name !== null" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="c.career.position_name !== null" class="mt-2 justify-self-start col-span-2">{{ c.career.position_name }}</div>
+                    <div v-if="c.position_name !== null" class="mt-2 justify-self-start col-span-1">職位</div><div v-if="c.position_name !== null" class="mt-2 justify-self-start col-span-2">{{ c.position_name }}</div>
                     <div class="mt-2 justify-self-start col-span-1">入社区分</div>
-                    <div v-if="c.career.is_new_graduate" class="mt-2 justify-self-start col-span-2">新卒入社</div>
+                    <div v-if="c.is_new_graduate" class="mt-2 justify-self-start col-span-2">新卒入社</div>
                     <div v-else class="mt-2 justify-self-start col-span-2">中途入社</div>
-                    <div v-if="c.career.note !== null" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="c.career.note !== null" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ c.career.note }}</div>
+                    <div v-if="c.note !== null" class="mt-2 justify-self-start col-span-1">備考</div><div v-if="c.note !== null" class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ c.note }}</div>
                   </div>
                 </li>
               </ul>
@@ -579,7 +579,7 @@ import { Identity } from '@/util/personalized/Identity'
 import { useGetIdentityOptionByUserAccountId } from '@/util/personalized/user-account-info/identity/useGetIdentityOptionByUserAccountId'
 import { GetIdentityOptionByUserAccountIdResp } from '@/util/personalized/user-account-info/identity/GetIdentityOptionByUserAccountIdResp'
 import { useGetCareersByUserAccountId } from '@/util/personalized/user-account-info/career/useGetCareersByUserAccountId'
-import { CareersWithId } from '@/util/personalized/user-account-info/career/CareersWithId'
+import { CareerInfo } from '@/util/personalized/user-account-info/career/CareerInfo'
 import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-info/career/GetCareersByUserAccountIdResp'
 import { useGetFeePerHourInYenByUserAccountId } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/useGetFeePerHourInYenByUserAccountId'
 import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
@@ -802,7 +802,7 @@ export default defineComponent({
       identity.value = result.identity_option
     }
 
-    const careers = ref([] as CareersWithId[])
+    const careers = ref([] as CareerInfo[])
     const {
       getCareersByUserAccountIdDone,
       getCareersByUserAccountIdFunc

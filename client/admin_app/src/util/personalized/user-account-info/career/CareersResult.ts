@@ -1,5 +1,5 @@
-import { CareersWithId } from './CareersWithId'
+import { CareerInfo } from './CareerInfo'
 
 export type CareersResult = {
-  careers: CareersWithId[]
+  careers: CareerInfo[]
 }

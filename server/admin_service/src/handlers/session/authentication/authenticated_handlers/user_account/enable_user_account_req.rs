@@ -42,7 +42,7 @@ async fn handle_enable_user_account_req(
     let careers = op.get_careers(user_account_id).await?;
     let fee_per_hour_in_yen = op.get_fee_per_hour_in_yen(user_account_id).await?;
     let tenant_id = op.get_tenant_id(user_account_id).await?;
-    let rating_info = op.get_consultant_rating_info(user_account_id).await?; // user_account_id == consultant_id
+    let ratings = op.get_consultant_rating_info(user_account_id).await?; // user_account_id == consultant_id
 
     let ua = op
         .enable_user_account_req(user_account_id, INDEX_NAME.to_string())
