@@ -707,6 +707,7 @@ export default defineComponent({
       }
       const result = response.getUserAccountRetrievalResult()
       userAccount.value = result.user_account
+      accountEnableDisableConfirmation.value = false
     }
 
     const {
@@ -735,6 +736,7 @@ export default defineComponent({
       }
       const result = response.getUserAccountRetrievalResult()
       userAccount.value = result.user_account
+      accountEnableDisableConfirmation.value = false
     }
 
     const disableMfaConfirmation = ref(false)
