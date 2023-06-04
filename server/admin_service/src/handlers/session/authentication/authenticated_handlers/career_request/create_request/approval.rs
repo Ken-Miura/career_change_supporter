@@ -2,7 +2,7 @@
 
 use async_session::serde_json::json;
 use axum::{async_trait, Json};
-use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use chrono::{DateTime, FixedOffset, Utc};
 use common::{
     opensearch::{index_document, update_document, INDEX_NAME},
     smtp::{
@@ -30,7 +30,7 @@ use tracing::{error, info};
 use crate::{
     err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
-        admin::Admin,
+        admin::Admin, calculate_years_of_service,
         user_account_operation::find_user_account_model_by_user_account_id_with_shared_lock,
     },
 };
@@ -478,12 +478,6 @@ async fn insert_new_career_into_document(
             ErrRespStruct { err_resp: e }
         })?;
     Ok(())
-}
-
-fn calculate_years_of_service(from: NaiveDate, to: NaiveDate) -> i64 {
-    let days_in_year = 365; // 1日の誤差（1年が365日か366日か）は、年という単位に対して無視して良いと判断し、365日固定で計算する
-    let days_of_service = (to - from).num_days();
-    days_of_service / days_in_year
 }
 
 fn create_text() -> String {

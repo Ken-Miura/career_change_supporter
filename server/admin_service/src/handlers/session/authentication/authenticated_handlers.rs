@@ -1,6 +1,6 @@
 // Copyright 2023 Ken Miura
 
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 use common::{
     util::{Identity, Ymd},
     ErrResp,
@@ -56,6 +56,12 @@ fn convert_identity(identity_model: entity::identity::Model) -> Identity {
         address_line2: identity_model.address_line2,
         telephone_number: identity_model.telephone_number,
     }
+}
+
+fn calculate_years_of_service(from: NaiveDate, to: NaiveDate) -> i64 {
+    let days_in_year = 365; // 1日の誤差（1年が365日か366日か）は、年という単位に対して無視して良いと判断し、365日固定で計算する
+    let days_of_service = (to - from).num_days();
+    days_of_service / days_in_year
 }
 
 #[cfg(test)]

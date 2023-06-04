@@ -4,7 +4,8 @@ use async_session::serde_json::{json, Value};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use common::opensearch::INDEX_NAME;
+use chrono::{DateTime, FixedOffset, Utc};
+use common::opensearch::{index_document, INDEX_NAME};
 use common::rating::calculate_average_rating;
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
@@ -13,9 +14,10 @@ use entity::sea_orm::{
 };
 use opensearch::OpenSearch;
 use serde::Deserialize;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::authenticated_handlers::calculate_years_of_service;
 use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::find_user_account_model_by_user_account_id_with_exclusive_lock;
 
 use super::super::admin::Admin;
@@ -28,7 +30,8 @@ pub(crate) async fn post_enable_user_account_req(
     Json(req): Json<EnableUserAccountReq>,
 ) -> RespResult<UserAccountRetrievalResult> {
     let op = EnableUserAccountReqOperationImpl { pool, index_client };
-    handle_enable_user_account_req(req.user_account_id, &op).await
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    handle_enable_user_account_req(req.user_account_id, current_date_time, &op).await
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
@@ -38,6 +41,7 @@ pub(crate) struct EnableUserAccountReq {
 
 async fn handle_enable_user_account_req(
     user_account_id: i64,
+    current_date_time: DateTime<FixedOffset>,
     op: &impl EnableUserAccountReqOperation,
 ) -> RespResult<UserAccountRetrievalResult> {
     validate_account_id_is_positive(user_account_id)?;
@@ -52,6 +56,7 @@ async fn handle_enable_user_account_req(
         fee_per_hour_in_yen,
         tenant_id,
         ratings,
+        current_date_time,
     );
 
     let ua = op
@@ -128,7 +133,18 @@ impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
                     })?;
 
                     if let Some(dv) = doc_value {
-                      //   documentを作成したらopensearchに入れる
+                      let document_id = user_account_id; // document_idとしてuser_account_idを利用
+                      info!("create document (user_account_id: {}, document_id: {}) on enabling user account", user_account_id, document_id);
+                      let _ = insert_document(txn, user_account_id, document_id).await?;
+                      index_document(index_name.as_str(), document_id.to_string().as_str(), &dv, &index_client)
+                        .await
+                        .map_err(|e| {
+                          error!(
+                              "failed to index new document (user_account_id: {}, document_id: {})",
+                              user_account_id, document_id
+                          );
+                          ErrRespStruct { err_resp: e }
+                        })?;
                     }
 
                     Ok(result)
@@ -191,6 +207,7 @@ fn generate_document_value(
     fee_per_hour_in_yen: Option<i32>,
     tenant_id: Option<String>,
     ratings: Vec<i16>,
+    current_date_time: DateTime<FixedOffset>,
 ) -> Option<Value> {
     if careers.is_empty()
         && fee_per_hour_in_yen.is_none()
@@ -200,33 +217,72 @@ fn generate_document_value(
         return None;
     }
     let num_of_careers = careers.len();
+    let career_values = generate_career_values(careers, current_date_time);
     let is_bank_account_registered = tenant_id.is_some();
     let num_of_rated = ratings.len();
     let average_rating = calculate_average_rating(ratings);
     Some(json!({
         "user_account_id": user_account_id,
-        "careers": [{
-            // "career_id": career_model.career_id,
-            // "company_name": career_model.company_name,
-            // "department_name": career_model.department_name,
-            // "office": career_model.office,
-            // "years_of_service": years_of_service,
-            // "employed": employed,
-            // "contract_type": career_model.contract_type,
-            // "profession": career_model.profession,
-            // "annual_income_in_man_yen": career_model.annual_income_in_man_yen,
-            // "is_manager": career_model.is_manager,
-            // "position_name": career_model.position_name,
-            // "is_new_graduate": career_model.is_new_graduate,
-            // "note": career_model.note,
-        }],
+        "careers": career_values,
         "num_of_careers": num_of_careers,
         "fee_per_hour_in_yen": fee_per_hour_in_yen,
         "is_bank_account_registered": is_bank_account_registered,
         "rating": average_rating,
         "num_of_rated": num_of_rated
-    }));
-    todo!()
+    }))
+}
+
+fn generate_career_values(
+    careers: Vec<Career>,
+    current_date_time: DateTime<FixedOffset>,
+) -> Vec<Value> {
+    let mut values = Vec::with_capacity(careers.len());
+    for c in careers {
+        let years_of_service = if let Some(career_end_date) = c.career_end_date {
+            calculate_years_of_service(c.career_start_date, career_end_date)
+        } else {
+            calculate_years_of_service(c.career_start_date, current_date_time.naive_local().date())
+        };
+        let employed = c.career_end_date.is_none();
+        let value = json!({
+            "career_id": c.career_id,
+            "company_name": c.company_name,
+            "department_name": c.department_name,
+            "office": c.office,
+            "years_of_service": years_of_service,
+            "employed": employed,
+            "contract_type": c.contract_type,
+            "profession": c.profession,
+            "annual_income_in_man_yen": c.annual_income_in_man_yen,
+            "is_manager": c.is_manager,
+            "position_name": c.position_name,
+            "is_new_graduate": c.is_new_graduate,
+            "note": c.note,
+        });
+        values.push(value);
+    }
+    values
+}
+
+async fn insert_document(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+    document_id: i64,
+) -> Result<(), ErrRespStruct> {
+    let document = entity::document::ActiveModel {
+        user_account_id: Set(user_account_id),
+        document_id: Set(document_id),
+    };
+    let _ = document.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert document (user_account_id: {}, document_id: {}): {}",
+            user_account_id, document_id, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 #[cfg(test)]
