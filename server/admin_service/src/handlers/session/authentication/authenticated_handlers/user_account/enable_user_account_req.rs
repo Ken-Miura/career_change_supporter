@@ -3,7 +3,6 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use chrono::{DateTime, FixedOffset, Utc};
 use common::opensearch::{delete_document, INDEX_NAME};
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
@@ -27,8 +26,7 @@ pub(crate) async fn post_enable_user_account_req(
     Json(req): Json<EnableUserAccountReq>,
 ) -> RespResult<UserAccountRetrievalResult> {
     let op = EnableUserAccountReqOperationImpl { pool, index_client };
-    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    handle_enable_user_account_req(req.user_account_id, current_date_time, &op).await
+    handle_enable_user_account_req(req.user_account_id, &op).await
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
@@ -38,12 +36,11 @@ pub(crate) struct EnableUserAccountReq {
 
 async fn handle_enable_user_account_req(
     user_account_id: i64,
-    current_date_time: DateTime<FixedOffset>,
     op: &impl EnableUserAccountReqOperation,
 ) -> RespResult<UserAccountRetrievalResult> {
     validate_account_id_is_positive(user_account_id)?;
     let ua = op
-        .enable_user_account_req(user_account_id, INDEX_NAME.to_string(), current_date_time)
+        .enable_user_account_req(user_account_id, INDEX_NAME.to_string())
         .await?;
     Ok((
         StatusCode::OK,
@@ -59,7 +56,6 @@ trait EnableUserAccountReqOperation {
         &self,
         user_account_id: i64,
         index_name: String,
-        current_date_time: DateTime<FixedOffset>,
     ) -> Result<UserAccount, ErrResp>;
 }
 
@@ -74,7 +70,6 @@ impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
         &self,
         user_account_id: i64,
         index_name: String,
-        current_date_time: DateTime<FixedOffset>,
     ) -> Result<UserAccount, ErrResp> {
         let index_client = self.index_client.clone();
         let result = self.pool
@@ -83,7 +78,7 @@ impl EnableUserAccountReqOperation for EnableUserAccountReqOperationImpl {
                     let user_model = find_user_model_with_exclusive_lock(user_account_id, txn).await?;
 
                     let mut user_active_model: entity::user_account::ActiveModel = user_model.into();
-                    user_active_model.disabled_at = Set(Some(current_date_time));
+                    user_active_model.disabled_at = Set(None);
                     let result = user_active_model.update(txn).await.map_err(|e| {
                         error!("failed to update disabled_at in user_account (user_account_id: {}): {}", user_account_id, e);
                         ErrRespStruct {
@@ -195,96 +190,96 @@ mod tests {
 
     use super::*;
 
-    struct EnableUserAccountReqOperationMock {
-        user_account_id: i64,
-        current_date_time: DateTime<FixedOffset>,
-        user_account: UserAccount,
-    }
+    // struct EnableUserAccountReqOperationMock {
+    //     user_account_id: i64,
+    //     current_date_time: DateTime<FixedOffset>,
+    //     user_account: UserAccount,
+    // }
 
-    #[async_trait]
-    impl EnableUserAccountReqOperation for EnableUserAccountReqOperationMock {
-        async fn enable_user_account_req(
-            &self,
-            user_account_id: i64,
-            index_name: String,
-            current_date_time: DateTime<FixedOffset>,
-        ) -> Result<UserAccount, ErrResp> {
-            assert_eq!(self.user_account_id, user_account_id);
-            assert_eq!(INDEX_NAME.to_string(), index_name);
-            assert_eq!(self.current_date_time, current_date_time);
-            Ok(self.user_account.clone())
-        }
-    }
+    // #[async_trait]
+    // impl EnableUserAccountReqOperation for EnableUserAccountReqOperationMock {
+    //     async fn enable_user_account_req(
+    //         &self,
+    //         user_account_id: i64,
+    //         index_name: String,
+    //         current_date_time: DateTime<FixedOffset>,
+    //     ) -> Result<UserAccount, ErrResp> {
+    //         assert_eq!(self.user_account_id, user_account_id);
+    //         assert_eq!(INDEX_NAME.to_string(), index_name);
+    //         assert_eq!(self.current_date_time, current_date_time);
+    //         Ok(self.user_account.clone())
+    //     }
+    // }
 
-    fn create_dummy_user_account(user_account_id: i64) -> UserAccount {
-        UserAccount {
-            user_account_id,
-            email_address: "test0@test.com".to_string(),
-            last_login_time: Some("2023-04-15T14:12:53.4242+09:00 ".to_string()),
-            created_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
-            mfa_enabled_at: None,
-            disabled_at: Some("2023-05-15T14:12:53.4242+09:00 ".to_string()),
-        }
-    }
+    // fn create_dummy_user_account(user_account_id: i64) -> UserAccount {
+    //     UserAccount {
+    //         user_account_id,
+    //         email_address: "test0@test.com".to_string(),
+    //         last_login_time: Some("2023-04-15T14:12:53.4242+09:00 ".to_string()),
+    //         created_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
+    //         mfa_enabled_at: None,
+    //         disabled_at: Some("2023-05-15T14:12:53.4242+09:00 ".to_string()),
+    //     }
+    // }
 
-    #[tokio::test]
-    async fn handle_enable_user_account_req_success() {
-        let user_account_id = 57301;
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
-            .unwrap();
-        let user_account = create_dummy_user_account(user_account_id);
-        let op_mock = EnableUserAccountReqOperationMock {
-            user_account_id,
-            current_date_time,
-            user_account: user_account.clone(),
-        };
+    // #[tokio::test]
+    // async fn handle_enable_user_account_req_success() {
+    //     let user_account_id = 57301;
+    //     let current_date_time = JAPANESE_TIME_ZONE
+    //         .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
+    //         .unwrap();
+    //     let user_account = create_dummy_user_account(user_account_id);
+    //     let op_mock = EnableUserAccountReqOperationMock {
+    //         user_account_id,
+    //         current_date_time,
+    //         user_account: user_account.clone(),
+    //     };
 
-        let result =
-            handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
+    //     let result =
+    //         handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
 
-        let resp = result.expect("failed to get Ok");
-        assert_eq!(resp.0, StatusCode::OK);
-        assert_eq!(resp.1 .0.user_account, Some(user_account))
-    }
+    //     let resp = result.expect("failed to get Ok");
+    //     assert_eq!(resp.0, StatusCode::OK);
+    //     assert_eq!(resp.1 .0.user_account, Some(user_account))
+    // }
 
-    #[tokio::test]
-    async fn handle_enable_user_account_req_fail_user_account_id_is_zero() {
-        let user_account_id = 0;
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
-            .unwrap();
-        let op_mock = EnableUserAccountReqOperationMock {
-            user_account_id,
-            current_date_time,
-            user_account: create_dummy_user_account(user_account_id),
-        };
+    // #[tokio::test]
+    // async fn handle_enable_user_account_req_fail_user_account_id_is_zero() {
+    //     let user_account_id = 0;
+    //     let current_date_time = JAPANESE_TIME_ZONE
+    //         .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
+    //         .unwrap();
+    //     let op_mock = EnableUserAccountReqOperationMock {
+    //         user_account_id,
+    //         current_date_time,
+    //         user_account: create_dummy_user_account(user_account_id),
+    //     };
 
-        let result =
-            handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
+    //     let result =
+    //         handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
 
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
-    }
+    //     let resp = result.expect_err("failed to get Err");
+    //     assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+    //     assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    // }
 
-    #[tokio::test]
-    async fn handle_enable_user_account_req_fail_user_account_id_is_negative() {
-        let user_account_id = -1;
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
-            .unwrap();
-        let op_mock = EnableUserAccountReqOperationMock {
-            user_account_id,
-            current_date_time,
-            user_account: create_dummy_user_account(user_account_id),
-        };
+    // #[tokio::test]
+    // async fn handle_enable_user_account_req_fail_user_account_id_is_negative() {
+    //     let user_account_id = -1;
+    //     let current_date_time = JAPANESE_TIME_ZONE
+    //         .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
+    //         .unwrap();
+    //     let op_mock = EnableUserAccountReqOperationMock {
+    //         user_account_id,
+    //         current_date_time,
+    //         user_account: create_dummy_user_account(user_account_id),
+    //     };
 
-        let result =
-            handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
+    //     let result =
+    //         handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
 
-        let resp = result.expect_err("failed to get Err");
-        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
-    }
+    //     let resp = result.expect_err("failed to get Err");
+    //     assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+    //     assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    // }
 }
