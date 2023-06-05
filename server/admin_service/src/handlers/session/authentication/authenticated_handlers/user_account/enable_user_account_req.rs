@@ -153,102 +153,83 @@ async fn find_user_model_with_exclusive_lock(
 #[cfg(test)]
 mod tests {
 
-    // use chrono::TimeZone;
+    use crate::err::Code;
 
-    // use crate::err::Code;
+    use super::*;
 
-    // use super::*;
+    struct EnableUserAccountReqOperationMock {
+        user_account_id: i64,
+        user_account: UserAccount,
+    }
 
-    // struct EnableUserAccountReqOperationMock {
-    //     user_account_id: i64,
-    //     current_date_time: DateTime<FixedOffset>,
-    //     user_account: UserAccount,
-    // }
+    #[async_trait]
+    impl EnableUserAccountReqOperation for EnableUserAccountReqOperationMock {
+        async fn enable_user_account_req(
+            &self,
+            user_account_id: i64,
+            index_name: String,
+        ) -> Result<UserAccount, ErrResp> {
+            assert_eq!(self.user_account_id, user_account_id);
+            assert_eq!(INDEX_NAME.to_string(), index_name);
+            Ok(self.user_account.clone())
+        }
+    }
 
-    // #[async_trait]
-    // impl EnableUserAccountReqOperation for EnableUserAccountReqOperationMock {
-    //     async fn enable_user_account_req(
-    //         &self,
-    //         user_account_id: i64,
-    //         index_name: String,
-    //         current_date_time: DateTime<FixedOffset>,
-    //     ) -> Result<UserAccount, ErrResp> {
-    //         assert_eq!(self.user_account_id, user_account_id);
-    //         assert_eq!(INDEX_NAME.to_string(), index_name);
-    //         assert_eq!(self.current_date_time, current_date_time);
-    //         Ok(self.user_account.clone())
-    //     }
-    // }
+    fn create_dummy_user_account(user_account_id: i64) -> UserAccount {
+        UserAccount {
+            user_account_id,
+            email_address: "test0@test.com".to_string(),
+            last_login_time: Some("2023-04-15T14:12:53.4242+09:00 ".to_string()),
+            created_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
+            mfa_enabled_at: None,
+            disabled_at: None,
+        }
+    }
 
-    // fn create_dummy_user_account(user_account_id: i64) -> UserAccount {
-    //     UserAccount {
-    //         user_account_id,
-    //         email_address: "test0@test.com".to_string(),
-    //         last_login_time: Some("2023-04-15T14:12:53.4242+09:00 ".to_string()),
-    //         created_at: "2023-04-13T14:12:53.4242+09:00 ".to_string(),
-    //         mfa_enabled_at: None,
-    //         disabled_at: Some("2023-05-15T14:12:53.4242+09:00 ".to_string()),
-    //     }
-    // }
+    #[tokio::test]
+    async fn handle_disable_user_account_req_success() {
+        let user_account_id = 57301;
+        let user_account = create_dummy_user_account(user_account_id);
+        let op_mock = EnableUserAccountReqOperationMock {
+            user_account_id,
+            user_account: user_account.clone(),
+        };
 
-    // #[tokio::test]
-    // async fn handle_enable_user_account_req_success() {
-    //     let user_account_id = 57301;
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
-    //         .unwrap();
-    //     let user_account = create_dummy_user_account(user_account_id);
-    //     let op_mock = EnableUserAccountReqOperationMock {
-    //         user_account_id,
-    //         current_date_time,
-    //         user_account: user_account.clone(),
-    //     };
+        let result = handle_enable_user_account_req(user_account_id, &op_mock).await;
 
-    //     let result =
-    //         handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(resp.1 .0.user_account, Some(user_account))
+    }
 
-    //     let resp = result.expect("failed to get Ok");
-    //     assert_eq!(resp.0, StatusCode::OK);
-    //     assert_eq!(resp.1 .0.user_account, Some(user_account))
-    // }
+    #[tokio::test]
+    async fn handle_disable_user_account_req_fail_user_account_id_is_zero() {
+        let user_account_id = 0;
+        let op_mock = EnableUserAccountReqOperationMock {
+            user_account_id,
+            user_account: create_dummy_user_account(user_account_id),
+        };
 
-    // #[tokio::test]
-    // async fn handle_enable_user_account_req_fail_user_account_id_is_zero() {
-    //     let user_account_id = 0;
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
-    //         .unwrap();
-    //     let op_mock = EnableUserAccountReqOperationMock {
-    //         user_account_id,
-    //         current_date_time,
-    //         user_account: create_dummy_user_account(user_account_id),
-    //     };
+        let result = handle_enable_user_account_req(user_account_id, &op_mock).await;
 
-    //     let result =
-    //         handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    }
 
-    //     let resp = result.expect_err("failed to get Err");
-    //     assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-    //     assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
-    // }
+    #[tokio::test]
+    async fn handle_disable_user_account_req_fail_user_account_id_is_negative() {
+        let user_account_id = -1;
+        let op_mock = EnableUserAccountReqOperationMock {
+            user_account_id,
 
-    // #[tokio::test]
-    // async fn handle_enable_user_account_req_fail_user_account_id_is_negative() {
-    //     let user_account_id = -1;
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2022, 4, 5, 21, 0, 40)
-    //         .unwrap();
-    //     let op_mock = EnableUserAccountReqOperationMock {
-    //         user_account_id,
-    //         current_date_time,
-    //         user_account: create_dummy_user_account(user_account_id),
-    //     };
+            user_account: create_dummy_user_account(user_account_id),
+        };
 
-    //     let result =
-    //         handle_enable_user_account_req(user_account_id, current_date_time, &op_mock).await;
+        let result = handle_enable_user_account_req(user_account_id, &op_mock).await;
 
-    //     let resp = result.expect_err("failed to get Err");
-    //     assert_eq!(resp.0, StatusCode::BAD_REQUEST);
-    //     assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
-    // }
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::AccountIdIsNotPositive as u32)
+    }
 }
