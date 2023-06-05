@@ -9,29 +9,6 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
-/// 共有ロックを行い、documentテーブルからドキュメントIDを取得する
-///
-/// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる
-pub(super) async fn find_document_model_by_user_account_id_with_shared_lock(
-    txn: &DatabaseTransaction,
-    user_account_id: i64,
-) -> Result<Option<document::Model>, ErrRespStruct> {
-    let doc_option = document::Entity::find_by_id(user_account_id)
-        .lock_shared()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find document (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(doc_option)
-}
-
 /// 排他ロックを行い、documentテーブルからドキュメントIDを取得する
 ///
 /// opensearch呼び出しとセットで利用するため、トランザクション内で利用することが前提となる

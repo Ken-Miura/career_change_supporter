@@ -12,6 +12,7 @@ use crate::err::unexpected_err_resp;
 
 pub(crate) mod admin;
 pub(crate) mod career_request;
+mod document_operation;
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod identity_request;
 pub(crate) mod pagination;

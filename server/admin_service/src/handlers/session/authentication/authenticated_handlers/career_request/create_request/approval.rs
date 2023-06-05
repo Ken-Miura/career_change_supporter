@@ -18,8 +18,8 @@ use entity::{
     approved_create_career_req, career, create_career_req, document,
     sea_orm::{
         ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection,
-        DatabaseTransaction, EntityTrait, PaginatorTrait, QueryFilter, QuerySelect, Set,
-        TransactionError, TransactionTrait,
+        DatabaseTransaction, EntityTrait, PaginatorTrait, QueryFilter, Set, TransactionError,
+        TransactionTrait,
     },
 };
 use once_cell::sync::Lazy;
@@ -31,6 +31,7 @@ use crate::{
     err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, calculate_years_of_service,
+        document_operation::find_document_model_by_user_account_id_with_exclusive_lock,
         user_account_operation::find_user_account_model_by_user_account_id_with_shared_lock,
     },
 };
@@ -241,7 +242,7 @@ impl CreateCareerReqApprovalOperation for CreateCareerReqApprovalOperationImpl {
                         })?;
 
                     let document_option =
-                        find_document_model_by_user_account_id_with_shared_lock(txn, user_account_id).await?;
+                    find_document_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
                     if let Some(document) = document_option {
                         info!("update document for \"careers\" (user_account_id: {}, document_id: {}, career_model: {:?})", user_account_id, document.document_id, career_model);
                         let _ = insert_new_career_into_document(
@@ -331,26 +332,6 @@ fn generate_career_active_model(model: create_career_req::Model) -> career::Acti
         is_new_graduate: Set(model.is_new_graduate),
         note: Set(model.note),
     }
-}
-
-async fn find_document_model_by_user_account_id_with_shared_lock(
-    txn: &DatabaseTransaction,
-    user_account_id: i64,
-) -> Result<Option<document::Model>, ErrRespStruct> {
-    let doc_option = document::Entity::find_by_id(user_account_id)
-        .lock_shared()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find document (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(doc_option)
 }
 
 async fn insert_document(

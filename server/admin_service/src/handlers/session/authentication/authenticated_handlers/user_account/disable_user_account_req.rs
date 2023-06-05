@@ -7,14 +7,15 @@ use chrono::{DateTime, FixedOffset, Utc};
 use common::opensearch::{delete_document, INDEX_NAME};
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, ModelTrait,
-    QuerySelect, Set, TransactionError, TransactionTrait,
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, ModelTrait, Set, TransactionError,
+    TransactionTrait,
 };
 use opensearch::OpenSearch;
 use serde::Deserialize;
 use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::find_user_account_model_by_user_account_id_with_exclusive_lock;
 
 use super::super::admin::Admin;
@@ -91,7 +92,7 @@ impl DisableUserAccountReqOperation for DisableUserAccountReqOperationImpl {
                         }
                     })?;
 
-                    let doc_option = find_user_account_model_with_exclusive_lock(user_account_id, txn).await?;
+                    let doc_option = find_document_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
                     if let Some(doc) = doc_option {
                         info!("document (user_account_id: {}, document_id: {}) exists and will be deleted", user_account_id, doc.document_id);
                         let document_id = doc.document_id.to_string();
@@ -164,26 +165,6 @@ async fn find_user_model_with_exclusive_lock(
         }
     })?;
     Ok(user_model)
-}
-
-async fn find_user_account_model_with_exclusive_lock(
-    user_account_id: i64,
-    txn: &DatabaseTransaction,
-) -> Result<Option<entity::document::Model>, ErrRespStruct> {
-    let doc_option = entity::document::Entity::find_by_id(user_account_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find document (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(doc_option)
 }
 
 #[cfg(test)]

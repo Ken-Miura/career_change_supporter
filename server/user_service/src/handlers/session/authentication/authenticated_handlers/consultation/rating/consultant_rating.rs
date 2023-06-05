@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_shared_lock;
+use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
@@ -290,11 +290,11 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                         return Ok(());
                     }
 
-                    let doc_option = find_document_model_by_user_account_id_with_shared_lock(txn, consultant_id).await?;
+                    let doc_option = find_document_model_by_user_account_id_with_exclusive_lock(txn, consultant_id).await?;
                     let doc = match doc_option {
                         Some(d) => d,
                         None => {
-                            // アカウントを排他ロックし、Disabledでないことを確認済みのため、documentが存在しないことはないはず。従ってエラーログとして記録する。
+                            // アカウントを排他ロックし、削除されていないことを確認済みのため、documentが存在しないことはないはず。従ってエラーログとして記録する。
                             // 一方で、ユーザーにまでこのエラーを返すのは適切でないため、Okとして処理する。
                             // エラーを返すのが適切ではないと考えたのは次の通り
                             // - このエラーを解消しないとユーザーは正しく操作を終了できないわけではない

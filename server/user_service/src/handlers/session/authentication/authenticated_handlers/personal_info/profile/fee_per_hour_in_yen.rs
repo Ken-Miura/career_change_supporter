@@ -17,7 +17,7 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
-use crate::handlers::session::authentication::authenticated_handlers::document_operation::{find_document_model_by_user_account_id_with_shared_lock, insert_document};
+use crate::handlers::session::authentication::authenticated_handlers::document_operation::{find_document_model_by_user_account_id_with_exclusive_lock, insert_document};
 use crate::handlers::session::authentication::authenticated_handlers::fee_per_hour_in_yen_range::{
     MAX_FEE_PER_HOUR_IN_YEN, MIN_FEE_PER_HOUR_IN_YEN,
 };
@@ -131,7 +131,7 @@ impl SubmitFeePerHourInYenOperation for SubmitFeePerHourInYenOperationImpl {
                     }
 
                     let document_option =
-                        find_document_model_by_user_account_id_with_shared_lock(txn, account_id).await?;
+                        find_document_model_by_user_account_id_with_exclusive_lock(txn, account_id).await?;
                     if let Some(document) = document_option {
                         let document_id = document.document_id;
                         info!("update document for \"fee_per_hour_in_yen\" (account_id: {}, document_id: {}, fee_per_hour_in_yen: {})", account_id, document_id, fee_per_hour_in_yen);

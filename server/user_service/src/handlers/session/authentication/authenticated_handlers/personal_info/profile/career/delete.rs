@@ -18,7 +18,7 @@ use tracing::error;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
-use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_shared_lock;
+use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 
 pub(crate) async fn career(
     User { user_info }: User,
@@ -130,7 +130,7 @@ impl DeleteCareerOperation for DeleteCareerOperationImpl {
                         })?;
 
                     let document_option =
-                        find_document_model_by_user_account_id_with_shared_lock(txn, account_id)
+                        find_document_model_by_user_account_id_with_exclusive_lock(txn, account_id)
                             .await?;
                     let document = document_option.ok_or_else(|| {
                         error!("no document found (user_account_id: {})", account_id);
