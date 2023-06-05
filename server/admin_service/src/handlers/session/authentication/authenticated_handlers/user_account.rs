@@ -20,17 +20,18 @@ pub(crate) mod tenant_id_by_user_account_id;
 pub(crate) mod user_account_retrieval_by_email_address;
 pub(crate) mod user_account_retrieval_by_user_account_id;
 
+use async_session::serde_json::json;
 use axum::{http::StatusCode, Json};
-use chrono::NaiveDate;
 use common::{
+    opensearch::update_document,
     rating::{calculate_average_rating, round_rating_to_one_decimal_places},
-    ApiError, ErrResp,
+    ApiError, ErrResp, ErrRespStruct,
 };
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::err::Code;
 
 #[derive(Deserialize)]
 pub(crate) struct UserAccountIdQuery {
@@ -123,130 +124,26 @@ fn calculate_rating_and_count(ratings: Vec<i16>) -> (Option<String>, i32) {
     }
 }
 
-// career_idが必要になるため、共通モジュールのCareerは使わない
-struct Career {
-    career_id: i64,
-    user_account_id: i64,
-    company_name: String,
-    department_name: Option<String>,
-    office: Option<String>,
-    career_start_date: NaiveDate,
-    career_end_date: Option<NaiveDate>,
-    contract_type: String,
-    profession: Option<String>,
-    annual_income_in_man_yen: Option<i32>,
-    is_manager: bool,
-    position_name: Option<String>,
-    is_new_graduate: bool,
-    note: Option<String>,
-}
-
-async fn get_careers(
-    user_account_id: i64,
-    pool: &DatabaseConnection,
-) -> Result<Vec<Career>, ErrResp> {
-    let careers = entity::career::Entity::find()
-        .filter(entity::career::Column::UserAccountId.eq(user_account_id))
-        .all(pool)
+async fn update_disabled_on_document(
+    index_name: &str,
+    document_id: &str,
+    disabled: bool,
+    index_client: OpenSearch,
+) -> Result<(), ErrRespStruct> {
+    let value = format!("ctx._source.disabled = {}", disabled);
+    let script = json!({
+        "script": {
+            "source": value
+        }
+    });
+    update_document(index_name, document_id, &script, &index_client)
         .await
         .map_err(|e| {
             error!(
-                "failed to filter career (user_account_id: {}): {}",
-                user_account_id, e
+                "failed to update disabled on document (document_id: {}, disabled: {})",
+                document_id, disabled
             );
-            unexpected_err_resp()
+            ErrRespStruct { err_resp: e }
         })?;
-    Ok(careers
-        .into_iter()
-        .map(|m| Career {
-            career_id: m.career_id,
-            user_account_id: m.user_account_id,
-            company_name: m.company_name,
-            department_name: m.department_name,
-            office: m.office,
-            career_start_date: m.career_start_date,
-            career_end_date: m.career_end_date,
-            contract_type: m.contract_type,
-            profession: m.profession,
-            annual_income_in_man_yen: m.annual_income_in_man_yen,
-            is_manager: m.is_manager,
-            position_name: m.position_name,
-            is_new_graduate: m.is_new_graduate,
-            note: m.note,
-        })
-        .collect::<Vec<Career>>())
-}
-
-async fn get_fee_per_hour_in_yen(
-    user_account_id: i64,
-    pool: &DatabaseConnection,
-) -> Result<Option<i32>, ErrResp> {
-    let result = entity::consulting_fee::Entity::find_by_id(user_account_id)
-        .one(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find consulting_fee (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            unexpected_err_resp()
-        })?;
-    Ok(result.map(|m| m.fee_per_hour_in_yen))
-}
-
-async fn get_tenant_id(
-    user_account_id: i64,
-    pool: &DatabaseConnection,
-) -> Result<Option<String>, ErrResp> {
-    let result = entity::tenant::Entity::find_by_id(user_account_id)
-        .one(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find tenant (user_account_id: {}): {}",
-                user_account_id, e
-            );
-            unexpected_err_resp()
-        })?;
-    Ok(result.map(|m| m.tenant_id))
-}
-
-async fn get_consultant_rating_info(
-    consultant_id: i64,
-    pool: &DatabaseConnection,
-) -> Result<Vec<i16>, ErrResp> {
-    let models = entity::consultation::Entity::find()
-        .filter(entity::consultation::Column::ConsultantId.eq(consultant_id))
-        .find_with_related(entity::consultant_rating::Entity)
-        .filter(entity::consultant_rating::Column::Rating.is_not_null())
-        .all(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to filter consultant_rating (consultant_id: {}): {}",
-                consultant_id, e
-            );
-            unexpected_err_resp()
-        })?;
-    models
-        .into_iter()
-        .map(|m| {
-            // consultationとconsultant_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
-            let ur = m.1.get(0).ok_or_else(|| {
-                error!(
-                    "failed to find consultant_rating (consultation_id: {})",
-                    m.0.consultation_id
-                );
-                unexpected_err_resp()
-            })?;
-            let r = ur.rating.ok_or_else(|| {
-                error!(
-                    "rating is null (consultant_rating_id: {}, consultant_id: {})",
-                    ur.consultant_rating_id, m.0.consultant_id
-                );
-                unexpected_err_resp()
-            })?;
-            Ok(r)
-        })
-        .collect::<Result<Vec<i16>, ErrResp>>()
+    Ok(())
 }

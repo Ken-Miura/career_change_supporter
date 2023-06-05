@@ -212,7 +212,8 @@ async fn add_new_fee_per_hour_in_yen_into_document(
         "fee_per_hour_in_yen": fee_per_hour_in_yen,
         "is_bank_account_registered": false,
         "rating": null,
-        "num_of_rated": 0
+        "num_of_rated": 0,
+        "disabled": false
     });
     index_document(index_name, document_id, &new_document, &index_client)
         .await

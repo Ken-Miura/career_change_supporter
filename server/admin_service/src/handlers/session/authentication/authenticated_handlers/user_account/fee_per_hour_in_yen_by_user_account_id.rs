@@ -4,8 +4,11 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::{ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::Serialize;
+use tracing::error;
+
+use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
 use super::{validate_account_id_is_positive, UserAccountIdQuery};
@@ -59,7 +62,17 @@ impl FeePerHourInYenOperation for FeePerHourInYenOperationImpl {
         &self,
         user_account_id: i64,
     ) -> Result<Option<i32>, ErrResp> {
-        super::get_fee_per_hour_in_yen(user_account_id, &self.pool).await
+        let result = entity::consulting_fee::Entity::find_by_id(user_account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find consulting_fee (user_account_id: {}): {}",
+                    user_account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(result.map(|m| m.fee_per_hour_in_yen))
     }
 }
 

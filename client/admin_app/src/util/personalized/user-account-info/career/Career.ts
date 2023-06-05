@@ -1,4 +1,4 @@
-export type CareerInfo = {
+export type Career = {
   /* eslint-disable camelcase */
   career_id: number,
   user_account_id: number,

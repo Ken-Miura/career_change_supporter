@@ -482,7 +482,8 @@ async fn add_new_document_with_is_bank_account_registered(
         "fee_per_hour_in_yen": null,
         "is_bank_account_registered": true,
         "rating": null,
-        "num_of_rated": 0
+        "num_of_rated": 0,
+        "disabled": false
     });
     index_document(index_name, document_id, &new_document, &index_client)
         .await

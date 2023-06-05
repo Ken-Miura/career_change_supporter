@@ -215,6 +215,9 @@
       },
       "num_of_rated": {
         "type": "integer"
+      },
+      "disabled": {
+        "type": "boolean"
       }
     }
   }

@@ -4,8 +4,11 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use common::{ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::Serialize;
+use tracing::error;
+
+use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
 use super::{validate_account_id_is_positive, UserAccountIdQuery};
@@ -22,13 +25,12 @@ pub(crate) async fn get_careers_by_user_account_id(
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CareersResult {
-    careers: Vec<CareerInfo>,
+    careers: Vec<Career>,
 }
 
-// NaiveDateを使わずに自身でシリアライズを制御するため
-// career_start_dateとcareer_end_dateにStringを指定した下記の型を使う
+// career_idが必要になるため、共通モジュールのCareerは使わない
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
-struct CareerInfo {
+struct Career {
     career_id: i64,
     user_account_id: i64,
     company_name: String,
@@ -59,7 +61,7 @@ trait CareersOperation {
     async fn get_careers_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<CareerInfo>, ErrResp>;
+    ) -> Result<Vec<Career>, ErrResp>;
 }
 
 struct CareersOperationImpl {
@@ -71,11 +73,21 @@ impl CareersOperation for CareersOperationImpl {
     async fn get_careers_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<CareerInfo>, ErrResp> {
-        let careers = super::get_careers(user_account_id, &self.pool).await?;
+    ) -> Result<Vec<Career>, ErrResp> {
+        let careers = entity::career::Entity::find()
+            .filter(entity::career::Column::UserAccountId.eq(user_account_id))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter career (user_account_id: {}): {}",
+                    user_account_id, e
+                );
+                unexpected_err_resp()
+            })?;
         Ok(careers
             .into_iter()
-            .map(|m| CareerInfo {
+            .map(|m| Career {
                 career_id: m.career_id,
                 user_account_id: m.user_account_id,
                 company_name: m.company_name,
@@ -93,7 +105,7 @@ impl CareersOperation for CareersOperationImpl {
                 is_new_graduate: m.is_new_graduate,
                 note: m.note,
             })
-            .collect::<Vec<CareerInfo>>())
+            .collect::<Vec<Career>>())
     }
 }
 
@@ -109,7 +121,7 @@ mod tests {
 
     struct CareersOperationMock {
         user_account_id: i64,
-        careers: Vec<CareerInfo>,
+        careers: Vec<Career>,
     }
 
     #[async_trait]
@@ -117,7 +129,7 @@ mod tests {
         async fn get_careers_by_user_account_id(
             &self,
             user_account_id: i64,
-        ) -> Result<Vec<CareerInfo>, ErrResp> {
+        ) -> Result<Vec<Career>, ErrResp> {
             if self.user_account_id != user_account_id {
                 return Ok(vec![]);
             }
@@ -125,8 +137,8 @@ mod tests {
         }
     }
 
-    fn create_dummy_career_info1(user_account_id: i64) -> CareerInfo {
-        CareerInfo {
+    fn create_dummy_career_info1(user_account_id: i64) -> Career {
+        Career {
             career_id: 1,
             user_account_id,
             company_name: "テスト１株式会社".to_string(),
@@ -144,8 +156,8 @@ mod tests {
         }
     }
 
-    fn create_dummy_career_info2(user_account_id: i64) -> CareerInfo {
-        CareerInfo {
+    fn create_dummy_career_info2(user_account_id: i64) -> Career {
+        Career {
             career_id: 2,
             user_account_id,
             company_name: "テスト２株式会社".to_string(),
@@ -211,7 +223,7 @@ mod tests {
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(Vec::<CareerInfo>::with_capacity(0), resp.1 .0.careers);
+        assert_eq!(Vec::<Career>::with_capacity(0), resp.1 .0.careers);
     }
 
     #[tokio::test]

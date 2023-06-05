@@ -4,10 +4,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::opensearch::{delete_document, INDEX_NAME};
+use common::opensearch::INDEX_NAME;
 use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, ModelTrait, Set, TransactionError,
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionError,
     TransactionTrait,
 };
 use opensearch::OpenSearch;
@@ -16,6 +16,7 @@ use tracing::{error, info};
 
 use crate::err::unexpected_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::update_disabled_on_document;
 use crate::handlers::session::authentication::authenticated_handlers::user_account_operation::find_user_account_model_by_user_account_id_with_exclusive_lock;
 
 use super::super::admin::Admin;
@@ -94,23 +95,9 @@ impl DisableUserAccountReqOperation for DisableUserAccountReqOperationImpl {
 
                     let doc_option = find_document_model_by_user_account_id_with_exclusive_lock(txn, user_account_id).await?;
                     if let Some(doc) = doc_option {
-                        info!("document (user_account_id: {}, document_id: {}) exists and will be deleted", user_account_id, doc.document_id);
+                        info!("document (user_account_id: {}, document_id: {}) exists and set disabled to true on document", user_account_id, doc.document_id);
                         let document_id = doc.document_id.to_string();
-                        let _ = doc.delete(txn).await.map_err(|e| {
-                            error!("failed to delete document (user_account_id: {}): {}", user_account_id, e);
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                        delete_document(index_name.as_str(), document_id.as_str(), &index_client).await.map_err(|e|{
-                            error!(
-                              "failed to delete document (user_account_id: {}, index_name: {}, document_id: {}) from Opensearch",
-                              user_account_id, index_name, document_id
-                            );
-                            ErrRespStruct {
-                              err_resp: e,
-                            }
-                          })?;
+                        update_disabled_on_document(&index_name, &document_id, true, index_client).await?;
                     }
 
                     Ok(result)

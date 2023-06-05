@@ -162,6 +162,11 @@ fn create_query_json(account_id_for_consultant: i64, account_id: i64) -> Value {
                         "term": {
                             "is_bank_account_registered": true
                         }
+                    },
+                    {
+                        "term": {
+                            "disabled": false
+                        }
                     }
                 ],
                 "must_not": [
@@ -530,8 +535,10 @@ mod tests {
                                   ],
                                   "fee_per_hour_in_yen" : 3000,
                                   "is_bank_account_registered" : true,
+                                  "disabled": false,
                                   "num_of_careers" : 1,
                                   "rating" : null,
+                                  "num_of_rated": 0,
                                   "user_account_id" : 3
                                 }
                               }
@@ -628,6 +635,7 @@ mod tests {
                                   ],
                                   "fee_per_hour_in_yen" : 3000,
                                   "is_bank_account_registered" : true,
+                                  "disabled": false,
                                   "num_of_careers" : 1,
                                   "num_of_rated" : 43,
                                   "rating" : 4.2,
@@ -711,7 +719,9 @@ mod tests {
                                   ],
                                   "fee_per_hour_in_yen" : 4500,
                                   "is_bank_account_registered" : true,
+                                  "disabled": false,
                                   "rating" : null,
+                                  "num_of_rated": 0,
                                   "user_account_id" : 5,
                                   "num_of_careers" : 1
                                 }
@@ -899,7 +909,9 @@ mod tests {
                                   ],
                                   "fee_per_hour_in_yen" : 4500,
                                   "is_bank_account_registered" : true,
+                                  "disabled": false,
                                   "rating" : null,
+                                  "num_of_rated": 0,
                                   "user_account_id" : 5,
                                   "num_of_careers" : 8
                                 }
@@ -1123,7 +1135,9 @@ mod tests {
                                   ],
                                   "fee_per_hour_in_yen" : 4500,
                                   "is_bank_account_registered" : true,
+                                  "disabled": false,
                                   "rating" : null,
+                                  "num_of_rated": 0,
                                   "user_account_id" : 5,
                                   "num_of_careers" : 3
                                 }

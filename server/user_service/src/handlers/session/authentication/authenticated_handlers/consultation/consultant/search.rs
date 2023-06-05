@@ -800,6 +800,11 @@ fn generate_query_json(account_id: i64, params: Vec<Value>) -> Value {
                         "term": {
                             "is_bank_account_registered": true
                         }
+                    },
+                    {
+                        "term": {
+                            "disabled": false
+                        }
                     }
                 ],
                 "must_not": [
@@ -1050,8 +1055,10 @@ mod tests {
                                     ],
                                     "fee_per_hour_in_yen" : 4500,
                                     "is_bank_account_registered" : true,
+                                    "disabled" : false,
                                     "num_of_careers" : 1,
                                     "rating" : null,
+                                    "num_of_rated": 0,
                                     "user_account_id" : 2
                                   }
                                 }
@@ -1152,8 +1159,10 @@ mod tests {
                                     ],
                                     "fee_per_hour_in_yen" : 4500,
                                     "is_bank_account_registered" : true,
+                                    "disabled" : false,
                                     "num_of_careers" : 1,
                                     "rating" : null,
+                                    "num_of_rated": 0,
                                     "user_account_id" : 2
                                   }
                                 }

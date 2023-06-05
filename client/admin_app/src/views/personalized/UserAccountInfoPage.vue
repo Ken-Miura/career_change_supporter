@@ -579,7 +579,7 @@ import { Identity } from '@/util/personalized/Identity'
 import { useGetIdentityOptionByUserAccountId } from '@/util/personalized/user-account-info/identity/useGetIdentityOptionByUserAccountId'
 import { GetIdentityOptionByUserAccountIdResp } from '@/util/personalized/user-account-info/identity/GetIdentityOptionByUserAccountIdResp'
 import { useGetCareersByUserAccountId } from '@/util/personalized/user-account-info/career/useGetCareersByUserAccountId'
-import { CareerInfo } from '@/util/personalized/user-account-info/career/CareerInfo'
+import { Career } from '@/util/personalized/user-account-info/career/Career'
 import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-info/career/GetCareersByUserAccountIdResp'
 import { useGetFeePerHourInYenByUserAccountId } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/useGetFeePerHourInYenByUserAccountId'
 import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
@@ -830,7 +830,7 @@ export default defineComponent({
       identity.value = result.identity_option
     }
 
-    const careers = ref([] as CareerInfo[])
+    const careers = ref([] as Career[])
     const {
       getCareersByUserAccountIdDone,
       getCareersByUserAccountIdFunc
