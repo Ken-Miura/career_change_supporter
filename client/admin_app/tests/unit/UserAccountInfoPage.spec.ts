@@ -1,4 +1,4 @@
-describe('ConsultationRelatedInfoPage.vue', () => {
+describe('UserAccountInfoPage.vue', () => {
   beforeEach(() => {
     console.log('beforeEach')
   })
