@@ -1006,7 +1006,7 @@ export default defineComponent({
     }
 
     const moveToConsultationRelatedInfoPage = async (consultationId: number) => {
-      console.log(consultationId) // 決済、返金、評価状況を表示するページへ遷移する
+      await router.push({ name: 'ConsultationRelatedInfoPage', params: { consultation_id: consultationId } })
     }
 
     const ratingInfoAsUser = ref({ average_rating: null, count: 0 } as RatingInfoResult)
