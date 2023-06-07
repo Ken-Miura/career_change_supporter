@@ -126,12 +126,12 @@ jest.mock('@/util/personalized/user-account-info/identity-creation/useGetIdentit
   })
 }))
 
-const getIdentityCreationRejectionRecordDoneMock = ref(true)
-const getIdentityCreationRejectionRecordFuncMock = jest.fn()
-jest.mock('@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationRejectionRecord', () => ({
-  useGetIdentityCreationRejectionRecord: () => ({
-    getIdentityCreationRejectionRecordDone: getIdentityCreationRejectionRecordDoneMock,
-    getIdentityCreationRejectionRecordFunc: getIdentityCreationRejectionRecordFuncMock
+const getIdentityCreationRejectionRecordsDoneMock = ref(true)
+const getIdentityCreationRejectionRecordsFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationRejectionRecords', () => ({
+  useGetIdentityCreationRejectionRecords: () => ({
+    getIdentityCreationRejectionRecordsDone: getIdentityCreationRejectionRecordsDoneMock,
+    getIdentityCreationRejectionRecordsFunc: getIdentityCreationRejectionRecordsFuncMock
   })
 }))
 
@@ -165,8 +165,8 @@ describe('UserAccountInfoPage.vue', () => {
     getRatingInfoByConsultantIdFuncMock.mockReset()
     getIdentityCreationApprovalRecordDoneMock.value = true
     getIdentityCreationApprovalRecordFuncMock.mockReset()
-    getIdentityCreationRejectionRecordDoneMock.value = true
-    getIdentityCreationRejectionRecordFuncMock.mockReset()
+    getIdentityCreationRejectionRecordsDoneMock.value = true
+    getIdentityCreationRejectionRecordsFuncMock.mockReset()
   })
 
   it('tests', () => {

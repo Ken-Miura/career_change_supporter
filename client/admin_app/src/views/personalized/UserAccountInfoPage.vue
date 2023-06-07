@@ -607,8 +607,8 @@ import { IdentityCreationApprovalRecord } from '@/util/personalized/user-account
 import { useGetIdentityCreationApprovalRecord } from '@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationApprovalRecord'
 import { GetIdentityCreationApprovalRecordResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationApprovalRecordResp'
 import { IdentityCreationRejectionRecord } from '@/util/personalized/user-account-info/identity-creation/IdentityCreationRejectionRecord'
-import { useGetIdentityCreationRejectionRecord } from '@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationRejectionRecord'
-import { GetIdentityCreationRejectionRecordResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationRejectionRecordResp'
+import { useGetIdentityCreationRejectionRecords } from '@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationRejectionRecords'
+import { GetIdentityCreationRejectionRecordsResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationRejectionRecordsResp'
 import { IdentityUpdateRejectionRecord } from '@/util/personalized/user-account-info/identity-update/IdentityUpdateRejectionRecord'
 import { useGetIdentityUpdateRejectionRecord } from '@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateRejectionRecord'
 import { GetIdentityUpdateRejectionRecordResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateRejectionRecordResp'
@@ -1091,14 +1091,14 @@ export default defineComponent({
 
     const identityCreationRejectionRecords = ref([] as IdentityCreationRejectionRecord[])
     const {
-      getIdentityCreationRejectionRecordDone,
-      getIdentityCreationRejectionRecordFunc
-    } = useGetIdentityCreationRejectionRecord()
+      getIdentityCreationRejectionRecordsDone,
+      getIdentityCreationRejectionRecordsFunc
+    } = useGetIdentityCreationRejectionRecords()
     const identityCreationRejectionRecordsErrMessage = ref(null as string | null)
 
     const findIdentityCreationRejectionRecords = async (accountId: number) => {
-      const response = await getIdentityCreationRejectionRecordFunc(accountId.toString())
-      if (!(response instanceof GetIdentityCreationRejectionRecordResp)) {
+      const response = await getIdentityCreationRejectionRecordsFunc(accountId.toString())
+      if (!(response instanceof GetIdentityCreationRejectionRecordsResp)) {
         if (!(response instanceof ApiErrorResp)) {
           throw new Error(`unexpected result on getting request detail: ${response}`)
         }
@@ -1110,7 +1110,7 @@ export default defineComponent({
         identityCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
         return
       }
-      const result = response.getIdentityCreationRejectionRecordResult()
+      const result = response.getIdentityCreationRejectionRecordsResult()
       identityCreationRejectionRecords.value = result.rejection_records
     }
 
@@ -1285,7 +1285,7 @@ export default defineComponent({
         getRatingInfoByUserAccountIdDone.value &&
         getRatingInfoByConsultantIdDone.value &&
         getIdentityCreationApprovalRecordDone.value &&
-        getIdentityCreationRejectionRecordDone.value &&
+        getIdentityCreationRejectionRecordsDone.value &&
         getIdentityUpdateApprovalRecordDone.value &&
         getIdentityUpdateRejectionRecordDone.value &&
         getCareerCreationApprovalRecordDone.value &&
