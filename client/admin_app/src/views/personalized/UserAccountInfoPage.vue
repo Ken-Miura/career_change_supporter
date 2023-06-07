@@ -585,7 +585,7 @@ import { useGetFeePerHourInYenByUserAccountId } from '@/util/personalized/user-a
 import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
 import { useGetTenantIdByUserAccountId } from '@/util/personalized/user-account-info/tenant/useGetTenantIdByUserAccountId'
 import { GetTenantIdByUserAccountIdResp } from '@/util/personalized/user-account-info/tenant/GetTenantIdByUserAccountIdResp'
-import { useGetAgreementsByUserAccountId } from '@/util/personalized/user-account-info/terms-of-use/useGetCareersByUserAccountId'
+import { useGetAgreementsByUserAccountId } from '@/util/personalized/user-account-info/terms-of-use/useGetAgreementsByUserAccountId'
 import { Agreement } from '@/util/personalized/user-account-info/terms-of-use/Agreement'
 import { GetAgreementsByUserAccountIdResp } from '@/util/personalized/user-account-info/terms-of-use/GetAgreementsByUserAccountIdResp'
 import { GetConsultationReqsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByUserAccountIdResp'
