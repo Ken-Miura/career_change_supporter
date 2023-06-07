@@ -135,6 +135,42 @@ jest.mock('@/util/personalized/user-account-info/identity-creation/useGetIdentit
   })
 }))
 
+const getIdentityUpdateApprovalRecordsDoneMock = ref(true)
+const getIdentityUpdateApprovalRecordsFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateApprovalRecords', () => ({
+  useGetIdentityUpdateApprovalRecords: () => ({
+    getIdentityUpdateApprovalRecordsDone: getIdentityUpdateApprovalRecordsDoneMock,
+    getIdentityUpdateApprovalRecordsFunc: getIdentityUpdateApprovalRecordsFuncMock
+  })
+}))
+
+const getIdentityUpdateRejectionRecordsDoneMock = ref(true)
+const getIdentityUpdateRejectionRecordsFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateRejectionRecords', () => ({
+  useGetIdentityUpdateRejectionRecords: () => ({
+    getIdentityUpdateRejectionRecordsDone: getIdentityUpdateRejectionRecordsDoneMock,
+    getIdentityUpdateRejectionRecordsFunc: getIdentityUpdateRejectionRecordsFuncMock
+  })
+}))
+
+const getCareerCreationApprovalRecordsDoneMock = ref(true)
+const getCareerCreationApprovalRecordsFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/career-creation/useGetCareerCreationApprovalRecords', () => ({
+  useGetCareerCreationApprovalRecords: () => ({
+    getCareerCreationApprovalRecordsDone: getCareerCreationApprovalRecordsDoneMock,
+    getCareerCreationApprovalRecordsFunc: getCareerCreationApprovalRecordsFuncMock
+  })
+}))
+
+const getCareerCreationRejectionRecordsDoneMock = ref(true)
+const getCareerCreationRejectionRecordsFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/career-creation/useGetCareerCreationRejectionRecords', () => ({
+  useGetCareerCreationRejectionRecords: () => ({
+    getCareerCreationRejectionRecordsDone: getCareerCreationRejectionRecordsDoneMock,
+    getCareerCreationRejectionRecordsFunc: getCareerCreationRejectionRecordsFuncMock
+  })
+}))
+
 describe('UserAccountInfoPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -167,6 +203,14 @@ describe('UserAccountInfoPage.vue', () => {
     getIdentityCreationApprovalRecordFuncMock.mockReset()
     getIdentityCreationRejectionRecordsDoneMock.value = true
     getIdentityCreationRejectionRecordsFuncMock.mockReset()
+    getIdentityUpdateApprovalRecordsDoneMock.value = true
+    getIdentityUpdateApprovalRecordsFuncMock.mockReset()
+    getIdentityUpdateRejectionRecordsDoneMock.value = true
+    getIdentityUpdateRejectionRecordsFuncMock.mockReset()
+    getCareerCreationApprovalRecordsDoneMock.value = true
+    getCareerCreationApprovalRecordsFuncMock.mockReset()
+    getCareerCreationRejectionRecordsDoneMock.value = true
+    getCareerCreationRejectionRecordsFuncMock.mockReset()
   })
 
   it('tests', () => {
